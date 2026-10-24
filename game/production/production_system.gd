@@ -250,15 +250,22 @@ func to_dict() -> Dictionary:
 	return {"stations": sts, "segments": segs, "shelf": shelf.duplicate(), "reservations": res, "requests": reqs}
 
 
+## 存档之后店里新加的机位和传送带（新菜）不在存档里，保持开店时的初始状态
 func from_dict(d: Dictionary) -> void:
-	stations.clear()
+	var saved := {}
 	for sd in d.stations:
-		stations.append(StationState.from_dict(sd))
+		saved[String(sd.slot)] = sd
+	stations.clear()
+	for slot in _config.slots:
+		if not _slot_defs.has(slot.id):
+			continue
+		stations.append(StationState.from_dict(saved[slot.id]) if saved.has(slot.id) else StationState.create(slot))
 	var seg_data := {}
 	for sd in d.segments:
 		seg_data[String(sd.id)] = sd
 	for seg in segments:
-		seg.load_dict(seg_data[seg.id])
+		if seg_data.has(seg.id):
+			seg.load_dict(seg_data[seg.id])
 	shelf = SaveUtil.int_dict(d.shelf)
 	reservations.clear()
 	for r in d.reservations:

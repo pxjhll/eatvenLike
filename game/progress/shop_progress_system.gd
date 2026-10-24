@@ -120,7 +120,8 @@ func from_dict(d: Dictionary) -> void:
 	done_tasks.clear()
 	for task_id in d.done_tasks:
 		done_tasks[String(task_id)] = true
-	completed = bool(d.completed)
+	# 存档之后又加了新菜：菜单不再是全的，店铺回到未完成
+	completed = bool(d.completed) and stage_index >= _stages().size() - 1
 
 
 func _stages() -> Array[ShopStageDef]:

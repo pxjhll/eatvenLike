@@ -43,9 +43,10 @@ func bind(sim: GameSim) -> void:
 	_sim = sim
 	_font = load("res://art/ui/graybox_font.ttf")
 	_positions = Layout.positions(sim.config)
+	var lanes := Layout.shelf_lanes(sim.config, _positions)
 	for connection in sim.config.connections:
 		var belt := Belt.new()
-		belt.points = Layout.route(connection, _positions)
+		belt.points = Layout.route(connection, _positions, lanes.get(connection.id, 0))
 		belt.length_cells = connection.length_cells
 		add_child(belt)
 		_belts[connection.id] = belt
@@ -64,6 +65,8 @@ func bind(sim: GameSim) -> void:
 	_shelf = Shelf.new()
 	_shelf.position = Layout.SHELF
 	_shelf.capacity = sim.config.shelf_capacity
+	for item in sim.config.items:
+		_shelf.item_names[item.id] = item.display_name
 	_entities.add_child(_shelf)
 	sim.tick_finished.connect(_on_snapshot)
 	sim.sale_settled.connect(_on_sale)
@@ -128,10 +131,17 @@ func _on_snapshot(snapshot: Dictionary) -> void:
 			visual.staff_working = claimed.has(data.request)
 			visual.manual_progress = claimed.get(data.request, 0.0)
 			_stations[data.slot].display(visual)
+	var inactive := {}
+	for row in snapshot.production.stations:
+		if row.status != StationState.Status.ACTIVE:
+			inactive[row.slot] = true
+	for connection in _sim.config.connections:
+		_belts[connection.id].ghost = inactive.has(connection.from_slot) or inactive.has(connection.to_slot)
 	for data in snapshot.production.segments:
 		if _belts.has(data.id):
 			_belts[data.id].data = data
 	_queue_buffers_on_belts(snapshot)
+	_shelf.items = _menu_items(snapshot)
 	_shelf.stock = snapshot.production.shelf
 	_shelf.queue_redraw()
 	var requests := {}
@@ -244,6 +254,17 @@ func _place_customers(snapshot: Dictionary) -> void:
 			_customers[id].leaving = true
 			_customers[id].target = Layout.ENTRANCE + Vector2(-20, 0)
 			_customers.erase(id)
+
+
+## Finished goods of the dishes on the menu so far, in unlock order.
+func _menu_items(snapshot: Dictionary) -> Array:
+	var out := []
+	var stages := _sim.config.progression.stages
+	for i in mini(int(snapshot.progress.stage) + 1, stages.size()):
+		var item := _dish_item(stages[i].dish_id)
+		if not item in out:
+			out.append(item)
+	return out
 
 
 func _dish_item(dish_id: String) -> String:

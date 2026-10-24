@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StationDef" format=3]
+
+[ext_resource type="Resource" path="res://content/bakery/recipes/slice_bread.tres" id="1_sl1rc"]
+[ext_resource type="Script" path="res://content/defs/station_def.gd" id="2_sl1st"]
+
+[resource]
+script = ExtResource("2_sl1st")
+id = "slicer"
+display_name = "切片机"
+recipe = ExtResource("1_sl1rc")
+cycle_seconds = 3.0
+input_capacity = Dictionary[String, int]({
+"bread": 2
+})
+output_capacity = 2
+zone = "kitchen"
+level_speed = Array[float]([1.0, 1.25, 1.5])
+upgrade_costs = Array[int]([60, 120])
+unlock_cost = 200
