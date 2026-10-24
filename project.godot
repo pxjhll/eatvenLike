@@ -16,8 +16,11 @@ App="*res://game/app/app.gd"
 window/size/viewport_width=720
 window/size/viewport_height=1280
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 window/handheld/orientation=1
 
 [rendering]
 
 renderer/rendering_method="mobile"
+renderer/rendering_method.web="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.958, 0.957, 0.916, 1)

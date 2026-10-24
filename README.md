@@ -2,7 +2,11 @@
 
 Godot 4.7（GDScript）工程。结构按 Notion「Architecture Contract v1.1｜Godot 版」搭建，玩法以 02 和单店节奏页为准。
 
-这一版是**骨架 + 最小可跑的单店模拟**：只有面包店第 1 阶段「白面包」这条线，表现层是一个调试 HUD（文字 + 按钮）。新手引导、手感、正式美术都还没做。
+这一版是**白面包单店模拟 + 2D 3/4 灰盒现场**：能看到物料输送、员工装卸/服务、备料库存和顾客排队。点击工位可升级或启用并联，顶部可以调岗和存档，列表图标可展开原有调试 HUD。新手引导、移动端手感和正式美术仍待后续制作。
+
+灰盒资源包含六类工位、兔子/小熊/小猫三套动画、顾客、四种物料及 UI 图标；当前店铺仍只有白面包，切片机与小猫资源不会自动变成已解锁内容。独立打开 `presentation/graybox/asset_gallery.tscn` 可查看资源。
+
+源图、PNG 和动画帧信息见 `art/graybox_manifest.json`；生成方式与授权见 `art/CREDITS.md`。渲染与输入验收记录见 [docs/qa/README.md](docs/qa/README.md)。
 
 ## 跑起来
 
@@ -39,9 +43,10 @@ godot --path .
 | `game/diagnostics/` | 只读统计 |
 | `content/defs/` | Resource 类（只读 Def） |
 | `content/bakery/`、`content/staff/`、`content/catalog.tres` | 面包店与员工数据 |
-| `presentation/` | `shop.tscn` + 调试 HUD |
+| `presentation/` | `shop.tscn`、graybox 只读表现层、操作界面与可折叠调试 HUD |
 | `tests/` | `run_all.gd` + 回归用例（契约第 6 节 10 条不变量各一个） |
-| `art/{env,char,machine,belt,item,ui,fx}` | 美术目录（空） |
+| `art/{env,char,machine,belt,item,ui,fx}` | 原创灰盒 PNG、动画表、字体与资源清单；传送带和反馈图形由表现层绘制 |
+| `art_src/graybox/` | 原创 SVG、源图生成脚本、Godot PNG 导出脚本 |
 
 ## 相对契约 v1.1 的补充
 

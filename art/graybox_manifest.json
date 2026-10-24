@@ -1,0 +1,401 @@
+{
+  "version": 1,
+  "style": "2d_three_quarter_graybox",
+  "assets": [
+    {
+      "id": "mach_flour_bin",
+      "source": "art_src/graybox/svg/mach_flour_bin.svg",
+      "path": "art/machine/mach_flour_bin.png",
+      "size": [
+        128,
+        160
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "mach_dough_table",
+      "source": "art_src/graybox/svg/mach_dough_table.svg",
+      "path": "art/machine/mach_dough_table.png",
+      "size": [
+        128,
+        160
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "mach_oven",
+      "source": "art_src/graybox/svg/mach_oven.svg",
+      "path": "art/machine/mach_oven.png",
+      "size": [
+        128,
+        160
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "mach_slicer",
+      "source": "art_src/graybox/svg/mach_slicer.svg",
+      "path": "art/machine/mach_slicer.png",
+      "size": [
+        128,
+        160
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "mach_rack",
+      "source": "art_src/graybox/svg/mach_rack.svg",
+      "path": "art/machine/mach_rack.png",
+      "size": [
+        128,
+        160
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "mach_counter",
+      "source": "art_src/graybox/svg/mach_counter.svg",
+      "path": "art/machine/mach_counter.png",
+      "size": [
+        256,
+        128
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "char_rabbit",
+      "source": "art_src/graybox/svg/char_rabbit.svg",
+      "path": "art/char/char_rabbit.png",
+      "size": [
+        1280,
+        480
+      ],
+      "anchor": "bottom_center",
+      "frame_size": [
+        128,
+        160
+      ],
+      "columns": 10,
+      "rows": 3,
+      "directions": [
+        "down",
+        "up",
+        "side"
+      ],
+      "idle": [
+        0,
+        1
+      ],
+      "walk": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "work": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "fps": 8
+    },
+    {
+      "id": "char_bear",
+      "source": "art_src/graybox/svg/char_bear.svg",
+      "path": "art/char/char_bear.png",
+      "size": [
+        1280,
+        480
+      ],
+      "anchor": "bottom_center",
+      "frame_size": [
+        128,
+        160
+      ],
+      "columns": 10,
+      "rows": 3,
+      "directions": [
+        "down",
+        "up",
+        "side"
+      ],
+      "idle": [
+        0,
+        1
+      ],
+      "walk": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "work": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "fps": 8
+    },
+    {
+      "id": "char_cat",
+      "source": "art_src/graybox/svg/char_cat.svg",
+      "path": "art/char/char_cat.png",
+      "size": [
+        1280,
+        480
+      ],
+      "anchor": "bottom_center",
+      "frame_size": [
+        128,
+        160
+      ],
+      "columns": 10,
+      "rows": 3,
+      "directions": [
+        "down",
+        "up",
+        "side"
+      ],
+      "idle": [
+        0,
+        1
+      ],
+      "walk": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "work": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "fps": 8
+    },
+    {
+      "id": "char_customer",
+      "source": "art_src/graybox/svg/char_customer.svg",
+      "path": "art/char/char_customer.png",
+      "size": [
+        768,
+        480
+      ],
+      "anchor": "bottom_center",
+      "frame_size": [
+        128,
+        160
+      ],
+      "columns": 6,
+      "rows": 3,
+      "directions": [
+        "down",
+        "up",
+        "side"
+      ],
+      "idle": [
+        0,
+        1
+      ],
+      "walk": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "work": [],
+      "fps": 8
+    },
+    {
+      "id": "env_kitchen_floor",
+      "source": "art_src/graybox/svg/env_kitchen_floor.svg",
+      "path": "art/env/env_kitchen_floor.png",
+      "size": [
+        128,
+        128
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "env_front_floor",
+      "source": "art_src/graybox/svg/env_front_floor.svg",
+      "path": "art/env/env_front_floor.png",
+      "size": [
+        128,
+        128
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "env_divider",
+      "source": "art_src/graybox/svg/env_divider.svg",
+      "path": "art/env/env_divider.png",
+      "size": [
+        128,
+        32
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "env_window",
+      "source": "art_src/graybox/svg/env_window.svg",
+      "path": "art/env/env_window.png",
+      "size": [
+        128,
+        96
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "item_flour",
+      "source": "art_src/graybox/svg/item_flour.svg",
+      "path": "art/item/item_flour.png",
+      "size": [
+        64,
+        64
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "item_dough",
+      "source": "art_src/graybox/svg/item_dough.svg",
+      "path": "art/item/item_dough.png",
+      "size": [
+        64,
+        64
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "item_bread",
+      "source": "art_src/graybox/svg/item_bread.svg",
+      "path": "art/item/item_bread.png",
+      "size": [
+        64,
+        64
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "item_toast",
+      "source": "art_src/graybox/svg/item_toast.svg",
+      "path": "art/item/item_toast.png",
+      "size": [
+        64,
+        64
+      ],
+      "anchor": "bottom_center"
+    },
+    {
+      "id": "ui_icons",
+      "source": "art_src/graybox/svg/ui_icons.svg",
+      "path": "art/ui/ui_icons.png",
+      "size": [
+        256,
+        256
+      ],
+      "anchor": "bottom_center",
+      "icons": {
+        "coin": [
+          0,
+          0,
+          64,
+          64
+        ],
+        "goal": [
+          64,
+          0,
+          64,
+          64
+        ],
+        "belt": [
+          128,
+          0,
+          64,
+          64
+        ],
+        "oven": [
+          192,
+          0,
+          64,
+          64
+        ],
+        "slicer": [
+          0,
+          64,
+          64,
+          64
+        ],
+        "delete": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "hire": [
+          128,
+          64,
+          64,
+          64
+        ],
+        "hint": [
+          192,
+          64,
+          64,
+          64
+        ],
+        "reset": [
+          0,
+          128,
+          64,
+          64
+        ],
+        "upgrade": [
+          64,
+          128,
+          64,
+          64
+        ],
+        "lock": [
+          128,
+          128,
+          64,
+          64
+        ],
+        "rotate": [
+          192,
+          128,
+          64,
+          64
+        ],
+        "close": [
+          0,
+          192,
+          64,
+          64
+        ],
+        "assign": [
+          64,
+          192,
+          64,
+          64
+        ],
+        "save": [
+          128,
+          192,
+          64,
+          64
+        ],
+        "debug": [
+          192,
+          192,
+          64,
+          64
+        ]
+      }
+    }
+  ]
+}

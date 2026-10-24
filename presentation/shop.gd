@@ -3,8 +3,13 @@ extends Node2D
 
 @onready var sim: GameSim = $GameSim
 @onready var hud: ShopHud = $HUD
+@onready var world: Node2D = $World
+@onready var controls: CanvasLayer = $Controls
 
 
 func _ready() -> void:
 	App.open_shop(sim)
 	hud.bind(sim)
+	hud.visible = false
+	world.bind(sim)
+	controls.bind(sim, world, hud)
