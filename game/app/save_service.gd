@@ -25,13 +25,16 @@ func save(data: Dictionary) -> Error:
 	return DirAccess.rename_absolute(tmp, path)
 
 
-## 没有存档或读不了时返回空字典
+## 没有存档或读不了时返回空字典。读不了的存档先改名留底，免得下次自动存档把它盖掉。
 func load_data() -> Dictionary:
 	if not FileAccess.file_exists(path):
 		return {}
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	var json := JSON.new()
+	var parsed: Variant = json.data if json.parse(FileAccess.get_file_as_string(path)) == OK else null
 	if not parsed is Dictionary:
-		push_warning("存档无法解析：%s" % path)
+		var backup := "%s.corrupt-%d" % [path, int(Time.get_unix_time_from_system())]
+		DirAccess.rename_absolute(path, backup)
+		push_warning("存档无法解析，已另存为 %s" % backup)
 		return {}
 	return migrate(SaveUtil.decode_floats(parsed))
 
