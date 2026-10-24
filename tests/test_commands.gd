@@ -108,3 +108,10 @@ func _with_toast_stage() -> ShopConfig:
 	stage.order_weights["toast"] = 1.0
 	cfg.progression.stages.append(stage)
 	return cfg
+
+
+func test_long_frame_catchup_is_capped() -> void:
+	var sim := make_sim()
+	sim._process(3600.0)
+	check(sim.tick <= roundi(GameSim.MAX_CATCHUP_SECONDS / sim.step_seconds), "一帧只补跑有限的 tick：%d" % sim.tick)
+	check(sim.tick > 0, "仍然会推进")

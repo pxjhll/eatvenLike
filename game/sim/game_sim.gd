@@ -11,6 +11,8 @@ signal shop_completed()
 
 ## 模拟步长（秒），工程常量：每秒 10 步。渲染帧只做插值显示。
 const STEP_SECONDS := 0.1
+## 一帧最多补跑的模拟秒数。切后台回来时不一口气补完离开的时间（会卡顿，也等于提前有了离线收益）
+const MAX_CATCHUP_SECONDS := 0.5
 
 ## 只有回归测试会改它，用来验证步长无关（不变量 9）
 var step_seconds := STEP_SECONDS
@@ -55,7 +57,7 @@ func setup(shop_config: ShopConfig, roster: Array[StaffDef]) -> void:
 func _process(delta: float) -> void:
 	if config == null or paused:
 		return
-	_accumulator += delta
+	_accumulator = minf(_accumulator + delta, MAX_CATCHUP_SECONDS)
 	while _accumulator >= step_seconds:
 		_accumulator -= step_seconds
 		step()
