@@ -2,6 +2,7 @@ extends Node2D
 ## Animation follows the snapshot. Render travel never delays business progress.
 
 const Assets := preload("res://presentation/graybox/assets.gd")
+const Layout := preload("res://presentation/graybox/layout.gd")
 var target := Vector2.ZERO
 var working := false
 var work_progress := 0.0
@@ -9,6 +10,9 @@ var idle := true
 var wait_ratio := 0.0
 var order_item := ""
 var leaving := false
+var carry_item := ""
+## Held by the player's finger: snapshot targets are ignored until release.
+var dragging := false
 var sprite: Sprite2D
 var _clock := 0.0
 var _is_staff := true
@@ -23,7 +27,7 @@ func setup(id: String, staff: bool = true) -> void:
 	sprite.hframes = 10 if staff else 6
 	sprite.vframes = 3
 	sprite.position = Vector2(0, -48)
-	sprite.scale = Vector2(0.62, 0.62)
+	sprite.scale = Vector2.ONE * Layout.CHAR_SCALE
 	add_child(sprite)
 	_font = load("res://art/ui/graybox_font.ttf")
 	if not staff:
@@ -36,7 +40,11 @@ func _process(delta: float) -> void:
 	_clock += delta
 	var distance := position.distance_to(target)
 	var direction := target - position
-	position = position.move_toward(target, delta * 250.0)
+	if dragging:
+		distance = 0.0
+	else:
+		position = position.move_toward(target, delta * 320.0)
+	sprite.scale = Vector2.ONE * Layout.CHAR_SCALE * (1.12 if dragging else 1.0)
 	var frame := 0
 	var row_index := 0
 	if distance > 3:
@@ -63,8 +71,14 @@ func _draw() -> void:
 			draw_arc(Vector2(0, -113), 24, -PI/2, -PI/2 + TAU * minf(wait_ratio, 1.0), 28, Color("c8815a"), 3, true)
 	elif _is_staff and idle and position.distance_to(target) < 4:
 		draw_string(_font, Vector2(15, -93), "z", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("91a4a7"))
-	if _is_staff and working:
+	if _is_staff and not carry_item.is_empty():
+		draw_texture_rect(Assets.item(carry_item), Rect2(-12, -52, 24, 24), false)
+	if _is_staff and working and not dragging:
 		draw_arc(Vector2(0, -5), 15, -PI/2, -PI/2 + TAU * clampf(work_progress, 0.0, 1.0), 24, Color("7fae98"), 3, true)
+
+
+func hit(at: Vector2) -> bool:
+	return Rect2(position + Vector2(-30, -100), Vector2(60, 100)).has_point(at)
 
 
 func _bubble() -> StyleBoxFlat:

@@ -8,7 +8,7 @@ static func station(row: Dictionary, def: StationDef) -> Dictionary:
 	if def.owner == StationDef.OwnerSystem.FRONT_HALL:
 		return {"kind": "service", "text": "销售台", "color": Color("6e9988")}
 	if SaveUtil.total(row.outputs) + SaveUtil.total(def.recipe.outputs) > def.output_capacity:
-		return {"kind": "blocked", "text": "出口堆积", "color": Color("c97957")}
+		return {"kind": "blocked", "text": "出口堵了", "color": Color("e53935")}
 	if row.phase == StationState.Phase.PROCESSING:
 		return {"kind": "working", "text": "加工中", "color": Color("6e9988")}
 	if row.phase in [StationState.Phase.WAIT_LOAD, StationState.Phase.WAIT_UNLOAD, StationState.Phase.WAIT_WORK]:
@@ -18,7 +18,7 @@ static func station(row: Dictionary, def: StationDef) -> Dictionary:
 		return {"kind": "staff", "text": "等待员工", "color": Color("c39e5c")}
 	if def.mode == StationDef.Mode.SUPPLY:
 		return {"kind": "working", "text": "供料中", "color": Color("6e9988")}
-	return {"kind": "input", "text": "等待原料", "color": Color("9ca8ab")}
+	return {"kind": "input", "text": "缺原料", "color": Color("9aa6a8")}
 
 
 static func mode_label(def: StationDef) -> String:

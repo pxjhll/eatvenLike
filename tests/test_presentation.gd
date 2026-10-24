@@ -52,3 +52,59 @@ func test_graybox_rebind_and_detach_do_not_change_simulation() -> void:
 	view.free()
 	sim.run_seconds(20.0)
 	check(sim.economy.revenue > 0, "simulation continues without a view")
+
+
+# Catches servers stacking on one fixed point instead of fetching from the window and serving a customer.
+func test_front_service_fetches_from_window_then_serves_its_customer() -> void:
+	var layout: Script = load("res://presentation/graybox/layout.gd")
+	var sim := make_sim()
+	var view: Node = load("res://presentation/graybox/shop_view.gd").new()
+	view.bind(sim)
+	var fetched := false
+	var served := false
+	for i in 1200:
+		sim.step()
+		var rabbit: Node2D = view._staff["rabbit"]
+		if not rabbit.working:
+			continue
+		var place := -1
+		for staff in sim.last_snapshot.workforce.staff:
+			if staff.staff == "rabbit":
+				for request in sim.last_snapshot.front_hall.requests:
+					if request.id == staff.request:
+						for p in sim.last_snapshot.front_hall.orders.size():
+							if sim.last_snapshot.front_hall.orders[p].id == request.order:
+								place = p
+		if place == -1:
+			continue
+		if rabbit.carry_item == "":
+			fetched = fetched or rabbit.target.x == layout.WINDOW.x - 30
+		else:
+			served = served or rabbit.target == layout.serve_spot(place)
+	check(fetched, "a server first walks to the pass-through window")
+	check(served, "then carries the dish to the customer's own place")
+	view.unbind()
+	view.free()
+
+
+# Catches kitchen workers snapping back to a home point between jobs.
+func test_idle_kitchen_worker_stays_at_last_station() -> void:
+	var layout: Script = load("res://presentation/graybox/layout.gd")
+	var sim := make_sim()
+	var view: Node = load("res://presentation/graybox/shop_view.gd").new()
+	view.bind(sim)
+	var bear: Node2D = view._staff["bear"]
+	var last_job := Vector2.INF
+	var stayed := false
+	for i in 600:
+		sim.step()
+		if bear.working:
+			last_job = bear.target
+		elif last_job != Vector2.INF:
+			stayed = stayed or bear.target == last_job
+			check_eq(bear.target, last_job, "an idle kitchen worker keeps the last work spot")
+			break
+	check(stayed, "the worker finished a job and was observed idle")
+	check(last_job != layout.KITCHEN_HOME, "the work spot is beside a station, not the home point")
+	view.unbind()
+	view.free()
