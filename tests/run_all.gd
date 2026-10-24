@@ -11,6 +11,9 @@ const SUITES := [
 
 
 func _initialize() -> void:
+	# 测试方法里发生运行时错误时 Godot 只会中止那个方法，断言不会记失败，所以另外收集错误
+	var errors := preload("res://tests/error_counter.gd").new()
+	OS.add_logger(errors)
 	var total := 0
 	var failed := 0
 	for suite_script in SUITES:
@@ -21,8 +24,11 @@ func _initialize() -> void:
 				continue
 			var suite: RefCounted = suite_script.new()
 			total += 1
+			errors.take()
 			suite.call(name)
 			suite.cleanup()
+			for e in errors.take():
+				suite.failures.append("运行时错误：" + e)
 			if suite.failures.is_empty():
 				print("  ok    %s.%s" % [suite_name, name])
 			else:
@@ -30,5 +36,6 @@ func _initialize() -> void:
 				print("  FAIL  %s.%s" % [suite_name, name])
 				for f in suite.failures:
 					print("        - " + f)
+	OS.remove_logger(errors)
 	print("\n%d 个用例，%d 个失败" % [total, failed])
 	quit(1 if failed > 0 else 0)
