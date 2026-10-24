@@ -47,13 +47,14 @@ func open_shop(game_sim: GameSim) -> void:
 	_autosave_timer = 0.0
 
 
-func save_now() -> void:
+func save_now() -> Error:
 	var data := {"profile": profile.to_dict()}
 	if sim != null and sim.config != null:
 		data.shop = sim.to_dict()
 	var err := save_service.save(data)
 	if err != OK:
 		push_warning("存档失败：%s" % error_string(err))
+	return err
 
 
 ## SwitchShop：写入纪录 → 存档 → 丢弃旧 GameSim → 用下一家 ShopConfig 新建。返回空字符串表示成功。
