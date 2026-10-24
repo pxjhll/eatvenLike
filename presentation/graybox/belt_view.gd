@@ -7,6 +7,9 @@ var points := PackedVector2Array()
 var data := {}
 var length_cells := 1.0
 var selected := false
+## Items buffered inside the machine at either end, shown queued on the belt where they wait.
+var queued_end := {}
+var queued_start := {}
 var _clock := 0.0
 var _head_waiting := 0.0
 
@@ -65,5 +68,19 @@ func _draw() -> void:
 ## Items are drawn by a shared layer above every belt, so overlapping belts never cover each other's items.
 func draw_items(canvas: CanvasItem) -> void:
 	for item in data.get("items", []):
-		var at := Layout.along(points, float(item.pos) / maxf(length_cells, 0.01))
-		canvas.draw_texture_rect(Assets.item(item.item), Rect2(at - Vector2(13, 20), Vector2(26, 26)), false)
+		_draw_item(canvas, item.item, float(item.pos))
+	var index := 0
+	for item in queued_end:
+		for i in mini(int(queued_end[item]), 3):
+			_draw_item(canvas, item, length_cells - 0.12 - index * 0.32)
+			index += 1
+	index = 0
+	for item in queued_start:
+		for i in mini(int(queued_start[item]), 3):
+			_draw_item(canvas, item, 0.12 + index * 0.32)
+			index += 1
+
+
+func _draw_item(canvas: CanvasItem, item: String, pos: float) -> void:
+	var at := Layout.along(points, clampf(pos, 0.0, length_cells) / maxf(length_cells, 0.01))
+	canvas.draw_texture_rect(Assets.item(item), Rect2(at - Vector2(13, 20), Vector2(26, 26)), false)

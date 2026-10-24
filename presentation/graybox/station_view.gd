@@ -75,15 +75,14 @@ func _draw() -> void:
 		return
 	if not _counter:
 		_draw_progress(state)
-		_draw_buffers(top)
 	if state.kind in ["blocked", "staff", "input"]:
 		var width: float = 18.0 + String(state.text).length() * 13.0
 		draw_style_box(_pill(Color(state.color, 0.95)), Rect2(-width / 2.0, top - 18, width, 24))
 		_text(Vector2(-width / 2.0 + 9, top), state.text, 13, Color.WHITE)
 	if not _counter:
-		# Name sits right of centre: the operating worker stands front-left of the machine.
+		# Name sits below the operating worker's feet so it stays readable while they work.
 		var level := "" if int(row.level) <= 1 else "  Lv%d" % row.level
-		_text(Vector2(-4, 24), definition.display_name + level, 13, Color("5d6f72"))
+		_text(Vector2(-box.size.x / 2.0, 70), definition.display_name + level, 13, Color("5d6f72"))
 
 
 func _draw_counter() -> void:
@@ -104,21 +103,8 @@ func _draw_progress(state: Dictionary) -> void:
 		amount = fmod(float(row.supply_timer) / maxf(definition.supply_interval, 0.01), 1.0)
 	if definition.mode == StationDef.Mode.COOP and row.phase == StationState.Phase.PROCESSING:
 		draw_rect(Rect2(-20, -58, 40, 20), Color(1, 0.68, 0.27, 0.22))
-	draw_line(Vector2(-4, 4), Vector2(40, 4), Color("d4ded8"), 5, true)
-	draw_line(Vector2(-4, 4), Vector2(-4 + 44 * clampf(amount, 0.0, 1.0), 4), Color("77a995"), 5, true)
-
-
-## Buffered items sit on the machine's top surface: inputs on the left, outputs on the right.
-func _draw_buffers(top: float) -> void:
-	var indices := {"input": 0, "output": 0}
-	for stack in State.buffers(row):
-		for i in mini(stack.count, 3):
-			var index: int = indices[stack.side]
-			if index >= 3:
-				break
-			var x: float = (-36 if stack.side == "input" else 4) + index * 9
-			draw_texture_rect(Assets.item(stack.item), Rect2(x, top + 8 - (index % 2) * 3, 22, 22), false)
-			indices[stack.side] = index + 1
+	draw_line(Vector2(-26, 50), Vector2(26, 50), Color("d4ded8"), 5, true)
+	draw_line(Vector2(-26, 50), Vector2(-26 + 52 * clampf(amount, 0.0, 1.0), 50), Color("77a995"), 5, true)
 
 
 func _price() -> int:

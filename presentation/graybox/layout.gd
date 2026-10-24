@@ -30,7 +30,7 @@ static func positions(config: ShopConfig) -> Dictionary:
 
 ## Where a worker stands to operate a station: just in front of it, clear of the belts.
 static func work_spot(station: Vector2) -> Vector2:
-	return station + Vector2(-30, 46)
+	return station + Vector2(0, 40)
 
 
 ## Behind the counter, one spot per customer place so servers never stack.

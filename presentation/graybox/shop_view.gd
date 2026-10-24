@@ -23,6 +23,9 @@ var _customers := {}
 var _entities: Node2D
 var _shelf: Node2D
 var _font: Font
+const DRAG_THRESHOLD := 12.0
+var _held := ""
+var _held_at := Vector2.ZERO
 var _dragged := ""
 var _drag_zone := ""
 
@@ -36,6 +39,7 @@ func bind(sim: GameSim) -> void:
 	_staff.clear()
 	_customers.clear()
 	_dragged = ""
+	_held = ""
 	_sim = sim
 	_font = load("res://art/ui/graybox_font.ttf")
 	_positions = Layout.positions(sim.config)
@@ -127,6 +131,7 @@ func _on_snapshot(snapshot: Dictionary) -> void:
 	for data in snapshot.production.segments:
 		if _belts.has(data.id):
 			_belts[data.id].data = data
+	_queue_buffers_on_belts(snapshot)
 	_shelf.stock = snapshot.production.shelf
 	_shelf.queue_redraw()
 	var requests := {}
@@ -137,6 +142,25 @@ func _on_snapshot(snapshot: Dictionary) -> void:
 		places[int(snapshot.front_hall.orders[i].id)] = i
 	_place_staff(snapshot, requests, places)
 	_place_customers(snapshot)
+
+
+## A machine's waiting inputs show at the end of its first incoming belt, its finished outputs at the start of its first outgoing one.
+func _queue_buffers_on_belts(snapshot: Dictionary) -> void:
+	var rows := {}
+	for row in snapshot.production.stations:
+		rows[row.slot] = row
+	var has_input := {}
+	var has_output := {}
+	for connection in _sim.config.connections:
+		var belt: Node2D = _belts[connection.id]
+		belt.queued_end = {}
+		belt.queued_start = {}
+		if rows.has(connection.to_slot) and not has_input.has(connection.to_slot):
+			belt.queued_end = rows[connection.to_slot].inputs
+			has_input[connection.to_slot] = true
+		if rows.has(connection.from_slot) and not has_output.has(connection.from_slot):
+			belt.queued_start = rows[connection.from_slot].outputs
+			has_output[connection.from_slot] = true
 
 
 func _place_staff(snapshot: Dictionary, requests: Dictionary, places: Dictionary) -> void:
@@ -262,18 +286,29 @@ func _on_sale(_sale_id: int, amount: int) -> void:
 	tween.tween_callback(label.queue_free)
 
 
-## An active drag owns motion and release before GUI controls can swallow them.
+## A press on a worker becomes a drag only after the finger moves; a still tap selects what is underneath.
+## An active press owns motion and release before GUI controls can swallow them.
 func _input(event: InputEvent) -> void:
-	if _dragged == "":
+	if _held == "":
 		return
+	var point: Vector2 = get_global_transform_with_canvas().affine_inverse() * event.position if event is InputEventMouse else Vector2.ZERO
 	if event is InputEventMouseMotion:
-		var point: Vector2 = get_global_transform_with_canvas().affine_inverse() * event.position
-		_staff[_dragged].position = point + Vector2(0, 40)
-		_drag_zone = _zone_at(point)
-		queue_redraw()
+		if _dragged == "" and point.distance_to(_held_at) > DRAG_THRESHOLD:
+			_dragged = _held
+			_staff[_dragged].dragging = true
+			_staff[_dragged].z_index = 10
+			selection_cleared.emit()
+		if _dragged != "":
+			_staff[_dragged].position = point + Vector2(0, 40)
+			_drag_zone = _zone_at(point)
+			queue_redraw()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
-		_drop()
+		_held = ""
+		if _dragged != "":
+			_drop()
+		else:
+			_select_at(_held_at)
 		get_viewport().set_input_as_handled()
 
 
@@ -286,13 +321,13 @@ func _unhandled_input(event: InputEvent) -> void:
 func _press(point: Vector2) -> void:
 	for id in _staff:
 		if _staff[id].hit(point):
-			_dragged = id
-			_staff[id].dragging = true
-			_staff[id].z_index = 10
-			_drag_zone = _zone_at(point)
-			selection_cleared.emit()
-			queue_redraw()
+			_held = id
+			_held_at = point
 			return
+	_select_at(point)
+
+
+func _select_at(point: Vector2) -> void:
 	var nodes: Array = _stations.keys()
 	nodes.sort_custom(func(a: String, b: String) -> bool: return _stations[a].position.y > _stations[b].position.y)
 	for id in nodes:
