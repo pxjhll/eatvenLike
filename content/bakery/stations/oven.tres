@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="StationDef" format=3]
+
+[ext_resource type="Resource" path="res://content/bakery/recipes/bake_bread.tres" id="1_jkvd4"]
+[ext_resource type="Script" path="res://content/defs/station_def.gd" id="2_c066e"]
+
+[resource]
+script = ExtResource("2_c066e")
+id = "oven"
+display_name = "烤炉"
+mode = 1
+recipe = ExtResource("1_jkvd4")
+cycle_seconds = 4.0
+manual_seconds = 0.8
+input_capacity = Dictionary[String, int]({
+"dough": 2
+})
+output_capacity = 1
+zone = "kitchen"
+level_speed = Array[float]([1.0, 1.25, 1.5, 1.75])
+upgrade_costs = Array[int]([40, 80, 160])
+parallel_cost = 120

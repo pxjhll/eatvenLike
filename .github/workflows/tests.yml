@@ -1,0 +1,21 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  headless:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Godot 4.7
+        run: |
+          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.7-stable_linux.x86_64 godot
+      - name: Import (build class cache)
+        run: ./godot --headless --path . --import
+      - name: Run tests
+        run: ./godot --headless --path . -s tests/run_all.gd

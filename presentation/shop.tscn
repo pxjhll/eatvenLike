@@ -1,0 +1,14 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://presentation/shop.gd" id="1_shop"]
+[ext_resource type="Script" path="res://game/sim/game_sim.gd" id="2_sim"]
+[ext_resource type="Script" path="res://presentation/hud/hud.gd" id="3_hud"]
+
+[node name="Shop" type="Node2D"]
+script = ExtResource("1_shop")
+
+[node name="GameSim" type="Node" parent="."]
+script = ExtResource("2_sim")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("3_hud")

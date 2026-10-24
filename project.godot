@@ -1,0 +1,23 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="eatvenLike"
+run/main_scene="res://presentation/shop.tscn"
+config/features=PackedStringArray("4.7", "Mobile")
+
+[autoload]
+
+App="*res://game/app/app.gd"
+
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/stretch/mode="canvas_items"
+window/handheld/orientation=1
+
+[rendering]
+
+renderer/rendering_method="mobile"

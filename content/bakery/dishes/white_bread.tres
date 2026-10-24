@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="DishDef" format=3]
+
+[ext_resource type="Script" path="res://content/defs/dish_def.gd" id="1_5enrt"]
+
+[resource]
+script = ExtResource("1_5enrt")
+id = "white_bread"
+display_name = "白面包"
+item_id = "bread"
+price = 10

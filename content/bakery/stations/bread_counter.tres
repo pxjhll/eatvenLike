@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="StationDef" format=3]
+
+[ext_resource type="Script" path="res://content/defs/station_def.gd" id="1_cp3qc"]
+
+[resource]
+script = ExtResource("1_cp3qc")
+id = "bread_counter"
+display_name = "面包柜台"
+owner = 1
+mode = 2
+cycle_seconds = 1.5
+zone = "front"
+level_speed = Array[float]([1.0, 1.2, 1.4])
+upgrade_costs = Array[int]([30, 70])
+dishes = Array[String](["white_bread"])

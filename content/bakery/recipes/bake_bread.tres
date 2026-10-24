@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RecipeDef" format=3]
+
+[ext_resource type="Script" path="res://content/defs/recipe_def.gd" id="1_y3u1b"]
+
+[resource]
+script = ExtResource("1_y3u1b")
+id = "bake_bread"
+inputs = Dictionary[String, int]({
+"dough": 1
+})
+outputs = Dictionary[String, int]({
+"bread": 1
+})
