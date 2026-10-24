@@ -17,6 +17,51 @@ var sprite: Sprite2D
 var _clock := 0.0
 var _is_staff := true
 var _font: Font
+var _move_speed := 320.0
+var _service_id := -1
+var _service_origin := Vector2.ZERO
+var _service_begin_progress := 0.0
+var _delivery := Vector2.ZERO
+var _delivery_seconds := 0.0
+var _fetched := false
+
+
+## Fit the visual route into the real service duration, including staff efficiency.
+## Snapshot phase boundaries also reconcile skipped frames or a restored in-flight job.
+func display_service(request_id: int, progress: float, seconds: float, pickup: Vector2, delivery: Vector2, item: String, fetch_share: float) -> void:
+	if _service_id != request_id:
+		finish_service()
+		_service_id = request_id
+		_service_origin = position
+		_service_begin_progress = progress
+		_fetched = false
+	_delivery = delivery
+	if progress < fetch_share:
+		target = pickup
+		_move_speed = _service_origin.distance_to(pickup) / maxf(seconds * (fetch_share - _service_begin_progress), 0.001)
+		carry_item = ""
+	else:
+		if not _fetched:
+			position = pickup
+			_fetched = true
+			_delivery_seconds = seconds * (1.0 - progress)
+		target = delivery
+		_move_speed = pickup.distance_to(delivery) / maxf(_delivery_seconds, 0.001)
+		carry_item = item
+
+
+func finish_service() -> void:
+	if _service_id != -1:
+		position = _delivery
+	_service_id = -1
+	carry_item = ""
+	_move_speed = 320.0
+
+
+func cancel_service_motion() -> void:
+	_service_id = -1
+	carry_item = ""
+	_move_speed = 320.0
 
 
 func setup(id: String, staff: bool = true) -> void:
@@ -43,7 +88,7 @@ func _process(delta: float) -> void:
 	if dragging:
 		distance = 0.0
 	else:
-		position = position.move_toward(target, delta * 320.0)
+		position = position.move_toward(target, delta * _move_speed)
 	sprite.scale = Vector2.ONE * Layout.CHAR_SCALE * (1.12 if dragging else 1.0)
 	var frame := 0
 	var row_index := 0

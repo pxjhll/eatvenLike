@@ -189,15 +189,17 @@ func _place_staff(snapshot: Dictionary, requests: Dictionary, places: Dictionary
 		if actor.dragging:
 			continue
 		var request: Dictionary = requests.get(int(data.request), {})
+		var serving := not request.is_empty() and places.has(int(request.order))
+		if not serving:
+			actor.finish_service()
 		if not request.is_empty() and _positions.has(request.slot):
 			actor.target = Layout.work_spot(_positions[request.slot])
-		elif not request.is_empty() and places.has(int(request.order)):
+		elif serving:
 			# Service: fetch from the pass-through window, then hand over at the customer's place.
-			if progress < FETCH_SHARE:
-				actor.target = Vector2(Layout.WINDOW.x - 30, Layout.STAFF_LINE - 34)
-			else:
-				actor.target = Layout.serve_spot(places[int(request.order)])
-				actor.carry_item = _dish_item(snapshot.front_hall.orders[places[int(request.order)]].dish)
+			var duration := float(data.work_seconds) / _sim.workforce.efficiency(data.staff, data.zone)
+			actor.display_service(int(data.request), progress, duration,
+				Vector2(Layout.WINDOW.x - 30, Layout.STAFF_LINE - 34), Layout.serve_spot(places[int(request.order)]),
+				_dish_item(snapshot.front_hall.orders[places[int(request.order)]].dish), FETCH_SHARE)
 		elif not _zone_rect(zone).has_point(actor.target):
 			actor.target = _zone_home(zone, index)
 		elif zone == "front":
@@ -295,6 +297,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		if _dragged == "" and point.distance_to(_held_at) > DRAG_THRESHOLD:
 			_dragged = _held
+			_staff[_dragged].cancel_service_motion()
 			_staff[_dragged].dragging = true
 			_staff[_dragged].z_index = 10
 			selection_cleared.emit()

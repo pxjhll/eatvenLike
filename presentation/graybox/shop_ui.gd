@@ -112,8 +112,8 @@ func _build() -> void:
 	var save := _button("", Rect2(594, 30, 42, 50), "save", _root)
 	save.tooltip_text = "保存进度"
 	save.pressed.connect(func() -> void:
-		App.save_now()
-		_show_toast("已保存"))
+		var err := App.save_now()
+		_show_toast("已保存" if err == OK else "保存失败：" + error_string(err)))
 	var debug := _button("", Rect2(642, 30, 42, 50), "debug", _root)
 	debug.tooltip_text = "显示 / 收起调试面板"
 	debug.pressed.connect(func() -> void: _debug.visible = not _debug.visible)

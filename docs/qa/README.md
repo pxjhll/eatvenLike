@@ -5,9 +5,9 @@ Godot 4.7 stable; current 2D 3/4 specification. This is a functional graybox, no
 ## Automated checks
 
 - `godot --headless --path . --import`
-- `godot --headless --path . -s tests/run_all.gd`: **37 cases, zero failures** (32 existing + 5 presentation regressions).
+- `godot --headless --path . -s tests/run_all.gd`: **40 cases, zero failures** (32 existing + 8 presentation regressions).
 - Presentation regressions cover snapshot immutability and signal rebind/detach, claimed versus unclaimed manual work, distinct input/output item identities, servers fetching from the window before serving their own customer, and idle kitchen workers staying at their last station. Both display regressions failed before correction and passed afterward.
-- `git diff --check` and the project inspection script passed; `game/` and `content/` are unchanged.
+- `git diff --check` and the project inspection script passed; Production rules and `content/` are unchanged. `App.save_now()` now returns the real write result to the UI.
 
 ## Real renderer and input
 
@@ -35,3 +35,13 @@ Screen captures: [720×1280 shop](pxj26-whitebread.png), [station card](pxj26-ca
 - Tapping a station or belt opens a card beside it (upgrade / enable, or disconnect / clear belt). Workers are reassigned by dragging them onto the kitchen or front hall; the target zone highlights while dragging.
 - Stuck belts turn red after one second of a blocked head item; "blocked" uses the warning red reserved by the art list.
 - `docs/` carries a `.gdignore`, so QA images are no longer imported as game resources.
+
+## PR #5 review corrections
+
+- Saving reports success only after the actual write and rename succeed; failures show the write error. Regression coverage uses a real invalid destination and a real successful save file.
+- Server travel speeds fit the service duration including staff efficiency and the progress already elapsed when a snapshot arrives. Pickup and completion snapshots reconcile skipped render frames; dragging cancels the local motion before the next snapshot resumes it. Economy and service timing are unchanged.
+- The motion regression advances actual actor positions at the simulation cadence and covers all three counter levels. It checks arrival at the window before carrying and arrival at the customer before the completion snapshot, so snapping at a phase boundary cannot conceal a too-slow walk.
+- The bundled font subset was regenerated from the licensed source, including the new drag hint and parallel-card glyphs. Font coverage has a runtime regression.
+- These three regression cases failed against the reviewed head before correction and passed afterward. Expected warnings from deliberate save-failure and corrupt-save fixtures are not application errors.
+
+The corrected head also passed Godot 4.7 import and the real X11 renderer/input script (card upgrade, parallel activation, floor dismissal, drag assignment, release over GUI, cancellation, rebind, 720×1280 / 540×960 / 1280×720). Screenshots were inspected; Mesa llvmpipe was used, so this is not a mobile performance or Web gameplay result.

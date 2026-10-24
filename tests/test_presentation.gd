@@ -54,6 +54,83 @@ func test_graybox_rebind_and_detach_do_not_change_simulation() -> void:
 	check(sim.economy.revenue > 0, "simulation continues without a view")
 
 
+func test_service_reaches_pickup_before_carrying_and_customer_before_sale() -> void:
+	for upgrades in [0, 1, 2]:
+		var config := bakery_copy()
+		config.starting_gold = 200
+		var sim := make_sim(config)
+		for i in upgrades:
+			sim.submit(UpgradeStationCommand.new("bread_counter"))
+			sim.step()
+		var view: Node = load("res://presentation/graybox/shop_view.gd").new()
+		view.bind(sim)
+		var rabbit: Node2D = view._staff["rabbit"]
+		var pickup := Vector2(530, 914)
+		var picked_up := false
+		var delivered := false
+		var last_target := Vector2.ZERO
+		for i in 600:
+			var revenue := sim.economy.revenue
+			var before_move := rabbit.position
+			sim.step()
+			if not rabbit.carry_item.is_empty() and not picked_up:
+				check(before_move.distance_to(pickup) < 3.0, "normal animation reaches pickup without relying on phase-boundary reconciliation")
+				check(rabbit.position.distance_to(pickup) < 3.0, "a dish appears only after the server reaches the pickup window")
+				picked_up = true
+			if sim.economy.revenue > revenue:
+				check(before_move.distance_to(last_target) < 3.0, "normal animation reaches the customer before the completion snapshot")
+				check(rabbit.position.distance_to(last_target) < 3.0, "the server reaches the customer's place before the sale leaves the view")
+				delivered = true
+				break
+			if not rabbit.carry_item.is_empty():
+				last_target = rabbit.target
+			for actor in view._staff.values():
+				actor._process(0.1)
+		check(picked_up and delivered, "a complete service was observed, including upgraded counter timing")
+		view.unbind()
+		view.free()
+
+
+func test_ui_font_covers_drag_hint_and_parallel_card() -> void:
+	var font: Font = load("res://art/ui/graybox_font.ttf")
+	for code in [0x62D6, 0x64CD, 0x6837, 0x7FFB]:
+		check(font.has_char(code), "bundled font covers new UI character " + String.chr(code))
+
+
+func test_save_button_reports_real_write_failure_and_success() -> void:
+	var app: Node = Engine.get_main_loop().root.get_node("App")
+	var old_profile: Profile = app.profile
+	var old_sim: GameSim = app.sim
+	var old_path: String = app.save_service.path
+	var sim := make_sim()
+	app.profile = Profile.create(load(CATALOG))
+	app.sim = sim
+	var view: Node = load("res://presentation/graybox/shop_view.gd").new()
+	view.bind(sim)
+	var ui: Node = load("res://presentation/graybox/shop_ui.gd").new()
+	var debug := CanvasLayer.new()
+	ui.bind(sim, view, debug)
+	var save: Button
+	for child in ui._root.get_children():
+		if child is Button and child.tooltip_text == "保存进度":
+			save = child
+	app.save_service.path = "user://missing-pr5-test-directory/save.json"
+	save.pressed.emit()
+	check(not FileAccess.file_exists(app.save_service.path), "the failure case did not write a save")
+	check(ui._toast.text.contains("失败"), "the user sees failure when the write fails")
+	app.save_service.path = "user://pr5-save-ui-test.json"
+	save.pressed.emit()
+	check(FileAccess.file_exists(app.save_service.path), "success feedback corresponds to a real file")
+	check_eq(ui._toast.text, "已保存", "successful save feedback remains available")
+	DirAccess.remove_absolute(app.save_service.path)
+	ui.free()
+	view.free()
+	debug.free()
+	app.profile = old_profile
+	app.sim = old_sim
+	app.save_service.path = old_path
+
+
 # Catches servers stacking on one fixed point instead of fetching from the window and serving a customer.
 func test_front_service_fetches_from_window_then_serves_its_customer() -> void:
 	var layout: Script = load("res://presentation/graybox/layout.gd")
