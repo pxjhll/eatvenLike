@@ -4,6 +4,7 @@ extends RefCounted
 ## Machines share the character scale so a worker reads as tall as the station they operate.
 const MACHINE_SCALE := 0.6
 const RACK_SCALE := 0.75
+const MACHINE_EDGE := 40.0
 const CHAR_SCALE := 0.62
 const KITCHEN := Rect2(40, 118, 640, 662)
 const FRONT := Rect2(40, 810, 640, 380)
@@ -27,9 +28,9 @@ static func positions(config: ShopConfig) -> Dictionary:
 	return result
 
 
-## Where a worker stands to operate a station: in front of its left edge.
+## Where a worker stands to operate a station: just in front of it, clear of the belts.
 static func work_spot(station: Vector2) -> Vector2:
-	return station + Vector2(-56, 14)
+	return station + Vector2(-30, 46)
 
 
 ## Behind the counter, one spot per customer place so servers never stack.
@@ -46,14 +47,15 @@ static func customer_spot(place: int) -> Vector2:
 
 
 static func route(connection: ConnectionDef, points: Dictionary) -> PackedVector2Array:
-	var a: Vector2 = points.get(connection.from_slot, Vector2(120, 330)) + Vector2(20, -24)
-	var b: Vector2 = points.get(connection.to_slot, SHELF) + Vector2(-20, -24)
+	# Belts stop at machine edges: items vanish into a machine instead of sliding underneath it.
+	var a: Vector2 = points.get(connection.from_slot, Vector2(120, 330)) + Vector2(MACHINE_EDGE, -24)
+	var b: Vector2 = points.get(connection.to_slot, SHELF) + Vector2(-MACHINE_EDGE, -24)
 	if connection.to_slot == "shelf":
 		# Each producer gets its own lane down the right wall, so items never pass behind a machine.
 		var top := a.y < 420
 		var lane := 668.0 if top else 638.0
 		var drop := SHELF.y - (52.0 if top else 66.0)
-		return PackedVector2Array([a, Vector2(lane, a.y), Vector2(lane, drop), Vector2(SHELF.x + 30, drop)])
+		return PackedVector2Array([a, Vector2(lane, a.y), Vector2(lane, drop), Vector2(SHELF.x + 50, drop)])
 	if absf(a.y - b.y) > 1.0:
 		var turn := (a.x + b.x) / 2.0
 		return PackedVector2Array([a, Vector2(turn, a.y), Vector2(turn, b.y), b])

@@ -176,6 +176,23 @@ func _place_staff(snapshot: Dictionary, requests: Dictionary, places: Dictionary
 		elif zone == "front":
 			actor.target = Layout.front_idle_spot(index)
 		# An idle kitchen worker stays where the last job ended until another station needs them.
+	_separate_idle_workers()
+
+
+## Two workers never share a spot: an idle one steps aside for whoever is working there.
+func _separate_idle_workers() -> void:
+	for id in _staff:
+		var actor: Node2D = _staff[id]
+		if actor.working or actor.dragging:
+			continue
+		for attempt in 4:
+			var crowded := false
+			for other_id in _staff:
+				if other_id != id and _staff[other_id].target.distance_to(actor.target) < 40.0:
+					crowded = true
+			if not crowded:
+				break
+			actor.target += Vector2(-52, 8)
 
 
 func _place_customers(snapshot: Dictionary) -> void:
@@ -242,26 +259,25 @@ func _on_sale(_sale_id: int, amount: int) -> void:
 	tween.tween_callback(label.queue_free)
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not (event is InputEventMouseButton or event is InputEventMouseMotion):
+## An active drag owns motion and release before GUI controls can swallow them.
+func _input(event: InputEvent) -> void:
+	if _dragged == "":
 		return
-	if event is InputEventMouseButton and event.button_index != MOUSE_BUTTON_LEFT:
-		return
-	var point: Vector2 = get_global_transform_with_canvas().affine_inverse() * event.position
 	if event is InputEventMouseMotion:
-		if _dragged != "":
-			_staff[_dragged].position = point + Vector2(0, 40)
-			_drag_zone = _zone_at(point)
-			queue_redraw()
-			get_viewport().set_input_as_handled()
-		return
-	if event.pressed:
-		_press(point)
-	elif _dragged != "":
+		var point: Vector2 = get_global_transform_with_canvas().affine_inverse() * event.position
+		_staff[_dragged].position = point + Vector2(0, 40)
+		_drag_zone = _zone_at(point)
+		queue_redraw()
+		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		_drop()
-	else:
-		return
-	get_viewport().set_input_as_handled()
+		get_viewport().set_input_as_handled()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_press(get_global_transform_with_canvas().affine_inverse() * event.position)
+		get_viewport().set_input_as_handled()
 
 
 func _press(point: Vector2) -> void:

@@ -249,9 +249,14 @@ func _refresh_belt_card() -> void:
 
 func _assign(id: String, zone: String) -> void:
 	for staff in _snapshot.workforce.staff:
-		if staff.staff == id and staff.zone != zone and staff.target != zone:
-			_sim.submit(AssignStaffCommand.new(id, zone))
-			_show_toast("%s 调往%s" % [Names.get(id, id), ZoneNames.get(zone, zone)])
+		if staff.staff != id:
+			continue
+		# Already heading there, or already there with nothing pending: nothing to do.
+		if staff.target == zone or (staff.zone == zone and staff.target == ""):
+			return
+		# Dropping back on the current zone cancels a pending transfer.
+		_sim.submit(AssignStaffCommand.new(id, zone))
+		_show_toast("%s 留在%s" % [Names.get(id, id), ZoneNames.get(zone, zone)] if staff.zone == zone else "%s 调往%s" % [Names.get(id, id), ZoneNames.get(zone, zone)])
 
 
 func _act(button: int) -> void:

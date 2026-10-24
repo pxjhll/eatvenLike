@@ -45,7 +45,20 @@ func _run() -> void:
 	for staff in sim.workforce.staff:
 		if staff.staff_id == "rabbit":
 			assert(staff.zone == "kitchen", "dragging a worker submits the assignment")
-	print("GRAYBOX INPUT QA: card upgrade, parallel activation, drag assignment passed")
+	# Releasing a drag over a GUI button must still end the drag.
+	var bear: Node2D = shop.world._staff["bear"]
+	await _drag(bear.position + Vector2(0, -40), Vector2(615, 55), false)
+	assert(shop.world._dragged == "" and not bear.dragging, "a release over a button still ends the drag")
+	# Sending a worker away and dropping them back cancels the pending transfer.
+	sim.submit(AssignStaffCommand.new("bear", "front"))
+	sim.step()
+	await create_timer(1.5).timeout
+	await _drag(bear.position + Vector2(0, -40), Vector2(200, 600), false)
+	sim.step()
+	for staff in sim.workforce.staff:
+		if staff.staff_id == "bear":
+			assert(staff.target_zone == "", "dropping back on the current zone cancels the transfer")
+	print("GRAYBOX INPUT QA: card upgrade, parallel activation, drag assignment, drag over GUI, cancel transfer passed")
 	await _advance(sim, 20.0)
 	await _capture("res://docs/qa/pxj26-parallel.png")
 	await _click(_center_of(shop, "dough_table"))
@@ -97,7 +110,7 @@ func _click(at: Vector2) -> void:
 		await process_frame
 
 
-func _drag(from: Vector2, to: Vector2) -> void:
+func _drag(from: Vector2, to: Vector2, capture: bool = true) -> void:
 	_move(from)
 	_press(from, true)
 	await process_frame
@@ -105,7 +118,8 @@ func _drag(from: Vector2, to: Vector2) -> void:
 		_move(from.lerp(to, i / 10.0))
 		await process_frame
 	await create_timer(0.2).timeout
-	await _capture("res://docs/qa/pxj26-drag.png")
+	if capture:
+		await _capture("res://docs/qa/pxj26-drag.png")
 	_press(to, false)
 	await process_frame
 
