@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="StaffDef" format=3]
+
+[ext_resource type="Script" path="res://content/defs/staff_def.gd" id="1_eo6fn"]
+
+[resource]
+script = ExtResource("1_eo6fn")
+id = "bear"
+display_name = "小熊"
+zone_efficiency = Dictionary[String, float]({
+"kitchen": 1.2
+})

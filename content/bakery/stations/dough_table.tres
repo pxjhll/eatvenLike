@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StationDef" format=3]
+
+[ext_resource type="Resource" path="res://content/bakery/recipes/make_dough.tres" id="1_0fkwq"]
+[ext_resource type="Script" path="res://content/defs/station_def.gd" id="2_fa11e"]
+
+[resource]
+script = ExtResource("2_fa11e")
+id = "dough_table"
+display_name = "面团台"
+recipe = ExtResource("1_0fkwq")
+cycle_seconds = 2.0
+input_capacity = Dictionary[String, int]({
+"flour": 4
+})
+output_capacity = 2
+zone = "kitchen"
+level_speed = Array[float]([1.0, 1.25, 1.5])
+upgrade_costs = Array[int]([30, 60])

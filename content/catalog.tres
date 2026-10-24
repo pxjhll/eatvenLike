@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="GameCatalog" format=3]
+
+[ext_resource type="Script" path="res://content/defs/game_catalog.gd" id="1_3x767"]
+[ext_resource type="Script" path="res://content/defs/shop_config.gd" id="2_lati3"]
+[ext_resource type="Resource" path="res://content/bakery/bakery.tres" id="3_1efsm"]
+[ext_resource type="Script" path="res://content/defs/staff_def.gd" id="4_1sx5y"]
+[ext_resource type="Resource" path="res://content/staff/rabbit.tres" id="5_fp7d6"]
+[ext_resource type="Resource" path="res://content/staff/bear.tres" id="6_h515d"]
+[ext_resource type="Resource" path="res://content/staff/cat.tres" id="7_2ref6"]
+
+[resource]
+script = ExtResource("1_3x767")
+shops = Array[ExtResource("2_lati3")]([ExtResource("3_1efsm")])
+staff = Array[ExtResource("4_1sx5y")]([ExtResource("5_fp7d6"), ExtResource("6_h515d"), ExtResource("7_2ref6")])
+starting_roster = Array[String](["rabbit", "bear"])
