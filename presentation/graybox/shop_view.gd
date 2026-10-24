@@ -45,6 +45,9 @@ func bind(sim: GameSim) -> void:
 		belt.length_cells = connection.length_cells
 		add_child(belt)
 		_belts[connection.id] = belt
+	var items := BeltItems.new()
+	items.belts = _belts.values()
+	add_child(items)
 	_entities = Node2D.new()
 	_entities.y_sort_enabled = true
 	add_child(_entities)
@@ -344,3 +347,14 @@ func _panel(color: Color, radius: int) -> StyleBoxFlat:
 	style.bg_color = color
 	style.set_corner_radius_all(radius)
 	return style
+
+
+class BeltItems extends Node2D:
+	var belts: Array = []
+
+	func _process(_delta: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		for belt in belts:
+			belt.draw_items(self)

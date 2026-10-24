@@ -60,6 +60,10 @@ func _draw() -> void:
 			var at := points[i] + direction * (j * 24 + offset)
 			if at.distance_to(points[i]) < length - 5:
 				draw_polyline(PackedVector2Array([at - direction * 3 + normal * 3, at, at - direction * 3 - normal * 3]), Color("7f9797") if not jam else Color("c0463c"), 2, true)
+
+
+## Items are drawn by a shared layer above every belt, so overlapping belts never cover each other's items.
+func draw_items(canvas: CanvasItem) -> void:
 	for item in data.get("items", []):
 		var at := Layout.along(points, float(item.pos) / maxf(length_cells, 0.01))
-		draw_texture_rect(Assets.item(item.item), Rect2(at - Vector2(13, 20), Vector2(26, 26)), false)
+		canvas.draw_texture_rect(Assets.item(item.item), Rect2(at - Vector2(13, 20), Vector2(26, 26)), false)
