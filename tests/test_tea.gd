@@ -97,10 +97,10 @@ func test_shared_service_and_reassignment_have_real_capacity_cost() -> void:
 		if sim.front_hall.requests.size() > 1:
 			saw_service_queue = true
 	check(saw_service_queue, "ready drinks queue for the shared front service workforce")
-	var before := sim.progress.sold.get("pearl_milk_tea", 0)
+	var before: int = sim.progress.sold.get("pearl_milk_tea", 0)
 	sim.submit(AssignStaffCommand.new("bear", "front"))
 	sim.run_seconds(200.0)
-	var stalled := sim.progress.sold.get("pearl_milk_tea", 0)
+	var stalled: int = sim.progress.sold.get("pearl_milk_tea", 0)
 	sim.run_seconds(200.0)
 	check(sim.progress.sold.get("pearl_milk_tea", 0) - stalled <= 2, "moving the cook front eventually exhausts physical pearls")
 	check(stalled >= before, "existing stock is served during transfer")
