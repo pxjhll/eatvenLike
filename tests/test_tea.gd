@@ -34,7 +34,7 @@ func test_fresh_tea_and_legacy_bakery_identity() -> void:
 func test_closed_kitchen_rejects_commands_without_partial_commit() -> void:
 	var sim := tea()
 	check(not sim.progress.kitchen_open(), "new tea kitchen is closed")
-	var commands: Array[SimCommand] = [UpgradeStationCommand.new("lemon_press"), ActivateParallelCommand.new("pearl_pot_b"), SetConnectionCommand.new("raw_box", "pearl_pot", false), ClearItemsCommand.new("raw_to_pot"), AssignStaffCommand.new("bear", "kitchen"), UnlockStationCommand.new("pearl_pot")]
+	var commands: Array[SimCommand] = [UpgradeStationCommand.new("pearl_pot"), ActivateParallelCommand.new("pearl_pot_b"), SetConnectionCommand.new("raw_box", "pearl_pot", false), ClearItemsCommand.new("raw_to_pot"), AssignStaffCommand.new("bear", "kitchen"), UnlockStationCommand.new("pearl_pot")]
 	for command in commands:
 		var before := state_json(sim)
 		check(command.validate(sim) != "", "locked command has a rejection reason")
@@ -45,6 +45,23 @@ func test_closed_kitchen_rejects_commands_without_partial_commit() -> void:
 	check(sim.economy.revenue >= 120, "front lemonade business earns the unlock gate while closed")
 	check_eq(sim.progress.unlocked_dishes(), ["lemonade"], "only lemonade is on the starting menu")
 	check(not sim.production.count_items().has("cooked_pearl"), "kitchen does not produce before access")
+
+
+# 后厨锁只拦后厨：开厨前前厅柠檬水机可以升级，前厅传送带可以改线、清空。
+func test_closed_kitchen_still_allows_front_production_changes() -> void:
+	var sim := tea()
+	var front: Array[SimCommand] = [UpgradeStationCommand.new("lemon_press"), SetConnectionCommand.new("lemon_press", "shelf", false), SetConnectionCommand.new("lemon_press", "shelf", true), ClearItemsCommand.new("lemon_to_press")]
+	for command in front:
+		check_eq(command.validate(sim), "", "front command is allowed before the kitchen opens")
+	var gold := sim.economy.gold
+	sim.submit(UpgradeStationCommand.new("lemon_press"))
+	sim.step()
+	var levels := {}
+	for st in sim.production.stations:
+		levels[st.slot_id] = st.level
+	check_eq(levels["lemon_press"], 2, "lemon press upgrades while the kitchen is closed")
+	check(sim.economy.gold < gold, "front upgrade spends gold")
+	check(not sim.progress.kitchen_open(), "front upgrade does not open the kitchen")
 
 
 func test_unlock_and_save_resume_before_and_after_gate() -> void:
@@ -129,17 +146,17 @@ func test_all_presentation_controls_follow_access_snapshot() -> void:
 	for entry in debug._buttons:
 		if entry.kitchen_only:
 			check(not entry.button.visible, "debug kitchen controls are hidden")
-		elif entry.production_only:
-			check(entry.button.disabled, "debug front production controls are disabled until access")
+		else:
+			check(entry.button.visible and not entry.button.disabled, "debug front controls stay usable before access")
 	ui._selected = "lemon_press"
 	ui._selected_kind = "station"
 	ui._card.visible = true
 	ui._refresh_card()
-	check(ui._card_buttons[0].disabled, "visible lemonade card does not advertise a rejected production upgrade")
+	check(not ui._card_buttons[0].disabled, "lemonade card offers the front upgrade before the kitchen opens")
 	ui._selected = "lemon_to_press"
 	ui._selected_kind = "belt"
 	ui._refresh_card()
-	check(ui._card_buttons[0].disabled and ui._card_buttons[1].disabled, "visible front belt modifications are disabled")
+	check(not ui._card_buttons[0].disabled, "front belt can be disconnected before the kitchen opens")
 	open_kitchen(sim)
 	check(world._stations["pearl_pot"].visible, "open snapshot reveals physical kitchen")
 	check(debug._status.text.contains("pearl_pot"), "debug kitchen state appears only after access")

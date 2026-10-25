@@ -43,4 +43,3 @@ func _draw() -> void:
 		draw_circle(Vector2(0, -64), 13, Color("f5ecd8"))
 		draw_arc(Vector2(0, -63), 8, 0, PI, 16, color, 2, true)
 		draw_line(Vector2(-8, -65), Vector2(8, -65), color, 2, true)
-

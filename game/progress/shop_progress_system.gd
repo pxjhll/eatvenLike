@@ -145,4 +145,3 @@ func _task_value(task: TaskDef) -> float:
 		TaskDef.Condition.STATION_LEVEL:
 			return float(station_levels.get(task.target_id, 1))
 	return 0.0
-

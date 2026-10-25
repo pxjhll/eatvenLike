@@ -26,4 +26,3 @@ static func _tasks(sim: GameSim) -> Array:
 		for task in stages[i].tasks:
 			out.append({"id": task.id, "name": task.display_name, "progress": sim.progress.task_progress(task)})
 	return out
-

@@ -40,7 +40,7 @@ func setup(config: ShopConfig) -> void:
 ## 本 tick 刚推上传送带的物料不会在同一 tick 内移动。
 func advance_logistics(dt: float, closed_zone: String = "") -> Array:
 	for seg in segments:
-		if not seg.connected or _in_zone(seg.from_slot, closed_zone) or _in_zone(seg.to_slot, closed_zone):
+		if not seg.connected or in_zone(seg.from_slot, closed_zone) or in_zone(seg.to_slot, closed_zone):
 			continue
 		if not seg.items.is_empty() and seg.items[0].pos >= seg.length - EPS:
 			if _try_accept(seg.to_slot, seg.items[0].item):
@@ -51,7 +51,7 @@ func advance_logistics(dt: float, closed_zone: String = "") -> Array:
 			var limit: float = seg.length if i == 0 else seg.items[i - 1].pos - ITEM_SPACING
 			it.pos = maxf(it.pos, minf(it.pos + step, limit))
 	for st in stations:
-		if st.status == StationState.Status.ACTIVE and not _in_zone(st.slot_id, closed_zone):
+		if st.status == StationState.Status.ACTIVE and not in_zone(st.slot_id, closed_zone):
 			_push_outputs(st)
 	return []
 
@@ -60,7 +60,7 @@ func advance_logistics(dt: float, closed_zone: String = "") -> Array:
 func advance_stations(dt: float, new_id: Callable, closed_zone: String = "") -> Array:
 	var events := []
 	for st in stations:
-		if st.status != StationState.Status.ACTIVE or _in_zone(st.slot_id, closed_zone):
+		if st.status != StationState.Status.ACTIVE or in_zone(st.slot_id, closed_zone):
 			continue
 		var def := _def(st)
 		match def.mode:
@@ -210,6 +210,16 @@ func has_segment(segment_id: String) -> bool:
 	return _segment(segment_id) != null
 
 
+## 这段传送带两端的机位
+func segment_slots(segment_id: String) -> Array[String]:
+	var seg := _segment(segment_id)
+	return [seg.from_slot, seg.to_slot]
+
+
+func in_zone(slot_id: String, zone: String) -> bool:
+	return zone != "" and _slot_defs.has(slot_id) and station_def(slot_id).zone == zone
+
+
 func clear_segment(segment_id: String) -> Array:
 	var seg := _segment(segment_id)
 	var events := []
@@ -277,10 +287,6 @@ func from_dict(d: Dictionary) -> void:
 
 
 # ---------------------------------------------------------------- 内部
-
-func _in_zone(slot_id: String, zone: String) -> bool:
-	return zone != "" and _slot_defs.has(slot_id) and station_def(slot_id).zone == zone
-
 
 func _reindex() -> void:
 	_by_slot.clear()
@@ -427,4 +433,3 @@ func _segment_between(from_slot: String, to_slot: String) -> BeltSegmentState:
 		if seg.from_slot == from_slot and seg.to_slot == to_slot:
 			return seg
 	return null
-

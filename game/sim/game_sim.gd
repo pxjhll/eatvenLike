@@ -82,11 +82,20 @@ func push_events(events: Array) -> void:
 	_events.append_array(events)
 
 
-## 按 StationDef.owner 找到拥有这个机位的系统
+## 后厨是否开放由 ShopProgress 的阶段推导，不另存开关
 func validate_kitchen_access() -> String:
 	return "" if progress.kitchen_open() else "解锁新菜后开放后厨"
 
 
+## 只拦涉及后厨机位的命令；前厅机位和前厅传送带在开厨前照常可改
+func validate_kitchen_slots(slot_ids: Array) -> String:
+	for slot_id in slot_ids:
+		if production.in_zone(slot_id, config.kitchen_zone):
+			return validate_kitchen_access()
+	return ""
+
+
+## 按 StationDef.owner 找到拥有这个机位的系统
 func station_owner(slot_id: String) -> RefCounted:
 	if production.has_slot(slot_id):
 		return production
@@ -200,4 +209,3 @@ func load_dict(d: Dictionary) -> void:
 	progress.from_dict(d.progress)
 	diagnostics.from_dict(d.diagnostics)
 	last_snapshot = SimSnapshot.build(self)
-

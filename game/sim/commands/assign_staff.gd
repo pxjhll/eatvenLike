@@ -23,4 +23,3 @@ func validate(sim: GameSim) -> String:
 
 func commit(sim: GameSim) -> void:
 	sim.workforce.assign(staff_id, zone)
-

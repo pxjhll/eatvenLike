@@ -74,11 +74,11 @@ func _build() -> void:
 	for slot in _sim.config.slots:
 		var def := slot.station
 		if slot.parallel_of != "":
-			_add_button(buttons, "并联 %s（%d）" % [def.display_name, def.parallel_cost], ActivateParallelCommand.new.bind(slot.id), def.zone == _sim.config.kitchen_zone, true)
+			_add_button(buttons, "并联 %s（%d）" % [def.display_name, def.parallel_cost], ActivateParallelCommand.new.bind(slot.id), def.zone == _sim.config.kitchen_zone)
 		elif slot.initially_locked:
 			_add_button(buttons, "解锁 %s（%d）" % [def.display_name, def.unlock_cost], UnlockStationCommand.new.bind(slot.id), def.zone == _sim.config.kitchen_zone)
 		if not def.upgrade_costs.is_empty():
-			_add_button(buttons, "升级 %s" % slot.id, UpgradeStationCommand.new.bind(slot.id), def.zone == _sim.config.kitchen_zone, def.owner == StationDef.OwnerSystem.PRODUCTION)
+			_add_button(buttons, "升级 %s" % slot.id, UpgradeStationCommand.new.bind(slot.id), def.zone == _sim.config.kitchen_zone)
 	for s in _sim.last_snapshot.workforce.staff:
 		for zone in _sim.config.zones:
 			_add_button(buttons, "%s → %s" % [s.staff, zone], AssignStaffCommand.new.bind(s.staff, zone), zone == _sim.config.kitchen_zone)
@@ -95,12 +95,12 @@ func _build() -> void:
 	buttons.add_child(switch)
 
 
-func _add_button(parent: Control, text: String, make_command: Callable, kitchen_only: bool = false, production_only: bool = false) -> void:
+func _add_button(parent: Control, text: String, make_command: Callable, kitchen_only: bool = false) -> void:
 	var b := Button.new()
 	b.text = text
 	b.pressed.connect(func() -> void: _sim.submit(make_command.call()))
 	parent.add_child(b)
-	_buttons.append({"button": b, "kitchen_only": kitchen_only, "production_only": production_only})
+	_buttons.append({"button": b, "kitchen_only": kitchen_only})
 
 
 func _show_toast(text: String) -> void:
@@ -120,7 +120,6 @@ func _closed_kitchen_slot(slot_id: String, snap: Dictionary) -> bool:
 func _on_tick(snap: Dictionary) -> void:
 	for entry in _buttons:
 		entry.button.visible = snap.kitchen_open or not entry.kitchen_only
-		entry.button.disabled = not snap.kitchen_open and entry.production_only
 	var lines := PackedStringArray()
 	lines.append("时间 %.1f 秒  金币 %d  累计营业额 %d" % [snap.time, snap.gold, snap.revenue])
 	lines.append("备料架 %s  排队 %d 人" % [snap.production.shelf, snap.front_hall.orders.size()])
@@ -152,4 +151,3 @@ func _on_tick(snap: Dictionary) -> void:
 	if snap.progress.completed:
 		lines.append("店铺完成！")
 	_status.text = "\n".join(lines)
-

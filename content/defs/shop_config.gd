@@ -27,7 +27,6 @@ extends Resource
 @export var arrival_jitter: float = 0.0
 @export var progression: ShopProgressionDef
 @export var random_seed: int = 0
-## Derived access gate. Zero preserves existing shops; never store a second kitchen-open flag.
+## 到第几阶段开放后厨（0 = 一开始就开放）；开没开由进度推导，不另存开关
 @export var kitchen_unlock_stage: int = 0
 @export var kitchen_zone: String = "kitchen"
-
