@@ -7,6 +7,14 @@ func tea() -> GameSim:
 	return make_sim(load(TEA))
 
 
+func saved_state(sim: GameSim) -> Dictionary:
+	var service := SaveService.new("user://tea-roundtrip-test.json")
+	check_eq(service.save({"shop": sim.to_dict()}), OK, "tea state writes to disk")
+	var data := service.load_data()
+	service.delete()
+	return data.get("shop", {})
+
+
 func open_kitchen(sim: GameSim) -> void:
 	sim.run_seconds(100.0)
 	sim.submit(UnlockStationCommand.new("pearl_pot"))
@@ -43,7 +51,7 @@ func test_unlock_and_save_resume_before_and_after_gate() -> void:
 	var sim := tea()
 	sim.run_seconds(30.0)
 	var closed := make_sim(load(TEA))
-	closed.load_dict(JSON.parse_string(state_json(sim)))
+	closed.load_dict(saved_state(sim))
 	check(not closed.last_snapshot.kitchen_open, "closed access survives reconstruction")
 	open_kitchen(sim)
 	check_eq(sim.progress.stage_index, 1, "unlock changes menu stage")
@@ -54,7 +62,7 @@ func test_unlock_and_save_resume_before_and_after_gate() -> void:
 	sim.submit(AssignStaffCommand.new("bear", "kitchen"))
 	sim.run_seconds(45.0)
 	var restored := make_sim(load(TEA))
-	restored.load_dict(JSON.parse_string(state_json(sim)))
+	restored.load_dict(saved_state(sim))
 	check(restored.last_snapshot.kitchen_open, "opened access derives from restored stage")
 	check_eq(state_json(restored), state_json(sim), "full active production restores")
 	sim.run_seconds(40.0)
@@ -68,7 +76,7 @@ func test_parallel_pots_improve_physical_output_and_tasks_complete() -> void:
 	single.submit(AssignStaffCommand.new("bear", "kitchen"))
 	single.run_seconds(40.0)
 	var parallel := make_sim(load(TEA))
-	parallel.load_dict(JSON.parse_string(state_json(single)))
+	parallel.load_dict(saved_state(single))
 	parallel.submit(ActivateParallelCommand.new("pearl_pot_b"))
 	parallel.step()
 	check_eq(parallel.production.validate_parallel("pearl_pot_b"), "并联槽已启用", "parallel purchase activated its physical slot")

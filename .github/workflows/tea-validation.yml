@@ -33,3 +33,17 @@ jobs:
         with:
           name: tea-qa
           path: docs/qa/pxj42-*.png
+  parse:
+    timeout-minutes: 2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check changed GDScript
+        run: |
+          curl -fLsS --retry 3 -o godot.zip https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.7-stable_linux.x86_64 godot
+          timeout 30s ./godot --headless --path . --import
+          for script in tests/test_tea.gd tests/render_tea.gd game/sim/game_sim.gd presentation/graybox/shop_ui.gd presentation/graybox/shop_view.gd; do
+            timeout 10s ./godot --headless --path . --check-only -s "$script"
+          done
