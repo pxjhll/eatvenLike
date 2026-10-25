@@ -8,8 +8,12 @@
 [ext_resource type="Resource" path="res://content/staff/bear.tres" id="6_h515d"]
 [ext_resource type="Resource" path="res://content/staff/cat.tres" id="7_2ref6"]
 
+[ext_resource type="Resource" path="res://content/tea/tea.tres" id="8_tea"]
+
 [resource]
 script = ExtResource("1_3x767")
-shops = Array[ExtResource("2_lati3")]([ExtResource("3_1efsm")])
+starting_shop_id = "tea"
+shops = Array[ExtResource("2_lati3")]([ExtResource("3_1efsm"), ExtResource("8_tea")])
 staff = Array[ExtResource("4_1sx5y")]([ExtResource("5_fp7d6"), ExtResource("6_h515d"), ExtResource("7_2ref6")])
 starting_roster = Array[String](["rabbit", "bear"])
+

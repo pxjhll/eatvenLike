@@ -14,8 +14,11 @@ func _init(from_slot_: String, to_slot_: String, connected_: bool = true) -> voi
 
 
 func validate(sim: GameSim) -> String:
+	if sim.validate_kitchen_access() != "":
+		return sim.validate_kitchen_access()
 	return sim.production.validate_connection(from_slot, to_slot)
 
 
 func commit(sim: GameSim) -> void:
 	sim.production.commit_connection(from_slot, to_slot, connected)
+

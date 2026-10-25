@@ -22,6 +22,10 @@ func setup(config: ShopConfig) -> void:
 	_config = config
 
 
+func kitchen_open() -> bool:
+	return stage_index >= _config.kitchen_unlock_stage
+
+
 func unlocked_dishes() -> Array[String]:
 	var out: Array[String] = []
 	for i in stage_index + 1:
@@ -141,3 +145,4 @@ func _task_value(task: TaskDef) -> float:
 		TaskDef.Condition.STATION_LEVEL:
 			return float(station_levels.get(task.target_id, 1))
 	return 0.0
+

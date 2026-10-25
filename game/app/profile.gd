@@ -13,6 +13,10 @@ var records := {}
 static func create(catalog: GameCatalog) -> Profile:
 	var p := Profile.new()
 	p.roster = catalog.starting_roster.duplicate()
+	for i in catalog.shops.size():
+		if catalog.shops[i].id == catalog.starting_shop_id:
+			p.current_shop = i
+			break
 	return p
 
 
@@ -41,3 +45,4 @@ static func from_dict(d: Dictionary) -> Profile:
 	for shop_id in d.records:
 		p.records[String(shop_id)] = {"revenue": int(d.records[shop_id].revenue), "seconds": float(d.records[shop_id].seconds)}
 	return p
+

@@ -23,6 +23,8 @@ static func positions(config: ShopConfig) -> Dictionary:
 	for slot in config.slots:
 		if slot.station.owner == StationDef.OwnerSystem.FRONT_HALL:
 			result[slot.id] = COUNTER
+		elif slot.station.zone == "front":
+			result[slot.id] = Vector2(100 + slot.grid_pos.x * 80, 260 + slot.grid_pos.y * 110)
 		else:
 			result[slot.id] = Vector2(100 + slot.grid_pos.x * 80, 320 + slot.grid_pos.y * 110)
 	return result
@@ -99,3 +101,4 @@ static func distance_to_route(points: PackedVector2Array, at: Vector2) -> float:
 		var closest := Geometry2D.get_closest_point_to_segment(at, points[i], points[i + 1])
 		best = minf(best, closest.distance_to(at))
 	return best
+

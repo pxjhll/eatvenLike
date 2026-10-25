@@ -83,6 +83,10 @@ func push_events(events: Array) -> void:
 
 
 ## 按 StationDef.owner 找到拥有这个机位的系统
+func validate_kitchen_access() -> String:
+	return "" if progress.kitchen_open() else "解锁新菜后开放后厨"
+
+
 func station_owner(slot_id: String) -> RefCounted:
 	if production.has_slot(slot_id):
 		return production
@@ -104,13 +108,14 @@ func step() -> void:
 		_run_command(command)
 
 	# 2. 物流
-	push_events(production.advance_logistics(dt))
+	var closed_zone := "" if progress.kitchen_open() else config.kitchen_zone
+	push_events(production.advance_logistics(dt, closed_zone))
 
 	# 3. 收集请求 → 派工
 	workforce.dispatch(production.open_requests() + front_hall.open_requests())
 
 	# 4. 加工、到货、来客、库存事务、人工进度
-	push_events(production.advance_stations(dt, new_id))
+	push_events(production.advance_stations(dt, new_id, closed_zone))
 	var hall := front_hall.advance(dt, rng, new_id, workforce.claimed_request_ids())
 	push_events(hall.events)
 	for order_id in hall.cancelled:
@@ -195,3 +200,4 @@ func load_dict(d: Dictionary) -> void:
 	progress.from_dict(d.progress)
 	diagnostics.from_dict(d.diagnostics)
 	last_snapshot = SimSnapshot.build(self)
+

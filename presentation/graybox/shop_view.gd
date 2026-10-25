@@ -22,6 +22,7 @@ var _staff := {}
 var _customers := {}
 var _entities: Node2D
 var _shelf: Node2D
+var _kitchen_open := true
 var _font: Font
 const DRAG_THRESHOLD := 12.0
 var _held := ""
@@ -121,6 +122,16 @@ func select(kind: String, id: String) -> void:
 
 
 func _on_snapshot(snapshot: Dictionary) -> void:
+	_kitchen_open = bool(snapshot.kitchen_open)
+	for slot in _sim.config.slots:
+		_stations[slot.id].visible = _kitchen_open or slot.station.zone != _sim.config.kitchen_zone
+	for connection in _sim.config.connections:
+		var hidden := false
+		for slot in _sim.config.slots:
+			if slot.id in [connection.from_slot, connection.to_slot] and slot.station.zone == _sim.config.kitchen_zone:
+				hidden = not _kitchen_open
+		_belts[connection.id].visible = not hidden
+	queue_redraw()
 	var claimed := {}
 	for staff in snapshot.workforce.staff:
 		if staff.request != -1:
@@ -285,7 +296,7 @@ func _zone_rect(zone: String) -> Rect2:
 
 
 func _zone_at(point: Vector2) -> String:
-	if Layout.KITCHEN.has_point(point):
+	if _kitchen_open and Layout.KITCHEN.has_point(point):
 		return "kitchen"
 	if Layout.FRONT.has_point(point):
 		return "front"
@@ -355,11 +366,11 @@ func _select_at(point: Vector2) -> void:
 	var nodes: Array = _stations.keys()
 	nodes.sort_custom(func(a: String, b: String) -> bool: return _stations[a].position.y > _stations[b].position.y)
 	for id in nodes:
-		if _stations[id].hit(point):
+		if _stations[id].visible and _stations[id].hit(point):
 			station_selected.emit(id)
 			return
 	for id in _belts:
-		if _belts[id].hit(point):
+		if _belts[id].visible and _belts[id].hit(point):
 			belt_selected.emit(id)
 			return
 	selection_cleared.emit()
@@ -388,11 +399,17 @@ func _draw() -> void:
 	draw_texture_rect(Assets.texture("res://art/env/env_front_floor.png"), Layout.FRONT, true)
 	draw_texture_rect(Assets.texture("res://art/env/env_divider.png"), Rect2(36, Layout.KITCHEN.end.y - 4, 648, 32), true)
 	draw_texture_rect(Assets.texture("res://art/env/env_window.png"), Rect2(Layout.WINDOW.x - 52, Layout.WINDOW.y - 46, 104, 56), false)
-	draw_string(_font, Vector2(56, 146), "后厨", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("77908e"))
+	draw_string(_font, Vector2(56, 146), "后厨" if _kitchen_open else "前厅备饮 · 柠檬水", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("77908e"))
 	draw_string(_font, Vector2(56, 842), "前厅", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("a48d71"))
 	draw_string(_font, Vector2(56, 1180), "入口", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("a48d71"))
+	if not _kitchen_open:
+		draw_style_box(_panel(Color("d6dfd5"), 16), Rect2(56, 354, 608, 360))
+		draw_string(_font, Vector2(190, 510), "解锁珍珠奶茶后开放后厨", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("6a8175"))
+		draw_string(_font, Vector2(180, 550), "先经营柠檬水，在前厅购买新菜", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("6a8175"))
 	if _dragged != "":
 		for zone in ["kitchen", "front"]:
+			if zone == "kitchen" and not _kitchen_open:
+				continue
 			var rect := _zone_rect(zone)
 			var hot: bool = zone == _drag_zone
 			draw_rect(rect, Color(0.95, 0.8, 0.4, 0.22 if hot else 0.06))
@@ -416,4 +433,6 @@ class BeltItems extends Node2D:
 
 	func _draw() -> void:
 		for belt in belts:
-			belt.draw_items(self)
+			if belt.visible:
+				belt.draw_items(self)
+

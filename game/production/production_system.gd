@@ -38,9 +38,9 @@ func setup(config: ShopConfig) -> void:
 
 ## tick 第 2 步：物流。先交付到达终点的物料，再移动，最后把出口缓冲推上传送带。
 ## 本 tick 刚推上传送带的物料不会在同一 tick 内移动。
-func advance_logistics(dt: float) -> Array:
+func advance_logistics(dt: float, closed_zone: String = "") -> Array:
 	for seg in segments:
-		if not seg.connected:
+		if not seg.connected or _in_zone(seg.from_slot, closed_zone) or _in_zone(seg.to_slot, closed_zone):
 			continue
 		if not seg.items.is_empty() and seg.items[0].pos >= seg.length - EPS:
 			if _try_accept(seg.to_slot, seg.items[0].item):
@@ -51,16 +51,16 @@ func advance_logistics(dt: float) -> Array:
 			var limit: float = seg.length if i == 0 else seg.items[i - 1].pos - ITEM_SPACING
 			it.pos = maxf(it.pos, minf(it.pos + step, limit))
 	for st in stations:
-		if st.status == StationState.Status.ACTIVE:
+		if st.status == StationState.Status.ACTIVE and not _in_zone(st.slot_id, closed_zone):
 			_push_outputs(st)
 	return []
 
 
 ## tick 第 4 步：工位加工、外购到货，按需提出人工请求。
-func advance_stations(dt: float, new_id: Callable) -> Array:
+func advance_stations(dt: float, new_id: Callable, closed_zone: String = "") -> Array:
 	var events := []
 	for st in stations:
-		if st.status != StationState.Status.ACTIVE:
+		if st.status != StationState.Status.ACTIVE or _in_zone(st.slot_id, closed_zone):
 			continue
 		var def := _def(st)
 		match def.mode:
@@ -278,6 +278,10 @@ func from_dict(d: Dictionary) -> void:
 
 # ---------------------------------------------------------------- 内部
 
+func _in_zone(slot_id: String, zone: String) -> bool:
+	return zone != "" and _slot_defs.has(slot_id) and station_def(slot_id).zone == zone
+
+
 func _reindex() -> void:
 	_by_slot.clear()
 	for st in stations:
@@ -423,3 +427,4 @@ func _segment_between(from_slot: String, to_slot: String) -> BeltSegmentState:
 		if seg.from_slot == from_slot and seg.to_slot == to_slot:
 			return seg
 	return null
+

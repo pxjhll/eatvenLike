@@ -13,6 +13,8 @@ func validate(sim: GameSim) -> String:
 	var owner_system := sim.station_owner(slot_id)
 	if owner_system == null:
 		return "没有这个工位"
+	if owner_system == sim.production and sim.validate_kitchen_access() != "":
+		return sim.validate_kitchen_access()
 	var reason: String = owner_system.validate_upgrade(slot_id)
 	if reason != "":
 		return reason
@@ -26,3 +28,4 @@ func commit(sim: GameSim) -> void:
 	sim.economy.spend(owner_system.upgrade_cost(slot_id))
 	var level: int = owner_system.commit_upgrade(slot_id)
 	sim.push_events([{"type": "station_level", "station": owner_system.station_def(slot_id).id, "level": level}])
+

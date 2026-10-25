@@ -27,3 +27,7 @@ extends Resource
 @export var arrival_jitter: float = 0.0
 @export var progression: ShopProgressionDef
 @export var random_seed: int = 0
+## Derived access gate. Zero preserves existing shops; never store a second kitchen-open flag.
+@export var kitchen_unlock_stage: int = 0
+@export var kitchen_zone: String = "kitchen"
+
