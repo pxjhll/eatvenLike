@@ -12,6 +12,8 @@ func _init(staff_id_: String, zone_: String) -> void:
 
 
 func validate(sim: GameSim) -> String:
+	if zone == sim.config.kitchen_zone and sim.validate_kitchen_access() != "":
+		return sim.validate_kitchen_access()
 	if not sim.workforce.has_staff(staff_id):
 		return "没有这名员工"
 	if not sim.workforce.has_zone(zone):

@@ -6,6 +6,7 @@ extends RefCounted
 static func build(sim: GameSim) -> Dictionary:
 	return {
 		"tick": sim.tick,
+		"kitchen_open": sim.progress.kitchen_open(),
 		"time": sim.elapsed_seconds(),
 		"gold": sim.economy.gold,
 		"revenue": sim.economy.revenue,

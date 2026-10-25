@@ -23,6 +23,8 @@ static func positions(config: ShopConfig) -> Dictionary:
 	for slot in config.slots:
 		if slot.station.owner == StationDef.OwnerSystem.FRONT_HALL:
 			result[slot.id] = COUNTER
+		elif slot.station.zone == "front":
+			result[slot.id] = Vector2(100 + slot.grid_pos.x * 80, 260 + slot.grid_pos.y * 110)
 		else:
 			result[slot.id] = Vector2(100 + slot.grid_pos.x * 80, 320 + slot.grid_pos.y * 110)
 	return result

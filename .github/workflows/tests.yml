@@ -7,6 +7,7 @@ on:
 
 jobs:
   headless:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,4 +19,14 @@ jobs:
       - name: Import (build class cache)
         run: ./godot --headless --path . --import
       - name: Run tests
-        run: ./godot --headless --path . -s tests/run_all.gd
+        run: timeout 120s ./godot --headless --path . -s tests/run_all.gd
+      - name: Tea window input and screenshot QA
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri
+          timeout 180s xvfb-run -a ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_tea.gd
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tea-qa
+          path: docs/qa/pxj42-*.png

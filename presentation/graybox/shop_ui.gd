@@ -17,6 +17,8 @@ var _card_title: Label
 var _card_detail: Label
 var _card_buttons: Array[Button] = []
 var _toast: Label
+var _unlock: Button
+var _menu: Label
 var _hint: Label
 var _selected := ""
 var _selected_kind := ""
@@ -121,7 +123,20 @@ func _build() -> void:
 	_toast = _label("", Vector2(0, 1236), 16, Color("a16e47"), _root)
 	_toast.size = Vector2(720, 24)
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_menu = _label("", Vector2(56, 750), 16, Color("526b65"), _root)
+	_unlock = _button("", Rect2(74, 1130, 572, 46), "lock", _root)
+	_unlock.pressed.connect(_unlock_next)
 	_build_card()
+
+
+func _unlock_next() -> void:
+	var stage := _next_stage(_snapshot)
+	if stage == null:
+		return
+	for slot_id in stage.unlock_slots:
+		if not slot_id in _snapshot.progress.unlocked_slots:
+			_sim.submit(UnlockStationCommand.new(slot_id))
+			return
 
 
 func _build_card() -> void:
@@ -157,6 +172,21 @@ func _on_snapshot(snapshot: Dictionary) -> void:
 		total += stage.tasks.size()
 	_progress.value = completed / maxf(total, 1)
 	var next := _next_stage(snapshot)
+	var menu: Array[String] = []
+	for i in int(snapshot.progress.stage) + 1:
+		menu.append(_dish_name(_sim.config.progression.stages[i].dish_id))
+	_menu.text = "菜单：" + " / ".join(menu)
+	_unlock.visible = next != null
+	if next != null:
+		var next_slot: SlotDef
+		for slot in _sim.config.slots:
+			if slot.id in next.unlock_slots and not slot.id in snapshot.progress.unlocked_slots:
+				next_slot = slot
+		if next_slot != null:
+			var cost := next_slot.station.unlock_cost
+			_unlock.text = "解锁%s · 金币 %d · 营业额 %d/%d" % [_dish_name(next.dish_id), cost, snapshot.revenue, next.revenue_threshold]
+			_unlock.disabled = snapshot.gold < cost or snapshot.revenue < next.revenue_threshold
+	_hint.text = "按住员工拖到后厨或前厅来调岗，点机器或传送带查看操作" if snapshot.kitchen_open else "先卖柠檬水，再在前厅解锁珍珠奶茶，开放后厨"
 	if snapshot.progress.completed:
 		_goal.text = "本店目标已达成"
 	elif current != "":
@@ -223,7 +253,7 @@ func _refresh_card() -> void:
 	if row.status != StationState.Status.ACTIVE:
 		var price := def.parallel_cost if slot.parallel_of != "" else def.unlock_cost
 		_card_title.text = def.display_name
-		_card_detail.text = "加一台同样的机器，产能翻倍" if slot.parallel_of != "" else "启用这个机位"
+		_card_detail.text = "加一台同样的机器，本段设备数量翻倍" if slot.parallel_of != "" else "启用这个机位"
 		_card_buttons[0].text = "启用  %d" % price
 		_card_buttons[0].disabled = _snapshot.gold < price
 		var stage := _stage_unlocking(slot.id)
@@ -233,6 +263,12 @@ func _refresh_card() -> void:
 			if _snapshot.revenue < stage.revenue_threshold:
 				_card_detail.text = "营业额 %d/%d 后可买，解锁%s" % [_snapshot.revenue, stage.revenue_threshold, _dish_name(stage.dish_id)]
 				_card_buttons[0].disabled = true
+		return
+	if def.zone == _sim.config.kitchen_zone and not _snapshot.kitchen_open:
+		_card_title.text = def.display_name
+		_card_detail.text = "解锁新菜后开放后厨"
+		_card_buttons[0].text = "后厨未开放"
+		_card_buttons[0].disabled = true
 		return
 	var level := int(row.level)
 	var maximum := mini(def.level_speed.size(), def.upgrade_costs.size() + 1)
@@ -267,6 +303,17 @@ func _refresh_belt_card() -> void:
 	_card_buttons[1].icon = Assets.icon("delete")
 	_card_buttons[1].text = "清空"
 	_card_buttons[1].disabled = segment.items.is_empty()
+	if not _snapshot.kitchen_open and (_kitchen_slot(connection.from_slot) or _kitchen_slot(connection.to_slot)):
+		_card_detail.text = "解锁新菜后开放后厨"
+		_card_buttons[0].disabled = true
+		_card_buttons[1].disabled = true
+
+
+func _kitchen_slot(slot_id: String) -> bool:
+	for slot in _sim.config.slots:
+		if slot.id == slot_id:
+			return slot.station.zone == _sim.config.kitchen_zone
+	return false
 
 
 func _assign(id: String, zone: String) -> void:

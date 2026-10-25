@@ -13,7 +13,10 @@ func validate(sim: GameSim) -> String:
 	var owner_system := sim.station_owner(slot_id)
 	if owner_system == null:
 		return "没有这个工位"
-	var reason: String = owner_system.validate_upgrade(slot_id)
+	var reason := sim.validate_kitchen_slots([slot_id])
+	if reason != "":
+		return reason
+	reason = owner_system.validate_upgrade(slot_id)
 	if reason != "":
 		return reason
 	if not sim.economy.can_spend(owner_system.upgrade_cost(slot_id)):

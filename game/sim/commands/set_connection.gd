@@ -14,6 +14,9 @@ func _init(from_slot_: String, to_slot_: String, connected_: bool = true) -> voi
 
 
 func validate(sim: GameSim) -> String:
+	var reason := sim.validate_kitchen_slots([from_slot, to_slot])
+	if reason != "":
+		return reason
 	return sim.production.validate_connection(from_slot, to_slot)
 
 

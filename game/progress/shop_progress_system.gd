@@ -22,6 +22,10 @@ func setup(config: ShopConfig) -> void:
 	_config = config
 
 
+func kitchen_open() -> bool:
+	return stage_index >= _config.kitchen_unlock_stage
+
+
 func unlocked_dishes() -> Array[String]:
 	var out: Array[String] = []
 	for i in stage_index + 1:

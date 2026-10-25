@@ -22,6 +22,10 @@ static func machine(def: StationDef) -> Texture2D:
 
 
 static func item(id: String) -> Texture2D:
+	if id == "lemonade":
+		return texture("res://art/item/tea_lemonade.svg")
+	if id == "pearl_milk_tea":
+		return texture("res://art/item/tea_milk_tea.svg")
 	return texture("res://art/item/" + ITEM_PATHS.get(id, "item_bread") + ".png")
 
 

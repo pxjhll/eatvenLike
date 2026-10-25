@@ -1,0 +1,18 @@
+Functional source: 47b90da17630c7360c8a204604a2c2569c1e854b
+Godot 4.7, ubuntu-latest
+Workflow: https://github.com/pxjhll/eatvenLike/actions/runs/40198754180
+Job: 121185203709
+2026-10-25T13:41:35.1795686Z   ok    test_tea.test_fresh_tea_and_legacy_bakery_identity
+2026-10-25T13:41:35.2734957Z   ok    test_tea.test_closed_kitchen_rejects_commands_without_partial_commit
+2026-10-25T13:41:35.6304784Z   ok    test_tea.test_unlock_and_save_resume_before_and_after_gate
+2026-10-25T13:41:37.6626971Z TEA THROUGHPUT single=62 parallel=78
+2026-10-25T13:41:37.6664472Z   ok    test_tea.test_parallel_pots_improve_physical_output_and_tasks_complete
+2026-10-25T13:41:38.6139790Z   ok    test_tea.test_shared_service_and_reassignment_have_real_capacity_cost
+2026-10-25T13:41:38.8861598Z   ok    test_tea.test_all_presentation_controls_follow_access_snapshot
+2026-10-25T13:41:38.8974886Z   ok    test_tea.test_debug_hud_rebind_disconnects_previous_sim
+2026-10-25T13:41:45.2170100Z 53 个用例，0 个失败
+2026-10-25T13:42:03.6447142Z CAPTURE: res://docs/qa/pxj42-lemonade.png (720, 1280)
+2026-10-25T13:42:12.8239646Z CAPTURE: res://docs/qa/pxj42-single-pot.png (720, 1280)
+2026-10-25T13:42:24.6337114Z CAPTURE: res://docs/qa/pxj42-parallel-pots.png (720, 1280)
+2026-10-25T13:42:25.1255942Z CAPTURE: res://docs/qa/pxj42-small.png (540, 960)
+2026-10-25T13:42:25.1256606Z TEA INPUT QA failures=0

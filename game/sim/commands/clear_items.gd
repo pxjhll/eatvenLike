@@ -10,7 +10,9 @@ func _init(segment_id_: String) -> void:
 
 
 func validate(sim: GameSim) -> String:
-	return "" if sim.production.has_segment(segment_id) else "没有这段传送带"
+	if not sim.production.has_segment(segment_id):
+		return "没有这段传送带"
+	return sim.validate_kitchen_slots(sim.production.segment_slots(segment_id))
 
 
 func commit(sim: GameSim) -> void:

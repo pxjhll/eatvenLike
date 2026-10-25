@@ -82,6 +82,19 @@ func push_events(events: Array) -> void:
 	_events.append_array(events)
 
 
+## 后厨是否开放由 ShopProgress 的阶段推导，不另存开关
+func validate_kitchen_access() -> String:
+	return "" if progress.kitchen_open() else "解锁新菜后开放后厨"
+
+
+## 只拦涉及后厨机位的命令；前厅机位和前厅传送带在开厨前照常可改
+func validate_kitchen_slots(slot_ids: Array) -> String:
+	for slot_id in slot_ids:
+		if production.in_zone(slot_id, config.kitchen_zone):
+			return validate_kitchen_access()
+	return ""
+
+
 ## 按 StationDef.owner 找到拥有这个机位的系统
 func station_owner(slot_id: String) -> RefCounted:
 	if production.has_slot(slot_id):
@@ -104,13 +117,14 @@ func step() -> void:
 		_run_command(command)
 
 	# 2. 物流
-	push_events(production.advance_logistics(dt))
+	var closed_zone := "" if progress.kitchen_open() else config.kitchen_zone
+	push_events(production.advance_logistics(dt, closed_zone))
 
 	# 3. 收集请求 → 派工
 	workforce.dispatch(production.open_requests() + front_hall.open_requests())
 
 	# 4. 加工、到货、来客、库存事务、人工进度
-	push_events(production.advance_stations(dt, new_id))
+	push_events(production.advance_stations(dt, new_id, closed_zone))
 	var hall := front_hall.advance(dt, rng, new_id, workforce.claimed_request_ids())
 	push_events(hall.events)
 	for order_id in hall.cancelled:
