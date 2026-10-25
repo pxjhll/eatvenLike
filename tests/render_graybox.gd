@@ -11,6 +11,7 @@ func _run() -> void:
 	await process_frame
 	var app: Node = root.get_node("App")
 	app.profile = Profile.create(app.catalog)
+	app.profile.current_shop = 0 # Bakery retains legacy catalog index zero.
 	app._pending_shop_state = {}
 	change_scene_to_file("res://presentation/shop.tscn")
 	await process_frame
@@ -147,3 +148,4 @@ func _capture(path: String) -> void:
 	var image := root.get_texture().get_image()
 	assert(image.save_png(path) == OK, "screenshot is saved")
 	print("CAPTURE: ", path, " ", image.get_size())
+
