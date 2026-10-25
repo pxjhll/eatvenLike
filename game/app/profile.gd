@@ -45,4 +45,3 @@ static func from_dict(d: Dictionary) -> Profile:
 	for shop_id in d.records:
 		p.records[String(shop_id)] = {"revenue": int(d.records[shop_id].revenue), "seconds": float(d.records[shop_id].seconds)}
 	return p
-

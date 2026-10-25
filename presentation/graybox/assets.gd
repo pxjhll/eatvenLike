@@ -39,4 +39,3 @@ static func icon(id: String) -> AtlasTexture:
 	atlas.atlas = texture("res://art/ui/ui_icons.png")
 	atlas.region = Rect2((index % 4) * 64, (index / 4) * 64, 64, 64)
 	return atlas
-

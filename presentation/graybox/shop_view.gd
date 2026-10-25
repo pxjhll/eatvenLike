@@ -435,4 +435,3 @@ class BeltItems extends Node2D:
 		for belt in belts:
 			if belt.visible:
 				belt.draw_items(self)
-

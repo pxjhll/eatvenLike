@@ -264,7 +264,7 @@ func _refresh_card() -> void:
 				_card_detail.text = "营业额 %d/%d 后可买，解锁%s" % [_snapshot.revenue, stage.revenue_threshold, _dish_name(stage.dish_id)]
 				_card_buttons[0].disabled = true
 		return
-	if def.owner == StationDef.OwnerSystem.PRODUCTION and not _snapshot.kitchen_open:
+	if def.zone == _sim.config.kitchen_zone and not _snapshot.kitchen_open:
 		_card_title.text = def.display_name
 		_card_detail.text = "解锁新菜后开放后厨"
 		_card_buttons[0].text = "后厨未开放"
@@ -303,10 +303,17 @@ func _refresh_belt_card() -> void:
 	_card_buttons[1].icon = Assets.icon("delete")
 	_card_buttons[1].text = "清空"
 	_card_buttons[1].disabled = segment.items.is_empty()
-	if not _snapshot.kitchen_open:
+	if not _snapshot.kitchen_open and (_kitchen_slot(connection.from_slot) or _kitchen_slot(connection.to_slot)):
 		_card_detail.text = "解锁新菜后开放后厨"
 		_card_buttons[0].disabled = true
 		_card_buttons[1].disabled = true
+
+
+func _kitchen_slot(slot_id: String) -> bool:
+	for slot in _sim.config.slots:
+		if slot.id == slot_id:
+			return slot.station.zone == _sim.config.kitchen_zone
+	return false
 
 
 func _assign(id: String, zone: String) -> void:
@@ -456,4 +463,3 @@ func _button(text: String, rect: Rect2, icon: String, parent: Control) -> Button
 		create_tween().tween_property(button, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_BACK))
 	parent.add_child(button)
 	return button
-

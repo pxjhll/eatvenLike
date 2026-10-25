@@ -101,4 +101,3 @@ static func distance_to_route(points: PackedVector2Array, at: Vector2) -> float:
 		var closest := Geometry2D.get_closest_point_to_segment(at, points[i], points[i + 1])
 		best = minf(best, closest.distance_to(at))
 	return best
-
