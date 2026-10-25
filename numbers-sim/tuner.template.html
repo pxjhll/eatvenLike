@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eatvenLike 三店经济实验｜PXJ-41</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:#1c2938;font:14px/1.65 system-ui,sans-serif}main{max-width:1440px;margin:auto;padding:28px}h1{font-size:25px;margin:0}h2{font-size:17px;margin:0 0 12px}p{margin:8px 0 16px}.muted{color:#5b6775}.notice{background:#fff3da;border:1px solid #dfba65;padding:14px 18px;border-radius:10px}.layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;margin-top:20px}.panel{background:white;border:1px solid #dde1e7;border-radius:10px;padding:20px;margin-bottom:16px}fieldset{border:0;padding:0;margin:16px 0}legend{font-weight:700;margin-bottom:8px}label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0}input,select,button{font:inherit;border:1px solid #b8c2ce;border-radius:6px;padding:6px 8px;background:white;color:inherit}input{width:95px}select{max-width:170px}button{cursor:pointer;background:#235f9e;color:white;border-color:#235f9e;margin:6px 6px 0 0}button:disabled{opacity:.5;cursor:default}input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid #85b6e8;outline-offset:2px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #e4e8ed}th{white-space:nowrap;color:#53657b}td{font-variant-numeric:tabular-nums}.scroll{overflow:auto}#error{color:#a02626}code{font-size:12px}li{margin:6px 0}@media(max-width:920px){.layout{grid-template-columns:1fr}main{padding:16px}.panel{padding:16px}}@media(prefers-color-scheme:dark){body{background:#161b22;color:#e7edf4}.panel,input,select{background:#212831;color:#e7edf4;border-color:#465363}.muted,th{color:#b7c4d2}.notice{background:#392e1a;color:#f6dfae}th,td{border-color:#465363}}
+</style>
+<main>
+<h1>三店经济实验</h1><p class="muted">PXJ-41 · 旧基线保留，新客流规则采用显式假设。没有改动正式游戏数值。</p>
+<div class="notice"><strong>这里比较假设，尚不能预测正式通关时间。</strong> 本轮没有工序、物流、断货模拟。任务未配置时显示 N/A；“满级”和“通关”分别统计。</div>
+<div class="layout">
+<form class="panel" id="controls">
+<h2>经济配置</h2>
+<label>载入配置<select id="preset"><option value="original">原默认</option><option value="candidateB">试玩候选 B</option></select></label>
+<div id="globals"></div>
+<fieldset><legend>客流与品质：未校准假设</legend>
+<label>场景<select id="scenario"></select></label><div id="assumptions"></div>
+</fieldset>
+<fieldset><legend>购买习惯与假设任务</legend>
+<label>购买间隔<select id="every"><option value="0">随时购买</option><option value="60">每 1 分钟</option><option value="300">每 5 分钟</option><option value="900">每 15 分钟</option></select></label>
+<label>每菜销量目标（假设）<input id="target" type="number" min="1" step="1" placeholder="未配置"></label>
+<p class="muted">留空 = 不配置任务。间隔购买仍是全程在线生产，不代表离线收益。</p>
+</fieldset>
+<button type="submit">运行对照</button><button type="button" id="export" disabled>导出输入与结果</button>
+<p id="error" role="alert"></p>
+</form>
+<section>
+<div class="panel"><h2>三店结果</h2><p id="task-note" aria-live="polite"></p>
+<p class="muted">菜数 / 等级上限 / 产能档数：奶茶 2 / 20 / 8；煎饼 2 / 35 / 12；面包 6 / 70 / 14。</p>
+<div class="scroll"><table><thead><tr><th>店</th><th>购买策略</th><th>全部菜满级</th><th>菜单＋任务</th><th>新菜解锁</th><th>最大购买间隔</th><th>菜价/机器/员工/魅力支出</th><th>停止原因</th></tr></thead><tbody id="rows"></tbody></table></div></div>
+<div class="panel"><h2>如何理解结果</h2>
+<p><strong>即时回本：</strong>比较购买后的即时收入增量，是贪心策略，可能比固定循环更慢，不能称为最优方案。</p>
+<p><strong>固定循环：</strong>新菜优先；之后循环买菜价、机器、员工、魅力，不识别瓶颈。仅用于对照。</p>
+<p>新客流 = 魅力拉新 + 品质回头。升星只改变售价；“每菜岗位负荷”只是兼岗代理。所有换算系数都属于本轮实验假设。</p>
+<p>停止原因：<code>reference_complete</code> 仅升满；<code>tasks_and_reference_complete</code> 两项都完成；<code>time_limit</code> 达到 48 小时；<code>zero_income</code> 无收入；<code>no_actions</code> 无可行购买。</p>
+<ul id="limits"></ul>
+</div>
+</section>
+</div>
+</main>
+<script type="module">
+/*__MODEL_BUNDLE__*/
+</script>
+</html>

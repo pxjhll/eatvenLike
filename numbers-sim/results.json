@@ -1,0 +1,2351 @@
+{
+  "schemaVersion": 1,
+  "basisDate": "2026-10-25",
+  "task": "PXJ-41",
+  "inputs": {
+    "globals": {
+      "pg": 1.08,
+      "cg": 1.2,
+      "starEvery": 10,
+      "starMult": 2,
+      "starArr": 0.25,
+      "crossMult": 1.4,
+      "rM": 1.5,
+      "rS": 1.5,
+      "rL": 1.5,
+      "newDishFactor": 1,
+      "newShare": 0.45,
+      "flowStep": 1.25,
+      "capStep": 0.2,
+      "perStaff": 0.2,
+      "p0": 10,
+      "unlockAt": 10,
+      "volGrow": 0.2
+    },
+    "candidateB": {
+      "rM": 1.2,
+      "rS": 1,
+      "rL": 1.2,
+      "crossMult": 1.3
+    },
+    "shops": [
+      {
+        "id": "tea",
+        "name": "奶茶店",
+        "type": "小店",
+        "dishes": 2,
+        "cap": 20,
+        "staff0": 1,
+        "staffMax": 3,
+        "volMax": 8,
+        "c0": 0.25,
+        "d0": 0.2
+      },
+      {
+        "id": "pancake",
+        "name": "煎饼果子店",
+        "type": "小店",
+        "dishes": 2,
+        "cap": 35,
+        "staff0": 2,
+        "staffMax": 5,
+        "volMax": 12,
+        "c0": 0.25,
+        "d0": 0.2
+      },
+      {
+        "id": "bakery",
+        "name": "面包店",
+        "type": "中店",
+        "dishes": 6,
+        "cap": 70,
+        "staff0": 2,
+        "staffMax": 8,
+        "volMax": 14,
+        "c0": 0.25,
+        "d0": 0.2
+      }
+    ],
+    "scenarios": [
+      {
+        "id": "low",
+        "label": "低回头率假设",
+        "newVisits": 0.15,
+        "returnAtQualityOne": 0.025,
+        "baseQuality": 0.8,
+        "overloadPenalty": 0.1,
+        "postsPerDish": 1,
+        "charm": 0,
+        "perCharm": 0.1
+      },
+      {
+        "id": "middle",
+        "label": "中回头率假设",
+        "newVisits": 0.15,
+        "returnAtQualityOne": 0.05,
+        "baseQuality": 0.8,
+        "overloadPenalty": 0.1,
+        "postsPerDish": 1,
+        "charm": 0,
+        "perCharm": 0.1
+      },
+      {
+        "id": "high",
+        "label": "高回头率假设",
+        "newVisits": 0.15,
+        "returnAtQualityOne": 0.1,
+        "baseQuality": 0.8,
+        "overloadPenalty": 0.1,
+        "postsPerDish": 1,
+        "charm": 0,
+        "perCharm": 0.1
+      }
+    ],
+    "taskSpecs": {}
+  },
+  "limitations": [
+    "实验线性客流换算，系数与兼岗规则未校准；不代表正式公式。",
+    "总产能/总人力近似，未模拟自动、人工、人机配合的工序阶段。",
+    "未模拟配方、共用设备争抢、物流、库存、断料及顾客耐心。",
+    "销量为连续流量估算；正式任务目标未配置时通关时间为 N/A。",
+    "定时购买期间仍按在线生产；不是实际离线收益。"
+  ],
+  "baseline": [
+    {
+      "preset": "original",
+      "shop": "tea",
+      "fullLevelSeconds": 1252.74279562,
+      "unlocks": [
+        355.352203249
+      ],
+      "spendShares": {
+        "price": 0.665062574672,
+        "machine": 0.216789299231,
+        "staff": 0.0432053658087,
+        "lure": 0.0577527292387,
+        "unlock": 0.017190031049
+      },
+      "taskCompletionSeconds": null,
+      "coverage": "legacy_star_demand_proxy"
+    },
+    {
+      "preset": "original",
+      "shop": "pancake",
+      "fullLevelSeconds": 1398.20276531,
+      "unlocks": [
+        226.554441969
+      ],
+      "spendShares": {
+        "price": 0.735379734367,
+        "machine": 0.179412955278,
+        "staff": 0.0794625322257,
+        "lure": 0.0045472678785,
+        "unlock": 0.00119751025126
+      },
+      "taskCompletionSeconds": null,
+      "coverage": "legacy_star_demand_proxy"
+    },
+    {
+      "preset": "original",
+      "shop": "bakery",
+      "fullLevelSeconds": 2145.09002824,
+      "unlocks": [
+        161.824601407,
+        389.998720439,
+        533.613408954,
+        658.892458514,
+        747.64140582
+      ],
+      "spendShares": {
+        "price": 0.367780413629,
+        "machine": 0.383030410519,
+        "staff": 0.184717721369,
+        "lure": 0.0644701904304,
+        "unlock": 0.00000126405244077
+      },
+      "taskCompletionSeconds": null,
+      "coverage": "legacy_star_demand_proxy"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "tea",
+      "fullLevelSeconds": 998.86745572,
+      "unlocks": [
+        331.176218757
+      ],
+      "spendShares": {
+        "price": 0.702927195415,
+        "machine": 0.180818505355,
+        "staff": 0.0751809093147,
+        "lure": 0.02290466298,
+        "unlock": 0.0181687269357
+      },
+      "taskCompletionSeconds": null,
+      "coverage": "legacy_star_demand_proxy"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "pancake",
+      "fullLevelSeconds": 1278.47421871,
+      "unlocks": [
+        240.13555289
+      ],
+      "spendShares": {
+        "price": 0.681422493943,
+        "machine": 0.225930542343,
+        "staff": 0.0901384290975,
+        "lure": 0.00139888964777,
+        "unlock": 0.00110964496818
+      },
+      "taskCompletionSeconds": null,
+      "coverage": "legacy_star_demand_proxy"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "bakery",
+      "fullLevelSeconds": 1998.66581675,
+      "unlocks": [
+        184.719656069,
+        431.358460648,
+        579.099427486,
+        695.152756544,
+        764.661070321
+      ],
+      "spendShares": {
+        "price": 0.520241886985,
+        "machine": 0.313974980816,
+        "staff": 0.126179496226,
+        "lure": 0.0396018479135,
+        "unlock": 0.00000178805885976
+      },
+      "taskCompletionSeconds": null,
+      "coverage": "legacy_star_demand_proxy"
+    }
+  ],
+  "runs": [
+    {
+      "preset": "original",
+      "shop": "tea",
+      "shopName": "奶茶店",
+      "scenario": "low",
+      "strategy": "roi",
+      "purchases": 44,
+      "elapsedSeconds": 1490.53909123,
+      "fullLevelSeconds": 1490.53909123,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        270.974134783,
+        158.769689139
+      ],
+      "unlocks": [
+        384.611462508
+      ],
+      "spend": {
+        "price": 30935.6780169,
+        "machine": 5177.77769634,
+        "staff": 274.733688186,
+        "lure": 7845.68030855,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 45033.4715609,
+      "spendShares": {
+        "price": 0.686948550594,
+        "machine": 0.11497620585,
+        "staff": 0.00610065532734,
+        "lure": 0.174218865138,
+        "unlock": 0.0177557230906
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 1490.53909123
+      },
+      "gapMaxSeconds": 154.473702908,
+      "gold": 0,
+      "finalRevenuePerSecond": 159.470421782,
+      "finalDemand": {
+        "attraction": 0.373248,
+        "returns": 0.02,
+        "quality": 0.8
+      },
+      "levels": [
+        20,
+        20
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "pancake",
+      "shopName": "煎饼果子店",
+      "scenario": "low",
+      "strategy": "roi",
+      "purchases": 73,
+      "elapsedSeconds": 1793.46610305,
+      "fullLevelSeconds": 1793.46610305,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        335.435902339,
+        225.285177724
+      ],
+      "unlocks": [
+        258.529940986
+      ],
+      "spend": {
+        "price": 491027.944063,
+        "machine": 604.41411401,
+        "staff": 0,
+        "lure": 1002.35632417,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 493434.316352,
+      "spendShares": {
+        "price": 0.995123216588,
+        "machine": 0.00122491301067,
+        "staff": 0,
+        "lure": 0.00203138754432,
+        "unlock": 0.00162048285728
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 1793.46610305
+      },
+      "gapMaxSeconds": 60.5326876513,
+      "gold": 0,
+      "finalRevenuePerSecond": 1192.36290736,
+      "finalDemand": {
+        "attraction": 0.31104,
+        "returns": 0.02,
+        "quality": 0.8
+      },
+      "levels": [
+        35,
+        35
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "bakery",
+      "shopName": "面包店",
+      "scenario": "low",
+      "strategy": "roi",
+      "purchases": 435,
+      "elapsedSeconds": 3866.73844798,
+      "fullLevelSeconds": 3866.73844798,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        282.446571762,
+        195.976664813,
+        284.402396854,
+        454.539867376,
+        745.117817746,
+        1273.10558387
+      ],
+      "unlocks": [
+        184.664243561,
+        466.357903688,
+        677.577593725,
+        889.965599616,
+        1049.86974756
+      ],
+      "spend": {
+        "price": 79187735039.4,
+        "machine": 87045015750.5,
+        "staff": 42184120858.7,
+        "lure": 101043270946,
+        "unlock": 272166.341779
+      },
+      "totalSpend": 309460414761,
+      "spendShares": {
+        "price": 0.255889707576,
+        "machine": 0.281279968612,
+        "staff": 0.136315078913,
+        "lure": 0.326514365412,
+        "unlock": 8.79486773744e-7
+      },
+      "bottleneckSeconds": {
+        "machine": 2831.40053288,
+        "labor": 29.2185891059,
+        "demand": 1006.119326
+      },
+      "gapMaxSeconds": 165.762291848,
+      "gold": 0,
+      "finalRevenuePerSecond": 526680431.37,
+      "finalDemand": {
+        "attraction": 1.92587769682,
+        "returns": 0.02,
+        "quality": 0.8
+      },
+      "levels": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "tea",
+      "shopName": "奶茶店",
+      "scenario": "low",
+      "strategy": "routine",
+      "purchases": 63,
+      "elapsedSeconds": 1963.94713359,
+      "fullLevelSeconds": 1963.94713359,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        505.248819994,
+        272.715898656
+      ],
+      "unlocks": [
+        757.410289897
+      ],
+      "spend": {
+        "price": 30935.6780169,
+        "machine": 11419.5570526,
+        "staff": 11227.869053,
+        "lure": 10477.315327,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 64860.0213003,
+      "spendShares": {
+        "price": 0.476960651519,
+        "machine": 0.176064651594,
+        "staff": 0.173109240914,
+        "lure": 0.161537340212,
+        "unlock": 0.0123281157609
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 1963.94713359
+      },
+      "gapMaxSeconds": 84.9535617948,
+      "gold": 0,
+      "finalRevenuePerSecond": 269.660499393,
+      "finalDemand": {
+        "attraction": 0.644972544,
+        "returns": 0.02,
+        "quality": 0.8
+      },
+      "levels": [
+        20,
+        20
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "pancake",
+      "shopName": "煎饼果子店",
+      "scenario": "low",
+      "strategy": "routine",
+      "purchases": 105,
+      "elapsedSeconds": 2126.64391623,
+      "fullLevelSeconds": 2126.64391623,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        869.385164214,
+        618.564598923
+      ],
+      "unlocks": [
+        484.582044075
+      ],
+      "spend": {
+        "price": 491027.944063,
+        "machine": 137153.239035,
+        "staff": 134656.289606,
+        "lure": 133554.999505,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 897192.074059,
+      "spendShares": {
+        "price": 0.547294117124,
+        "machine": 0.152869427852,
+        "staff": 0.150086356644,
+        "lure": 0.148858871324,
+        "unlock": 0.000891227056013
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 2126.64391623
+      },
+      "gapMaxSeconds": 77.6461760435,
+      "gold": 0,
+      "finalRevenuePerSecond": 4889.23204469,
+      "finalDemand": {
+        "attraction": 1.33741506724,
+        "returns": 0.02,
+        "quality": 0.8
+      },
+      "levels": [
+        35,
+        35
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "bakery",
+      "shopName": "面包店",
+      "scenario": "low",
+      "strategy": "routine",
+      "purchases": 461,
+      "elapsedSeconds": 3650.8626442,
+      "fullLevelSeconds": 3650.8626442,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        450.466717249,
+        319.415534621,
+        455.545469305,
+        686.55539912,
+        1056.85473446,
+        1521.67714739
+      ],
+      "unlocks": [
+        281.872316998,
+        769.136062753,
+        1109.05036106,
+        1443.17933019,
+        1872.04087289
+      ],
+      "spend": {
+        "price": 79187735039.4,
+        "machine": 2200258.15801,
+        "staff": 2199878.23943,
+        "lure": 2175558.09281,
+        "unlock": 272166.341779
+      },
+      "totalSpend": 79194582900.2,
+      "spendShares": {
+        "price": 0.999913531196,
+        "machine": 0.0000277829376384,
+        "staff": 0.0000277781403585,
+        "lure": 0.0000274710467956,
+        "unlock": 0.00000343667877034
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 3650.8626442
+      },
+      "gapMaxSeconds": 50.9888909445,
+      "gold": 0,
+      "finalRevenuePerSecond": 526680431.37,
+      "finalDemand": {
+        "attraction": 1.92587769682,
+        "returns": 0.02,
+        "quality": 0.8
+      },
+      "levels": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "tea",
+      "shopName": "奶茶店",
+      "scenario": "middle",
+      "strategy": "roi",
+      "purchases": 43,
+      "elapsedSeconds": 1506.64293934,
+      "fullLevelSeconds": 1506.64293934,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        253.147910301,
+        148.972475169
+      ],
+      "unlocks": [
+        374.054950789
+      ],
+      "spend": {
+        "price": 30935.6780169,
+        "machine": 4085.87000679,
+        "staff": 274.733688186,
+        "lure": 6488.06692379,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 42583.9504865,
+      "spendShares": {
+        "price": 0.726463319243,
+        "machine": 0.095948590023,
+        "staff": 0.00645157823657,
+        "lure": 0.152359441754,
+        "unlock": 0.0187770707439
+      },
+      "bottleneckSeconds": {
+        "machine": 67.0683989507,
+        "labor": 0,
+        "demand": 1439.57454039
+      },
+      "gapMaxSeconds": 142.426956915,
+      "gold": 0,
+      "finalRevenuePerSecond": 142.354180727,
+      "finalDemand": {
+        "attraction": 0.31104,
+        "returns": 0.04,
+        "quality": 0.8
+      },
+      "levels": [
+        20,
+        20
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "pancake",
+      "shopName": "煎饼果子店",
+      "scenario": "middle",
+      "strategy": "roi",
+      "purchases": 73,
+      "elapsedSeconds": 2027.6820355,
+      "fullLevelSeconds": 2027.6820355,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        354.518016686,
+        245.105608943
+      ],
+      "unlocks": [
+        249.747702928
+      ],
+      "spend": {
+        "price": 491027.944063,
+        "machine": 34471.0427035,
+        "staff": 0,
+        "lure": 50027.9819188,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 576326.570536,
+      "spendShares": {
+        "price": 0.851996019559,
+        "machine": 0.0598116492728,
+        "staff": 0,
+        "lure": 0.0868049201208,
+        "unlock": 0.00138741104735
+      },
+      "bottleneckSeconds": {
+        "machine": 47.9059992505,
+        "labor": 0,
+        "demand": 1979.77603625
+      },
+      "gapMaxSeconds": 175.558558185,
+      "gold": 0,
+      "finalRevenuePerSecond": 1264.40029906,
+      "finalDemand": {
+        "attraction": 0.31104,
+        "returns": 0.04,
+        "quality": 0.8
+      },
+      "levels": [
+        35,
+        35
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "bakery",
+      "shopName": "面包店",
+      "scenario": "middle",
+      "strategy": "roi",
+      "purchases": 434,
+      "elapsedSeconds": 3699.59275845,
+      "fullLevelSeconds": 3699.59275845,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        273.467846936,
+        191.636001273,
+        281.46712945,
+        452.334689959,
+        732.627455696,
+        1261.267226
+      ],
+      "unlocks": [
+        178.391216377,
+        462.617641302,
+        681.914737733,
+        917.7833188,
+        1058.89931567
+      ],
+      "spend": {
+        "price": 79187735039.4,
+        "machine": 75820047393.5,
+        "staff": 41863976755.6,
+        "lure": 101179897569,
+        "unlock": 272166.341779
+      },
+      "totalSpend": 298051928924,
+      "spendShares": {
+        "price": 0.265684356834,
+        "machine": 0.254385360522,
+        "staff": 0.14045866741,
+        "lure": 0.339470702084,
+        "unlock": 9.13150747797e-7
+      },
+      "bottleneckSeconds": {
+        "machine": 316.96191036,
+        "labor": 149.29235785,
+        "demand": 3233.33849024
+      },
+      "gapMaxSeconds": 165.762291848,
+      "gold": 0,
+      "finalRevenuePerSecond": 532093725.661,
+      "finalDemand": {
+        "attraction": 1.92587769682,
+        "returns": 0.04,
+        "quality": 0.8
+      },
+      "levels": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "tea",
+      "shopName": "奶茶店",
+      "scenario": "middle",
+      "strategy": "routine",
+      "purchases": 63,
+      "elapsedSeconds": 1852.66472489,
+      "fullLevelSeconds": 1852.66472489,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        505.248819994,
+        272.715898656
+      ],
+      "unlocks": [
+        694.873198306
+      ],
+      "spend": {
+        "price": 30935.6780169,
+        "machine": 11419.5570526,
+        "staff": 11227.869053,
+        "lure": 10477.315327,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 64860.0213003,
+      "spendShares": {
+        "price": 0.476960651519,
+        "machine": 0.176064651594,
+        "staff": 0.173109240914,
+        "lure": 0.161537340212,
+        "unlock": 0.0123281157609
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 1852.66472489
+      },
+      "gapMaxSeconds": 82.0113305322,
+      "gold": 0,
+      "finalRevenuePerSecond": 277.770924458,
+      "finalDemand": {
+        "attraction": 0.644972544,
+        "returns": 0.04,
+        "quality": 0.8
+      },
+      "levels": [
+        20,
+        20
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "pancake",
+      "shopName": "煎饼果子店",
+      "scenario": "middle",
+      "strategy": "routine",
+      "purchases": 105,
+      "elapsedSeconds": 2041.89138883,
+      "fullLevelSeconds": 2041.89138883,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        869.385164214,
+        618.564598923
+      ],
+      "unlocks": [
+        445.331801
+      ],
+      "spend": {
+        "price": 491027.944063,
+        "machine": 137153.239035,
+        "staff": 134656.289606,
+        "lure": 133554.999505,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 897192.074059,
+      "spendShares": {
+        "price": 0.547294117124,
+        "machine": 0.152869427852,
+        "staff": 0.150086356644,
+        "lure": 0.148858871324,
+        "unlock": 0.000891227056013
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 2041.89138883
+      },
+      "gapMaxSeconds": 76.0431755293,
+      "gold": 0,
+      "finalRevenuePerSecond": 4961.26943638,
+      "finalDemand": {
+        "attraction": 1.33741506724,
+        "returns": 0.04,
+        "quality": 0.8
+      },
+      "levels": [
+        35,
+        35
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "bakery",
+      "shopName": "面包店",
+      "scenario": "middle",
+      "strategy": "routine",
+      "purchases": 461,
+      "elapsedSeconds": 3547.89262331,
+      "fullLevelSeconds": 3547.89262331,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        450.466717249,
+        319.415534621,
+        455.545469305,
+        686.55539912,
+        1056.85473446,
+        1521.67714739
+      ],
+      "unlocks": [
+        257.358318668,
+        714.889380026,
+        1041.76129437,
+        1366.42386274,
+        1787.72321853
+      ],
+      "spend": {
+        "price": 79187735039.4,
+        "machine": 2200258.15801,
+        "staff": 2199878.23943,
+        "lure": 2175558.09281,
+        "unlock": 272166.341779
+      },
+      "totalSpend": 79194582900.2,
+      "spendShares": {
+        "price": 0.999913531196,
+        "machine": 0.0000277829376384,
+        "staff": 0.0000277781403585,
+        "lure": 0.0000274710467956,
+        "unlock": 0.00000343667877034
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 3547.89262331
+      },
+      "gapMaxSeconds": 50.1055936485,
+      "gold": 0,
+      "finalRevenuePerSecond": 532093725.661,
+      "finalDemand": {
+        "attraction": 1.92587769682,
+        "returns": 0.04,
+        "quality": 0.8
+      },
+      "levels": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "tea",
+      "shopName": "奶茶店",
+      "scenario": "high",
+      "strategy": "roi",
+      "purchases": 44,
+      "elapsedSeconds": 1513.07596229,
+      "fullLevelSeconds": 1513.07596229,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        275.123031538,
+        162.164241029
+      ],
+      "unlocks": [
+        334.444750007
+      ],
+      "spend": {
+        "price": 30935.6780169,
+        "machine": 9297.87558613,
+        "staff": 60,
+        "lure": 11432.1843915,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 52525.3398454,
+      "spendShares": {
+        "price": 0.588966736969,
+        "machine": 0.177016952455,
+        "staff": 0.00114230579329,
+        "lure": 0.217650841007,
+        "unlock": 0.0152231637757
+      },
+      "bottleneckSeconds": {
+        "machine": 60.4715072506,
+        "labor": 0,
+        "demand": 1452.60445504
+      },
+      "gapMaxSeconds": 148.212530302,
+      "gold": 0,
+      "finalRevenuePerSecond": 158.575030855,
+      "finalDemand": {
+        "attraction": 0.31104,
+        "returns": 0.08,
+        "quality": 0.8
+      },
+      "levels": [
+        20,
+        20
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "pancake",
+      "shopName": "煎饼果子店",
+      "scenario": "high",
+      "strategy": "roi",
+      "purchases": 71,
+      "elapsedSeconds": 1887.56610176,
+      "fullLevelSeconds": 1887.56610176,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        320.260372993,
+        220.49654116
+      ],
+      "unlocks": [
+        220.715654192
+      ],
+      "spend": {
+        "price": 491027.944063,
+        "machine": 274.733688186,
+        "staff": 0,
+        "lure": 604.41411401,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 492706.693716,
+      "spendShares": {
+        "price": 0.996592801205,
+        "machine": 0.000557600884442,
+        "staff": 0,
+        "lure": 0.00122672194577,
+        "unlock": 0.00162287596463
+      },
+      "bottleneckSeconds": {
+        "machine": 43.1939337504,
+        "labor": 0,
+        "demand": 1844.37216801
+      },
+      "gapMaxSeconds": 65.2273355651,
+      "gold": 0,
+      "finalRevenuePerSecond": 1066.15339711,
+      "finalDemand": {
+        "attraction": 0.216,
+        "returns": 0.08,
+        "quality": 0.8
+      },
+      "levels": [
+        35,
+        35
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "bakery",
+      "shopName": "面包店",
+      "scenario": "high",
+      "strategy": "roi",
+      "purchases": 434,
+      "elapsedSeconds": 4031.31565064,
+      "fullLevelSeconds": 4031.31565064,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        276.941164006,
+        196.920601448,
+        292.337653806,
+        459.671074606,
+        764.72839752,
+        1309.95125325
+      ],
+      "unlocks": [
+        157.654038709,
+        437.130588755,
+        695.586463207,
+        881.684291526,
+        1041.24224246
+      ],
+      "spend": {
+        "price": 79187735039.4,
+        "machine": 87894569332,
+        "staff": 43136009415.4,
+        "lure": 122296888654,
+        "unlock": 272166.341779
+      },
+      "totalSpend": 332515474607,
+      "spendShares": {
+        "price": 0.238147518196,
+        "machine": 0.26433226735,
+        "staff": 0.129726321659,
+        "lure": 0.367793074288,
+        "unlock": 8.1850729534e-7
+      },
+      "bottleneckSeconds": {
+        "machine": 493.098545691,
+        "labor": 336.381120183,
+        "demand": 3201.83598477
+      },
+      "gapMaxSeconds": 174.354058302,
+      "gold": 0,
+      "finalRevenuePerSecond": 542920314.244,
+      "finalDemand": {
+        "attraction": 1.92587769682,
+        "returns": 0.08,
+        "quality": 0.8
+      },
+      "levels": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "tea",
+      "shopName": "奶茶店",
+      "scenario": "high",
+      "strategy": "routine",
+      "purchases": 63,
+      "elapsedSeconds": 1676.06128464,
+      "fullLevelSeconds": 1676.06128464,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        505.248819994,
+        272.715898656
+      ],
+      "unlocks": [
+        604.27540958
+      ],
+      "spend": {
+        "price": 30935.6780169,
+        "machine": 11419.5570526,
+        "staff": 11227.869053,
+        "lure": 10477.315327,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 64860.0213003,
+      "spendShares": {
+        "price": 0.476960651519,
+        "machine": 0.176064651594,
+        "staff": 0.173109240914,
+        "lure": 0.161537340212,
+        "unlock": 0.0123281157609
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 57.4074074074,
+        "demand": 1618.65387724
+      },
+      "gapMaxSeconds": 76.6986588314,
+      "gold": 0,
+      "finalRevenuePerSecond": 293.991774586,
+      "finalDemand": {
+        "attraction": 0.644972544,
+        "returns": 0.08,
+        "quality": 0.8
+      },
+      "levels": [
+        20,
+        20
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "pancake",
+      "shopName": "煎饼果子店",
+      "scenario": "high",
+      "strategy": "routine",
+      "purchases": 105,
+      "elapsedSeconds": 1897.70371106,
+      "fullLevelSeconds": 1897.70371106,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        869.385164214,
+        618.564598923
+      ],
+      "unlocks": [
+        383.602563396
+      ],
+      "spend": {
+        "price": 491027.944063,
+        "machine": 137153.239035,
+        "staff": 134656.289606,
+        "lure": 133554.999505,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 897192.074059,
+      "spendShares": {
+        "price": 0.547294117124,
+        "machine": 0.152869427852,
+        "staff": 0.150086356644,
+        "lure": 0.148858871324,
+        "unlock": 0.000891227056013
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 1897.70371106
+      },
+      "gapMaxSeconds": 73.027864034,
+      "gold": 0,
+      "finalRevenuePerSecond": 5105.34421978,
+      "finalDemand": {
+        "attraction": 1.33741506724,
+        "returns": 0.08,
+        "quality": 0.8
+      },
+      "levels": [
+        35,
+        35
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "original",
+      "shop": "bakery",
+      "shopName": "面包店",
+      "scenario": "high",
+      "strategy": "routine",
+      "purchases": 461,
+      "elapsedSeconds": 3369.15414912,
+      "fullLevelSeconds": 3369.15414912,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        450.466717249,
+        319.415534621,
+        455.545469305,
+        686.55539912,
+        1056.85473446,
+        1521.67714739
+      ],
+      "unlocks": [
+        219.340404531,
+        627.265473366,
+        930.883191117,
+        1238.16470226,
+        1645.12987142
+      ],
+      "spend": {
+        "price": 79187735039.4,
+        "machine": 2200258.15801,
+        "staff": 2199878.23943,
+        "lure": 2175558.09281,
+        "unlock": 272166.341779
+      },
+      "totalSpend": 79194582900.2,
+      "spendShares": {
+        "price": 0.999913531196,
+        "machine": 0.0000277829376384,
+        "staff": 0.0000277781403585,
+        "lure": 0.0000274710467956,
+        "unlock": 0.00000343667877034
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 3369.15414912
+      },
+      "gapMaxSeconds": 48.4277345621,
+      "gold": 0,
+      "finalRevenuePerSecond": 542920314.244,
+      "finalDemand": {
+        "attraction": 1.92587769682,
+        "returns": 0.08,
+        "quality": 0.8
+      },
+      "levels": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "tea",
+      "shopName": "奶茶店",
+      "scenario": "low",
+      "strategy": "roi",
+      "purchases": 44,
+      "elapsedSeconds": 1242.96236416,
+      "fullLevelSeconds": 1242.96236416,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        246.047899328,
+        139.357314676
+      ],
+      "unlocks": [
+        378.611462508
+      ],
+      "spend": {
+        "price": 30935.6780169,
+        "machine": 800.024499998,
+        "staff": 183.155792124,
+        "lure": 1463.77962066,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 34182.2397806,
+      "spendShares": {
+        "price": 0.905021970928,
+        "machine": 0.0234046834009,
+        "staff": 0.00535821506431,
+        "lure": 0.0428228117892,
+        "unlock": 0.0233923188175
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 1242.96236416
+      },
+      "gapMaxSeconds": 100,
+      "gold": 0,
+      "finalRevenuePerSecond": 159.470421782,
+      "finalDemand": {
+        "attraction": 0.373248,
+        "returns": 0.02,
+        "quality": 0.8
+      },
+      "levels": [
+        20,
+        20
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "pancake",
+      "shopName": "煎饼果子店",
+      "scenario": "low",
+      "strategy": "roi",
+      "purchases": 74,
+      "elapsedSeconds": 1700.06222509,
+      "fullLevelSeconds": 1700.06222509,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        364.258661178,
+        246.747251977
+      ],
+      "unlocks": [
+        268.263013369
+      ],
+      "spend": {
+        "price": 491027.944063,
+        "machine": 800.024499998,
+        "staff": 0,
+        "lure": 1257.63528,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 493885.205693,
+      "spendShares": {
+        "price": 0.994214725208,
+        "machine": 0.00161985921177,
+        "staff": 0,
+        "lure": 0.00254641213282,
+        "unlock": 0.00161900344781
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 1700.06222509
+      },
+      "gapMaxSeconds": 65.1890482399,
+      "gold": 0,
+      "finalRevenuePerSecond": 1315.25458118,
+      "finalDemand": {
+        "attraction": 0.373248,
+        "returns": 0.02,
+        "quality": 0.8
+      },
+      "levels": [
+        35,
+        35
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "bakery",
+      "shopName": "面包店",
+      "scenario": "low",
+      "strategy": "roi",
+      "purchases": 434,
+      "elapsedSeconds": 3655.51766812,
+      "fullLevelSeconds": 3655.51766812,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        316.069103882,
+        219.15386969,
+        318.624471543,
+        471.154570561,
+        762.595498997,
+        1303.84465911
+      ],
+      "unlocks": [
+        206.35616413,
+        516.117813583,
+        821.706978576,
+        1005.60511739,
+        1132.12402582
+      ],
+      "spend": {
+        "price": 79187735039.4,
+        "machine": 60520110226.7,
+        "staff": 24321673094.2,
+        "lure": 65517708898.4,
+        "unlock": 272166.341779
+      },
+      "totalSpend": 229547499425,
+      "spendShares": {
+        "price": 0.344973198304,
+        "machine": 0.263649616651,
+        "staff": 0.105954859692,
+        "lure": 0.285421139688,
+        "unlock": 0.00000118566458995
+      },
+      "bottleneckSeconds": {
+        "machine": 2695.81931564,
+        "labor": 0,
+        "demand": 959.69835248
+      },
+      "gapMaxSeconds": 148.930709578,
+      "gold": 0,
+      "finalRevenuePerSecond": 454127514.804,
+      "finalDemand": {
+        "attraction": 1.92587769682,
+        "returns": 0.02,
+        "quality": 0.8
+      },
+      "levels": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "tea",
+      "shopName": "奶茶店",
+      "scenario": "low",
+      "strategy": "routine",
+      "purchases": 63,
+      "elapsedSeconds": 1655.70819669,
+      "fullLevelSeconds": 1655.70819669,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        431.151198255,
+        232.262361309
+      ],
+      "unlocks": [
+        639.928162883
+      ],
+      "spend": {
+        "price": 30935.6780169,
+        "machine": 9135.64564207,
+        "staff": 7485.24603531,
+        "lure": 8381.85226156,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 56738.0238067,
+      "spendShares": {
+        "price": 0.545237143301,
+        "machine": 0.161014519526,
+        "staff": 0.13192644955,
+        "lure": 0.147729013089,
+        "unlock": 0.0140928745345
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 1655.70819669
+      },
+      "gapMaxSeconds": 71.6332378223,
+      "gold": 0,
+      "finalRevenuePerSecond": 269.660499393,
+      "finalDemand": {
+        "attraction": 0.644972544,
+        "returns": 0.02,
+        "quality": 0.8
+      },
+      "levels": [
+        20,
+        20
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "pancake",
+      "shopName": "煎饼果子店",
+      "scenario": "low",
+      "strategy": "routine",
+      "purchases": 105,
+      "elapsedSeconds": 1893.77519412,
+      "fullLevelSeconds": 1893.77519412,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        785.86615932,
+        556.53774896
+      ],
+      "unlocks": [
+        443.709965544
+      ],
+      "spend": {
+        "price": 491027.944063,
+        "machine": 109722.591228,
+        "staff": 89770.8597371,
+        "lure": 106843.999604,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 798164.996483,
+      "spendShares": {
+        "price": 0.615196038697,
+        "machine": 0.137468558145,
+        "staff": 0.112471556799,
+        "lure": 0.133862046162,
+        "unlock": 0.00100180019716
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 1893.77519412
+      },
+      "gapMaxSeconds": 66.8951670529,
+      "gold": 0,
+      "finalRevenuePerSecond": 4540.00118435,
+      "finalDemand": {
+        "attraction": 1.33741506724,
+        "returns": 0.02,
+        "quality": 0.8
+      },
+      "levels": [
+        35,
+        35
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "bakery",
+      "shopName": "面包店",
+      "scenario": "low",
+      "strategy": "routine",
+      "purchases": 461,
+      "elapsedSeconds": 3894.10058476,
+      "fullLevelSeconds": 3894.10058476,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        479.483817004,
+        340.827410298,
+        493.935624787,
+        750.190035831,
+        1165.91830368,
+        1731.84902202
+      ],
+      "unlocks": [
+        290.602946029,
+        775.165880231,
+        1124.77484536,
+        1464.40980013,
+        1880.10276547
+      ],
+      "spend": {
+        "price": 79187735039.4,
+        "machine": 1760206.52641,
+        "staff": 1466585.49296,
+        "lure": 1740446.47425,
+        "unlock": 272166.341779
+      },
+      "totalSpend": 79192974444.2,
+      "spendShares": {
+        "price": 0.99993384003,
+        "machine": 0.000022226801541,
+        "staff": 0.0000185191363659,
+        "lure": 0.000021977283799,
+        "unlock": 0.00000343674857132
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 3894.10058476
+      },
+      "gapMaxSeconds": 50.145421723,
+      "gold": 0,
+      "finalRevenuePerSecond": 454127514.804,
+      "finalDemand": {
+        "attraction": 1.92587769682,
+        "returns": 0.02,
+        "quality": 0.8
+      },
+      "levels": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "tea",
+      "shopName": "奶茶店",
+      "scenario": "middle",
+      "strategy": "roi",
+      "purchases": 45,
+      "elapsedSeconds": 1508.09493756,
+      "fullLevelSeconds": 1508.09493756,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        289.700344903,
+        178.879012571
+      ],
+      "unlocks": [
+        374.054950789
+      ],
+      "spend": {
+        "price": 30935.6780169,
+        "machine": 8532.6511961,
+        "staff": 2723.91333786,
+        "lure": 12770.5490136,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 55762.3934153,
+      "spendShares": {
+        "price": 0.554776725355,
+        "machine": 0.153018022963,
+        "staff": 0.0488485728647,
+        "lure": 0.229017232429,
+        "unlock": 0.0143394463879
+      },
+      "bottleneckSeconds": {
+        "machine": 53.6547191605,
+        "labor": 151.836761954,
+        "demand": 1302.60345644
+      },
+      "gapMaxSeconds": 151.836761954,
+      "gold": 0,
+      "finalRevenuePerSecond": 197.85284619,
+      "finalDemand": {
+        "attraction": 0.4478976,
+        "returns": 0.04,
+        "quality": 0.8
+      },
+      "levels": [
+        20,
+        20
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "pancake",
+      "shopName": "煎饼果子店",
+      "scenario": "middle",
+      "strategy": "roi",
+      "purchases": 73,
+      "elapsedSeconds": 1790.30041346,
+      "fullLevelSeconds": 1790.30041346,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        356.086634721,
+        240.061048512
+      ],
+      "unlocks": [
+        252.628032872
+      ],
+      "spend": {
+        "price": 491027.944063,
+        "machine": 483.531291208,
+        "staff": 0,
+        "lure": 801.885059339,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 493112.962264,
+      "spendShares": {
+        "price": 0.995771722991,
+        "machine": 0.00098056901402,
+        "staff": 0,
+        "lure": 0.00162616909452,
+        "unlock": 0.00162153890089
+      },
+      "bottleneckSeconds": {
+        "machine": 277.956837821,
+        "labor": 0,
+        "demand": 1512.34357564
+      },
+      "gapMaxSeconds": 61.5384615385,
+      "gold": 0,
+      "finalRevenuePerSecond": 1174.08599199,
+      "finalDemand": {
+        "attraction": 0.31104,
+        "returns": 0.04,
+        "quality": 0.8
+      },
+      "levels": [
+        35,
+        35
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "bakery",
+      "shopName": "面包店",
+      "scenario": "middle",
+      "strategy": "roi",
+      "purchases": 434,
+      "elapsedSeconds": 3466.39005651,
+      "fullLevelSeconds": 3466.39005651,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        313.216278415,
+        216.819739762,
+        314.380598946,
+        463.113045764,
+        760.774571919,
+        1283.96517097
+      ],
+      "unlocks": [
+        194.329256056,
+        486.138675824,
+        784.784657805,
+        946.324827332,
+        1097.78750467
+      ],
+      "spend": {
+        "price": 79187735039.4,
+        "machine": 49673401397.1,
+        "staff": 24148500041.7,
+        "lure": 65520954054.7,
+        "unlock": 272166.341779
+      },
+      "totalSpend": 218530862699,
+      "spendShares": {
+        "price": 0.362364080118,
+        "machine": 0.227306114951,
+        "staff": 0.110503842539,
+        "lure": 0.299824716955,
+        "unlock": 0.00000124543663269
+      },
+      "bottleneckSeconds": {
+        "machine": 471.519915087,
+        "labor": 52.1945746961,
+        "demand": 2942.67556673
+      },
+      "gapMaxSeconds": 148.930709578,
+      "gold": 0,
+      "finalRevenuePerSecond": 458795100.188,
+      "finalDemand": {
+        "attraction": 1.92587769682,
+        "returns": 0.04,
+        "quality": 0.8
+      },
+      "levels": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "tea",
+      "shopName": "奶茶店",
+      "scenario": "middle",
+      "strategy": "routine",
+      "purchases": 63,
+      "elapsedSeconds": 1562.99425711,
+      "fullLevelSeconds": 1562.99425711,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        431.151198255,
+        232.262361309
+      ],
+      "unlocks": [
+        587.766472887
+      ],
+      "spend": {
+        "price": 30935.6780169,
+        "machine": 9135.64564207,
+        "staff": 7485.24603531,
+        "lure": 8381.85226156,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 56738.0238067,
+      "spendShares": {
+        "price": 0.545237143301,
+        "machine": 0.161014519526,
+        "staff": 0.13192644955,
+        "lure": 0.147729013089,
+        "unlock": 0.0140928745345
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 1562.99425711
+      },
+      "gapMaxSeconds": 66.8449197861,
+      "gold": 0,
+      "finalRevenuePerSecond": 277.770924458,
+      "finalDemand": {
+        "attraction": 0.644972544,
+        "returns": 0.04,
+        "quality": 0.8
+      },
+      "levels": [
+        20,
+        20
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "pancake",
+      "shopName": "煎饼果子店",
+      "scenario": "middle",
+      "strategy": "routine",
+      "purchases": 105,
+      "elapsedSeconds": 1818.96500771,
+      "fullLevelSeconds": 1818.96500771,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        785.86615932,
+        556.53774896
+      ],
+      "unlocks": [
+        408.375663804
+      ],
+      "spend": {
+        "price": 491027.944063,
+        "machine": 109722.591228,
+        "staff": 89770.8597371,
+        "lure": 106843.999604,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 798164.996483,
+      "spendShares": {
+        "price": 0.615196038697,
+        "machine": 0.137468558145,
+        "staff": 0.112471556799,
+        "lure": 0.133862046162,
+        "unlock": 0.00100180019716
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 1818.96500771
+      },
+      "gapMaxSeconds": 65.514120456,
+      "gold": 0,
+      "finalRevenuePerSecond": 4606.89304807,
+      "finalDemand": {
+        "attraction": 1.33741506724,
+        "returns": 0.04,
+        "quality": 0.8
+      },
+      "levels": [
+        35,
+        35
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "bakery",
+      "shopName": "面包店",
+      "scenario": "middle",
+      "strategy": "routine",
+      "purchases": 461,
+      "elapsedSeconds": 3788.97216123,
+      "fullLevelSeconds": 3788.97216123,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        479.483817004,
+        340.827410298,
+        493.935624787,
+        750.190035831,
+        1165.91830368,
+        1731.84902202
+      ],
+      "unlocks": [
+        265.716970892,
+        720.992051864,
+        1057.39110339,
+        1387.57494497,
+        1795.95376529
+      ],
+      "spend": {
+        "price": 79187735039.4,
+        "machine": 1760206.52641,
+        "staff": 1466585.49296,
+        "lure": 1740446.47425,
+        "unlock": 272166.341779
+      },
+      "totalSpend": 79192974444.2,
+      "spendShares": {
+        "price": 0.99993384003,
+        "machine": 0.000022226801541,
+        "staff": 0.0000185191363659,
+        "lure": 0.000021977283799,
+        "unlock": 0.00000343674857132
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 3788.97216123
+      },
+      "gapMaxSeconds": 46.4885034561,
+      "gold": 0,
+      "finalRevenuePerSecond": 458795100.188,
+      "finalDemand": {
+        "attraction": 1.92587769682,
+        "returns": 0.04,
+        "quality": 0.8
+      },
+      "levels": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "tea",
+      "shopName": "奶茶店",
+      "scenario": "high",
+      "strategy": "roi",
+      "purchases": 44,
+      "elapsedSeconds": 1255.62953637,
+      "fullLevelSeconds": 1255.62953637,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        250.267921246,
+        143.464605336
+      ],
+      "unlocks": [
+        325.749097833
+      ],
+      "spend": {
+        "price": 30935.6780169,
+        "machine": 2896.4968372,
+        "staff": 40,
+        "lure": 3695.58315519,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 38367.3598602,
+      "spendShares": {
+        "price": 0.806301974639,
+        "machine": 0.0754937751191,
+        "staff": 0.00104255284038,
+        "lure": 0.0963210178822,
+        "unlock": 0.0208406795192
+      },
+      "bottleneckSeconds": {
+        "machine": 48.3772058005,
+        "labor": 0,
+        "demand": 1207.25233057
+      },
+      "gapMaxSeconds": 109.157725728,
+      "gold": 0,
+      "finalRevenuePerSecond": 158.575030855,
+      "finalDemand": {
+        "attraction": 0.31104,
+        "returns": 0.08,
+        "quality": 0.8
+      },
+      "levels": [
+        20,
+        20
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "pancake",
+      "shopName": "煎饼果子店",
+      "scenario": "high",
+      "strategy": "roi",
+      "purchases": 73,
+      "elapsedSeconds": 1768.01329681,
+      "fullLevelSeconds": 1768.01329681,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        364.840281668,
+        253.77603704
+      ],
+      "unlocks": [
+        237.693781438
+      ],
+      "spend": {
+        "price": 491027.944063,
+        "machine": 2896.4968372,
+        "staff": 0,
+        "lure": 3695.58315519,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 498419.625906,
+      "spendShares": {
+        "price": 0.985169761665,
+        "machine": 0.00581136192607,
+        "staff": 0,
+        "lure": 0.00741460200021,
+        "unlock": 0.00160427440912
+      },
+      "bottleneckSeconds": {
+        "machine": 37.2132352311,
+        "labor": 0,
+        "demand": 1730.80006158
+      },
+      "gapMaxSeconds": 83.9674813291,
+      "gold": 0,
+      "finalRevenuePerSecond": 1307.86971942,
+      "finalDemand": {
+        "attraction": 0.31104,
+        "returns": 0.08,
+        "quality": 0.8
+      },
+      "levels": [
+        35,
+        35
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "bakery",
+      "shopName": "面包店",
+      "scenario": "high",
+      "strategy": "roi",
+      "purchases": 434,
+      "elapsedSeconds": 3375.46652593,
+      "fullLevelSeconds": 3375.46652593,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        303.266188286,
+        213.719459816,
+        307.487513482,
+        465.609333723,
+        753.994480301,
+        1290.22376183
+      ],
+      "unlocks": [
+        182.841370337,
+        490.816664318,
+        757.942741143,
+        940.667859277,
+        1068.67874603
+      ],
+      "spend": {
+        "price": 79187735039.4,
+        "machine": 47356288512.5,
+        "staff": 23236731297.2,
+        "lure": 65701683991.2,
+        "unlock": 272166.341779
+      },
+      "totalSpend": 215482711007,
+      "spendShares": {
+        "price": 0.367489970167,
+        "machine": 0.219768390194,
+        "staff": 0.107835710757,
+        "lure": 0.304904665828,
+        "unlock": 0.00000126305419357
+      },
+      "bottleneckSeconds": {
+        "machine": 469.77963115,
+        "labor": 220.52744662,
+        "demand": 2685.15944816
+      },
+      "gapMaxSeconds": 149.36497295,
+      "gold": 0,
+      "finalRevenuePerSecond": 468130270.955,
+      "finalDemand": {
+        "attraction": 1.92587769682,
+        "returns": 0.08,
+        "quality": 0.8
+      },
+      "levels": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "tea",
+      "shopName": "奶茶店",
+      "scenario": "high",
+      "strategy": "routine",
+      "purchases": 63,
+      "elapsedSeconds": 1414.44956801,
+      "fullLevelSeconds": 1414.44956801,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        431.151198255,
+        232.262361309
+      ],
+      "unlocks": [
+        510.875920083
+      ],
+      "spend": {
+        "price": 30935.6780169,
+        "machine": 9135.64564207,
+        "staff": 7485.24603531,
+        "lure": 8381.85226156,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 56738.0238067,
+      "spendShares": {
+        "price": 0.545237143301,
+        "machine": 0.161014519526,
+        "staff": 0.13192644955,
+        "lure": 0.147729013089,
+        "unlock": 0.0140928745345
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 39.6296296296,
+        "demand": 1374.81993838
+      },
+      "gapMaxSeconds": 61.3589270651,
+      "gold": 0,
+      "finalRevenuePerSecond": 293.991774586,
+      "finalDemand": {
+        "attraction": 0.644972544,
+        "returns": 0.08,
+        "quality": 0.8
+      },
+      "levels": [
+        20,
+        20
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "pancake",
+      "shopName": "煎饼果子店",
+      "scenario": "high",
+      "strategy": "routine",
+      "purchases": 105,
+      "elapsedSeconds": 1691.54061245,
+      "fullLevelSeconds": 1691.54061245,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        785.86615932,
+        556.53774896
+      ],
+      "unlocks": [
+        352.585834629
+      ],
+      "spend": {
+        "price": 491027.944063,
+        "machine": 109722.591228,
+        "staff": 89770.8597371,
+        "lure": 106843.999604,
+        "unlock": 799.601850842
+      },
+      "totalSpend": 798164.996483,
+      "spendShares": {
+        "price": 0.615196038697,
+        "machine": 0.137468558145,
+        "staff": 0.112471556799,
+        "lure": 0.133862046162,
+        "unlock": 0.00100180019716
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 1691.54061245
+      },
+      "gapMaxSeconds": 62.9163136293,
+      "gold": 0,
+      "finalRevenuePerSecond": 4740.67677551,
+      "finalDemand": {
+        "attraction": 1.33741506724,
+        "returns": 0.08,
+        "quality": 0.8
+      },
+      "levels": [
+        35,
+        35
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    },
+    {
+      "preset": "candidateB",
+      "shop": "bakery",
+      "shopName": "面包店",
+      "scenario": "high",
+      "strategy": "routine",
+      "purchases": 461,
+      "elapsedSeconds": 3605.77183245,
+      "fullLevelSeconds": 3605.77183245,
+      "taskCompletionSeconds": null,
+      "tasks": null,
+      "menuComplete": true,
+      "stopReason": "reference_complete",
+      "sales": [
+        479.483817004,
+        340.827410298,
+        493.935624787,
+        750.190035831,
+        1165.91830368,
+        1731.84902202
+      ],
+      "unlocks": [
+        226.970372285,
+        633.298915378,
+        946.101626921,
+        1258.90620141,
+        1653.41862239
+      ],
+      "spend": {
+        "price": 79187735039.4,
+        "machine": 1760206.52641,
+        "staff": 1466585.49296,
+        "lure": 1740446.47425,
+        "unlock": 272166.341779
+      },
+      "totalSpend": 79192974444.2,
+      "spendShares": {
+        "price": 0.99993384003,
+        "machine": 0.000022226801541,
+        "staff": 0.0000185191363659,
+        "lure": 0.000021977283799,
+        "unlock": 0.00000343674857132
+      },
+      "bottleneckSeconds": {
+        "machine": 0,
+        "labor": 0,
+        "demand": 3605.77183245
+      },
+      "gapMaxSeconds": 44.9317679251,
+      "gold": 0,
+      "finalRevenuePerSecond": 468130270.955,
+      "finalDemand": {
+        "attraction": 1.92587769682,
+        "returns": 0.08,
+        "quality": 0.8
+      },
+      "levels": [
+        70,
+        70,
+        70,
+        70,
+        70,
+        70
+      ],
+      "productionMode": "online",
+      "coverage": "aggregate_capacity_not_physical_production"
+    }
+  ]
+}
