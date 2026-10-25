@@ -115,3 +115,37 @@ func test_shared_service_and_reassignment_have_real_capacity_cost() -> void:
 	sim.submit(AssignStaffCommand.new("bear", "kitchen"))
 	sim.run_seconds(120.0)
 	check(sim.progress.sold.get("pearl_milk_tea", 0) > stalled, "reassignment back to kitchen resumes production")
+
+
+func test_all_presentation_controls_follow_access_snapshot() -> void:
+	var sim := tea()
+	var world: Node2D = load("res://presentation/graybox/shop_view.gd").new()
+	world.bind(sim)
+	var debug := ShopHud.new()
+	debug.bind(sim)
+	var ui: CanvasLayer = load("res://presentation/graybox/shop_ui.gd").new()
+	ui.bind(sim, world, debug)
+	check(not debug._status.text.contains("pearl_pot"), "debug snapshot text hides the closed kitchen")
+	for entry in debug._buttons:
+		if entry.kitchen_only:
+			check(not entry.button.visible, "debug kitchen controls are hidden")
+		elif entry.production_only:
+			check(entry.button.disabled, "debug front production controls are disabled until access")
+	ui._selected = "lemon_press"
+	ui._selected_kind = "station"
+	ui._card.visible = true
+	ui._refresh_card()
+	check(ui._card_buttons[0].disabled, "visible lemonade card does not advertise a rejected production upgrade")
+	ui._selected = "lemon_to_press"
+	ui._selected_kind = "belt"
+	ui._refresh_card()
+	check(ui._card_buttons[0].disabled and ui._card_buttons[1].disabled, "visible front belt modifications are disabled")
+	open_kitchen(sim)
+	check(world._stations["pearl_pot"].visible, "open snapshot reveals physical kitchen")
+	check(debug._status.text.contains("pearl_pot"), "debug kitchen state appears only after access")
+	for entry in debug._buttons:
+		if entry.kitchen_only:
+			check(entry.button.visible, "open snapshot reveals kitchen controls")
+	ui.free()
+	debug.free()
+	world.free()

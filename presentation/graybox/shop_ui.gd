@@ -264,6 +264,12 @@ func _refresh_card() -> void:
 				_card_detail.text = "营业额 %d/%d 后可买，解锁%s" % [_snapshot.revenue, stage.revenue_threshold, _dish_name(stage.dish_id)]
 				_card_buttons[0].disabled = true
 		return
+	if def.owner == StationDef.OwnerSystem.PRODUCTION and not _snapshot.kitchen_open:
+		_card_title.text = def.display_name
+		_card_detail.text = "解锁新菜后开放后厨"
+		_card_buttons[0].text = "后厨未开放"
+		_card_buttons[0].disabled = true
+		return
 	var level := int(row.level)
 	var maximum := mini(def.level_speed.size(), def.upgrade_costs.size() + 1)
 	var full := level >= maximum
@@ -297,6 +303,10 @@ func _refresh_belt_card() -> void:
 	_card_buttons[1].icon = Assets.icon("delete")
 	_card_buttons[1].text = "清空"
 	_card_buttons[1].disabled = segment.items.is_empty()
+	if not _snapshot.kitchen_open:
+		_card_detail.text = "解锁新菜后开放后厨"
+		_card_buttons[0].disabled = true
+		_card_buttons[1].disabled = true
 
 
 func _assign(id: String, zone: String) -> void:
