@@ -149,3 +149,24 @@ func test_all_presentation_controls_follow_access_snapshot() -> void:
 	ui.free()
 	debug.free()
 	world.free()
+
+
+func test_debug_hud_rebind_disconnects_previous_sim() -> void:
+	var first := tea()
+	var second := make_sim()
+	var debug := ShopHud.new()
+	debug.bind(first)
+	var count := debug._buttons.size()
+	debug.bind(first)
+	check_eq(debug._buttons.size(), count, "rebinding does not retain old button tracking")
+	check_eq(first.tick_finished.get_connections().size(), 1, "one HUD subscription after rebinding")
+	debug.bind(second)
+	check_eq(first.tick_finished.get_connections().size(), 0, "previous shop is disconnected")
+	var status := debug._status.text
+	first.run_seconds(2.0)
+	check_eq(debug._status.text, status, "old simulation cannot update rebound HUD")
+	second.step()
+	check(debug._status.text != status, "current simulation still updates HUD")
+	debug.unbind()
+	check_eq(second.tick_finished.get_connections().size(), 0, "explicit detach disconnects HUD")
+	debug.free()

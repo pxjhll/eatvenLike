@@ -10,12 +10,44 @@ var _buttons: Array[Dictionary] = []
 
 
 func bind(sim: GameSim) -> void:
+	unbind()
+	for child in get_children():
+		child.free()
+	_buttons.clear()
 	_sim = sim
 	_build()
 	sim.tick_finished.connect(_on_tick)
-	sim.command_rejected.connect(func(_c: SimCommand, reason: String) -> void: _show_toast(reason))
-	sim.shop_completed.connect(func() -> void: _show_toast("店铺完成，可以换店"))
+	sim.command_rejected.connect(_on_rejected)
+	sim.shop_completed.connect(_on_completed)
 	_on_tick(sim.last_snapshot)
+
+
+func unbind() -> void:
+	if is_instance_valid(_sim):
+		if _sim.tick_finished.is_connected(_on_tick):
+			_sim.tick_finished.disconnect(_on_tick)
+		if _sim.command_rejected.is_connected(_on_rejected):
+			_sim.command_rejected.disconnect(_on_rejected)
+		if _sim.shop_completed.is_connected(_on_completed):
+			_sim.shop_completed.disconnect(_on_completed)
+	_sim = null
+	_buttons.clear()
+
+
+func _exit_tree() -> void:
+	unbind()
+
+
+func _app() -> Node:
+	return Engine.get_main_loop().root.get_node("App")
+
+
+func _on_rejected(_command: SimCommand, reason: String) -> void:
+	_show_toast(reason)
+
+
+func _on_completed() -> void:
+	_show_toast("店铺完成，可以换店")
 
 
 func _process(delta: float) -> void:
@@ -52,12 +84,12 @@ func _build() -> void:
 			_add_button(buttons, "%s → %s" % [s.staff, zone], AssignStaffCommand.new.bind(s.staff, zone), zone == _sim.config.kitchen_zone)
 	var save := Button.new()
 	save.text = "存档"
-	save.pressed.connect(App.save_now)
+	save.pressed.connect(func() -> void: _app().save_now())
 	buttons.add_child(save)
 	var switch := Button.new()
 	switch.text = "换店"
 	switch.pressed.connect(func() -> void:
-		var reason := App.switch_shop()
+		var reason: String = _app().switch_shop()
 		if reason != "":
 			_show_toast(reason))
 	buttons.add_child(switch)
