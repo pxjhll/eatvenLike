@@ -124,7 +124,7 @@ func _build() -> void:
 	_toast.size = Vector2(720, 24)
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_menu = _label("", Vector2(56, 750), 16, Color("526b65"), _root)
-	_unlock = _button("", Rect2(74, 852, 572, 46), "lock", _root)
+	_unlock = _button("", Rect2(74, 1130, 572, 46), "lock", _root)
 	_unlock.pressed.connect(_unlock_next)
 	_build_card()
 

@@ -37,8 +37,10 @@ func _draw() -> void:
 		full = full or int(stock.get(item_id, 0)) >= capacity
 	var color := Color("e53935") if empty or full else Color("5d6f72")
 	var text := "备料架 %s/%d" % [parts[0], capacity] if items.size() == 1 else "备料架 " + " ".join(parts)
-	draw_string(_font, Vector2(-size.x / 2.0, 22), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, color)
+	var text_width := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+	draw_string(_font, Vector2(-text_width / 2.0, 22), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, color)
 	if count == 0:
 		draw_circle(Vector2(0, -64), 13, Color("f5ecd8"))
 		draw_arc(Vector2(0, -63), 8, 0, PI, 16, color, 2, true)
 		draw_line(Vector2(-8, -65), Vector2(8, -65), color, 2, true)
+
