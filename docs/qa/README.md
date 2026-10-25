@@ -57,3 +57,5 @@ Display changes: kitchen columns are 80 px apart so the slicer fits right of the
 
 ![Slicer ghost card](pxj40-slicer-locked.png)
 ![Toast line](pxj40-toast-line.png)
+
+Font: the UI font is a glyph subset built from the repo's text. "切片吐司" added 吐 and 司, which the old subset lacked (the first PXJ-40 screenshots showed boxes). Regenerated with `python3 art_src/graybox/subset_font.py /usr/share/fonts/truetype/wqy/wqy-microhei.ttc` (598 → 601 glyphs, none lost). `tests/test_font.gd` now fails when a content name, task name or a string literal in `presentation/` or `game/` uses a character the font lacks; it failed on the old font and passes on the new one.
