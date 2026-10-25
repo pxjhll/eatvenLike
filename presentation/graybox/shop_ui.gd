@@ -146,10 +146,25 @@ func _on_snapshot(snapshot: Dictionary) -> void:
 	_snapshot = snapshot
 	_gold.text = str(snapshot.gold)
 	var completed := 0.0
+	var current := ""
 	for task in snapshot.tasks:
 		completed += task.progress
-	_progress.value = completed / maxf(snapshot.tasks.size(), 1)
-	_goal.text = "本店目标已达成" if snapshot.progress.completed else ("目标：" + (snapshot.tasks[0].name if not snapshot.tasks.is_empty() else "菜单与任务"))
+		if current == "" and task.progress < 1.0:
+			current = task.name
+	# Tasks of dishes not yet unlocked still count, so the bar reads as progress toward the next shop.
+	var total := 0
+	for stage in _sim.config.progression.stages:
+		total += stage.tasks.size()
+	_progress.value = completed / maxf(total, 1)
+	var next := _next_stage(snapshot)
+	if snapshot.progress.completed:
+		_goal.text = "本店目标已达成"
+	elif current != "":
+		_goal.text = "目标：" + current
+	elif next != null:
+		_goal.text = "目标：营业额 %d/%d，解锁%s" % [snapshot.revenue, next.revenue_threshold, _dish_name(next.dish_id)]
+	else:
+		_goal.text = "目标：菜单与任务"
 	_refresh_card()
 
 
@@ -211,6 +226,13 @@ func _refresh_card() -> void:
 		_card_detail.text = "加一台同样的机器，产能翻倍" if slot.parallel_of != "" else "启用这个机位"
 		_card_buttons[0].text = "启用  %d" % price
 		_card_buttons[0].disabled = _snapshot.gold < price
+		var stage := _stage_unlocking(slot.id)
+		if stage != null:
+			_card_detail.text = "解锁新菜：%s" % _dish_name(stage.dish_id)
+			_card_buttons[0].text = "购买  %d" % price
+			if _snapshot.revenue < stage.revenue_threshold:
+				_card_detail.text = "营业额 %d/%d 后可买，解锁%s" % [_snapshot.revenue, stage.revenue_threshold, _dish_name(stage.dish_id)]
+				_card_buttons[0].disabled = true
 		return
 	var level := int(row.level)
 	var maximum := mini(def.level_speed.size(), def.upgrade_costs.size() + 1)
@@ -288,6 +310,27 @@ func _slot() -> SlotDef:
 		if slot.id == _selected:
 			return slot
 	return null
+
+
+## The stage whose purchase list holds this slot, if any.
+func _stage_unlocking(slot_id: String) -> ShopStageDef:
+	for stage in _sim.config.progression.stages:
+		if slot_id in stage.unlock_slots:
+			return stage
+	return null
+
+
+func _next_stage(snapshot: Dictionary) -> ShopStageDef:
+	var stages := _sim.config.progression.stages
+	var index := int(snapshot.progress.stage) + 1
+	return stages[index] if index < stages.size() else null
+
+
+func _dish_name(dish_id: String) -> String:
+	for dish in _sim.config.dishes:
+		if dish.id == dish_id:
+			return dish.display_name
+	return dish_id
 
 
 func _slot_name(id: String) -> String:

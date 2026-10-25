@@ -4,6 +4,8 @@ extends SceneTree
 
 const SUITES := [
 	preload("res://tests/test_white_bread.gd"),
+	preload("res://tests/test_toast.gd"),
+	preload("res://tests/test_font.gd"),
 	preload("res://tests/test_invariants.gd"),
 	preload("res://tests/test_commands.gd"),
 	preload("res://tests/test_save.gd"),

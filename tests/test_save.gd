@@ -43,3 +43,31 @@ func test_corrupt_save_is_kept() -> void:
 	for name in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir + "/" + name)
 	DirAccess.remove_absolute(dir)
+
+
+func test_save_from_before_new_dish_still_loads() -> void:
+	# 模拟加切片吐司之前的存档：没有切片机机位和它的三条传送带，且白面包任务已让店铺完成
+	var sim := make_sim()
+	sim.run_seconds(60.0)
+	var old: Dictionary = sim.to_dict()
+	var stations := []
+	for st in old.production.stations:
+		if st.slot != "slicer":
+			stations.append(st)
+	old.production.stations = stations
+	var segments := []
+	for seg in old.production.segments:
+		if seg.id.find("slicer") == -1:
+			segments.append(seg)
+	old.production.segments = segments
+	old.progress.completed = true
+	var resumed := make_sim()
+	resumed.load_dict(old)
+	var slicer: StationState
+	for st in resumed.production.stations:
+		if st.slot_id == "slicer":
+			slicer = st
+	check(slicer != null and slicer.status == StationState.Status.LOCKED, "切片机按开店状态补上，仍是灰色虚影")
+	check(not resumed.progress.completed, "菜单多了一道菜，店铺回到未完成")
+	resumed.run_seconds(30.0)
+	check(resumed.economy.revenue > old.economy.revenue, "读回后照常营业")

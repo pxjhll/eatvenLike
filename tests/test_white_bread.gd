@@ -11,11 +11,19 @@ func test_line_sells_white_bread() -> void:
 
 
 func test_shop_completes_after_tasks() -> void:
-	var sim := make_sim()
+	var cfg := bakery_copy()
+	cfg.starting_gold = 1000
+	var sim := make_sim(cfg)
 	var fired := [0]
 	sim.shop_completed.connect(func() -> void: fired[0] += 1)
-	sim.run_seconds(600.0)
-	check(sim.progress.completed, "卖够 30 份白面包后店铺完成")
+	while sim.economy.revenue < 600:
+		sim.run_seconds(1.0)
+	check(sim.progress.sold.get("white_bread", 0) >= 30, "白面包任务已完成")
+	check(not sim.progress.completed, "菜单还没做全，店铺不算完成")
+	check(SwitchShopCommand.new().validate(sim) != "", "完成前不能换店")
+	sim.submit(UnlockStationCommand.new("slicer"))
+	sim.run_seconds(900.0)
+	check(sim.progress.completed, "菜单做全、任务列表完成后店铺完成")
 	check_eq(fired[0], 1, "shop_completed 只发一次")
 	check_eq(SwitchShopCommand.new().validate(sim), "", "完成后可以换店")
 

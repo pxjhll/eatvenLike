@@ -45,3 +45,17 @@ Screen captures: [720×1280 shop](pxj26-whitebread.png), [station card](pxj26-ca
 - These three regression cases failed against the reviewed head before correction and passed afterward. Expected warnings from deliberate save-failure and corrupt-save fixtures are not application errors.
 
 The corrected head also passed Godot 4.7 import and the real X11 renderer/input script (card upgrade, parallel activation, floor dismissal, drag assignment, release over GUI, cancellation, rebind, 720×1280 / 540×960 / 1280×720). Screenshots were inspected; Mesa llvmpipe was used, so this is not a mobile performance or Web gameplay result.
+
+
+## PXJ-40 second dish: sliced toast
+
+Run `xvfb-run -a godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_toast.gd`. Fresh profile, paused simulation, synthetic input.
+
+Verified: the slicer ghost card names the revenue goal and cannot be bought before 600; after 600 the card button buys it and the shop enters stage 2; the ovens split bread between the rack and the slicer and toast sells in the live scene. The original `tests/render_graybox.gd` still passes with the new layout (its PXJ-26 screenshots are left as they were).
+
+Display changes: kitchen columns are 80 px apart so the slicer fits right of the ovens; rack feeders get one lane each down the right wall (higher machine, outer lane); belts to a locked or empty slot are drawn pale and still; the rack shows each menu item's count; the goal bar counts tasks of dishes not yet unlocked.
+
+![Slicer ghost card](pxj40-slicer-locked.png)
+![Toast line](pxj40-toast-line.png)
+
+Font: the UI font is a glyph subset built from the repo's text. "切片吐司" added 吐 and 司, which the old subset lacked (the first PXJ-40 screenshots showed boxes). Regenerated with `python3 art_src/graybox/subset_font.py /usr/share/fonts/truetype/wqy/wqy-microhei.ttc` (598 → 601 glyphs, none lost). `tests/test_font.gd` now fails when a content name, task name or a string literal in `presentation/` or `game/` uses a character the font lacks; it failed on the old font and passes on the new one.

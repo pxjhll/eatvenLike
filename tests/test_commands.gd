@@ -11,25 +11,25 @@ func test_upgrade_routes_to_front_hall() -> void:
 
 
 func test_unlock_station_adds_dish() -> void:
-	var cfg := _with_toast_stage()
+	var cfg := _with_extra_counter_stage()
 	var sim := make_sim(cfg)
 	var reasons := []
 	sim.command_rejected.connect(func(_c: SimCommand, reason: String) -> void: reasons.append(reason))
-	sim.submit(UnlockStationCommand.new("toast_counter"))
+	sim.submit(UnlockStationCommand.new("extra_counter"))
 	sim.step()
 	check_eq(reasons, ["累计营业额不足"], "营业额没到门槛时拒绝")
 	sim.run_seconds(60.0)
 	check(sim.economy.revenue >= 50, "一分钟后营业额过门槛")
 	var gold := sim.economy.gold
-	sim.submit(UnlockStationCommand.new("toast_counter"))
+	sim.submit(UnlockStationCommand.new("extra_counter"))
 	sim.step()
 	check_eq(reasons.size(), 1, "过门槛后解锁成功")
 	check(sim.economy.gold <= gold - 40 + 10, "扣了解锁价")
 	check_eq(sim.progress.stage_index, 1, "进入第 2 阶段")
 	check_eq(sim.front_hall.menu_stage, 1, "前厅菜单加入新菜")
-	check(sim.front_hall.has_slot("toast_counter"), "新柜台归 FrontHall")
+	check(sim.front_hall.has_slot("extra_counter"), "新柜台归 FrontHall")
 	sim.run_seconds(120.0)
-	check(sim.progress.sold.get("toast", 0) > 0, "新菜有人点、能卖出")
+	check(sim.progress.sold.get("extra_dish", 0) > 0, "新菜有人点、能卖出")
 
 
 func test_assign_staff_finishes_current_step() -> void:
@@ -82,30 +82,34 @@ func _segment(sim: GameSim, id: String) -> BeltSegmentState:
 	return null
 
 
-## 在面包店副本上加一个第 2 阶段：解锁吐司柜台（直接卖面包，只为测解锁流程）
-func _with_toast_stage() -> ShopConfig:
+## 面包店副本只留第 1 阶段，再换上一个解锁前厅柜台的第 2 阶段（柜台直接卖面包，只为测前厅机位的解锁流程）
+func _with_extra_counter_stage() -> ShopConfig:
 	var cfg := bakery_copy()
+	cfg.progression.stages.resize(1)
 	var dish := DishDef.new()
-	dish.id = "toast"
+	dish.id = "extra_dish"
 	dish.item_id = "bread"
 	dish.price = 18
 	cfg.dishes.append(dish)
-	var counter: StationDef = cfg.slots[4].station.duplicate_deep()
-	counter.id = "toast_counter"
-	counter.dishes.assign(["toast"])
+	var counter: StationDef
+	for s in cfg.slots:
+		if s.id == "bread_counter":
+			counter = s.station.duplicate_deep()
+	counter.id = "extra_counter"
+	counter.dishes.assign(["extra_dish"])
 	counter.unlock_cost = 40
 	var slot := SlotDef.new()
-	slot.id = "toast_counter"
+	slot.id = "extra_counter"
 	slot.station = counter
 	slot.initially_locked = true
 	cfg.slots.append(slot)
 	var stage := ShopStageDef.new()
-	stage.dish_id = "toast"
+	stage.dish_id = "extra_dish"
 	stage.revenue_threshold = 50
-	stage.unlock_slots.assign(["toast_counter"])
+	stage.unlock_slots.assign(["extra_counter"])
 	stage.customer_interval = 3.0
 	stage.order_weights["white_bread"] = 1.0
-	stage.order_weights["toast"] = 1.0
+	stage.order_weights["extra_dish"] = 1.0
 	cfg.progression.stages.append(stage)
 	return cfg
 

@@ -24,7 +24,7 @@ static func positions(config: ShopConfig) -> Dictionary:
 		if slot.station.owner == StationDef.OwnerSystem.FRONT_HALL:
 			result[slot.id] = COUNTER
 		else:
-			result[slot.id] = Vector2(120 + slot.grid_pos.x * 115, 320 + slot.grid_pos.y * 220)
+			result[slot.id] = Vector2(100 + slot.grid_pos.x * 80, 320 + slot.grid_pos.y * 110)
 	return result
 
 
@@ -46,20 +46,38 @@ static func customer_spot(place: int) -> Vector2:
 	return Vector2(160 + place * 84, CUSTOMER_LINE)
 
 
-static func route(connection: ConnectionDef, points: Dictionary) -> PackedVector2Array:
+## shelf_lane: rank of this producer among the shelf feeders, highest machine first.
+static func route(connection: ConnectionDef, points: Dictionary, shelf_lane := 0) -> PackedVector2Array:
 	# Belts stop at machine edges: items vanish into a machine instead of sliding underneath it.
 	var a: Vector2 = points.get(connection.from_slot, Vector2(120, 330)) + Vector2(MACHINE_EDGE, -24)
 	var b: Vector2 = points.get(connection.to_slot, SHELF) + Vector2(-MACHINE_EDGE, -24)
 	if connection.to_slot == "shelf":
 		# Each producer gets its own lane down the right wall, so items never pass behind a machine.
-		var top := a.y < 420
-		var lane := 668.0 if top else 638.0
-		var drop := SHELF.y - (52.0 if top else 66.0)
+		# Higher machines take outer lanes and enter the rack lower, so lanes never cross.
+		var lane := 668.0 - shelf_lane * 20.0
+		var drop := SHELF.y - 52.0 - shelf_lane * 14.0
 		return PackedVector2Array([a, Vector2(lane, a.y), Vector2(lane, drop), Vector2(SHELF.x + 50, drop)])
+	# Two belts merging into one machine, one from above and one from below, enter at different
+	# heights and turn on different columns, so they read as two belts rather than one.
+	b.y += clampf((a.y - b.y) * 0.1, -12.0, 12.0)
 	if absf(a.y - b.y) > 1.0:
-		var turn := (a.x + b.x) / 2.0
+		var turn := (a.x + b.x) / 2.0 + signf(b.y - a.y) * 16.0
 		return PackedVector2Array([a, Vector2(turn, a.y), Vector2(turn, b.y), b])
 	return PackedVector2Array([a, b])
+
+
+## Shelf lane rank per connection id: feeders sorted top to bottom.
+static func shelf_lanes(config: ShopConfig, points: Dictionary) -> Dictionary:
+	var feeders := []
+	for connection in config.connections:
+		if connection.to_slot == "shelf":
+			feeders.append(connection)
+	feeders.sort_custom(func(x: ConnectionDef, y: ConnectionDef) -> bool:
+		return points.get(x.from_slot, Vector2.ZERO).y < points.get(y.from_slot, Vector2.ZERO).y)
+	var result := {}
+	for i in feeders.size():
+		result[feeders[i].id] = i
+	return result
 
 
 static func along(points: PackedVector2Array, fraction: float) -> Vector2:

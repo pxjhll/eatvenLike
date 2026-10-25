@@ -7,6 +7,8 @@ var points := PackedVector2Array()
 var data := {}
 var length_cells := 1.0
 var selected := false
+## An end of this belt is a locked machine or an empty parallel slot: drawn pale and still.
+var ghost := false
 ## Items buffered inside the machine at either end, shown queued on the belt where they wait.
 var queued_end := {}
 var queued_start := {}
@@ -36,7 +38,7 @@ func hit(at: Vector2) -> bool:
 func _draw() -> void:
 	if points.size() < 2:
 		return
-	var connected: bool = data.get("connected", true)
+	var connected: bool = data.get("connected", true) and not ghost
 	var jam := connected and jammed()
 	var rim := Color("91a6a8")
 	var top := Color("c8d6d3")
