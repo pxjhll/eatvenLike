@@ -71,3 +71,15 @@ func test_save_from_before_new_dish_still_loads() -> void:
 	check(not resumed.progress.completed, "菜单多了一道菜，店铺回到未完成")
 	resumed.run_seconds(30.0)
 	check(resumed.economy.revenue > old.economy.revenue, "读回后照常营业")
+
+
+func test_tea_save_from_before_empty_shop_restarts_the_shop() -> void:
+	# PXJ-46 之前的奶茶店存档：前厅还是封口柜台，读回来会指向已经不存在的工位
+	var profile := Profile.create(load(CATALOG))
+	var old := {"schema_version": 1, "profile": profile.to_dict(), "shop": {"shop_id": "tea", "front_hall": {"counters": [{"slot": "seal_counter"}]}}}
+	var data := SaveService.migrate(old)
+	check_eq(int(data.schema_version), SaveService.SCHEMA_VERSION, "迁移到当前版本")
+	check(not data.has("shop"), "旧奶茶店的店内状态丢掉，从空店重开")
+	check_eq(data.profile, profile.to_dict(), "Profile 原样保留")
+	var bakery := {"schema_version": 1, "profile": profile.to_dict(), "shop": make_sim().to_dict()}
+	check(SaveService.migrate(bakery).has("shop"), "面包店的中途存档不受影响")

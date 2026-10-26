@@ -173,7 +173,7 @@ func _staff_card(staff_id: String, index: int) -> Button:
 	return card
 
 
-## 松手：落在工位上就上岗，落在别处什么也不做
+## 松手：落在前厅工位上就上岗，落在开放的后厨就去后厨，落在别处什么也不做
 func _finish_bar_drag(at: Vector2) -> void:
 	var staff_id := _bar_drag
 	_bar_drag = ""
@@ -183,9 +183,12 @@ func _finish_bar_drag(at: Vector2) -> void:
 	_idle_staff = ["?"]
 	if _view == null or staff_id == "":
 		return
-	var spot: String = _view.spot_at(_view.get_global_transform_with_canvas().affine_inverse() * (at + Vector2(_root.position.x, 0)))
-	if spot != "":
-		_assign(staff_id, spot)
+	var point: Vector2 = _view.get_global_transform_with_canvas().affine_inverse() * (at + Vector2(_root.position.x, 0))
+	var target: String = _view.spot_at(point)
+	if target == "" and _view._zone_at(point) == _sim.config.kitchen_zone:
+		target = _sim.config.kitchen_zone
+	if target != "":
+		_assign(staff_id, target)
 
 
 func _refresh_staff_bar() -> void:

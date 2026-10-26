@@ -164,6 +164,19 @@ func test_staff_bar_hires_and_drag_to_post_uses_commands() -> void:
 	ui._finish_bar_drag(_counter_point(view))
 	sim.step()
 	check_eq(sim.workforce.staff[0].post, "counter", "dropping a card on the open counter puts them on post")
+	# 后厨开了以后，新招的人可以直接从员工栏拖进后厨
+	sim.economy.revenue = 300
+	sim.economy.gold += 200
+	sim.submit(UnlockStationCommand.new("pearl_pot"))
+	sim.step()
+	check(sim.progress.kitchen_open(), "the kitchen opened for the drop test")
+	ui._hire.pressed.emit()
+	sim.step()
+	var cook: String = sim.workforce.staff[1].staff_id
+	ui._bar_drag = cook
+	ui._finish_bar_drag(Vector2(300, 600))
+	sim.step()
+	check_eq(sim.workforce.staff[1].zone, "kitchen", "dropping a card on the open kitchen sends them there")
 	ui.free()
 	view.free()
 

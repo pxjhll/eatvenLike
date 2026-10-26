@@ -72,7 +72,7 @@ func _run() -> void:
 	_check(sim.economy.gold <= gold - 60, "actual purchase pays configured price")
 	_check(shop.world._stations["pearl_pot"].visible, "physical kitchen appears after purchase")
 
-	# 再招一个人，拖到后厨（后厨这一段还是按工作区，布局模式见 PXJ-47）
+	# 再招一个人，从员工栏直接拖到后厨（后厨这一段还是按工作区，布局模式见 PXJ-47）
 	while sim.economy.gold < sim.workforce.hire_cost():
 		sim.step()
 	await _click(hire.get_global_rect().get_center())
@@ -86,7 +86,6 @@ func _run() -> void:
 		actor._process(0.1)
 	var dragged: Node2D = shop.world._staff.get(cook)
 	_check(dragged != null, "the second hire has an actor in the world")
-	sim.submit(AssignStaffCommand.new(cook, "kitchen"))
 	await _advance(sim, 50.0)
 	for staff in sim.workforce.staff:
 		if staff.staff_id == cook:
