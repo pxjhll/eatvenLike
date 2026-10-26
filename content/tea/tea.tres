@@ -6,15 +6,17 @@
 [ext_resource type="Script" path="res://content/defs/recipe_def.gd" id="recipe_def"]
 [ext_resource type="Script" path="res://content/defs/station_def.gd" id="station_def"]
 [ext_resource type="Script" path="res://content/defs/slot_def.gd" id="slot_def"]
+[ext_resource type="Script" path="res://content/defs/front_spot_def.gd" id="front_spot_def"]
+[ext_resource type="Script" path="res://content/defs/staff_def.gd" id="staff_def"]
+[ext_resource type="Resource" path="res://content/tea/tea_grid.tres" id="tea_grid"]
+[ext_resource type="Resource" path="res://content/staff/rabbit.tres" id="staff_rabbit"]
+[ext_resource type="Resource" path="res://content/staff/bear.tres" id="staff_bear"]
+[ext_resource type="Resource" path="res://content/staff/cat.tres" id="staff_cat"]
 [ext_resource type="Script" path="res://content/defs/connection_def.gd" id="connection_def"]
 [ext_resource type="Script" path="res://content/defs/task_def.gd" id="task_def"]
 [ext_resource type="Script" path="res://content/defs/shop_stage_def.gd" id="shop_stage_def"]
 [ext_resource type="Script" path="res://content/defs/shop_progression_def.gd" id="shop_progression_def"]
 
-[sub_resource type="Resource" id="item_lemon_extract"]
-script = ExtResource("item_def")
-id = "lemon_extract"
-display_name = "柠檬原液"
 
 [sub_resource type="Resource" id="item_raw_pearl"]
 script = ExtResource("item_def")
@@ -55,11 +57,6 @@ display_name = "珍珠奶茶"
 item_id = "pearl_milk_tea"
 price = 24
 
-[sub_resource type="Resource" id="recipe_lemon_supply"]
-script = ExtResource("recipe_def")
-id = "lemon_supply"
-inputs = Dictionary[String, int]({})
-outputs = Dictionary[String, int]({"lemon_extract": 1})
 
 [sub_resource type="Resource" id="recipe_raw_supply"]
 script = ExtResource("recipe_def")
@@ -73,11 +70,6 @@ id = "milk_supply"
 inputs = Dictionary[String, int]({})
 outputs = Dictionary[String, int]({"milk_base": 1})
 
-[sub_resource type="Resource" id="recipe_lemonade"]
-script = ExtResource("recipe_def")
-id = "lemonade"
-inputs = Dictionary[String, int]({"lemon_extract": 1})
-outputs = Dictionary[String, int]({"lemonade": 1})
 
 [sub_resource type="Resource" id="recipe_cook_pearl"]
 script = ExtResource("recipe_def")
@@ -91,39 +83,7 @@ id = "milk_tea"
 inputs = Dictionary[String, int]({"cooked_pearl": 1, "milk_base": 1})
 outputs = Dictionary[String, int]({"pearl_milk_tea": 1})
 
-[sub_resource type="Resource" id="station_lemon_box"]
-script = ExtResource("station_def")
-id = "lemon_box"
-display_name = "柠檬原液箱"
-mode = 3
-zone = "front"
-cycle_seconds = 0.0
-manual_seconds = 0.0
-input_capacity = Dictionary[String, int]({})
-output_capacity = 8
-level_speed = Array[float]([1.0, 1.4, 1.8])
-upgrade_costs = Array[int]([80, 160])
-parallel_cost = 100
-unlock_cost = 60
-recipe = SubResource("recipe_lemon_supply")
-supply_interval = 3.0
-supply_batch = 1
 
-[sub_resource type="Resource" id="station_lemon_press"]
-script = ExtResource("station_def")
-id = "lemon_press"
-display_name = "柠檬水调配"
-mode = 0
-zone = "front"
-cycle_seconds = 3.0
-manual_seconds = 0.0
-input_capacity = Dictionary[String, int]({"lemon_extract": 4})
-output_capacity = 8
-level_speed = Array[float]([1.0, 1.4, 1.8])
-upgrade_costs = Array[int]([80, 160])
-parallel_cost = 100
-unlock_cost = 60
-recipe = SubResource("recipe_lemonade")
 
 [sub_resource type="Resource" id="station_raw_box"]
 script = ExtResource("station_def")
@@ -193,34 +153,64 @@ parallel_cost = 100
 unlock_cost = 60
 recipe = SubResource("recipe_milk_tea")
 
-[sub_resource type="Resource" id="station_seal_counter"]
+
+[sub_resource type="Resource" id="station_lemonade_stand"]
 script = ExtResource("station_def")
-id = "seal_counter"
-display_name = "封口与服务"
+id = "lemonade_stand"
+display_name = "柠檬水台"
+owner = 1
+mode = 4
+zone = "front"
+cycle_seconds = 2.0
+output_capacity = 0
+level_speed = Array[float]([1.0, 1.15, 1.32, 1.52, 1.75])
+upgrade_costs = Array[int]([20, 30, 45, 68])
+dishes = Array[String](["lemonade"])
+
+[sub_resource type="Resource" id="station_counter"]
+script = ExtResource("station_def")
+id = "counter"
+display_name = "柜台"
+owner = 1
 mode = 2
 zone = "front"
-cycle_seconds = 7.0
-manual_seconds = 0.0
-input_capacity = Dictionary[String, int]({})
-output_capacity = 8
-level_speed = Array[float]([1.0, 1.4, 1.8])
-upgrade_costs = Array[int]([80, 160])
-parallel_cost = 100
-unlock_cost = 60
-owner = 1
+cycle_seconds = 2.0
+output_capacity = 0
+level_speed = Array[float]([1.0])
+upgrade_costs = Array[int]([])
 dishes = Array[String](["lemonade", "pearl_milk_tea"])
 
-[sub_resource type="Resource" id="slot_lemon_box"]
-script = ExtResource("slot_def")
-id = "lemon_box"
-station = SubResource("station_lemon_box")
-grid_pos = Vector2i(0, 0)
+[sub_resource type="Resource" id="spot_lemonade_stand"]
+script = ExtResource("front_spot_def")
+id = "lemonade_stand"
+station = SubResource("station_lemonade_stand")
+grid_pos = Vector2i(6, 1)
+unlock_cost = 10
+stage = 0
+posts = 0
 
-[sub_resource type="Resource" id="slot_lemon_press"]
-script = ExtResource("slot_def")
-id = "lemon_press"
-station = SubResource("station_lemon_press")
-grid_pos = Vector2i(3, 0)
+[sub_resource type="Resource" id="spot_counter"]
+script = ExtResource("front_spot_def")
+id = "counter"
+station = SubResource("station_counter")
+grid_pos = Vector2i(4, 2)
+unlock_cost = 20
+stage = 0
+posts = 2
+
+[sub_resource type="Resource" id="task_lemon30"]
+script = ExtResource("task_def")
+id = "lemon30"
+display_name = "柠檬水卖出 30 杯"
+target_id = "lemonade"
+amount = 30.0
+
+[sub_resource type="Resource" id="task_tea20"]
+script = ExtResource("task_def")
+id = "tea20"
+display_name = "珍珠奶茶卖出 20 杯"
+target_id = "pearl_milk_tea"
+amount = 20.0
 
 [sub_resource type="Resource" id="slot_raw_box"]
 script = ExtResource("slot_def")
@@ -254,25 +244,6 @@ id = "milk_mixer"
 station = SubResource("station_milk_mixer")
 grid_pos = Vector2i(5, 2)
 
-[sub_resource type="Resource" id="slot_seal_counter"]
-script = ExtResource("slot_def")
-id = "seal_counter"
-station = SubResource("station_seal_counter")
-grid_pos = Vector2i(0, 0)
-
-[sub_resource type="Resource" id="conn_lemon_to_press"]
-script = ExtResource("connection_def")
-id = "lemon_to_press"
-from_slot = "lemon_box"
-to_slot = "lemon_press"
-length_cells = 2.0
-
-[sub_resource type="Resource" id="conn_lemon_to_shelf"]
-script = ExtResource("connection_def")
-id = "lemon_to_shelf"
-from_slot = "lemon_press"
-to_slot = "shelf"
-length_cells = 2.0
 
 [sub_resource type="Resource" id="conn_raw_to_pot"]
 script = ExtResource("connection_def")
@@ -316,31 +287,19 @@ from_slot = "milk_mixer"
 to_slot = "shelf"
 length_cells = 2.0
 
-[sub_resource type="Resource" id="task_lemon10"]
-script = ExtResource("task_def")
-id = "lemon10"
-display_name = "柠檬水卖出 10 杯"
-target_id = "lemonade"
-amount = 10.0
 
-[sub_resource type="Resource" id="task_tea20"]
-script = ExtResource("task_def")
-id = "tea20"
-display_name = "珍珠奶茶卖出 20 杯"
-target_id = "pearl_milk_tea"
-amount = 20.0
 
 [sub_resource type="Resource" id="stage_lemon"]
 script = ExtResource("shop_stage_def")
 dish_id = "lemonade"
 customer_interval = 4.0
 order_weights = Dictionary[String, float]({"lemonade": 1.0})
-tasks = Array[ExtResource("task_def")]([SubResource("task_lemon10")])
+tasks = Array[ExtResource("task_def")]([SubResource("task_lemon30")])
 
 [sub_resource type="Resource" id="stage_tea"]
 script = ExtResource("shop_stage_def")
 dish_id = "pearl_milk_tea"
-revenue_threshold = 120
+revenue_threshold = 300
 unlock_slots = Array[String](["pearl_pot"])
 customer_interval = 1.5
 order_weights = Dictionary[String, float]({"lemonade": 0.25, "pearl_milk_tea": 0.75})
@@ -355,15 +314,19 @@ script = ExtResource("shop_config")
 id = "tea"
 display_name = "奶茶店"
 kitchen_unlock_stage = 1
-items = Array[ExtResource("item_def")]([SubResource("item_lemon_extract"), SubResource("item_raw_pearl"), SubResource("item_cooked_pearl"), SubResource("item_milk_base"), SubResource("item_lemonade"), SubResource("item_pearl_milk_tea")])
+items = Array[ExtResource("item_def")]([SubResource("item_raw_pearl"), SubResource("item_cooked_pearl"), SubResource("item_milk_base"), SubResource("item_lemonade"), SubResource("item_pearl_milk_tea")])
 dishes = Array[ExtResource("dish_def")]([SubResource("dish_lemonade"), SubResource("dish_pearl_milk_tea")])
-slots = Array[ExtResource("slot_def")]([SubResource("slot_lemon_box"), SubResource("slot_lemon_press"), SubResource("slot_raw_box"), SubResource("slot_milk_box"), SubResource("slot_pearl_pot"), SubResource("slot_pearl_pot_b"), SubResource("slot_milk_mixer"), SubResource("slot_seal_counter")])
-connections = Array[ExtResource("connection_def")]([SubResource("conn_lemon_to_press"), SubResource("conn_lemon_to_shelf"), SubResource("conn_raw_to_pot"), SubResource("conn_raw_to_pot_b"), SubResource("conn_pot_to_mix"), SubResource("conn_pot_b_to_mix"), SubResource("conn_milk_to_mix"), SubResource("conn_tea_to_shelf")])
+slots = Array[ExtResource("slot_def")]([SubResource("slot_raw_box"), SubResource("slot_milk_box"), SubResource("slot_pearl_pot"), SubResource("slot_pearl_pot_b"), SubResource("slot_milk_mixer")])
+connections = Array[ExtResource("connection_def")]([SubResource("conn_raw_to_pot"), SubResource("conn_raw_to_pot_b"), SubResource("conn_pot_to_mix"), SubResource("conn_pot_b_to_mix"), SubResource("conn_milk_to_mix"), SubResource("conn_tea_to_shelf")])
 belt_speed = 3.0
 zones = Array[String](["front", "kitchen"])
 walk_seconds = Dictionary[String, float]({"front>kitchen": 2.0})
-starting_gold = 80
-staff_start_zones = Dictionary[String, String]({"rabbit": "front", "bear": "front"})
+starting_gold = 50
+front_spots = Array[ExtResource("front_spot_def")]([SubResource("spot_lemonade_stand"), SubResource("spot_counter")])
+hire_costs = Array[int]([15, 25, 40, 60])
+hire_defs = Array[ExtResource("staff_def")]([ExtResource("staff_rabbit"), ExtResource("staff_bear"), ExtResource("staff_cat")])
+hires_own_staff = true
+grid = ExtResource("tea_grid")
 shelf_capacity = 12
 queue_capacity = 6
 customer_patience = 24.0

@@ -1,15 +1,20 @@
 class_name FrontHallSystem
 extends RefCounted
-## 前厅：顾客生成、排队、订单、前厅工位的运行状态与等级、前厅服务步骤。
+## 前厅：顾客生成、排队、订单、前厅固定位点的解锁状态与等级、前厅服务步骤。
 ## 不直接加金币、不直接动库存（库存事务经 GameSim 交给 Production）。
+##
+## 所有顾客都在柜台点单。柜台服务员接单后，要么到出品台现打一杯（饮水机式，不囤杯、
+## 不限量），要么到货架取一杯（走库存预留）。出品台不配员工。
 
 const EPS := 0.000001
 
 var _config: ShopConfig
-var _slot_defs := {}  # slot_id -> SlotDef（只读）
+var _slot_defs := {}  # id -> StationDef（只读）
+var _spot_defs := {}  # id -> FrontSpotDef（只读，前厅固定位点才有）
 var _dishes := {}     # dish_id -> DishDef（只读）
 var _by_slot := {}
 
+## 前厅工位与位点的运行状态（柜台、出品台、以后的货架位）
 var counters: Array[StationState] = []
 ## 排队中的订单，按到店顺序
 var orders: Array[OrderState] = []
@@ -28,8 +33,12 @@ func setup(config: ShopConfig, rng: RandomNumberGenerator) -> void:
 	for slot in config.slots:
 		if slot.station.owner != StationDef.OwnerSystem.FRONT_HALL:
 			continue
-		_slot_defs[slot.id] = slot
+		_slot_defs[slot.id] = slot.station
 		counters.append(StationState.create(slot))
+	for spot in config.front_spots:
+		_slot_defs[spot.id] = spot.station
+		_spot_defs[spot.id] = spot
+		counters.append(StationState.create_spot(spot))
 	_reindex()
 	next_arrival = _roll_interval(rng)
 
@@ -43,6 +52,10 @@ func advance(dt: float, rng: RandomNumberGenerator, new_id: Callable, claimed: D
 	while next_arrival <= EPS:
 		_spawn(rng, new_id, events)
 		next_arrival += _roll_interval(rng)
+	# 出品台的饮品不用等库存，柜台有人就能开始服务
+	for o in orders:
+		if o.state == OrderState.State.WAITING_STOCK and _dispenser_for(o.dish_id) != null:
+			_begin_service(o, new_id, false)
 	for o in orders.duplicate():
 		if o.request_id != -1 and claimed.has(o.request_id):
 			continue
@@ -60,29 +73,21 @@ func advance(dt: float, rng: RandomNumberGenerator, new_id: Callable, claimed: D
 func stock_needs() -> Array:
 	var out := []
 	for o in orders:
-		if o.state == OrderState.State.WAITING_STOCK:
+		if o.state == OrderState.State.WAITING_STOCK and _dispenser_for(o.dish_id) == null:
 			out.append({"order_id": o.id, "item": _dishes[o.dish_id].item_id, "count": 1})
 	return out
 
 
 ## 预留成功：发布服务请求
 func on_reserved(order_id: int, new_id: Callable) -> void:
-	var o := _find_order(order_id)
-	var counter := _counter_for(o.dish_id)
-	assert(counter != null, "没有能卖这道菜的前厅工位")
-	var def: StationDef = _slot_defs[counter.slot_id].station
-	var r := WorkRequest.create(new_id.call(), WorkRequest.Kind.SERVE, def.zone, def.cycle_seconds / counter.speed(def))
-	r.order_id = order_id
-	requests.append(r)
-	o.state = OrderState.State.WAITING_SERVICE
-	o.request_id = r.id
+	_begin_service(_find_order(order_id), new_id, true)
 
 
-## 有订单在等料的菜算缺货，状态变化时发事件
+## 有订单在等货架上的货就算缺货；出品台的饮品不会缺货。状态变化时发事件。
 func update_stockout() -> Array:
 	var now := {}
 	for o in orders:
-		if o.state == OrderState.State.WAITING_STOCK:
+		if o.state == OrderState.State.WAITING_STOCK and _dispenser_for(o.dish_id) == null:
 			now[o.dish_id] = true
 	var events := []
 	for dish_id in now:
@@ -106,13 +111,14 @@ func owns_request(request_id: int) -> bool:
 	return _find_request(request_id) != null
 
 
-## 服务完成：订单离开队列，返回 {"order_id", "dish_id", "price"} 由 GameSim 取料并结算
+## 服务完成：订单离开队列，返回 {"order_id", "dish_id", "price", "from_stock"}；
+## from_stock 为真时 GameSim 才去 Production 取预留的那一杯。
 func on_work_completed(request_id: int) -> Dictionary:
 	var r := _find_request(request_id)
 	requests.erase(r)
 	var o := _find_order(r.order_id)
 	orders.erase(o)
-	return {"order_id": o.id, "dish_id": o.dish_id, "price": _dishes[o.dish_id].price}
+	return {"order_id": o.id, "dish_id": o.dish_id, "price": _dishes[o.dish_id].price, "from_stock": o.from_stock}
 
 
 func set_menu_stage(stage_index: int) -> void:
@@ -126,7 +132,26 @@ func has_slot(slot_id: String) -> bool:
 
 
 func station_def(slot_id: String) -> StationDef:
-	return _slot_defs[slot_id].station
+	return _slot_defs[slot_id]
+
+
+func has_spot(spot_id: String) -> bool:
+	return _spot_defs.has(spot_id)
+
+
+func spot_def(spot_id: String) -> FrontSpotDef:
+	return _spot_defs[spot_id]
+
+
+func is_active(slot_id: String) -> bool:
+	return has_slot(slot_id) and _by_slot[slot_id].status == StationState.Status.ACTIVE
+
+
+## 这个工位上最多站几个人（不要员工的位点是 0）
+func post_capacity(post: String) -> int:
+	if _spot_defs.has(post):
+		return _spot_defs[post].posts
+	return 1 if has_slot(post) else 0
 
 
 func validate_upgrade(slot_id: String) -> String:
@@ -227,6 +252,27 @@ func _spawn(rng: RandomNumberGenerator, new_id: Callable, events: Array) -> void
 	events.append({"type": "customer_arrived", "dish": dish_id})
 
 
+## 发布一张服务请求：柜台接单递杯，出品台的饮品再加上在台前打一杯的时间。
+func _begin_service(o: OrderState, new_id: Callable, from_stock: bool) -> void:
+	var counter := _counter_for(o.dish_id)
+	if counter == null:
+		return
+	var def: StationDef = _slot_defs[counter.slot_id]
+	var seconds := def.cycle_seconds / counter.speed(def)
+	var dispenser := _dispenser_for(o.dish_id)
+	if dispenser != null:
+		var dispenser_def: StationDef = _slot_defs[dispenser.slot_id]
+		seconds += dispenser_def.cycle_seconds / dispenser.speed(dispenser_def)
+	var r := WorkRequest.create(new_id.call(), WorkRequest.Kind.SERVE, def.zone, seconds)
+	r.order_id = o.id
+	r.post = counter.slot_id if _spot_defs.has(counter.slot_id) else ""
+	r.source = dispenser.slot_id if dispenser != null else ""
+	requests.append(r)
+	o.state = OrderState.State.WAITING_SERVICE
+	o.from_stock = from_stock
+	o.request_id = r.id
+
+
 func _pick_dish(rng: RandomNumberGenerator) -> String:
 	var weights := _stage().order_weights
 	var total := 0.0
@@ -242,9 +288,24 @@ func _pick_dish(rng: RandomNumberGenerator) -> String:
 	return last
 
 
+## 能接这道菜的柜台（要员工的那种）
 func _counter_for(dish_id: String) -> StationState:
 	for c in counters:
-		if c.status == StationState.Status.ACTIVE and dish_id in _slot_defs[c.slot_id].station.dishes:
+		if c.status != StationState.Status.ACTIVE:
+			continue
+		var def: StationDef = _slot_defs[c.slot_id]
+		if def.mode != StationDef.Mode.DISPENSER and dish_id in def.dishes:
+			return c
+	return null
+
+
+## 现打这道饮品的出品台；没有就说明这道菜从货架取
+func _dispenser_for(dish_id: String) -> StationState:
+	for c in counters:
+		if c.status != StationState.Status.ACTIVE:
+			continue
+		var def: StationDef = _slot_defs[c.slot_id]
+		if def.mode == StationDef.Mode.DISPENSER and dish_id in def.dishes:
 			return c
 	return null
 

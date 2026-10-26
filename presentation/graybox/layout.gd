@@ -20,6 +20,12 @@ const ENTRANCE := Vector2(30, 1170)
 
 static func positions(config: ShopConfig) -> Dictionary:
 	var result := {"shelf": SHELF}
+	for spot in config.front_spots:
+		# 柜台横贯前厅，其余位点按格子排在前厅上半部分
+		if spot.station.mode == StationDef.Mode.MANUAL:
+			result[spot.id] = COUNTER
+		else:
+			result[spot.id] = Vector2(60 + (spot.grid_pos.x + 0.5) * 75, 840 + spot.grid_pos.y * 60)
 	for slot in config.slots:
 		if slot.station.owner == StationDef.OwnerSystem.FRONT_HALL:
 			result[slot.id] = COUNTER
@@ -38,6 +44,13 @@ static func work_spot(station: Vector2) -> Vector2:
 ## Behind the counter, one spot per customer place so servers never stack.
 static func serve_spot(place: int) -> Vector2:
 	return Vector2(customer_spot(place).x, STAFF_LINE)
+
+
+## 站在前厅位点上的员工：柜台按人数排开，其余位点站在台前
+static func post_spot(station: Vector2, index: int) -> Vector2:
+	if station == COUNTER:
+		return Vector2(station.x - 90 + index * 120, STAFF_LINE)
+	return work_spot(station)
 
 
 static func front_idle_spot(index: int) -> Vector2:

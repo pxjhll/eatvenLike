@@ -5,6 +5,8 @@ extends RefCounted
 static func station(row: Dictionary, def: StationDef) -> Dictionary:
 	if row.status != StationState.Status.ACTIVE:
 		return {"kind": "locked", "text": "待启用", "color": Color("9ca8ab")}
+	if def.mode == StationDef.Mode.DISPENSER:
+		return {"kind": "service", "text": "现打", "color": Color("6e9988")}
 	if def.owner == StationDef.OwnerSystem.FRONT_HALL:
 		return {"kind": "service", "text": "销售台", "color": Color("6e9988")}
 	if SaveUtil.total(row.outputs) + SaveUtil.total(def.recipe.outputs) > def.output_capacity:
@@ -22,9 +24,7 @@ static func station(row: Dictionary, def: StationDef) -> Dictionary:
 
 
 static func mode_label(def: StationDef) -> String:
-	if def.owner == StationDef.OwnerSystem.FRONT_HALL:
-		return "手工作业"
-	return ["全自动", "人机配合", "手工作业", "自动供料"][def.mode]
+	return ["全自动", "人机配合", "手工作业", "自动供料", "前厅现打"][def.mode]
 
 
 static func buffers(row: Dictionary) -> Array[Dictionary]:

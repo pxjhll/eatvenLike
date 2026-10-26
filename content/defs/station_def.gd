@@ -4,15 +4,17 @@ extends Resource
 
 enum OwnerSystem { PRODUCTION, FRONT_HALL }
 ## AUTO：机器自动加工；COOP：员工装入 → 机器加工 → 员工取出；
-## MANUAL：员工人工完成一份（前厅服务也用它）；SUPPLY：外购箱按间隔到货。
-enum Mode { AUTO, COOP, MANUAL, SUPPLY }
+## MANUAL：员工人工完成一份（前厅柜台服务也用它）；SUPPLY：外购箱按间隔到货；
+## DISPENSER：前厅出品台，像饮水机，不要员工、不囤杯、不限量，柜台服务员过去现打。
+enum Mode { AUTO, COOP, MANUAL, SUPPLY, DISPENSER }
 
 @export var id: String = ""
 @export var display_name: String = ""
 @export var owner: OwnerSystem = OwnerSystem.PRODUCTION
 @export var mode: Mode = Mode.AUTO
 @export var recipe: RecipeDef
-## AUTO / COOP：机器加工一份的秒数；MANUAL：员工做一份的秒数
+## AUTO / COOP：机器加工一份的秒数；MANUAL：员工做一份的秒数；
+## DISPENSER：员工在台前打一杯的秒数（加在柜台服务时间上）
 @export var cycle_seconds: float = 0.0
 ## COOP：装入、取出各一步的人工秒数
 @export var manual_seconds: float = 0.0

@@ -7,6 +7,16 @@ extends Resource
 @export var items: Array[ItemDef] = []
 @export var dishes: Array[DishDef] = []
 @export var slots: Array[SlotDef] = []
+## 前厅固定位点（点一下解锁）。后厨设备不在这里，见布局模式（PXJ-47）
+@export var front_spots: Array[FrontSpotDef] = []
+## 第 N 名员工的招人价（下标 0 = 第 1 名）；超出长度按最后一个
+@export var hire_costs: Array[int] = []
+## 招人时按顺序取用的员工模板；用完后重复最后一个
+@export var hire_defs: Array[StaffDef] = []
+## true = 空店开局，店里一个人都没有，全靠局内招人（跨店名册不带人进来）
+@export var hires_own_staff: bool = false
+## 店铺网格，由店铺场景导出
+@export var grid: ShopGridDef
 @export var connections: Array[ConnectionDef] = []
 ## 传送带速度（格/秒）
 @export var belt_speed: float = 0.0

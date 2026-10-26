@@ -59,3 +59,17 @@ Display changes: kitchen columns are 80 px apart so the slicer fits right of the
 ![Toast line](pxj40-toast-line.png)
 
 Font: the UI font is a glyph subset built from the repo's text. "切片吐司" added 吐 and 司, which the old subset lacked (the first PXJ-40 screenshots showed boxes). Regenerated with `python3 art_src/graybox/subset_font.py /usr/share/fonts/truetype/wqy/wqy-microhei.ttc` (598 → 601 glyphs, none lost). `tests/test_font.gd` now fails when a content name, task name or a string literal in `presentation/` or `game/` uses a character the font lacks; it failed on the old font and passes on the new one.
+
+## PXJ-46 布局阶段 1：空店开局、前厅点解锁、员工栏
+
+跑法同上，脚本换成 `tests/render_tea.gd`。新档开局、模拟暂停、合成输入。
+
+验收过的一条路：开局空店只有环境和两个价格牌（金币 50）→ 点柠檬水台（10）、点柜台（20）→ 点「招人」（15）→ 把员工栏里的卡片拖到柜台 → 柜台服务员开始卖柠檬水 → 营业额到 300 后前厅按钮买下煮珍珠锅，后厨出现 → 再招一人调去后厨，奶茶卖出。全部断言通过（`TEA INPUT QA failures=0`）。
+
+柠檬水台是饮水机式出品台：不配员工、不囤杯、不限量，服务员接单后过去现打，打一杯的时间加在柜台服务时间上，升级柠檬水台能提高前厅产能。这一条有无头回归覆盖。
+
+![空店开局](pxj46-empty-shop.png)
+![员工栏](pxj46-staff-bar.png)
+![卖柠檬水](pxj46-lemonade.png)
+
+后厨这一段仍是 v1.1 的固定机位和工作区派工，布局模式见 PXJ-47。PXJ-42 时期的 pxj42-*.png 是旧前厅（柠檬原液箱 + 封口台）的记录，流程已被本阶段取代。

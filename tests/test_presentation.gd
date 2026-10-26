@@ -91,9 +91,10 @@ func test_service_reaches_pickup_before_carrying_and_customer_before_sale() -> v
 		view.free()
 
 
-func test_ui_font_covers_drag_hint_and_parallel_card() -> void:
+func test_ui_font_covers_staff_bar_and_drag_hint() -> void:
 	var font: Font = load("res://art/ui/graybox_font.ttf")
-	for code in [0x62D6, 0x64CD, 0x6837, 0x7FFB]:
+	# 员工栏、招人、上岗、拖动：阶段 1 新加的界面文案
+	for code in [0x62D6, 0x62DB, 0x680F, 0x5C97]:
 		check(font.has_char(code), "bundled font covers new UI character " + String.chr(code))
 
 
