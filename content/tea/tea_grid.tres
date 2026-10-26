@@ -4,6 +4,6 @@
 
 [resource]
 script = ExtResource("shop_grid_def")
-kitchen_rect = Rect2i(0, 0, 8, 6)
-front_rect = Rect2i(0, 6, 8, 5)
-supply_wall_cells = Array[Vector2i]([Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0), Vector2i(5, 0), Vector2i(6, 0), Vector2i(0, 1), Vector2i(0, 2), Vector2i(0, 3), Vector2i(0, 4), Vector2i(7, 1), Vector2i(7, 2), Vector2i(7, 3), Vector2i(7, 4)])
+kitchen_rect = Rect2i(0, 0, 6, 5)
+front_rect = Rect2i(0, 5, 6, 5)
+supply_wall_cells = Array[Vector2i]([Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0), Vector2i(0, 1), Vector2i(0, 2), Vector2i(0, 3), Vector2i(5, 1), Vector2i(5, 2), Vector2i(5, 3)])

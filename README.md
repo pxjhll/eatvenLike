@@ -71,7 +71,7 @@ godot --path .
 
 ## 相对契约 v1.2 的进度（PXJ-46）
 
-- 已做：`FrontSpotDef`（前厅位点，点价格牌解锁）、`UnlockFrontSpot` / `HireStaff` / `SwapStaff`、`AssignStaff` 改成「工位或工作区」、`StationDef.DISPENSER`（饮水机式出品台，没有库存，不走预留）、`ShopGridDef`（首店 8×6 后厨 + 8×5 前厅，手写 .tres）。
+- 已做：`FrontSpotDef`（前厅位点，点价格牌解锁）、`UnlockFrontSpot` / `HireStaff` / `SwapStaff`、`AssignStaff` 改成「工位或工作区」、`StationDef.DISPENSER`（饮水机式出品台，没有库存，不走预留）、`ShopGridDef`（首店 6×5 后厨 + 6×5 前厅，手写 .tres）。
 - 还没做：布局模式、设备栏、自动传送带、一键部署、加料台与口味货架（PXJ-47 / 48）。后厨因此仍用 v1.1 的 `SlotDef` / `ConnectionDef` 固定机位，后厨员工也仍按工作区派工；前厅已经是按工位。
 - `ShopGridDef` 目前是手写的 .tres，店铺场景模板和 `@tool` 导出脚本等后厨真的能摆了（PXJ-47）再做。
 

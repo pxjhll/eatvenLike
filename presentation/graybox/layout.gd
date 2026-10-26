@@ -20,12 +20,15 @@ const ENTRANCE := Vector2(30, 1170)
 
 static func positions(config: ShopConfig) -> Dictionary:
 	var result := {"shelf": SHELF}
+	# 前厅一格的显示宽度：前厅多少列就把 600 像素分成几份
+	var columns := config.grid.front_rect.size.x if config.grid != null and config.grid.front_rect.size.x > 0 else 8
+	var cell := 600.0 / columns
 	for spot in config.front_spots:
 		# 柜台横贯前厅，其余位点按格子排在前厅上半部分
 		if spot.station.mode == StationDef.Mode.MANUAL:
 			result[spot.id] = COUNTER
 		else:
-			result[spot.id] = Vector2(60 + (spot.grid_pos.x + 0.5) * 75, 840 + spot.grid_pos.y * 60)
+			result[spot.id] = Vector2(60 + (spot.grid_pos.x + 0.5) * cell, 840 + spot.grid_pos.y * 60)
 	for slot in config.slots:
 		if slot.station.owner == StationDef.OwnerSystem.FRONT_HALL:
 			result[slot.id] = COUNTER
