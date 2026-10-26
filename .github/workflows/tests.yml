@@ -20,13 +20,15 @@ jobs:
         run: ./godot --headless --path . --import
       - name: Run tests
         run: timeout 120s ./godot --headless --path . -s tests/run_all.gd
+      # 真窗口 QA 要装 xvfb、跑好几分钟，只在合进 main 时跑，PR 上靠本地跑（省 Actions 分钟数）
       - name: Tea window input and screenshot QA
+        if: github.event_name == 'push'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y xvfb libgl1-mesa-dri
           timeout 180s xvfb-run -a ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_tea.gd
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && github.event_name == 'push'
         with:
           name: tea-qa
           path: docs/qa/pxj46-*.png
