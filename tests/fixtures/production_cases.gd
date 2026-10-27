@@ -1,15 +1,15 @@
 extends RefCounted
 ## Test-only definitions. Arbitrary IDs deliberately exercise data-driven dispatch.
+## Devices are laid out directly (no router) so production tests do not depend on grid geometry.
 
 
-static func config(slots: Array, connections: Array = []) -> ShopConfig:
+static func config(defs: Array) -> ShopConfig:
 	var cfg := ShopConfig.new()
 	cfg.id = "production_validation"
-	cfg.slots.assign(slots)
-	cfg.connections.assign(connections)
-	cfg.zones.assign(["kitchen", "front"])
-	cfg.staff_start_zones["operator"] = "kitchen"
-	cfg.walk_seconds["kitchen>front"] = 2.0
+	cfg.kitchen_devices.assign(defs)
+	cfg.supply_slot_limit = 99
+	cfg.grid = ShopGridDef.new()
+	cfg.grid.kitchen_rect = Rect2i(0, 0, 20, 20)
 	cfg.belt_speed = 4.0
 	cfg.shelf_capacity = 4
 	cfg.queue_capacity = 4
@@ -25,33 +25,39 @@ static func config(slots: Array, connections: Array = []) -> ShopConfig:
 	return cfg
 
 
-static func slot(id: String, mode: int, inputs: Dictionary, outputs: Dictionary, seconds: float = 2.0) -> SlotDef:
+static func device(id: String, mode: int, inputs: Dictionary, outputs: Dictionary, seconds: float = 2.0) -> StationDef:
 	var def := StationDef.new()
-	def.id = id + "_definition"
+	def.id = id
 	def.mode = mode
 	def.zone = "kitchen"
 	def.cycle_seconds = seconds
 	def.manual_seconds = 1.0
 	def.output_capacity = 8
+	if mode == StationDef.Mode.SUPPLY:
+		def.supply_items.assign(outputs.keys())
+		def.supply_interval = seconds
+		return def
 	def.recipe = RecipeDef.new()
 	def.recipe.id = id + "_recipe"
 	def.recipe.inputs.assign(inputs)
 	def.recipe.outputs.assign(outputs)
 	for item in inputs:
 		def.input_capacity[item] = 8
-	var result := SlotDef.new()
-	result.id = id
-	result.station = def
-	return result
+	return def
 
 
-static func connection(id: String, from_slot: String, to_slot: String) -> ConnectionDef:
-	var conn := ConnectionDef.new()
-	conn.id = id
-	conn.from_slot = from_slot
-	conn.to_slot = to_slot
-	conn.length_cells = 2.0
-	return conn
+## 直接摆好设备和带子。devices：{实例 id: 定义 id}；belts：[[from, to, item, 格数]]
+static func lay(sim: GameSim, devices: Dictionary, belts: Array) -> void:
+	var x := 0
+	for id in devices:
+		sim.layout.devices.append({"id": id, "def": devices[id], "cell": Vector2i(x, 0)})
+		x += 3
+	for b in belts:
+		var path: Array[Vector2i] = []
+		for i in int(b[3]):
+			path.append(Vector2i(i, 10))
+		sim.layout.belts.append({"id": "%s>%s:%s" % [b[0], b[1], b[2]], "from": b[0], "to": b[1], "item": b[2], "path": path})
+	sim.production.apply_layout(sim.layout.devices, sim.layout.belts)
 
 
 static func worker(efficiency: float = 1.0) -> StaffDef:

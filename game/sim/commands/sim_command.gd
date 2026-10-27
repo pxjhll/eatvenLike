@@ -12,3 +12,13 @@ func validate(_sim: GameSim) -> String:
 
 func commit(_sim: GameSim) -> void:
 	pass
+
+
+## 布局模式里也能下的命令（布局命令、存档类）；其余命令在布局模式里一律拒绝
+func allowed_in_layout() -> bool:
+	return false
+
+
+## 只在布局模式里能下
+func layout_only() -> bool:
+	return false

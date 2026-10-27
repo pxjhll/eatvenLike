@@ -5,10 +5,10 @@ const TEST_PATH := "user://test_save.json"
 
 
 func test_save_file_roundtrip() -> void:
-	var sim := make_sim()
+	var sim := running_tea()
 	sim.run_seconds(77.7)
 	var profile := Profile.create(load(CATALOG))
-	profile.record_shop("bakery", 300, 412.5)
+	profile.record_shop("tea", 300, 412.5)
 	var service := SaveService.new(TEST_PATH)
 	check_eq(service.save({"profile": profile.to_dict(), "shop": sim.to_dict()}), OK, "写入成功")
 	check(not FileAccess.file_exists(TEST_PATH + ".tmp"), "临时文件已替换")
@@ -16,7 +16,7 @@ func test_save_file_roundtrip() -> void:
 	check_eq(int(data.schema_version), SaveService.SCHEMA_VERSION, "带 schema_version")
 	var loaded := Profile.from_dict(data.profile)
 	check_eq(loaded.to_dict(), profile.to_dict(), "Profile 读回一致")
-	var resumed := make_sim()
+	var resumed := make_sim(kitchen_copy())
 	resumed.load_dict(data.shop)
 	check_eq(state_json(resumed), state_json(sim), "店内状态读回一致")
 	service.delete()
@@ -45,34 +45,6 @@ func test_corrupt_save_is_kept() -> void:
 	DirAccess.remove_absolute(dir)
 
 
-func test_save_from_before_new_dish_still_loads() -> void:
-	# 模拟加切片吐司之前的存档：没有切片机机位和它的三条传送带，且白面包任务已让店铺完成
-	var sim := make_sim()
-	sim.run_seconds(60.0)
-	var old: Dictionary = sim.to_dict()
-	var stations := []
-	for st in old.production.stations:
-		if st.slot != "slicer":
-			stations.append(st)
-	old.production.stations = stations
-	var segments := []
-	for seg in old.production.segments:
-		if seg.id.find("slicer") == -1:
-			segments.append(seg)
-	old.production.segments = segments
-	old.progress.completed = true
-	var resumed := make_sim()
-	resumed.load_dict(old)
-	var slicer: StationState
-	for st in resumed.production.stations:
-		if st.slot_id == "slicer":
-			slicer = st
-	check(slicer != null and slicer.status == StationState.Status.LOCKED, "切片机按开店状态补上，仍是灰色虚影")
-	check(not resumed.progress.completed, "菜单多了一道菜，店铺回到未完成")
-	resumed.run_seconds(30.0)
-	check(resumed.economy.revenue > old.economy.revenue, "读回后照常营业")
-
-
 func test_tea_save_from_before_empty_shop_restarts_the_shop() -> void:
 	# PXJ-46 之前的奶茶店存档：前厅还是封口柜台，读回来会指向已经不存在的工位
 	var profile := Profile.create(load(CATALOG))
@@ -81,5 +53,22 @@ func test_tea_save_from_before_empty_shop_restarts_the_shop() -> void:
 	check_eq(int(data.schema_version), SaveService.SCHEMA_VERSION, "迁移到当前版本")
 	check(not data.has("shop"), "旧奶茶店的店内状态丢掉，从空店重开")
 	check_eq(data.profile, profile.to_dict(), "Profile 原样保留")
-	var bakery := {"schema_version": 1, "profile": profile.to_dict(), "shop": make_sim().to_dict()}
-	check(SaveService.migrate(bakery).has("shop"), "面包店的中途存档不受影响")
+
+
+
+# PXJ-47 之前的存档：后厨是固定机位，还有老面包店。店内状态全丢，回到奶茶店空店。
+func test_save_from_before_layout_mode_restarts_in_tea() -> void:
+	var profile := Profile.create(load(CATALOG))
+	profile.current_shop = 1
+	profile.record_shop("bakery", 600, 300.0)
+	profile.roster.append("cat")
+	var old := {"schema_version": 2, "profile": profile.to_dict(), "shop": {"shop_id": "tea", "production": {"stations": [{"slot": "pearl_pot"}]}}}
+	var data := SaveService.migrate(old)
+	check_eq(int(data.schema_version), 3, "迁移到第 3 版")
+	check(not data.has("shop"), "旧的店内状态丢掉")
+	var loaded := Profile.from_dict(data.profile)
+	check_eq(loaded.current_shop, 0, "当前店回到奶茶店")
+	check(not "bakery" in loaded.completed_shops, "完成列表里去掉了已删除的面包店")
+	check("cat" in loaded.roster, "名册照留")
+	var catalog: GameCatalog = load(CATALOG)
+	check_eq(catalog.shops[loaded.current_shop].id, "tea", "读回来开的是奶茶店")

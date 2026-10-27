@@ -3,8 +3,8 @@ extends RefCounted
 ## 本店员工：招来的人、所在工位（一人一岗）、请求认领与释放、人工进度、效率倍率。
 ## 不管物料和订单，不创建或销毁请求。
 ##
-## 前厅按工位派工：员工上岗在哪个位点，就只做那个位点的活。
-## 后厨还没有布局模式，暂时仍按工作区派工（PXJ-47 做完后只剩工位）。
+## 按工位派工：员工上岗在哪个工位（前厅位点或后厨设备），就只做那个工位的活。
+## 后厨员工固定站工位、不走路，调岗立即生效（决定⑫）；正在做的那一份做完再换。
 
 const EPS := 0.000001
 
@@ -20,7 +20,7 @@ func setup(config: ShopConfig, roster: Array[StaffDef]) -> void:
 	for d in roster:
 		_defs[d.id] = d
 		if not config.hires_own_staff:
-			staff.append(StaffState.create(d.id, config.staff_start_zones.get(d.id, config.zones[0]), d.id))
+			staff.append(StaffState.create(d.id, d.id))
 	for d in config.hire_defs:
 		_defs[d.id] = d
 
@@ -30,14 +30,6 @@ func efficiency(staff_id: String, zone: String) -> float:
 	var s := _find(staff_id)
 	var d: StaffDef = _defs.get(s.def_id if s != null else staff_id)
 	return d.zone_efficiency.get(zone, 1.0) if d != null else 1.0
-
-
-func walk_seconds(from_zone: String, to_zone: String) -> float:
-	return _config.walk_seconds.get(from_zone + ">" + to_zone, _config.walk_seconds.get(to_zone + ">" + from_zone, 0.0))
-
-
-func has_zone(zone: String) -> bool:
-	return zone in _config.zones
 
 
 func has_staff(staff_id: String) -> bool:
@@ -85,7 +77,7 @@ func hire(new_id: int) -> String:
 	assert(d != null, "这家店没配招人模板")
 	_defs[d.id] = d
 	var staff_id := "staff%d" % new_id
-	staff.append(StaffState.create(staff_id, "", d.id))
+	staff.append(StaffState.create(staff_id, d.id))
 	return staff_id
 
 
@@ -112,7 +104,7 @@ func dispatch(open: Array) -> void:
 				break
 
 
-## tick 第 4 步：推进人工进度和走路，返回本 tick 完成的请求
+## tick 第 4 步：推进人工进度，返回本 tick 完成的请求
 ## [{"id", "overshoot"}]，overshoot 是完成后本 tick 还剩的秒数（让请求方接着算，保证步长无关）。
 func advance(dt: float) -> Array[Dictionary]:
 	var completed: Array[Dictionary] = []
@@ -125,37 +117,15 @@ func advance(dt: float) -> Array[Dictionary]:
 				s.request_id = -1
 				s.work_seconds = 0.0
 				s.work_done = 0.0
-				if s.target_zone != "":
-					s.walk_left = walk_seconds(s.zone, s.target_zone)
-		elif s.target_zone != "":
-			s.walk_left -= dt
-			if s.walk_left <= EPS:
-				s.zone = s.target_zone
-				s.target_zone = ""
-				s.walk_left = 0.0
 	return completed
 
 
-## 调岗到工作区（后厨）：正在做人工步骤就做完再走，期间不再认领旧区新请求。
-func assign(staff_id: String, zone: String) -> void:
-	var s := _find(staff_id)
-	s.post = ""
-	if zone == s.zone:
-		s.target_zone = ""
-		s.walk_left = 0.0
-		return
-	s.target_zone = zone
-	if s.request_id == -1:
-		s.walk_left = walk_seconds(s.zone, zone)
-
-
-## 上岗到前厅工位；post 为空 = 下岗。后厨员工不走路，前厅服务员的走动只是表现。
+## 上岗；post 为空 = 下岗。正在做的人工步骤照样做完（认领的请求不变），之后只接新工位的活。
+## 前厅服务员的走动只是表现。
 func assign_post(staff_id: String, post: String, zone: String) -> void:
 	var s := _find(staff_id)
 	s.post = post
 	s.zone = zone
-	s.target_zone = ""
-	s.walk_left = 0.0
 
 
 ## 拖到有人的工位上时交换两人的岗位
@@ -168,9 +138,6 @@ func swap(staff_a: String, staff_b: String) -> void:
 	a.zone = b.zone
 	b.post = post
 	b.zone = zone
-	for s in [a, b]:
-		s.target_zone = ""
-		s.walk_left = 0.0
 
 
 func to_dict() -> Dictionary:
@@ -186,12 +153,9 @@ func from_dict(d: Dictionary) -> void:
 		staff.append(StaffState.from_dict(sd))
 
 
-## 前厅请求带工位，只有站在那个工位的人能做；后厨请求只带工作区。
+## 请求带工位，只有站在那个工位的人能做
 func _can_take(s: StaffState, r: Dictionary) -> bool:
-	var post := String(r.get("post", ""))
-	if post != "":
-		return s.post == post
-	return s.post == "" and s.zone == String(r.zone)
+	return s.post != "" and s.post == String(r.post)
 
 
 func _find(staff_id: String) -> StaffState:

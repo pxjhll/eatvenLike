@@ -6,8 +6,11 @@ extends Resource
 @export var display_name: String = ""
 @export var items: Array[ItemDef] = []
 @export var dishes: Array[DishDef] = []
-@export var slots: Array[SlotDef] = []
-## 前厅固定位点（点一下解锁）。后厨设备不在这里，见布局模式（PXJ-47）
+## 后厨设备（设备栏里能买的），哪个阶段开放见 ShopStageDef.kitchen_devices
+@export var kitchen_devices: Array[StationDef] = []
+## 全店原料卡位：所有原料柜的槽数合计不能超过它
+@export var supply_slot_limit: int = 0
+## 前厅固定位点（点一下解锁）
 @export var front_spots: Array[FrontSpotDef] = []
 ## 第 N 名员工的招人价（下标 0 = 第 1 名）；超出长度按最后一个
 @export var hire_costs: Array[int] = []
@@ -17,16 +20,9 @@ extends Resource
 @export var hires_own_staff: bool = false
 ## 店铺网格，由店铺场景导出
 @export var grid: ShopGridDef
-@export var connections: Array[ConnectionDef] = []
 ## 传送带速度（格/秒）
 @export var belt_speed: float = 0.0
-## 工作区 id，第一个是默认工作区
-@export var zones: Array[String] = []
-## "a>b" -> 秒，反方向没写时按同一个值
-@export var walk_seconds: Dictionary[String, float] = {}
 @export var starting_gold: int = 0
-## staff_id -> 开店时所在工作区
-@export var staff_start_zones: Dictionary[String, String] = {}
 ## 备料架每种 item 的容量
 @export var shelf_capacity: int = 0
 ## 前厅最多排几位顾客，满了新顾客直接走
@@ -37,6 +33,17 @@ extends Resource
 @export var arrival_jitter: float = 0.0
 @export var progression: ShopProgressionDef
 @export var random_seed: int = 0
-## 到第几阶段开放后厨（0 = 一开始就开放）；开没开由进度推导，不另存开关
-@export var kitchen_unlock_stage: int = 0
-@export var kitchen_zone: String = "kitchen"
+
+
+func device_def(def_id: String) -> StationDef:
+	for d in kitchen_devices:
+		if d.id == def_id:
+			return d
+	return null
+
+
+func dish_for_item(item_id: String) -> DishDef:
+	for d in dishes:
+		if d.item_id == item_id:
+			return d
+	return null

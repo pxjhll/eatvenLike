@@ -30,11 +30,6 @@ func setup(config: ShopConfig, rng: RandomNumberGenerator) -> void:
 	_config = config
 	for dish in config.dishes:
 		_dishes[dish.id] = dish
-	for slot in config.slots:
-		if slot.station.owner != StationDef.OwnerSystem.FRONT_HALL:
-			continue
-		_slot_defs[slot.id] = slot.station
-		counters.append(StationState.create(slot))
 	for spot in config.front_spots:
 		_slot_defs[spot.id] = spot.station
 		_spot_defs[spot.id] = spot
@@ -121,6 +116,11 @@ func on_work_completed(request_id: int) -> Dictionary:
 	return {"order_id": o.id, "dish_id": o.dish_id, "price": _dishes[o.dish_id].price, "from_stock": o.from_stock}
 
 
+## 前厅有现打这道菜的出品台（已解锁）
+func has_dispenser(dish_id: String) -> bool:
+	return _dispenser_for(dish_id) != null
+
+
 func set_menu_stage(stage_index: int) -> void:
 	menu_stage = stage_index
 
@@ -151,7 +151,7 @@ func is_active(slot_id: String) -> bool:
 func post_capacity(post: String) -> int:
 	if _spot_defs.has(post):
 		return _spot_defs[post].posts
-	return 1 if has_slot(post) else 0
+	return 0
 
 
 func validate_upgrade(slot_id: String) -> String:

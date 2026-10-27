@@ -1,119 +1,102 @@
 extends "res://tests/test_case.gd"
-## PXJ-23: real slicing recipes, generic parallel slots, and bounded backpressure.
+## 物流：按物品分路的传送带、出口回压、货架库存与预留、原料柜按需轮流出货。
 
 const Cases := preload("res://tests/fixtures/production_cases.gd")
 
 
-# Catches a toast alias bypassing slicing, lost material, or duplicate delivery.
-func test_real_slicing_chain_conserves_material() -> void:
-	var sim := make_sim(_chain())
+# 一条供料 → 加工 → 货架的链：物料守恒，成品只从加工那一路进货架。
+func test_chain_conserves_material() -> void:
+	var sim := _chain()
 	sim.run_seconds(60.0)
-	check(Cases.produced(sim, "bread") > 0, "the oven actually baked bread")
-	check(Cases.produced(sim, "sliced_bread") > 0, "the slicing recipe actually ran")
-	check(sim.production.shelf.get("sliced_bread", 0) > 0, "sliced bread reached the shelf")
-	check_eq(sim.production.shelf.get("bread", 0), 0, "unsliced bread cannot bypass the slicer")
-	var consumed_bread: int = sim.diagnostics.item_flow.get("bread", {}).get("consumed", 0)
-	var processing_loaves := 0
-	for id in ["cutter_alpha", "cutter_beta"]:
-		if Cases.state(sim, id).phase == StationState.Phase.PROCESSING:
-			processing_loaves += 1
-	check_eq(Cases.produced(sim, "sliced_bread"), (consumed_bread - processing_loaves) * 2, "each completed loaf yields two slices; in-flight input has no output yet")
-	_check_conservation(sim)
+	check(Cases.produced(sim, "dough") > 0, "加工设备真的做出了东西")
+	check(sim.production.shelf.get("dough", 0) > 0, "成品送到了货架")
+	check_eq(sim.production.shelf.get("flour", 0), 0, "原料不会绕过加工直接上货架")
+	_check_conservation(sim, ["flour", "dough"])
 
 
-# Catches parallel activation being tied to oven IDs or not adding actual capacity.
-func test_parallel_slicers_raise_output_without_dispatch_changes() -> void:
-	var cfg := _chain()
-	var single := make_sim(cfg)
-	var parallel := make_sim(cfg)
-	parallel.submit(ActivateParallelCommand.new("cutter_beta"))
-	single.run_seconds(60.0)
-	parallel.run_seconds(60.0)
-	check_eq(Cases.state(single, "cutter_beta").status, StationState.Status.EMPTY_PARALLEL, "control keeps the second slot empty")
-	for id in ["cutter_alpha", "cutter_beta"]:
-		check(parallel.diagnostics.produced_by_slot.get(id, 0) > 0, "both arbitrary slicer IDs produce: " + id)
-	check(Cases.produced(parallel, "sliced_bread") > Cases.produced(single, "sliced_bread"), "a second slicer increases actual sliced output")
-	check_eq(single.economy.gold - parallel.economy.gold, 10, "generic parallel activation charges once")
-	_check_conservation(parallel)
-	print("    PXJ-23 fixture: %.0f Hz, %d stations, %d belt segments, %d ticks; sliced output single=%d parallel=%d" % [
-		1.0 / parallel.step_seconds, parallel.production.stations.size(), parallel.production.segments.size(), parallel.tick,
-		Cases.produced(single, "sliced_bread"), Cases.produced(parallel, "sliced_bread")])
-
-
-# Catches accepting into full buffers, dropping blocked items, or never recovering.
+# 货架满了，压力一路传回原料柜；腾出货架后整条线恢复。
 func test_full_shelf_backpressures_upstream_and_resumes_after_consumption() -> void:
-	var sim := make_sim(_chain(true))
+	var sim := _chain(true)
 	sim.run_seconds(100.0)
-	check_eq(sim.production.shelf.get("sliced_bread", 0), 2, "the bounded shelf is full")
-	# One slice can enter the last belt gap before saturation; the remaining slice
-	# occupies half the 2-slot output buffer, so the next two-slice batch cannot start.
-	check_eq(Cases.state(sim, "cutter_alpha").outputs.get("sliced_bread", 0), 1, "a partial batch backs up and prevents the next two-slice batch")
-	check_eq(Cases.state(sim, "heater_custom").outputs.get("bread", 0), 1, "bread backs up at the oven")
-	check_eq(Cases.state(sim, "prep_custom").outputs.get("dough", 0), 1, "backpressure reaches the prep station")
-	check_eq(Cases.state(sim, "supply_custom").outputs.get("flour", 0), 1, "backpressure reaches the supplier")
+	check_eq(sim.production.shelf.get("dough", 0), 2, "有上限的货架满了")
+	check_eq(Cases.state(sim, "prep").outputs.get("dough", 0), 1, "成品堵在加工设备的出口")
+	check_eq(Cases.state(sim, "supply").outputs.get("flour", 0), 0, "原料柜看到下游没空位就不再出货")
 	var before := JSON.stringify(sim.production.to_dict(), "", false)
-	var produced_before := Cases.produced(sim, "sliced_bread")
 	var flour_before := Cases.produced(sim, "flour")
 	sim.run_seconds(5.0)
-	check_eq(JSON.stringify(sim.production.to_dict(), "", false), before, "the saturated chain retains all items without moving or duplicating them")
-	_check_conservation(sim)
-	check(sim.production.reserve(1000000, "sliced_bread", 2), "existing stock can be reserved for consumption")
-	var consumed := sim.production.take_reserved(1000000)
-	# Production emits a stock transaction; its caller feeds Diagnostics, as GameSim does for sales.
-	sim.diagnostics.record(0.0, consumed)
-	check_eq(sim.production.free_stock("sliced_bread"), 0, "consumption empties the shelf")
+	check_eq(JSON.stringify(sim.production.to_dict(), "", false), before, "堵住的线不移动、不复制物料")
+	check_eq(Cases.produced(sim, "flour"), flour_before, "堵住时原料柜不空转出货")
+	check(sim.production.reserve(1000000, "dough", 2), "货架上的库存可以预留")
+	sim.diagnostics.record(0.0, sim.production.take_reserved(1000000))
+	check_eq(sim.production.free_stock("dough"), 0, "取走后货架空了")
 	sim.run_seconds(30.0)
-	check_eq(sim.production.shelf.get("sliced_bread", 0), 2, "the shelf refills after consumption")
-	check(Cases.produced(sim, "sliced_bread") > produced_before, "unblocking downstream resumes slicing")
-	check(Cases.produced(sim, "flour") > flour_before, "freed capacity propagates all the way back to the supplier")
-	_check_conservation(sim)
+	check_eq(sim.production.shelf.get("dough", 0), 2, "取走后货架重新补满")
+	check(Cases.produced(sim, "flour") > flour_before, "腾出的空位一路传回原料柜")
+	_check_conservation(sim, ["flour", "dough"])
 
 
-# Catches treating empty inventory or overlapping orders as extra available stock.
+# 预留只占用实际库存，空货架和重叠订单都变不出货来。
 func test_empty_and_reserved_inventory_do_not_create_stock() -> void:
-	var sim := make_sim(_chain())
-	check(not sim.production.reserve(41, "sliced_bread", 1), "empty stock refuses reservation")
-	check(sim.production.reservations.is_empty(), "failed reservations leave no ownership record")
+	var sim := _chain()
+	check(not sim.production.reserve(41, "dough", 1), "空货架不能预留")
+	check(sim.production.reservations.is_empty(), "失败的预留不留记录")
 	sim.run_seconds(20.0)
-	var stock := sim.production.free_stock("sliced_bread")
-	check(stock > 0, "the real chain supplies inventory")
-	check(sim.production.reserve(42, "sliced_bread", stock), "all available stock can be reserved once")
-	check_eq(sim.production.free_stock("sliced_bread"), 0, "reserved stock is unavailable to another order")
-	check(not sim.production.reserve(43, "sliced_bread", 1), "another order cannot reserve the same stock")
+	var stock := sim.production.free_stock("dough")
+	check(stock > 0, "线上真的供出了库存")
+	check(sim.production.reserve(42, "dough", stock), "全部库存可以一次预留")
+	check_eq(sim.production.free_stock("dough"), 0, "预留后别的订单看不到")
+	check(not sim.production.reserve(43, "dough", 1), "同一份库存不能再预留")
 	sim.production.release(42)
-	check_eq(sim.production.free_stock("sliced_bread"), stock, "cancelling restores availability, not total quantity")
-	_check_conservation(sim)
+	check_eq(sim.production.free_stock("dough"), stock, "取消预留后恢复可用")
 
 
-func _chain(bounded: bool = false) -> ShopConfig:
-	var supply := Cases.slot("supply_custom", StationDef.Mode.SUPPLY, {}, {"flour": 1})
-	supply.station.supply_interval = 0.2
-	var prep := Cases.slot("prep_custom", StationDef.Mode.AUTO, {"flour": 1}, {"dough": 1}, 0.2)
-	var oven := Cases.slot("heater_custom", StationDef.Mode.AUTO, {"dough": 1}, {"bread": 1}, 0.2)
-	var alpha := Cases.slot("cutter_alpha", StationDef.Mode.AUTO, {"bread": 1}, {"sliced_bread": 2}, 2.0)
-	alpha.station.parallel_cost = 10
-	var beta := SlotDef.new()
-	beta.id = "cutter_beta"
-	beta.station = alpha.station
-	beta.parallel_of = "cutter_alpha"
-	var cfg := Cases.config([supply, prep, oven, alpha, beta], [
-		Cases.connection("supply_prep", "supply_custom", "prep_custom"),
-		Cases.connection("prep_heater", "prep_custom", "heater_custom"),
-		Cases.connection("heater_alpha", "heater_custom", "cutter_alpha"),
-		Cases.connection("heater_beta", "heater_custom", "cutter_beta"),
-		Cases.connection("alpha_shelf", "cutter_alpha", "shelf"),
-		Cases.connection("beta_shelf", "cutter_beta", "shelf"),
-	])
-	cfg.shelf_capacity = 2 if bounded else 10000
+# 原料柜（决定⑮）：几个槽轮流出货，每种料走自己那一路；某一路下游满了就只出另一种。
+func test_cabinet_rotates_slots_and_skips_a_full_branch() -> void:
+	var cabinet := Cases.device("cabinet", StationDef.Mode.SUPPLY, {}, {"leaf": 1, "milk": 1}, 0.5)
+	cabinet.output_capacity = 3
+	var brew := Cases.device("brew", StationDef.Mode.AUTO, {"leaf": 1}, {"soup": 1}, 0.5)
+	var mix := Cases.device("mix", StationDef.Mode.AUTO, {"milk": 1}, {"latte": 1}, 1000000.0)
+	mix.input_capacity["milk"] = 2
+	var sim := make_sim(Cases.config([cabinet, brew, mix]))
+	Cases.lay(sim, {"c": "cabinet", "b": "brew", "m": "mix"}, [["c", "b", "leaf", 2], ["c", "m", "milk", 2], ["b", "shelf", "soup", 2]])
+	sim.config.shelf_capacity = 1000
+	sim.run_seconds(1.6)
+	check_eq(Cases.produced(sim, "leaf"), 2, "前几份轮流出：茶叶")
+	check_eq(Cases.produced(sim, "milk"), 1, "前几份轮流出：牛奶")
+	sim.run_seconds(60.0)
+	# 调奶那一路：入口 2 + 加工中 1，入口满后带上最多再排 2 件就算没空位
+	var milk := Cases.produced(sim, "milk")
+	check(milk <= 5, "牛奶那一路满了就不再出牛奶：%d" % milk)
+	check(Cases.produced(sim, "leaf") > 50, "茶叶那一路照常出货，每 0.5 秒一份")
+	check_eq(Cases.state(sim, "c").outputs.get("milk", 0), 0, "满了的那种料不会在出口越堆越多")
+	_check_conservation(sim, ["leaf", "milk", "soup"])
+
+
+# 两路都没需求时原料柜停着，计时器不会攒出一大批。
+func test_cabinet_idles_without_demand() -> void:
+	var cabinet := Cases.device("cabinet", StationDef.Mode.SUPPLY, {}, {"leaf": 1}, 0.5)
+	var sim := make_sim(Cases.config([cabinet]))
+	Cases.lay(sim, {"c": "cabinet"}, [])
+	sim.run_seconds(30.0)
+	check_eq(Cases.produced(sim, "leaf"), 0, "没有带子接着就不出货")
+	check(Cases.state(sim, "c").supply_timer <= cabinet.supply_interval + 0.001, "计时器停在一份的时间上")
+
+
+func _chain(bounded: bool = false) -> GameSim:
+	var supply := Cases.device("supply", StationDef.Mode.SUPPLY, {}, {"flour": 1}, 0.2)
+	var prep := Cases.device("prep", StationDef.Mode.AUTO, {"flour": 1}, {"dough": 1}, 0.2)
 	if bounded:
-		for s in [supply, prep, oven, alpha]:
-			s.station.output_capacity = 2 if s == alpha else 1
-			for item in s.station.input_capacity:
-				s.station.input_capacity[item] = 1
-	return cfg
+		supply.output_capacity = 1
+		prep.output_capacity = 1
+		prep.input_capacity["flour"] = 1
+	var cfg := Cases.config([supply, prep])
+	cfg.shelf_capacity = 2 if bounded else 10000
+	var sim := make_sim(cfg)
+	Cases.lay(sim, {"supply": "supply", "prep": "prep"}, [["supply", "prep", "flour", 2], ["prep", "shelf", "dough", 2]])
+	return sim
 
 
-func _check_conservation(sim: GameSim) -> void:
+func _check_conservation(sim: GameSim, items: Array) -> void:
 	var on_field := sim.production.count_items()
-	for item in ["flour", "dough", "bread", "sliced_bread"]:
-		check_eq(on_field.get(item, 0), sim.diagnostics.expected_on_field(item), "conservation through actual slicing: " + item)
+	for item in items:
+		check_eq(on_field.get(item, 0), sim.diagnostics.expected_on_field(item), "物料守恒：" + item)

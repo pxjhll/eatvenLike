@@ -14,12 +14,14 @@ const COUNTER := Vector2(372, 980)
 const COUNTER_WIDTH := 520.0
 const STAFF_LINE := 948.0
 const CUSTOMER_LINE := 1102.0
-const KITCHEN_HOME := Vector2(250, 690)
 const ENTRANCE := Vector2(30, 1170)
+## 后厨地面格（正方形）的边长和左上角
+const CELL := 106.0
+const GRID_ORIGIN := Vector2(42, 186)
 
 
 static func positions(config: ShopConfig) -> Dictionary:
-	var result := {"shelf": SHELF}
+	var result := {"shelf": shelf_point(config)}
 	# 前厅一格的显示宽度：前厅多少列就把 600 像素分成几份
 	var columns := config.grid.front_rect.size.x if config.grid != null and config.grid.front_rect.size.x > 0 else 8
 	var cell := 600.0 / columns
@@ -29,13 +31,6 @@ static func positions(config: ShopConfig) -> Dictionary:
 			result[spot.id] = COUNTER
 		else:
 			result[spot.id] = Vector2(60 + (spot.grid_pos.x + 0.5) * cell, 840 + spot.grid_pos.y * 60)
-	for slot in config.slots:
-		if slot.station.owner == StationDef.OwnerSystem.FRONT_HALL:
-			result[slot.id] = COUNTER
-		elif slot.station.zone == "front":
-			result[slot.id] = Vector2(100 + slot.grid_pos.x * 80, 260 + slot.grid_pos.y * 110)
-		else:
-			result[slot.id] = Vector2(100 + slot.grid_pos.x * 80, 320 + slot.grid_pos.y * 110)
 	return result
 
 
@@ -64,38 +59,61 @@ static func customer_spot(place: int) -> Vector2:
 	return Vector2(160 + place * 84, CUSTOMER_LINE)
 
 
-## shelf_lane: rank of this producer among the shelf feeders, highest machine first.
-static func route(connection: ConnectionDef, points: Dictionary, shelf_lane := 0) -> PackedVector2Array:
-	# Belts stop at machine edges: items vanish into a machine instead of sliding underneath it.
-	var a: Vector2 = points.get(connection.from_slot, Vector2(120, 330)) + Vector2(MACHINE_EDGE, -24)
-	var b: Vector2 = points.get(connection.to_slot, SHELF) + Vector2(-MACHINE_EDGE, -24)
-	if connection.to_slot == "shelf":
-		# Each producer gets its own lane down the right wall, so items never pass behind a machine.
-		# Higher machines take outer lanes and enter the rack lower, so lanes never cross.
-		var lane := 668.0 - shelf_lane * 20.0
-		var drop := SHELF.y - 52.0 - shelf_lane * 14.0
-		return PackedVector2Array([a, Vector2(lane, a.y), Vector2(lane, drop), Vector2(SHELF.x + 50, drop)])
-	# Two belts merging into one machine, one from above and one from below, enter at different
-	# heights and turn on different columns, so they read as two belts rather than one.
-	b.y += clampf((a.y - b.y) * 0.1, -12.0, 12.0)
-	if absf(a.y - b.y) > 1.0:
-		var turn := (a.x + b.x) / 2.0 + signf(b.y - a.y) * 16.0
-		return PackedVector2Array([a, Vector2(turn, a.y), Vector2(turn, b.y), b])
-	return PackedVector2Array([a, b])
+## 后厨格 cell 的屏幕矩形（size 格）
+static func cell_rect(cell: Vector2i, size := Vector2i.ONE) -> Rect2:
+	return Rect2(GRID_ORIGIN + Vector2(cell) * CELL, Vector2(size) * CELL)
 
 
-## Shelf lane rank per connection id: feeders sorted top to bottom.
-static func shelf_lanes(config: ShopConfig, points: Dictionary) -> Dictionary:
-	var feeders := []
-	for connection in config.connections:
-		if connection.to_slot == "shelf":
-			feeders.append(connection)
-	feeders.sort_custom(func(x: ConnectionDef, y: ConnectionDef) -> bool:
-		return points.get(x.from_slot, Vector2.ZERO).y < points.get(y.from_slot, Vector2.ZERO).y)
-	var result := {}
-	for i in feeders.size():
-		result[feeders[i].id] = i
-	return result
+static func cell_center(cell: Vector2i) -> Vector2:
+	return GRID_ORIGIN + (Vector2(cell) + Vector2(0.5, 0.5)) * CELL
+
+
+## 屏幕点落在哪一格（可能在后厨外）
+static func cell_at(point: Vector2) -> Vector2i:
+	var at := (point - GRID_ORIGIN) / CELL
+	return Vector2i(floori(at.x), floori(at.y))
+
+
+## 设备本体的屏幕矩形
+static func device_rect(def: StationDef, cell: Vector2i) -> Rect2:
+	return cell_rect(cell, def.footprint)
+
+
+## 员工站的位置：工位格中间
+static func device_post(def: StationDef, cell: Vector2i) -> Vector2:
+	return cell_center(cell + def.work_cell) + Vector2(0, 30)
+
+
+## 货架画在通往它的那一格正下方，紧贴传菜窗口
+static func shelf_point(config: ShopConfig) -> Vector2:
+	if config.grid == null:
+		return SHELF
+	return Vector2(cell_center(config.grid.shelf_cell).x, SHELF.y)
+
+
+## 传送带的折线：从上游接口的边，经过每一格中心，到下游接口的边（到货架就一直往下进窗口）。
+## 长度正好等于格数，物料的 pos 按格算就能直接用。
+static func belt_points(config: ShopConfig, devices: Dictionary, belt: Dictionary) -> PackedVector2Array:
+	var path: Array = belt.path
+	var points := PackedVector2Array()
+	var first := Vector2i(path[0][0], path[0][1])
+	var from: Dictionary = devices.get(belt.from, {})
+	var out_dir := Vector2.ZERO
+	if not from.is_empty():
+		var port := config.device_def(from.def).out_port()
+		out_dir = Vector2(PortDef.direction(port.side))
+	points.append(cell_center(first) - out_dir * CELL / 2.0)
+	for c in path:
+		points.append(cell_center(Vector2i(c[0], c[1])))
+	var last := Vector2i(path[-1][0], path[-1][1])
+	if belt.to == "shelf":
+		points.append(cell_center(last) + Vector2(0, CELL / 2.0))
+	else:
+		var to: Dictionary = devices.get(belt.to, {})
+		if not to.is_empty():
+			var port := config.device_def(to.def).in_port_for(belt.item)
+			points.append(cell_center(last) - Vector2(PortDef.direction(port.side)) * CELL / 2.0)
+	return points
 
 
 static func along(points: PackedVector2Array, fraction: float) -> Vector2:

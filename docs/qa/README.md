@@ -73,3 +73,13 @@ Font: the UI font is a glyph subset built from the repo's text. "切片吐司" a
 ![卖柠檬水](pxj46-lemonade.png)
 
 后厨这一段仍是 v1.1 的固定机位和工作区派工，布局模式见 PXJ-47。PXJ-42 时期的 pxj42-*.png 是旧前厅（柠檬原液箱 + 封口台）的记录，流程已被本阶段取代。
+
+## PXJ-47 布局阶段 2
+
+- `godot --headless --path . -s tests/run_all.gd`: **62 cases, zero failures** (new `test_layout`; bakery, white-bread and toast tests removed with the bakery).
+- `xvfb-run -a godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_tea.gd`: zero failures. The script drives empty shop → front unlock → hire and drag to the counter → lemonade → milk tea opens by revenue → layout button → drag the cabinet from the device bar onto its recommended spot → one-click deploy → confirm → drag a cook onto the milk station work cell → milk tea sells → device card → save round trip → 540×960.
+- Kitchen is a 6×5 grid of square cells; the dashed ghosts are the recommended spots, beige cells are walls that take the 原料柜, belts route automatically.
+
+Screen captures: [empty shop](pxj47-empty-shop.png), [kitchen opens](pxj47-kitchen-open.png), [layout ghosts](pxj47-layout-ghosts.png), [draft after deploy](pxj47-layout-draft.png), [milk tea line](pxj47-milk-tea.png), [device card](pxj47-device-card.png), [540×960](pxj47-small.png).
+
+Known graybox limits: the floor texture's tiles do not line up with the 106 px grid; the 货架口 label sits under the shelf art.
