@@ -9,7 +9,8 @@ static func station(row: Dictionary, def: StationDef) -> Dictionary:
 		return {"kind": "service", "text": "现打", "color": Color("6e9988")}
 	if def.owner == StationDef.OwnerSystem.FRONT_HALL:
 		return {"kind": "service", "text": "销售台", "color": Color("6e9988")}
-	if SaveUtil.total(row.outputs) + SaveUtil.total(def.recipe.outputs) > def.output_capacity:
+	var batch := SaveUtil.total(def.recipe.outputs) if def.recipe else 1
+	if SaveUtil.total(row.outputs) + batch > def.output_capacity:
 		return {"kind": "blocked", "text": "出口堵了", "color": Color("e53935")}
 	if row.phase == StationState.Phase.PROCESSING:
 		return {"kind": "working", "text": "加工中", "color": Color("6e9988")}

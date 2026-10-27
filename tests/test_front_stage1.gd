@@ -1,18 +1,8 @@
 extends "res://tests/test_case.gd"
 ## PXJ-46 阶段 1：空店开局、前厅点解锁、招人与一人一岗、饮水机式出品台。
 
-const TEA := "res://content/tea/tea.tres"
-
-
 func tea() -> GameSim:
 	return make_sim(load(TEA))
-
-
-func hire(sim: GameSim) -> String:
-	var command := HireStaffCommand.new()
-	sim.submit(command)
-	sim.step()
-	return command.staff_id
 
 
 # 验收：新档从空店开始，只靠点解锁柠檬水台和柜台、招一个服务员拖到柜台，就能卖出柠檬水。
@@ -164,19 +154,20 @@ func test_staff_bar_hires_and_drag_to_post_uses_commands() -> void:
 	ui._finish_bar_drag(_counter_point(view))
 	sim.step()
 	check_eq(sim.workforce.staff[0].post, "counter", "dropping a card on the open counter puts them on post")
-	# 后厨开了以后，新招的人可以直接从员工栏拖进后厨
+	# 后厨摆好以后，新招的人可以直接从员工栏拖到调奶台的工位上
 	sim.economy.revenue = 300
-	sim.economy.gold += 200
-	sim.submit(UnlockStationCommand.new("pearl_pot"))
+	sim.economy.gold += 400
 	sim.step()
 	check(sim.progress.kitchen_open(), "the kitchen opened for the drop test")
+	deploy(sim)
 	ui._hire.pressed.emit()
 	sim.step()
 	var cook: String = sim.workforce.staff[1].staff_id
+	var milk := device_of(sim, "milk_station")
 	ui._bar_drag = cook
-	ui._finish_bar_drag(Vector2(300, 600))
+	ui._finish_bar_drag(_device_point(view, milk))
 	sim.step()
-	check_eq(sim.workforce.staff[1].zone, "kitchen", "dropping a card on the open kitchen sends them there")
+	check_eq(sim.workforce.staff[1].post, milk, "dropping a card on the milk station puts them on that post")
 	ui.free()
 	view.free()
 
@@ -185,3 +176,8 @@ func test_staff_bar_hires_and_drag_to_post_uses_commands() -> void:
 func _counter_point(view: Node2D) -> Vector2:
 	var box: Rect2 = view._stations["counter"].bounds()
 	return box.get_center()
+
+
+## 后厨设备在画面上的落点（屏幕坐标）
+func _device_point(view: Node2D, device_id: String) -> Vector2:
+	return view.station_anchor(device_id).get_center()

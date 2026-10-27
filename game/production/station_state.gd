@@ -1,8 +1,9 @@
 class_name StationState
 extends RefCounted
-## 一个机位的运行状态（后厨与前厅工位共用）。只用字符串 id 引用 Def，不复制、不修改 Def。
+## 一台设备 / 一个前厅位点的运行状态。只用字符串 id 引用 Def，不复制、不修改 Def。
+## 后厨设备的 slot_id 是设备实例 id（Layout 和 Production 用同一个 id）。
 
-enum Status { ACTIVE, LOCKED, EMPTY_PARALLEL }
+enum Status { ACTIVE, LOCKED }
 enum Phase { IDLE, WAIT_LOAD, PROCESSING, WAIT_UNLOAD, WAIT_WORK }
 
 var slot_id := ""
@@ -20,16 +21,14 @@ var request_id := -1
 var supply_timer := 0.0
 ## 分流轮流送的下一路
 var rr_index := 0
+## 原料柜：下一次先看哪个槽
+var supply_rr := 0
 
 
-static func create(slot: SlotDef) -> StationState:
+static func create(id: String, def_id_: String) -> StationState:
 	var st := StationState.new()
-	st.slot_id = slot.id
-	st.def_id = slot.station.id
-	if slot.initially_locked:
-		st.status = Status.LOCKED
-	elif slot.parallel_of != "":
-		st.status = Status.EMPTY_PARALLEL
+	st.slot_id = id
+	st.def_id = def_id_
 	return st
 
 
@@ -75,6 +74,7 @@ func to_dict() -> Dictionary:
 		"request": request_id,
 		"supply_timer": supply_timer,
 		"rr": rr_index,
+		"supply_rr": supply_rr,
 	}
 
 
@@ -91,4 +91,5 @@ static func from_dict(d: Dictionary) -> StationState:
 	st.request_id = int(d.request)
 	st.supply_timer = float(d.supply_timer)
 	st.rr_index = int(d.rr)
+	st.supply_rr = int(d.get("supply_rr", 0))
 	return st

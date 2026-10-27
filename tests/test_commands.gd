@@ -2,116 +2,56 @@ extends "res://tests/test_case.gd"
 ## 第 5 节命令表：校验与提交顺序。
 
 
-func test_upgrade_routes_to_front_hall() -> void:
-	var sim := make_sim()
-	sim.submit(UpgradeStationCommand.new("bread_counter"))
+func test_upgrade_routes_to_owner_system() -> void:
+	var sim := running_tea()
+	sim.economy.gold = 1000
+	sim.submit(UpgradeStationCommand.new("lemonade_stand"))
+	sim.submit(UpgradeStationCommand.new(device_of(sim, "tea_brewer")))
 	sim.step()
-	check_eq(sim.front_hall.counters[0].level, 2, "前厅工位由 FrontHall 升级")
-	check_eq(sim.progress.station_levels.get("bread_counter", 1), 2, "ShopProgress 收到等级事件")
+	var levels := {}
+	for st in sim.front_hall.counters + sim.production.stations:
+		levels[st.def_id] = st.level
+	check_eq(levels.lemonade_stand, 2, "前厅位点由 FrontHall 升级")
+	check_eq(levels.tea_brewer, 2, "后厨设备由 Production 升级")
+	check_eq(sim.progress.station_levels.get("tea_brewer", 1), 2, "ShopProgress 收到等级事件")
 
 
-func test_unlock_station_adds_dish() -> void:
-	var cfg := _with_extra_counter_stage()
-	var sim := make_sim(cfg)
-	var reasons := []
-	sim.command_rejected.connect(func(_c: SimCommand, reason: String) -> void: reasons.append(reason))
-	sim.submit(UnlockStationCommand.new("extra_counter"))
+func test_layout_commands_only_in_layout_mode() -> void:
+	var sim := running_tea()
+	var rejected := []
+	sim.command_rejected.connect(func(_c: SimCommand, reason: String) -> void: rejected.append(reason))
+	for command in [PlaceDeviceCommand.new("tea_brewer", Vector2i(0, 3)), MoveDeviceCommand.new("d1", Vector2i(0, 3)), RemoveDraftDeviceCommand.new("d1"), AutoDeployCommand.new(), ConfirmLayoutCommand.new(), CancelLayoutCommand.new()]:
+		sim.submit(command)
 	sim.step()
-	check_eq(reasons, ["累计营业额不足"], "营业额没到门槛时拒绝")
-	sim.run_seconds(60.0)
-	check(sim.economy.revenue >= 50, "一分钟后营业额过门槛")
-	var gold := sim.economy.gold
-	sim.submit(UnlockStationCommand.new("extra_counter"))
+	check_eq(rejected.size(), 6, "经营模式里布局命令都被拒绝")
+	rejected.clear()
+	sim.submit(EnterLayoutCommand.new())
 	sim.step()
-	check_eq(reasons.size(), 1, "过门槛后解锁成功")
-	check(sim.economy.gold <= gold - 40 + 10, "扣了解锁价")
-	check_eq(sim.progress.stage_index, 1, "进入第 2 阶段")
-	check_eq(sim.front_hall.menu_stage, 1, "前厅菜单加入新菜")
-	check(sim.front_hall.has_slot("extra_counter"), "新柜台归 FrontHall")
-	sim.run_seconds(120.0)
-	check(sim.progress.sold.get("extra_dish", 0) > 0, "新菜有人点、能卖出")
+	for command in [EnterLayoutCommand.new(), HireStaffCommand.new(), AssignStaffCommand.new(sim.workforce.staff[0].staff_id, ""), UpgradeStationCommand.new("lemonade_stand"), UnlockFrontSpotCommand.new("counter")]:
+		sim.submit(command)
+	sim.step()
+	check_eq(rejected, ["布局模式中", "布局模式中", "布局模式中", "布局模式中", "布局模式中"], "布局模式里经营命令都被拒绝")
 
 
-func test_assign_staff_finishes_current_step() -> void:
-	var sim := make_sim()
-	var bear: StaffState
-	for s in sim.workforce.staff:
-		if s.staff_id == "bear":
-			bear = s
-	while bear.request_id == -1:
-		sim.step()
-	var request := bear.request_id
-	sim.submit(AssignStaffCommand.new("bear", "front"))
+func test_place_and_remove_draft_device() -> void:
+	var sim := make_sim(kitchen_copy())
+	open_front(sim)
+	sim.submit(EnterLayoutCommand.new())
+	var rec: Dictionary = sim.config.grid.recommended[1]
+	var place := PlaceDeviceCommand.new(String(rec.station), rec.cell)
+	sim.submit(place)
 	sim.step()
-	check_eq(bear.zone, "kitchen", "做完当前步骤前不走")
-	check(bear.request_id == request or bear.request_id == -1, "不认领新请求")
-	sim.run_seconds(3.5)
-	check_eq(bear.zone, "front", "做完再走 2 秒到前厅")
-	check_eq(bear.target_zone, "", "到达后清掉目标")
-
-
-func test_set_connection_keeps_items_and_clear_removes_them() -> void:
-	var sim := make_sim()
-	var seg := _segment(sim, "dough_to_oven")
-	for i in 2000:
-		if seg.items.size() >= 2:
-			break
-		sim.step()
-	sim.submit(SetConnectionCommand.new("dough_table", "oven", false))
+	check(place.device_id.begins_with("new"), "草稿里的设备先用临时 id")
+	check_eq(sim.layout.draft_cost(), sim.config.device_def(String(rec.station)).price, "草稿总价算上它")
+	sim.submit(RemoveDraftDeviceCommand.new(place.device_id))
 	sim.step()
-	var frozen := seg.to_dict()
-	check(not seg.items.is_empty(), "断开时线上有物料")
-	sim.run_seconds(10.0)
-	check_eq(seg.to_dict().items, frozen.items, "断开后物料留在原处，不转移、不复制")
-	var count := seg.items.size()
-	sim.submit(ClearItemsCommand.new("dough_to_oven"))
-	sim.step()
-	check(seg.items.is_empty(), "清理后这段为空")
-	check_eq(sim.diagnostics.items_cleared, count, "Diagnostics 记录清理数量")
+	check_eq(sim.layout.draft_cost(), 0, "拿回后草稿是空的")
+	check(sim.layout.draft.devices.is_empty(), "设备回到设备栏")
 
 
 func test_switch_shop_needs_completion() -> void:
 	var sim := make_sim()
 	check_eq(SwitchShopCommand.new().validate(sim), "店铺还没完成", "没完成不能换店")
-
-
-func _segment(sim: GameSim, id: String) -> BeltSegmentState:
-	for seg in sim.production.segments:
-		if seg.id == id:
-			return seg
-	return null
-
-
-## 面包店副本只留第 1 阶段，再换上一个解锁前厅柜台的第 2 阶段（柜台直接卖面包，只为测前厅机位的解锁流程）
-func _with_extra_counter_stage() -> ShopConfig:
-	var cfg := bakery_copy()
-	cfg.progression.stages.resize(1)
-	var dish := DishDef.new()
-	dish.id = "extra_dish"
-	dish.item_id = "bread"
-	dish.price = 18
-	cfg.dishes.append(dish)
-	var counter: StationDef
-	for s in cfg.slots:
-		if s.id == "bread_counter":
-			counter = s.station.duplicate_deep()
-	counter.id = "extra_counter"
-	counter.dishes.assign(["extra_dish"])
-	counter.unlock_cost = 40
-	var slot := SlotDef.new()
-	slot.id = "extra_counter"
-	slot.station = counter
-	slot.initially_locked = true
-	cfg.slots.append(slot)
-	var stage := ShopStageDef.new()
-	stage.dish_id = "extra_dish"
-	stage.revenue_threshold = 50
-	stage.unlock_slots.assign(["extra_counter"])
-	stage.customer_interval = 3.0
-	stage.order_weights["white_bread"] = 1.0
-	stage.order_weights["extra_dish"] = 1.0
-	cfg.progression.stages.append(stage)
-	return cfg
 
 
 func test_long_frame_catchup_is_capped() -> void:

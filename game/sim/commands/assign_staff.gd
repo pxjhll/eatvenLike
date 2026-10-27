@@ -1,6 +1,6 @@
 class_name AssignStaffCommand
 extends SimCommand
-## 调岗。target 是前厅位点 id（上岗到这个工位）、工作区名（后厨，暂时仍按工作区）
+## 调岗。target 是前厅位点 id、后厨设备 id（要员工的那几种，一台一人），
 ## 或空字符串（下岗，回到员工栏）。拖到已经有人的满位上要用 SwapStaff。
 
 var staff_id: String
@@ -17,29 +17,27 @@ func validate(sim: GameSim) -> String:
 		return "没有这名员工"
 	if target == "":
 		return ""
+	var capacity := 0
 	if sim.front_hall.has_spot(target):
 		if not sim.front_hall.is_active(target):
 			return "这个工位还没解锁"
-		var capacity := sim.front_hall.post_capacity(target)
-		if capacity <= 0:
-			return "这个工位不要员工"
-		if sim.workforce.post_occupancy(target) >= capacity and not _already_there(sim):
-			return "这个工位满了"
-		return ""
-	if target == sim.config.kitchen_zone and sim.validate_kitchen_access() != "":
-		return sim.validate_kitchen_access()
-	if not sim.workforce.has_zone(target):
+		capacity = sim.front_hall.post_capacity(target)
+	elif sim.production.has_slot(target):
+		capacity = 1 if sim.production.station_def(target).needs_staff() else 0
+	else:
 		return "没有这个工位"
+	if capacity <= 0:
+		return "这个工位不要员工"
+	if sim.workforce.post_occupancy(target) >= capacity and not _already_there(sim):
+		return "这个工位满了"
 	return ""
 
 
 func commit(sim: GameSim) -> void:
 	if target == "":
 		sim.workforce.assign_post(staff_id, "", "")
-	elif sim.front_hall.has_spot(target):
-		sim.workforce.assign_post(staff_id, target, sim.front_hall.station_def(target).zone)
 	else:
-		sim.workforce.assign(staff_id, target)
+		sim.workforce.assign_post(staff_id, target, sim.station_owner(target).station_def(target).zone)
 
 
 func _already_there(sim: GameSim) -> bool:

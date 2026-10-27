@@ -16,8 +16,10 @@ func test_content_names_have_glyphs() -> void:
 			names.append(item.display_name)
 		for dish in shop.dishes:
 			names.append(dish.display_name)
-		for slot in shop.slots:
-			names.append(slot.station.display_name)
+		for device in shop.kitchen_devices:
+			names.append(device.display_name)
+		for spot in shop.front_spots:
+			names.append(spot.station.display_name)
 		for stage in shop.progression.stages:
 			for task in stage.tasks:
 				names.append(task.display_name)

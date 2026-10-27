@@ -1,12 +1,12 @@
 extends RefCounted
 ## Asset identities belong here, never in simulation dispatch.
 
+## 灰盒阶段借用旧面包店的图，正式美术到了再换
 const MACHINE_PATHS := {
-	"flour_box": "mach_flour_bin", "dough_table": "mach_dough_table", "oven": "mach_oven",
-	"slicer": "mach_slicer", "rack": "mach_rack", "bread_counter": "mach_counter",
-	"lemonade_stand": "mach_rack", "counter": "mach_counter",
+	"supply_cabinet": "mach_flour_bin", "tea_brewer": "mach_oven", "milk_station": "mach_dough_table",
+	"topping_station": "mach_slicer", "lemonade_stand": "mach_rack", "counter": "mach_counter",
 }
-const ITEM_PATHS := {"flour": "item_flour", "dough": "item_dough", "bread": "item_bread", "sliced_bread": "item_toast", "toast": "item_toast"}
+const ITEM_PATHS := {"tea_leaf": "item_flour", "milk": "item_dough", "tea_soup": "item_bread"}
 const ICONS := ["coin", "goal", "belt", "oven", "slicer", "delete", "hire", "hint", "reset", "upgrade", "lock", "rotate", "close", "assign", "save", "debug"]
 static var _textures := {}
 
@@ -25,7 +25,7 @@ static func machine(def: StationDef) -> Texture2D:
 static func item(id: String) -> Texture2D:
 	if id == "lemonade":
 		return texture("res://art/item/tea_lemonade.svg")
-	if id == "pearl_milk_tea":
+	if id == "pearl_milk_tea" or id == "milk_tea":
 		return texture("res://art/item/tea_milk_tea.svg")
 	return texture("res://art/item/" + ITEM_PATHS.get(id, "item_bread") + ".png")
 

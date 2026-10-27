@@ -2,7 +2,7 @@ class_name SaveService
 extends RefCounted
 ## JSON 存档：先写临时文件再替换。文件带 schema_version，读取时逐级迁移。
 
-const SCHEMA_VERSION := 2
+const SCHEMA_VERSION := 3
 const DEFAULT_PATH := "user://save.json"
 
 var path := DEFAULT_PATH
@@ -50,6 +50,7 @@ static func migrate(data: Dictionary) -> Dictionary:
 	while version < SCHEMA_VERSION:
 		match version:
 			1: data = _migrate_1_to_2(data)
+			2: data = _migrate_2_to_3(data)
 		version += 1
 	data.schema_version = version
 	return data
@@ -60,4 +61,15 @@ static func migrate(data: Dictionary) -> Dictionary:
 static func _migrate_1_to_2(data: Dictionary) -> Dictionary:
 	if data.get("shop", {}) is Dictionary and String(data.get("shop", {}).get("shop_id", "")) == "tea":
 		data.erase("shop")
+	return data
+
+
+## 2 → 3（PXJ-47）：后厨改成布局模式自己摆设备，旧的固定机位、手动连线和老面包店都删了。
+## 店内存档全部丢掉、从空店重开；店铺列表只剩奶茶店，所以当前店回到第 0 家。Profile 其余照留。
+static func _migrate_2_to_3(data: Dictionary) -> Dictionary:
+	data.erase("shop")
+	if data.get("profile") is Dictionary:
+		data.profile.current_shop = 0
+		var done: Array = data.profile.get("completed_shops", [])
+		data.profile.completed_shops = done.filter(func(id: Variant) -> bool: return String(id) != "bakery")
 	return data

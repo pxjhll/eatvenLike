@@ -1,11 +1,6 @@
 extends "res://tests/test_case.gd"
-## 奶茶店：空店开局 → 前厅点解锁 → 招人上柜台 → 卖柠檬水 → 营业额到门槛开后厨。
-
-const TEA := "res://content/tea/tea.tres"
-
-
-func tea() -> GameSim:
-	return make_sim(load(TEA))
+## 奶茶店：空店开局 → 前厅点解锁 → 招人上柜台 → 卖柠檬水 → 营业额到门槛自动开放后厨 →
+## 布局模式一键部署 → 招人上调奶台 → 奶茶开卖 → 任务完成。
 
 
 func saved_state(sim: GameSim) -> Dictionary:
@@ -16,94 +11,57 @@ func saved_state(sim: GameSim) -> Dictionary:
 	return data.get("shop", {})
 
 
-## 开场：点开柠檬水台和柜台，招一个人拖到柜台
-func open_front(sim: GameSim) -> String:
-	sim.submit(UnlockFrontSpotCommand.new("lemonade_stand"))
-	sim.submit(UnlockFrontSpotCommand.new("counter"))
-	var hire := HireStaffCommand.new()
-	sim.submit(hire)
-	sim.step()
-	sim.submit(AssignStaffCommand.new(hire.staff_id, "counter"))
-	sim.step()
-	return hire.staff_id
-
-
-## 卖柠檬水攒到门槛，再买煮珍珠锅开后厨，并招一名后厨员工
-func open_kitchen(sim: GameSim) -> String:
-	for i in 4000:
-		if sim.economy.revenue >= 300 and sim.economy.gold >= 60 + sim.workforce.hire_cost():
-			break
+## 卖柠檬水攒到奶茶开放、钱够买后厨四台和第二个人
+func earn_kitchen(sim: GameSim) -> void:
+	for i in 6000:
+		if sim.progress.kitchen_open() and sim.economy.gold >= 250 + sim.workforce.hire_cost():
+			return
 		sim.step()
-	sim.submit(UnlockStationCommand.new("pearl_pot"))
-	var hire := HireStaffCommand.new()
-	sim.submit(hire)
-	sim.step()
-	check(sim.progress.kitchen_open(), "milk tea stage opens the kitchen")
-	sim.submit(AssignStaffCommand.new(hire.staff_id, "kitchen"))
-	sim.step()
-	return hire.staff_id
 
 
-func test_fresh_tea_and_legacy_bakery_identity() -> void:
+func test_fresh_games_start_at_tea() -> void:
 	var catalog: GameCatalog = load(CATALOG)
-	check_eq(catalog.shops[0].id, "bakery", "old save index zero is still bakery")
+	check_eq(catalog.shops.size(), 1, "老面包店删掉了，只剩奶茶店")
 	check_eq(catalog.shops[Profile.create(catalog).current_shop].id, "tea", "fresh games start at tea")
-	var old := Profile.from_dict({"current_shop": 0, "completed_shops": [], "roster": ["rabbit", "bear"], "records": {}})
-	check_eq(catalog.shops[old.current_shop].id, "bakery", "legacy profile keeps its shop")
-	check(make_sim().progress.kitchen_open(), "bakery stage zero remains accessible")
 
 
-func test_closed_kitchen_rejects_commands_without_partial_commit() -> void:
-	var sim := tea()
-	check(not sim.progress.kitchen_open(), "new tea kitchen is closed")
+# 完整一轮：从空店到店铺完成，全程只用玩家命令。
+func test_full_playthrough_from_empty_shop() -> void:
+	var sim := make_sim()
 	open_front(sim)
-	var commands: Array[SimCommand] = [UpgradeStationCommand.new("pearl_pot"), ActivateParallelCommand.new("pearl_pot_b"), SetConnectionCommand.new("raw_box", "pearl_pot", false), ClearItemsCommand.new("raw_to_pot"), AssignStaffCommand.new("staff3", "kitchen"), UnlockStationCommand.new("pearl_pot")]
-	for command in commands:
-		var before := state_json(sim)
-		check(command.validate(sim) != "", "locked command has a rejection reason")
-		# The actual command runner is the transaction boundary; stepping would also advance business.
-		sim._run_command(command)
-		check_eq(state_json(sim), before, "rejection changes no gold, staff, connections or progress")
-	sim.run_seconds(200.0)
-	check(sim.economy.revenue >= 300, "front lemonade business earns the unlock gate while closed")
-	check_eq(sim.progress.unlocked_dishes(), ["lemonade"], "only lemonade is on the starting menu")
-	check(not sim.production.count_items().has("cooked_pearl"), "kitchen does not produce before access")
-
-
-# 后厨锁只拦后厨：开厨前前厅位点照常解锁、照常升级。
-func test_closed_kitchen_still_allows_front_changes() -> void:
-	var sim := tea()
-	open_front(sim)
-	check(sim.front_hall.is_active("lemonade_stand"), "the stand opens before the kitchen exists")
-	var gold := sim.economy.gold
-	sim.run_seconds(40.0)
-	check(sim.economy.gold > gold, "lemonade earns money with the kitchen still closed")
-	check_eq(UpgradeStationCommand.new("lemonade_stand").validate(sim), "", "front upgrade is allowed before the kitchen opens")
-	sim.submit(UpgradeStationCommand.new("lemonade_stand"))
+	check(not sim.progress.kitchen_open(), "开局后厨没开")
+	earn_kitchen(sim)
+	check(sim.progress.kitchen_open(), "卖柠檬水攒到门槛，奶茶自动开放")
+	check(sim.economy.revenue >= 300, "门槛是累计营业额 300")
+	check_eq(sim.front_hall.menu_stage, 0, "线没搭好前菜单还只有柠檬水")
+	deploy(sim)
+	var cook := hire(sim)
+	sim.submit(AssignStaffCommand.new(cook, device_of(sim, "milk_station")))
 	sim.step()
-	var levels := {}
-	for st in sim.front_hall.counters:
-		levels[st.slot_id] = st.level
-	check_eq(levels["lemonade_stand"], 2, "the stand upgrades while the kitchen is closed")
-	check(not sim.progress.kitchen_open(), "front upgrade does not open the kitchen")
+	check_eq(sim.front_hall.menu_stage, 1, "带子接到货架后奶茶上菜单")
+	for i in 30:
+		if sim.progress.completed:
+			break
+		sim.run_seconds(60.0)
+	print("TEA PLAYTHROUGH %.0fs lemonade=%d tea=%d" % [sim.elapsed_seconds(), sim.progress.sold.get("lemonade", 0), sim.progress.sold.get("pearl_milk_tea", 0)])
+	check(sim.progress.sold.get("pearl_milk_tea", 0) >= 20, "奶茶走完茶叶 → 茶汤 → 奶茶 → 加料整条线")
+	check(sim.progress.sold.get("lemonade", 0) >= 30, "奶茶开放后柠檬水照常卖")
+	check(sim.progress.completed, "菜单和任务都完成，店铺完成")
 
 
-func test_unlock_and_save_resume_before_and_after_gate() -> void:
-	var sim := tea()
+func test_save_resume_before_and_after_kitchen() -> void:
+	var sim := make_sim()
 	open_front(sim)
 	sim.run_seconds(30.0)
-	var closed := make_sim(load(TEA))
+	var closed := make_sim()
 	closed.load_dict(saved_state(sim))
 	check(not closed.last_snapshot.kitchen_open, "closed access survives reconstruction")
 	check_eq(closed.workforce.staff[0].post, "counter", "the hired server keeps their post across a save")
-	open_kitchen(sim)
-	check_eq(sim.progress.stage_index, 1, "unlock changes menu stage")
-	check_eq(sim.front_hall.menu_stage, 1, "hall uses the same menu stage")
-	var gold := sim.economy.gold
-	check(UnlockStationCommand.new("pearl_pot").validate(sim) != "", "repeated unlock rejects")
-	check_eq(sim.economy.gold, gold, "repeated unlock does not charge")
+	earn_kitchen(sim)
+	deploy(sim)
+	sim.submit(AssignStaffCommand.new(hire(sim), device_of(sim, "milk_station")))
 	sim.run_seconds(45.0)
-	var restored := make_sim(load(TEA))
+	var restored := make_sim()
 	restored.load_dict(saved_state(sim))
 	check(restored.last_snapshot.kitchen_open, "opened access derives from restored stage")
 	check_eq(state_json(restored), state_json(sim), "full active production restores")
@@ -112,108 +70,51 @@ func test_unlock_and_save_resume_before_and_after_gate() -> void:
 	check_eq(state_json(restored), state_json(sim), "restored simulation continues deterministically")
 
 
-func test_parallel_pots_improve_physical_output_and_tasks_complete() -> void:
-	var single := tea()
-	open_front(single)
-	open_kitchen(single)
-	single.run_seconds(40.0)
-	var parallel := make_sim(load(TEA))
-	parallel.load_dict(saved_state(single))
-	parallel.submit(ActivateParallelCommand.new("pearl_pot_b"))
-	parallel.step()
-	check_eq(parallel.production.validate_parallel("pearl_pot_b"), "并联槽已启用", "parallel purchase activated its physical slot")
-	single.run_seconds(900.0)
-	parallel.run_seconds(900.0)
-	var a := int(single.progress.sold.get("pearl_milk_tea", 0))
-	var b := int(parallel.progress.sold.get("pearl_milk_tea", 0))
-	print("TEA THROUGHPUT single=%d parallel=%d" % [a, b])
-	check(b > a, "parallel pots yield more actual milk tea sales under the same demand")
-	check(b >= 20, "tea physically traverses raw pearl, cooked pearl and mixed drink")
-	check(parallel.progress.sold.get("lemonade", 0) >= 30, "lemonade remains sold after milk tea unlock")
-	check(parallel.progress.completed, "both drink tasks and menu complete in playable core")
+# 存档时正在布局模式：草稿不存，读回来是经营模式、什么都没买。
+func test_saving_in_layout_mode_counts_as_cancel() -> void:
+	var sim := make_sim(kitchen_copy())
+	open_front(sim)
+	var before := saved_state(sim)
+	sim.submit(EnterLayoutCommand.new())
+	sim.submit(AutoDeployCommand.new())
+	sim.step()
+	var during := saved_state(sim)
+	check_eq(JSON.stringify(during), JSON.stringify(before), "布局模式里存档等于没进过布局模式")
+	var restored := make_sim(kitchen_copy())
+	restored.load_dict(during)
+	check_eq(restored.mode, GameSim.Mode.BUSINESS, "读回来是经营模式")
+	check(restored.layout.devices.is_empty(), "草稿里的设备没有生效")
 
 
-func test_counter_serves_both_drinks_and_reassignment_costs_capacity() -> void:
-	var sim := tea()
-	var server := open_front(sim)
-	var cook := open_kitchen(sim)
+func test_counter_serves_both_drinks_and_moving_the_cook_stops_the_line() -> void:
+	var sim := running_tea()
+	var cook := ""
+	var milk := device_of(sim, "milk_station")
+	for s in sim.workforce.staff:
+		if s.post == milk:
+			cook = s.staff_id
 	check_eq(sim.front_hall.station_def("counter").dishes, ["lemonade", "pearl_milk_tea"], "every customer orders at the one counter")
 	check_eq(sim.front_hall.post_capacity("counter"), 2, "the counter has room for a second server")
-	check_eq(sim.front_hall.post_capacity("lemonade_stand"), 0, "the lemonade stand takes no staff at all")
-	sim.submit(ActivateParallelCommand.new("pearl_pot_b"))
-	sim.run_seconds(100.0)
-	var saw_service_queue := false
-	for i in 600:
-		sim.step()
-		if sim.front_hall.requests.size() > 1:
-			saw_service_queue = true
-	check(saw_service_queue, "ready drinks queue for the shared front service workforce")
+	sim.run_seconds(120.0)
 	var before: int = sim.progress.sold.get("pearl_milk_tea", 0)
+	check(before > 0, "the line sells milk tea")
 	sim.submit(AssignStaffCommand.new(cook, "counter"))
 	sim.run_seconds(200.0)
 	var stalled: int = sim.progress.sold.get("pearl_milk_tea", 0)
 	sim.run_seconds(200.0)
-	check(sim.progress.sold.get("pearl_milk_tea", 0) - stalled <= 2, "moving the cook front eventually exhausts physical pearls")
-	check(stalled >= before, "existing stock is served during transfer")
+	check(sim.progress.sold.get("pearl_milk_tea", 0) - stalled <= 1, "nobody on the milk station: the line runs dry")
 	check_eq(sim.workforce.post_occupancy("counter"), 2, "both servers now stand at the counter")
-	check(sim.progress.sold.get("lemonade", 0) > 0, "the second server keeps lemonade moving")
-	sim.submit(AssignStaffCommand.new(cook, "kitchen"))
+	sim.submit(AssignStaffCommand.new(cook, milk))
 	sim.run_seconds(160.0)
-	check(sim.progress.sold.get("pearl_milk_tea", 0) > stalled, "reassignment back to kitchen resumes production")
-	check_eq(sim.workforce.post_occupancy("counter"), 1, "the cook left the counter post")
-	check_eq(server, sim.workforce.staff[0].staff_id, "the first hire is still the one on the counter")
+	check(sim.progress.sold.get("pearl_milk_tea", 0) > stalled, "back on the milk station, the line resumes")
 
 
-func test_all_presentation_controls_follow_access_snapshot() -> void:
-	var sim := tea()
-	var world: Node2D = load("res://presentation/graybox/shop_view.gd").new()
-	world.bind(sim)
-	var debug := ShopHud.new()
-	debug.bind(sim)
-	var ui: CanvasLayer = load("res://presentation/graybox/shop_ui.gd").new()
-	ui.bind(sim, world, debug)
-	check(not debug._status.text.contains("pearl_pot"), "debug snapshot text hides the closed kitchen")
-	for entry in debug._buttons:
-		if entry.kitchen_only:
-			check(not entry.button.visible, "debug kitchen controls are hidden")
-		else:
-			check(entry.button.visible and not entry.button.disabled, "debug front controls stay usable before access")
-	ui._selected = "lemonade_stand"
-	ui._selected_kind = "station"
-	ui._card.visible = true
-	ui._refresh_card()
-	check(ui._card_buttons[0].text.contains("10"), "the locked stand shows its price plate")
-	check(not ui._card_buttons[0].disabled, "50 starting gold buys the stand")
-	open_front(sim)
-	ui._refresh_card()
-	check(ui._card_title.text.contains("柠檬水台"), "an opened stand shows its own card")
-	open_kitchen(sim)
-	check(world._stations["pearl_pot"].visible, "open snapshot reveals physical kitchen")
-	check(debug._status.text.contains("pearl_pot"), "debug kitchen state appears only after access")
-	for entry in debug._buttons:
-		if entry.kitchen_only:
-			check(entry.button.visible, "open snapshot reveals kitchen controls")
-	ui.free()
-	debug.free()
-	world.free()
-
-
-func test_debug_hud_rebind_disconnects_previous_sim() -> void:
-	var first := tea()
-	var second := make_sim()
-	var debug := ShopHud.new()
-	debug.bind(first)
-	var count := debug._buttons.size()
-	debug.bind(first)
-	check_eq(debug._buttons.size(), count, "rebinding does not retain old button tracking")
-	check_eq(first.tick_finished.get_connections().size(), 1, "one HUD subscription after rebinding")
-	debug.bind(second)
-	check_eq(first.tick_finished.get_connections().size(), 0, "previous shop is disconnected")
-	var status := debug._status.text
-	first.run_seconds(2.0)
-	check_eq(debug._status.text, status, "old simulation cannot update rebound HUD")
-	second.step()
-	check(debug._status.text != status, "current simulation still updates HUD")
-	debug.unbind()
-	check_eq(second.tick_finished.get_connections().size(), 0, "explicit detach disconnects HUD")
-	debug.free()
+# 原料柜轮流出货：茶叶和牛奶都按需送到各自的设备，不会一种料堆满另一种饿死。
+func test_cabinet_feeds_both_branches() -> void:
+	var sim := running_tea()
+	sim.run_seconds(300.0)
+	var leaf := int(sim.diagnostics.item_flow.get("tea_leaf", {}).get("produced", 0))
+	var milk := int(sim.diagnostics.item_flow.get("milk", {}).get("produced", 0))
+	check(leaf > 0 and milk > 0, "两种料都出了：茶叶 %d，牛奶 %d" % [leaf, milk])
+	check(milk > leaf, "一份茶叶煮 4 份茶汤，牛奶用得多，原料柜就多出牛奶")
+	check(sim.progress.sold.get("pearl_milk_tea", 0) > 0, "两路都通，奶茶卖得出去")

@@ -1,21 +1,21 @@
 class_name ProductionSystem
 extends RefCounted
-## 后厨：工位（含外购箱、未解锁机位、并联槽）、连接与传送带、备料架库存与预留。
-## 不管金币、员工是谁、前厅工位。不持有其他系统的引用，只经 GameSim 往来。
+## 后厨：设备运行状态（加工进度、等级、出入口缓冲）、按 Layout 给出的连接推进物流、
+## 传送带上的物品、货架库存与预留。
+## 不管设备在哪、金币、员工是谁、前厅工位。不持有其他系统的引用，只经 GameSim 往来。
 
-## 备料架作为连接终点时的 id
-const SHELF := "shelf"
+## 货架作为连接终点时的 id
+const SHELF := BeltRouter.SHELF
 ## 传送带上相邻两件物料的最小间距（格）
 const ITEM_SPACING := 1.0
 const EPS := 0.000001
 
 var _config: ShopConfig
-var _slot_defs := {}        # slot_id -> SlotDef（只读）
-var _by_slot := {}          # slot_id -> StationState
+var _by_id := {}            # device id -> StationState
 
 var stations: Array[StationState] = []
 var segments: Array[BeltSegmentState] = []
-## 备料架 item_id -> 数量（含已预留）
+## 货架 item_id -> 数量（含已预留）
 var shelf := {}
 ## order_id -> {"item": String, "count": int}
 var reservations := {}
@@ -24,24 +24,45 @@ var requests: Array[WorkRequest] = []
 
 func setup(config: ShopConfig) -> void:
 	_config = config
-	for slot in config.slots:
-		if slot.station.owner != StationDef.OwnerSystem.PRODUCTION:
-			continue
-		_slot_defs[slot.id] = slot
-		stations.append(StationState.create(slot))
-	for conn in config.connections:
-		segments.append(BeltSegmentState.create(conn))
+
+
+# ---------------------------------------------------------------- 布局
+
+## ConfirmLayout 提交：新设备建 State；搬动过的设备保留进度、缓冲、等级；
+## 旧传送带上的物料全部退回各自上游设备的出口缓冲（允许暂时超过出口容量，超出期间不出新货）。
+## devices / belts 是 Layout 的生效布局。
+func apply_layout(devices: Array, belts: Array) -> void:
+	for seg in segments:
+		var from: StationState = _by_id.get(seg.from_slot)
+		if from != null:
+			SaveUtil.add_counts(from.outputs, seg.item_counts())
+	segments.clear()
+	var kept := {}
+	for d in devices:
+		kept[d.id] = true
+		if not _by_id.has(d.id):
+			stations.append(StationState.create(d.id, d.def))
+	for st in stations.duplicate():
+		assert(kept.has(st.slot_id), "布局里没有删除设备的途径")
+	for b in belts:
+		segments.append(BeltSegmentState.create(b.id, b.from, b.to, b.item, b.path.size()))
 	_reindex()
+
+
+## 有一条传送带把这种成品送到货架
+func delivers(item: String) -> bool:
+	for seg in segments:
+		if seg.to_slot == SHELF and seg.item == item:
+			return true
+	return false
 
 
 # ---------------------------------------------------------------- tick
 
 ## tick 第 2 步：物流。先交付到达终点的物料，再移动，最后把出口缓冲推上传送带。
 ## 本 tick 刚推上传送带的物料不会在同一 tick 内移动。
-func advance_logistics(dt: float, closed_zone: String = "") -> Array:
+func advance_logistics(dt: float) -> Array:
 	for seg in segments:
-		if not seg.connected or in_zone(seg.from_slot, closed_zone) or in_zone(seg.to_slot, closed_zone):
-			continue
 		if not seg.items.is_empty() and seg.items[0].pos >= seg.length - EPS:
 			if _try_accept(seg.to_slot, seg.items[0].item):
 				seg.items.pop_front()
@@ -51,17 +72,14 @@ func advance_logistics(dt: float, closed_zone: String = "") -> Array:
 			var limit: float = seg.length if i == 0 else seg.items[i - 1].pos - ITEM_SPACING
 			it.pos = maxf(it.pos, minf(it.pos + step, limit))
 	for st in stations:
-		if st.status == StationState.Status.ACTIVE and not in_zone(st.slot_id, closed_zone):
-			_push_outputs(st)
+		_push_outputs(st)
 	return []
 
 
-## tick 第 4 步：工位加工、外购到货，按需提出人工请求。
-func advance_stations(dt: float, new_id: Callable, closed_zone: String = "") -> Array:
+## tick 第 4 步：设备加工、原料柜出货，按需提出人工请求。
+func advance_stations(dt: float, new_id: Callable) -> Array:
 	var events := []
 	for st in stations:
-		if st.status != StationState.Status.ACTIVE or in_zone(st.slot_id, closed_zone):
-			continue
 		var def := _def(st)
 		match def.mode:
 			StationDef.Mode.SUPPLY:
@@ -94,7 +112,7 @@ func on_work_completed(request_id: int, overshoot: float) -> Array:
 	var req := _find_request(request_id)
 	assert(req != null)
 	requests.erase(req)
-	var st: StationState = _by_slot[req.slot_id]
+	var st: StationState = _by_id[req.slot_id]
 	var def := _def(st)
 	st.request_id = -1
 	match st.phase:
@@ -144,93 +162,32 @@ func release(order_id: int) -> void:
 
 # ---------------------------------------------------------------- 命令用的校验与提交
 
-func has_slot(slot_id: String) -> bool:
-	return _by_slot.has(slot_id)
+func has_slot(device_id: String) -> bool:
+	return _by_id.has(device_id)
 
 
-func station_def(slot_id: String) -> StationDef:
-	return _slot_defs[slot_id].station
+func station_def(device_id: String) -> StationDef:
+	return _def(_by_id[device_id])
 
 
-func validate_upgrade(slot_id: String) -> String:
-	if not has_slot(slot_id):
-		return "没有这个工位"
-	return _by_slot[slot_id].upgrade_problem(station_def(slot_id))
+func validate_upgrade(device_id: String) -> String:
+	if not has_slot(device_id):
+		return "没有这台设备"
+	return _by_id[device_id].upgrade_problem(station_def(device_id))
 
 
-func upgrade_cost(slot_id: String) -> int:
-	return _by_slot[slot_id].upgrade_cost(station_def(slot_id))
+func upgrade_cost(device_id: String) -> int:
+	return _by_id[device_id].upgrade_cost(station_def(device_id))
 
 
-func commit_upgrade(slot_id: String) -> int:
-	var st: StationState = _by_slot[slot_id]
-	assert(st.upgrade_problem(station_def(slot_id)) == "")
+func commit_upgrade(device_id: String) -> int:
+	var st: StationState = _by_id[device_id]
+	assert(st.upgrade_problem(station_def(device_id)) == "")
 	st.level += 1
 	return st.level
 
 
-func validate_parallel(slot_id: String) -> String:
-	if not has_slot(slot_id) or _slot_defs[slot_id].parallel_of == "":
-		return "这不是并联槽"
-	if _by_slot[slot_id].status != StationState.Status.EMPTY_PARALLEL:
-		return "并联槽已启用"
-	if not has_slot(_slot_defs[slot_id].parallel_of):
-		return "并联槽不属于固定机位"
-	return ""
-
-
-func commit_parallel(slot_id: String) -> void:
-	assert(validate_parallel(slot_id) == "")
-	_by_slot[slot_id].status = StationState.Status.ACTIVE
-
-
-func validate_unlock(slot_id: String) -> String:
-	if not has_slot(slot_id):
-		return "没有这个工位"
-	if _by_slot[slot_id].status != StationState.Status.LOCKED:
-		return "机位不是未解锁状态"
-	return ""
-
-
-func commit_unlock(slot_id: String) -> void:
-	assert(validate_unlock(slot_id) == "")
-	_by_slot[slot_id].status = StationState.Status.ACTIVE
-
-
-func validate_connection(from_slot: String, to_slot: String) -> String:
-	return "" if _segment_between(from_slot, to_slot) != null else "ShopConfig 不允许这条连接"
-
-
-## 线上已有物料不转移、不复制，留在原处（断开的传送带不再移动），玩家可用 ClearItems 清理
-func commit_connection(from_slot: String, to_slot: String, connected: bool) -> void:
-	_segment_between(from_slot, to_slot).connected = connected
-
-
-func has_segment(segment_id: String) -> bool:
-	return _segment(segment_id) != null
-
-
-## 这段传送带两端的机位
-func segment_slots(segment_id: String) -> Array[String]:
-	var seg := _segment(segment_id)
-	return [seg.from_slot, seg.to_slot]
-
-
-func in_zone(slot_id: String, zone: String) -> bool:
-	return zone != "" and _slot_defs.has(slot_id) and station_def(slot_id).zone == zone
-
-
-func clear_segment(segment_id: String) -> Array:
-	var seg := _segment(segment_id)
-	var events := []
-	var counts := seg.item_counts()
-	for item in counts:
-		events.append({"type": "cleared", "item": item, "count": counts[item]})
-	seg.items.clear()
-	return events
-
-
-## 当前场上（传送带、工位缓冲、备料架）每种物料的数量。加工中的投入不计。
+## 当前场上（传送带、设备缓冲、货架）每种物料的数量。加工中的投入不计。
 func count_items() -> Dictionary:
 	var out := {}
 	for seg in segments:
@@ -260,22 +217,13 @@ func to_dict() -> Dictionary:
 	return {"stations": sts, "segments": segs, "shelf": shelf.duplicate(), "reservations": res, "requests": reqs}
 
 
-## 存档之后店里新加的机位和传送带（新菜）不在存档里，保持开店时的初始状态
 func from_dict(d: Dictionary) -> void:
-	var saved := {}
-	for sd in d.stations:
-		saved[String(sd.slot)] = sd
 	stations.clear()
-	for slot in _config.slots:
-		if not _slot_defs.has(slot.id):
-			continue
-		stations.append(StationState.from_dict(saved[slot.id]) if saved.has(slot.id) else StationState.create(slot))
-	var seg_data := {}
+	for sd in d.stations:
+		stations.append(StationState.from_dict(sd))
+	segments.clear()
 	for sd in d.segments:
-		seg_data[String(sd.id)] = sd
-	for seg in segments:
-		if seg_data.has(seg.id):
-			seg.load_dict(seg_data[seg.id])
+		segments.append(BeltSegmentState.from_dict(sd))
 	shelf = SaveUtil.int_dict(d.shelf)
 	reservations.clear()
 	for r in d.reservations:
@@ -289,26 +237,46 @@ func from_dict(d: Dictionary) -> void:
 # ---------------------------------------------------------------- 内部
 
 func _reindex() -> void:
-	_by_slot.clear()
+	_by_id.clear()
 	for st in stations:
-		_by_slot[st.slot_id] = st
+		_by_id[st.slot_id] = st
 
 
 func _def(st: StationState) -> StationDef:
-	return _slot_defs[st.slot_id].station
+	return _config.device_def(st.def_id)
 
 
+## 原料柜：每隔一段时间出一份，几个槽按顺序轮流；某种料下游没空位（或这个槽的出口满了）就跳过它
 func _advance_supply(st: StationState, def: StationDef, dt: float, events: Array) -> void:
 	var interval := def.supply_interval / st.speed(def)
 	st.supply_timer += dt
 	if st.supply_timer < interval - EPS:
 		return
-	if SaveUtil.total(st.outputs) + SaveUtil.total(def.recipe.outputs) * def.supply_batch > def.output_capacity:
-		st.supply_timer = interval
-		return
-	st.supply_timer -= interval
-	for i in def.supply_batch:
-		_produce(st, def, events)
+	var count := def.supply_items.size()
+	for k in count:
+		var idx := (st.supply_rr + k) % count
+		var item: String = def.supply_items[idx]
+		if int(st.outputs.get(item, 0)) < def.output_capacity and _has_demand(st.slot_id, item):
+			st.supply_timer -= interval
+			st.supply_rr = (idx + 1) % count
+			st.outputs[item] = int(st.outputs.get(item, 0)) + 1
+			events.append({"type": "produced", "slot": st.slot_id, "item": item, "count": 1})
+			return
+	st.supply_timer = interval
+
+
+## 这种料的下游里有没有一路还收得下（带上的 + 下游入口里的 < 入口容量）
+func _has_demand(device_id: String, item: String) -> bool:
+	for seg in segments:
+		if seg.from_slot != device_id or seg.item != item:
+			continue
+		if seg.to_slot == SHELF:
+			return true
+		var to: StationState = _by_id[seg.to_slot]
+		var cap := int(_def(to).input_capacity.get(item, 0))
+		if seg.items.size() + int(to.inputs.get(item, 0)) < cap:
+			return true
+	return false
 
 
 func _advance_auto(st: StationState, def: StationDef, dt: float, events: Array) -> void:
@@ -361,52 +329,48 @@ func _produce(st: StationState, def: StationDef, events: Array) -> void:
 		events.append({"type": "produced", "slot": st.slot_id, "item": item, "count": def.recipe.outputs[item]})
 
 
+## 人工请求带工位：只有站在这台设备上的员工能做（一人一岗）
 func _post_request(st: StationState, kind: int, seconds: float, zone: String, new_id: Callable) -> void:
 	var r := WorkRequest.create(new_id.call(), kind, zone, seconds)
 	r.slot_id = st.slot_id
+	r.post = st.slot_id
 	requests.append(r)
 	st.request_id = r.id
 
 
-## 一个出口连多条线时轮流送，跳过堵住的一路
+## 出口里每件物料只走收它的那几路；同一种物料有几路时轮流送，跳过堵住的一路（决定⑥）
 func _push_outputs(st: StationState) -> void:
-	var outs: Array[BeltSegmentState] = []
-	for seg in segments:
-		if seg.from_slot == st.slot_id and seg.connected and _routable(seg.to_slot):
-			outs.append(seg)
-	if outs.is_empty():
-		return
-	while SaveUtil.total(st.outputs) > 0:
-		var pushed := false
-		for k in outs.size():
-			var idx := (st.rr_index + k) % outs.size()
-			var seg := outs[idx]
-			if seg.items.is_empty() or seg.items[-1].pos >= ITEM_SPACING - EPS:
-				var item: String = st.outputs.keys()[0]
-				SaveUtil.remove_counts(st.outputs, {item: 1})
-				seg.items.append({"item": item, "pos": 0.0})
-				st.rr_index = (idx + 1) % outs.size()
-				pushed = true
+	for item in st.outputs.keys():
+		var outs: Array[BeltSegmentState] = []
+		for seg in segments:
+			if seg.from_slot == st.slot_id and seg.item == item:
+				outs.append(seg)
+		if outs.is_empty():
+			continue
+		while int(st.outputs.get(item, 0)) > 0:
+			var pushed := false
+			for k in outs.size():
+				var idx := (st.rr_index + k) % outs.size()
+				var seg := outs[idx]
+				if seg.items.is_empty() or seg.items[-1].pos >= ITEM_SPACING - EPS:
+					SaveUtil.remove_counts(st.outputs, {item: 1})
+					seg.items.append({"item": item, "pos": 0.0})
+					st.rr_index = (idx + 1) % outs.size()
+					pushed = true
+					break
+			if not pushed:
 				break
-		if not pushed:
-			return
 
 
-func _routable(slot_id: String) -> bool:
-	return slot_id == SHELF or (_by_slot.has(slot_id) and _by_slot[slot_id].status == StationState.Status.ACTIVE)
-
-
-func _try_accept(slot_id: String, item: String) -> bool:
-	if slot_id == SHELF:
+func _try_accept(to: String, item: String) -> bool:
+	if to == SHELF:
 		if int(shelf.get(item, 0)) >= _config.shelf_capacity:
 			return false
 		shelf[item] = int(shelf.get(item, 0)) + 1
 		return true
-	if not _routable(slot_id):
-		return false
-	var st: StationState = _by_slot[slot_id]
+	var st: StationState = _by_id[to]
 	var def := _def(st)
-	if def.recipe == null or not def.recipe.inputs.has(item):
+	if not def.accepts(item):
 		return false
 	if int(st.inputs.get(item, 0)) >= int(def.input_capacity.get(item, 0)):
 		return false
@@ -418,18 +382,4 @@ func _find_request(request_id: int) -> WorkRequest:
 	for r in requests:
 		if r.id == request_id:
 			return r
-	return null
-
-
-func _segment(segment_id: String) -> BeltSegmentState:
-	for seg in segments:
-		if seg.id == segment_id:
-			return seg
-	return null
-
-
-func _segment_between(from_slot: String, to_slot: String) -> BeltSegmentState:
-	for seg in segments:
-		if seg.from_slot == from_slot and seg.to_slot == to_slot:
-			return seg
 	return null

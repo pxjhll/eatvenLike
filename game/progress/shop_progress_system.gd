@@ -1,15 +1,16 @@
 class_name ShopProgressSystem
 extends RefCounted
-## 已解锁菜品、任务进度、店铺完成度（菜单做全 + 任务列表完成）。
-## 只读 GameSim 传入的事件和累计营业额，不管金币。
+## 已开放的阶段（菜品、可买的后厨设备、可解锁的前厅位）、任务进度、店铺完成度。
+## 阶段在累计营业额到门槛时自动开放（基线 §28）。只读 GameSim 传入的事件和累计营业额，不管金币。
 
 const EPS := 0.000001
 
 var _config: ShopConfig
 
-## 已解锁到第几阶段（0 = 开店即有的菜）
+## 已开放到第几阶段（0 = 开店即有的菜）
 var stage_index := 0
-var unlocked_slots: Array[String] = []
+## 本 tick 刚开放的阶段（GameSim 读完就清），-1 = 没有
+var opened_stage := -1
 var sold := {}             # dish_id -> 份数
 var no_stockout := {}      # dish_id -> 连续不缺货秒数
 var stockout := {}         # dish_id -> true
@@ -22,8 +23,17 @@ func setup(config: ShopConfig) -> void:
 	_config = config
 
 
+## 后厨开没开由阶段推导：已开放的阶段里有后厨设备
 func kitchen_open() -> bool:
-	return stage_index >= _config.kitchen_unlock_stage
+	return not open_devices().is_empty()
+
+
+## 已开放、能在设备栏里买的后厨设备
+func open_devices() -> Array[String]:
+	var out: Array[String] = []
+	for i in stage_index + 1:
+		out.append_array(_stages()[i].kitchen_devices)
+	return out
 
 
 func unlocked_dishes() -> Array[String]:
@@ -33,33 +43,14 @@ func unlocked_dishes() -> Array[String]:
 	return out
 
 
-## UnlockStation 的校验：机位属于下一阶段，且累计营业额到达门槛
-func validate_unlock(slot_id: String, revenue: int) -> String:
-	var next := stage_index + 1
-	if next >= _stages().size():
-		return "没有可解锁的阶段"
-	var stage: ShopStageDef = _stages()[next]
-	if not slot_id in stage.unlock_slots or slot_id in unlocked_slots:
-		return "这个机位不在下一阶段的解锁列表里"
-	if revenue < stage.revenue_threshold:
-		return "累计营业额不足"
-	return ""
-
-
-## 标记机位已解锁；下一阶段的机位都解锁后进入该阶段，返回新阶段下标，否则返回 -1
-func mark_unlocked(slot_id: String) -> int:
-	unlocked_slots.append(slot_id)
-	var stage: ShopStageDef = _stages()[stage_index + 1]
-	for s in stage.unlock_slots:
-		if not s in unlocked_slots:
-			return -1
-	stage_index += 1
-	no_stockout[stage.dish_id] = 0.0
-	return stage_index
-
-
 ## tick 第 6 步。返回 true 表示本 tick 店铺刚刚完成。
-func advance(dt: float, events: Array, _revenue: int) -> bool:
+## menu_stage：前厅菜单已经卖到第几阶段（新菜的线搭好才上菜单），只有上了菜单的菜才累计不缺货时间
+func advance(dt: float, events: Array, revenue: int, menu_stage: int) -> bool:
+	opened_stage = -1
+	while stage_index + 1 < _stages().size() and revenue >= _stages()[stage_index + 1].revenue_threshold:
+		stage_index += 1
+		opened_stage = stage_index
+		no_stockout[_stages()[stage_index].dish_id] = 0.0
 	for e in events:
 		match e.type:
 			"sold":
@@ -71,7 +62,8 @@ func advance(dt: float, events: Array, _revenue: int) -> bool:
 				stockout.erase(e.dish)
 			"station_level":
 				station_levels[e.station] = maxi(int(station_levels.get(e.station, 1)), int(e.level))
-	for dish_id in unlocked_dishes():
+	for i in mini(menu_stage, stage_index) + 1:
+		var dish_id := _stages()[i].dish_id
 		if not stockout.has(dish_id):
 			no_stockout[dish_id] = float(no_stockout.get(dish_id, 0.0)) + dt
 	for i in stage_index + 1:
@@ -102,7 +94,6 @@ func to_dict() -> Dictionary:
 	tasks.sort()
 	return {
 		"stage": stage_index,
-		"unlocked_slots": unlocked_slots.duplicate(),
 		"sold": sold.duplicate(),
 		"no_stockout": no_stockout.duplicate(),
 		"stockout": stockout.keys(),
@@ -114,7 +105,6 @@ func to_dict() -> Dictionary:
 
 func from_dict(d: Dictionary) -> void:
 	stage_index = int(d.stage)
-	unlocked_slots = SaveUtil.string_array(d.unlocked_slots)
 	sold = SaveUtil.int_dict(d.sold)
 	no_stockout = SaveUtil.float_dict(d.no_stockout)
 	stockout.clear()

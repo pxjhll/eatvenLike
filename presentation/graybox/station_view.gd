@@ -6,7 +6,7 @@ const State := preload("res://presentation/graybox/view_state.gd")
 var definition: StationDef
 var row := {}
 var selected := false
-## 前厅位点的解锁价（价格牌）；-1 = 用 StationDef 上的价格
+## 前厅位点的解锁价（价格牌）
 var unlock_price := -1
 var sprite: Sprite2D
 var _font: Font
@@ -110,9 +110,7 @@ func _draw_progress(state: Dictionary) -> void:
 
 
 func _price() -> int:
-	if unlock_price >= 0:
-		return unlock_price
-	return definition.unlock_cost if row.status == StationState.Status.LOCKED else definition.parallel_cost
+	return maxi(unlock_price, 0)
 
 
 func _text(at: Vector2, text: String, size: int, color: Color) -> void:

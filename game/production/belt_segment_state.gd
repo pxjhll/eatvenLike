@@ -1,23 +1,24 @@
 class_name BeltSegmentState
 extends RefCounted
-## 一条连接上的传送带。物料按「格」记位置，items[0] 离终点最近。
+## 一条自动铺出的传送带：从一台设备送一种物料到一台设备（或货架）。
+## 物料按「格」记位置，items[0] 离终点最近。端点和长度来自 Layout 的寻路结果。
 
 var id := ""
 var from_slot := ""
 var to_slot := ""
+var item := ""
 var length := 1.0
-var connected := true
 ## 每件 {"item": String, "pos": float}
 var items: Array[Dictionary] = []
 
 
-static func create(conn: ConnectionDef) -> BeltSegmentState:
+static func create(id_: String, from: String, to: String, item_: String, length_: float) -> BeltSegmentState:
 	var seg := BeltSegmentState.new()
-	seg.id = conn.id
-	seg.from_slot = conn.from_slot
-	seg.to_slot = conn.to_slot
-	seg.length = conn.length_cells
-	seg.connected = conn.initially_connected
+	seg.id = id_
+	seg.from_slot = from
+	seg.to_slot = to
+	seg.item = item_
+	seg.length = length_
 	return seg
 
 
@@ -32,12 +33,11 @@ func to_dict() -> Dictionary:
 	var list := []
 	for it in items:
 		list.append({"item": it.item, "pos": it.pos})
-	return {"id": id, "connected": connected, "items": list}
+	return {"id": id, "from": from_slot, "to": to_slot, "item": item, "length": length, "items": list}
 
 
-## 连接的端点和长度来自 ConnectionDef，存档里只放运行状态
-func load_dict(d: Dictionary) -> void:
-	connected = bool(d.connected)
-	items.clear()
+static func from_dict(d: Dictionary) -> BeltSegmentState:
+	var seg := BeltSegmentState.create(String(d.id), String(d.from), String(d.to), String(d.item), float(d.length))
 	for it in d.items:
-		items.append({"item": String(it.item), "pos": float(it.pos)})
+		seg.items.append({"item": String(it.item), "pos": float(it.pos)})
+	return seg

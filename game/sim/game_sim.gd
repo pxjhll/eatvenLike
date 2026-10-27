@@ -1,13 +1,17 @@
 class_name GameSim
 extends Node
 ## 每家店一个：唯一时钟、唯一中介、唯一 ID 与 RNG 来源。
-## 按固定步长、固定顺序推进 5 个业务系统，中转它们之间的请求、结果和事件。
+## 按固定步长、固定顺序推进 6 个业务系统，中转它们之间的请求、结果和事件。
 ## 不保存任何业务真值的副本；命令的校验和提交写在 commands/ 里。
+##
+## 两种模式：BUSINESS 照常经营；LAYOUT 布局模式，时间冻结，每 tick 只跑布局命令（契约第 4 节）。
 
 signal tick_finished(snapshot: Dictionary)
 signal sale_settled(sale_id: int, amount: int)
 signal command_rejected(command: SimCommand, reason: String)
 signal shop_completed()
+
+enum Mode { BUSINESS, LAYOUT }
 
 ## 模拟步长（秒），工程常量：每秒 10 步。渲染帧只做插值显示。
 const STEP_SECONDS := 0.1
@@ -17,8 +21,10 @@ const MAX_CATCHUP_SECONDS := 0.5
 ## 只有回归测试会改它，用来验证步长无关（不变量 9）
 var step_seconds := STEP_SECONDS
 var paused := false
+var mode := Mode.BUSINESS
 
 var config: ShopConfig
+var layout: LayoutSystem
 var production: ProductionSystem
 var workforce: WorkforceSystem
 var front_hall: FrontHallSystem
@@ -40,6 +46,8 @@ var _accumulator := 0.0
 func setup(shop_config: ShopConfig, roster: Array[StaffDef]) -> void:
 	config = shop_config
 	rng.seed = config.random_seed
+	layout = LayoutSystem.new()
+	layout.setup(config)
 	production = ProductionSystem.new()
 	production.setup(config)
 	workforce = WorkforceSystem.new()
@@ -87,15 +95,11 @@ func validate_kitchen_access() -> String:
 	return "" if progress.kitchen_open() else "解锁新菜后开放后厨"
 
 
-## 只拦涉及后厨机位的命令；前厅机位和前厅传送带在开厨前照常可改
-func validate_kitchen_slots(slot_ids: Array) -> String:
-	for slot_id in slot_ids:
-		if production.in_zone(slot_id, config.kitchen_zone):
-			return validate_kitchen_access()
-	return ""
+func in_layout() -> bool:
+	return mode == Mode.LAYOUT
 
 
-## 按 StationDef.owner 找到拥有这个机位的系统
+## 按 StationDef.owner 找到拥有这台设备 / 这个位点的系统
 func station_owner(slot_id: String) -> RefCounted:
 	if production.has_slot(slot_id):
 		return production
@@ -104,9 +108,15 @@ func station_owner(slot_id: String) -> RefCounted:
 	return null
 
 
+## 新菜能不能端上桌：前厅有现打它的出品台，或者有传送带把它送到货架
+func dish_deliverable(dish_id: String) -> bool:
+	for dish in config.dishes:
+		if dish.id == dish_id:
+			return front_hall.has_dispenser(dish_id) or production.delivers(dish.item_id)
+	return false
+
+
 func step() -> void:
-	tick += 1
-	var dt := step_seconds
 	_events = []
 	var new_id := next_id
 
@@ -115,16 +125,25 @@ func step() -> void:
 	_commands = []
 	for command in commands:
 		_run_command(command)
+	_refresh_menu()
+
+	# 布局模式：时间不走，不推进任何系统（不变量 11）
+	if in_layout():
+		diagnostics.record(0.0, _events)
+		last_snapshot = SimSnapshot.build(self)
+		tick_finished.emit(last_snapshot)
+		return
+	tick += 1
+	var dt := step_seconds
 
 	# 2. 物流
-	var closed_zone := "" if progress.kitchen_open() else config.kitchen_zone
-	push_events(production.advance_logistics(dt, closed_zone))
+	push_events(production.advance_logistics(dt))
 
 	# 3. 收集请求 → 派工
 	workforce.dispatch(production.open_requests() + front_hall.open_requests())
 
 	# 4. 加工、到货、来客、库存事务、人工进度
-	push_events(production.advance_stations(dt, new_id, closed_zone))
+	push_events(production.advance_stations(dt, new_id))
 	var hall := front_hall.advance(dt, rng, new_id, workforce.claimed_request_ids())
 	push_events(hall.events)
 	for order_id in hall.cancelled:
@@ -155,7 +174,7 @@ func step() -> void:
 			sale_settled.emit(sale_id, sale.price)
 
 	# 6. 任务与完成度
-	var just_completed := progress.advance(dt, _events, economy.revenue)
+	var just_completed := progress.advance(dt, _events, economy.revenue, front_hall.menu_stage)
 	diagnostics.record(dt, _events)
 
 	# 7. 快照与信号
@@ -171,11 +190,24 @@ func run_seconds(seconds: float) -> void:
 
 
 func _run_command(command: SimCommand) -> void:
-	var reason := command.validate(self)
+	var reason := ""
+	if in_layout() and not command.allowed_in_layout():
+		reason = "布局模式中"
+	elif not in_layout() and command.layout_only():
+		reason = "不在布局模式"
+	else:
+		reason = command.validate(self)
 	if reason != "":
 		command_rejected.emit(command, reason)
 		return
 	command.commit(self)
+
+
+## 已开放阶段的新菜，线搭好了才上菜单（来客间隔和点单比例跟着变）
+func _refresh_menu() -> void:
+	var stages := config.progression.stages
+	while front_hall.menu_stage < progress.stage_index and dish_deliverable(stages[front_hall.menu_stage + 1].dish_id):
+		front_hall.set_menu_stage(front_hall.menu_stage + 1)
 
 
 # ---------------------------------------------------------------- 存档
@@ -188,6 +220,8 @@ func to_dict() -> Dictionary:
 		# 64 位整数存成字符串，避免 JSON 数字丢精度
 		"rng_seed": str(rng.seed),
 		"rng_state": str(rng.state),
+		# 布局草稿不存：布局模式里存档按取消处理
+		"layout": layout.to_dict(),
 		"production": production.to_dict(),
 		"workforce": workforce.to_dict(),
 		"front_hall": front_hall.to_dict(),
@@ -204,6 +238,8 @@ func load_dict(d: Dictionary) -> void:
 	_next_id = int(d.next_id)
 	rng.seed = String(d.rng_seed).to_int()
 	rng.state = String(d.rng_state).to_int()
+	mode = Mode.BUSINESS
+	layout.from_dict(d.layout)
 	production.from_dict(d.production)
 	workforce.from_dict(d.workforce)
 	front_hall.from_dict(d.front_hall)
