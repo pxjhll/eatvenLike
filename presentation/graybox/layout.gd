@@ -8,10 +8,10 @@ const MACHINE_EDGE := 40.0
 const CHAR_SCALE := 0.62
 const KITCHEN := Rect2(40, 118, 640, 662)
 const FRONT := Rect2(40, 810, 640, 380)
-const SHELF := Vector2(560, 736)
-const WINDOW := Vector2(560, 812)
-const COUNTER := Vector2(372, 980)
-const COUNTER_WIDTH := 520.0
+const SHELF := Vector2(606, 730)
+const WINDOW := Vector2(420, 812)
+const COUNTER := Vector2(480, 980)
+const COUNTER_WIDTH := 340.0
 const STAFF_LINE := 948.0
 const CUSTOMER_LINE := 1102.0
 const KITCHEN_HOME := Vector2(250, 690)
@@ -25,12 +25,16 @@ static func positions(config: ShopConfig) -> Dictionary:
 	var cell := 600.0 / columns
 	for spot in config.front_spots:
 		# 柜台横贯前厅，其余位点按格子排在前厅上半部分
-		if spot.station.mode == StationDef.Mode.MANUAL:
+		if spot.view_pos != Vector2.ZERO:
+			result[spot.id] = spot.view_pos
+		elif spot.station.mode == StationDef.Mode.MANUAL:
 			result[spot.id] = COUNTER
 		else:
 			result[spot.id] = Vector2(60 + (spot.grid_pos.x + 0.5) * cell, 840 + spot.grid_pos.y * 60)
 	for slot in config.slots:
-		if slot.station.owner == StationDef.OwnerSystem.FRONT_HALL:
+		if slot.view_pos != Vector2.ZERO:
+			result[slot.id] = slot.view_pos
+		elif slot.station.owner == StationDef.OwnerSystem.FRONT_HALL:
 			result[slot.id] = COUNTER
 		elif slot.station.zone == "front":
 			result[slot.id] = Vector2(100 + slot.grid_pos.x * 80, 260 + slot.grid_pos.y * 110)
@@ -57,22 +61,24 @@ static func post_spot(station: Vector2, index: int) -> Vector2:
 
 
 static func front_idle_spot(index: int) -> Vector2:
-	return Vector2(250 + index * 88, STAFF_LINE)
+	return Vector2(COUNTER.x - 150 + index * 88, STAFF_LINE)
 
 
 static func customer_spot(place: int) -> Vector2:
-	return Vector2(160 + place * 84, CUSTOMER_LINE)
+	return Vector2(COUNTER.x - 170 + place * 68, CUSTOMER_LINE)
 
 
 ## shelf_lane: rank of this producer among the shelf feeders, highest machine first.
 static func route(connection: ConnectionDef, points: Dictionary, shelf_lane := 0) -> PackedVector2Array:
+	if connection.view_points.size() >= 2:
+		return connection.view_points
 	# Belts stop at machine edges: items vanish into a machine instead of sliding underneath it.
 	var a: Vector2 = points.get(connection.from_slot, Vector2(120, 330)) + Vector2(MACHINE_EDGE, -24)
 	var b: Vector2 = points.get(connection.to_slot, SHELF) + Vector2(-MACHINE_EDGE, -24)
 	if connection.to_slot == "shelf":
 		# Each producer gets its own lane down the right wall, so items never pass behind a machine.
 		# Higher machines take outer lanes and enter the rack lower, so lanes never cross.
-		var lane := 668.0 - shelf_lane * 20.0
+		var lane := SHELF.x + 54.0 - shelf_lane * 20.0
 		var drop := SHELF.y - 52.0 - shelf_lane * 14.0
 		return PackedVector2Array([a, Vector2(lane, a.y), Vector2(lane, drop), Vector2(SHELF.x + 50, drop)])
 	# Two belts merging into one machine, one from above and one from below, enter at different

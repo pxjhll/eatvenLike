@@ -7,6 +7,8 @@ extends Resource
 @export var station: StationDef
 ## 显示用的格子坐标，模拟不读
 @export var grid_pos: Vector2i = Vector2i.ZERO
+## 画面上的像素位置；留 (0, 0) 就按 grid_pos 换算
+@export var view_pos: Vector2 = Vector2.ZERO
 @export var unlock_cost: int = 0
 ## 到第几阶段才出现价格牌（0 = 开局就有）
 @export var stage: int = 0

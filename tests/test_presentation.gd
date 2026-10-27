@@ -65,7 +65,8 @@ func test_service_reaches_pickup_before_carrying_and_customer_before_sale() -> v
 		var view: Node = load("res://presentation/graybox/shop_view.gd").new()
 		view.bind(sim)
 		var rabbit: Node2D = view._staff["rabbit"]
-		var pickup := Vector2(530, 914)
+		var layout := preload("res://presentation/graybox/layout.gd")
+		var pickup := Vector2(layout.WINDOW.x - 30, layout.STAFF_LINE - 34)
 		var picked_up := false
 		var delivered := false
 		var last_target := Vector2.ZERO

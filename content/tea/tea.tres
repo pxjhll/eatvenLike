@@ -272,6 +272,7 @@ grid_pos = Vector2i(5, 1)
 unlock_cost = 10
 stage = 0
 posts = 0
+view_pos = Vector2(170, 960)
 
 [sub_resource type="Resource" id="spot_counter"]
 script = ExtResource("front_spot_def")
@@ -289,6 +290,7 @@ id = "cabinet"
 station = SubResource("station_cabinet")
 grid_pos = Vector2i(0, 1)
 initially_locked = true
+view_pos = Vector2(130, 310)
 
 [sub_resource type="Resource" id="slot_brewer"]
 script = ExtResource("slot_def")
@@ -296,6 +298,7 @@ id = "brewer"
 station = SubResource("station_brewer")
 grid_pos = Vector2i(2, 0)
 initially_locked = true
+view_pos = Vector2(300, 310)
 
 [sub_resource type="Resource" id="slot_milk_station"]
 script = ExtResource("slot_def")
@@ -303,6 +306,7 @@ id = "milk_station"
 station = SubResource("station_milk_station")
 grid_pos = Vector2i(4, 1)
 initially_locked = true
+view_pos = Vector2(460, 310)
 
 [sub_resource type="Resource" id="slot_topping"]
 script = ExtResource("slot_def")
@@ -310,6 +314,7 @@ id = "topping"
 station = SubResource("station_topping")
 grid_pos = Vector2i(4, 3)
 initially_locked = true
+view_pos = Vector2(610, 310)
 
 [sub_resource type="Resource" id="conn_cabinet_to_brewer"]
 script = ExtResource("connection_def")
@@ -324,6 +329,7 @@ id = "cabinet_to_milk"
 from_slot = "cabinet"
 to_slot = "milk_station"
 length_cells = 3.0
+view_points = PackedVector2Array(130, 232, 130, 196, 460, 196, 460, 232)
 
 [sub_resource type="Resource" id="conn_brewer_to_milk"]
 script = ExtResource("connection_def")
@@ -339,6 +345,7 @@ from_slot = "milk_station"
 to_slot = "shelf"
 length_cells = 3.0
 until_active = "topping"
+view_points = PackedVector2Array(500, 286, 540, 286, 540, 678, 560, 678)
 
 [sub_resource type="Resource" id="conn_milk_to_topping"]
 script = ExtResource("connection_def")
