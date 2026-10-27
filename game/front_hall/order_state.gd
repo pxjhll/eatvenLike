@@ -10,10 +10,12 @@ var state: int = State.WAITING_STOCK
 ## 没人接待时累计的等待秒数
 var wait := 0.0
 var request_id := -1
+## 这一杯是从货架预留的（取餐时要扣库存），还是出品台现打的
+var from_stock := false
 
 
 func to_dict() -> Dictionary:
-	return {"id": id, "dish": dish_id, "state": state, "wait": wait, "request": request_id}
+	return {"id": id, "dish": dish_id, "state": state, "wait": wait, "request": request_id, "from_stock": from_stock}
 
 
 static func from_dict(d: Dictionary) -> OrderState:
@@ -23,4 +25,5 @@ static func from_dict(d: Dictionary) -> OrderState:
 	o.state = int(d.state)
 	o.wait = float(d.wait)
 	o.request_id = int(d.request)
+	o.from_stock = bool(d.get("from_stock", true))
 	return o

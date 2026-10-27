@@ -33,6 +33,15 @@ static func create(slot: SlotDef) -> StationState:
 	return st
 
 
+## 前厅固定位点：开局都是价格牌，点一下才解锁（布局基线决定⑧）
+static func create_spot(spot: FrontSpotDef) -> StationState:
+	var st := StationState.new()
+	st.slot_id = spot.id
+	st.def_id = spot.station.id
+	st.status = Status.LOCKED
+	return st
+
+
 func speed(def: StationDef) -> float:
 	return def.level_speed[level - 1] if level <= def.level_speed.size() else 1.0
 

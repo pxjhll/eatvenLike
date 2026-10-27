@@ -142,7 +142,9 @@ func step() -> void:
 			push_events(production.on_work_completed(request_id, done_work.overshoot))
 		elif front_hall.owns_request(request_id):
 			var done := front_hall.on_work_completed(request_id)
-			push_events(production.take_reserved(done.order_id))
+			# 出品台现打的那一杯不在库存里，只有从货架取的才扣预留
+			if done.from_stock:
+				push_events(production.take_reserved(done.order_id))
 			sales.append(done)
 
 	# 5. 结算

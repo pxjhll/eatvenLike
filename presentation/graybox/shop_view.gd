@@ -4,7 +4,8 @@ extends Node2D
 signal station_selected(slot_id: String)
 signal belt_selected(segment_id: String)
 signal selection_cleared
-signal staff_dropped(staff_id: String, zone: String)
+## target：前厅位点 id、工作区名，或空（拖回员工栏 = 下岗）
+signal staff_dropped(staff_id: String, target: String)
 
 const Assets := preload("res://presentation/graybox/assets.gd")
 const Layout := preload("res://presentation/graybox/layout.gd")
@@ -29,6 +30,8 @@ var _held := ""
 var _held_at := Vector2.ZERO
 var _dragged := ""
 var _drag_zone := ""
+## 松手时手指落在底部员工栏上（= 下岗）
+var _dropped_on_bar := false
 
 
 func bind(sim: GameSim) -> void:
@@ -63,6 +66,13 @@ func bind(sim: GameSim) -> void:
 		station.position = _positions[slot.id]
 		_entities.add_child(station)
 		_stations[slot.id] = station
+	for spot in sim.config.front_spots:
+		var station := Station.new()
+		station.setup(spot.station)
+		station.unlock_price = spot.unlock_cost
+		station.position = _positions[spot.id]
+		_entities.add_child(station)
+		_stations[spot.id] = station
 	_shelf = Shelf.new()
 	_shelf.position = Layout.SHELF
 	_shelf.capacity = sim.config.shelf_capacity
@@ -125,6 +135,8 @@ func _on_snapshot(snapshot: Dictionary) -> void:
 	_kitchen_open = bool(snapshot.kitchen_open)
 	for slot in _sim.config.slots:
 		_stations[slot.id].visible = _kitchen_open or slot.station.zone != _sim.config.kitchen_zone
+	for spot in _sim.config.front_spots:
+		_stations[spot.id].visible = int(snapshot.progress.stage) >= spot.stage
 	for connection in _sim.config.connections:
 		var hidden := false
 		for slot in _sim.config.slots:
@@ -207,6 +219,7 @@ func _place_staff(snapshot: Dictionary, requests: Dictionary, places: Dictionary
 			front_index += 1
 		else:
 			kitchen_index += 1
+		actor.visible = String(data.post) != "" or zone != ""
 		if actor.dragging:
 			continue
 		var request: Dictionary = requests.get(int(data.request), {})
@@ -216,17 +229,35 @@ func _place_staff(snapshot: Dictionary, requests: Dictionary, places: Dictionary
 		if not request.is_empty() and _positions.has(request.slot):
 			actor.target = Layout.work_spot(_positions[request.slot])
 		elif serving:
-			# Service: fetch from the pass-through window, then hand over at the customer's place.
+			# Service: fetch where the drink comes from (the stand it is poured at, or the
+			# pass-through window), then hand over at the customer's place.
 			var duration := float(data.work_seconds) / _sim.workforce.efficiency(data.staff, data.zone)
+			var source := String(request.get("source", ""))
+			var pickup := Vector2(Layout.WINDOW.x - 30, Layout.STAFF_LINE - 34)
+			if source != "" and _positions.has(source):
+				pickup = Layout.work_spot(_positions[source])
 			actor.display_service(int(data.request), progress, duration,
-				Vector2(Layout.WINDOW.x - 30, Layout.STAFF_LINE - 34), Layout.serve_spot(places[int(request.order)]),
+				pickup, Layout.serve_spot(places[int(request.order)]),
 				_dish_item(snapshot.front_hall.orders[places[int(request.order)]].dish), FETCH_SHARE)
+		elif String(data.post) != "" and _positions.has(data.post):
+			actor.target = Layout.post_spot(_positions[data.post], _post_index(snapshot, data))
 		elif not _zone_rect(zone).has_point(actor.target):
 			actor.target = _zone_home(zone, index)
 		elif zone == "front":
 			actor.target = Layout.front_idle_spot(index)
 		# An idle kitchen worker stays where the last job ended until another station needs them.
 	_separate_idle_workers()
+
+
+## Rank of this worker among the ones standing on the same post, so two never stack.
+func _post_index(snapshot: Dictionary, data: Dictionary) -> int:
+	var index := 0
+	for other in snapshot.workforce.staff:
+		if other.staff == data.staff:
+			break
+		if other.post == data.post:
+			index += 1
+	return index
 
 
 ## Two workers never share a spot: an idle one steps aside for whoever is working there.
@@ -295,6 +326,25 @@ func _zone_rect(zone: String) -> Rect2:
 	return Layout.FRONT if zone == "front" else Layout.KITCHEN
 
 
+## 拖到哪里了：前厅位点优先，其次工作区；拖回底部员工栏是下岗（空字符串）
+func _target_at(point: Vector2) -> String:
+	var spot := spot_at(point)
+	if spot != "":
+		return spot
+	_dropped_on_bar = point.y > Layout.FRONT.end.y
+	return "" if _dropped_on_bar else _zone_at(point)
+
+
+## The front spot under the finger, if it takes staff and is unlocked.
+func spot_at(point: Vector2) -> String:
+	if _sim == null:
+		return ""
+	for spot in _sim.config.front_spots:
+		if spot.posts > 0 and _sim.front_hall.is_active(spot.id) and _stations[spot.id].hit(point):
+			return spot.id
+	return ""
+
+
 func _zone_at(point: Vector2) -> String:
 	if _kitchen_open and Layout.KITCHEN.has_point(point):
 		return "kitchen"
@@ -335,7 +385,7 @@ func _input(event: InputEvent) -> void:
 			selection_cleared.emit()
 		if _dragged != "":
 			_staff[_dragged].position = point + Vector2(0, 40)
-			_drag_zone = _zone_at(point)
+			_drag_zone = _target_at(point)
 			queue_redraw()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
@@ -380,7 +430,7 @@ func _drop() -> void:
 	var actor: Node2D = _staff[_dragged]
 	actor.dragging = false
 	actor.z_index = 0
-	if _drag_zone != "":
+	if _drag_zone != "" or _dropped_on_bar:
 		# Land where the finger let go; the snapshot moves the worker on from there.
 		actor.target = actor.position
 		staff_dropped.emit(_dragged, _drag_zone)
@@ -399,7 +449,7 @@ func _draw() -> void:
 	draw_texture_rect(Assets.texture("res://art/env/env_front_floor.png"), Layout.FRONT, true)
 	draw_texture_rect(Assets.texture("res://art/env/env_divider.png"), Rect2(36, Layout.KITCHEN.end.y - 4, 648, 32), true)
 	draw_texture_rect(Assets.texture("res://art/env/env_window.png"), Rect2(Layout.WINDOW.x - 52, Layout.WINDOW.y - 46, 104, 56), false)
-	draw_string(_font, Vector2(56, 146), "后厨" if _kitchen_open else "前厅备饮 · 柠檬水", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("77908e"))
+	draw_string(_font, Vector2(56, 146), "后厨" if _kitchen_open else "后厨 · 未开放", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("77908e"))
 	draw_string(_font, Vector2(56, 842), "前厅", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("a48d71"))
 	draw_string(_font, Vector2(56, 1180), "入口", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("a48d71"))
 	if not _kitchen_open:

@@ -6,6 +6,8 @@ const State := preload("res://presentation/graybox/view_state.gd")
 var definition: StationDef
 var row := {}
 var selected := false
+## 前厅位点的解锁价（价格牌）；-1 = 用 StationDef 上的价格
+var unlock_price := -1
 var sprite: Sprite2D
 var _font: Font
 var _counter := false
@@ -15,7 +17,7 @@ var _level := 0
 
 func setup(def: StationDef) -> void:
 	definition = def
-	_counter = def.owner == StationDef.OwnerSystem.FRONT_HALL
+	_counter = def.owner == StationDef.OwnerSystem.FRONT_HALL and def.mode == StationDef.Mode.MANUAL
 	_font = load("res://art/ui/graybox_font.ttf")
 	if _counter:
 		return
@@ -108,6 +110,8 @@ func _draw_progress(state: Dictionary) -> void:
 
 
 func _price() -> int:
+	if unlock_price >= 0:
+		return unlock_price
 	return definition.unlock_cost if row.status == StationState.Status.LOCKED else definition.parallel_cost
 
 

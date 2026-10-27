@@ -1,8 +1,10 @@
 # eatvenLike
 
-Godot 4.7（GDScript）工程。结构按 Notion「Architecture Contract v1.1｜Godot 版」搭建，玩法以 02 和单店节奏页为准。
+Godot 4.7（GDScript）工程。结构按 Notion「Architecture Contract v1.2｜Godot 版」搭建（布局层分 PXJ-46/47/48 三步落地，这一版做完第 1 步），玩法以 02 和单店节奏页为准。
 
-这一版是**面包店单店模拟（白面包 + 切片吐司）+ 2D 3/4 灰盒现场**：能看到物料输送、员工装卸/服务、备料库存和顾客排队。点击工位可升级或启用并联，顶部可以调岗和存档，列表图标可展开原有调试 HUD。新手引导、移动端手感和正式美术仍待后续制作。
+这一版新档从**奶茶店空店开局**：前厅柠檬水台和柜台是价格牌，点一下花钱摆上；员工栏里招人，把卡片拖到柜台上岗，服务员就开始卖柠檬水（PXJ-46）。营业额到门槛后买下煮珍珠锅，后厨和奶茶线开放，后厨仍是 v1.1 的固定机位（布局模式见 PXJ-47）。面包店（白面包 + 切片吐司）作为旧店保留在存档里，PXJ-47 做布局模式时删除。
+
+现场是 2D 3/4 灰盒：能看到物料输送、员工装卸/服务、备料库存和顾客排队。点击工位可升级或启用并联，底部是员工栏，列表图标可展开原有调试 HUD。新手引导、移动端手感和正式美术仍待后续制作。
 
 灰盒资源包含六类工位、兔子/小熊/小猫三套动画、顾客、四种物料及 UI 图标；切片机在店里是灰色虚影，累计营业额到 600 后可以买下；小猫资源暂未接入。独立打开 `presentation/graybox/asset_gallery.tscn` 可查看资源。
 
@@ -21,7 +23,18 @@ godot --headless --path . -s tests/run_all.gd
 godot --path .
 ```
 
-## 白面包这条线
+## 奶茶店这家店（首店）
+
+| 东西 | 怎么来的 | 占位数字 |
+| --- | --- | --- |
+| 柠檬水台 | 前厅位点，点价格牌解锁 | 10 金；出品台（饮水机式）：不配员工、不囤杯、不限量，服务员过去现打一杯 2 秒，升级提速 |
+| 柜台 | 前厅位点，点价格牌解锁 | 20 金；所有顾客在这里点单，接单 + 递杯 2 秒，最多站 2 人 |
+| 员工 | 员工栏「招人」，拖到工位上岗 | 15 / 25 / 40 / 60 金；一人一岗，拖到满位就是换岗，拖回员工栏是下岗 |
+| 奶茶线 | 营业额 300 后买煮珍珠锅（60 金） | 生珍珠箱 → 煮珍珠锅 → 调配 → 备料架 → 柜台，售价 24 |
+
+开局金币 50，正好够柠檬水台 + 柜台 + 第一个人。数字都在 `content/tea/tea.tres` 里，直接在 Godot 里编辑。
+
+## 白面包这条线（面包店，旧内容）
 
 面粉箱（外购，每 3 秒 1 份）→ 传送带 → 面团台（自动，2 秒）→ 传送带 → 烤炉（员工装入 0.8 秒 → 烘烤 4 秒 → 员工取出 0.8 秒）→ 传送带 → 备料架 → 前厅柜台（员工服务 1.5 秒，售价 10）。
 烤炉旁有一个并联槽（120 金启用），面团台到两台烤炉默认轮流送、跳过堵住的一路。顾客约每 4 秒一位，等 18 秒没人接待就走。任务：白面包卖出 30 份。
@@ -42,7 +55,7 @@ godot --path .
 | --- | --- |
 | `game/app/` | `app.gd`（唯一 Autoload，换店、存读档）、`profile.gd`、`save_service.gd` |
 | `game/sim/` | `game_sim.gd`（Node，固定步长 0.1 秒，tick 顺序和中转）、`snapshot.gd`、`save_util.gd` |
-| `game/sim/commands/` | 7 条命令，每条一个文件（validate + commit） |
+| `game/sim/commands/` | 每条命令一个文件（validate + commit）：解锁前厅位点、招人、调岗、换岗、升级、解锁机位、并联、改线、清线、换店 |
 | `game/production/` | 后厨工位、传送带、备料架与预留 |
 | `game/workforce/` | 员工、请求认领、人工进度、效率倍率（唯一一处） |
 | `game/front_hall/` | 顾客、订单、前厅工位 |
@@ -50,11 +63,17 @@ godot --path .
 | `game/progress/` | 已解锁菜品、任务、店铺完成度 |
 | `game/diagnostics/` | 只读统计 |
 | `content/defs/` | Resource 类（只读 Def） |
-| `content/bakery/`、`content/staff/`、`content/catalog.tres` | 面包店与员工数据 |
+| `content/tea/`、`content/bakery/`、`content/staff/`、`content/catalog.tres` | 奶茶店、面包店与员工数据 |
 | `presentation/` | `shop.tscn`、graybox 只读表现层、操作界面与可折叠调试 HUD |
 | `tests/` | `run_all.gd` + 回归用例（契约第 6 节 10 条不变量各一个） |
 | `art/{env,char,machine,belt,item,ui,fx}` | 原创灰盒 PNG、动画表、字体与资源清单；传送带和反馈图形由表现层绘制 |
 | `art_src/graybox/` | 原创 SVG、源图生成脚本、Godot PNG 导出脚本 |
+
+## 相对契约 v1.2 的进度（PXJ-46）
+
+- 已做：`FrontSpotDef`（前厅位点，点价格牌解锁）、`UnlockFrontSpot` / `HireStaff` / `SwapStaff`、`AssignStaff` 改成「工位或工作区」、`StationDef.DISPENSER`（饮水机式出品台，没有库存，不走预留）、`ShopGridDef`（首店 6×5 后厨 + 6×5 前厅，手写 .tres）。
+- 还没做：布局模式、设备栏、自动传送带、一键部署、加料台与口味货架（PXJ-47 / 48）。后厨因此仍用 v1.1 的 `SlotDef` / `ConnectionDef` 固定机位，后厨员工也仍按工作区派工；前厅已经是按工位。
+- `ShopGridDef` 目前是手写的 .tres，店铺场景模板和 `@tool` 导出脚本等后厨真的能摆了（PXJ-47）再做。
 
 ## 相对契约 v1.1 的补充
 

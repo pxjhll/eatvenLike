@@ -4,6 +4,7 @@ extends RefCounted
 const MACHINE_PATHS := {
 	"flour_box": "mach_flour_bin", "dough_table": "mach_dough_table", "oven": "mach_oven",
 	"slicer": "mach_slicer", "rack": "mach_rack", "bread_counter": "mach_counter",
+	"lemonade_stand": "mach_rack", "counter": "mach_counter",
 }
 const ITEM_PATHS := {"flour": "item_flour", "dough": "item_dough", "bread": "item_bread", "sliced_bread": "item_toast", "toast": "item_toast"}
 const ICONS := ["coin", "goal", "belt", "oven", "slicer", "delete", "hire", "hint", "reset", "upgrade", "lock", "rotate", "close", "assign", "save", "debug"]

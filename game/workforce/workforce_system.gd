@@ -1,26 +1,34 @@
 class_name WorkforceSystem
 extends RefCounted
-## 本店员工：所在工作区、请求认领与释放、人工进度、效率倍率。
+## 本店员工：招来的人、所在工位（一人一岗）、请求认领与释放、人工进度、效率倍率。
 ## 不管物料和订单，不创建或销毁请求。
+##
+## 前厅按工位派工：员工上岗在哪个位点，就只做那个位点的活。
+## 后厨还没有布局模式，暂时仍按工作区派工（PXJ-47 做完后只剩工位）。
 
 const EPS := 0.000001
 
 var _config: ShopConfig
-var _defs := {}  # staff_id -> StaffDef（只读）
+var _defs := {}  # def_id -> StaffDef（只读）
 
 var staff: Array[StaffState] = []
 
 
 func setup(config: ShopConfig, roster: Array[StaffDef]) -> void:
 	_config = config
+	# 空店开局的店一个人都没有，名册里的人不带进来，全靠局内招人
 	for d in roster:
 		_defs[d.id] = d
-		staff.append(StaffState.create(d.id, config.staff_start_zones.get(d.id, config.zones[0])))
+		if not config.hires_own_staff:
+			staff.append(StaffState.create(d.id, config.staff_start_zones.get(d.id, config.zones[0]), d.id))
+	for d in config.hire_defs:
+		_defs[d.id] = d
 
 
 ## 员工 × 工作区 → 速度倍率。全工程只在这里算；以后加特长、稀有度、星级只改这里。
 func efficiency(staff_id: String, zone: String) -> float:
-	var d: StaffDef = _defs.get(staff_id)
+	var s := _find(staff_id)
+	var d: StaffDef = _defs.get(s.def_id if s != null else staff_id)
 	return d.zone_efficiency.get(zone, 1.0) if d != null else 1.0
 
 
@@ -36,6 +44,51 @@ func has_staff(staff_id: String) -> bool:
 	return _find(staff_id) != null
 
 
+func staff_count() -> int:
+	return staff.size()
+
+
+## 这个工位上已经有几个人
+func post_occupancy(post: String) -> int:
+	var count := 0
+	for s in staff:
+		if s.post == post:
+			count += 1
+	return count
+
+
+func display_name(staff_id: String) -> String:
+	var s := _find(staff_id)
+	var d: StaffDef = _defs.get(s.def_id if s != null else staff_id)
+	return d.display_name if d != null else staff_id
+
+
+## 第 N 名员工的招人价（N 从 1 起）
+func hire_cost() -> int:
+	var costs := _config.hire_costs
+	if costs.is_empty():
+		return 0
+	return costs[mini(staff.size(), costs.size() - 1)]
+
+
+## 招来的人用哪个模板：按顺序取，用完重复最后一个
+func hire_def() -> StaffDef:
+	var defs := _config.hire_defs
+	if defs.is_empty():
+		return null
+	return defs[mini(staff.size(), defs.size() - 1)]
+
+
+## HireStaff：新增一名未上岗员工。id 由 GameSim 发号，所以同一个模板可以招多个。
+func hire(new_id: int) -> String:
+	var d := hire_def()
+	assert(d != null, "这家店没配招人模板")
+	_defs[d.id] = d
+	var staff_id := "staff%d" % new_id
+	staff.append(StaffState.create(staff_id, "", d.id))
+	return staff_id
+
+
 func claimed_request_ids() -> Dictionary:
 	var out := {}
 	for s in staff:
@@ -44,14 +97,14 @@ func claimed_request_ids() -> Dictionary:
 	return out
 
 
-## tick 第 3 步：把「现在可执行」的请求派给同工作区的空闲员工。一个请求只给一名员工。
+## tick 第 3 步：把「现在可执行」的请求派给空闲员工。一个请求只给一名员工。
 func dispatch(open: Array) -> void:
 	var claimed := claimed_request_ids()
 	for s in staff:
 		if not s.is_free():
 			continue
 		for r in open:
-			if r.zone == s.zone and not claimed.has(r.id):
+			if _can_take(s, r) and not claimed.has(r.id):
 				s.request_id = r.id
 				s.work_seconds = r.seconds
 				s.work_done = 0.0
@@ -83,9 +136,10 @@ func advance(dt: float) -> Array[Dictionary]:
 	return completed
 
 
-## 调岗：正在做人工步骤就做完再走，期间不再认领旧区新请求。
+## 调岗到工作区（后厨）：正在做人工步骤就做完再走，期间不再认领旧区新请求。
 func assign(staff_id: String, zone: String) -> void:
 	var s := _find(staff_id)
+	s.post = ""
 	if zone == s.zone:
 		s.target_zone = ""
 		s.walk_left = 0.0
@@ -93,6 +147,30 @@ func assign(staff_id: String, zone: String) -> void:
 	s.target_zone = zone
 	if s.request_id == -1:
 		s.walk_left = walk_seconds(s.zone, zone)
+
+
+## 上岗到前厅工位；post 为空 = 下岗。后厨员工不走路，前厅服务员的走动只是表现。
+func assign_post(staff_id: String, post: String, zone: String) -> void:
+	var s := _find(staff_id)
+	s.post = post
+	s.zone = zone
+	s.target_zone = ""
+	s.walk_left = 0.0
+
+
+## 拖到有人的工位上时交换两人的岗位
+func swap(staff_a: String, staff_b: String) -> void:
+	var a := _find(staff_a)
+	var b := _find(staff_b)
+	var post := a.post
+	var zone := a.zone
+	a.post = b.post
+	a.zone = b.zone
+	b.post = post
+	b.zone = zone
+	for s in [a, b]:
+		s.target_zone = ""
+		s.walk_left = 0.0
 
 
 func to_dict() -> Dictionary:
@@ -106,6 +184,14 @@ func from_dict(d: Dictionary) -> void:
 	staff.clear()
 	for sd in d.staff:
 		staff.append(StaffState.from_dict(sd))
+
+
+## 前厅请求带工位，只有站在那个工位的人能做；后厨请求只带工作区。
+func _can_take(s: StaffState, r: Dictionary) -> bool:
+	var post := String(r.get("post", ""))
+	if post != "":
+		return s.post == post
+	return s.post == "" and s.zone == String(r.zone)
 
 
 func _find(staff_id: String) -> StaffState:

@@ -25,6 +25,12 @@ var _selected_kind := ""
 var _snapshot := {}
 var _font: Font
 var _toast_left := 0.0
+var _bar: Panel
+var _hire: Button
+var _bar_hint: Label
+var _staff_cards: Array[Button] = []
+var _bar_drag := ""
+var _idle_staff := []
 
 
 func bind(sim: GameSim, view: Node2D, debug: CanvasLayer) -> void:
@@ -32,6 +38,9 @@ func bind(sim: GameSim, view: Node2D, debug: CanvasLayer) -> void:
 	for child in get_children():
 		child.free()
 	_card_buttons.clear()
+	_staff_cards.clear()
+	_idle_staff = []
+	_bar_drag = ""
 	_selected = ""
 	_selected_kind = ""
 	_sim = sim
@@ -119,13 +128,14 @@ func _build() -> void:
 	var debug := _button("", Rect2(642, 30, 42, 50), "debug", _root)
 	debug.tooltip_text = "显示 / 收起调试面板"
 	debug.pressed.connect(func() -> void: _debug.visible = not _debug.visible)
-	_hint = _label("按住员工拖到后厨或前厅来调岗，点机器或传送带查看操作", Vector2(40, 1214), 13, Color("8a978d"), _root)
-	_toast = _label("", Vector2(0, 1236), 16, Color("a16e47"), _root)
+	_hint = _label("", Vector2(40, 1104), 13, Color("8a978d"), _root)
+	_toast = _label("", Vector2(0, 1264), 14, Color("a16e47"), _root)
 	_toast.size = Vector2(720, 24)
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_menu = _label("", Vector2(56, 750), 16, Color("526b65"), _root)
-	_unlock = _button("", Rect2(74, 1130, 572, 46), "lock", _root)
+	_unlock = _button("", Rect2(74, 1124, 572, 42), "lock", _root)
 	_unlock.pressed.connect(_unlock_next)
+	_build_staff_bar()
 	_build_card()
 
 
@@ -137,6 +147,69 @@ func _unlock_next() -> void:
 		if not slot_id in _snapshot.progress.unlocked_slots:
 			_sim.submit(UnlockStationCommand.new(slot_id))
 			return
+
+
+## 员工栏（只在经营模式）：已雇未上岗的员工卡片 + 招人按钮。
+## 拖卡片到工位上岗；把在岗的人拖回这里就是下岗（决定⑩）。
+func _build_staff_bar() -> void:
+	_bar = _panel(Rect2(32, 1194, 656, 68), Color("f2f0e4"), _root)
+	_hire = _button("", Rect2(44, 1202, 136, 52), "hire", _root)
+	_hire.pressed.connect(func() -> void: _sim.submit(HireStaffCommand.new()))
+	_bar_hint = _label("", Vector2(196, 1218), 13, Color("8a978d"), _root)
+
+
+## 一张未上岗员工的卡片，按下就跟着手指走，松手落在工位上就上岗
+func _staff_card(staff_id: String, index: int) -> Button:
+	var card := _button(_sim.workforce.display_name(staff_id), Rect2(196 + index * 116, 1202, 108, 52), "assign", _root)
+	card.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseMotion and _bar_drag == staff_id:
+			card.position += event.relative
+		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_bar_drag = staff_id
+				card.z_index = 10
+			elif _bar_drag == staff_id:
+				_finish_bar_drag(card.position + event.position))
+	return card
+
+
+## 松手：落在前厅工位上就上岗，落在开放的后厨就去后厨，落在别处什么也不做
+func _finish_bar_drag(at: Vector2) -> void:
+	var staff_id := _bar_drag
+	_bar_drag = ""
+	for card in _staff_cards:
+		card.queue_free()
+	_staff_cards.clear()
+	_idle_staff = ["?"]
+	if _view == null or staff_id == "":
+		return
+	var point: Vector2 = _view.get_global_transform_with_canvas().affine_inverse() * (at + Vector2(_root.position.x, 0))
+	var target: String = _view.spot_at(point)
+	if target == "" and _view._zone_at(point) == _sim.config.kitchen_zone:
+		target = _sim.config.kitchen_zone
+	if target != "":
+		_assign(staff_id, target)
+
+
+func _refresh_staff_bar() -> void:
+	var idle := []
+	for staff in _snapshot.workforce.staff:
+		if String(staff.post) == "" and String(staff.zone) == "":
+			idle.append(String(staff.staff))
+	# 拖动中不要重建卡片，否则手里的那张会被换掉
+	if _bar_drag == "" and idle != _idle_staff:
+		_idle_staff = idle
+		for card in _staff_cards:
+			card.queue_free()
+		_staff_cards.clear()
+		for i in idle.size():
+			_staff_cards.append(_staff_card(idle[i], i))
+	var cost := _sim.workforce.hire_cost()
+	_hire.text = "招人 %d" % cost
+	_hire.disabled = int(_snapshot.gold) < cost
+	_bar_hint.text = ""
+	if idle.is_empty():
+		_bar_hint.text = "店里还没人，先招一个" if _sim.workforce.staff_count() == 0 else "所有人都在岗上"
 
 
 func _build_card() -> void:
@@ -186,7 +259,8 @@ func _on_snapshot(snapshot: Dictionary) -> void:
 			var cost := next_slot.station.unlock_cost
 			_unlock.text = "解锁%s · 金币 %d · 营业额 %d/%d" % [_dish_name(next.dish_id), cost, snapshot.revenue, next.revenue_threshold]
 			_unlock.disabled = snapshot.gold < cost or snapshot.revenue < next.revenue_threshold
-	_hint.text = "按住员工拖到后厨或前厅来调岗，点机器或传送带查看操作" if snapshot.kitchen_open else "先卖柠檬水，再在前厅解锁珍珠奶茶，开放后厨"
+	_refresh_staff_bar()
+	_hint.text = "按住员工拖到工位上上岗，拖回员工栏是下岗" if snapshot.kitchen_open else "点价格牌解锁柠檬水台和柜台，招一个人拖到柜台"
 	if snapshot.progress.completed:
 		_goal.text = "本店目标已达成"
 	elif current != "":
@@ -242,9 +316,15 @@ func _refresh_card() -> void:
 	if _selected_kind == "belt":
 		_refresh_belt_card()
 		return
-	var slot := _slot()
 	var row := _row()
-	if slot == null or row.is_empty():
+	if row.is_empty():
+		return
+	var spot := _spot()
+	if spot != null:
+		_refresh_spot_card(spot, row)
+		return
+	var slot := _slot()
+	if slot == null:
 		return
 	var def: StationDef = slot.station
 	_card_buttons[1].visible = false
@@ -285,6 +365,32 @@ func _refresh_card() -> void:
 	_card_buttons[0].disabled = _snapshot.gold < price
 
 
+## 前厅位点：没解锁时是价格牌，解锁后和别的工位一样能升级。
+func _refresh_spot_card(spot: FrontSpotDef, row: Dictionary) -> void:
+	var def: StationDef = spot.station
+	_card_buttons[1].visible = false
+	_card_buttons[0].size.x = 236
+	_card_buttons[0].icon = Assets.icon("upgrade")
+	if row.status != StationState.Status.ACTIVE:
+		_card_title.text = def.display_name
+		_card_detail.text = "点一下在前厅摆上它" if spot.posts == 0 else "点一下摆上它，再派一名员工"
+		_card_buttons[0].text = "购买  %d" % spot.unlock_cost
+		_card_buttons[0].disabled = int(_snapshot.gold) < spot.unlock_cost
+		return
+	var level := int(row.level)
+	var maximum := mini(def.level_speed.size(), def.upgrade_costs.size() + 1)
+	_card_title.text = "%s  Lv%d" % [def.display_name, level]
+	if level >= maximum:
+		_card_detail.text = "已经是最高等级" if maximum > 1 else "这个工位不升级"
+		_card_buttons[0].text = "已满级" if maximum > 1 else "不用升级"
+		_card_buttons[0].disabled = true
+		return
+	var price: int = def.upgrade_costs[level - 1]
+	_card_detail.text = "速度 ×%.2f → ×%.2f" % [def.level_speed[level - 1], def.level_speed[level]]
+	_card_buttons[0].text = "升级  %d" % price
+	_card_buttons[0].disabled = int(_snapshot.gold) < price
+
+
 func _refresh_belt_card() -> void:
 	var segment := {}
 	for data in _snapshot.production.segments:
@@ -316,16 +422,41 @@ func _kitchen_slot(slot_id: String) -> bool:
 	return false
 
 
-func _assign(id: String, zone: String) -> void:
+## 拖拽落点：前厅位点 = 上岗（满了就和台上的人换岗），工作区 = 后厨调岗，空 = 下岗。
+func _assign(id: String, target: String) -> void:
+	var me := {}
 	for staff in _snapshot.workforce.staff:
-		if staff.staff != id:
-			continue
-		# Already heading there, or already there with nothing pending: nothing to do.
-		if staff.target == zone or (staff.zone == zone and staff.target == ""):
+		if staff.staff == id:
+			me = staff
+	if me.is_empty():
+		return
+	var name: String = _sim.workforce.display_name(id)
+	if target == "":
+		if String(me.post) == "" and String(me.zone) == "":
 			return
-		# Dropping back on the current zone cancels a pending transfer.
-		_sim.submit(AssignStaffCommand.new(id, zone))
-		_show_toast("%s 留在%s" % [Names.get(id, id), ZoneNames.get(zone, zone)] if staff.zone == zone else "%s 调往%s" % [Names.get(id, id), ZoneNames.get(zone, zone)])
+		_sim.submit(AssignStaffCommand.new(id, ""))
+		_show_toast("%s 下岗了" % name)
+		return
+	if _sim.front_hall.has_spot(target):
+		if String(me.post) == target:
+			return
+		var capacity := _sim.front_hall.post_capacity(target)
+		if _sim.workforce.post_occupancy(target) >= capacity:
+			# 工位满了：和台上的人换岗，而不是挤下去
+			for staff in _snapshot.workforce.staff:
+				if staff.post == target:
+					_sim.submit(SwapStaffCommand.new(id, String(staff.staff)))
+					_show_toast("%s 和 %s 换了岗" % [name, _sim.workforce.display_name(String(staff.staff))])
+					return
+			return
+		_sim.submit(AssignStaffCommand.new(id, target))
+		_show_toast("%s 去了%s" % [name, _sim.front_hall.station_def(target).display_name])
+		return
+	# Already heading there, or already there with nothing pending: nothing to do.
+	if me.target == target or (me.zone == target and me.target == "" and String(me.post) == ""):
+		return
+	_sim.submit(AssignStaffCommand.new(id, target))
+	_show_toast("%s 调往%s" % [name, ZoneNames.get(target, target)])
 
 
 func _act(button: int) -> void:
@@ -340,9 +471,17 @@ func _act(button: int) -> void:
 			if data.id == _selected:
 				_sim.submit(SetConnectionCommand.new(connection.from_slot, connection.to_slot, not data.connected))
 		return
-	var slot := _slot()
 	var row := _row()
-	if slot == null or row.is_empty():
+	if row.is_empty():
+		return
+	if _spot() != null:
+		if row.status == StationState.Status.ACTIVE:
+			_sim.submit(UpgradeStationCommand.new(_selected))
+		else:
+			_sim.submit(UnlockFrontSpotCommand.new(_selected))
+		return
+	var slot := _slot()
+	if slot == null:
 		return
 	if row.status == StationState.Status.EMPTY_PARALLEL:
 		_sim.submit(ActivateParallelCommand.new(_selected))
@@ -350,6 +489,13 @@ func _act(button: int) -> void:
 		_sim.submit(UnlockStationCommand.new(_selected))
 	else:
 		_sim.submit(UpgradeStationCommand.new(_selected))
+
+
+func _spot() -> FrontSpotDef:
+	for spot in _sim.config.front_spots:
+		if spot.id == _selected:
+			return spot
+	return null
 
 
 func _slot() -> SlotDef:
@@ -383,6 +529,9 @@ func _dish_name(dish_id: String) -> String:
 func _slot_name(id: String) -> String:
 	if id == "shelf":
 		return "备料架"
+	for spot in _sim.config.front_spots:
+		if spot.id == id:
+			return spot.station.display_name
 	for slot in _sim.config.slots:
 		if slot.id == id:
 			return slot.station.display_name
