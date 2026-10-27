@@ -1,0 +1,548 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://art/reference/ingredient_table.png" id="1_36bis"]
+[ext_resource type="Texture2D" path="res://art/reference/pearl_jar.png" id="2_wb37j"]
+[ext_resource type="Texture2D" path="res://art/reference/tea_tin.png" id="3_onyl5"]
+[ext_resource type="Texture2D" path="res://art/reference/milk_bottle.png" id="4_fyr00"]
+[ext_resource type="Texture2D" path="res://art/reference/prep_bench.png" id="5_ba0ta"]
+[ext_resource type="Texture2D" path="res://art/reference/machine_table.png" id="6_800ag"]
+[ext_resource type="Texture2D" path="res://art/reference/pearl_pot.png" id="7_vlf75"]
+[ext_resource type="Texture2D" path="res://art/reference/brewer.png" id="8_j0eya"]
+[ext_resource type="Texture2D" path="res://art/reference/belt_horizontal.png" id="9_trs6r"]
+[ext_resource type="Texture2D" path="res://art/reference/belt_vertical.png" id="10_tx7yf"]
+[ext_resource type="Texture2D" path="res://art/reference/belt_corner.png" id="11_ynukg"]
+[ext_resource type="Texture2D" path="res://art/reference/sealer.png" id="12_kbrwl"]
+[ext_resource type="Texture2D" path="res://art/reference/cat.png" id="13_xhkp2"]
+[ext_resource type="Texture2D" path="res://art/reference/raccoon.png" id="14_cs3k0"]
+[ext_resource type="Texture2D" path="res://art/reference/rack.png" id="15_sme3r"]
+[ext_resource type="Texture2D" path="res://art/reference/pearl_tea.png" id="16_oewea"]
+[ext_resource type="Texture2D" path="res://art/reference/cream_tea.png" id="17_cggs3"]
+[ext_resource type="Texture2D" path="res://art/reference/partition_left.png" id="18_h41f2"]
+[ext_resource type="Texture2D" path="res://art/reference/partition_right.png" id="19_3qchh"]
+[ext_resource type="Texture2D" path="res://art/reference/door_lintel.png" id="20_rajy7"]
+[ext_resource type="Texture2D" path="res://art/reference/fox.png" id="21_ku1wv"]
+[ext_resource type="Texture2D" path="res://art/reference/checkout.png" id="22_28ce3"]
+[ext_resource type="Texture2D" path="res://art/reference/register.png" id="23_ruqqi"]
+[ext_resource type="Texture2D" path="res://art/reference/display_case.png" id="24_466mj"]
+[ext_resource type="Texture2D" path="res://art/reference/fruit_tea.png" id="25_kjlhf"]
+[ext_resource type="Texture2D" path="res://art/reference/squirrel.png" id="26_bchtc"]
+[ext_resource type="Texture2D" path="res://art/reference/hamster.png" id="27_2srf0"]
+[ext_resource type="Texture2D" path="res://art/reference/floor.png" id="28_fqxi1"]
+[ext_resource type="Texture2D" path="res://art/reference/back_wall.png" id="29_uw3yt"]
+[ext_resource type="Texture2D" path="res://art/reference/outer_left.png" id="30_cft0w"]
+[ext_resource type="Texture2D" path="res://art/reference/outer_right.png" id="31_i5bfi"]
+
+[node name="ShopArt" type="Node2D" unique_id=1057463458]
+
+[node name="Sortables" type="Node2D" parent="." unique_id=1541857696]
+y_sort_enabled = true
+
+[node name="IngredientTable" type="Node2D" parent="Sortables" unique_id=78718895]
+position = Vector2(135.5, 293)
+metadata/art_layer = "furniture"
+metadata/asset_id = "ingredient_table"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/IngredientTable" unique_id=908037586]
+position = Vector2(-112.5, -99)
+scale = Vector2(0.46875, 0.44)
+texture = ExtResource("1_36bis")
+centered = false
+
+[node name="PearlJar" type="Node2D" parent="Sortables/IngredientTable" unique_id=1541974213]
+position = Vector2(-65.5, -55)
+metadata/art_layer = "equipment"
+metadata/asset_id = "pearl_jar"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/IngredientTable/PearlJar" unique_id=305210257]
+position = Vector2(-35, -81)
+scale = Vector2(0.20588236, 0.25714287)
+texture = ExtResource("2_wb37j")
+centered = false
+
+[node name="TeaTin" type="Node2D" parent="Sortables/IngredientTable" unique_id=261005398]
+position = Vector2(7, -55)
+metadata/art_layer = "equipment"
+metadata/asset_id = "tea_tin"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/IngredientTable/TeaTin" unique_id=150128712]
+position = Vector2(-31.5, -95)
+scale = Vector2(0.22909091, 0.25333333)
+texture = ExtResource("3_onyl5")
+centered = false
+
+[node name="MilkBottle" type="Node2D" parent="Sortables/IngredientTable" unique_id=1953827778]
+position = Vector2(76, -55)
+metadata/art_layer = "equipment"
+metadata/asset_id = "milk_bottle"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/IngredientTable/MilkBottle" unique_id=881564366]
+position = Vector2(-23.5, -86)
+scale = Vector2(0.2, 0.22337662)
+texture = ExtResource("4_fyr00")
+centered = false
+
+[node name="PrepBench" type="Node2D" parent="Sortables" unique_id=653390344]
+position = Vector2(84, 594.37)
+metadata/art_layer = "furniture"
+metadata/asset_id = "prep_bench"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/PrepBench" unique_id=616602746]
+position = Vector2(-61, -348.37)
+scale = Vector2(0.2798165, 0.27981526)
+texture = ExtResource("5_ba0ta")
+centered = false
+
+[node name="MachineTable" type="Node2D" parent="Sortables" unique_id=1165223491]
+position = Vector2(381, 280)
+metadata/art_layer = "furniture"
+metadata/asset_id = "machine_table"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/MachineTable" unique_id=1433537560]
+position = Vector2(-140, -70)
+scale = Vector2(0.14285715, 0.14285715)
+texture = ExtResource("6_800ag")
+centered = false
+
+[node name="PearlPot" type="Node2D" parent="Sortables/MachineTable" unique_id=1069753232]
+position = Vector2(-49, -6)
+metadata/art_layer = "equipment"
+metadata/asset_id = "pearl_pot"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/MachineTable/PearlPot" unique_id=762927150]
+position = Vector2(-83, -155)
+scale = Vector2(0.3074074, 0.37804878)
+texture = ExtResource("7_vlf75")
+centered = false
+
+[node name="Brewer" type="Node2D" parent="Sortables/MachineTable" unique_id=1217752630]
+position = Vector2(76.5, -20)
+metadata/art_layer = "equipment"
+metadata/asset_id = "brewer"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/MachineTable/Brewer" unique_id=1094571303]
+position = Vector2(-47.5, -144)
+scale = Vector2(0.2835821, 0.3235955)
+texture = ExtResource("8_j0eya")
+centered = false
+
+[node name="BeltHorizontal" type="Node2D" parent="Sortables" unique_id=1863504199]
+position = Vector2(512, 362)
+metadata/art_layer = "belts"
+metadata/asset_id = "belt_horizontal"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/BeltHorizontal" unique_id=1184852971]
+position = Vector2(-146, -92)
+scale = Vector2(0.38933334, 0.27297297)
+texture = ExtResource("9_trs6r")
+centered = false
+
+[node name="BeltVertical" type="Node2D" parent="Sortables" unique_id=1760801578]
+position = Vector2(619, 361)
+metadata/art_layer = "belts"
+metadata/asset_id = "belt_vertical"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/BeltVertical" unique_id=2034212406]
+position = Vector2(-45, -40)
+scale = Vector2(0.23376623, 0.4028777)
+texture = ExtResource("10_tx7yf")
+centered = false
+
+[node name="BeltCorner" type="Node2D" parent="Sortables" unique_id=1668385896]
+position = Vector2(608, 363)
+metadata/art_layer = "belts"
+metadata/asset_id = "belt_corner"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/BeltCorner" unique_id=225533212]
+position = Vector2(-56, -93)
+scale = Vector2(0.16, 0.17741935)
+texture = ExtResource("11_ynukg")
+centered = false
+
+[node name="Sealer" type="Node2D" parent="Sortables" unique_id=436498135]
+position = Vector2(611, 367)
+metadata/art_layer = "equipment"
+metadata/asset_id = "sealer"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Sealer" unique_id=145339566]
+position = Vector2(-60, -169)
+scale = Vector2(0.27906978, 0.37843138)
+texture = ExtResource("12_kbrwl")
+centered = false
+
+[node name="Cat" type="Node2D" parent="Sortables" unique_id=1739299791]
+position = Vector2(325.5, 383)
+metadata/art_layer = "actors"
+metadata/asset_id = "cat"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Cat" unique_id=617542235]
+position = Vector2(-60.5, -162)
+scale = Vector2(0.31025642, 0.3375)
+texture = ExtResource("13_xhkp2")
+centered = false
+
+[node name="Raccoon" type="Node2D" parent="Sortables" unique_id=1348690258]
+position = Vector2(177.5, 500)
+metadata/art_layer = "actors"
+metadata/asset_id = "raccoon"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Raccoon" unique_id=1880582211]
+position = Vector2(-67.5, -184)
+scale = Vector2(0.3139535, 0.35)
+texture = ExtResource("14_cs3k0")
+centered = false
+
+[node name="Rack" type="Node2D" parent="Sortables" unique_id=681801286]
+position = Vector2(602, 707)
+metadata/art_layer = "furniture"
+metadata/asset_id = "rack"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Rack" unique_id=1352239532]
+position = Vector2(-95, -185)
+scale = Vector2(0.4871795, 0.4868421)
+texture = ExtResource("15_sme3r")
+centered = false
+
+[node name="RackCupA" type="Node2D" parent="Sortables/Rack" unique_id=1925257894]
+position = Vector2(-57, -97)
+metadata/art_layer = "drinks"
+metadata/asset_id = "pearl_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Rack/RackCupA" unique_id=852802219]
+position = Vector2(-19, -62)
+scale = Vector2(0.14339623, 0.16986302)
+texture = ExtResource("16_oewea")
+centered = false
+
+[node name="RackCupB" type="Node2D" parent="Sortables/Rack" unique_id=692190399]
+position = Vector2(-3, -97)
+metadata/art_layer = "drinks"
+metadata/asset_id = "pearl_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Rack/RackCupB" unique_id=375631530]
+position = Vector2(-19, -62)
+scale = Vector2(0.14339623, 0.16986302)
+texture = ExtResource("16_oewea")
+centered = false
+
+[node name="RackCupC" type="Node2D" parent="Sortables/Rack" unique_id=1272353466]
+position = Vector2(51.5, -98)
+metadata/art_layer = "drinks"
+metadata/asset_id = "cream_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Rack/RackCupC" unique_id=339734732]
+position = Vector2(-19.5, -56)
+scale = Vector2(0.14444445, 0.16969697)
+texture = ExtResource("17_cggs3")
+centered = false
+
+[node name="RackCupD" type="Node2D" parent="Sortables/Rack" unique_id=706279342]
+position = Vector2(-57, -15)
+metadata/art_layer = "drinks"
+metadata/asset_id = "pearl_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Rack/RackCupD" unique_id=508531880]
+position = Vector2(-19, -60)
+scale = Vector2(0.14339623, 0.16438356)
+texture = ExtResource("16_oewea")
+centered = false
+
+[node name="RackCupE" type="Node2D" parent="Sortables/Rack" unique_id=1516592667]
+position = Vector2(-3, -15)
+metadata/art_layer = "drinks"
+metadata/asset_id = "pearl_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Rack/RackCupE" unique_id=1741318790]
+position = Vector2(-19, -60)
+scale = Vector2(0.14339623, 0.16438356)
+texture = ExtResource("16_oewea")
+centered = false
+
+[node name="RackCupF" type="Node2D" parent="Sortables/Rack" unique_id=1641743098]
+position = Vector2(51.5, -15)
+metadata/art_layer = "drinks"
+metadata/asset_id = "cream_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Rack/RackCupF" unique_id=1009291040]
+position = Vector2(-19.5, -55)
+scale = Vector2(0.14444445, 0.16666667)
+texture = ExtResource("17_cggs3")
+centered = false
+
+[node name="BeltCupA" type="Node2D" parent="Sortables" unique_id=4695403]
+position = Vector2(425, 368)
+metadata/art_layer = "drinks"
+metadata/asset_id = "pearl_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/BeltCupA" unique_id=1243071151]
+position = Vector2(-19, -125)
+scale = Vector2(0.14339623, 0.19178082)
+texture = ExtResource("16_oewea")
+centered = false
+
+[node name="BeltCupB" type="Node2D" parent="Sortables" unique_id=846321701]
+position = Vector2(510, 368)
+metadata/art_layer = "drinks"
+metadata/asset_id = "pearl_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/BeltCupB" unique_id=67353936]
+position = Vector2(-19, -125)
+scale = Vector2(0.14339623, 0.19178082)
+texture = ExtResource("16_oewea")
+centered = false
+
+[node name="SealingCup" type="Node2D" parent="Sortables" unique_id=1838151622]
+position = Vector2(615, 368)
+metadata/art_layer = "drinks"
+metadata/asset_id = "cream_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/SealingCup" unique_id=1447494921]
+position = Vector2(-20, -89)
+scale = Vector2(0.14814815, 0.16363636)
+texture = ExtResource("17_cggs3")
+centered = false
+
+[node name="SealedCup" type="Node2D" parent="Sortables" unique_id=1718268931]
+position = Vector2(615, 395)
+metadata/art_layer = "drinks"
+metadata/asset_id = "cream_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/SealedCup" unique_id=1819140805]
+position = Vector2(-20, -57)
+scale = Vector2(0.14814815, 0.16363636)
+texture = ExtResource("17_cggs3")
+centered = false
+
+[node name="BeltCupC" type="Node2D" parent="Sortables" unique_id=602659084]
+position = Vector2(615, 480)
+metadata/art_layer = "drinks"
+metadata/asset_id = "pearl_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/BeltCupC" unique_id=1000412731]
+position = Vector2(-20, -74)
+scale = Vector2(0.1509434, 0.1890411)
+texture = ExtResource("16_oewea")
+centered = false
+
+[node name="BeltCupD" type="Node2D" parent="Sortables" unique_id=722940664]
+position = Vector2(615, 550)
+metadata/art_layer = "drinks"
+metadata/asset_id = "pearl_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/BeltCupD" unique_id=1676133188]
+position = Vector2(-20, -74)
+scale = Vector2(0.1509434, 0.1890411)
+texture = ExtResource("16_oewea")
+centered = false
+
+[node name="PartitionLeft" type="Node2D" parent="Sortables" unique_id=1962661351]
+position = Vector2(121.8, 857)
+metadata/art_layer = "walls"
+metadata/asset_id = "partition_left"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/PartitionLeft" unique_id=931128748]
+position = Vector2(-97.200005, -181.90002)
+scale = Vector2(0.76837945, 0.7630252)
+texture = ExtResource("18_h41f2")
+centered = false
+
+[node name="PartitionRight" type="Node2D" parent="Sortables" unique_id=1943958563]
+position = Vector2(589.75, 857)
+metadata/art_layer = "walls"
+metadata/asset_id = "partition_right"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/PartitionRight" unique_id=1183850777]
+position = Vector2(-105.649994, -181.90002)
+scale = Vector2(0.76836365, 0.7630252)
+texture = ExtResource("19_3qchh")
+centered = false
+
+[node name="DoorLintel" type="Node2D" parent="Sortables" unique_id=1703709462]
+position = Vector2(351.55, 857)
+metadata/art_layer = "walls"
+metadata/asset_id = "door_lintel"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/DoorLintel" unique_id=305866631]
+position = Vector2(-132.54999, -181.90002)
+scale = Vector2(0.7684058, 0.7677419)
+texture = ExtResource("20_rajy7")
+centered = false
+
+[node name="Fox" type="Node2D" parent="Sortables" unique_id=999073584]
+position = Vector2(408.5, 978)
+metadata/art_layer = "actors"
+metadata/asset_id = "fox"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Fox" unique_id=916900103]
+position = Vector2(-77.5, -176)
+scale = Vector2(0.37349397, 0.36666667)
+texture = ExtResource("21_ku1wv")
+centered = false
+
+[node name="Checkout" type="Node2D" parent="Sortables" unique_id=2070721871]
+position = Vector2(346.5, 1015)
+metadata/art_layer = "furniture"
+metadata/asset_id = "checkout"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Checkout" unique_id=1436337364]
+position = Vector2(-317.5, -74)
+scale = Vector2(1.0241935, 0.45357144)
+texture = ExtResource("22_28ce3")
+centered = false
+
+[node name="Register" type="Node2D" parent="Sortables/Checkout" unique_id=306095844]
+position = Vector2(229.5, 4)
+metadata/art_layer = "furniture"
+metadata/asset_id = "register"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Checkout/Register" unique_id=1952482288]
+position = Vector2(-77, -112)
+scale = Vector2(0.45970148, 0.45714286)
+texture = ExtResource("23_ruqqi")
+centered = false
+
+[node name="DisplayCase" type="Node2D" parent="Sortables" unique_id=1002318541]
+position = Vector2(167.5, 1040)
+metadata/art_layer = "furniture"
+metadata/asset_id = "display_case"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase" unique_id=570257040]
+position = Vector2(-137.5, -219)
+scale = Vector2(0.52884614, 0.5736842)
+texture = ExtResource("24_466mj")
+centered = false
+
+[node name="DisplayPearlA" type="Node2D" parent="Sortables/DisplayCase" unique_id=214675857]
+position = Vector2(-79, -102)
+metadata/art_layer = "drinks"
+metadata/asset_id = "pearl_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase/DisplayPearlA" unique_id=1391197790]
+position = Vector2(-21.5, -75)
+scale = Vector2(0.16226415, 0.20547946)
+texture = ExtResource("16_oewea")
+centered = false
+
+[node name="DisplayFruitA" type="Node2D" parent="Sortables/DisplayCase" unique_id=1026423569]
+position = Vector2(3, -102)
+metadata/art_layer = "drinks"
+metadata/asset_id = "fruit_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase/DisplayFruitA" unique_id=444575836]
+position = Vector2(-21.5, -75)
+scale = Vector2(0.15925926, 0.20547946)
+texture = ExtResource("25_kjlhf")
+centered = false
+
+[node name="DisplayCreamA" type="Node2D" parent="Sortables/DisplayCase" unique_id=294423527]
+position = Vector2(83, -104)
+metadata/art_layer = "drinks"
+metadata/asset_id = "cream_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase/DisplayCreamA" unique_id=591487246]
+position = Vector2(-21.5, -61)
+scale = Vector2(0.15925926, 0.18484849)
+texture = ExtResource("17_cggs3")
+centered = false
+
+[node name="DisplayPearlB" type="Node2D" parent="Sortables/DisplayCase" unique_id=487208372]
+position = Vector2(-79, -21)
+metadata/art_layer = "drinks"
+metadata/asset_id = "pearl_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase/DisplayPearlB" unique_id=511097406]
+position = Vector2(-21.5, -75)
+scale = Vector2(0.16226415, 0.20547946)
+texture = ExtResource("16_oewea")
+centered = false
+
+[node name="DisplayFruitB" type="Node2D" parent="Sortables/DisplayCase" unique_id=1613774567]
+position = Vector2(3, -21)
+metadata/art_layer = "drinks"
+metadata/asset_id = "fruit_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase/DisplayFruitB" unique_id=202470841]
+position = Vector2(-21.5, -75)
+scale = Vector2(0.15925926, 0.20547946)
+texture = ExtResource("25_kjlhf")
+centered = false
+
+[node name="DisplayCreamB" type="Node2D" parent="Sortables/DisplayCase" unique_id=510561384]
+position = Vector2(83, -23)
+metadata/art_layer = "drinks"
+metadata/asset_id = "cream_tea"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase/DisplayCreamB" unique_id=273398916]
+position = Vector2(-21.5, -61)
+scale = Vector2(0.15925926, 0.18484849)
+texture = ExtResource("17_cggs3")
+centered = false
+
+[node name="Squirrel" type="Node2D" parent="Sortables" unique_id=577703516]
+position = Vector2(359, 1222)
+metadata/art_layer = "actors"
+metadata/asset_id = "squirrel"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Squirrel" unique_id=986992046]
+position = Vector2(-65, -128)
+scale = Vector2(0.325, 0.33684212)
+texture = ExtResource("26_bchtc")
+centered = false
+
+[node name="Hamster" type="Node2D" parent="Sortables" unique_id=2070603464]
+position = Vector2(497, 1222)
+metadata/art_layer = "actors"
+metadata/asset_id = "hamster"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Hamster" unique_id=8781092]
+position = Vector2(-51, -128)
+scale = Vector2(0.32903227, 0.34133333)
+texture = ExtResource("27_2srf0")
+centered = false
+
+[node name="Floor" type="Node2D" parent="." unique_id=1318203089]
+z_index = -20
+position = Vector2(360, 1280)
+metadata/art_layer = "floor"
+metadata/asset_id = "floor"
+
+[node name="Sprite" type="Sprite2D" parent="Floor" unique_id=1543786478]
+position = Vector2(-360, -1280)
+scale = Vector2(0.76840985, 0.76281285)
+texture = ExtResource("28_fqxi1")
+centered = false
+
+[node name="BackWall" type="Node2D" parent="." unique_id=2021821485]
+z_index = -10
+position = Vector2(360, 233)
+metadata/art_layer = "walls"
+metadata/asset_id = "back_wall"
+
+[node name="Sprite" type="Sprite2D" parent="BackWall" unique_id=1401806553]
+position = Vector2(-360, -233)
+scale = Vector2(0.76840985, 0.76393443)
+texture = ExtResource("29_uw3yt")
+centered = false
+
+[node name="OuterLeft" type="Node2D" parent="." unique_id=1779068200]
+z_index = 10
+position = Vector2(12.3, 1280)
+metadata/art_layer = "walls"
+metadata/asset_id = "outer_left"
+
+[node name="Sprite" type="Sprite2D" parent="OuterLeft" unique_id=1139042561]
+position = Vector2(-12.3, -1047)
+scale = Vector2(0.76875, 0.7625637)
+texture = ExtResource("30_cft0w")
+centered = false
+
+[node name="OuterRight" type="Node2D" parent="." unique_id=2031558558]
+z_index = 10
+position = Vector2(707.7, 1280)
+metadata/art_layer = "walls"
+metadata/asset_id = "outer_right"
+
+[node name="Sprite" type="Sprite2D" parent="OuterRight" unique_id=1122013745]
+position = Vector2(-12.299988, -1047)
+scale = Vector2(0.76875, 0.7625637)
+texture = ExtResource("31_i5bfi")
+centered = false

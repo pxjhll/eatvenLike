@@ -133,6 +133,9 @@ func _build() -> void:
 	var debug := _button("", Rect2(642, 30, 42, 50), "debug", _root)
 	debug.tooltip_text = "显示 / 收起调试面板"
 	debug.pressed.connect(func() -> void: _debug.visible = not _debug.visible)
+	var art := _button("ART", Rect2(594, 88, 90, 28), "hint", _root)
+	art.tooltip_text = "Art preview"
+	art.pressed.connect(func() -> void: _sim.get_parent().open_art_preview())
 	_hint = _label("", Vector2(40, 1104), 13, Color("8a978d"), _root)
 	_toast = _label("", Vector2(0, 1264), 14, Color("a16e47"), _root)
 	_toast.size = Vector2(720, 24)

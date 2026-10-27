@@ -1,0 +1,52 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "source": "art/reference/reference.png",
+  "source_description": "User-supplied portrait illustration, 2026-10-27",
+  "notes": "Transparent extraction and occluded-area reconstruction followed by lossless native Godot atlas slicing. Earlier unused background drafts are excluded.",
+  "requests": [
+    {
+      "name": "equipment",
+      "transparent_background": true,
+      "output": "art_src/reference/equipment.png",
+      "prompt": "Use case: background-extraction. Input reference and edit target: the supplied tea shop illustration. Create a TRANSPARENT RGBA GAME SPRITE ATLAS, preserving the exact shapes, colors, thick brown outlines, same 3/4 frontal view and soft shading of these objects in the reference. Reconstruct occluded parts. Arrange SIX separate complete isolated sprites in a precise 3-column by 2-row grid, each sprite centered in its equal-sized cell with generous transparent padding, NO overlapping cells. Top row left: the grey stainless pearl cooking pot with handles, soup pearls and its side heater/controller, no animal; top row middle: the beige tea brewing machine including its small tray and a single cup on the tray; top row right: the tall blue cup sealing machine including its base, inlet opening and side red-green indicator lights, but NO conveyor and no cups. Bottom row left: the small transparent tub of brown tapioca pearls from upper-left table; bottom row middle: the green tea leaf tin with tan lid and leaf emblem; bottom row right: the cream milk bottle with grey cap, no writing. Six sprites only. No shadows extending across cells, no table, no wall, no floor, no captions, no Chinese labels, no checkerboard baked into pixels. Real transparent background. Preserve the source art's friendly hand-drawn identities, do not redesign objects. Landscape atlas."
+    },
+    {
+      "name": "actors",
+      "transparent_background": true,
+      "output": "art_src/reference/actors.png",
+      "prompt": "Use case: background-extraction. Input reference and edit target: supplied tea shop illustration. Create a TRANSPARENT RGBA GAME SPRITE ATLAS from its characters and drinks, matching EXACT character identities, proportions, costumes, dark brown outline and softly shaded warm drawing style. A precise 4-column by 2-row equal cell grid, each sprite fully inside its cell with transparent padding, no overlaps. Top row left-to-right: (1) beige cat chef with white tall hat and brown apron, facing right, complete body/tail/feet, holding a small spoon; (2) raccoon chef with tall white hat and brown apron, complete body striped tail/feet, with its spatula but no prep table; (3) orange fox chef with white hat and dark brown apron, complete body and tail, no paper bag, no counter; (4) brown squirrel customer facing right, big curled tail and complete feet. Bottom row left-to-right: (1) cream and tan hamster customer facing left, full body and feet; (2) one pearl milk tea cup with beige lid and brown straw and visible pearls; (3) one orange fruit tea cup with green straw and fruit pieces; (4) one golden cream-topped tea cup. Do not include speech bubbles, exclamation marks, floor, tables, machines, text, detached animal parts, duplicates or checkerboard pattern. Restore occluded character legs naturally. True transparent background. Landscape atlas."
+    },
+    {
+      "name": "shell",
+      "transparent_background": false,
+      "output": "art_src/reference/room_intermediate.png",
+      "prompt": "Use case: precise-object-edit. Edit target: supplied tea shop illustration. Create the EMPTY ROOM BACKGROUND ONLY for this exact portrait scene. Preserve original 1536:2752 composition, camera, outer brown wooden walls, cream upper rear wall, blue checkerboard kitchen floor, lower wood-plank customer floor, and central cream partition with a wide doorway opening between kitchen and front. REMOVE ABSOLUTELY ALL CONTENT: ALL tables including left raw ingredient table, long left prep table, front checkout counter, ALL machines/pots, ALL horizontal/vertical conveyors and lights, ALL shelves/racks, ALL glass display cases, ALL containers and bags/register, ALL animals, ALL drinks, ALL text/labels/bubbles. Reconstruct continuous floor where these stood. The room must be EMPTY, only walls, floors, central partition and doorway. Wall partition stays at 55% image height with central opening from x28% to70%, matching reference exactly. Kitchen occupies upper55%; front wood floor lower35%; doorway blue floor connects both. Same warm hand-painted thick brown outlines and soft textures as source; not flat vector, no new decoration or furniture. Tall portrait same aspect ratio as reference."
+    },
+    {
+      "name": "furniture",
+      "transparent_background": true,
+      "output": "art_src/reference/furniture.png",
+      "prompt": "Use case: background-extraction. Reference/edit target supplied tea shop illustration. Produce SIX separate fully isolated furniture game sprites, reconstructing obscured parts, TRUE transparent RGBA background. Same exact original hand-drawn thick dark-brown outlines, warm honey wood, soft shading, 3/4 frontal view. Arrange strict 3 columns by 2 rows, each whole object confined inside its cell with large transparent margins. Top row left: short horizontal back-left wooden ingredient table with EMPTY tabletop and legs, no jars no lamp. Top middle: long tall vertical left prep bench including its embedded topping bins and tongs, NO animal or loose bottles, fully reconstructed tabletop. Top right: right-hand tall empty two-tier wooden stock rack, no cups or bubbles. Bottom left: front glass drink display case with transparent cyan glass and two EMPTY shelves, NO drinks labels or counter underneath. Bottom middle: long horizontal front wooden checkout counter, EMPTY tabletop, no glass case no cash register no bags or animals. Bottom right: small cream cash register together with adjacent wooden paper bag holder containing two flat bags, no counter. Furniture only, do not include floor/wall, shadow clouds, conveyors, machines, characters, labels, text, checkerboard. Preserve appearance of the original pieces rather than inventing new furniture. Landscape atlas with generous padding."
+    },
+    {
+      "name": "conveyors",
+      "transparent_background": true,
+      "output": "art_src/reference/conveyors.png",
+      "prompt": "Use case: background-extraction. Reference/edit target supplied tea shop illustration. Create a true transparent RGBA modular game conveyor sprite atlas, exactly matching its dark charcoal conveyor belt with thick brown outline and soft blue grey highlights, warm cute hand-drawn 3/4 frontal perspective. Three individual sprites in a precise single-row 3-column grid with transparent margins, not touching: LEFT a straight horizontal belt section with white right-pointing chevrons, side rail, visible front rollers and two short support feet, no cups no indicators no machines. MIDDLE a straight vertical belt section seen from above in same scene perspective, dark cross slats and side rails, no cups no shelf. RIGHT a 90 degree elbow joining a horizontal belt from the left into a vertical belt downwards, exact same belt width and style as other two. Sprites are modular repeatable building blocks, cut ends are flat so they can join. No extra objects, no floor, no text, no checkerboard pixels. Keep the source's exact dark palette and outlines."
+    },
+    {
+      "name": "walls",
+      "source": "art_src/reference/room_intermediate.png",
+      "transparent_background": true,
+      "output": "art_src/reference/walls.png",
+      "prompt": "Use case: background-extraction. Input/edit target the supplied EMPTY ROOM image (937x1678). Create a TRUE TRANSPARENT RGBA wall-only overlay at the EXACT same 937:1678 portrait aspect ratio and original layout. KEEP ALL the walls in their exact original positions: top brown beam and cream rear wall in upper 18%, thin left and right brown boundary wall strips, cream partition wall across y53.5% to66.5% with its central doorway x29% to68%. REMOVE ALL blue floor tiles AND ALL wood floor pixels, replace floors with fully transparent alpha0, including INSIDE THE DOOR OPENING. Reconstruct bottom outlines of walls where needed. Wall-only overlay ready to composite over separately drawn floors; NOT a wall asset collage, do NOT rearrange or move walls. Preserve the source outlines/colors/perspective exactly. Keep partition lintel a thin beam over the central open transparent doorway, and two separate solid wall sections on either side. Transparent background, NO visible checkerboard, NO floor, NO new content."
+    },
+    {
+      "name": "floor",
+      "source": "art_src/reference/room_intermediate.png",
+      "transparent_background": false,
+      "output": "art/reference/floor.png",
+      "prompt": "Use case: precise-object-edit. Input/edit target supplied EMPTY ROOM illustration. Create its FLOOR-ONLY layer. Remove ALL walls including rear wall/top beam, all outer boundary strips, and center partition/doorframe. Replace removed areas with continuous matching floor. Full-bleed rectangular portrait floor at exactly original 937:1678 ratio. Upper 66.5% of image entirely the original blue/grey checkerboard kitchen tiles, tiles on square grid, same soft texture and hues as source, extending behind where back wall and center partition used to be. Lower 33.5% entirely original warm honey wooden floorboards with darker brown joints. Straight horizontal transition at y66.5%. No walls, door, framing, baseboards, furniture, rugs, machines, characters, lettering, gradients to blank edges, or decorations. Match original painting style, lighting and color, not redesigned floor."
+    }
+  ]
+}

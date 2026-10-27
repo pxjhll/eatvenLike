@@ -1,0 +1,15 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "source": "art/reference/reference.png",
+  "reason": "User correction: straight preparation bench, preserve proportions, independent support under cooker and brewer. Belt dimensions adjusted in scene metadata.",
+  "requests": [
+    {
+      "name": "straight_prep",
+      "prompt": "Use case: background-extraction. Reference/edit target supplied original tea shop illustration. Isolate and faithfully reconstruct ONLY the LEFT-SIDE LONG STRAIGHT PREPARATION TABLE. This is one tall narrow straight rectangular wooden bench, NOT L-shaped: its two long sides are parallel straight lines from top to bottom; top end is short and flat/rounded; NO right-angle return, NO side extension, NO horizontal table attached to its top, NO corner shape. Restore full width and natural reference proportions: visible tabletop approximately 180 units wide and 530 units long, whole sprite width-to-height approximately 0.34. Preserve the source's honey-orange wood, dark brown thick rounded outlines, slightly visible right side/front apron, two short legs, soft painterly shading and 3/4 overhead view. Retain reference's small inset ingredient bins near the upper and lower ends, tongs in middle, small condiment bottles toward upper half and the little prep board in middle-right. Remove raccoon, its hands, chef hat and tail; reconstruct unobstructed table beneath. Single complete object centered on a genuinely transparent RGBA canvas with padding. No floor, wall, machines, characters, labels, text, checkerboard or extra loose objects outside the table. Do not squash or widen the table, do not invent an L-shaped countertop."
+    },
+    {
+      "name": "machine_table",
+      "prompt": "Use case: background-extraction. Reference/edit target supplied original tea shop illustration. Extract and reconstruct ONLY the horizontal workbench underneath the pearl cooking pot AND beige tea brewing machine in the top center. In the source both appliances rest on one cream/beige tabletop with dark brown rounded edges and honey-brown support/base. Show the complete unobstructed workbench after removing BOTH machines and the cat, conveyor, cups and all foreground overlaps. It is a horizontal wide support table, visible top plane, front apron and short legs; about 2.5 times wider than tall including legs, same 3/4 front-overhead perspective as source. Keep its simple cream/tan work surface and warm wooden base, dark brown thick outlines, softly shaded hand-drawn style. Single isolated complete furniture sprite, genuinely transparent RGBA background with padding. No machinery, no original blue floor or wall, no labels, no text, no extra decorations. Match this exact practical support table, not a kitchen island or the separate left ingredient table."
+    }
+  ]
+}
