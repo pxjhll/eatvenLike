@@ -68,6 +68,8 @@ func advance_stations(dt: float, new_id: Callable, closed_zone: String = "") -> 
 				_advance_supply(st, def, dt, events)
 			StationDef.Mode.AUTO:
 				_advance_auto(st, def, dt, events)
+			StationDef.Mode.TOPPING:
+				_advance_topping(st, def, dt, events)
 			StationDef.Mode.COOP:
 				_advance_coop(st, def, dt, new_id)
 			StationDef.Mode.MANUAL:
@@ -167,6 +169,55 @@ func commit_upgrade(slot_id: String) -> int:
 	assert(st.upgrade_problem(station_def(slot_id)) == "")
 	st.level += 1
 	return st.level
+
+
+func validate_material_upgrade(slot_id: String, material_id: String) -> String:
+	if not has_slot(slot_id):
+		return "没有这个工位"
+	var m := station_def(slot_id).material(material_id)
+	if m == null:
+		return "这台机器没有这个物料槽"
+	return _by_slot[slot_id].mat_upgrade_problem(m)
+
+
+func material_upgrade_cost(slot_id: String, material_id: String) -> int:
+	return _by_slot[slot_id].mat_upgrade_cost(station_def(slot_id).material(material_id))
+
+
+func commit_material_upgrade(slot_id: String, material_id: String) -> int:
+	var st: StationState = _by_slot[slot_id]
+	assert(st.mat_upgrade_problem(station_def(slot_id).material(material_id)) == "")
+	st.mat_levels[material_id] = st.mat_level(material_id) + 1
+	return st.mat_level(material_id)
+
+
+## 这种成品的售价倍率：加料机上对应配料槽的等级（首店：配料槽升级 = 这个口味涨价）
+func price_bonus(item: String) -> float:
+	for st in stations:
+		var def := _def(st)
+		if def.mode != StationDef.Mode.TOPPING or st.status != StationState.Status.ACTIVE:
+			continue
+		for m in def.materials:
+			if m.item_id == item:
+				return m.bonus(st.mat_level(m.id))
+	return 1.0
+
+
+## 现在能上货架的成品：有启用的机器正往货架送，或者货架上还有没被订走的
+func available_items() -> Dictionary:
+	var out := {}
+	for seg in segments:
+		if seg.to_slot != SHELF or not _seg_routable(seg) or not _by_slot.has(seg.from_slot):
+			continue
+		var st: StationState = _by_slot[seg.from_slot]
+		if st.status != StationState.Status.ACTIVE:
+			continue
+		for item in _output_kinds(st, _def(st)):
+			out[item] = true
+	for item in shelf:
+		if free_stock(item) > 0:
+			out[item] = true
+	return out
 
 
 func validate_parallel(slot_id: String) -> String:
@@ -299,6 +350,9 @@ func _def(st: StationState) -> StationDef:
 
 
 func _advance_supply(st: StationState, def: StationDef, dt: float, events: Array) -> void:
+	if not def.materials.is_empty():
+		_advance_cabinet(st, def, dt, events)
+		return
 	var interval := def.supply_interval / st.speed(def)
 	st.supply_timer += dt
 	if st.supply_timer < interval - EPS:
@@ -325,6 +379,86 @@ func _advance_auto(st: StationState, def: StationDef, dt: float, events: Array) 
 		_consume(st, def, events)
 		st.phase = StationState.Phase.PROCESSING
 		st.progress = carry
+
+
+## 原料柜：每个原料槽自己计时、自己出货，出口按每种原料分别计容量，
+## 所以一种料的下游堵住了也不挡另一种（布局基线⑮「轮流、满了跳过」）
+func _advance_cabinet(st: StationState, def: StationDef, dt: float, events: Array) -> void:
+	for m in def.materials:
+		if not st.mat_open(m):
+			continue
+		var interval := def.supply_interval / (st.speed(def) * m.bonus(st.mat_level(m.id)))
+		var t := float(st.mat_timers.get(m.item_id, 0.0)) + dt
+		if t >= interval - EPS:
+			if int(st.outputs.get(m.item_id, 0)) + def.supply_batch > def.output_capacity:
+				t = interval
+			else:
+				t -= interval
+				SaveUtil.add_counts(st.outputs, {m.item_id: def.supply_batch})
+				events.append({"type": "produced", "slot": st.slot_id, "item": m.item_id, "count": def.supply_batch})
+		st.mat_timers[m.item_id] = t
+
+
+## 加料机：和自动机器一样计进度，只是每杯开工前挑口味——在已开放的配料槽之间轮流，
+## 某口味在货架上（含在途）已经够 flavor_cap 杯就跳过；全都够了就停着
+func _advance_topping(st: StationState, def: StationDef, dt: float, events: Array) -> void:
+	var carry := 0.0
+	if st.phase == StationState.Phase.PROCESSING:
+		st.progress += dt * st.speed(def) / def.cycle_seconds
+		if st.progress >= 1.0 - EPS:
+			carry = maxf(0.0, st.progress - 1.0)
+			SaveUtil.add_counts(st.outputs, {st.making: 1})
+			events.append({"type": "produced", "slot": st.slot_id, "item": st.making, "count": 1})
+			st.making = ""
+			st.phase = StationState.Phase.IDLE
+			st.progress = 0.0
+	if st.phase != StationState.Phase.IDLE or SaveUtil.total(st.outputs) + 1 > def.output_capacity:
+		return
+	for item in def.recipe.inputs:
+		if int(st.inputs.get(item, 0)) < def.recipe.inputs[item]:
+			return
+	var flavor := _next_flavor(st, def)
+	if flavor == "":
+		return
+	_consume(st, def, events)
+	st.making = flavor
+	st.phase = StationState.Phase.PROCESSING
+	st.progress = carry
+
+
+func _next_flavor(st: StationState, def: StationDef) -> String:
+	var n := def.materials.size()
+	for k in n:
+		var idx := (st.flavor_index + k) % n
+		var m := def.materials[idx]
+		if st.mat_open(m) and _in_flight(m.item_id) < def.flavor_cap:
+			st.flavor_index = (idx + 1) % n
+			return m.item_id
+	return ""
+
+
+## 这种成品在货架上、传送带上、机器出口和机器里一共有几杯
+func _in_flight(item: String) -> int:
+	var count := int(shelf.get(item, 0))
+	for seg in segments:
+		count += int(seg.item_counts().get(item, 0))
+	for st in stations:
+		count += int(st.outputs.get(item, 0))
+		if st.making == item:
+			count += 1
+	return count
+
+
+## 这台机器会出哪些成品
+func _output_kinds(st: StationState, def: StationDef) -> Array:
+	var out := []
+	if def.mode == StationDef.Mode.TOPPING or (def.mode == StationDef.Mode.SUPPLY and not def.materials.is_empty()):
+		for m in def.materials:
+			if st.mat_open(m):
+				out.append(m.item_id)
+	elif def.recipe != null:
+		out.append_array(def.recipe.outputs.keys())
+	return out
 
 
 func _advance_coop(st: StationState, def: StationDef, dt: float, new_id: Callable) -> void:
@@ -372,7 +506,7 @@ func _post_request(st: StationState, kind: int, seconds: float, zone: String, ne
 func _push_outputs(st: StationState) -> void:
 	var outs: Array[BeltSegmentState] = []
 	for seg in segments:
-		if seg.from_slot == st.slot_id and seg.connected and _routable(seg.to_slot):
+		if seg.from_slot == st.slot_id and _seg_routable(seg):
 			outs.append(seg)
 	if outs.is_empty():
 		return
@@ -382,7 +516,10 @@ func _push_outputs(st: StationState) -> void:
 			var idx := (st.rr_index + k) % outs.size()
 			var seg := outs[idx]
 			if seg.items.is_empty() or seg.items[-1].pos >= ITEM_SPACING - EPS:
-				var item: String = st.outputs.keys()[0]
+				# 一个出口出几种料（原料柜）时，每条带只拿下游要的那种
+				var item := _item_for(st, seg.to_slot)
+				if item == "":
+					continue
 				SaveUtil.remove_counts(st.outputs, {item: 1})
 				seg.items.append({"item": item, "pos": 0.0})
 				st.rr_index = (idx + 1) % outs.size()
@@ -390,6 +527,25 @@ func _push_outputs(st: StationState) -> void:
 				break
 		if not pushed:
 			return
+
+
+func _seg_routable(seg: BeltSegmentState) -> bool:
+	if not seg.connected or not _routable(seg.to_slot):
+		return false
+	return seg.until_active == "" or not _by_slot.has(seg.until_active) or _by_slot[seg.until_active].status != StationState.Status.ACTIVE
+
+
+## 出口里第一件下游收的料；货架什么都收
+func _item_for(st: StationState, to_slot: String) -> String:
+	for item in st.outputs:
+		if int(st.outputs[item]) <= 0:
+			continue
+		if to_slot == SHELF:
+			return item
+		var def := _def(_by_slot[to_slot])
+		if def.recipe != null and def.recipe.inputs.has(item):
+			return item
+	return ""
 
 
 func _routable(slot_id: String) -> bool:

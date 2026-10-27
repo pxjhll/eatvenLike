@@ -31,4 +31,4 @@ jobs:
         if: always() && github.event_name == 'push'
         with:
           name: tea-qa
-          path: docs/qa/pxj46-*.png
+          path: docs/qa/pxj49-*.png

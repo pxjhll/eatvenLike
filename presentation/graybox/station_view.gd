@@ -8,6 +8,8 @@ var row := {}
 var selected := false
 ## 前厅位点的解锁价（价格牌）；-1 = 用 StationDef 上的价格
 var unlock_price := -1
+## 整条线一起解锁时只在第一台上挂价格牌，其余只显示锁
+var show_price := true
 var sprite: Sprite2D
 var _font: Font
 var _counter := false
@@ -71,6 +73,8 @@ func _draw() -> void:
 	var top := box.position.y
 	if row.status != StationState.Status.ACTIVE:
 		draw_texture_rect(Assets.icon("lock"), Rect2(-14, top + 22, 28, 28), false)
+		if not show_price:
+			return
 		draw_style_box(_pill(Color("fff8e4")), Rect2(-30, top - 26, 60, 22))
 		_text(Vector2(-26, top - 10), "%d" % _price(), 14, Color("8a7139"))
 		draw_texture_rect(Assets.icon("coin"), Rect2(10, top - 24, 18, 18), false)

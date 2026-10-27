@@ -1,0 +1,23 @@
+class_name MaterialSlotDef
+extends Resource
+## 机器上的一个物料槽：原料柜里的一种原料，或加料机上的一种配料。点开机器能单独升级（首店流程稿 5）。
+## 运行时只读。
+
+@export var id: String = ""
+@export var display_name: String = ""
+## 原料柜：这个槽出的原料；加料机：加完这种料出来的成品
+@export var item_id: String = ""
+## 机器升到几级这个槽才开放（1 = 机器一解锁就有）
+@export var unlock_level: int = 1
+## 下标 i = 从 Lv(i+1) 升到 Lv(i+2) 的价格
+@export var upgrade_costs: Array[int] = []
+## 每级倍率，下标 0 = Lv1。原料柜 = 这种原料的出货速度；加料机 = 这个口味的售价
+@export var level_bonus: Array[float] = [1.0]
+
+
+func max_level() -> int:
+	return mini(level_bonus.size(), upgrade_costs.size() + 1)
+
+
+func bonus(level: int) -> float:
+	return level_bonus[level - 1] if level >= 1 and level <= level_bonus.size() else 1.0

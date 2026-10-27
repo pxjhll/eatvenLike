@@ -24,6 +24,9 @@ var menu_stage := 0
 var next_arrival := 0.0
 ## 当前缺货的菜品 dish_id -> true
 var stockout := {}
+## 后厨现在能上货架的成品 item_id -> true（GameSim 每 tick 从 Production 抄过来，不存档）。
+## 顾客只点出品台现打的、或者这里有的菜；都没有时按阶段权重照点（开店前也有人来）
+var available := {}
 
 
 func setup(config: ShopConfig, rng: RandomNumberGenerator) -> void:
@@ -119,6 +122,10 @@ func on_work_completed(request_id: int) -> Dictionary:
 	var o := _find_order(r.order_id)
 	orders.erase(o)
 	return {"order_id": o.id, "dish_id": o.dish_id, "price": _dishes[o.dish_id].price, "from_stock": o.from_stock}
+
+
+func dish_item(dish_id: String) -> String:
+	return _dishes[dish_id].item_id
 
 
 func set_menu_stage(stage_index: int) -> void:
@@ -274,7 +281,12 @@ func _begin_service(o: OrderState, new_id: Callable, from_stock: bool) -> void:
 
 
 func _pick_dish(rng: RandomNumberGenerator) -> String:
-	var weights := _stage().order_weights
+	var weights := {}
+	for dish_id in _stage().order_weights:
+		if _dispenser_for(dish_id) != null or available.has(_dishes[dish_id].item_id):
+			weights[dish_id] = _stage().order_weights[dish_id]
+	if weights.is_empty():
+		weights = _stage().order_weights
 	var total := 0.0
 	for dish_id in weights:
 		total += weights[dish_id]

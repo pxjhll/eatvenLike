@@ -6,7 +6,8 @@ enum OwnerSystem { PRODUCTION, FRONT_HALL }
 ## AUTO：机器自动加工；COOP：员工装入 → 机器加工 → 员工取出；
 ## MANUAL：员工人工完成一份（前厅柜台服务也用它）；SUPPLY：外购箱按间隔到货；
 ## DISPENSER：前厅出品台，像饮水机，不要员工、不囤杯、不限量，柜台服务员过去现打。
-enum Mode { AUTO, COOP, MANUAL, SUPPLY, DISPENSER }
+## TOPPING：加料机，自动；每杯在已开放的配料槽之间轮流加料，某口味货架格满了（含在途）就跳过。
+enum Mode { AUTO, COOP, MANUAL, SUPPLY, DISPENSER, TOPPING }
 
 @export var id: String = ""
 @export var display_name: String = ""
@@ -20,7 +21,7 @@ enum Mode { AUTO, COOP, MANUAL, SUPPLY, DISPENSER }
 @export var manual_seconds: float = 0.0
 ## 入口缓冲容量，按 item 分别计
 @export var input_capacity: Dictionary[String, int] = {}
-## 出口缓冲容量（所有 item 合计）
+## 出口缓冲容量（所有 item 合计；带物料槽的原料柜按每种原料分别计）
 @export var output_capacity: int = 0
 ## 所属工作区
 @export var zone: String = ""
@@ -36,3 +37,14 @@ enum Mode { AUTO, COOP, MANUAL, SUPPLY, DISPENSER }
 @export var supply_batch: int = 1
 ## FRONT_HALL：可卖的菜品 id
 @export var dishes: Array[String] = []
+## 物料槽：SUPPLY = 原料柜的各原料（每种单独计时、单独出货）；TOPPING = 加料机的各配料
+@export var materials: Array[MaterialSlotDef] = []
+## TOPPING：每个口味在货架上最多几杯（含传送带上和机器里的）
+@export var flavor_cap: int = 0
+
+
+func material(material_id: String) -> MaterialSlotDef:
+	for m in materials:
+		if m.id == material_id:
+			return m
+	return null

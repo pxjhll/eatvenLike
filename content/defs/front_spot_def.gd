@@ -1,7 +1,7 @@
 class_name FrontSpotDef
 extends Resource
 ## 前厅的一个固定位点：开局是价格牌，点一下花金币解锁（布局基线决定⑧）。
-## 后厨设备在布局模式里自己摆（PXJ-47），前厅不摆。运行时只读。
+## 后厨机器也在固定机位上（SlotDef），按阶段整条线一起解锁。运行时只读。
 
 @export var id: String = ""
 @export var station: StationDef
@@ -12,3 +12,5 @@ extends Resource
 @export var stage: int = 0
 ## 这个位点能站几名员工（柜台可以站 2 人）；不要员工的位点填 0
 @export var posts: int = 1
+## 开局就在、不用解锁（首店的柜台）
+@export var starts_unlocked: bool = false

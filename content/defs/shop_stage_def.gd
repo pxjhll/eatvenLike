@@ -7,6 +7,10 @@ extends Resource
 @export var revenue_threshold: int = 0
 ## 本阶段需要解锁的机位 id
 @export var unlock_slots: Array[String] = []
+## 大于 0：unlock_slots 整条线一次点解锁（UnlockLine），机器和传送带一起出现，不能单台买
+@export var line_cost: int = 0
+## 整条线的名字，显示在价格牌和解锁按钮上（如「奶茶生产线」）；空 = 用菜名
+@export var line_name: String = ""
 ## 本阶段的平均来客间隔（秒）
 @export var customer_interval: float = 0.0
 ## 本阶段起的点单权重：dish_id -> 权重

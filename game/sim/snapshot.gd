@@ -15,6 +15,8 @@ static func build(sim: GameSim) -> Dictionary:
 		"workforce": sim.workforce.to_dict(),
 		"progress": sim.progress.to_dict(),
 		"tasks": _tasks(sim),
+		# 现在能上货架的成品（派生，给货架显示用）
+		"available": sim.production.available_items().keys(),
 	}
 
 

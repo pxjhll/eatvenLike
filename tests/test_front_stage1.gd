@@ -1,5 +1,6 @@
 extends "res://tests/test_case.gd"
 ## PXJ-46 阶段 1：空店开局、前厅点解锁、招人与一人一岗、饮水机式出品台。
+## PXJ-49 起柜台开局就在，只有柠檬茶台要买。
 
 const TEA := "res://content/tea/tea.tres"
 
@@ -20,8 +21,8 @@ func test_empty_shop_sells_lemonade_after_unlock_hire_and_assign() -> void:
 	var sim := tea()
 	check_eq(sim.workforce.staff.size(), 0, "an empty shop starts with nobody in it")
 	check_eq(sim.economy.gold, 50, "the player starts with the placeholder 50 gold")
-	for spot in sim.config.front_spots:
-		check(not sim.front_hall.is_active(spot.id), "every front spot starts as a price plate: " + spot.id)
+	check(not sim.front_hall.is_active("lemonade_stand"), "the stand starts as a price plate")
+	check(sim.front_hall.is_active("counter"), "the counter is there from the start")
 	sim.run_seconds(30.0)
 	check_eq(sim.economy.revenue, 0, "customers arrive but nothing can be sold yet")
 	check(sim.front_hall.orders.size() < sim.config.queue_capacity + 1, "unserved customers leave instead of piling up forever")
@@ -29,14 +30,11 @@ func test_empty_shop_sells_lemonade_after_unlock_hire_and_assign() -> void:
 	sim.submit(UnlockFrontSpotCommand.new("lemonade_stand"))
 	sim.step()
 	check_eq(sim.economy.gold, 40, "the stand costs its price plate")
-	sim.submit(UnlockFrontSpotCommand.new("counter"))
-	sim.step()
-	check_eq(sim.economy.gold, 20, "the counter costs its price plate")
 	sim.run_seconds(20.0)
 	check_eq(sim.economy.revenue, 0, "an unstaffed counter still sells nothing")
 
 	var server := hire(sim)
-	check_eq(sim.economy.gold, 5, "the first hire costs 15")
+	check_eq(sim.economy.gold, 25, "the first hire costs 15")
 	check_eq(sim.workforce.staff[0].post, "", "a new hire waits in the staff bar")
 	sim.run_seconds(20.0)
 	check_eq(sim.economy.revenue, 0, "a hired but unassigned server does not work")
@@ -46,7 +44,7 @@ func test_empty_shop_sells_lemonade_after_unlock_hire_and_assign() -> void:
 	check_eq(sim.workforce.staff[0].post, "counter", "dragging onto the counter puts them on that post")
 	sim.run_seconds(60.0)
 	check(sim.progress.sold.get("lemonade", 0) > 0, "the shop sells lemonade")
-	check(sim.economy.gold > 5, "sales pay out")
+	check(sim.economy.gold > 25, "sales pay out")
 
 
 func test_lemonade_stand_pours_on_demand_and_never_runs_out() -> void:
@@ -124,10 +122,10 @@ func test_rejected_front_commands_change_nothing() -> void:
 	# 钱不够也是拒绝，不是半成交
 	var poor := tea()
 	poor.economy.gold = 5
-	poor.submit(UnlockFrontSpotCommand.new("counter"))
+	poor.submit(UnlockFrontSpotCommand.new("lemonade_stand"))
 	poor.step()
 	check_eq(poor.economy.gold, 5, "an unaffordable spot does not charge")
-	check(not poor.front_hall.is_active("counter"), "and does not open")
+	check(not poor.front_hall.is_active("lemonade_stand"), "and does not open")
 
 
 ## 命令该改的东西：金币、员工与岗位、前厅位点状态（时间照走的部分不在内）
@@ -153,21 +151,19 @@ func test_staff_bar_hires_and_drag_to_post_uses_commands() -> void:
 	sim.step()
 	check_eq(sim.workforce.staff.size(), 1, "the hire button submits a real command")
 	check_eq(ui._staff_cards.size(), 1, "the new hire appears in the staff bar")
-	# 柜台还没解锁，拖过去应该什么也不发生
+	# 后厨还没开，拖进后厨什么也不发生
 	ui._bar_drag = sim.workforce.staff[0].staff_id
-	ui._finish_bar_drag(_counter_point(view))
+	ui._finish_bar_drag(Vector2(300, 600))
 	sim.step()
-	check_eq(sim.workforce.staff[0].post, "", "a locked counter is not a drop target")
-	sim.submit(UnlockFrontSpotCommand.new("counter"))
-	sim.step()
+	check_eq(sim.workforce.staff[0].zone, "", "a closed kitchen is not a drop target")
 	ui._bar_drag = sim.workforce.staff[0].staff_id
 	ui._finish_bar_drag(_counter_point(view))
 	sim.step()
 	check_eq(sim.workforce.staff[0].post, "counter", "dropping a card on the open counter puts them on post")
 	# 后厨开了以后，新招的人可以直接从员工栏拖进后厨
 	sim.economy.revenue = 300
-	sim.economy.gold += 200
-	sim.submit(UnlockStationCommand.new("pearl_pot"))
+	sim.economy.gold += 400
+	sim.submit(UnlockLineCommand.new())
 	sim.step()
 	check(sim.progress.kitchen_open(), "the kitchen opened for the drop test")
 	ui._hire.pressed.emit()

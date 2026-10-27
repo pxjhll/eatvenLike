@@ -20,6 +20,14 @@ var request_id := -1
 var supply_timer := 0.0
 ## 分流轮流送的下一路
 var rr_index := 0
+## 物料槽等级 material_id -> 等级；没写的按 1 级
+var mat_levels := {}
+## 原料柜：每种原料自己的到货计时 item_id -> 秒
+var mat_timers := {}
+## 加料机：下一杯从第几个配料槽开始轮
+var flavor_index := 0
+## 加料机：正在加工的那杯出来是什么
+var making := ""
 
 
 static func create(slot: SlotDef) -> StationState:
@@ -38,7 +46,7 @@ static func create_spot(spot: FrontSpotDef) -> StationState:
 	var st := StationState.new()
 	st.slot_id = spot.id
 	st.def_id = spot.station.id
-	st.status = Status.LOCKED
+	st.status = Status.ACTIVE if spot.starts_unlocked else Status.LOCKED
 	return st
 
 
@@ -62,6 +70,29 @@ func upgrade_cost(def: StationDef) -> int:
 	return def.upgrade_costs[level - 1]
 
 
+func mat_level(material_id: String) -> int:
+	return int(mat_levels.get(material_id, 1))
+
+
+## 物料槽开放了没有：机器升到槽要求的等级
+func mat_open(m: MaterialSlotDef) -> bool:
+	return status == Status.ACTIVE and level >= m.unlock_level
+
+
+func mat_upgrade_problem(m: MaterialSlotDef) -> String:
+	if status != Status.ACTIVE:
+		return "工位未启用"
+	if level < m.unlock_level:
+		return "机器升到 Lv%d 才开放%s" % [m.unlock_level, m.display_name]
+	if mat_level(m.id) >= m.max_level():
+		return "已达等级上限"
+	return ""
+
+
+func mat_upgrade_cost(m: MaterialSlotDef) -> int:
+	return m.upgrade_costs[mat_level(m.id) - 1]
+
+
 func to_dict() -> Dictionary:
 	return {
 		"slot": slot_id,
@@ -75,6 +106,10 @@ func to_dict() -> Dictionary:
 		"request": request_id,
 		"supply_timer": supply_timer,
 		"rr": rr_index,
+		"mat_levels": mat_levels.duplicate(),
+		"mat_timers": mat_timers.duplicate(),
+		"flavor": flavor_index,
+		"making": making,
 	}
 
 
@@ -91,4 +126,8 @@ static func from_dict(d: Dictionary) -> StationState:
 	st.request_id = int(d.request)
 	st.supply_timer = float(d.supply_timer)
 	st.rr_index = int(d.rr)
+	st.mat_levels = SaveUtil.int_dict(d.get("mat_levels", {}))
+	st.mat_timers = SaveUtil.float_dict(d.get("mat_timers", {}))
+	st.flavor_index = int(d.get("flavor", 0))
+	st.making = String(d.get("making", ""))
 	return st
