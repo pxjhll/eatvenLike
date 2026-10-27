@@ -12,6 +12,9 @@ var ghost := false
 ## Items buffered inside the machine at either end, shown queued on the belt where they wait.
 var queued_end := {}
 var queued_start := {}
+## 同一台设备出来的几路共用开头几格（原料柜主带）：共用格上每路物料走自己那半边，不叠在一起
+var shared_cells := 0
+var lane := 0.0
 var _clock := 0.0
 var _head_waiting := 0.0
 
@@ -84,5 +87,9 @@ func draw_items(canvas: CanvasItem) -> void:
 
 
 func _draw_item(canvas: CanvasItem, item: String, pos: float) -> void:
-	var at := Layout.along(points, clampf(pos, 0.0, length_cells) / maxf(length_cells, 0.01))
+	var t := clampf(pos, 0.0, length_cells) / maxf(length_cells, 0.01)
+	var at := Layout.along(points, t)
+	if lane != 0.0 and pos < shared_cells:
+		var dir := (Layout.along(points, minf(t + 0.02, 1.0)) - Layout.along(points, maxf(t - 0.02, 0.0))).normalized()
+		at += Vector2(-dir.y, dir.x) * lane
 	canvas.draw_texture_rect(Assets.item(item), Rect2(at - Vector2(13, 20), Vector2(26, 26)), false)

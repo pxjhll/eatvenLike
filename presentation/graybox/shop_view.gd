@@ -218,6 +218,32 @@ func _sync_kitchen(snapshot: Dictionary) -> void:
 		belt.ghost = _layout_mode
 		_belt_layer.add_child(belt)
 		_belts[b.id] = belt
+	_split_shared_lanes(source.belts)
+
+
+## 同一出口的几路带子开头共用几格，就在这几格上给每路分一条半边车道
+func _split_shared_lanes(belts: Array) -> void:
+	var by_source := {}
+	for b in belts:
+		if not by_source.has(b.from):
+			by_source[b.from] = []
+		by_source[b.from].append(b)
+	for group in by_source.values():
+		if group.size() < 2:
+			continue
+		for i in group.size():
+			var b: Dictionary = group[i]
+			var shared := 0
+			for other in group:
+				if other == b:
+					continue
+				var n := 0
+				while n < mini(b.path.size(), other.path.size()) and b.path[n] == other.path[n]:
+					n += 1
+				shared = maxi(shared, n)
+			var belt: Node2D = _belts[b.id]
+			belt.shared_cells = shared
+			belt.lane = (i - (group.size() - 1) / 2.0) * 22.0
 
 
 ## 设备里等着的原料画在进来的带子末端，做好的成品画在出去的第一条带子开头
