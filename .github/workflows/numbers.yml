@@ -1,0 +1,25 @@
+name: numbers-sim
+
+on:
+  push:
+    branches: [main]
+    paths: ['numbers-sim/**', 'docs/numbers/**', '.github/workflows/numbers.yml']
+  pull_request:
+    paths: ['numbers-sim/**', 'docs/numbers/**', '.github/workflows/numbers.yml']
+
+jobs:
+  numbers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test economic rules and baseline
+        run: node --test numbers-sim/tests/*.test.js
+      - name: Check standalone tuner
+        run: node numbers-sim/build-tuner.js --check
+      - name: Check reproducible report
+        run: |
+          node numbers-sim/report.js
+          git diff --exit-code -- numbers-sim/results.json docs/numbers/PXJ-41-results.md
