@@ -125,6 +125,7 @@ func step() -> void:
 
 	# 4. 加工、到货、来客、库存事务、人工进度
 	push_events(production.advance_stations(dt, new_id, closed_zone))
+	front_hall.available = production.available_items()
 	var hall := front_hall.advance(dt, rng, new_id, workforce.claimed_request_ids())
 	push_events(hall.events)
 	for order_id in hall.cancelled:
@@ -149,6 +150,7 @@ func step() -> void:
 
 	# 5. 结算
 	for sale in sales:
+		sale.price = roundi(sale.price * production.price_bonus(front_hall.dish_item(sale.dish_id)))
 		var sale_id := next_id()
 		if economy.settle(sale_id, sale.price):
 			push_events([{"type": "sold", "dish": sale.dish_id, "amount": sale.price}])

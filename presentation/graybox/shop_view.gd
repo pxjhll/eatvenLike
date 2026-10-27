@@ -24,6 +24,8 @@ var _customers := {}
 var _entities: Node2D
 var _shelf: Node2D
 var _kitchen_open := true
+## 后厨还没开时盖在上面的提示，两行
+var _closed_lines: Array[String] = []
 var _font: Font
 const DRAG_THRESHOLD := 12.0
 var _held := ""
@@ -63,6 +65,11 @@ func bind(sim: GameSim) -> void:
 	for slot in sim.config.slots:
 		var station := Station.new()
 		station.setup(slot.station)
+		var stage := _line_stage(slot.id)
+		if stage != null:
+			# 整条线一个价：价格牌只挂在这条线的第一台上
+			station.unlock_price = stage.line_cost
+			station.show_price = stage.unlock_slots[0] == slot.id
 		station.position = _positions[slot.id]
 		_entities.add_child(station)
 		_stations[slot.id] = station
@@ -133,16 +140,25 @@ func select(kind: String, id: String) -> void:
 
 func _on_snapshot(snapshot: Dictionary) -> void:
 	_kitchen_open = bool(snapshot.kitchen_open)
+	var rows := {}
+	for row in snapshot.production.stations:
+		rows[row.slot] = row
+	var revealed := _revealed_slots(snapshot)
+	# 后厨机器：启用的照常显示；下一条线营业额够了就显示成虚影 + 价格牌；其余不显示（开局后厨是空的）
 	for slot in _sim.config.slots:
-		_stations[slot.id].visible = _kitchen_open or slot.station.zone != _sim.config.kitchen_zone
+		var active: bool = rows.has(slot.id) and rows[slot.id].status == StationState.Status.ACTIVE
+		_stations[slot.id].visible = active or revealed.has(slot.id) or slot.station.zone != _sim.config.kitchen_zone
 	for spot in _sim.config.front_spots:
 		_stations[spot.id].visible = int(snapshot.progress.stage) >= spot.stage
 	for connection in _sim.config.connections:
-		var hidden := false
-		for slot in _sim.config.slots:
-			if slot.id in [connection.from_slot, connection.to_slot] and slot.station.zone == _sim.config.kitchen_zone:
-				hidden = not _kitchen_open
-		_belts[connection.id].visible = not hidden
+		var ends_shown := true
+		for end in [connection.from_slot, connection.to_slot]:
+			if _stations.has(end) and not _stations[end].visible:
+				ends_shown = false
+		# 被后面的机器接替的带（加料机接上后调奶台不再直送货架）不再画
+		var replaced: bool = connection.until_active != "" and rows.has(connection.until_active) and rows[connection.until_active].status == StationState.Status.ACTIVE
+		_belts[connection.id].visible = ends_shown and not replaced
+	_closed_lines = _closed_text(snapshot, revealed)
 	queue_redraw()
 	var claimed := {}
 	for staff in snapshot.workforce.staff:
@@ -298,15 +314,53 @@ func _place_customers(snapshot: Dictionary) -> void:
 			_customers.erase(id)
 
 
-## Finished goods of the dishes on the menu so far, in unlock order.
+## 货架上显示的成品：现在能上架的（出品台现打的不上货架），按菜品表顺序
 func _menu_items(snapshot: Dictionary) -> Array:
 	var out := []
-	var stages := _sim.config.progression.stages
-	for i in mini(int(snapshot.progress.stage) + 1, stages.size()):
-		var item := _dish_item(stages[i].dish_id)
-		if not item in out:
-			out.append(item)
+	for dish in _sim.config.dishes:
+		if dish.item_id in snapshot.available and not dish.item_id in out:
+			out.append(dish.item_id)
+	if out.is_empty():
+		out.append(_dish_item(_sim.config.progression.stages[int(snapshot.progress.stage)].dish_id))
 	return out
+
+
+## 整条一起解锁的那一阶段（这个机位在它的列表里）
+func _line_stage(slot_id: String) -> ShopStageDef:
+	for stage in _sim.config.progression.stages:
+		if stage.line_cost > 0 and slot_id in stage.unlock_slots:
+			return stage
+	return null
+
+
+## 下一阶段的机器：营业额到了门槛就以虚影 + 价格牌出现在固定机位上
+func _revealed_slots(snapshot: Dictionary) -> Dictionary:
+	var out := {}
+	var stages := _sim.config.progression.stages
+	var next := int(snapshot.progress.stage) + 1
+	if next < stages.size() and int(snapshot.revenue) >= stages[next].revenue_threshold:
+		for slot_id in stages[next].unlock_slots:
+			out[slot_id] = true
+	return out
+
+
+func _closed_text(snapshot: Dictionary, revealed: Dictionary) -> Array[String]:
+	if _kitchen_open or not revealed.is_empty():
+		return []
+	var stages := _sim.config.progression.stages
+	var next := int(snapshot.progress.stage) + 1
+	if next >= stages.size():
+		return []
+	var stage: ShopStageDef = stages[next]
+	var name := stage.line_name if stage.line_name != "" else _dish_name(stage.dish_id)
+	return ["营业额 %d / %d 后可解锁%s" % [int(snapshot.revenue), stage.revenue_threshold, name], "先在前厅卖柠檬茶"]
+
+
+func _dish_name(dish_id: String) -> String:
+	for dish in _sim.config.dishes:
+		if dish.id == dish_id:
+			return dish.display_name
+	return dish_id
 
 
 func _dish_item(dish_id: String) -> String:
@@ -452,10 +506,12 @@ func _draw() -> void:
 	draw_string(_font, Vector2(56, 146), "后厨" if _kitchen_open else "后厨 · 未开放", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("77908e"))
 	draw_string(_font, Vector2(56, 842), "前厅", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("a48d71"))
 	draw_string(_font, Vector2(56, 1180), "入口", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("a48d71"))
-	if not _kitchen_open:
+	if not _closed_lines.is_empty():
 		draw_style_box(_panel(Color("d6dfd5"), 16), Rect2(56, 354, 608, 360))
-		draw_string(_font, Vector2(190, 510), "解锁珍珠奶茶后开放后厨", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("6a8175"))
-		draw_string(_font, Vector2(180, 550), "先经营柠檬水，在前厅购买新菜", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("6a8175"))
+		for i in _closed_lines.size():
+			var size := 20 if i == 0 else 17
+			var width := _font.get_string_size(_closed_lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+			draw_string(_font, Vector2(360 - width / 2.0, 510 + i * 40), _closed_lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color("6a8175"))
 	if _dragged != "":
 		for zone in ["kitchen", "front"]:
 			if zone == "kitchen" and not _kitchen_open:

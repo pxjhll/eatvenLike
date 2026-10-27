@@ -83,3 +83,15 @@ func test_tea_save_from_before_empty_shop_restarts_the_shop() -> void:
 	check_eq(data.profile, profile.to_dict(), "Profile 原样保留")
 	var bakery := {"schema_version": 1, "profile": profile.to_dict(), "shop": make_sim().to_dict()}
 	check(SaveService.migrate(bakery).has("shop"), "面包店的中途存档不受影响")
+
+
+func test_tea_save_from_before_fixed_line_restarts_the_shop() -> void:
+	# PXJ-49 之前的奶茶店存档：后厨还是煮珍珠锅、柜台还要买
+	var profile := Profile.create(load(CATALOG))
+	var old := {"schema_version": 2, "profile": profile.to_dict(), "shop": {"shop_id": "tea", "production": {"stations": [{"slot": "pearl_pot"}]}}}
+	var data := SaveService.migrate(old)
+	check_eq(int(data.schema_version), 3, "迁移到 v3")
+	check(not data.has("shop"), "旧奶茶店的店内状态丢掉，从新开局重开")
+	check_eq(data.profile, profile.to_dict(), "Profile 原样保留")
+	var bakery := {"schema_version": 2, "profile": profile.to_dict(), "shop": make_sim().to_dict()}
+	check(SaveService.migrate(bakery).has("shop"), "面包店的中途存档不受影响")

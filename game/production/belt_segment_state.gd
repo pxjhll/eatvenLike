@@ -7,6 +7,8 @@ var from_slot := ""
 var to_slot := ""
 var length := 1.0
 var connected := true
+## 这个机位启用后这条带不再送货（ConnectionDef.until_active）
+var until_active := ""
 ## 每件 {"item": String, "pos": float}
 var items: Array[Dictionary] = []
 
@@ -18,6 +20,7 @@ static func create(conn: ConnectionDef) -> BeltSegmentState:
 	seg.to_slot = conn.to_slot
 	seg.length = conn.length_cells
 	seg.connected = conn.initially_connected
+	seg.until_active = conn.until_active
 	return seg
 
 

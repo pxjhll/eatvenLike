@@ -31,7 +31,9 @@ func _draw() -> void:
 	for item_id in items:
 		var n := int(stock.get(item_id, 0))
 		empty = empty or n == 0
-		parts.append(str(n) if items.size() == 1 else "%s%d" % [item_names.get(item_id, item_id), n])
+		# 口味多了名字放不下：「珍珠奶茶」只写「珍珠」
+		var name: String = item_names.get(item_id, item_id)
+		parts.append(str(n) if items.size() == 1 else "%s%d" % [name.trim_suffix("奶茶") if items.size() > 2 else name, n])
 	var full := false
 	for item_id in items:
 		full = full or int(stock.get(item_id, 0)) >= capacity

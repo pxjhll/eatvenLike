@@ -7,3 +7,7 @@ extends Resource
 @export var to_slot: String = ""
 @export var length_cells: float = 1.0
 @export var initially_connected: bool = true
+## 非空：这个机位启用后，这条带不再送货（例如加料机接上后，调奶台不再直送货架）
+@export var until_active: String = ""
+## 手画的传送带折线（像素坐标）；留空就自动走线。模拟不读
+@export var view_points: PackedVector2Array = PackedVector2Array()

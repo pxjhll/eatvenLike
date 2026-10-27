@@ -33,6 +33,11 @@ func unlocked_dishes() -> Array[String]:
 	return out
 
 
+func next_stage() -> ShopStageDef:
+	var next := stage_index + 1
+	return _stages()[next] if next < _stages().size() else null
+
+
 ## UnlockStation 的校验：机位属于下一阶段，且累计营业额到达门槛
 func validate_unlock(slot_id: String, revenue: int) -> String:
 	var next := stage_index + 1

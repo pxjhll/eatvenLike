@@ -13,6 +13,8 @@ func validate(sim: GameSim) -> String:
 	var reason := sim.progress.validate_unlock(slot_id, sim.economy.revenue)
 	if reason != "":
 		return reason
+	if sim.progress.next_stage().line_cost > 0:
+		return "这条线要整条一起解锁"
 	var owner_system := sim.station_owner(slot_id)
 	if owner_system == null:
 		return "没有这个工位"

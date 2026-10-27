@@ -71,11 +71,16 @@ func _build() -> void:
 	root.add_child(_toast)
 	var buttons := HFlowContainer.new()
 	root.add_child(buttons)
+	var has_line := false
+	for stage in _sim.config.progression.stages:
+		has_line = has_line or stage.line_cost > 0
+	if has_line:
+		_add_button(buttons, "解锁下一条线", UnlockLineCommand.new)
 	for slot in _sim.config.slots:
 		var def := slot.station
 		if slot.parallel_of != "":
 			_add_button(buttons, "并联 %s（%d）" % [def.display_name, def.parallel_cost], ActivateParallelCommand.new.bind(slot.id), def.zone == _sim.config.kitchen_zone)
-		elif slot.initially_locked:
+		elif slot.initially_locked and not has_line:
 			_add_button(buttons, "解锁 %s（%d）" % [def.display_name, def.unlock_cost], UnlockStationCommand.new.bind(slot.id), def.zone == _sim.config.kitchen_zone)
 		if not def.upgrade_costs.is_empty():
 			_add_button(buttons, "升级 %s" % slot.id, UpgradeStationCommand.new.bind(slot.id), def.zone == _sim.config.kitchen_zone)

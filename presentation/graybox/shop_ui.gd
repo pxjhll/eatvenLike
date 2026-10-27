@@ -5,6 +5,8 @@ const Assets := preload("res://presentation/graybox/assets.gd")
 const Names := {"rabbit": "兔子", "bear": "小熊", "cat": "小猫"}
 const ZoneNames := {"kitchen": "后厨", "front": "前厅"}
 const CARD_SIZE := Vector2(268, 120)
+## 机器面板里每个物料槽一行
+const MAT_ROW := 46.0
 var _sim: GameSim
 var _view: Node2D
 var _debug: CanvasLayer
@@ -16,6 +18,8 @@ var _card: Panel
 var _card_title: Label
 var _card_detail: Label
 var _card_buttons: Array[Button] = []
+## 物料槽升级按钮（原料柜的各原料、加料机的各配料），点开机器时按槽数显示
+var _mat_buttons: Array[Button] = []
 var _toast: Label
 var _unlock: Button
 var _menu: Label
@@ -38,6 +42,7 @@ func bind(sim: GameSim, view: Node2D, debug: CanvasLayer) -> void:
 	for child in get_children():
 		child.free()
 	_card_buttons.clear()
+	_mat_buttons.clear()
 	_staff_cards.clear()
 	_idle_staff = []
 	_bar_drag = ""
@@ -143,6 +148,9 @@ func _unlock_next() -> void:
 	var stage := _next_stage(_snapshot)
 	if stage == null:
 		return
+	if stage.line_cost > 0:
+		_sim.submit(UnlockLineCommand.new())
+		return
 	for slot_id in stage.unlock_slots:
 		if not slot_id in _snapshot.progress.unlocked_slots:
 			_sim.submit(UnlockStationCommand.new(slot_id))
@@ -227,6 +235,12 @@ func _build_card() -> void:
 		var button := _button("", Rect2(16 + i * 122, 68, 114, 40), "upgrade", _card)
 		button.pressed.connect(_act.bind(i))
 		_card_buttons.append(button)
+	for i in 4:
+		var button := _button("", Rect2(16, 116 + i * MAT_ROW, 236, 38), "upgrade", _card)
+		button.add_theme_font_size_override("font_size", 13)
+		button.pressed.connect(_act_material.bind(i))
+		button.visible = false
+		_mat_buttons.append(button)
 	_card.visible = false
 
 
@@ -246,11 +260,15 @@ func _on_snapshot(snapshot: Dictionary) -> void:
 	_progress.value = completed / maxf(total, 1)
 	var next := _next_stage(snapshot)
 	var menu: Array[String] = []
-	for i in int(snapshot.progress.stage) + 1:
-		menu.append(_dish_name(_sim.config.progression.stages[i].dish_id))
-	_menu.text = "菜单：" + " / ".join(menu)
+	for dish in _sim.config.dishes:
+		if dish.item_id in snapshot.available or _poured(dish.id):
+			menu.append(dish.display_name)
+	_menu.text = "菜单：" + (" / ".join(menu) if not menu.is_empty() else "还没有")
 	_unlock.visible = next != null
-	if next != null:
+	if next != null and next.line_cost > 0:
+		_unlock.text = "解锁%s · 金币 %d · 营业额 %d/%d" % [next.line_name, next.line_cost, snapshot.revenue, next.revenue_threshold]
+		_unlock.disabled = snapshot.gold < next.line_cost or snapshot.revenue < next.revenue_threshold
+	elif next != null:
 		var next_slot: SlotDef
 		for slot in _sim.config.slots:
 			if slot.id in next.unlock_slots and not slot.id in snapshot.progress.unlocked_slots:
@@ -260,13 +278,13 @@ func _on_snapshot(snapshot: Dictionary) -> void:
 			_unlock.text = "解锁%s · 金币 %d · 营业额 %d/%d" % [_dish_name(next.dish_id), cost, snapshot.revenue, next.revenue_threshold]
 			_unlock.disabled = snapshot.gold < cost or snapshot.revenue < next.revenue_threshold
 	_refresh_staff_bar()
-	_hint.text = "按住员工拖到工位上上岗，拖回员工栏是下岗" if snapshot.kitchen_open else "点价格牌解锁柠檬水台和柜台，招一个人拖到柜台"
+	_hint.text = "按住员工拖到工位上上岗，拖回员工栏是下岗；点机器看升级" if snapshot.kitchen_open else "点价格牌解锁柠檬茶台，招一个人拖到柜台"
 	if snapshot.progress.completed:
 		_goal.text = "本店目标已达成"
 	elif current != "":
 		_goal.text = "目标：" + current
 	elif next != null:
-		_goal.text = "目标：营业额 %d/%d，解锁%s" % [snapshot.revenue, next.revenue_threshold, _dish_name(next.dish_id)]
+		_goal.text = "目标：营业额 %d/%d，解锁%s" % [snapshot.revenue, next.revenue_threshold, next.line_name if next.line_name != "" else _dish_name(next.dish_id)]
 	else:
 		_goal.text = "目标：菜单与任务"
 	_refresh_card()
@@ -278,7 +296,7 @@ func _select(id: String, kind: String) -> void:
 	_view.select(kind, id)
 	_card.visible = true
 	_card.scale = Vector2(0.9, 0.9)
-	_card.pivot_offset = CARD_SIZE / 2.0
+	_card.pivot_offset = _card.size / 2.0
 	create_tween().tween_property(_card, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_refresh_card()
 	_place_card()
@@ -303,16 +321,19 @@ func _place_card() -> void:
 	else:
 		anchor = Rect2(_view.belt_anchor(_selected), Vector2.ZERO)
 	anchor.position.x -= _root.position.x
-	var at := Vector2(anchor.get_center().x - CARD_SIZE.x / 2.0, anchor.end.y + 34)
-	if at.y + CARD_SIZE.y > 1200:
-		at.y = anchor.position.y - CARD_SIZE.y - 40
-	at.x = clampf(at.x, screen.position.x + 12, screen.end.x - CARD_SIZE.x - 12)
+	var size := _card.size
+	var at := Vector2(anchor.get_center().x - size.x / 2.0, anchor.end.y + 34)
+	if at.y + size.y > 1200:
+		at.y = anchor.position.y - size.y - 40
+	at.y = maxf(at.y, 96.0)
+	at.x = clampf(at.x, screen.position.x + 12, screen.end.x - size.x - 12)
 	_card.position = at
 
 
 func _refresh_card() -> void:
 	if _selected == "" or _card == null or not _card.visible:
 		return
+	_show_materials(0)
 	if _selected_kind == "belt":
 		_refresh_belt_card()
 		return
@@ -330,6 +351,10 @@ func _refresh_card() -> void:
 	_card_buttons[1].visible = false
 	_card_buttons[0].size.x = 236
 	_card_buttons[0].icon = Assets.icon("upgrade")
+	var line := _line_stage(slot.id)
+	if row.status == StationState.Status.LOCKED and line != null:
+		_refresh_line_card(line)
+		return
 	if row.status != StationState.Status.ACTIVE:
 		var price := def.parallel_cost if slot.parallel_of != "" else def.unlock_cost
 		_card_title.text = def.display_name
@@ -354,15 +379,66 @@ func _refresh_card() -> void:
 	var maximum := mini(def.level_speed.size(), def.upgrade_costs.size() + 1)
 	var full := level >= maximum
 	_card_title.text = "%s  Lv%d" % [def.display_name, level]
+	_refresh_materials(def, row)
 	if full:
 		_card_detail.text = "已经是最高等级"
 		_card_buttons[0].text = "已满级"
 		_card_buttons[0].disabled = true
 		return
 	var price: int = def.upgrade_costs[level - 1]
-	_card_detail.text = "速度 ×%.1f → ×%.1f" % [def.level_speed[level - 1], def.level_speed[level]]
-	_card_buttons[0].text = "升级  %d" % price
+	_card_detail.text = "速度 ×%.2f → ×%.2f" % [def.level_speed[level - 1], def.level_speed[level]]
+	for m in def.materials:
+		if m.unlock_level == level + 1:
+			_card_detail.text += "，开放" + m.display_name
+	_card_buttons[0].text = "升级机器  %d" % price
 	_card_buttons[0].disabled = _snapshot.gold < price
+
+
+## 还没买的整条线：点哪一台都是同一张价格牌，一次买齐（首店流程稿 3）
+func _refresh_line_card(stage: ShopStageDef) -> void:
+	var names: Array[String] = []
+	for slot in _sim.config.slots:
+		if slot.id in stage.unlock_slots:
+			names.append(slot.station.display_name)
+	_card_title.text = stage.line_name
+	_card_detail.text = " + ".join(names) + "，一起解锁"
+	_card_buttons[0].text = "解锁  %d" % stage.line_cost
+	_card_buttons[0].disabled = _snapshot.gold < stage.line_cost or _snapshot.revenue < stage.revenue_threshold
+	if _snapshot.revenue < stage.revenue_threshold:
+		_card_detail.text = "营业额 %d/%d 后可解锁" % [_snapshot.revenue, stage.revenue_threshold]
+
+
+## 机器面板下半部分：每个物料槽一行，能单独升级；没开放的写要机器几级
+func _refresh_materials(def: StationDef, row: Dictionary) -> void:
+	_show_materials(def.materials.size())
+	for i in def.materials.size():
+		var m: MaterialSlotDef = def.materials[i]
+		var button := _mat_buttons[i]
+		var level := int(row.mat_levels.get(m.id, 1))
+		var what := "售价" if def.mode == StationDef.Mode.TOPPING else "出货"
+		if int(row.level) < m.unlock_level:
+			button.text = "%s · 机器 Lv%d 开放" % [m.display_name, m.unlock_level]
+			button.disabled = true
+		elif level >= m.max_level():
+			button.text = "%s Lv%d · %s ×%.2f · 满级" % [m.display_name, level, what, m.bonus(level)]
+			button.disabled = true
+		else:
+			var price: int = m.upgrade_costs[level - 1]
+			button.text = "%s Lv%d · %s ×%.2f→×%.2f · %d" % [m.display_name, level, what, m.bonus(level), m.bonus(level + 1), price]
+			button.disabled = int(_snapshot.gold) < price
+
+
+func _show_materials(count: int) -> void:
+	for i in _mat_buttons.size():
+		_mat_buttons[i].visible = i < count
+	_card.size = CARD_SIZE + Vector2(0, count * MAT_ROW)
+
+
+func _act_material(index: int) -> void:
+	var slot := _slot()
+	if slot == null or index >= slot.station.materials.size():
+		return
+	_sim.submit(UpgradeMaterialCommand.new(slot.id, slot.station.materials[index].id))
 
 
 ## 前厅位点：没解锁时是价格牌，解锁后和别的工位一样能升级。
@@ -485,6 +561,8 @@ func _act(button: int) -> void:
 		return
 	if row.status == StationState.Status.EMPTY_PARALLEL:
 		_sim.submit(ActivateParallelCommand.new(_selected))
+	elif row.status == StationState.Status.LOCKED and _line_stage(slot.id) != null:
+		_sim.submit(UnlockLineCommand.new())
 	elif row.status == StationState.Status.LOCKED:
 		_sim.submit(UnlockStationCommand.new(_selected))
 	else:
@@ -503,6 +581,20 @@ func _slot() -> SlotDef:
 		if slot.id == _selected:
 			return slot
 	return null
+
+
+## 整条一起解锁的阶段（line_cost > 0）里有这个机位就返回它
+func _line_stage(slot_id: String) -> ShopStageDef:
+	var stage := _stage_unlocking(slot_id)
+	return stage if stage != null and stage.line_cost > 0 else null
+
+
+## 出品台现打的饮品：出品台开着就在菜单上
+func _poured(dish_id: String) -> bool:
+	for spot in _sim.config.front_spots:
+		if spot.station.mode == StationDef.Mode.DISPENSER and dish_id in spot.station.dishes and _sim.front_hall.is_active(spot.id):
+			return true
+	return false
 
 
 ## The stage whose purchase list holds this slot, if any.
