@@ -136,6 +136,14 @@ func _build() -> void:
 	var art := _button("ART", Rect2(594, 88, 90, 28), "hint", _root)
 	art.tooltip_text = "Art preview"
 	art.pressed.connect(func() -> void: _sim.get_parent().open_art_preview())
+	var play := _button("试玩", Rect2(594, 120, 90, 28), "hint", _root)
+	play.pressed.connect(func() -> void:
+		if App.save_now() != OK:
+			_show_toast("保存失败，未离开当前游戏")
+			return
+		App._pending_shop_state = _sim.to_dict()
+		App.sim = null
+		_sim.get_tree().change_scene_to_file("res://presentation/tea_playtest/tea_playtest.tscn"))
 	_hint = _label("", Vector2(40, 1104), 13, Color("8a978d"), _root)
 	_toast = _label("", Vector2(0, 1264), 14, Color("a16e47"), _root)
 	_toast.size = Vector2(720, 24)

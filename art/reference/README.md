@@ -20,6 +20,26 @@ The preview pauses the existing simulation and restores its previous paused/runn
 
 ## Rebuild
 
+Runtime textures use a **256 art pixels per nominal 100-unit display cell** budget.
+Oversized PNGs are downsampled with Lanczos filtering; existing scene Sprite scales
+are compensated so placement, size and occlusion anchors stay the same. This budget
+is inferred from the current composition, not a new footprint or layout definition.
+Smaller originals are retained without upscaling. Existing nonuniform scaling is
+preserved; fixing distorted artwork requires a separate proportion/layout review.
+
+See `docs/art/resource-inventory-256.md` and its CSV for every repository image,
+before/after sizes and memory estimates. `art_src/reference/texture_budget.json`
+records the geometry before optimization. Source sheets remain unchanged, and
+the locally edited support-table master is retained under `art_src/reference/masters`.
+`manifest.json` records runtime export sizes and that table's source override, so
+extracting the source sheets again preserves the optimized resolution.
+
+**Do not repack the scene to apply a texture change:** `_pack` regenerates placements
+from the older manifest and can overwrite manual scene edits. The optimizer patches
+only Sprite scales in the existing `.tscn`. The original preview also keeps the
+uploaded full-resolution `reference.png` for visual comparison; it is exempt from
+the gameplay texture budget, as are source sheets, UI atlases and animation sheets.
+
 Run from the project root with Godot 4:
 
 ```sh

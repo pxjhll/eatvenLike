@@ -1,11 +1,18 @@
 ; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 config_version=5
 
 [application]
 
 config/name="eatvenLike"
-run/main_scene="res://presentation/shop.tscn"
-config/features=PackedStringArray("4.7", "Mobile")
+run/main_scene="res://presentation/tea_playtest/tea_playtest.tscn"
+config/features=PackedStringArray("4.6", "Mobile")
 
 [autoload]
 
@@ -22,5 +29,4 @@ window/handheld/orientation=1
 [rendering]
 
 renderer/rendering_method="mobile"
-renderer/rendering_method.web="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.958, 0.957, 0.916, 1)

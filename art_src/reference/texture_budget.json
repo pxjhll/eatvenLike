@@ -1,0 +1,979 @@
+{
+  "art_pixels_per_cell": 256,
+  "display_units_per_cell": 100,
+  "textures": {
+    "art/reference/back_wall.png": {
+      "before": [
+        937,
+        305
+      ],
+      "after": [
+        937,
+        305
+      ],
+      "bytes_before": 226898,
+      "sha256_before": "ae541eb179b6cddea2ed8d9bd2e6a47f4b8fd791dfbf576fef0354102e22ef9e",
+      "status": "kept",
+      "display_density_before": 1.301,
+      "bytes_after": 226898
+    },
+    "art/reference/belt_corner.png": {
+      "before": [
+        700,
+        620
+      ],
+      "after": [
+        318,
+        282
+      ],
+      "bytes_before": 256959,
+      "sha256_before": "df2da93823309babd125f393b47a4245a0d982462efe7e13498fe3f98924eb8e",
+      "status": "downsampled",
+      "display_density_before": 5.636,
+      "bytes_after": 71788
+    },
+    "art/reference/belt_horizontal.png": {
+      "before": [
+        750,
+        370
+      ],
+      "after": [
+        748,
+        369
+      ],
+      "bytes_before": 193552,
+      "sha256_before": "4ef10129dbcc93c2d6d577286ce177be50936d6b54cd04b39d3dd39055c54895",
+      "status": "downsampled",
+      "display_density_before": 2.568,
+      "bytes_after": 207312
+    },
+    "art/reference/belt_vertical.png": {
+      "before": [
+        385,
+        695
+      ],
+      "after": [
+        385,
+        695
+      ],
+      "bytes_before": 188562,
+      "sha256_before": "eb5ce3923a6723ef6e15254bd7e612f536048678eb0ad79aecf0e24ab309aa13",
+      "status": "kept",
+      "display_density_before": 2.482,
+      "bytes_after": 188562
+    },
+    "art/reference/brewer.png": {
+      "before": [
+        335,
+        445
+      ],
+      "after": [
+        278,
+        369
+      ],
+      "bytes_before": 159284,
+      "sha256_before": "15ed1eb3b08f72b589f481dd41ec06553b4404b9d7d59a1b82230085c7dc89bf",
+      "status": "downsampled",
+      "display_density_before": 3.09,
+      "bytes_after": 123763
+    },
+    "art/reference/cat.png": {
+      "before": [
+        390,
+        480
+      ],
+      "after": [
+        337,
+        415
+      ],
+      "bytes_before": 165591,
+      "sha256_before": "3f88c0e6207c2b00bca52b1160e0318b17e3ce88c5359fd24b80befb98cc196f",
+      "status": "downsampled",
+      "display_density_before": 2.963,
+      "bytes_after": 138610
+    },
+    "art/reference/checkout.png": {
+      "before": [
+        620,
+        280
+      ],
+      "after": [
+        620,
+        280
+      ],
+      "bytes_before": 130998,
+      "sha256_before": "f4499320528e3361c0af1886755f93b1cd1e2a2372baa471bf8dca7fc74330fe",
+      "status": "kept",
+      "display_density_before": 0.976,
+      "bytes_after": 130998
+    },
+    "art/reference/cream_tea.png": {
+      "before": [
+        270,
+        330
+      ],
+      "after": [
+        128,
+        157
+      ],
+      "bytes_before": 78815,
+      "sha256_before": "ed56b96708c29cf009fb925545e88f9ad59409d1b6fdfc0d454c8fe4ca32e781",
+      "status": "downsampled",
+      "display_density_before": 5.41,
+      "bytes_after": 24875
+    },
+    "art/reference/display_case.png": {
+      "before": [
+        520,
+        380
+      ],
+      "after": [
+        520,
+        380
+      ],
+      "bytes_before": 162904,
+      "sha256_before": "7f3070115ae33b49382266cad460614bb023933ebc819f28c4f849600ddc9db3",
+      "status": "kept",
+      "display_density_before": 1.743,
+      "bytes_after": 162904
+    },
+    "art/reference/door_lintel.png": {
+      "before": [
+        345,
+        62
+      ],
+      "after": [
+        345,
+        62
+      ],
+      "bytes_before": 16175,
+      "sha256_before": "2f23810bba17aa8e41a24e2317726bc0b560e921c9060a4a73725ef146018eb6",
+      "status": "kept",
+      "display_density_before": 1.301,
+      "bytes_after": 16175
+    },
+    "art/reference/floor.png": {
+      "before": [
+        937,
+        1678
+      ],
+      "after": [
+        937,
+        1678
+      ],
+      "bytes_before": 1453185,
+      "sha256_before": "37a2f85756aef807b2aa14f326ed7d7ed41e28afe089c14a91b255a0d79099e6",
+      "status": "kept",
+      "display_density_before": 1.301,
+      "bytes_after": 1453185
+    },
+    "art/reference/fox.png": {
+      "before": [
+        415,
+        480
+      ],
+      "after": [
+        397,
+        459
+      ],
+      "bytes_before": 172084,
+      "sha256_before": "0160595e324ea5451238612054fbaea7c9f1508432a2fd09e57d047c60522f62",
+      "status": "downsampled",
+      "display_density_before": 2.677,
+      "bytes_after": 168146
+    },
+    "art/reference/fruit_tea.png": {
+      "before": [
+        270,
+        365
+      ],
+      "after": [
+        143,
+        193
+      ],
+      "bytes_before": 98784,
+      "sha256_before": "c3593f2f0d0f49d34e6277d7ab9a181d90974e8429e7c0698b4123d33fa0c570",
+      "status": "downsampled",
+      "display_density_before": 4.867,
+      "bytes_after": 36561
+    },
+    "art/reference/hamster.png": {
+      "before": [
+        310,
+        375
+      ],
+      "after": [
+        271,
+        328
+      ],
+      "bytes_before": 105459,
+      "sha256_before": "98703bc3667b120434f5d54680a789973cdf22b0554333eec78a80ee84b4ddd5",
+      "status": "downsampled",
+      "display_density_before": 2.93,
+      "bytes_after": 89788
+    },
+    "art/reference/ingredient_table.png": {
+      "before": [
+        480,
+        225
+      ],
+      "after": [
+        480,
+        225
+      ],
+      "bytes_before": 85392,
+      "sha256_before": "7958d26cd3f120e69c19a992ef273b6f9344c36929baad1feac688961f887b7e",
+      "status": "kept",
+      "display_density_before": 2.133,
+      "bytes_after": 85392
+    },
+    "art/reference/machine_table.png": {
+      "before": [
+        1960,
+        490
+      ],
+      "after": [
+        717,
+        180
+      ],
+      "bytes_before": 691001,
+      "sha256_before": "714adf7429edb8fb625f8249f559592dfa060f8731e3a1f541fbae23645ba05c",
+      "status": "downsampled",
+      "display_density_before": 7.0,
+      "bytes_after": 104936
+    },
+    "art/reference/milk_bottle.png": {
+      "before": [
+        235,
+        385
+      ],
+      "after": [
+        135,
+        221
+      ],
+      "bytes_before": 85994,
+      "sha256_before": "8c08dd464b87407114bc54ac627bb0ee3db2126dd006c35488a2e8c59b1ea156",
+      "status": "downsampled",
+      "display_density_before": 4.477,
+      "bytes_after": 36396
+    },
+    "art/reference/outer_left.png": {
+      "before": [
+        32,
+        1373
+      ],
+      "after": [
+        32,
+        1373
+      ],
+      "bytes_before": 40116,
+      "sha256_before": "18028e373f5665f5a5b96786771963252f5449e541322914cf71ca6c320b24fa",
+      "status": "kept",
+      "display_density_before": 1.301,
+      "bytes_after": 40116
+    },
+    "art/reference/outer_right.png": {
+      "before": [
+        32,
+        1373
+      ],
+      "after": [
+        32,
+        1373
+      ],
+      "bytes_before": 40284,
+      "sha256_before": "efb51e2e26f4bd4620183f5617191a0a550561e5d87c48f5a34cd13b9923bf98",
+      "status": "kept",
+      "display_density_before": 1.301,
+      "bytes_after": 40284
+    },
+    "art/reference/partition_left.png": {
+      "before": [
+        253,
+        238
+      ],
+      "after": [
+        253,
+        238
+      ],
+      "bytes_before": 48385,
+      "sha256_before": "081b1863e38c6b13e78df91a7fc73ec310a7d5e49fd1980081212a5f3d3cbde3",
+      "status": "kept",
+      "display_density_before": 1.301,
+      "bytes_after": 48385
+    },
+    "art/reference/partition_right.png": {
+      "before": [
+        275,
+        238
+      ],
+      "after": [
+        275,
+        238
+      ],
+      "bytes_before": 51739,
+      "sha256_before": "43f3896e70ad0eb311e15dbd8badbc7293eec721f503f19f060c5ffd30fe4bcd",
+      "status": "kept",
+      "display_density_before": 1.301,
+      "bytes_after": 51739
+    },
+    "art/reference/pearl_jar.png": {
+      "before": [
+        340,
+        315
+      ],
+      "after": [
+        224,
+        208
+      ],
+      "bytes_before": 142047,
+      "sha256_before": "bd8e497174865560458aacb8da0fe4cb8d0f1528814cf7b20a1da5c52bbda407",
+      "status": "downsampled",
+      "display_density_before": 3.889,
+      "bytes_after": 74667
+    },
+    "art/reference/pearl_pot.png": {
+      "before": [
+        540,
+        410
+      ],
+      "after": [
+        523,
+        397
+      ],
+      "bytes_before": 243177,
+      "sha256_before": "96ee8705852353f956c92fcf1652d5c398723a844596f43d156f98abf308ec86",
+      "status": "downsampled",
+      "display_density_before": 2.645,
+      "bytes_after": 243053
+    },
+    "art/reference/pearl_tea.png": {
+      "before": [
+        265,
+        365
+      ],
+      "after": [
+        140,
+        193
+      ],
+      "bytes_before": 93711,
+      "sha256_before": "76cff839e9402f8302419609bfeb6737cde0b934541d9ba0833f1e0ace4415e8",
+      "status": "downsampled",
+      "display_density_before": 4.867,
+      "bytes_after": 35113
+    },
+    "art/reference/prep_bench.png": {
+      "before": [
+        436,
+        1245
+      ],
+      "after": [
+        313,
+        892
+      ],
+      "bytes_before": 541779,
+      "sha256_before": "9afdbed8cb6d80a6030811db9b074adee87754e67a2affc1eed1ff32bd20c198",
+      "status": "downsampled",
+      "display_density_before": 3.574,
+      "bytes_after": 343068
+    },
+    "art/reference/raccoon.png": {
+      "before": [
+        430,
+        480
+      ],
+      "after": [
+        386,
+        431
+      ],
+      "bytes_before": 180747,
+      "sha256_before": "dc00611a5623ffb0f7f8c0ec58db6db10cd4cf34e13473487d7ac8a83a0688ce",
+      "status": "downsampled",
+      "display_density_before": 2.857,
+      "bytes_after": 160584
+    },
+    "art/reference/rack.png": {
+      "before": [
+        390,
+        380
+      ],
+      "after": [
+        390,
+        380
+      ],
+      "bytes_before": 123534,
+      "sha256_before": "3c480dd39c791b8d50ed5822309606ccec954344f56160f1fe4093e816a417d5",
+      "status": "kept",
+      "display_density_before": 2.053,
+      "bytes_after": 123534
+    },
+    "art/reference/register.png": {
+      "before": [
+        335,
+        245
+      ],
+      "after": [
+        335,
+        245
+      ],
+      "bytes_before": 82561,
+      "sha256_before": "928059611d12b9e2b4307ec5afe542acbae5af8338ac994eb1b1adbd40af57ea",
+      "status": "kept",
+      "display_density_before": 2.175,
+      "bytes_after": 82561
+    },
+    "art/reference/sealer.png": {
+      "before": [
+        430,
+        510
+      ],
+      "after": [
+        417,
+        495
+      ],
+      "bytes_before": 198845,
+      "sha256_before": "aa52ee8212ebab54c2d669e271ec3693b796d6139b2378f499b5053eec5a28c5",
+      "status": "downsampled",
+      "display_density_before": 2.642,
+      "bytes_after": 199226
+    },
+    "art/reference/squirrel.png": {
+      "before": [
+        400,
+        380
+      ],
+      "after": [
+        345,
+        328
+      ],
+      "bytes_before": 119247,
+      "sha256_before": "c5b4d5e276f57f2daea025d67d0c059402c3dbdd2e150e45a9a6f10dc4ba98c8",
+      "status": "downsampled",
+      "display_density_before": 2.969,
+      "bytes_after": 99098
+    },
+    "art/reference/tea_tin.png": {
+      "before": [
+        275,
+        375
+      ],
+      "after": [
+        179,
+        244
+      ],
+      "bytes_before": 106685,
+      "sha256_before": "7d4587d13026199634807fc245eaf51d00eb2dbed32a899282b64b61703cfba6",
+      "status": "downsampled",
+      "display_density_before": 3.947,
+      "bytes_after": 54529
+    }
+  },
+  "scene_geometry_before": [
+    {
+      "node": "Sortables/IngredientTable/Sprite",
+      "position": [
+        -112.5,
+        -99.0
+      ],
+      "size": [
+        225.0,
+        99.0
+      ]
+    },
+    {
+      "node": "Sortables/IngredientTable/PearlJar/Sprite",
+      "position": [
+        -35.0,
+        -81.0
+      ],
+      "size": [
+        70.0000024,
+        81.00000405
+      ]
+    },
+    {
+      "node": "Sortables/IngredientTable/TeaTin/Sprite",
+      "position": [
+        -31.5,
+        -95.0
+      ],
+      "size": [
+        63.00000025,
+        94.99999875
+      ]
+    },
+    {
+      "node": "Sortables/IngredientTable/MilkBottle/Sprite",
+      "position": [
+        -23.5,
+        -86.0
+      ],
+      "size": [
+        47.0,
+        85.9999987
+      ]
+    },
+    {
+      "node": "Sortables/PrepBench/Sprite",
+      "position": [
+        -61.0,
+        -348.37
+      ],
+      "size": [
+        121.99999400000002,
+        348.3699987
+      ]
+    },
+    {
+      "node": "Sortables/MachineTable/Sprite",
+      "position": [
+        -140.0,
+        -70.0
+      ],
+      "size": [
+        280.00001399999996,
+        70.00000349999999
+      ]
+    },
+    {
+      "node": "Sortables/MachineTable/PearlPot/Sprite",
+      "position": [
+        -83.0,
+        -155.0
+      ],
+      "size": [
+        165.999996,
+        154.99999979999998
+      ]
+    },
+    {
+      "node": "Sortables/MachineTable/Brewer/Sprite",
+      "position": [
+        -47.5,
+        -144.0
+      ],
+      "size": [
+        95.0000035,
+        143.99999749999998
+      ]
+    },
+    {
+      "node": "Sortables/BeltHorizontal/Sprite",
+      "position": [
+        -146.0,
+        -92.0
+      ],
+      "size": [
+        292.00000500000004,
+        100.9999989
+      ]
+    },
+    {
+      "node": "Sortables/BeltVertical/Sprite",
+      "position": [
+        -45.0,
+        -40.0
+      ],
+      "size": [
+        89.99999855,
+        280.0000015
+      ]
+    },
+    {
+      "node": "Sortables/BeltCorner/Sprite",
+      "position": [
+        -56.0,
+        -93.0
+      ],
+      "size": [
+        112.0,
+        109.99999700000001
+      ]
+    },
+    {
+      "node": "Sortables/Sealer/Sprite",
+      "position": [
+        -60.0,
+        -169.0
+      ],
+      "size": [
+        120.00000539999999,
+        193.0000038
+      ]
+    },
+    {
+      "node": "Sortables/Cat/Sprite",
+      "position": [
+        -60.5,
+        -162.0
+      ],
+      "size": [
+        121.00000379999999,
+        162.0
+      ]
+    },
+    {
+      "node": "Sortables/Raccoon/Sprite",
+      "position": [
+        -67.5,
+        -184.0
+      ],
+      "size": [
+        135.000005,
+        168.0
+      ]
+    },
+    {
+      "node": "Sortables/Rack/Sprite",
+      "position": [
+        -95.0,
+        -185.0
+      ],
+      "size": [
+        190.000005,
+        184.999998
+      ]
+    },
+    {
+      "node": "Sortables/Rack/RackCupA/Sprite",
+      "position": [
+        -19.0,
+        -62.0
+      ],
+      "size": [
+        38.00000095,
+        62.0000023
+      ]
+    },
+    {
+      "node": "Sortables/Rack/RackCupB/Sprite",
+      "position": [
+        -19.0,
+        -62.0
+      ],
+      "size": [
+        38.00000095,
+        62.0000023
+      ]
+    },
+    {
+      "node": "Sortables/Rack/RackCupC/Sprite",
+      "position": [
+        -19.5,
+        -56.0
+      ],
+      "size": [
+        39.0000015,
+        56.0000001
+      ]
+    },
+    {
+      "node": "Sortables/Rack/RackCupD/Sprite",
+      "position": [
+        -19.0,
+        -60.0
+      ],
+      "size": [
+        38.00000095,
+        59.99999940000001
+      ]
+    },
+    {
+      "node": "Sortables/Rack/RackCupE/Sprite",
+      "position": [
+        -19.0,
+        -60.0
+      ],
+      "size": [
+        38.00000095,
+        59.99999940000001
+      ]
+    },
+    {
+      "node": "Sortables/Rack/RackCupF/Sprite",
+      "position": [
+        -19.5,
+        -55.0
+      ],
+      "size": [
+        39.0000015,
+        55.0000011
+      ]
+    },
+    {
+      "node": "Sortables/BeltCupA/Sprite",
+      "position": [
+        -19.0,
+        -125.0
+      ],
+      "size": [
+        38.00000095,
+        69.9999993
+      ]
+    },
+    {
+      "node": "Sortables/BeltCupB/Sprite",
+      "position": [
+        -19.0,
+        -125.0
+      ],
+      "size": [
+        38.00000095,
+        69.9999993
+      ]
+    },
+    {
+      "node": "Sortables/SealingCup/Sprite",
+      "position": [
+        -20.0,
+        -89.0
+      ],
+      "size": [
+        40.0000005,
+        53.9999988
+      ]
+    },
+    {
+      "node": "Sortables/SealedCup/Sprite",
+      "position": [
+        -20.0,
+        -57.0
+      ],
+      "size": [
+        40.0000005,
+        53.9999988
+      ]
+    },
+    {
+      "node": "Sortables/BeltCupC/Sprite",
+      "position": [
+        -20.0,
+        -74.0
+      ],
+      "size": [
+        40.000001000000005,
+        69.0000015
+      ]
+    },
+    {
+      "node": "Sortables/BeltCupD/Sprite",
+      "position": [
+        -20.0,
+        -74.0
+      ],
+      "size": [
+        40.000001000000005,
+        69.0000015
+      ]
+    },
+    {
+      "node": "Sortables/PartitionLeft/Sprite",
+      "position": [
+        -97.200005,
+        -181.90002
+      ],
+      "size": [
+        194.40000085,
+        181.5999976
+      ]
+    },
+    {
+      "node": "Sortables/PartitionRight/Sprite",
+      "position": [
+        -105.649994,
+        -181.90002
+      ],
+      "size": [
+        211.30000374999997,
+        181.5999976
+      ]
+    },
+    {
+      "node": "Sortables/DoorLintel/Sprite",
+      "position": [
+        -132.54999,
+        -181.90002
+      ],
+      "size": [
+        265.100001,
+        47.5999978
+      ]
+    },
+    {
+      "node": "Sortables/Fox/Sprite",
+      "position": [
+        -77.5,
+        -176.0
+      ],
+      "size": [
+        154.99999755000002,
+        176.0000016
+      ]
+    },
+    {
+      "node": "Sortables/Checkout/Sprite",
+      "position": [
+        -317.5,
+        -74.0
+      ],
+      "size": [
+        634.99997,
+        127.0000032
+      ]
+    },
+    {
+      "node": "Sortables/Checkout/Register/Sprite",
+      "position": [
+        -77.0,
+        -112.0
+      ],
+      "size": [
+        153.9999958,
+        112.0000007
+      ]
+    },
+    {
+      "node": "Sortables/DisplayCase/Sprite",
+      "position": [
+        -137.5,
+        -219.0
+      ],
+      "size": [
+        274.9999928,
+        217.99999599999998
+      ]
+    },
+    {
+      "node": "Sortables/DisplayCase/DisplayPearlA/Sprite",
+      "position": [
+        -21.5,
+        -75.0
+      ],
+      "size": [
+        42.99999975,
+        75.0000029
+      ]
+    },
+    {
+      "node": "Sortables/DisplayCase/DisplayFruitA/Sprite",
+      "position": [
+        -21.5,
+        -75.0
+      ],
+      "size": [
+        43.0000002,
+        75.0000029
+      ]
+    },
+    {
+      "node": "Sortables/DisplayCase/DisplayCreamA/Sprite",
+      "position": [
+        -21.5,
+        -61.0
+      ],
+      "size": [
+        43.0000002,
+        61.0000017
+      ]
+    },
+    {
+      "node": "Sortables/DisplayCase/DisplayPearlB/Sprite",
+      "position": [
+        -21.5,
+        -75.0
+      ],
+      "size": [
+        42.99999975,
+        75.0000029
+      ]
+    },
+    {
+      "node": "Sortables/DisplayCase/DisplayFruitB/Sprite",
+      "position": [
+        -21.5,
+        -75.0
+      ],
+      "size": [
+        43.0000002,
+        75.0000029
+      ]
+    },
+    {
+      "node": "Sortables/DisplayCase/DisplayCreamB/Sprite",
+      "position": [
+        -21.5,
+        -61.0
+      ],
+      "size": [
+        43.0000002,
+        61.0000017
+      ]
+    },
+    {
+      "node": "Sortables/Squirrel/Sprite",
+      "position": [
+        -65.0,
+        -128.0
+      ],
+      "size": [
+        130.0,
+        128.0000056
+      ]
+    },
+    {
+      "node": "Sortables/Hamster/Sprite",
+      "position": [
+        -51.0,
+        -128.0
+      ],
+      "size": [
+        102.00000370000001,
+        127.99999875
+      ]
+    },
+    {
+      "node": "Floor/Sprite",
+      "position": [
+        -360.0,
+        -1280.0
+      ],
+      "size": [
+        720.0000294499999,
+        1279.9999622999999
+      ]
+    },
+    {
+      "node": "BackWall/Sprite",
+      "position": [
+        -360.0,
+        -233.0
+      ],
+      "size": [
+        720.0000294499999,
+        233.00000115
+      ]
+    },
+    {
+      "node": "OuterLeft/Sprite",
+      "position": [
+        -12.3,
+        -1047.0
+      ],
+      "size": [
+        24.6,
+        1046.9999601
+      ]
+    },
+    {
+      "node": "OuterRight/Sprite",
+      "position": [
+        -12.299988,
+        -1047.0
+      ],
+      "size": [
+        24.6,
+        1046.9999601
+      ]
+    }
+  ]
+}

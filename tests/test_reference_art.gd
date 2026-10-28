@@ -1,6 +1,38 @@
 extends "res://tests/test_case.gd"
 
 
+func test_reference_textures_fit_256_pixels_per_cell_budget() -> void:
+	var art: Node2D = load("res://presentation/reference/shop_art.tscn").instantiate()
+	# One nominal display cell is 100 units. Keep enough pixels for the largest use.
+	var largest_scale := {}
+	for sprite in art.find_children("*", "Sprite2D", true, false):
+		var path: String = sprite.texture.resource_path
+		largest_scale[path] = maxf(largest_scale.get(path, 0.0), maxf(sprite.scale.x, sprite.scale.y))
+	# The walking probe also uses the cat texture, at 104 x 140 display units.
+	var cat_path := "res://art/reference/cat.png"
+	var cat: Texture2D = load(cat_path)
+	largest_scale[cat_path] = maxf(largest_scale[cat_path], maxf(104.0 / cat.get_width(), 140.0 / cat.get_height()))
+	for path in largest_scale:
+		check(1.0 / largest_scale[path] <= 2.56 + 0.02, "no excessive texture density: " + path)
+	art.free()
+
+
+func test_texture_optimization_preserves_existing_sprite_geometry() -> void:
+	var audit_path := "res://art_src/reference/texture_budget.json"
+	check(FileAccess.file_exists(audit_path), "texture optimization keeps a geometry audit")
+	if not FileAccess.file_exists(audit_path):
+		return
+	var audit: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(audit_path))
+	var art: Node2D = load("res://presentation/reference/shop_art.tscn").instantiate()
+	for row in audit.scene_geometry_before:
+		var sprite: Sprite2D = art.get_node(row.node)
+		var expected_position := Vector2(row.position[0], row.position[1])
+		var expected_size := Vector2(row.size[0], row.size[1])
+		check(sprite.position.distance_to(expected_position) < 0.001, "anchor unchanged: " + row.node)
+		check((sprite.texture.get_size() * sprite.scale).distance_to(expected_size) < 0.001, "display size unchanged: " + row.node)
+	art.free()
+
+
 func test_art_scene_has_independent_occluders_and_clear_doorway() -> void:
 	var path := "res://presentation/reference/shop_art.tscn"
 	check(ResourceLoader.exists(path), "layered art scene exists")

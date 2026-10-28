@@ -13,6 +13,7 @@ var _probe: Node2D
 var _probe_walk := false
 var _clock := 0.0
 var _closing := false
+var _save_notice: Label
 
 
 func _ready() -> void:
@@ -38,7 +39,20 @@ func _build_ui() -> void:
 	bar.position = Vector2(18, 8)
 	bar.add_theme_constant_override("separation", 8)
 	_ui.add_child(bar)
+	_save_notice = Label.new()
+	_save_notice.position = Vector2(18, 1218)
+	_save_notice.text = "保存失败，未离开当前游戏"
+	_save_notice.visible = false
+	_ui.add_child(_save_notice)
 	_button(bar, "Back to game", close)
+	_button(bar, "试玩", func() -> void:
+		if is_instance_valid(App.sim):
+			if App.save_now() != OK:
+				_save_notice.visible = true
+				return
+			App._pending_shop_state = App.sim.to_dict()
+			App.sim = null
+		get_tree().change_scene_to_file("res://presentation/tea_playtest/tea_playtest.tscn"))
 	_button(bar, "Layers", func() -> void: _panel.visible = not _panel.visible)
 	var reference := CheckButton.new()
 	reference.text = "Original"

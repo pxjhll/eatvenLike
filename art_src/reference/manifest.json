@@ -79,5 +79,139 @@
     {"id":"Hamster", "asset":"hamster", "rect":[446,1094,102,128], "layer":"actors"},
     {"id":"OuterLeft", "asset":"outer_left", "rect":[0,233,24.6,1047], "layer":"walls", "parent":"root", "z":10},
     {"id":"OuterRight", "asset":"outer_right", "rect":[695.4,233,24.6,1047], "layer":"walls", "parent":"root", "z":10}
-  ]
+  ],
+  "texture_budget": {
+    "art_pixels_per_cell": 256,
+    "display_units_per_cell": 100,
+    "mode": "downsample_only_preserve_current_layout"
+  },
+  "runtime_sizes": {
+    "back_wall": [
+      937,
+      305
+    ],
+    "belt_corner": [
+      318,
+      282
+    ],
+    "belt_horizontal": [
+      748,
+      369
+    ],
+    "belt_vertical": [
+      385,
+      695
+    ],
+    "brewer": [
+      278,
+      369
+    ],
+    "cat": [
+      337,
+      415
+    ],
+    "checkout": [
+      620,
+      280
+    ],
+    "cream_tea": [
+      128,
+      157
+    ],
+    "display_case": [
+      520,
+      380
+    ],
+    "door_lintel": [
+      345,
+      62
+    ],
+    "floor": [
+      937,
+      1678
+    ],
+    "fox": [
+      397,
+      459
+    ],
+    "fruit_tea": [
+      143,
+      193
+    ],
+    "hamster": [
+      271,
+      328
+    ],
+    "ingredient_table": [
+      480,
+      225
+    ],
+    "machine_table": [
+      717,
+      180
+    ],
+    "milk_bottle": [
+      135,
+      221
+    ],
+    "outer_left": [
+      32,
+      1373
+    ],
+    "outer_right": [
+      32,
+      1373
+    ],
+    "partition_left": [
+      253,
+      238
+    ],
+    "partition_right": [
+      275,
+      238
+    ],
+    "pearl_jar": [
+      224,
+      208
+    ],
+    "pearl_pot": [
+      523,
+      397
+    ],
+    "pearl_tea": [
+      140,
+      193
+    ],
+    "prep_bench": [
+      313,
+      892
+    ],
+    "raccoon": [
+      386,
+      431
+    ],
+    "rack": [
+      390,
+      380
+    ],
+    "register": [
+      335,
+      245
+    ],
+    "sealer": [
+      417,
+      495
+    ],
+    "squirrel": [
+      345,
+      328
+    ],
+    "tea_tin": [
+      179,
+      244
+    ]
+  },
+  "asset_overrides": {
+    "machine_table": "masters/machine_table.png"
+  }
 }
