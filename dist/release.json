@@ -1,7 +1,7 @@
 {
-  "source_commit": "85c7e0c9881dfe43d794fb4f8c3c7486bd071f05",
-  "built_at": "2026-10-29T15:04:16.341135+08:00",
+  "source_commit": "2bb7282d9c3af8d2dc31567aea48a07194847250",
+  "built_at": "2026-10-29T15:32:22.848109+08:00",
   "entry_scene": "presentation/tea_playtest/tea_playtest.tscn",
-  "feature": "shop-progression-staff-roster-persistent-saves",
+  "feature": "shop-gameplay-ui-scale-fix",
   "godot": "4.6.3"
 }
