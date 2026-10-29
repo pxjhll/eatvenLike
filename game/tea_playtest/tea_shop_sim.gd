@@ -299,11 +299,43 @@ func station_info(requested: String) -> Dictionary:
 			var mat_level: int = material_levels[id][material.id]
 			materials.append({"id": material.id, "name": material.display_name, "level": mat_level,
 				"upgrade_cost": material.upgrade_costs[mat_level - 1] if mat_level <= material.upgrade_costs.size() else -1,
-				"upgrade_error": _material_error(id, material.id)})
+				"upgrade_error": _material_error(id, material.id), "unlock_level": material.unlock_level,
+				"bonus": material.bonus(mat_level), "next_bonus": material.bonus(mat_level + 1) if mat_level < material.max_level() else -1.0,
+				"base_price": _base_price(material.item_id)})
 	var descriptions := {"supply": "茶叶、牛奶升级提高真实加工效率", "boil": "人工装料、煮茶、取茶；每批 3 份", "mix": "自动将茶汤调成原味奶茶", "topping": "人工加料，口味随设备等级开放", "seal": "自动封口并保留实际口味", "lemonade": "服务员到展示柜现取柠檬茶", "counter": "交付真实订单后获得收入"}
+	var effects := {"supply": "补货速度", "boil": "煮茶速度", "mix": "调奶速度", "topping": "加料速度", "lemonade": "出杯速度"}
+	var speeds: Array = definition.level_speed if definition != null else [1.0]
+	var next_flavor := ""
+	if definition != null:
+		for material in definition.materials:
+			if material.unlock_level == level + 1: next_flavor = material.display_name
+	var stage := _unlock_stage(id)
+	var line: Array = []
+	if stage == 1:
+		for key in ["supply", "boil", "mix", "seal"]: line.append(_definition(key).display_name if _definition(key) != null else "封口机")
 	return {"id": id, "name": name, "unlocked": station_unlocked(id), "level": level,
 		"description": descriptions.get(id, ""), "unlock_cost": _unlock_cost(id), "unlock_error": _unlock_error(id),
-		"upgrade_cost": upgrade_cost, "upgrade_error": _upgrade_error(id), "materials": materials}
+		"upgrade_cost": upgrade_cost, "upgrade_error": _upgrade_error(id), "materials": materials,
+		"effect": effects.get(id, ""), "speed": speeds[mini(level, speeds.size()) - 1],
+		"next_speed": speeds[level] if upgrade_cost >= 0 and level < speeds.size() else -1.0, "next_unlock": next_flavor,
+		"unlock_revenue": CONFIG.progression.stages[stage].revenue_threshold if stage > 0 else 0,
+		"line_name": CONFIG.progression.stages[stage].line_name if stage > 0 else name, "line_members": line,
+		"dish_name": dish_name(CONFIG.progression.stages[stage].dish_id), "dish_price": _base_price(CONFIG.progression.stages[stage].dish_id)}
+
+func _base_price(dish: String) -> int:
+	for definition in CONFIG.dishes:
+		if definition.id == dish: return definition.price
+	return 0
+
+func goal_progress() -> Dictionary:
+	if not station_unlocked("lemonade"): return {"text": "解锁柠檬茶台，开始营业", "current": 0, "target": 1}
+	if stage_index < CONFIG.progression.stages.size() - 1:
+		var stage = CONFIG.progression.stages[stage_index + 1]
+		if revenue < stage.revenue_threshold: return {"text": "营业额 · 解锁" + stage.line_name, "current": revenue, "target": stage.revenue_threshold}
+		return {"text": "攒金币 · 解锁" + stage.line_name, "current": mini(gold, stage.line_cost), "target": stage.line_cost}
+	for row in task_rows():
+		if not row.complete: return {"text": row.name, "current": row.current, "target": row.target}
+	return {"text": "经营任务已全部完成", "current": 1, "target": 1}
 
 func dish_name(id: String) -> String:
 	for dish in CONFIG.dishes:

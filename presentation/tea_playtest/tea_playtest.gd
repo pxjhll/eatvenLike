@@ -7,7 +7,9 @@ const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const DragController := preload("res://presentation/tea_playtest/staff_drag_controller.gd")
 const ART_NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸"}
 const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "seal": "自动封口"}
-const BADGES := {"boil": Vector2(255, 105), "mix": Vector2(416, 105), "topping": Vector2(30, 607), "seal": Vector2(547, 172)}
+## Machines show no standing text: a bar while working and a bubble only when they need a hand.
+const BADGES := {"boil": Vector2(265, 112), "mix": Vector2(420, 112), "topping": Vector2(36, 612), "seal": Vector2(556, 178)}
+const SALE_POINT := Vector2(470, 905)
 var sim: RefCounted
 var store: RefCounted
 var save_status := "自动存档已开启"
@@ -19,11 +21,14 @@ var _customers := {}
 var _customer_positions := {}
 var _cups: Array[Sprite2D] = []
 var _badges := {}
+var _bars := {}
+var _pops: Array[Dictionary] = []
 var _staff_cards: Array[Button] = []
 var _shelf: Label
 var _toast: Label
 var _toast_left := 0.0
 var _last_sold := 0
+var _last_revenue := 0
 var _hire_button: Button
 var _train_button: Button
 var _pause_button: Button
@@ -103,6 +108,14 @@ func _reset_visuals() -> void:
 	_customers.clear()
 	_customer_positions.clear()
 	_last_sold = sim.sold
+	_last_revenue = _revenue()
+	for pop in _pops:
+		pop.label.free()
+	_pops.clear()
+
+
+func _revenue() -> int:
+	return int(sim.revenue) if "revenue" in sim else sim.sold * sim.SALE_PRICE
 
 
 func _process(delta: float) -> void:
@@ -113,6 +126,7 @@ func _process(delta: float) -> void:
 	_fit()
 	_toast_left = maxf(0, _toast_left - delta)
 	_toast.visible = _toast_left > 0 or _mobile_count() == 0
+	_update_pops(delta)
 	if store != null:
 		_autosave_elapsed += delta
 		if _autosave_elapsed >= 10.0:
@@ -143,23 +157,26 @@ func _refresh(delta: float) -> void:
 		_actors[worker.id].task.visible = ui.show_selection and int(worker.id) == selected_worker and ui.page == "shop"
 	for id in _badges:
 		var station: Dictionary = sim.stations[id]
-		var state := "等原料"
+		var need := ""
 		var output_count := _total(station.output)
-		if station.phase in ["heating", "mixing", "working", "sealing"]:
-			state = "%d%%" % int(float(station.progress) * 100)
-		elif output_count > 0:
-			state = "待取 %d" % output_count
+		var working: bool = station.phase in ["heating", "mixing", "working", "sealing"]
+		if working:
+			pass
 		elif station.phase == "awaiting_take":
-			state = "等待取茶"
-		elif _total(station.input) > 0:
-			state = "待操作"
-		_badges[id].text = STATION_NAMES[id] + " " + state
-		_badges[id].visible = not sim.has_method("station_unlocked") or sim.station_unlocked(id)
-		_badges[id].tooltip_text = "输入 %d · 加工 %d · 输出 %d" % [_total(station.input), station.get("processing", 0), output_count]
+			need = "待取茶"
+		elif output_count > 0:
+			need = "待取 %d" % output_count
+		elif _total(station.input) > 0 and id in ["boil", "topping"]:
+			need = "待操作"
+		var open: bool = not sim.has_method("station_unlocked") or sim.station_unlocked(id)
+		_bars[id].visible = open and working
+		_bars[id].value = float(station.progress)
+		_badges[id].text = need
+		_badges[id].visible = open and not working and not need.is_empty()
+		_badges[id].tooltip_text = "%s · 输入 %d · 加工 %d · 输出 %d" % [STATION_NAMES[id], _total(station.input), station.get("processing", 0), output_count]
 	var limit: int = sim.shelf_limit() if sim.has_method("shelf_limit") else 3
-	_shelf.text = "成品货架  %d / %d" % [sim.shelf_count, limit]
-	if sim.has_method("station_unlocked") and not sim.station_unlocked("mix"):
-		_shelf.text = "成品货架 未开放"
+	_shelf.text = "货架 %d/%d" % [sim.shelf_count, limit]
+	_shelf.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("mix")
 	if sim.has_method("station_info"):
 		_refresh_station_signs()
 	for post in _post_labels:
@@ -167,15 +184,16 @@ func _refresh(delta: float) -> void:
 		for worker in sim.workers:
 			if worker.get("post", "") == post:
 				owner = int(worker.id)
-				_post_labels[post].text = ART_NAMES[worker.art] + " · 坐班"
+				_post_labels[post].text = "坐班"
 		_post_labels[post].visible = owner != -1
 	if _mobile_count() == 0 and _toast_left <= 0:
 		_toast.text = "店内暂无员工，请从员工名册派遣伙伴。" if sim.workers.is_empty() else "缺少流动员工，搬运将等待；拖到空地可恢复流动。"
 	_update_cups()
 	_update_customers(delta if not sim.paused else 0.0)
 	if sim.sold > _last_sold:
-		_show_toast("奶茶已送达，获得金币！")
+		_pop_income(_revenue() - _last_revenue)
 	_last_sold = sim.sold
+	_last_revenue = _revenue()
 
 
 func _total(stock: Dictionary) -> int:
@@ -250,8 +268,9 @@ func _update_customers(delta: float) -> void:
 		var point: Vector2 = _customer_positions[order.id]
 		point = point.move_toward(goal, delta * 170.0)
 		_customer_positions[order.id] = point
-		var dish_name: String = sim.dish_name(order.get("dish", "pearl_milk_tea")) if sim.has_method("dish_name") else "珍珠奶茶"
-		_customers[order.id].display({"pos": point, "walking": point.distance_to(goal) > 1, "phase": "idle", "task_label": dish_name}, sim.elapsed)
+		var patience: float = sim.CONFIG.customer_patience if "CONFIG" in sim else 0.0
+		_customers[order.id].show_order(String(order.get("dish", "sealed")), 1.0 - float(order.wait) / patience if patience > 0 else -1.0)
+		_customers[order.id].display({"pos": point, "walking": point.distance_to(goal) > 1, "phase": "idle", "task_label": ""}, sim.elapsed)
 	for id in _customers.keys():
 		if not active.has(id):
 			_customers[id].free()
@@ -282,24 +301,65 @@ func _build_ui() -> void:
 	_restart_button = ui.restart_button
 	_old_button = ui.old_button
 	_speed_button = ui.speed_button
-	_toast = ui.get_node("Toast")
+	_toast = ui.toast
 
 
 func _build_badges() -> void:
 	var parent: Node = $Canvas/WorldLabels
 	for id in BADGES:
-		var label := _label(parent, BADGES[id], 15)
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.size.x = 168 if id == "topping" else 150
+		var bar := ProgressBar.new()
+		bar.position = BADGES[id]
+		bar.size = Vector2(110, 14)
+		bar.max_value = 1.0
+		bar.show_percentage = false
+		bar.theme = ui.theme
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		parent.add_child(bar)
+		_bars[id] = bar
+		var label := _chip(parent, BADGES[id] + Vector2(10, -6))
 		label.mouse_filter = Control.MOUSE_FILTER_PASS
 		_badges[id] = label
-	_shelf = _label(parent, Vector2(514, 714), 16)
+	_shelf = _chip(parent, Vector2(560, 706))
 	for post in Layout.POST_POINTS:
-		var label := _label(parent, Layout.POST_POINTS[post] + Vector2(-60, 14), 14)
-		label.size.x = 120
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var label := _chip(parent, Layout.POST_POINTS[post] + Vector2(-26, 14))
 		label.visible = false
 		_post_labels[post] = label
+
+
+func _chip(parent: Node, point: Vector2) -> Label:
+	var label := _label(parent, point, 16)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color("fff5e2")
+	box.border_color = Color("b38c62")
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(12)
+	box.content_margin_left = 10
+	box.content_margin_right = 10
+	box.content_margin_top = 2
+	box.content_margin_bottom = 2
+	label.add_theme_stylebox_override("normal", box)
+	label.add_theme_constant_override("outline_size", 0)
+	return label
+
+
+func _pop_income(amount: int) -> void:
+	if amount <= 0:
+		return
+	var label := _label($Canvas/WorldLabels, SALE_POINT, 30)
+	label.text = "+%d" % amount
+	label.add_theme_color_override("font_color", Color("8b6446"))
+	label.add_theme_constant_override("outline_size", 7)
+	_pops.append({"label": label, "age": 0.0})
+
+
+func _update_pops(delta: float) -> void:
+	for pop in _pops.duplicate():
+		pop.age += delta
+		pop.label.position = SALE_POINT - Vector2(0, pop.age * 50.0)
+		pop.label.modulate.a = clampf(1.4 - pop.age, 0, 1)
+		if pop.age >= 1.4:
+			pop.label.free()
+			_pops.erase(pop)
 
 
 func _label(parent: Node, point: Vector2, size: int) -> Label:
@@ -453,9 +513,10 @@ func _refresh_station_signs() -> void:
 	for id in _station_buttons:
 		var info: Dictionary = sim.station_info(id)
 		_station_buttons[id].visible = not info.unlocked and id in ["boil", "topping", "lemonade"]
-		_station_buttons[id].text = "%s Lv%d" % [info.name, info.level] if info.unlocked else "%s\n%d 金币" % [info.name, info.unlock_cost]
-		if id == "boil" and not info.unlocked:
-			_station_buttons[id].text = "奶茶生产线\n%d 金币" % info.unlock_cost
+		# Before the revenue gate the plate says when it opens; after it, what it costs.
+		var gated: bool = String(info.unlock_error).begins_with("营业额")
+		var title: String = info.get("line_name", info.name) if id == "boil" else info.name
+		_station_buttons[id].text = "%s\n%s" % [title, "营业额 %d 开放" % info.get("unlock_revenue", 0) if gated else "%d 金币" % info.unlock_cost]
 		_station_buttons[id].tooltip_text = info.description + "\n" + info.get("unlock_error", "")
 	for id in Layout.STATION_ART:
 		if id in ["counter", "shelf"]:
