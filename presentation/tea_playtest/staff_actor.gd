@@ -111,12 +111,12 @@ func display(worker: Dictionary, clock: float) -> void:
 static func item_asset(item: String) -> String:
 	if item == "raw": return "tea_tin"
 	if item == "lemonade": return "fruit_tea"
-	if item in ["tea", "milk_tea", "plain_milk_tea", "coconut_milk_tea", "taro_milk_tea"]: return "cream_tea"
+	if item in ["tea", "black_tea", "milk_tea", "plain_milk_tea", "coconut_milk_tea", "taro_milk_tea"]: return "cream_tea"
 	return "pearl_tea"
 
 
 static func item_color(item: String) -> Color:
-	return {"coconut_milk_tea": Color("fff8df"), "redbean_milk_tea": Color("ffd8cf"), "taro_milk_tea": Color("e1d0ff")}.get(item, Color.WHITE)
+	return {"black_tea": Color("d9935f"), "coconut_milk_tea": Color("fff8df"), "redbean_milk_tea": Color("ffd8cf"), "taro_milk_tea": Color("e1d0ff")}.get(item, Color.WHITE)
 
 
 func _draw() -> void:

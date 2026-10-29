@@ -1,10 +1,16 @@
 extends "res://game/tea_playtest/tea_playtest_sim.gd"
 ## Business rules preserve physical goods from collection to service.
 const CONFIG = preload("res://content/tea/tea.tres")
+## The art shop opens its line one machine group at a time; the legacy GameSim keeps tea.tres stages.
+const PROGRESSION = preload("res://content/tea/art_shop_progression.tres")
+## Black tea is brewed directly into the sealer; once milk opens, only this many are kept in stock.
+const BLACK_TEA_CAP := 3
+## v2: staged line (black tea stage) changed the station and dish shapes.
+const SAVE_VERSION := 2
 const ARTS := ["cat", "raccoon", "fox"]
 const ALIASES := {"cabinet": "supply", "brewer": "boil", "milk_station": "mix", "lemonade_stand": "lemonade"}
 const RESOURCE_IDS := {"supply": "cabinet", "boil": "brewer", "mix": "milk_station", "topping": "topping", "lemonade": "lemonade_stand", "counter": "counter"}
-const DISHES := ["lemonade", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"]
+const DISHES := ["lemonade", "black_tea", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"]
 const MACHINE_IDS := ["supply", "boil", "mix", "topping", "seal", "lemonade", "counter"]
 
 var roster: Array = []
@@ -69,11 +75,13 @@ func _initialize_shop() -> void:
 	stations.mix.input = {"tea": 0}
 	stations.mix.output = {"plain_milk_tea": 0}
 	stations.topping.input = {"plain_milk_tea": 0}
+	stations.seal.input = {"tea": 0}
 	for dish in DISHES:
 		if dish == "lemonade": continue
+		stations.seal.output[dish] = 0
+		if dish == "black_tea": continue
 		stations.topping.output[dish] = 0
 		stations.seal.input[dish] = 0
-		stations.seal.output[dish] = 0
 
 func reset_shop() -> void:
 	workers.clear()
@@ -208,9 +216,11 @@ func _definition(id: String):
 func station_unlocked(id: String) -> bool:
 	return unlocked_stations.get(_canonical(id), false)
 
+const STAGE_MACHINES := [[], ["supply", "boil", "seal"], ["mix"], ["topping"]]
+
 func _unlock_stage(id: String) -> int:
-	if id in ["supply", "boil", "mix", "seal"]: return 1
-	if id == "topping": return 2
+	for stage in STAGE_MACHINES.size():
+		if id in STAGE_MACHINES[stage]: return stage
 	return 0
 
 func _unlock_error(id: String) -> String:
@@ -219,8 +229,8 @@ func _unlock_error(id: String) -> String:
 	var stage := _unlock_stage(id)
 	if stage > 0:
 		if not station_unlocked("lemonade"): return "请先解锁柠檬茶台"
-		if stage > stage_index + 1: return "请先解锁奶茶生产线"
-		var definition = CONFIG.progression.stages[stage]
+		if stage > stage_index + 1: return "请先解锁" + PROGRESSION.stages[stage - 1].line_name
+		var definition = PROGRESSION.stages[stage]
 		if revenue < definition.revenue_threshold: return "营业额需达到 %d" % definition.revenue_threshold
 	if gold < _unlock_cost(id): return "金币不足，需要 %d" % _unlock_cost(id)
 	return ""
@@ -229,7 +239,7 @@ func _unlock_cost(id: String) -> int:
 	if id == "lemonade":
 		for spot in CONFIG.front_spots:
 			if spot.station.id == "lemonade_stand": return spot.unlock_cost
-	if id in ["supply", "boil", "mix", "seal", "topping"]: return CONFIG.progression.stages[_unlock_stage(id)].line_cost
+	if id in ["supply", "boil", "mix", "seal", "topping"]: return PROGRESSION.stages[_unlock_stage(id)].line_cost
 	return 0
 
 func unlock_station(requested: String) -> String:
@@ -238,9 +248,7 @@ func unlock_station(requested: String) -> String:
 	if not error.is_empty(): return error
 	gold -= _unlock_cost(id)
 	var stage := _unlock_stage(id)
-	if stage == 1:
-		for key in ["supply", "boil", "mix", "seal"]: unlocked_stations[key] = true
-	else: unlocked_stations[id] = true
+	for key in STAGE_MACHINES[stage] if stage > 0 else [id]: unlocked_stations[key] = true
 	stage_index = maxi(stage_index, stage)
 	if orders.is_empty():
 		for unused in 3: _add_order()
@@ -302,7 +310,7 @@ func station_info(requested: String) -> Dictionary:
 				"upgrade_error": _material_error(id, material.id), "unlock_level": material.unlock_level,
 				"bonus": material.bonus(mat_level), "next_bonus": material.bonus(mat_level + 1) if mat_level < material.max_level() else -1.0,
 				"base_price": _base_price(material.item_id)})
-	var descriptions := {"supply": "茶叶、牛奶升级提高真实加工效率", "boil": "人工装料、煮茶、取茶；每批 3 份", "mix": "自动将茶汤调成原味奶茶", "topping": "人工加料，口味随设备等级开放", "seal": "自动封口并保留实际口味", "lemonade": "服务员到展示柜现取柠檬茶", "counter": "交付真实订单后获得收入"}
+	var descriptions := {"supply": "茶叶、牛奶升级提高真实加工效率", "boil": "人工装料、煮茶、取茶；每批 3 份", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "seal": "自动封口：茶汤封成红茶，奶茶保留实际口味", "lemonade": "服务员到展示柜现取柠檬茶", "counter": "交付真实订单后获得收入"}
 	var effects := {"supply": "补货速度", "boil": "煮茶速度", "mix": "调奶速度", "topping": "加料速度", "lemonade": "出杯速度"}
 	var speeds: Array = definition.level_speed if definition != null else [1.0]
 	var next_flavor := ""
@@ -311,16 +319,16 @@ func station_info(requested: String) -> Dictionary:
 			if material.unlock_level == level + 1: next_flavor = material.display_name
 	var stage := _unlock_stage(id)
 	var line: Array = []
-	if stage == 1:
-		for key in ["supply", "boil", "mix", "seal"]: line.append(_definition(key).display_name if _definition(key) != null else "封口机")
+	if stage > 0:
+		for key in STAGE_MACHINES[stage]: line.append(_definition(key).display_name if _definition(key) != null else "封口机")
 	return {"id": id, "name": name, "unlocked": station_unlocked(id), "level": level,
 		"description": descriptions.get(id, ""), "unlock_cost": _unlock_cost(id), "unlock_error": _unlock_error(id),
 		"upgrade_cost": upgrade_cost, "upgrade_error": _upgrade_error(id), "materials": materials,
 		"effect": effects.get(id, ""), "speed": speeds[mini(level, speeds.size()) - 1],
 		"next_speed": speeds[level] if upgrade_cost >= 0 and level < speeds.size() else -1.0, "next_unlock": next_flavor,
-		"unlock_revenue": CONFIG.progression.stages[stage].revenue_threshold if stage > 0 else 0,
-		"line_name": CONFIG.progression.stages[stage].line_name if stage > 0 else name, "line_members": line,
-		"dish_name": dish_name(CONFIG.progression.stages[stage].dish_id), "dish_price": _base_price(CONFIG.progression.stages[stage].dish_id)}
+		"unlock_revenue": PROGRESSION.stages[stage].revenue_threshold if stage > 0 else 0,
+		"line_name": PROGRESSION.stages[stage].line_name if stage > 0 else name, "line_members": line,
+		"dish_name": dish_name(PROGRESSION.stages[stage].dish_id), "dish_price": _base_price(PROGRESSION.stages[stage].dish_id)}
 
 func _base_price(dish: String) -> int:
 	for definition in CONFIG.dishes:
@@ -329,8 +337,8 @@ func _base_price(dish: String) -> int:
 
 func goal_progress() -> Dictionary:
 	if not station_unlocked("lemonade"): return {"text": "解锁柠檬茶台，开始营业", "current": 0, "target": 1}
-	if stage_index < CONFIG.progression.stages.size() - 1:
-		var stage = CONFIG.progression.stages[stage_index + 1]
+	if stage_index < PROGRESSION.stages.size() - 1:
+		var stage = PROGRESSION.stages[stage_index + 1]
 		if revenue < stage.revenue_threshold: return {"text": "营业额 · 解锁" + stage.line_name, "current": revenue, "target": stage.revenue_threshold}
 		return {"text": "攒金币 · 解锁" + stage.line_name, "current": mini(gold, stage.line_cost), "target": stage.line_cost}
 	for row in task_rows():
@@ -344,7 +352,7 @@ func dish_name(id: String) -> String:
 
 func task_rows() -> Array:
 	var rows: Array = []
-	for stage in CONFIG.progression.stages:
+	for stage in PROGRESSION.stages:
 		for task in stage.tasks:
 			var current: float = station_levels.get(_canonical(task.target_id), 0) if task.condition == 2 else sold_by_dish.get(task.target_id, 0)
 			rows.append({"name": task.display_name, "current": current, "target": task.amount, "complete": current >= task.amount})
@@ -352,8 +360,8 @@ func task_rows() -> Array:
 
 func current_goal() -> String:
 	if not station_unlocked("lemonade"): return "支付 10 金币解锁柠檬茶台，开始营业"
-	if stage_index < CONFIG.progression.stages.size() - 1:
-		var stage = CONFIG.progression.stages[stage_index + 1]
+	if stage_index < PROGRESSION.stages.size() - 1:
+		var stage = PROGRESSION.stages[stage_index + 1]
 		if revenue < stage.revenue_threshold: return "营业额 %d / %d，随后解锁%s" % [revenue, stage.revenue_threshold, stage.line_name]
 		return "支付 %d 金币解锁%s" % [stage.line_cost, stage.line_name]
 	for row in task_rows():
@@ -380,7 +388,7 @@ func _action_duration(job: Dictionary, worker: Dictionary) -> float:
 	return super._action_duration(job, worker)
 
 func _order_interval() -> float:
-	return CONFIG.progression.stages[stage_index].customer_interval
+	return PROGRESSION.stages[stage_index].customer_interval
 
 func _queue_capacity() -> int:
 	return CONFIG.queue_capacity
@@ -425,6 +433,7 @@ func _candidate(kind: String, source: String, destination: String, item: String,
 
 func _dish_unlocked(dish: String) -> bool:
 	if dish == "lemonade": return station_unlocked("lemonade")
+	if dish == "black_tea": return station_unlocked("boil")
 	if dish == "plain_milk_tea": return station_unlocked("mix")
 	for material in _definition("topping").materials:
 		if material.item_id == dish: return station_unlocked("topping") and station_levels.topping >= material.unlock_level
@@ -432,7 +441,7 @@ func _dish_unlocked(dish: String) -> bool:
 
 func _add_order() -> void:
 	if _rng == null or not station_unlocked("lemonade"): return
-	var weights: Dictionary = CONFIG.progression.stages[stage_index].order_weights
+	var weights: Dictionary = PROGRESSION.stages[stage_index].order_weights
 	var total := 0.0
 	for dish in weights:
 		if _dish_unlocked(dish): total += weights[dish]
@@ -495,9 +504,18 @@ func _jobs(worker: Dictionary) -> Array:
 		serve.order_id = order.id
 		serve.priority += minf(20, order.wait * 0.1)
 		result.append(serve)
-	if not station_unlocked("mix"): return result
+	if not station_unlocked("boil"): return result
 	result.append(_candidate("load_boil", "supply", "boil", "raw", worker, 26))
-	result.append(_candidate("unload_boil", "boil", "mix", "tea", worker, 47))
+	if station_unlocked("mix"):
+		result.append(_candidate("unload_boil", "boil", "mix", "tea", worker, 47))
+		var room := BLACK_TEA_CAP - _flavor_inventory("black_tea")
+		var black := _candidate("carry_to_seal", "boil", "seal", "tea", worker, 50)
+		if room <= 0: black = {}
+		elif not black.is_empty(): black.count = mini(black.count, room)
+		result.append(black)
+	else:
+		result.append(_candidate("carry_to_seal", "boil", "seal", "tea", worker, 84))
+	if not station_unlocked("mix"): return _boost_kitchen(_shelf_jobs(worker, result))
 	if station_unlocked("topping"):
 		var original_need := false
 		for order in orders:
@@ -510,13 +528,32 @@ func _jobs(worker: Dictionary) -> Array:
 	else:
 		result.append(_candidate("carry_to_seal", "mix", "seal", "plain_milk_tea", worker, 84))
 	for dish in DISHES:
-		if dish == "lemonade": continue
-		if dish != "plain_milk_tea": result.append(_candidate("load_seal_belt" if use_belts else "carry_to_seal", "topping", "seal", dish, worker, 84, "topping_to_seal" if use_belts else ""))
-		result.append(_candidate("load_shelf_belt" if use_belts else "carry_to_shelf", "seal", "shelf", dish, worker, 96, "seal_to_shelf" if use_belts else ""))
+		if not dish in ["lemonade", "plain_milk_tea", "black_tea"]: result.append(_candidate("load_seal_belt" if use_belts else "carry_to_seal", "topping", "seal", dish, worker, 84, "topping_to_seal" if use_belts else ""))
+	return _boost_kitchen(_shelf_jobs(worker, result))
+
+# Customers waiting on an empty shelf flavor pull mobile staff back into the kitchen;
+# otherwise a lone worker serving lemonade would never start the new line.
+func _boost_kitchen(result: Array) -> Array:
+	var starving := 0
+	for order in orders:
+		if not order.reserved and order.dish != "lemonade" and shelf_stock.get(order.dish, 0) == 0: starving += 1
+	if starving == 0: return result
+	for job in result:
+		if not job.is_empty() and job.kind != "serve": job.priority += minf(90.0, 45.0 * starving)
+	return result
+
+func _shelf_jobs(worker: Dictionary, result: Array) -> Array:
+	for dish in DISHES:
+		if dish != "lemonade": result.append(_candidate("load_shelf_belt" if use_belts else "carry_to_shelf", "seal", "shelf", dish, worker, 96, "seal_to_shelf" if use_belts else ""))
 	return result
 
 func _flavor_inventory(dish: String) -> int:
 	var count: int = shelf_stock.get(dish, 0)
+	if dish == "black_tea":
+		# Brewed tea headed for the sealer is already committed to black tea.
+		count += stations.seal.input.tea
+		for worker in workers:
+			if not worker.job.is_empty() and worker.job.dst == "seal" and worker.job.item == "tea": count += worker.job.count
 	for key in ["topping", "seal"]:
 		count += stations[key].output.get(dish, 0)
 		if key == "seal": count += stations[key].input.get(dish, 0)
@@ -572,7 +609,7 @@ func _update_machines() -> void:
 			if not input_item.is_empty():
 				station.processing = station.input[input_item]
 				station.input[input_item] = 0
-				station.processing_item = "plain_milk_tea" if key == "mix" else input_item
+				station.processing_item = "plain_milk_tea" if key == "mix" else ("black_tea" if input_item == "tea" else input_item)
 				station.duration = _machine_duration(key)
 				station.remaining = station.duration
 				station.progress = 0.0
@@ -626,7 +663,7 @@ func audit() -> Dictionary:
 func to_dict() -> Dictionary:
 	var deployed: Array = []
 	for worker in workers: deployed.append(worker.id)
-	return {"version": 1, "roster": roster.duplicate(true), "deployed": deployed,
+	return {"version": SAVE_VERSION, "roster": roster.duplicate(true), "deployed": deployed,
 		"stations": stations.duplicate(true), "belt_items": belt_items.duplicate(true),
 		"shelf_stock": shelf_stock.duplicate(true), "shelf_count": shelf_count,
 		"orders": orders.duplicate(true), "gold": gold, "sold": sold, "revenue": revenue,
@@ -705,7 +742,7 @@ func _valid_job_route(job: Dictionary) -> bool:
 		"unload_boil": return job.src == "boil" and job.dst == "mix" and job.item == "tea" and job.belt == ""
 		"transfer_to_topping": return job.src == "mix" and job.dst == "topping" and job.item == "plain_milk_tea" and job.belt == ""
 		"load_seal_belt", "carry_to_seal":
-			var source_valid: bool = (job.src == "mix" and job.item == "plain_milk_tea") or (job.src == "topping" and job.item in DISHES and not job.item in ["lemonade", "plain_milk_tea"])
+			var source_valid: bool = (job.src == "mix" and job.item == "plain_milk_tea") or (job.kind == "carry_to_seal" and job.src == "boil" and job.item == "tea") or (job.src == "topping" and job.item in DISHES and not job.item in ["lemonade", "plain_milk_tea"])
 			return source_valid and job.dst == "seal" and job.belt == ("topping_to_seal" if job.kind == "load_seal_belt" else "")
 		"load_shelf_belt", "carry_to_shelf":
 			return job.src == "seal" and job.dst == "shelf" and job.item in DISHES and job.item != "lemonade" and job.belt == ("seal_to_shelf" if job.kind == "load_shelf_belt" else "")
@@ -718,7 +755,7 @@ func _validate_state(state: Dictionary) -> String:
 		if not state.has(key) or typeof(state[key]) != typeof(template[key]): return "存档字段类型错误：" + key
 	for key in ["version", "gold", "sold", "revenue", "shelf_count", "generated", "shelf_reserved_in", "shelf_reserved_out", "next_order", "stage_index", "flavor_cursor"]:
 		if state[key] < 0: return "存档数值无效：" + key
-	if state.version != 1 or state.stage_index > 2 or state.next_order < 1: return "不支持的存档版本或阶段"
+	if state.version != SAVE_VERSION or state.stage_index >= PROGRESSION.stages.size() or state.next_order < 1: return "不支持的存档版本或阶段"
 	for key in ["elapsed", "accumulator", "order_clock"]:
 		if not is_finite(state[key]) or state[key] < -0.000001: return "存档时间无效"
 	if state.accumulator >= STEP + 0.000001: return "存档时间余量无效"
@@ -728,7 +765,7 @@ func _validate_state(state: Dictionary) -> String:
 		var definition = _definition(id)
 		var max_level: int = definition.level_speed.size() if definition != null else 1
 		if state.station_levels[id] < 1 or state.station_levels[id] > max_level: return "设备等级无效"
-		var expected_unlock: bool = id == "counter" or (id == "lemonade" and state.unlocked_stations.lemonade) or (id in ["supply", "boil", "mix", "seal"] and state.stage_index >= 1) or (id == "topping" and state.stage_index >= 2)
+		var expected_unlock: bool = id == "counter" or (id == "lemonade" and state.unlocked_stations.lemonade) or (_unlock_stage(id) > 0 and state.stage_index >= _unlock_stage(id))
 		if state.unlocked_stations[id] != expected_unlock: return "设备解锁状态无效"
 	if state.stage_index > 0 and not state.unlocked_stations.lemonade: return "经营阶段无效"
 	for id in state.material_levels:

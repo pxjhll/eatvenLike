@@ -1,0 +1,85 @@
+[gd_resource type="Resource" script_class="ShopProgressionDef" format=3]
+
+[ext_resource type="Script" path="res://content/defs/task_def.gd" id="task_def"]
+[ext_resource type="Script" path="res://content/defs/shop_stage_def.gd" id="shop_stage_def"]
+[ext_resource type="Script" path="res://content/defs/shop_progression_def.gd" id="shop_progression_def"]
+
+[sub_resource type="Resource" id="task_lemon30"]
+script = ExtResource("task_def")
+id = "lemon30"
+display_name = "柠檬茶卖出 30 杯"
+target_id = "lemonade"
+amount = 30.0
+
+[sub_resource type="Resource" id="task_black20"]
+script = ExtResource("task_def")
+id = "black20"
+display_name = "红茶卖出 20 杯"
+target_id = "black_tea"
+amount = 20.0
+
+[sub_resource type="Resource" id="task_plain20"]
+script = ExtResource("task_def")
+id = "plain20"
+display_name = "原味奶茶卖出 20 杯"
+target_id = "plain_milk_tea"
+amount = 20.0
+
+[sub_resource type="Resource" id="task_topping4"]
+script = ExtResource("task_def")
+id = "topping4"
+display_name = "加料机升到 Lv4（四种口味全开）"
+condition = 2
+target_id = "topping"
+amount = 4.0
+
+[sub_resource type="Resource" id="task_pearl20"]
+script = ExtResource("task_def")
+id = "pearl20"
+display_name = "珍珠奶茶卖出 20 杯"
+target_id = "pearl_milk_tea"
+amount = 20.0
+
+[sub_resource type="Resource" id="stage_lemon"]
+script = ExtResource("shop_stage_def")
+dish_id = "lemonade"
+customer_interval = 4.0
+order_weights = Dictionary[String, float]({"lemonade": 1.0})
+tasks = Array[ExtResource("task_def")]([SubResource("task_lemon30")])
+
+[sub_resource type="Resource" id="stage_black_tea"]
+script = ExtResource("shop_stage_def")
+dish_id = "black_tea"
+revenue_threshold = 100
+unlock_slots = Array[String](["cabinet", "brewer"])
+line_cost = 100
+line_name = "红茶生产线"
+customer_interval = 3.0
+order_weights = Dictionary[String, float]({"lemonade": 0.5, "black_tea": 0.5})
+tasks = Array[ExtResource("task_def")]([SubResource("task_black20")])
+
+[sub_resource type="Resource" id="stage_milk_tea"]
+script = ExtResource("shop_stage_def")
+dish_id = "plain_milk_tea"
+revenue_threshold = 400
+unlock_slots = Array[String](["milk_station"])
+line_cost = 200
+line_name = "调奶台"
+customer_interval = 2.0
+order_weights = Dictionary[String, float]({"lemonade": 0.25, "black_tea": 0.25, "plain_milk_tea": 0.5})
+tasks = Array[ExtResource("task_def")]([SubResource("task_plain20")])
+
+[sub_resource type="Resource" id="stage_topping"]
+script = ExtResource("shop_stage_def")
+dish_id = "pearl_milk_tea"
+revenue_threshold = 1500
+unlock_slots = Array[String](["topping"])
+line_cost = 300
+line_name = "加料机"
+customer_interval = 1.5
+order_weights = Dictionary[String, float]({"lemonade": 0.15, "black_tea": 0.1, "plain_milk_tea": 0.05, "pearl_milk_tea": 0.3, "coconut_milk_tea": 0.15, "redbean_milk_tea": 0.15, "taro_milk_tea": 0.1})
+tasks = Array[ExtResource("task_def")]([SubResource("task_topping4"), SubResource("task_pearl20")])
+
+[resource]
+script = ExtResource("shop_progression_def")
+stages = Array[ExtResource("shop_stage_def")]([SubResource("stage_lemon"), SubResource("stage_black_tea"), SubResource("stage_milk_tea"), SubResource("stage_topping")])
