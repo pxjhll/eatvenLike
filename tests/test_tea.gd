@@ -248,7 +248,9 @@ func test_topping_slot_upgrade_raises_that_flavor_price() -> void:
 	check_eq(station(sim, "topping").mat_level("pearl"), 3, "pearl slot at Lv3")
 	var amounts := []
 	sim.sale_settled.connect(func(_id: int, amount: int) -> void: amounts.append(amount))
-	var dish_price := 24
+	var dish_price := 0
+	for dish in preload("res://content/tea/tea.tres").dishes:
+		if dish.id == "pearl_milk_tea": dish_price = dish.price
 	sim.run_seconds(200.0)
 	check(roundi(dish_price * pearl.bonus(3)) in amounts, "pearl sells at the upgraded price %d" % roundi(dish_price * pearl.bonus(3)))
 	check(not dish_price in amounts, "no pearl sale at the old base price")

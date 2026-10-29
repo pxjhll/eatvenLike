@@ -180,7 +180,7 @@ func _tick() -> void:
 	for order in orders: order.wait += STEP
 	if _order_clock >= _order_interval():
 		_order_clock = 0.0
-		if orders.size() < 3: _add_order()
+		if orders.size() < _queue_capacity(): _add_order()
 	_update_machines()
 	_update_belts()
 	for worker in workers:
@@ -268,9 +268,9 @@ func _jobs(worker: Dictionary) -> Array:
 		if post == "topping" and _available(post, item) > 0:
 			kind = "topping"
 			count = mini(worker.capacity, _available(post, item))
-		elif post == "boil" and station.processing == 0 and _available(post, "raw") >= 3:
+		elif post == "boil" and station.processing == 0 and _available(post, "raw") >= _brew_batch():
 			kind = "brew_start"
-			count = 3
+			count = _brew_batch()
 		elif post == "boil" and station.phase == "awaiting_take" and station.processing > 0:
 			kind = "brew_take"
 			count = station.processing
@@ -540,6 +540,12 @@ func audit() -> Dictionary:
 # Extension points keep the production sandbox timings and accounting unchanged.
 func _order_interval() -> float:
 	return 7.0
+
+func _queue_capacity() -> int:
+	return 3
+
+func _brew_batch() -> int:
+	return 3
 
 func _machine_duration(key: String) -> float:
 	return {"boil": 7.0, "mix": 4.0, "seal": 3.0}[key]
