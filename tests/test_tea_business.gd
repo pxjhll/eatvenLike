@@ -173,7 +173,7 @@ func test_exact_flavor_dispatch_and_upgraded_sale_price() -> void:
 	check_eq(sim.revenue - before, roundi(_base_price(sim, "pearl_milk_tea") * 1.08), "configured pearl bonus changes actual completed-sale income")
 	check(sim.audit().valid, "exact-flavor dispatch conserves inventory")
 
-func test_real_machine_cycles_respond_to_station_and_material_upgrades() -> void:
+func test_brewer_upgrades_speed_and_ingredient_upgrades_price() -> void:
 	var durations: Array = []
 	for upgraded in [false, true]:
 		var sim = opened()
@@ -189,10 +189,12 @@ func test_real_machine_cycles_respond_to_station_and_material_upgrades() -> void
 		sim.deploy_at(1, "boil", Vector2(270, 330))
 		sim.advance(1.0)
 		check(sim.stations.boil.processing == 3 and sim.stations.mix.processing == 3, "real batches started")
-		durations.append([sim.stations.boil.duration, sim.stations.mix.duration])
+		durations.append([sim.stations.boil.duration, sim.stations.mix.duration, sim._dish_price("plain_milk_tea"), sim._dish_price("black_tea")])
 		check(sim.audit().valid, "upgraded cycles keep physical batch accounting")
-	check(durations[1][0] < durations[0][0], "brewer and tea upgrades accelerate actual brewing")
-	check(durations[1][1] < durations[0][1], "milk upgrade accelerates actual mixing")
+	check(durations[1][0] < durations[0][0], "brewer upgrade accelerates actual brewing")
+	check_eq(durations[1][1], durations[0][1], "ingredient upgrades do not change mixing time")
+	check_eq(durations[1][2], durations[0][2] + 4, "tea leaf + milk upgrades each add 6% of the milk tea base price")
+	check_eq(durations[1][3], durations[0][3] + 2, "tea leaf upgrade adds 6% of the black tea base price")
 
 func test_recalling_every_observed_job_phase_preserves_goods_and_reservations() -> void:
 	var sim = opened()
