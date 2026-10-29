@@ -116,6 +116,19 @@ func _run() -> void:
 	var exit_state: Dictionary = view.sim.to_dict()
 	view.free()
 	_check(Store.new(save_path).load_game().to_dict() == exit_state, "leaving the view saves the most recent state")
+	var queue_view = load("res://presentation/tea_playtest/tea_playtest.tscn").instantiate()
+	var queue_sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
+	queue_sim.unlock_station("lemonade")
+	for worker in queue_sim.workers.duplicate(): queue_sim.recall_worker(worker.id)
+	queue_view.sim = queue_sim
+	root.add_child(queue_view)
+	await process_frame
+	queue_view.set_process(false)
+	for i in 200:
+		queue_sim.advance(0.1)
+		queue_view._refresh(0.1)
+	_check(queue_sim.orders.size() > 3 and queue_view._customers.size() == queue_sim.orders.size(), "every queued customer is drawn, not just the first three")
+	queue_view.free()
 	if FileAccess.file_exists(save_path):
 		DirAccess.remove_absolute(save_path)
 	for error in errors.take():
