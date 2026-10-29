@@ -206,12 +206,12 @@ func _update_cups() -> void:
 			draws.append({"pos": point + offset, "item": belt.item, "host": host})
 	var buffer_points := {"mix": Vector2(488, 270), "topping": Vector2(78, 445), "seal": Vector2(613, 405)}
 	var buffer_hosts := {"mix": "MachineTable", "topping": "PrepBench", "seal": "Sealer"}
+	# One full-size cup marks a waiting output; the station sign already shows how many.
 	for id in buffer_points:
-		var index := 0
 		for item in sim.stations[id].output:
-			for unused in mini(int(sim.stations[id].output[item]), 3 - index):
-				draws.append({"pos": buffer_points[id] + Vector2(index * 19, 0), "item": item, "host": buffer_hosts[id]})
-				index += 1
+			if int(sim.stations[id].output[item]) > 0:
+				draws.append({"pos": buffer_points[id], "item": item, "host": buffer_hosts[id]})
+				break
 	while _cups.size() < draws.size():
 		var sprite := Sprite2D.new()
 		sprite.centered = false
