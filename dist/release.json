@@ -1,7 +1,7 @@
 {
-  "source_commit": "bb8a9d4525db569476316b1a59855b4f87030e2e",
-  "built_at": "2026-10-29T11:20:03.716296+08:00",
+  "source_commit": "85c7e0c9881dfe43d794fb4f8c3c7486bd071f05",
+  "built_at": "2026-10-29T15:04:16.341135+08:00",
   "entry_scene": "presentation/tea_playtest/tea_playtest.tscn",
-  "feature": "drag-seated-mobile-staff",
+  "feature": "shop-progression-staff-roster-persistent-saves",
   "godot": "4.6.3"
 }

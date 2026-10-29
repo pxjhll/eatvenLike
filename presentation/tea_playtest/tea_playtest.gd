@@ -5,11 +5,13 @@ const Sim := preload("res://game/tea_playtest/tea_playtest_sim.gd")
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const DragController := preload("res://presentation/tea_playtest/staff_drag_controller.gd")
-const ROLE_NAMES := {"speed": "速度型", "carry": "力量型", "skill": "操作型"}
 const ART_NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸"}
 const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "seal": "自动封口"}
-const BADGES := {"boil": Vector2(255, 99), "mix": Vector2(416, 99), "topping": Vector2(30, 607), "seal": Vector2(547, 172)}
+const BADGES := {"boil": Vector2(255, 105), "mix": Vector2(416, 105), "topping": Vector2(30, 607), "seal": Vector2(547, 172)}
 var sim: RefCounted
+var store: RefCounted
+var save_status := "自动存档已开启"
+var _autosave_elapsed := 0.0
 var art: Node2D
 var selected_worker := 1
 var _actors := {}
@@ -18,10 +20,6 @@ var _customer_positions := {}
 var _cups: Array[Sprite2D] = []
 var _badges := {}
 var _staff_cards: Array[Button] = []
-var _staff_fatigue: Array[ColorRect] = []
-var _gold: Label
-var _score: Label
-var _stats: Label
 var _shelf: Label
 var _toast: Label
 var _toast_left := 0.0
@@ -37,12 +35,32 @@ var _speed_factor := 1.0
 var _font: Font
 var _drag: Node2D
 var _post_labels := {}
+var ui: Control
+var _station_buttons := {}
+var _lemonade_cup: Sprite2D
+const STATION_REGIONS := {
+	"supply": Rect2(20, 155, 221, 120), "boil": Rect2(245, 122, 167, 158),
+	"mix": Rect2(415, 121, 106, 160), "topping": Rect2(22, 254, 121, 339),
+	"seal": Rect2(548, 207, 120, 184), "lemonade": Rect2(40, 838, 250, 200),
+}
+const SIGN_RECTS := {
+	"supply": Rect2(28, 277, 190, 44), "boil": Rect2(246, 276, 164, 44),
+	"mix": Rect2(414, 276, 132, 44), "topping": Rect2(24, 603, 168, 52),
+	"seal": Rect2(543, 157, 148, 44), "lemonade": Rect2(43, 1000, 235, 52),
+}
 
 
 func _ready() -> void:
-	DisplayServer.window_set_title("奶茶店 · 岗位试玩")
+	DisplayServer.window_set_title("手作奶茶店")
 	art = $Canvas/ShopArt
 	_font = load("res://art/ui/graybox_font.ttf")
+	if sim == null:
+		if store == null:
+			store = get_node("/root/App").art_shop_save
+		sim = store.load_game()
+		_speed_factor = store.loaded_speed
+		if not store.last_error.is_empty():
+			save_status = store.last_error
 	for node in art.find_children("*", "Node2D", true, false):
 		if node.get_meta("art_layer", "") in ["actors", "drinks"]:
 			node.visible = false
@@ -51,14 +69,32 @@ func _ready() -> void:
 	_drag = DragController.new()
 	$Canvas.add_child(_drag)
 	_drag.setup(self)
-	restart()
+	_reset_visuals()
+	if sim.has_method("station_info"):
+		_build_station_signs()
+	_refresh(0.0)
+	_fit()
+	_show_toast(sim.current_goal() if sim.has_method("current_goal") else "欢迎开店，伙伴正在准备第一杯奶茶。")
 
 
 func restart() -> void:
 	if is_instance_valid(_drag):
 		_drag.cancel()
-	sim = Sim.new()
-	selected_worker = int(sim.workers[0].id)
+	if sim.has_method("reset_shop"):
+		sim.reset_shop()
+	else:
+		sim = Sim.new()
+	_reset_visuals()
+	_show_toast("店铺已重新开始。")
+	_refresh(0.0)
+	_fit()
+	save_now(false)
+
+
+func _reset_visuals() -> void:
+	ui.show_selection = false
+	var roster := all_staff()
+	selected_worker = int(roster[0].id) if not roster.is_empty() else -1
 	for actor in _actors.values():
 		actor.free()
 	_actors.clear()
@@ -66,10 +102,7 @@ func restart() -> void:
 		customer.free()
 	_customers.clear()
 	_customer_positions.clear()
-	_last_sold = 0
-	_show_toast("拖到人工工位坐班，拖到空地流动。员工可培养。")
-	_refresh(0.0)
-	_fit()
+	_last_sold = sim.sold
 
 
 func _process(delta: float) -> void:
@@ -80,52 +113,34 @@ func _process(delta: float) -> void:
 	_fit()
 	_toast_left = maxf(0, _toast_left - delta)
 	_toast.visible = _toast_left > 0 or _mobile_count() == 0
+	if store != null:
+		_autosave_elapsed += delta
+		if _autosave_elapsed >= 10.0:
+			_autosave_elapsed = 0.0
+			save_now(false)
 
 
 func _refresh(delta: float) -> void:
-	_gold.text = "金币 %d" % sim.gold
-	_score.text = "已售 %d 杯" % sim.sold
-	_speed_button.text = "倍速 ×%d" % int(_speed_factor)
-	_hire_button.text = "招募 %d" % sim.hire_cost() if sim.workers.size() < 3 else "员工已满"
-	_hire_button.disabled = sim.workers.size() >= 3 or sim.gold < sim.hire_cost()
-	_pause_button.text = "继续" if sim.paused else "暂停"
-	_belt_button.text = "运输：传送带" if sim.use_belts else "运输：人工搬运"
+	ui.refresh()
+	var deployed := {}
+	for worker in sim.workers:
+		deployed[int(worker.id)] = true
+	for id in _actors.keys():
+		if not deployed.has(int(id)):
+			_actors[id].free()
+			_actors.erase(id)
 	for node in art.find_children("*", "Node2D", true, false):
 		if node.get_meta("art_layer", "") == "belts":
 			node.visible = sim.use_belts or not sim.belt_items.is_empty()
-	var selected: Dictionary = sim.workers[0]
 	for worker in sim.workers:
-		if int(worker.id) == selected_worker:
-			selected = worker
 		if not _actors.has(worker.id):
 			var actor := Actor.new()
 			actor.setup(worker.art, _font)
 			art.get_node("Sortables").add_child(actor)
 			_actors[worker.id] = actor
-		_actors[worker.id].selected = int(worker.id) == selected_worker
+		_actors[worker.id].selected = ui.show_selection and int(worker.id) == selected_worker
 		_actors[worker.id].display(worker, sim.elapsed)
-	_stats.text = "%s  移速 %d  搬量 %d  操作 %.1f" % [ART_NAMES[selected.art], selected.speed, selected.capacity, selected.skill]
-	var cost: int = sim.train_cost(selected_worker)
-	_train_button.text = "培养 %d" % cost
-	_train_button.disabled = sim.gold < cost
-	for i in 3:
-		if i < sim.workers.size():
-			var worker: Dictionary = sim.workers[i]
-			var label: String = worker.get("task_label", "")
-			var post: String = worker.get("post", "")
-			var mode := "流动" if post.is_empty() else ("煮茶坐班" if post == "boil" else "加料坐班")
-			var task_text: String = Actor.TASKS.get(label, "待命" if label.is_empty() else label)
-			if worker.get("assignment_pending", false):
-				task_text = "交接中 · " + task_text
-			_staff_cards[i].text = "%s · %s Lv%d\n%s" % [ART_NAMES[worker.art], mode, worker.level, task_text]
-			_staff_cards[i].modulate = Color.WHITE if int(worker.id) == selected_worker else Color("e4d7c1")
-			_staff_fatigue[i].size.x = 202.0 * clampf(worker.fatigue, 0, 1)
-			_staff_fatigue[i].visible = true
-			_staff_cards[i].tooltip_text = "移速 %d · 搬量 %d · 操作 %.1f · 软疲劳 %d%%" % [worker.speed, worker.capacity, worker.skill, int(worker.fatigue * 100)]
-		else:
-			_staff_cards[i].text = "招募伙伴\n一起制作与配送"
-			_staff_cards[i].modulate = Color("e4d7c1")
-			_staff_fatigue[i].visible = false
+		_actors[worker.id].task.visible = ui.show_selection and int(worker.id) == selected_worker and ui.page == "shop"
 	for id in _badges:
 		var station: Dictionary = sim.stations[id]
 		var state := "等原料"
@@ -139,8 +154,14 @@ func _refresh(delta: float) -> void:
 		elif _total(station.input) > 0:
 			state = "待操作"
 		_badges[id].text = STATION_NAMES[id] + " " + state
+		_badges[id].visible = not sim.has_method("station_unlocked") or sim.station_unlocked(id)
 		_badges[id].tooltip_text = "输入 %d · 加工 %d · 输出 %d" % [_total(station.input), station.get("processing", 0), output_count]
-	_shelf.text = "成品货架  %d / 3" % sim.shelf_count
+	var limit: int = sim.shelf_limit() if sim.has_method("shelf_limit") else 3
+	_shelf.text = "成品货架  %d / %d" % [sim.shelf_count, limit]
+	if sim.has_method("station_unlocked") and not sim.station_unlocked("mix"):
+		_shelf.text = "成品货架 未开放"
+	if sim.has_method("station_info"):
+		_refresh_station_signs()
 	for post in _post_labels:
 		var owner := -1
 		for worker in sim.workers:
@@ -149,7 +170,7 @@ func _refresh(delta: float) -> void:
 				_post_labels[post].text = ART_NAMES[worker.art] + " · 坐班"
 		_post_labels[post].visible = owner != -1
 	if _mobile_count() == 0 and _toast_left <= 0:
-		_toast.text = "缺少流动员工，搬运将等待；拖到空地可恢复流动。"
+		_toast.text = "店内暂无员工，请从员工名册派遣伙伴。" if sim.workers.is_empty() else "缺少流动员工，搬运将等待；拖到空地可恢复流动。"
 	_update_cups()
 	_update_customers(delta if not sim.paused else 0.0)
 	if sim.sold > _last_sold:
@@ -166,8 +187,16 @@ func _total(stock: Dictionary) -> int:
 
 func _update_cups() -> void:
 	var draws := []
-	for i in sim.shelf_count:
-		draws.append({"pos": Vector2(546 + i * 51, 601), "item": "sealed", "height": 53.0, "z": 0})
+	var shelf_items: Array = []
+	if sim.has_method("station_info"):
+		for dish in sim.shelf_stock:
+			for unused in mini(int(sim.shelf_stock[dish]), 3 - shelf_items.size()):
+				shelf_items.append(dish)
+	else:
+		for unused in mini(sim.shelf_count, 3):
+			shelf_items.append("sealed")
+	for i in shelf_items.size():
+		draws.append({"pos": Vector2(546 + i * 51, 601), "item": shelf_items[i], "height": 53.0, "z": 0})
 	for belt in sim.belt_items:
 		var route := Layout.belt_path(belt.route)
 		var point := _along(route, float(belt.progress))
@@ -176,9 +205,11 @@ func _update_cups() -> void:
 			draws.append({"pos": point + offset, "item": belt.item, "height": 51.0, "z": 0})
 	var buffer_points := {"mix": Vector2(488, 270), "topping": Vector2(78, 445), "seal": Vector2(613, 405)}
 	for id in buffer_points:
-		var count := mini(_total(sim.stations[id].output), 3)
-		for i in count:
-			draws.append({"pos": buffer_points[id] + Vector2(i * 19, 0), "item": "milk_tea" if id == "mix" else "topped", "height": 37.0, "z": 0})
+		var index := 0
+		for item in sim.stations[id].output:
+			for unused in mini(int(sim.stations[id].output[item]), 3 - index):
+				draws.append({"pos": buffer_points[id] + Vector2(index * 19, 0), "item": item, "height": 37.0, "z": 0})
+				index += 1
 	while _cups.size() < draws.size():
 		var sprite := Sprite2D.new()
 		sprite.centered = false
@@ -190,8 +221,9 @@ func _update_cups() -> void:
 		if not sprite.visible:
 			continue
 		var row: Dictionary = draws[i]
-		var texture: Texture2D = load("res://art/reference/" + ("cream_tea" if row.item in ["tea", "milk_tea"] else "pearl_tea") + ".png")
+		var texture: Texture2D = load("res://art/reference/" + Actor.item_asset(row.item) + ".png")
 		sprite.texture = texture
+		sprite.modulate = Actor.item_color(row.item)
 		sprite.scale = Vector2.ONE * float(row.height) / texture.get_height()
 		sprite.position = row.pos - Vector2(texture.get_width() * sprite.scale.x / 2.0, float(row.height))
 		# Cup top-left is offset visually; explicit depth keeps it above the belt/shelf.
@@ -200,7 +232,7 @@ func _update_cups() -> void:
 
 func _update_customers(delta: float) -> void:
 	var active := {}
-	for i in sim.orders.size():
+	for i in mini(sim.orders.size(), 3):
 		var order: Dictionary = sim.orders[i]
 		active[order.id] = true
 		if not _customers.has(order.id):
@@ -213,7 +245,8 @@ func _update_customers(delta: float) -> void:
 		var point: Vector2 = _customer_positions[order.id]
 		point = point.move_toward(goal, delta * 170.0)
 		_customer_positions[order.id] = point
-		_customers[order.id].display({"pos": point, "walking": point.distance_to(goal) > 1, "phase": "idle", "task_label": "珍珠奶茶"}, sim.elapsed)
+		var dish_name: String = sim.dish_name(order.get("dish", "pearl_milk_tea")) if sim.has_method("dish_name") else "珍珠奶茶"
+		_customers[order.id].display({"pos": point, "walking": point.distance_to(goal) > 1, "phase": "idle", "task_label": dish_name}, sim.elapsed)
 	for id in _customers.keys():
 		if not active.has(id):
 			_customers[id].free()
@@ -235,46 +268,16 @@ func _along(points: PackedVector2Array, progress: float) -> Vector2:
 
 
 func _build_ui() -> void:
-	var root: Control = $Overlay/UI
-	var theme := Theme.new()
-	theme.default_font = _font
-	theme.default_font_size = 16
-	root.theme = theme
-	_panel(root, Rect2(12, 8, 696, 88))
-	_gold = _label(root, Vector2(26, 18), 23)
-	_score = _label(root, Vector2(204, 22), 20)
-	_speed_button = _button(root, Rect2(352, 15, 114, 35), "倍速 ×1", func() -> void:
-		_speed_factor = 1.0 if _speed_factor >= 4.0 else _speed_factor * 2.0
-		_refresh(0.0))
-	_hire_button = _button(root, Rect2(476, 15, 112, 35), "招募", hire_worker)
-	_pause_button = _button(root, Rect2(598, 15, 96, 35), "暂停", func() -> void: sim.paused = not sim.paused)
-	_stats = _label(root, Vector2(26, 63), 13)
-	_belt_button = _button(root, Rect2(282, 57, 150, 31), "运输：传送带", toggle_transport)
-	_train_button = _button(root, Rect2(441, 57, 100, 31), "培养", train_selected)
-	_restart_button = _button(root, Rect2(550, 57, 68, 31), "重开", restart)
-	_old_button = _button(root, Rect2(627, 57, 67, 31), "旧版", func() -> void: get_tree().change_scene_to_file("res://presentation/shop.tscn"))
-	_panel(root, Rect2(12, 1201, 696, 76))
-	for i in 3:
-		var card := _button(root, Rect2(20 + i * 228, 1207, 222, 62), "", _staff_clicked.bind(i))
-		card.clip_text = true
-		card.add_theme_font_size_override("font_size", 15)
-		_staff_cards.append(card)
-		var background := ColorRect.new()
-		background.position = Vector2(30 + i * 228, 1262)
-		background.size = Vector2(202, 4)
-		background.color = Color("dacdb6")
-		background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		root.add_child(background)
-		var fill := ColorRect.new()
-		fill.position = background.position
-		fill.size = Vector2(0, 4)
-		fill.color = Color("b59162")
-		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		root.add_child(fill)
-		_staff_fatigue.append(fill)
-	_toast = _label(root, Vector2(20, 1177), 14)
-	_toast.size = Vector2(680, 22)
-	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ui = $Overlay/UI/HUD
+	ui.setup(self)
+	_hire_button = ui.hire_button
+	_train_button = ui.train_button
+	_pause_button = ui.pause_button
+	_belt_button = ui.belt_button
+	_restart_button = ui.restart_button
+	_old_button = ui.old_button
+	_speed_button = ui.speed_button
+	_toast = ui.get_node("Toast")
 
 
 func _build_badges() -> void:
@@ -307,71 +310,37 @@ func _label(parent: Node, point: Vector2, size: int) -> Label:
 	return label
 
 
-func _panel(parent: Node, rect: Rect2) -> Panel:
-	var panel := Panel.new()
-	panel.position = rect.position
-	panel.size = rect.size
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("f9ebd3")
-	style.border_color = Color("79573c")
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(10)
-	panel.add_theme_stylebox_override("panel", style)
-	parent.add_child(panel)
-	return panel
-
-
-func _button(parent: Node, rect: Rect2, text: String, action: Callable) -> Button:
-	var button := Button.new()
-	button.position = rect.position
-	button.size = rect.size
-	button.text = text
-	button.focus_mode = Control.FOCUS_NONE
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("f4dfbc")
-	style.border_color = Color("956d4a")
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(7)
-	button.add_theme_stylebox_override("normal", style)
-	var hover := style.duplicate()
-	hover.bg_color = Color("fff1d4")
-	button.add_theme_stylebox_override("hover", hover)
-	var pressed := style.duplicate()
-	pressed.bg_color = Color("dfc49b")
-	button.add_theme_stylebox_override("pressed", pressed)
-	button.add_theme_color_override("font_color", Color("583b29"))
-	button.add_theme_color_override("font_hover_color", Color("583b29"))
-	button.add_theme_font_size_override("font_size", 15)
-	button.pressed.connect(action)
-	parent.add_child(button)
-	return button
-
-
 func hire_worker() -> void:
 	if sim.hire():
-		selected_worker = int(sim.workers.back().id)
-		_show_toast("新伙伴加入，会自动领取适合的任务。")
+		selected_worker = int(all_staff().back().id)
+		_show_toast("新伙伴已加入名册，可在员工界面派遣。" if sim.has_method("all_workers") else "新伙伴加入，会自动领取适合的任务。")
+		save_now(false)
 	_refresh(0.0)
 
 
 func train_selected() -> void:
 	if sim.train(selected_worker):
 		_show_toast("培养完成，擅长的能力已提升。")
+		save_now(false)
 	_refresh(0.0)
 
 
 func toggle_transport() -> void:
 	sim.set_belts(not sim.use_belts)
 	_show_toast("切换为传送带运输" if sim.use_belts else "切换为人工搬运")
+	save_now(false)
 	_refresh(0.0)
 
 
-func _staff_clicked(index: int) -> void:
-	if index < sim.workers.size():
-		selected_worker = int(sim.workers[index].id)
-	else:
-		hire_worker()
-	_refresh(0.0)
+func open_page(page: String) -> void:
+	ui.open_page(page)
+
+
+func select_worker(id: int, from_card := false) -> void:
+	selected_worker = id
+	if not from_card:
+		ui.show_selection = true
+	_refresh(0)
 
 
 func _show_toast(text: String) -> void:
@@ -386,8 +355,12 @@ func _fit() -> void:
 	var offset := (size - Vector2(720, 1280) * factor) / 2.0
 	$Canvas.position = offset
 	$Canvas.scale = Vector2.ONE * factor
-	$Overlay/UI.position = offset
-	$Overlay/UI.scale = Vector2.ONE * factor
+	var ui_factor := size.x / 720.0 if size.x / size.y < 1.1 else size.y / 900.0
+	var ui_width := minf(size.x / ui_factor, 1120.0)
+	$Overlay/UI.position = Vector2((size.x - ui_width * ui_factor) / 2.0, 0)
+	$Overlay/UI.scale = Vector2.ONE * ui_factor
+	$Overlay/UI.size = Vector2(ui_width, size.y / ui_factor)
+	ui.fit_to_size($Overlay/UI.size)
 
 
 func _mobile_count() -> int:
@@ -396,3 +369,115 @@ func _mobile_count() -> int:
 		if worker.get("post", "").is_empty():
 			count += 1
 	return count
+
+
+func all_staff() -> Array:
+	return sim.all_workers() if sim.has_method("all_workers") else sim.workers
+
+
+func staff_is_deployed(id: int) -> bool:
+	for worker in sim.workers:
+		if int(worker.id) == id:
+			return true
+	return false
+
+
+func toggle_deployment() -> void:
+	if not sim.has_method("deploy_worker"):
+		return
+	var returning := staff_is_deployed(selected_worker)
+	var error: String = sim.recall_worker(selected_worker) if returning else sim.deploy_worker(selected_worker)
+	_show_toast(error if not error.is_empty() else "伙伴已回到名册。" if returning else "伙伴已派到店内。")
+	if error.is_empty():
+		save_now(false)
+	_refresh(0)
+
+
+func station_action(action: String, station: String, material := "") -> void:
+	var error := ""
+	match action:
+		"unlock": error = sim.unlock_station(station)
+		"upgrade": error = sim.upgrade_station(station)
+		"material": error = sim.upgrade_material(station, material)
+	_show_toast(error if not error.is_empty() else "设备已解锁。" if action == "unlock" else "升级完成。")
+	if error.is_empty():
+		save_now(false)
+	_refresh(0)
+
+
+func save_now(notify := true) -> Error:
+	if store == null:
+		return OK
+	var result: Error = store.save_game(sim, _speed_factor)
+	save_status = "进度已保存" if result == OK else store.last_error
+	if notify:
+		_show_toast(save_status)
+	return result
+
+
+func go_to_old_game() -> void:
+	if save_now(false) != OK:
+		_show_toast(save_status)
+		return
+	get_tree().change_scene_to_file("res://presentation/shop.tscn")
+
+
+func _build_station_signs() -> void:
+	for id in SIGN_RECTS:
+		var button := Button.new()
+		button.position = SIGN_RECTS[id].position
+		button.size = SIGN_RECTS[id].size
+		button.theme = ui.theme
+		button.add_theme_font_size_override("font_size", 18)
+		button.focus_mode = Control.FOCUS_NONE
+		button.pressed.connect(ui.open_station.bind(id))
+		$Canvas/WorldLabels.add_child(button)
+		_station_buttons[id] = button
+	_lemonade_cup = Sprite2D.new()
+	_lemonade_cup.texture = load("res://art/reference/fruit_tea.png")
+	_lemonade_cup.scale = Vector2.ONE * 86.0 / _lemonade_cup.texture.get_height()
+	_lemonade_cup.position = Vector2(170, 920)
+	art.get_node("Sortables").add_child(_lemonade_cup)
+
+
+func _refresh_station_signs() -> void:
+	for id in _station_buttons:
+		var info: Dictionary = sim.station_info(id)
+		_station_buttons[id].visible = not info.unlocked and id in ["boil", "topping", "lemonade"]
+		_station_buttons[id].text = "%s Lv%d" % [info.name, info.level] if info.unlocked else "%s\n%d 金币" % [info.name, info.unlock_cost]
+		if id == "boil" and not info.unlocked:
+			_station_buttons[id].text = "奶茶生产线\n%d 金币" % info.unlock_cost
+		_station_buttons[id].tooltip_text = info.description + "\n" + info.get("unlock_error", "")
+	for id in Layout.STATION_ART:
+		if id in ["counter", "shelf"]:
+			continue
+		var node: Node2D = art.get_node_or_null(Layout.STATION_ART[id])
+		if node != null:
+			node.modulate = Color.WHITE if sim.station_unlocked(id) else Color(0.6, 0.6, 0.6, 0.48)
+	if is_instance_valid(_lemonade_cup):
+		_lemonade_cup.visible = sim.station_unlocked("lemonade")
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not sim.has_method("station_info"):
+		return
+	var pressed: bool = event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed
+	pressed = pressed or (event is InputEventScreenTouch and event.pressed)
+	if not pressed or ui.blocks_world(event.position) or _drag.worker_id != -1:
+		return
+	var point: Vector2 = $Canvas.get_global_transform_with_canvas().affine_inverse() * event.position
+	for id in STATION_REGIONS:
+		if STATION_REGIONS[id].has_point(point):
+			ui.open_station(id)
+			get_viewport().set_input_as_handled()
+			return
+
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST] and sim != null:
+		save_now(false)
+
+
+func _exit_tree() -> void:
+	if sim != null:
+		save_now(false)

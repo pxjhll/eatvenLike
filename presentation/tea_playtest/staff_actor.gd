@@ -69,13 +69,25 @@ func display(worker: Dictionary, clock: float) -> void:
 	amount.visible = carried.visible and count > 1
 	amount.text = "×%d" % count
 	if carried.visible:
-		var asset := "tea_tin" if item == "raw" else "cream_tea" if item in ["tea", "milk_tea"] else "pearl_tea"
+		var asset := item_asset(item)
 		var texture: Texture2D = load("res://art/reference/" + asset + ".png")
 		carried.texture = texture
+		carried.modulate = item_color(item)
 		carried.scale = Vector2.ONE * 44.0 / texture.get_height()
 		carried.position = Vector2(22, -78 + bob)
 	_last_pos = position
 	queue_redraw()
+
+
+static func item_asset(item: String) -> String:
+	if item == "raw": return "tea_tin"
+	if item == "lemonade": return "fruit_tea"
+	if item in ["tea", "milk_tea", "plain_milk_tea", "coconut_milk_tea", "taro_milk_tea"]: return "cream_tea"
+	return "pearl_tea"
+
+
+static func item_color(item: String) -> Color:
+	return {"coconut_milk_tea": Color("fff8df"), "redbean_milk_tea": Color("ffd8cf"), "taro_milk_tea": Color("e1d0ff")}.get(item, Color.WHITE)
 
 
 func _draw() -> void:

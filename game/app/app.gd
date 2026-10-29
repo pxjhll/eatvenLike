@@ -8,6 +8,8 @@ const AUTOSAVE_SECONDS := 30.0
 var catalog: GameCatalog
 var profile: Profile
 var save_service := SaveService.new()
+## Art-shop career is independent of the legacy shop/profile save.
+var art_shop_save := preload("res://game/tea_playtest/tea_shop_save.gd").new()
 var sim: GameSim
 
 ## 读档得到、还没交给 GameSim 的店内状态

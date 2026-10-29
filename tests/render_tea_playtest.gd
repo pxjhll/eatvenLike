@@ -12,6 +12,7 @@ func _initialize() -> void:
 func _run() -> void:
 	root.size = Vector2i(720, 1280)
 	view = load("res://presentation/tea_playtest/tea_playtest.tscn").instantiate()
+	view.sim = preload("res://game/tea_playtest/tea_playtest_sim.gd").new()
 	root.add_child(view)
 	current_scene = view
 	await process_frame
@@ -76,6 +77,8 @@ func _verify_old_game_round_trip() -> void:
 	var previous_profile: Profile = app.profile
 	var previous_pending: Dictionary = app._pending_shop_state
 	var previous_path: String = app.save_service.path
+	var previous_art_store: RefCounted = app.art_shop_save
+	app.art_shop_save = preload("res://game/tea_playtest/tea_shop_save.gd").new("user://tea-entry-art-test.json")
 	app.save_service.path = "user://tea-playtest-entry-test.json"
 	for from_preview in [false, true]:
 		app.profile = Profile.create(app.catalog)
@@ -107,6 +110,7 @@ func _verify_old_game_round_trip() -> void:
 		var saved: Dictionary = app.save_service.load_data()
 		_check(saved.has("shop") and int(saved.shop.economy.gold) == 321, "old progress is persisted before leaving, including normal quit in playtest")
 		_check(int(app._pending_shop_state.economy.gold) == 321, "old session is also retained in memory")
+		await _click(play.ui.menu_button)
 		await _click(play._old_button)
 		await process_frame
 		shop = current_scene
@@ -117,6 +121,9 @@ func _verify_old_game_round_trip() -> void:
 	app.profile = previous_profile
 	app._pending_shop_state = previous_pending
 	app.save_service.path = previous_path
+	app.art_shop_save = previous_art_store
+	if FileAccess.file_exists("user://tea-entry-art-test.json"):
+		DirAccess.remove_absolute("user://tea-entry-art-test.json")
 	if FileAccess.file_exists("user://tea-playtest-entry-test.json"):
 		DirAccess.remove_absolute("user://tea-playtest-entry-test.json")
 
@@ -149,7 +156,27 @@ func _advance_until(condition: Callable) -> void:
 
 func _click(button: Button) -> void:
 	await process_frame
-	var point := button.get_global_rect().get_center()
+	await process_frame
+	var scroll: ScrollContainer = button.find_parent("HUD").get_node("Sheet/Margin/Column/Scroll") if button.find_parent("HUD") != null else null
+	if scroll != null and scroll.is_ancestor_of(button):
+		scroll.ensure_control_visible(button)
+		await process_frame
+	var close_after := false
+	var confirm_restart := false
+	if is_instance_valid(view):
+		if button == view._hire_button:
+			await _click(view.ui.recruit_button)
+			close_after = true
+		elif button == view._train_button:
+			await _click(view.ui.staff_button)
+			close_after = true
+		elif button in [view._pause_button, view._belt_button, view._restart_button, view._old_button]:
+			await _click(view.ui.menu_button)
+			close_after = button != view._old_button
+			confirm_restart = button == view._restart_button
+	_check(button.is_visible_in_tree() and not button.disabled, "tested control is visible and enabled")
+	await process_frame
+	var point := button.get_global_rect().get_center() * Vector2(root.size) / root.get_visible_rect().size
 	var press := InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_LEFT
 	press.position = point
@@ -160,6 +187,10 @@ func _click(button: Button) -> void:
 	release.pressed = false
 	Input.parse_input_event(release)
 	await process_frame
+	if confirm_restart:
+		await _click(view.ui.confirm_restart_button)
+	if close_after:
+		await _click(view.ui.home_button)
 
 
 func _capture(suffix: String) -> void:
