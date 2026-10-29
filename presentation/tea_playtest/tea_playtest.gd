@@ -236,7 +236,8 @@ func _update_cups() -> void:
 
 func _update_customers(delta: float) -> void:
 	var active := {}
-	for i in mini(sim.orders.size(), 3):
+	# Up to three customers stand at the counter; the rest wait in a second row behind them.
+	for i in mini(sim.orders.size(), 6):
 		var order: Dictionary = sim.orders[i]
 		active[order.id] = true
 		if not _customers.has(order.id):
@@ -245,7 +246,7 @@ func _update_customers(delta: float) -> void:
 			art.get_node("Sortables").add_child(actor)
 			_customers[order.id] = actor
 			_customer_positions[order.id] = Vector2(740, 1163)
-		var goal := Vector2(350 + i * 126, 1163)
+		var goal := Vector2(350 + i * 126, 1163) if i < 3 else Vector2(287 + (i - 3) * 126, 1108)
 		var point: Vector2 = _customer_positions[order.id]
 		point = point.move_toward(goal, delta * 170.0)
 		_customer_positions[order.id] = point

@@ -350,6 +350,9 @@ func _action_duration(job: Dictionary, worker: Dictionary) -> float:
 func _order_interval() -> float:
 	return CONFIG.progression.stages[stage_index].customer_interval
 
+func _queue_capacity() -> int:
+	return CONFIG.queue_capacity
+
 func _tick() -> void:
 	super._tick()
 	# A reserved order belongs to a real delivery and must survive the walk.
@@ -442,9 +445,9 @@ func _jobs(worker: Dictionary) -> Array:
 		if post == "topping" and _available(post, item) > 0:
 			kind = "topping"
 			count = mini(worker.capacity, mini(_available(post, item), _topping_room()))
-		elif post == "boil" and station.processing == 0 and _available(post, "raw") >= 3:
+		elif post == "boil" and station.processing == 0 and _available(post, "raw") >= _brew_batch():
 			kind = "brew_start"
-			count = 3
+			count = _brew_batch()
 		elif post == "boil" and station.phase == "awaiting_take" and station.processing > 0:
 			kind = "brew_take"
 			count = station.processing

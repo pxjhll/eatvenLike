@@ -75,35 +75,35 @@ script = ExtResource("dish_def")
 id = "plain_milk_tea"
 display_name = "原味奶茶"
 item_id = "plain_milk_tea"
-price = 18
+price = 30
 
 [sub_resource type="Resource" id="dish_pearl_milk_tea"]
 script = ExtResource("dish_def")
 id = "pearl_milk_tea"
 display_name = "珍珠奶茶"
 item_id = "pearl_milk_tea"
-price = 24
+price = 38
 
 [sub_resource type="Resource" id="dish_coconut_milk_tea"]
 script = ExtResource("dish_def")
 id = "coconut_milk_tea"
 display_name = "椰果奶茶"
 item_id = "coconut_milk_tea"
-price = 26
+price = 40
 
 [sub_resource type="Resource" id="dish_redbean_milk_tea"]
 script = ExtResource("dish_def")
 id = "redbean_milk_tea"
 display_name = "红豆奶茶"
 item_id = "redbean_milk_tea"
-price = 28
+price = 42
 
 [sub_resource type="Resource" id="dish_taro_milk_tea"]
 script = ExtResource("dish_def")
 id = "taro_milk_tea"
 display_name = "芋泥奶茶"
 item_id = "taro_milk_tea"
-price = 32
+price = 46
 
 [sub_resource type="Resource" id="recipe_cabinet_supply"]
 script = ExtResource("recipe_def")

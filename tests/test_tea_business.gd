@@ -145,7 +145,7 @@ func test_exact_flavor_dispatch_and_upgraded_sale_price() -> void:
 		if sim.sold > 0: break
 	check_eq(sim.sold_by_dish.pearl_milk_tea, 1, "exact physical flavor sold")
 	check_eq(sim.shelf_stock.coconut_milk_tea, 1, "unrelated flavor stays on shelf")
-	check_eq(sim.revenue - before, 26, "configured pearl bonus changes actual completed-sale income")
+	check_eq(sim.revenue - before, roundi(_base_price(sim, "pearl_milk_tea") * 1.08), "configured pearl bonus changes actual completed-sale income")
 	check(sim.audit().valid, "exact-flavor dispatch conserves inventory")
 
 func test_real_machine_cycles_respond_to_station_and_material_upgrades() -> void:
@@ -319,3 +319,16 @@ func test_carried_service_retains_its_flavor_slot_until_delivery_or_recall() -> 
 	check_eq(restored.recall_worker(1), "", "loaded busy courier can recall")
 	check_eq(restored.shelf_stock.plain_milk_tea, 12, "recall restores exact flavor to its retained slot")
 	check(restored.audit().valid, "busy recall does not exceed per-flavor capacity")
+
+func test_customer_queue_uses_configured_capacity() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.unlock_station("lemonade")
+	for worker in sim.workers.duplicate(): sim.recall_worker(worker.id)
+	sim.advance(20)
+	check_eq(sim.orders.size(), sim.CONFIG.queue_capacity, "queue fills to the configured capacity, not a fixed 3")
+
+func _base_price(sim, dish: String) -> int:
+	for definition in sim.CONFIG.dishes:
+		if definition.id == dish: return definition.price
+	return -1
