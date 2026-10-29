@@ -4,6 +4,7 @@ extends Node2D
 const Sim := preload("res://game/tea_playtest/tea_playtest_sim.gd")
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
+const DragController := preload("res://presentation/tea_playtest/staff_drag_controller.gd")
 const ROLE_NAMES := {"speed": "速度型", "carry": "力量型", "skill": "操作型"}
 const ART_NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸"}
 const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "seal": "自动封口"}
@@ -34,9 +35,12 @@ var _old_button: Button
 var _speed_button: Button
 var _speed_factor := 1.0
 var _font: Font
+var _drag: Node2D
+var _post_labels := {}
 
 
 func _ready() -> void:
+	DisplayServer.window_set_title("奶茶店 · 岗位试玩")
 	art = $Canvas/ShopArt
 	_font = load("res://art/ui/graybox_font.ttf")
 	for node in art.find_children("*", "Node2D", true, false):
@@ -44,10 +48,15 @@ func _ready() -> void:
 			node.visible = false
 	_build_ui()
 	_build_badges()
+	_drag = DragController.new()
+	$Canvas.add_child(_drag)
+	_drag.setup(self)
 	restart()
 
 
 func restart() -> void:
+	if is_instance_valid(_drag):
+		_drag.cancel()
 	sim = Sim.new()
 	selected_worker = int(sim.workers[0].id)
 	for actor in _actors.values():
@@ -58,7 +67,7 @@ func restart() -> void:
 	_customers.clear()
 	_customer_positions.clear()
 	_last_sold = 0
-	_show_toast("一名员工也能完成整杯奶茶。招募伙伴，分担制作和配送。")
+	_show_toast("拖到人工工位坐班，拖到空地流动。点选员工可培养。")
 	_refresh(0.0)
 	_fit()
 
@@ -70,7 +79,7 @@ func _process(delta: float) -> void:
 	_refresh(delta)
 	_fit()
 	_toast_left = maxf(0, _toast_left - delta)
-	_toast.visible = _toast_left > 0
+	_toast.visible = _toast_left > 0 or _mobile_count() == 0
 
 
 func _refresh(delta: float) -> void:
@@ -103,7 +112,12 @@ func _refresh(delta: float) -> void:
 		if i < sim.workers.size():
 			var worker: Dictionary = sim.workers[i]
 			var label: String = worker.get("task_label", "")
-			_staff_cards[i].text = "%s · %s Lv%d\n%s" % [ART_NAMES[worker.art], ROLE_NAMES.get(worker.role, worker.role), worker.level, Actor.TASKS.get(label, "待命" if label.is_empty() else label)]
+			var post: String = worker.get("post", "")
+			var mode := "流动" if post.is_empty() else ("煮茶坐班" if post == "boil" else "加料坐班")
+			var task_text: String = Actor.TASKS.get(label, "待命" if label.is_empty() else label)
+			if worker.get("assignment_pending", false):
+				task_text = "交接中 · " + task_text
+			_staff_cards[i].text = "%s · %s Lv%d\n%s" % [ART_NAMES[worker.art], mode, worker.level, task_text]
 			_staff_cards[i].modulate = Color.WHITE if int(worker.id) == selected_worker else Color("e4d7c1")
 			_staff_fatigue[i].size.x = 202.0 * clampf(worker.fatigue, 0, 1)
 			_staff_fatigue[i].visible = true
@@ -120,11 +134,22 @@ func _refresh(delta: float) -> void:
 			state = "%d%%" % int(float(station.progress) * 100)
 		elif output_count > 0:
 			state = "待取 %d" % output_count
+		elif station.phase == "awaiting_take":
+			state = "等待取茶"
 		elif _total(station.input) > 0:
 			state = "待操作"
 		_badges[id].text = STATION_NAMES[id] + " " + state
 		_badges[id].tooltip_text = "输入 %d · 加工 %d · 输出 %d" % [_total(station.input), station.get("processing", 0), output_count]
 	_shelf.text = "成品货架  %d / 3" % sim.shelf_count
+	for post in _post_labels:
+		var owner := -1
+		for worker in sim.workers:
+			if worker.get("post", "") == post:
+				owner = int(worker.id)
+				_post_labels[post].text = ART_NAMES[worker.art] + " · 坐班"
+		_post_labels[post].visible = owner != -1
+	if _mobile_count() == 0 and _toast_left <= 0:
+		_toast.text = "缺少流动员工，搬运将等待；拖到空地可恢复流动。"
 	_update_cups()
 	_update_customers(delta if not sim.paused else 0.0)
 	if sim.sold > _last_sold:
@@ -231,6 +256,7 @@ func _build_ui() -> void:
 	_panel(root, Rect2(12, 1201, 696, 76))
 	for i in 3:
 		var card := _button(root, Rect2(20 + i * 228, 1207, 222, 62), "", _staff_clicked.bind(i))
+		card.clip_text = true
 		card.add_theme_font_size_override("font_size", 15)
 		_staff_cards.append(card)
 		var background := ColorRect.new()
@@ -260,6 +286,12 @@ func _build_badges() -> void:
 		label.mouse_filter = Control.MOUSE_FILTER_PASS
 		_badges[id] = label
 	_shelf = _label(parent, Vector2(514, 714), 16)
+	for post in Layout.POST_POINTS:
+		var label := _label(parent, Layout.POST_POINTS[post] + Vector2(-60, 14), 14)
+		label.size.x = 120
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.visible = false
+		_post_labels[post] = label
 
 
 func _label(parent: Node, point: Vector2, size: int) -> Label:
@@ -358,10 +390,9 @@ func _fit() -> void:
 	$Overlay/UI.scale = Vector2.ONE * factor
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		var point: Vector2 = $Canvas.get_global_transform_with_canvas().affine_inverse() * event.position
-		for worker in sim.workers:
-			if Rect2(worker.pos + Vector2(-50, -130), Vector2(100, 145)).has_point(point):
-				selected_worker = int(worker.id)
-				break
+func _mobile_count() -> int:
+	var count := 0
+	for worker in sim.workers:
+		if worker.get("post", "").is_empty():
+			count += 1
+	return count

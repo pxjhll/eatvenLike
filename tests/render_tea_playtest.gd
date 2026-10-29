@@ -20,8 +20,8 @@ func _run() -> void:
 	_check(view.art.get_node("Sortables/PrepBench").position == Vector2(84, 594.37), "existing furniture placement retained")
 	_check(not view.art.get_node("Sortables/Cat").visible, "static employee is replaced")
 	_check(not view.art.get_node("Sortables/Rack/RackCupA").visible, "example cups are not real stock")
-	_advance_until(func() -> bool: return view.sim.workers[0].phase == "work")
-	_check(view.sim.workers[0].phase == "work", "worker reaches the actual manual topping step")
+	_advance_until(func() -> bool: return view.sim.workers[0].phase == "work" and view.sim.workers[0].job.get("kind", "") == "topping")
+	_check(view.sim.workers[0].phase == "work" and view.sim.workers[0].job.get("kind", "") == "topping", "worker reaches the actual manual topping step")
 	await _capture("single")
 	var starting_gold: int = view.sim.gold
 	var hire_price: int = view.sim.hire_cost()

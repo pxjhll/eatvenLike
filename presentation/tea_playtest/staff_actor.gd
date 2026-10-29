@@ -3,6 +3,8 @@ extends Node2D
 
 const TASKS := {
 	"idle": "待命",
+	"take_post": "前往坐班", "move_free": "恢复流动",
+	"brew_start": "人工投料", "brew_take": "取出茶汤",
 	"supply": "补原料", "load_boil": "投料煮茶", "unload_boil": "取茶汤",
 	"transfer_to_topping": "送去加料", "topping": "手工加料",
 	"load_seal_belt": "放上传送带", "carry_to_seal": "送去封口",

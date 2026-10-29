@@ -212,8 +212,11 @@ func test_allocation_considers_path_and_soft_fatigue() -> void:
 		raccoon.speed = cat.speed
 		raccoon.capacity = cat.capacity
 		cat.fatigue = 0.0 if prefer_close else 1.0
-		# Four occupied slots leave exactly one two-unit task to choose between staff.
-		sim.stations.boil.input.raw = 4
+		# An active batch leaves exactly one supply task, with no manual start task.
+		sim.stations.boil.processing = 4
+		sim.stations.boil.duration = 100.0
+		sim.stations.boil.remaining = 100.0
+		sim.stations.boil.phase = "heating"
 		sim.advance(0.1)
 		check_eq(cat.phase != "idle", prefer_close, "near staff wins route choice; rested staff wins equal routes")
 		check_eq(raccoon.phase != "idle", not prefer_close, "allocation shares one atomic task without duplicate pickup")
@@ -228,7 +231,7 @@ func test_empty_topping_clears_ready_after_real_pickup_and_preserves_work_phase(
 		var station: Dictionary = sim.stations.topping
 		var worker: Dictionary = sim.workers[0]
 		check(sim.audit().valid, "actual production and pickup retain stock reservations")
-		if worker.phase == "work":
+		if worker.phase == "work" and worker.job.kind == "topping":
 			saw_work = true
 			check_eq(station.phase, "working", "active manual topping retains working phase")
 		if worker.carry_item == "topped" and worker.carry_count > 0 and station.input.milk_tea == 0 and station.output.topped == 0:

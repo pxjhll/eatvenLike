@@ -31,14 +31,14 @@ shim = f'''<script id="compressed-godot-loader">
 </script>
 <style>
 #status-splash{{display:none!important}}
-#status::before{{content:'面包小店';font:600 32px system-ui;color:#42565c;margin-bottom:16px}}
-#status::after{{content:'正在准备生产线…';font:16px system-ui;color:#81938c}}
+#status::before{{content:'手作奶茶店';font:600 32px system-ui;color:#65492f;margin-bottom:16px}}
+#status::after{{content:'正在准备奶茶和伙伴…';font:16px system-ui;color:#81938c}}
 #status-progress{{bottom:32%;height:8px;max-width:340px;accent-color:#92b29b}}
 </style>
 '''
 if 'id="compressed-godot-loader"' in source:
     raise SystemExit('This export has already been prepared; export fresh files first.')
-source = source.replace('<title>eatvenLike</title>', '<title>面包小店 · 灰盒试玩</title>')
+source = source.replace('<title>eatvenLike</title>', '<title>奶茶店 · 美术试玩</title>')
 source = source.replace('<html lang="en">', '<html lang="zh-CN">')
 html.write_text(source.replace('</head>', shim + '</head>'))
 wasm.unlink()
