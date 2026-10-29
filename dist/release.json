@@ -1,0 +1,14 @@
+{
+  "source_commit": "161b8a1fff99e8e6f1395b77ad6128dd51a9dd85",
+  "built_at": "2026-10-30T07:21:54+08:00",
+  "entry_scene": "presentation/tea_playtest/tea_playtest.tscn",
+  "feature": "black-tea-and-milk-staged-unlocks",
+  "godot": "4.6.3",
+  "pck_sha256": "af25bded3eb3118d55807bfc262dd04fe6275f2faa11de838e6ed843218f362b",
+  "tests": {
+    "passed": 125,
+    "failed": 0,
+    "shop_ui_failures": 0,
+    "tea_business_gui_failures": 0
+  }
+}
