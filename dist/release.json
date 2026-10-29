@@ -1,0 +1,7 @@
+{
+  "source_commit": "41b04b1e71e70aca2736780ed3049d3d042b0b85",
+  "built_at": "2026-10-29T10:51:00.227638+08:00",
+  "entry_scene": "presentation/tea_playtest/tea_playtest.tscn",
+  "feature": "drag-seated-mobile-staff",
+  "godot": "4.6.3"
+}
