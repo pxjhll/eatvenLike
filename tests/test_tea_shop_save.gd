@@ -62,7 +62,8 @@ func test_full_shop_state_and_continuation_roundtrip() -> void:
 		sim.gold = 100000
 		sim.revenue = 10000
 		check_eq(sim.unlock_station("lemonade"), "", "open lemonade")
-		check_eq(sim.unlock_station("mix"), "", "open milk tea line")
+		check_eq(sim.unlock_station("boil"), "", "open black tea line")
+		check_eq(sim.unlock_station("mix"), "", "open milk machine")
 		check_eq(sim.unlock_station("topping"), "", "open topping")
 		check(sim.hire() and sim.hire(), "own two additional employees")
 		for employee in sim.all_workers():

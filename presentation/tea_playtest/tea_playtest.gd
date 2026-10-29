@@ -176,7 +176,7 @@ func _refresh(delta: float) -> void:
 		_badges[id].tooltip_text = "%s · 输入 %d · 加工 %d · 输出 %d" % [STATION_NAMES[id], _total(station.input), station.get("processing", 0), output_count]
 	var limit: int = sim.shelf_limit() if sim.has_method("shelf_limit") else 3
 	_shelf.text = "货架 %d/%d" % [sim.shelf_count, limit]
-	_shelf.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("mix")
+	_shelf.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("seal")
 	if sim.has_method("station_info"):
 		_refresh_station_signs()
 	for post in _post_labels:
@@ -512,7 +512,7 @@ func _build_station_signs() -> void:
 func _refresh_station_signs() -> void:
 	for id in _station_buttons:
 		var info: Dictionary = sim.station_info(id)
-		_station_buttons[id].visible = not info.unlocked and id in ["boil", "topping", "lemonade"]
+		_station_buttons[id].visible = not info.unlocked and id in ["boil", "mix", "topping", "lemonade"]
 		# Before the revenue gate the plate says when it opens; after it, what it costs.
 		var gated: bool = String(info.unlock_error).begins_with("营业额")
 		var title: String = info.get("line_name", info.name) if id == "boil" else info.name

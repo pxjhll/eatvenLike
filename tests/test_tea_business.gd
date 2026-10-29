@@ -14,6 +14,7 @@ func opened():
 	sim.gold = 20000
 	sim.revenue = 2000
 	sim.unlock_station("boil")
+	sim.unlock_station("mix")
 	sim.unlock_station("topping")
 	sim.upgrade_station("topping")
 	sim.upgrade_station("topping")
@@ -38,10 +39,34 @@ func test_opening_and_unlock_validation() -> void:
 	sim.advance(80)
 	check(sim.revenue > 0 and sim.gold > 40, "real employee serves lemonade")
 	check(sim.audit().valid, "lemonade is conserved")
-	sim.revenue = 300
-	sim.gold = 240
-	check_eq(sim.unlock_station("mix"), "", "milk line unlocks together")
-	check(sim.station_unlocked("boil") and sim.station_unlocked("supply") and sim.station_unlocked("seal"), "all real milk machines become available")
+	check(not sim.unlock_station("mix").is_empty(), "milk waits for the black tea line")
+	sim.revenue = 100
+	sim.gold = 100
+	check_eq(sim.unlock_station("boil"), "", "black tea line unlocks first")
+	check(sim.station_unlocked("boil") and sim.station_unlocked("supply") and sim.station_unlocked("seal"), "cabinet, brewer and sealer open together")
+	check(not sim.station_unlocked("mix"), "milk machine stays locked")
+	check_eq(sim.gold, 0, "black tea line charges its stage price")
+	sim.revenue = 400
+	sim.gold = 200
+	check_eq(sim.unlock_station("mix"), "", "milk machine unlocks on its own")
+	check_eq(sim.stage_index, 2, "milk tea stage reached")
+
+func test_black_tea_sells_before_the_milk_machine() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.unlock_station("lemonade")
+	sim.revenue = 100
+	sim.gold = 100
+	sim.unlock_station("boil")
+	for tick in 3000:
+		sim.advance(0.1)
+		if sim.sold_by_dish.black_tea >= 3: break
+	check(sim.sold_by_dish.black_tea >= 3, "brewed tea is sealed, shelved and sold as black tea")
+	check_eq(sim.sold_by_dish.plain_milk_tea, 0, "no milk tea without the milk machine")
+	check(sim.audit().valid, "black tea is conserved")
+	var state: Dictionary = sim.to_dict()
+	var copy = make_shop()
+	check_eq(copy.load_dict(state), "", "black tea stage saves and loads")
 
 func test_collection_training_recall_and_reset() -> void:
 	var sim = make_shop()
@@ -101,7 +126,7 @@ func test_upgrades_tasks_and_malformed_load_are_atomic() -> void:
 	check_eq(sim.gold, previous - price, "resource machine price charged")
 	check_eq(sim.upgrade_material("supply", "milk"), "", "milk material upgrades")
 	check_eq(sim.upgrade_material("topping", "pearl"), "", "flavor price upgrades")
-	check(sim.task_rows().size() == 4, "all original task goals exposed")
+	check(sim.task_rows().size() == 5, "all task goals exposed, including the black tea stage")
 	var before: Dictionary = sim.to_dict()
 	check(not sim.upgrade_material("bad", "milk").is_empty(), "invalid material rejected")
 	check_eq(sim.to_dict(), before, "invalid upgrade has no mutation")
@@ -210,13 +235,13 @@ func test_opening_income_funds_the_real_production_progression() -> void:
 	if sim == null: return
 	sim.unlock_station("lemonade")
 	for tick in 60000:
-		if sim.stage_index == 0 and sim.revenue >= 300 and sim.gold >= 240: sim.unlock_station("mix")
-		if sim.stage_index == 1 and sim.revenue >= 1500 and sim.gold >= 300 and sim.sold_by_dish.plain_milk_tea >= 20: sim.unlock_station("topping")
+		for id in ["boil", "mix", "topping"]:
+			if sim.station_info(id).unlock_error.is_empty(): sim.unlock_station(id)
 		if sim.stage_index > 0 and sim.hire_cost() >= 0 and sim.gold >= sim.hire_cost():
 			sim.hire()
 			for worker in sim.roster:
 				if not worker.deployed: sim.deploy_worker(worker.id)
-		if sim.stage_index == 2 and sim.station_levels.topping < 4 and sim.station_info("topping").upgrade_error.is_empty(): sim.upgrade_station("topping")
+		if sim.stage_index == 3 and sim.station_levels.topping < 4 and sim.station_info("topping").upgrade_error.is_empty(): sim.upgrade_station("topping")
 		sim.advance(0.1)
 		var all_complete := true
 		for row in sim.task_rows(): all_complete = all_complete and row.complete
@@ -271,7 +296,7 @@ func test_shelf_capacity_is_per_flavor_and_reserves_in_flight_slots() -> void:
 	sim._generated = 13
 	var job: Dictionary = sim._candidate("carry_to_shelf", "seal", "shelf", "plain_milk_tea", sim.workers[0], 96)
 	check(job.is_empty(), "incoming same flavor holds its final shelf slot")
-	check_eq(sim.shelf_limit(), 60, "configured per-flavor capacity covers five unlocked milk flavors")
+	check_eq(sim.shelf_limit(), 72, "configured per-flavor capacity covers black tea and five milk flavors")
 	check(sim.audit().valid, "per-flavor incoming reservation is conserved")
 
 func test_unreserved_orders_leave_after_configured_patience_and_reserved_orders_finish() -> void:

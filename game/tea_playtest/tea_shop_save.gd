@@ -4,7 +4,7 @@ extends RefCounted
 
 const DEFAULT_PATH := "user://tea_shop.json"
 const FORMAT := "tea_shop"
-const VERSION := 1
+const VERSION := 2
 const SHOP_SCRIPT := "res://game/tea_playtest/tea_shop_sim.gd"
 
 var path: String

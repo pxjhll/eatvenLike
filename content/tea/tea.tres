@@ -63,6 +63,18 @@ script = ExtResource("item_def")
 id = "lemonade"
 display_name = "柠檬茶"
 
+[sub_resource type="Resource" id="item_black_tea"]
+script = ExtResource("item_def")
+id = "black_tea"
+display_name = "红茶"
+
+[sub_resource type="Resource" id="dish_black_tea"]
+script = ExtResource("dish_def")
+id = "black_tea"
+display_name = "红茶"
+item_id = "black_tea"
+price = 28
+
 [sub_resource type="Resource" id="dish_lemonade"]
 script = ExtResource("dish_def")
 id = "lemonade"
@@ -428,8 +440,8 @@ script = ExtResource("shop_config")
 id = "tea"
 display_name = "奶茶店"
 kitchen_unlock_stage = 1
-items = Array[ExtResource("item_def")]([SubResource("item_tea_leaf"), SubResource("item_milk"), SubResource("item_tea"), SubResource("item_plain_milk_tea"), SubResource("item_pearl_milk_tea"), SubResource("item_coconut_milk_tea"), SubResource("item_redbean_milk_tea"), SubResource("item_taro_milk_tea"), SubResource("item_lemonade")])
-dishes = Array[ExtResource("dish_def")]([SubResource("dish_lemonade"), SubResource("dish_plain_milk_tea"), SubResource("dish_pearl_milk_tea"), SubResource("dish_coconut_milk_tea"), SubResource("dish_redbean_milk_tea"), SubResource("dish_taro_milk_tea")])
+items = Array[ExtResource("item_def")]([SubResource("item_tea_leaf"), SubResource("item_milk"), SubResource("item_tea"), SubResource("item_plain_milk_tea"), SubResource("item_pearl_milk_tea"), SubResource("item_coconut_milk_tea"), SubResource("item_redbean_milk_tea"), SubResource("item_taro_milk_tea"), SubResource("item_lemonade"), SubResource("item_black_tea")])
+dishes = Array[ExtResource("dish_def")]([SubResource("dish_lemonade"), SubResource("dish_plain_milk_tea"), SubResource("dish_pearl_milk_tea"), SubResource("dish_coconut_milk_tea"), SubResource("dish_redbean_milk_tea"), SubResource("dish_taro_milk_tea"), SubResource("dish_black_tea")])
 slots = Array[ExtResource("slot_def")]([SubResource("slot_cabinet"), SubResource("slot_brewer"), SubResource("slot_milk_station"), SubResource("slot_topping")])
 connections = Array[ExtResource("connection_def")]([SubResource("conn_cabinet_to_brewer"), SubResource("conn_cabinet_to_milk"), SubResource("conn_brewer_to_milk"), SubResource("conn_milk_to_shelf"), SubResource("conn_milk_to_topping"), SubResource("conn_topping_to_shelf")])
 belt_speed = 3.0
