@@ -48,9 +48,11 @@ func geo(first: float, ratio: float, n: int) -> Array:
 	for i in n: out.append(int(round(first * pow(ratio, i) / 5.0) * 5))
 	return out
 
+var skip_boil := false
 func options(sim) -> Array:
 	var out := []
 	for id in ["lemonade", "boil", "mix", "topping", "supply"]:
+		if skip_boil and id == "boil": continue
 		var info = sim.station_info(id)
 		if not info.unlocked: continue
 		if info.upgrade_cost > 0 and info.upgrade_error in ["", "金币不足，需要 %d" % info.upgrade_cost]:
@@ -133,9 +135,12 @@ func run(label: String, limit: float, buy: bool) -> void:
 func _init() -> void:
 	var brewer = station_def("brewer")
 	var L := 1800.0
-	for sec in [7.0, 16.0, 24.0, 32.0]:
+	var fast: Array[float] = [1.0, 1.2, 1.4, 1.65, 1.9, 2.2, 2.5, 2.9, 3.4, 4.0]
+	brewer.art_speeds = fast
+	for sec in [40.0, 50.0, 60.0]:
 		brewer.art_seconds = sec
-		run("两种升级：煮茶机开局每锅 %d 秒" % int(sec), L, true)
-	brewer.art_seconds = 24.0
-	run("煮茶机 24 秒，不买升级", L, false)
+		skip_boil = false
+		run("煮茶机开局每锅 %d 秒，满级 ×4" % int(sec), L, true)
+		skip_boil = true
+		run("  同上但从不升煮茶机", L, true)
 	quit()

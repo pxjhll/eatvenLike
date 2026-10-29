@@ -339,7 +339,7 @@ func station_info(requested: String) -> Dictionary:
 				"base_price": _base_price(material.item_id)}
 			if _art_mode(material): row.merge(_price_preview(material.art_price_dishes, material.art_price_step, mat_level < mat_max))
 			materials.append(row)
-	var descriptions := {"supply": "茶叶、牛奶升级成好原料，提高售价", "boil": "人工装料、煮茶、取茶；每批 3 份，升级煮得更快", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "seal": "自动封口：茶汤封成红茶，奶茶保留实际口味", "lemonade": "服务员到展示柜现取柠檬茶", "counter": "交付真实订单后获得收入"}
+	var descriptions := {"supply": "茶叶、牛奶升级提高售价", "boil": "人工装料、煮茶、取茶；每批 3 份，升级煮得更快", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "seal": "自动封口：茶汤封成红茶，奶茶保留实际口味", "lemonade": "服务员到展示柜现取柠檬茶", "counter": "交付真实订单后获得收入"}
 	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "加料速度", "lemonade": "售价"}
 	var speeds: Array = [1.0]
 	if definition != null: speeds = definition.art_speeds if _art_mode(definition) and not definition.art_speeds.is_empty() else definition.level_speed
