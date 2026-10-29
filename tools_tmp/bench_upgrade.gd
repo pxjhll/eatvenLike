@@ -1,5 +1,5 @@
 extends SceneTree
-const USim = preload("res://tools_tmp/upgrade_sim.gd")
+const USim = preload("res://game/tea_playtest/tea_shop_sim.gd")
 const CFG = preload("res://content/tea/tea.tres")
 const HAUL := ["load_boil", "unload_boil", "transfer_to_topping", "carry_to_seal", "load_seal_belt", "carry_to_shelf", "load_shelf_belt"]
 const MANUAL := ["brew_start", "brew_take", "topping"]
@@ -130,23 +130,12 @@ func run(label: String, limit: float, buy: bool) -> void:
 	print("  末价 柠/红/原/珍/芋 ", "/".join(prices), "  末300秒人工 ", ", ".join(lp))
 	print("  等级 ", sim.station_levels, " ", sim.material_levels, " 员工Lv ", sim.workers.map(func(w): return w.level))
 
-func setup_a2(pct: float) -> void:
-	USim.V = {"price": true, "pct": {"lemonade": pct, "boil": pct, "mix": pct, "tea_leaf": pct, "milk": pct}}
-	set_station("lemonade_stand", geo(20, 1.4, 9), false)
-	set_station("brewer", geo(60, 1.35, 9), false)
-	set_station("milk_station", geo(80, 1.35, 9), false)
-	set_station("cabinet", [], false)
-	set_material("cabinet", "tea_leaf", geo(50, 1.5, 4))
-	set_material("cabinet", "milk", geo(60, 1.5, 4))
-
 func _init() -> void:
-	snapshot()
+	var brewer = station_def("brewer")
 	var L := 1800.0
-	for pct in [0.06, 0.08]:
-		setup_a2(pct)
-		run("A2 加价型 10级 每级+%d%%" % int(pct * 100), L, true)
-	setup_a2(0.06)
-	USim.V.batch = [5, 10]
-	run("A2+B 6%% + 煮茶锅Lv5/Lv10 批量+1", L, true)
-	restore()
+	for sec in [7.0, 16.0, 24.0, 32.0]:
+		brewer.art_seconds = sec
+		run("两种升级：煮茶机开局每锅 %d 秒" % int(sec), L, true)
+	brewer.art_seconds = 24.0
+	run("煮茶机 24 秒，不买升级", L, false)
 	quit()

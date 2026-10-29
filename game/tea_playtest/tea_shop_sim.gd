@@ -255,21 +255,45 @@ func unlock_station(requested: String) -> String:
 	_event("unlocked", station_info(id).name + "已解锁")
 	return ""
 
+## Timed machines (brewer) upgrade speed; the rest raise the price of the cups they touch.
+## The cabinet body has no upgrade (its ingredient slots carry the price). Topping keeps speed + flavors.
+func _art_mode(definition) -> bool:
+	return definition != null and not definition.art_costs.is_empty()
+
+func _upgrade_costs(id: String) -> Array:
+	var definition = _definition(id)
+	if definition == null or id == "supply": return []
+	return definition.art_costs if _art_mode(definition) else definition.upgrade_costs
+
+func _max_level(id: String) -> int:
+	var definition = _definition(id)
+	if definition == null: return 1
+	if _art_mode(definition) or id == "supply": return _upgrade_costs(id).size() + 1
+	return mini(definition.level_speed.size(), definition.upgrade_costs.size() + 1)
+
+func _material_costs(id: String, material: String) -> Array:
+	var definition = _definition(id).material(material)
+	return definition.art_costs if _art_mode(definition) else definition.upgrade_costs
+
+func _material_max(id: String, material: String) -> int:
+	var definition = _definition(id).material(material)
+	return definition.art_costs.size() + 1 if _art_mode(definition) else definition.max_level()
+
 func _upgrade_error(id: String) -> String:
 	if not id in MACHINE_IDS: return "未知设备"
 	if not station_unlocked(id): return "请先解锁设备"
 	var definition = _definition(id)
-	if definition == null: return "设备无需升级"
+	if definition == null or _upgrade_costs(id).is_empty(): return "设备无需升级"
 	var level: int = station_levels[id]
-	if level > definition.upgrade_costs.size() or level >= definition.level_speed.size(): return "设备已满级"
-	if gold < definition.upgrade_costs[level - 1]: return "金币不足，需要 %d" % definition.upgrade_costs[level - 1]
+	if level >= _max_level(id): return "设备已满级"
+	if gold < _upgrade_costs(id)[level - 1]: return "金币不足，需要 %d" % _upgrade_costs(id)[level - 1]
 	return ""
 
 func upgrade_station(requested: String) -> String:
 	var id := _canonical(requested)
 	var error := _upgrade_error(id)
 	if not error.is_empty(): return error
-	gold -= _definition(id).upgrade_costs[station_levels[id] - 1]
+	gold -= _upgrade_costs(id)[station_levels[id] - 1]
 	station_levels[id] += 1
 	_event("upgraded", station_info(id).name + "已升级")
 	return ""
@@ -280,8 +304,9 @@ func _material_error(id: String, material: String) -> String:
 	var definition = _definition(id).material(material)
 	if station_levels[id] < definition.unlock_level: return "设备需升到 Lv%d" % definition.unlock_level
 	var level: int = material_levels[id][material]
-	if level >= definition.max_level(): return "配料已满级"
-	if gold < definition.upgrade_costs[level - 1]: return "金币不足，需要 %d" % definition.upgrade_costs[level - 1]
+	if level >= _material_max(id, material): return "配料已满级"
+	var costs := _material_costs(id, material)
+	if gold < costs[level - 1]: return "金币不足，需要 %d" % costs[level - 1]
 	return ""
 
 func upgrade_material(requested: String, material: String) -> String:
@@ -289,7 +314,7 @@ func upgrade_material(requested: String, material: String) -> String:
 	var error := _material_error(id, material)
 	if not error.is_empty(): return error
 	var definition = _definition(id).material(material)
-	gold -= definition.upgrade_costs[material_levels[id][material] - 1]
+	gold -= _material_costs(id, material)[material_levels[id][material] - 1]
 	material_levels[id][material] += 1
 	_event("material_upgraded", definition.display_name + "已升级")
 	return ""
@@ -300,19 +325,24 @@ func station_info(requested: String) -> Dictionary:
 	var level: int = station_levels.get(id, 1)
 	var name: String = definition.display_name if definition != null else ("封口机" if id == "seal" else "未知设备")
 	var upgrade_cost := -1
-	if definition != null and level <= definition.upgrade_costs.size(): upgrade_cost = definition.upgrade_costs[level - 1]
+	if level < _max_level(id): upgrade_cost = _upgrade_costs(id)[level - 1]
 	var materials: Array = []
 	if definition != null:
 		for material in definition.materials:
 			var mat_level: int = material_levels[id][material.id]
-			materials.append({"id": material.id, "name": material.display_name, "level": mat_level,
-				"upgrade_cost": material.upgrade_costs[mat_level - 1] if mat_level <= material.upgrade_costs.size() else -1,
+			var mat_costs := _material_costs(id, material.id)
+			var mat_max := _material_max(id, material.id)
+			var row := {"id": material.id, "name": material.display_name, "level": mat_level,
+				"upgrade_cost": mat_costs[mat_level - 1] if mat_level < mat_max else -1,
 				"upgrade_error": _material_error(id, material.id), "unlock_level": material.unlock_level,
 				"bonus": material.bonus(mat_level), "next_bonus": material.bonus(mat_level + 1) if mat_level < material.max_level() else -1.0,
-				"base_price": _base_price(material.item_id)})
-	var descriptions := {"supply": "茶叶、牛奶升级提高真实加工效率", "boil": "人工装料、煮茶、取茶；每批 3 份", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "seal": "自动封口：茶汤封成红茶，奶茶保留实际口味", "lemonade": "服务员到展示柜现取柠檬茶", "counter": "交付真实订单后获得收入"}
-	var effects := {"supply": "补货速度", "boil": "煮茶速度", "mix": "调奶速度", "topping": "加料速度", "lemonade": "出杯速度"}
-	var speeds: Array = definition.level_speed if definition != null else [1.0]
+				"base_price": _base_price(material.item_id)}
+			if _art_mode(material): row.merge(_price_preview(material.art_price_dishes, material.art_price_step, mat_level < mat_max))
+			materials.append(row)
+	var descriptions := {"supply": "茶叶、牛奶升级成好原料，提高售价", "boil": "人工装料、煮茶、取茶；每批 3 份，升级煮得更快", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "seal": "自动封口：茶汤封成红茶，奶茶保留实际口味", "lemonade": "服务员到展示柜现取柠檬茶", "counter": "交付真实订单后获得收入"}
+	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "加料速度", "lemonade": "售价"}
+	var speeds: Array = [1.0]
+	if definition != null: speeds = definition.art_speeds if _art_mode(definition) and not definition.art_speeds.is_empty() else definition.level_speed
 	var next_flavor := ""
 	if definition != null:
 		for material in definition.materials:
@@ -328,7 +358,27 @@ func station_info(requested: String) -> Dictionary:
 		"next_speed": speeds[level] if upgrade_cost >= 0 and level < speeds.size() else -1.0, "next_unlock": next_flavor,
 		"unlock_revenue": PROGRESSION.stages[stage].revenue_threshold if stage > 0 else 0,
 		"line_name": PROGRESSION.stages[stage].line_name if stage > 0 else name, "line_members": line,
-		"dish_name": dish_name(PROGRESSION.stages[stage].dish_id), "dish_price": _base_price(PROGRESSION.stages[stage].dish_id)}
+		"dish_name": dish_name(PROGRESSION.stages[stage].dish_id), "dish_price": _base_price(PROGRESSION.stages[stage].dish_id),
+		"price": _price_preview(definition.art_price_dishes, definition.art_price_step, upgrade_cost >= 0) if _art_mode(definition) and definition.art_price_step > 0 else {},
+		"seconds": definition.art_seconds / speeds[level - 1] if _art_mode(definition) and definition.art_seconds > 0 else -1.0,
+		"next_seconds": definition.art_seconds / speeds[level] if _art_mode(definition) and definition.art_seconds > 0 and upgrade_cost >= 0 else -1.0}
+
+## What one more level is worth, shown on a sample cup the player already sells.
+func _price_preview(dishes: Array, step: float, has_next: bool) -> Dictionary:
+	var sample := ""
+	for dish in ["lemonade", "black_tea", "plain_milk_tea"]:
+		if dish in dishes: sample = dish
+	for dish in ["plain_milk_tea", "black_tea", "lemonade"]:
+		if dish in dishes and _dish_unlocked(dish):
+			sample = dish
+			break
+	var names: Array = []
+	if "lemonade" in dishes: names.append("柠檬茶")
+	if "black_tea" in dishes: names.append("红茶")
+	if "plain_milk_tea" in dishes: names.append("奶茶")
+	var now := _dish_price(sample)
+	return {"scope": "、".join(names), "step": roundi(step * 100), "sample": dish_name(sample),
+		"now": now, "next": now + roundi(_base_price(sample) * step) if has_next else -1}
 
 func _base_price(dish: String) -> int:
 	for definition in CONFIG.dishes:
@@ -370,14 +420,19 @@ func current_goal() -> String:
 
 func _speed(id: String) -> float:
 	var definition = _definition(id)
-	return 1.0 if definition == null else definition.level_speed[station_levels[id] - 1]
+	if definition == null or id == "supply": return 1.0
+	if _art_mode(definition): return 1.0 if definition.art_speeds.is_empty() else definition.art_speeds[station_levels[id] - 1]
+	return definition.level_speed[station_levels[id] - 1]
 
 func _material_bonus(id: String, material: String) -> float:
-	return _definition(id).material(material).bonus(material_levels[id][material])
+	var definition = _definition(id).material(material)
+	return 1.0 if _art_mode(definition) else definition.bonus(material_levels[id][material])
 
 func _machine_duration(key: String) -> float:
 	match key:
-		"boil": return 7.0 / _speed("boil") / _speed("supply") / _material_bonus("supply", "tea_leaf")
+		"boil":
+			var seconds: float = _definition("boil").art_seconds
+			return (seconds if seconds > 0 else 7.0) / _speed("boil") / _speed("supply") / _material_bonus("supply", "tea_leaf")
 		"mix": return 4.0 / _speed("mix") / _material_bonus("supply", "milk")
 	return 3.0
 
@@ -632,12 +687,17 @@ func _cancel_job(worker: Dictionary) -> void:
 	super._cancel_job(worker)
 
 func _dish_price(dish: String) -> int:
-	var price := 0
-	for definition in CONFIG.dishes:
-		if definition.id == dish: price = definition.price
+	var price := _base_price(dish)
+	var bonus := 0.0
+	for id in ["lemonade", "boil", "mix", "supply"]:
+		var definition = _definition(id)
+		if _art_mode(definition) and dish in definition.art_price_dishes: bonus += definition.art_price_step * (station_levels[id] - 1)
+		for material in definition.materials:
+			if _art_mode(material) and dish in material.art_price_dishes: bonus += material.art_price_step * (material_levels[id][material.id] - 1)
+	var flavor := 1.0
 	for material in _definition("topping").materials:
-		if material.item_id == dish: return roundi(price * _material_bonus("topping", material.id))
-	return price
+		if material.item_id == dish: flavor = _material_bonus("topping", material.id)
+	return roundi(price * (1.0 + bonus) * flavor)
 
 func _record_sale(job: Dictionary) -> void:
 	sold += job.count
@@ -763,7 +823,8 @@ func _validate_state(state: Dictionary) -> String:
 	if not _same_shape(state.material_levels, template.material_levels): return "配料字段无效"
 	for id in MACHINE_IDS:
 		var definition = _definition(id)
-		var max_level: int = definition.level_speed.size() if definition != null else 1
+		# Saves from before price upgrades may hold old speed levels (e.g. cabinet Lv3).
+		var max_level := maxi(_max_level(id), definition.level_speed.size() if definition != null else 1)
 		if state.station_levels[id] < 1 or state.station_levels[id] > max_level: return "设备等级无效"
 		var expected_unlock: bool = id == "counter" or (id == "lemonade" and state.unlocked_stations.lemonade) or (_unlock_stage(id) > 0 and state.stage_index >= _unlock_stage(id))
 		if state.unlocked_stations[id] != expected_unlock: return "设备解锁状态无效"
@@ -771,7 +832,7 @@ func _validate_state(state: Dictionary) -> String:
 	for id in state.material_levels:
 		for material in state.material_levels[id]:
 			var level: int = state.material_levels[id][material]
-			if level < 1 or level > _definition(id).material(material).max_level(): return "配料等级无效"
+			if level < 1 or level > _material_max(id, material): return "配料等级无效"
 	if not _same_shape(state.shelf_stock, template.shelf_stock) or not _counts(state.shelf_stock, DISHES): return "货架口味无效"
 	if not _same_shape(state.sold_by_dish, template.sold_by_dish) or not _counts(state.sold_by_dish, DISHES): return "销量无效"
 	var sale_total := 0

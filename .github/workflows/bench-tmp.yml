@@ -17,3 +17,9 @@ jobs:
       - run: ./godot --headless --path . --import
       - name: Bench
         run: timeout 600s ./godot --headless --path . -s tools_tmp/bench_upgrade.gd
+      - name: Tests
+        if: always()
+        run: timeout 120s ./godot --headless --path . -s tests/run_all.gd
+      - name: Business UI
+        if: always()
+        run: timeout 45s ./godot --headless --path . -s tests/render_tea_business.gd

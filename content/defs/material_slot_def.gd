@@ -11,6 +11,10 @@ extends Resource
 @export var unlock_level: int = 1
 ## 下标 i = 从 Lv(i+1) 升到 Lv(i+2) 的价格
 @export var upgrade_costs: Array[int] = []
+## 美术店加价升级（同 StationDef.art_*）：art_costs 非空时用这一套、不再影响速度
+@export var art_costs: Array[int] = []
+@export var art_price_step: float = 0.0
+@export var art_price_dishes: Array[String] = []
 ## 每级倍率，下标 0 = Lv1。原料柜 = 这种原料的出货速度；加料机 = 这个口味的售价
 @export var level_bonus: Array[float] = [1.0]
 
