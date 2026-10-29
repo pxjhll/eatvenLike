@@ -120,8 +120,8 @@ metadata/art_layer = "equipment"
 metadata/asset_id = "pearl_pot"
 
 [node name="Sprite" type="Sprite2D" parent="Sortables/MachineTable/PearlPot" unique_id=762927150]
-position = Vector2(-96, -155)
-scale = Vector2(0.390428, 0.390428)
+position = Vector2(-82, -133.5)
+scale = Vector2(0.390244, 0.390244)
 texture = ExtResource("7_vlf75")
 centered = false
 
