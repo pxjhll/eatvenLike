@@ -130,24 +130,23 @@ func run(label: String, limit: float, buy: bool) -> void:
 	print("  末价 柠/红/原/珍/芋 ", "/".join(prices), "  末300秒人工 ", ", ".join(lp))
 	print("  等级 ", sim.station_levels, " ", sim.material_levels, " 员工Lv ", sim.workers.map(func(w): return w.level))
 
+func setup_a2(pct: float) -> void:
+	USim.V = {"price": true, "pct": {"lemonade": pct, "boil": pct, "mix": pct, "tea_leaf": pct, "milk": pct}}
+	set_station("lemonade_stand", geo(20, 1.4, 9), false)
+	set_station("brewer", geo(60, 1.35, 9), false)
+	set_station("milk_station", geo(80, 1.35, 9), false)
+	set_station("cabinet", [], false)
+	set_material("cabinet", "tea_leaf", geo(50, 1.5, 4))
+	set_material("cabinet", "milk", geo(60, 1.5, 4))
+
 func _init() -> void:
 	snapshot()
 	var L := 1800.0
-	USim.V = {}
-	run("0 现状：不买升级", L, false)
-	run("1 现状：买最便宜升级", L, true)
-	# A 加价型
-	USim.V = {"price": true, "pct": {"lemonade": 0.10, "boil": 0.10, "mix": 0.10, "tea_leaf": 0.10, "milk": 0.10}}
-	set_station("lemonade_stand", [20, 30, 45, 70, 100, 150, 220], false)
-	set_station("brewer", [60, 110, 180, 280, 420], false)
-	set_station("milk_station", [80, 140, 220, 340, 500], false)
-	set_station("cabinet", [], false)
-	set_material("cabinet", "tea_leaf", [50, 100, 180])
-	set_material("cabinet", "milk", [60, 120, 200])
-	run("A 加价型(每级+10%%底价)", L, true)
-	USim.V.batch = [3, 5]
-	run("A+B 加价+煮茶锅Lv3/Lv5 批量+1", L, true)
-	USim.V = {"batch": [3, 5]}
+	for pct in [0.06, 0.08]:
+		setup_a2(pct)
+		run("A2 加价型 10级 每级+%d%%" % int(pct * 100), L, true)
+	setup_a2(0.06)
+	USim.V.batch = [5, 10]
+	run("A2+B 6%% + 煮茶锅Lv5/Lv10 批量+1", L, true)
 	restore()
-	run("B 只加批量(其余同现状)", L, true)
 	quit()
