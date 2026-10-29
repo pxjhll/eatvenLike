@@ -61,7 +61,7 @@ func _run() -> void:
 	_check(hud.station_panel.station_id == "supply", "unlocked device artwork opens its own material panel")
 	gold = view.sim.gold
 	await _click(hud.station_panel.material_buttons.tea_leaf)
-	_check(view.sim.material_levels.supply.tea_leaf == 2 and view.sim.gold == gold - 40, "raw material panel upgrades real production efficiency")
+	_check(view.sim.material_levels.supply.tea_leaf == 2 and view.sim.gold == gold - 50, "raw material panel upgrades the price of tea drinks")
 	await _capture("materials")
 	await _click(hud.home_button)
 	await _click(view._station_buttons.topping)

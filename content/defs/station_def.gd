@@ -39,6 +39,15 @@ enum Mode { AUTO, COOP, MANUAL, SUPPLY, DISPENSER, TOPPING }
 @export var dishes: Array[String] = []
 ## 物料槽：SUPPLY = 原料柜的各原料（每种单独计时、单独出货）；TOPPING = 加料机的各配料
 @export var materials: Array[MaterialSlotDef] = []
+## 美术店升级（旧版 GameSim 不读这几项）。art_costs 非空时美术店改用这一套：
+## 下标 i = 从 Lv(i+1) 升到 Lv(i+2) 的价格
+@export var art_costs: Array[int] = []
+## 加价：每升 1 级，art_price_dishes 里的饮品每杯 +底价 × art_price_step（多台机器相加，不连乘）
+@export var art_price_step: float = 0.0
+@export var art_price_dishes: Array[String] = []
+## 提速：机器做一批的秒数（Lv1），和每级速度倍率（下标 0 = Lv1，长度 = art_costs + 1）
+@export var art_seconds: float = 0.0
+@export var art_speeds: Array[float] = []
 ## TOPPING：每个口味在货架上最多几杯（含传送带上和机器里的）
 @export var flavor_cap: int = 0
 

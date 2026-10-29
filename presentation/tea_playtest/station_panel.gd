@@ -91,18 +91,26 @@ func _refresh_upgrade(info: Dictionary) -> void:
 	var cost := int(info.get("upgrade_cost", -1))
 	var effect := String(info.get("effect", ""))
 	upgrade_button.visible = not effect.is_empty()
+	var price: Dictionary = info.get("price", {})
 	if effect.is_empty():
 		_upgrade_title.text = "自动设备"
-		_upgrade_effect.text = "不用人管，无需升级"
+		_upgrade_effect.text = "本体无需升级，升级下面的原料" if not info.get("materials", []).is_empty() else "不用人管，无需升级"
 		return
 	if cost < 0:
 		_upgrade_title.text = "已满级 Lv%d" % level
-		_upgrade_effect.text = "%s ×%.2f" % [effect, info.speed]
+		if not price.is_empty(): _upgrade_effect.text = "%s %d 金" % [price.sample, price.now]
+		elif float(info.get("seconds", -1.0)) > 0: _upgrade_effect.text = "每批 %.1f 秒" % info.seconds
+		else: _upgrade_effect.text = "%s ×%.2f" % [effect, info.speed]
 		upgrade_button.text = "满级"
 		upgrade_button.disabled = true
 		return
 	_upgrade_title.text = "设备升级 Lv%d → Lv%d" % [level, level + 1]
-	_upgrade_effect.text = "%s ×%.2f → ×%.2f" % [effect, info.speed, info.next_speed]
+	if not price.is_empty():
+		_upgrade_effect.text = "%s每杯 +%d%% · %s %d → %d 金" % [price.scope, price.step, price.sample, price.now, price.next]
+	elif float(info.get("seconds", -1.0)) > 0:
+		_upgrade_effect.text = "%s · 每批 %.1f → %.1f 秒" % [effect, info.seconds, info.next_seconds]
+	else:
+		_upgrade_effect.text = "%s ×%.2f → ×%.2f" % [effect, info.speed, info.next_speed]
 	if not String(info.get("next_unlock", "")).is_empty():
 		_upgrade_effect.text += " · 开放" + info.next_unlock
 	upgrade_button.text = "%d 金币" % cost
@@ -127,8 +135,8 @@ func _refresh_materials(info: Dictionary) -> void:
 			material_buttons[row.id] = _buy_button(line, _view.station_action.bind("material", station_id, String(row.id)))
 		_material_signature = signature
 		_hud._sheet_height = -1.0
-	var priced := materials.any(func(row: Dictionary) -> bool: return int(row.get("base_price", 0)) > 0)
-	_material_title.text = "配料 · 升级提高售价" if priced else "原料 · 升级提高效率"
+	var flavors := materials.any(func(row: Dictionary) -> bool: return int(row.get("base_price", 0)) > 0)
+	_material_title.text = "配料 · 升级提高售价" if flavors else "原料 · 升级提高售价"
 	_material_title.visible = not materials.is_empty()
 	_materials.visible = not materials.is_empty()
 	for row in materials:
@@ -147,6 +155,11 @@ func _refresh_materials(info: Dictionary) -> void:
 			button.disabled = true
 			continue
 		nodes.name.text = "%s Lv%d" % [row.name, row.level]
+		if row.has("now"):
+			nodes.effect.text = "%s每杯 +%d%% · %s %d 金" % [row.scope, row.step, row.sample, row.now] if cost < 0 else "%s每杯 +%d%% · %s %d → %d 金" % [row.scope, row.step, row.sample, row.now, row.next]
+			button.text = "满级" if cost < 0 else "%d 金币" % cost
+			button.disabled = cost < 0 or not String(row.get("upgrade_error", "")).is_empty()
+			continue
 		if cost < 0 or float(row.get("next_bonus", -1.0)) < 0:
 			nodes.effect.text = label + describe.call(float(row.bonus))
 			button.text = "满级"
