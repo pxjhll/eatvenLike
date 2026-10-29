@@ -109,8 +109,8 @@ func _build_probe() -> void:
 	var sprite := Sprite2D.new()
 	sprite.texture = load("res://art/reference/cat.png")
 	sprite.centered = false
-	sprite.scale = Vector2(104, 140) / sprite.texture.get_size()
-	sprite.position = Vector2(-52, -140)
+	sprite.scale = Vector2.ONE * 140.0 / sprite.texture.get_height()
+	sprite.position = Vector2(-sprite.texture.get_width() * sprite.scale.x / 2.0, -140)
 	_probe.add_child(sprite)
 
 

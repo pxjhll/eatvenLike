@@ -234,7 +234,7 @@
       ],
       "after": [
         717,
-        180
+        208
       ],
       "bytes_before": 691001,
       "sha256_before": "714adf7429edb8fb625f8249f559592dfa060f8731e3a1f541fbae23645ba05c",
@@ -338,8 +338,8 @@
         410
       ],
       "after": [
-        523,
-        397
+        451,
+        342
       ],
       "bytes_before": 243177,
       "sha256_before": "96ee8705852353f956c92fcf1652d5c398723a844596f43d156f98abf308ec86",
@@ -975,5 +975,43 @@
         1046.9999601
       ]
     }
-  ]
+  ],
+  "perspective_revision": {
+    "date": "2026-10-29",
+    "reason": "Round props were stretched non-uniformly, which changed their apparent camera angle; they now use one uniform scale and keep their bottom-centre anchor. The sealer anchor moved to its front edge so cups entering it are hidden. The machine table top face was too shallow for the machines standing on it; its master was deepened by 1.32x so the top reaches the back wall.",
+    "nodes": [
+      "Sortables/BeltCupA/Sprite",
+      "Sortables/BeltCupB/Sprite",
+      "Sortables/BeltCupC/Sprite",
+      "Sortables/BeltCupD/Sprite",
+      "Sortables/Cat/Sprite",
+      "Sortables/DisplayCase/DisplayCreamA/Sprite",
+      "Sortables/DisplayCase/DisplayCreamB/Sprite",
+      "Sortables/DisplayCase/DisplayFruitA/Sprite",
+      "Sortables/DisplayCase/DisplayFruitB/Sprite",
+      "Sortables/DisplayCase/DisplayPearlA/Sprite",
+      "Sortables/DisplayCase/DisplayPearlB/Sprite",
+      "Sortables/Fox/Sprite",
+      "Sortables/Hamster/Sprite",
+      "Sortables/IngredientTable/MilkBottle/Sprite",
+      "Sortables/IngredientTable/PearlJar/Sprite",
+      "Sortables/IngredientTable/TeaTin/Sprite",
+      "Sortables/MachineTable/Brewer",
+      "Sortables/MachineTable/Brewer/Sprite",
+      "Sortables/MachineTable/PearlPot/Sprite",
+      "Sortables/MachineTable/Sprite",
+      "Sortables/Raccoon/Sprite",
+      "Sortables/Rack/RackCupA/Sprite",
+      "Sortables/Rack/RackCupB/Sprite",
+      "Sortables/Rack/RackCupC/Sprite",
+      "Sortables/Rack/RackCupD/Sprite",
+      "Sortables/Rack/RackCupE/Sprite",
+      "Sortables/Rack/RackCupF/Sprite",
+      "Sortables/SealedCup/Sprite",
+      "Sortables/Sealer",
+      "Sortables/Sealer/Sprite",
+      "Sortables/SealingCup/Sprite",
+      "Sortables/Squirrel/Sprite"
+    ]
+  }
 }
