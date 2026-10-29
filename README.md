@@ -31,6 +31,10 @@ godot --headless --path . -s tests/run_all.gd
 godot --path .
 ```
 
+## 网页试玩版（Cloudflare Pages）
+
+`.github/workflows/deploy-web.yml`：合进 main 或在 Actions 页手动运行时，用 Godot 4.7 导出 Web（单线程，不需要 COOP/COEP），跑 `tools/prepare_web_export.py` 压缩 wasm（Pages 单文件上限 25 MiB），再用 wrangler 发布到 Pages 项目 `eatvenlike`。需要仓库 Secrets `CLOUDFLARE_API_TOKEN`（Cloudflare Pages: Edit 权限）和 `CLOUDFLARE_ACCOUNT_ID`；没配时只导出，产物在 Actions 的 `web-build` 里。
+
 ## 奶茶店这家店（首店）
 
 | 东西 | 怎么来的 | 占位数字 |
