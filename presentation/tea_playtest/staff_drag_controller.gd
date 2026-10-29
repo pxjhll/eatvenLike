@@ -14,6 +14,7 @@ var _grab_offset := Vector2.ZERO
 var _ghost: Node2D
 var _touch_index := -1
 var _source_card := -1
+var _hint := ""
 
 
 func setup(view: Node2D) -> void:
@@ -143,10 +144,15 @@ func _update_ghost() -> void:
 	if not error.is_empty():
 		worker.task_label = _error_text(error)
 	elif target.get("kind", "") == "post":
-		worker.task_label = "坐班：" + POST_NAMES[target.post]
+		worker.task_label = "坐班" + POST_NAMES[target.post]
 	else:
-		worker.task_label = "流动：松手解除坐班"
+		worker.task_label = "恢复流动"
 	_ghost.display(worker, _view.sim.elapsed)
+	# The release outcome is also spelled out at the top, where the finger does not cover it.
+	var hint: String = ("松手：" + worker.task_label) if error.is_empty() else worker.task_label
+	if hint != _hint:
+		_hint = hint
+		_view._show_toast(hint)
 
 
 func _process(_delta: float) -> void:
@@ -198,6 +204,9 @@ func _release(screen: Vector2) -> void:
 
 
 func cancel() -> void:
+	if is_instance_valid(_view) and not _hint.is_empty() and _view._toast.text == _hint:
+		_view._toast_left = 0.0
+	_hint = ""
 	if is_instance_valid(_view) and _source_card >= 0 and _source_card < _view._staff_cards.size():
 		_view._staff_cards[_source_card].disabled = false
 	_source_card = -1

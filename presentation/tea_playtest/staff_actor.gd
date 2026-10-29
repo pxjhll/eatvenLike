@@ -22,11 +22,18 @@ var _last_pos := Vector2.ZERO
 var _base_scale := Vector2.ONE
 var _font: Font
 var _art := ""
+var _height := 128.0
+## A customer's order bubble: the drink they want and how much patience is left (-1 = no limit).
+var _order_item := ""
+var _patience := -1.0
+var _order_cup := Sprite2D.new()
+var _bubble := StyleBoxFlat.new()
 
 
 func setup(art_id: String, font: Font, height := 128.0) -> void:
 	_font = font
 	_art = art_id
+	_height = height
 	body.texture = load("res://art/reference/" + art_id + ".png")
 	_base_scale = Vector2.ONE * height / body.texture.get_height()
 	body.scale = _base_scale
@@ -52,6 +59,25 @@ func setup(art_id: String, font: Font, height := 128.0) -> void:
 	task.add_theme_color_override("font_outline_color", Color("fff1d8"))
 	task.add_theme_constant_override("outline_size", 5)
 	add_child(task)
+	_order_cup.centered = false
+	_order_cup.visible = false
+	add_child(_order_cup)
+	_bubble.bg_color = Color("fff8ec")
+	_bubble.border_color = Color("b38c62")
+	_bubble.set_border_width_all(2)
+	_bubble.set_corner_radius_all(14)
+
+
+func show_order(item: String, patience: float) -> void:
+	_order_item = item
+	_patience = patience
+	task.visible = false
+	var texture: Texture2D = load("res://art/reference/" + item_asset(item) + ".png")
+	_order_cup.texture = texture
+	_order_cup.modulate = item_color(item)
+	_order_cup.scale = Vector2.ONE * 36.0 / texture.get_height()
+	_order_cup.position = Vector2(-40, -_height - 58)
+	_order_cup.visible = true
 
 
 func display(worker: Dictionary, clock: float) -> void:
@@ -99,3 +125,13 @@ func _draw() -> void:
 	if selected:
 		draw_arc(Vector2.ZERO, 31, 0, TAU, 40, Color("e6b94f"), 6, true)
 	draw_set_transform(Vector2.ZERO)
+	if _order_item.is_empty():
+		return
+	var top := -_height - 64.0
+	draw_style_box(_bubble, Rect2(-48, top, 96, 48))
+	draw_colored_polygon(PackedVector2Array([Vector2(-8, top + 46), Vector2(8, top + 46), Vector2(0, top + 58)]), _bubble.bg_color)
+	if _patience >= 0:
+		var fill := clampf(_patience, 0.0, 1.0)
+		var color := Color("6b8f4e") if fill > 0.6 else Color("d08a2e") if fill > 0.3 else Color("b4482f")
+		draw_rect(Rect2(-4, top + 19, 42, 10), Color("efe3cc"))
+		draw_rect(Rect2(-4, top + 19, 42 * fill, 10), color)
