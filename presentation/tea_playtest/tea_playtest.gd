@@ -5,10 +5,9 @@ const Sim := preload("res://game/tea_playtest/tea_playtest_sim.gd")
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const DragController := preload("res://presentation/tea_playtest/staff_drag_controller.gd")
-const ROLE_NAMES := {"speed": "速度型", "carry": "力量型", "skill": "操作型"}
 const ART_NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸"}
 const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "seal": "自动封口"}
-const BADGES := {"boil": Vector2(255, 99), "mix": Vector2(416, 99), "topping": Vector2(30, 607), "seal": Vector2(547, 172)}
+const BADGES := {"boil": Vector2(255, 105), "mix": Vector2(416, 105), "topping": Vector2(30, 607), "seal": Vector2(547, 172)}
 var sim: RefCounted
 var art: Node2D
 var selected_worker := 1
@@ -18,10 +17,6 @@ var _customer_positions := {}
 var _cups: Array[Sprite2D] = []
 var _badges := {}
 var _staff_cards: Array[Button] = []
-var _staff_fatigue: Array[ColorRect] = []
-var _gold: Label
-var _score: Label
-var _stats: Label
 var _shelf: Label
 var _toast: Label
 var _toast_left := 0.0
@@ -37,10 +32,11 @@ var _speed_factor := 1.0
 var _font: Font
 var _drag: Node2D
 var _post_labels := {}
+var ui: Control
 
 
 func _ready() -> void:
-	DisplayServer.window_set_title("奶茶店 · 岗位试玩")
+	DisplayServer.window_set_title("手作奶茶店")
 	art = $Canvas/ShopArt
 	_font = load("res://art/ui/graybox_font.ttf")
 	for node in art.find_children("*", "Node2D", true, false):
@@ -58,6 +54,7 @@ func restart() -> void:
 	if is_instance_valid(_drag):
 		_drag.cancel()
 	sim = Sim.new()
+	ui.show_selection = false
 	selected_worker = int(sim.workers[0].id)
 	for actor in _actors.values():
 		actor.free()
@@ -67,7 +64,7 @@ func restart() -> void:
 	_customers.clear()
 	_customer_positions.clear()
 	_last_sold = 0
-	_show_toast("拖到人工工位坐班，拖到空地流动。员工可培养。")
+	_show_toast("欢迎开店，伙伴正在准备第一杯奶茶。")
 	_refresh(0.0)
 	_fit()
 
@@ -83,49 +80,19 @@ func _process(delta: float) -> void:
 
 
 func _refresh(delta: float) -> void:
-	_gold.text = "金币 %d" % sim.gold
-	_score.text = "已售 %d 杯" % sim.sold
-	_speed_button.text = "倍速 ×%d" % int(_speed_factor)
-	_hire_button.text = "招募 %d" % sim.hire_cost() if sim.workers.size() < 3 else "员工已满"
-	_hire_button.disabled = sim.workers.size() >= 3 or sim.gold < sim.hire_cost()
-	_pause_button.text = "继续" if sim.paused else "暂停"
-	_belt_button.text = "运输：传送带" if sim.use_belts else "运输：人工搬运"
+	ui.refresh()
 	for node in art.find_children("*", "Node2D", true, false):
 		if node.get_meta("art_layer", "") == "belts":
 			node.visible = sim.use_belts or not sim.belt_items.is_empty()
-	var selected: Dictionary = sim.workers[0]
 	for worker in sim.workers:
-		if int(worker.id) == selected_worker:
-			selected = worker
 		if not _actors.has(worker.id):
 			var actor := Actor.new()
 			actor.setup(worker.art, _font)
 			art.get_node("Sortables").add_child(actor)
 			_actors[worker.id] = actor
-		_actors[worker.id].selected = int(worker.id) == selected_worker
+		_actors[worker.id].selected = ui.show_selection and int(worker.id) == selected_worker
 		_actors[worker.id].display(worker, sim.elapsed)
-	_stats.text = "%s  移速 %d  搬量 %d  操作 %.1f" % [ART_NAMES[selected.art], selected.speed, selected.capacity, selected.skill]
-	var cost: int = sim.train_cost(selected_worker)
-	_train_button.text = "培养 %d" % cost
-	_train_button.disabled = sim.gold < cost
-	for i in 3:
-		if i < sim.workers.size():
-			var worker: Dictionary = sim.workers[i]
-			var label: String = worker.get("task_label", "")
-			var post: String = worker.get("post", "")
-			var mode := "流动" if post.is_empty() else ("煮茶坐班" if post == "boil" else "加料坐班")
-			var task_text: String = Actor.TASKS.get(label, "待命" if label.is_empty() else label)
-			if worker.get("assignment_pending", false):
-				task_text = "交接中 · " + task_text
-			_staff_cards[i].text = "%s · %s Lv%d\n%s" % [ART_NAMES[worker.art], mode, worker.level, task_text]
-			_staff_cards[i].modulate = Color.WHITE if int(worker.id) == selected_worker else Color("e4d7c1")
-			_staff_fatigue[i].size.x = 202.0 * clampf(worker.fatigue, 0, 1)
-			_staff_fatigue[i].visible = true
-			_staff_cards[i].tooltip_text = "移速 %d · 搬量 %d · 操作 %.1f · 软疲劳 %d%%" % [worker.speed, worker.capacity, worker.skill, int(worker.fatigue * 100)]
-		else:
-			_staff_cards[i].text = "招募伙伴\n一起制作与配送"
-			_staff_cards[i].modulate = Color("e4d7c1")
-			_staff_fatigue[i].visible = false
+		_actors[worker.id].task.visible = ui.show_selection and int(worker.id) == selected_worker and ui.page == "shop"
 	for id in _badges:
 		var station: Dictionary = sim.stations[id]
 		var state := "等原料"
@@ -235,46 +202,16 @@ func _along(points: PackedVector2Array, progress: float) -> Vector2:
 
 
 func _build_ui() -> void:
-	var root: Control = $Overlay/UI
-	var theme := Theme.new()
-	theme.default_font = _font
-	theme.default_font_size = 16
-	root.theme = theme
-	_panel(root, Rect2(12, 8, 696, 88))
-	_gold = _label(root, Vector2(26, 18), 23)
-	_score = _label(root, Vector2(204, 22), 20)
-	_speed_button = _button(root, Rect2(352, 15, 114, 35), "倍速 ×1", func() -> void:
-		_speed_factor = 1.0 if _speed_factor >= 4.0 else _speed_factor * 2.0
-		_refresh(0.0))
-	_hire_button = _button(root, Rect2(476, 15, 112, 35), "招募", hire_worker)
-	_pause_button = _button(root, Rect2(598, 15, 96, 35), "暂停", func() -> void: sim.paused = not sim.paused)
-	_stats = _label(root, Vector2(26, 63), 13)
-	_belt_button = _button(root, Rect2(282, 57, 150, 31), "运输：传送带", toggle_transport)
-	_train_button = _button(root, Rect2(441, 57, 100, 31), "培养", train_selected)
-	_restart_button = _button(root, Rect2(550, 57, 68, 31), "重开", restart)
-	_old_button = _button(root, Rect2(627, 57, 67, 31), "旧版", func() -> void: get_tree().change_scene_to_file("res://presentation/shop.tscn"))
-	_panel(root, Rect2(12, 1201, 696, 76))
-	for i in 3:
-		var card := _button(root, Rect2(20 + i * 228, 1207, 222, 62), "", _staff_clicked.bind(i))
-		card.clip_text = true
-		card.add_theme_font_size_override("font_size", 15)
-		_staff_cards.append(card)
-		var background := ColorRect.new()
-		background.position = Vector2(30 + i * 228, 1262)
-		background.size = Vector2(202, 4)
-		background.color = Color("dacdb6")
-		background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		root.add_child(background)
-		var fill := ColorRect.new()
-		fill.position = background.position
-		fill.size = Vector2(0, 4)
-		fill.color = Color("b59162")
-		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		root.add_child(fill)
-		_staff_fatigue.append(fill)
-	_toast = _label(root, Vector2(20, 1177), 14)
-	_toast.size = Vector2(680, 22)
-	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ui = $Overlay/UI/HUD
+	ui.setup(self)
+	_hire_button = ui.hire_button
+	_train_button = ui.train_button
+	_pause_button = ui.pause_button
+	_belt_button = ui.belt_button
+	_restart_button = ui.restart_button
+	_old_button = ui.old_button
+	_speed_button = ui.speed_button
+	_toast = ui.get_node("Toast")
 
 
 func _build_badges() -> void:
@@ -307,46 +244,6 @@ func _label(parent: Node, point: Vector2, size: int) -> Label:
 	return label
 
 
-func _panel(parent: Node, rect: Rect2) -> Panel:
-	var panel := Panel.new()
-	panel.position = rect.position
-	panel.size = rect.size
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("f9ebd3")
-	style.border_color = Color("79573c")
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(10)
-	panel.add_theme_stylebox_override("panel", style)
-	parent.add_child(panel)
-	return panel
-
-
-func _button(parent: Node, rect: Rect2, text: String, action: Callable) -> Button:
-	var button := Button.new()
-	button.position = rect.position
-	button.size = rect.size
-	button.text = text
-	button.focus_mode = Control.FOCUS_NONE
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("f4dfbc")
-	style.border_color = Color("956d4a")
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(7)
-	button.add_theme_stylebox_override("normal", style)
-	var hover := style.duplicate()
-	hover.bg_color = Color("fff1d4")
-	button.add_theme_stylebox_override("hover", hover)
-	var pressed := style.duplicate()
-	pressed.bg_color = Color("dfc49b")
-	button.add_theme_stylebox_override("pressed", pressed)
-	button.add_theme_color_override("font_color", Color("583b29"))
-	button.add_theme_color_override("font_hover_color", Color("583b29"))
-	button.add_theme_font_size_override("font_size", 15)
-	button.pressed.connect(action)
-	parent.add_child(button)
-	return button
-
-
 func hire_worker() -> void:
 	if sim.hire():
 		selected_worker = int(sim.workers.back().id)
@@ -366,12 +263,15 @@ func toggle_transport() -> void:
 	_refresh(0.0)
 
 
-func _staff_clicked(index: int) -> void:
-	if index < sim.workers.size():
-		selected_worker = int(sim.workers[index].id)
-	else:
-		hire_worker()
-	_refresh(0.0)
+func open_page(page: String) -> void:
+	ui.open_page(page)
+
+
+func select_worker(id: int, from_card := false) -> void:
+	selected_worker = id
+	if not from_card:
+		ui.show_selection = true
+	_refresh(0)
 
 
 func _show_toast(text: String) -> void:
@@ -386,8 +286,12 @@ func _fit() -> void:
 	var offset := (size - Vector2(720, 1280) * factor) / 2.0
 	$Canvas.position = offset
 	$Canvas.scale = Vector2.ONE * factor
-	$Overlay/UI.position = offset
-	$Overlay/UI.scale = Vector2.ONE * factor
+	var ui_factor := size.x / 720.0 if size.x / size.y < 1.1 else size.y / 900.0
+	var ui_width := minf(size.x / ui_factor, 1120.0)
+	$Overlay/UI.position = Vector2((size.x - ui_width * ui_factor) / 2.0, 0)
+	$Overlay/UI.scale = Vector2.ONE * ui_factor
+	$Overlay/UI.size = Vector2(ui_width, size.y / ui_factor)
+	ui.fit_to_size($Overlay/UI.size)
 
 
 func _mobile_count() -> int:

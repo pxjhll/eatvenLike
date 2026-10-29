@@ -41,7 +41,7 @@ func _run() -> void:
 	_check(view._mobile_count() == 0 and view._toast.visible, "sole seated employee warns about missing mobile staff")
 	await _click(view._staff_cards[0])
 	_check(first.post == "topping", "normal card click selects without changing mode")
-	await _drag(view._staff_cards[0].get_global_rect().get_center(), _screen(Vector2(360, 610)))
+	await _drag_card(0, _screen(Vector2(360, 610)))
 	_check(first.post.is_empty(), "dragging card onto clear floor restores mobile mode")
 	_check(first.pos == Vector2(370, 610) and not first.assignment_pending, "card drop immediately places employee in chosen floor cell")
 	_until(func() -> bool: return not first.assignment_pending)
@@ -49,17 +49,17 @@ func _run() -> void:
 	await _click(view._hire_button)
 	_check(view.sim.workers.size() == 2, "normal hire interaction survives drag handlers")
 	var second: Dictionary = view.sim.workers[1]
-	await _drag(view._staff_cards[0].get_global_rect().get_center(), _screen(Vector2(325, 210)))
+	await _drag_card(0, _screen(Vector2(325, 210)))
 	_check(first.post == "boil", "boil art accepts a seated employee")
 	var before := JSON.stringify(view.sim.workers)
-	await _drag(view._staff_cards[1].get_global_rect().get_center(), _screen(Vector2(325, 210)))
+	await _drag_card(1, _screen(Vector2(325, 210)))
 	_check(second.post.is_empty() and first.post == "boil", "occupied post rejects a second employee")
 	_check(JSON.stringify(view.sim.workers) == before, "occupied drop leaves current work and assignment untouched")
-	await _drag(view._staff_cards[1].get_global_rect().get_center(), _screen(Vector2(460, 180)))
+	await _drag_card(1, _screen(Vector2(460, 180)))
 	_check(second.post.is_empty(), "automatic mixing machine does not seat employees")
-	await _drag(view._staff_cards[1].get_global_rect().get_center(), _screen(Vector2(100, 760)))
+	await _drag_card(1, _screen(Vector2(100, 760)))
 	_check(second.post.is_empty(), "partition wall is not blank walkable floor")
-	await _begin_drag(view._staff_cards[1].get_global_rect().get_center(), _screen(Vector2(190, 460)))
+	await _begin_card_drag(1, _screen(Vector2(190, 460)))
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE
 	escape.pressed = true
@@ -73,10 +73,10 @@ func _run() -> void:
 	await _capture("boil")
 	# Dragging interrupts a real delivery and refunds its goods without losing stock.
 	_until(func() -> bool: return second.carry_count > 0)
-	await _drag(view._staff_cards[1].get_global_rect().get_center(), _screen(Vector2(85, 430)))
+	await _drag_card(1, _screen(Vector2(85, 430)))
 	_check(second.post == "topping" and not second.assignment_pending and second.carry_count == 0 and second.job.is_empty(), "busy drop cancels job and returns cargo immediately")
 	_check(second.pos == Vector2(190, 410) and view.sim.audit().valid, "busy employee lands immediately with valid stock accounting")
-	await _drag(view._staff_cards[0].get_global_rect().get_center(), _screen(Vector2(350, 610)))
+	await _drag_card(0, _screen(Vector2(350, 610)))
 	_until(func() -> bool: return not second.assignment_pending)
 	var sold_before: int = view.sim.sold
 	_until(func() -> bool: return view.sim.sold >= sold_before + 2)
@@ -87,7 +87,7 @@ func _run() -> void:
 	await process_frame
 	view._fit()
 	await process_frame
-	await _drag(view._staff_cards[1].get_global_rect().get_center(), _screen(Vector2(350, 610)))
+	await _drag_card(1, _screen(Vector2(350, 610)))
 	_check(second.post.is_empty(), "scaled viewport card-to-floor drag releases employee")
 	_check(second.pos == Vector2(350, 610), "scaled viewport drop places employee immediately")
 	await _capture("small")
@@ -95,7 +95,7 @@ func _run() -> void:
 	await process_frame
 	view._fit()
 	await process_frame
-	await _drag(view._staff_cards[1].get_global_rect().get_center(), _screen(Vector2(85, 430)))
+	await _drag_card(1, _screen(Vector2(85, 430)))
 	_check(second.post == "topping", "landscape drag recognizes the same manual station")
 	await _capture("landscape")
 	root.size = Vector2i(720, 1280)
@@ -105,7 +105,7 @@ func _run() -> void:
 	await _touch_drag(_screen(second.pos + Vector2(0, -65)), _screen(Vector2(350, 610)))
 	_check(second.post.is_empty() and not view._drag.dragging, "touch drag uses the same mobile assignment and clears ghost")
 	_check(second.pos == Vector2(350, 610) and not second.walking, "touch release immediately places employee without old route")
-	await _begin_touch_drag(view._staff_cards[1].get_global_rect().get_center(), _screen(Vector2(85, 430)))
+	await _begin_touch_card_drag(1, _screen(Vector2(85, 430)))
 	_check(view._drag.dragging and view._drag.worker_id == second.id, "touch drag can start from employee card")
 	var other := InputEventScreenTouch.new()
 	other.index = 1
@@ -148,13 +148,28 @@ func _run() -> void:
 	blank_cancel.canceled = true
 	Input.parse_input_event(blank_cancel)
 	Input.flush_buffered_events()
-	await _begin_drag(view._staff_cards[0].get_global_rect().get_center(), _screen(Vector2(85, 430)))
+	await _begin_card_drag(0, _screen(Vector2(85, 430)))
 	_check(view._drag.dragging, "mouse drag works after focus-loss cleanup")
 	view.restart()
 	_check(not view._drag.dragging and view.sim.workers.size() == 1, "restart safely clears pending gesture")
 	view.free()
 	print("STAFF POST GUI: %d failures" % failures)
 	quit(1 if failures else 0)
+
+
+func _drag_card(index: int, to: Vector2) -> void:
+	await _click(view.ui.staff_button)
+	await _drag(view._staff_cards[index].get_global_rect().get_center(), to)
+
+
+func _begin_card_drag(index: int, to: Vector2) -> void:
+	await _click(view.ui.staff_button)
+	await _begin_drag(view._staff_cards[index].get_global_rect().get_center(), to)
+
+
+func _begin_touch_card_drag(index: int, to: Vector2) -> void:
+	await _click(view.ui.staff_button)
+	await _begin_touch_drag(view._staff_cards[index].get_global_rect().get_center(), to)
 
 
 func _screen(point: Vector2) -> Vector2:
@@ -198,6 +213,14 @@ func _release(point: Vector2) -> void:
 
 
 func _click(button: Button) -> void:
+	var close_after := false
+	if button == view._hire_button:
+		await _click(view.ui.recruit_button)
+		close_after = true
+	elif button in view._staff_cards and not button.is_visible_in_tree():
+		await _click(view.ui.staff_button)
+	_check(button.is_visible_in_tree() and not button.disabled, "tested control is visible and enabled")
+	await process_frame
 	var point := button.get_global_rect().get_center()
 	var press := InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_LEFT
@@ -206,6 +229,8 @@ func _click(button: Button) -> void:
 	Input.parse_input_event(press)
 	Input.flush_buffered_events()
 	await _release(point)
+	if close_after:
+		await _click(view.ui.home_button)
 
 
 func _window_point(point: Vector2) -> Vector2:

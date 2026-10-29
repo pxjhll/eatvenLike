@@ -107,6 +107,7 @@ func _verify_old_game_round_trip() -> void:
 		var saved: Dictionary = app.save_service.load_data()
 		_check(saved.has("shop") and int(saved.shop.economy.gold) == 321, "old progress is persisted before leaving, including normal quit in playtest")
 		_check(int(app._pending_shop_state.economy.gold) == 321, "old session is also retained in memory")
+		await _click(play.ui.menu_button)
 		await _click(play._old_button)
 		await process_frame
 		shop = current_scene
@@ -148,8 +149,22 @@ func _advance_until(condition: Callable) -> void:
 
 
 func _click(button: Button) -> void:
+	var close_after := false
+	var confirm_restart := false
+	if is_instance_valid(view):
+		if button == view._hire_button:
+			await _click(view.ui.recruit_button)
+			close_after = true
+		elif button == view._train_button:
+			await _click(view.ui.staff_button)
+			close_after = true
+		elif button in [view._pause_button, view._belt_button, view._restart_button, view._old_button]:
+			await _click(view.ui.menu_button)
+			close_after = button != view._old_button
+			confirm_restart = button == view._restart_button
+	_check(button.is_visible_in_tree() and not button.disabled, "tested control is visible and enabled")
 	await process_frame
-	var point := button.get_global_rect().get_center()
+	var point := button.get_global_rect().get_center() * Vector2(root.size) / root.get_visible_rect().size
 	var press := InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_LEFT
 	press.position = point
@@ -160,6 +175,10 @@ func _click(button: Button) -> void:
 	release.pressed = false
 	Input.parse_input_event(release)
 	await process_frame
+	if confirm_restart:
+		await _click(view.ui.confirm_restart_button)
+	if close_after:
+		await _click(view.ui.home_button)
 
 
 func _capture(suffix: String) -> void:

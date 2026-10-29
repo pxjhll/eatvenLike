@@ -52,7 +52,7 @@ func _missing(font: FontFile, text: String) -> String:
 func _scripts(folder: String) -> Array:
 	var out := []
 	for file in DirAccess.get_files_at(folder):
-		if file.ends_with(".gd"):
+		if file.ends_with(".gd") or file.ends_with(".tscn"):
 			out.append(folder.path_join(file))
 	for sub in DirAccess.get_directories_at(folder):
 		out.append_array(_scripts(folder.path_join(sub)))

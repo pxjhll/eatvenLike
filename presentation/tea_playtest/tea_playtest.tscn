@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://presentation/tea_playtest/tea_playtest.gd" id="1"]
 [ext_resource type="PackedScene" path="res://presentation/reference/shop_art.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://presentation/tea_playtest/shop_hud.tscn" id="3"]
 
 [node name="TeaPlaytest" type="Node2D"]
 script = ExtResource("1")
@@ -21,3 +22,5 @@ layout_mode = 0
 offset_right = 720.0
 offset_bottom = 1280.0
 mouse_filter = 2
+
+[node name="HUD" parent="Overlay/UI" instance=ExtResource("3")]

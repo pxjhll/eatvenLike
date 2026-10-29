@@ -1,8 +1,8 @@
 # eatvenLike
 
-当前默认进入**奶茶店美术试玩**，使用现有分层美术实际运行员工制作、搬运和配送。拖动物或底部员工卡到煮茶台/加料台设为坐班，拖到可走空地恢复流动；支持招募、培养、软疲劳派工、人工/传送带运输及1/2/4倍速。试玩会话暂不保存。
+当前默认进入**奶茶店美术试玩**，使用现有分层美术实际运行员工制作、搬运和配送。底部为店铺、建造、员工、招募入口；员工面板查看和培养伙伴，招募面板邀请普通员工，建造与高级招募显示未开放。拖动物或员工面板中的卡片到煮茶台/加料台设为坐班，拖到可走空地恢复流动；支持软疲劳派工、人工/传送带运输及1/2/4倍速。试玩会话暂不保存。
 
-当前验证引擎为 Godot 4.6.3（GDScript）。入口是 `presentation/tea_playtest/tea_playtest.tscn`；可从右上角“旧版”进入原经营版本，旧版和静态美术预览也有“试玩”入口。操作及验证见 [拖拽岗位验证](docs/qa/staff-posts.md) 和 [试玩说明](docs/qa/tea-art-playtest.md)。独立图素与场景说明见 [art/reference/README.md](art/reference/README.md)。
+当前验证引擎为 Godot 4.6.3（GDScript）。入口是 `presentation/tea_playtest/tea_playtest.tscn`；顶部菜单包含暂停、运输方式、重开和“进入旧版”，旧版和静态美术预览也有“试玩”入口。UI 框架独立为 `presentation/tea_playtest/shop_hud.tscn`。操作及验证见 [UI 框架验证](docs/qa/shop-ui.md)、[拖拽岗位验证](docs/qa/staff-posts.md) 和 [试玩说明](docs/qa/tea-art-playtest.md)。独立图素与场景说明见 [art/reference/README.md](art/reference/README.md)。
 
 下文保留旧版经营流程与项目结构的历史说明，数值不代表当前默认试玩。
 

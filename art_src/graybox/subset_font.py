@@ -9,8 +9,8 @@ from fontTools.ttLib import TTFont
 import sys
 
 root = Path(__file__).resolve().parents[2]
-text = ''.join(path.read_text() for folder in ('presentation', 'game', 'content')
-               for path in (root / folder).rglob('*') if path.suffix in ('.gd', '.tres'))
+text = ''.join(path.read_text(encoding='utf-8') for folder in ('presentation', 'game', 'content')
+               for path in (root / folder).rglob('*') if path.suffix in ('.gd', '.tres', '.tscn'))
 options = subset.Options()
 options.layout_features = ['*']
 font = TTFont(sys.argv[1], fontNumber=0)

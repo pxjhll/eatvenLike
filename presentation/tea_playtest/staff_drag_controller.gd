@@ -65,9 +65,12 @@ func _press_body(screen: Vector2) -> void:
 	if worker_id != -1:
 		return
 	for i in mini(_view._staff_cards.size(), _view.sim.workers.size()):
-		if _view._staff_cards[i].get_global_rect().has_point(screen):
+		var card: Button = _view._staff_cards[i]
+		if _view.ui.card_hit_test(card, screen):
 			_candidate(int(_view.sim.workers[i].id), screen, true)
 			return
+	if _view.ui.blocks_world(screen):
+		return
 	var point := _world(screen)
 	if point.y < 98 or point.y >= 1200:
 		return
@@ -85,7 +88,7 @@ func _candidate(id: int, screen: Vector2, from_card: bool) -> void:
 	worker_id = id
 	_press = screen
 	_pointer = _world(screen)
-	_view.selected_worker = id
+	_view.select_worker(id, from_card)
 	var worker := _worker()
 	_grab_offset = Vector2(0, 60) if from_card else worker.pos - _pointer
 
@@ -96,7 +99,7 @@ func _motion(screen: Vector2) -> void:
 	if not dragging:
 		_start_drag()
 	_pointer = _world(screen)
-	target = Layout.drop_target(_pointer)
+	target = _drop_target(screen)
 	_update_ghost()
 	queue_redraw()
 	get_viewport().set_input_as_handled()
@@ -120,6 +123,7 @@ func _start_drag() -> void:
 			_view._staff_cards[i].disabled = true
 	if _view._actors.has(worker_id):
 		_view._actors[worker_id].visible = false
+	_view.ui.begin_staff_drag()
 
 
 func _update_ghost() -> void:
@@ -160,6 +164,12 @@ func _target_error() -> String:
 	return ""
 
 
+func _drop_target(screen: Vector2) -> Dictionary:
+	if _view.ui.blocks_world(screen):
+		return {"kind": "invalid", "reason": "ui_overlay"}
+	return Layout.drop_target(_world(screen))
+
+
 func _release(screen: Vector2) -> void:
 	if worker_id == -1:
 		return
@@ -167,7 +177,7 @@ func _release(screen: Vector2) -> void:
 		cancel()
 		return
 	_pointer = _world(screen)
-	target = Layout.drop_target(_pointer)
+	target = _drop_target(screen)
 	var error := _target_error()
 	if error.is_empty():
 		error = _view.sim.assign_post(worker_id, target.post, target.point)
@@ -218,6 +228,7 @@ func _error_text(error: String) -> String:
 		"automatic_station": "自动机器无需坐班", "invalid_post": "请拖到人工工位",
 		"occupied_post": "岗位已有坐班员工", "blocked_ground": "这里不能站立",
 		"unreachable": "这个位置无法到达", "invalid_worker": "员工不存在",
+		"ui_overlay": "请放到店内工位或空地",
 	}.get(error, "拖放位置无效")
 
 
