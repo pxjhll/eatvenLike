@@ -1,0 +1,13 @@
+# Cloudflare Pages 响应头。Web 导出关了线程，不需要 COOP/COEP 跨源隔离。
+/*
+  X-Content-Type-Options: nosniff
+
+# 每次发布都会覆盖同名文件，让浏览器每次都回源校验，避免试玩拿到旧版本
+/index.html
+  Cache-Control: no-cache
+/index.pck
+  Cache-Control: no-cache
+/index.wasm.gz
+  Cache-Control: no-cache
+/index.js
+  Cache-Control: no-cache
