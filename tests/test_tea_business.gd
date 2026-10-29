@@ -359,3 +359,15 @@ func _base_price(sim, dish: String) -> int:
 	for definition in sim.CONFIG.dishes:
 		if definition.id == dish: return definition.price
 	return -1
+
+func test_price_preview_matches_the_price_after_upgrading() -> void:
+	var sim = opened()
+	if sim == null: return
+	for unused in 2: sim.upgrade_station("mix")
+	for unused in 3:
+		var promised: int = sim.station_info("mix").price.next
+		check_eq(sim.upgrade_station("mix"), "", "mixer price upgrade succeeds")
+		check_eq(sim._dish_price("plain_milk_tea"), promised, "panel preview equals the real milk tea price")
+	var row: Dictionary = sim.station_info("supply").materials[1]
+	check_eq(sim.upgrade_material("supply", "milk"), "", "milk slot upgrade succeeds")
+	check_eq(sim._dish_price("plain_milk_tea"), int(row.next), "slot preview equals the real milk tea price")

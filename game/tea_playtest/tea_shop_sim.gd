@@ -337,7 +337,7 @@ func station_info(requested: String) -> Dictionary:
 				"upgrade_error": _material_error(id, material.id), "unlock_level": material.unlock_level,
 				"bonus": material.bonus(mat_level), "next_bonus": material.bonus(mat_level + 1) if mat_level < material.max_level() else -1.0,
 				"base_price": _base_price(material.item_id)}
-			if _art_mode(material): row.merge(_price_preview(material.art_price_dishes, material.art_price_step, mat_level < mat_max))
+			if _art_mode(material): row.merge(_price_preview(id, material.id, mat_level < mat_max))
 			materials.append(row)
 	var descriptions := {"supply": "茶叶、牛奶升级提高售价", "boil": "人工装料、煮茶、取茶；每批 3 份，升级煮得更快", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "seal": "自动封口：茶汤封成红茶，奶茶保留实际口味", "lemonade": "服务员到展示柜现取柠檬茶", "counter": "交付真实订单后获得收入"}
 	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "加料速度", "lemonade": "售价"}
@@ -359,12 +359,15 @@ func station_info(requested: String) -> Dictionary:
 		"unlock_revenue": PROGRESSION.stages[stage].revenue_threshold if stage > 0 else 0,
 		"line_name": PROGRESSION.stages[stage].line_name if stage > 0 else name, "line_members": line,
 		"dish_name": dish_name(PROGRESSION.stages[stage].dish_id), "dish_price": _base_price(PROGRESSION.stages[stage].dish_id),
-		"price": _price_preview(definition.art_price_dishes, definition.art_price_step, upgrade_cost >= 0) if _art_mode(definition) and definition.art_price_step > 0 else {},
+		"price": _price_preview(id, "", upgrade_cost >= 0) if _art_mode(definition) and definition.art_price_step > 0 else {},
 		"seconds": definition.art_seconds / speeds[level - 1] if _art_mode(definition) and definition.art_seconds > 0 else -1.0,
 		"next_seconds": definition.art_seconds / speeds[level] if _art_mode(definition) and definition.art_seconds > 0 and upgrade_cost >= 0 else -1.0}
 
 ## What one more level is worth, shown on a sample cup the player already sells.
-func _price_preview(dishes: Array, step: float, has_next: bool) -> Dictionary:
+func _price_preview(id: String, material: String, has_next: bool) -> Dictionary:
+	var source = _definition(id) if material.is_empty() else _definition(id).material(material)
+	var dishes: Array = source.art_price_dishes
+	var step: float = source.art_price_step
 	var sample := ""
 	for dish in ["lemonade", "black_tea", "plain_milk_tea"]:
 		if dish in dishes: sample = dish
@@ -376,9 +379,16 @@ func _price_preview(dishes: Array, step: float, has_next: bool) -> Dictionary:
 	if "lemonade" in dishes: names.append("柠檬茶")
 	if "black_tea" in dishes: names.append("红茶")
 	if "plain_milk_tea" in dishes: names.append("奶茶")
+	# Price the next level with the same combined bonus and single rounding as real sales.
 	var now := _dish_price(sample)
-	return {"scope": "、".join(names), "step": roundi(step * 100), "sample": dish_name(sample),
-		"now": now, "next": now + roundi(_base_price(sample) * step) if has_next else -1}
+	var next := -1
+	if has_next:
+		var levels: Dictionary = station_levels if material.is_empty() else material_levels[id]
+		var key := id if material.is_empty() else material
+		levels[key] += 1
+		next = _dish_price(sample)
+		levels[key] -= 1
+	return {"scope": "、".join(names), "step": roundi(step * 100), "sample": dish_name(sample), "now": now, "next": next}
 
 func _base_price(dish: String) -> int:
 	for definition in CONFIG.dishes:
