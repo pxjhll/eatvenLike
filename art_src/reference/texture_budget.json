@@ -234,7 +234,7 @@
       ],
       "after": [
         717,
-        180
+        208
       ],
       "bytes_before": 691001,
       "sha256_before": "714adf7429edb8fb625f8249f559592dfa060f8731e3a1f541fbae23645ba05c",
@@ -978,7 +978,7 @@
   ],
   "perspective_revision": {
     "date": "2026-10-29",
-    "reason": "Round props were stretched non-uniformly, which changed their apparent camera angle; they now use one uniform scale and keep their bottom-centre anchor. The sealer anchor moved to its front edge so cups entering it are hidden.",
+    "reason": "Round props were stretched non-uniformly, which changed their apparent camera angle; they now use one uniform scale and keep their bottom-centre anchor. The sealer anchor moved to its front edge so cups entering it are hidden. The machine table top face was too shallow for the machines standing on it; its master was deepened by 1.32x so the top reaches the back wall.",
     "nodes": [
       "Sortables/BeltCupA/Sprite",
       "Sortables/BeltCupB/Sprite",
@@ -999,6 +999,7 @@
       "Sortables/MachineTable/Brewer",
       "Sortables/MachineTable/Brewer/Sprite",
       "Sortables/MachineTable/PearlPot/Sprite",
+      "Sortables/MachineTable/Sprite",
       "Sortables/Raccoon/Sprite",
       "Sortables/Rack/RackCupA/Sprite",
       "Sortables/Rack/RackCupB/Sprite",

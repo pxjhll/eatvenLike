@@ -37,7 +37,7 @@
     {"id":"BackWall", "asset":"back_wall", "rect":[0,0,720,233], "layer":"walls", "parent":"root", "z":-10},
     {"id":"IngredientTable", "asset":"ingredient_table", "rect":[23,194,225,99], "layer":"furniture"},
     {"id":"PrepBench", "asset":"prep_bench", "rect":[23,246,122,348.37], "layer":"furniture"},
-    {"id":"MachineTable", "asset":"machine_table", "rect":[241,210,280,70], "layer":"furniture"},
+    {"id":"MachineTable", "asset":"machine_table", "rect":[241,199.11,280,80.89], "layer":"furniture"},
     {"id":"BeltHorizontal", "asset":"belt_horizontal", "rect":[366,270,292,101], "layer":"belts", "depth":362},
     {"id":"BeltVertical", "asset":"belt_vertical", "rect":[574,321,90,280], "layer":"belts", "depth":361},
     {"id":"BeltCorner", "asset":"belt_corner", "rect":[552,270,112,110], "layer":"belts", "depth":363},
@@ -148,7 +148,7 @@
     ],
     "machine_table": [
       717,
-      180
+      208
     ],
     "milk_bottle": [
       135,
