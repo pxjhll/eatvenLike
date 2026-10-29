@@ -975,5 +975,42 @@
         1046.9999601
       ]
     }
-  ]
+  ],
+  "perspective_revision": {
+    "date": "2026-10-29",
+    "reason": "Round props were stretched non-uniformly, which changed their apparent camera angle; they now use one uniform scale and keep their bottom-centre anchor. The sealer anchor moved to its front edge so cups entering it are hidden.",
+    "nodes": [
+      "Sortables/BeltCupA/Sprite",
+      "Sortables/BeltCupB/Sprite",
+      "Sortables/BeltCupC/Sprite",
+      "Sortables/BeltCupD/Sprite",
+      "Sortables/Cat/Sprite",
+      "Sortables/DisplayCase/DisplayCreamA/Sprite",
+      "Sortables/DisplayCase/DisplayCreamB/Sprite",
+      "Sortables/DisplayCase/DisplayFruitA/Sprite",
+      "Sortables/DisplayCase/DisplayFruitB/Sprite",
+      "Sortables/DisplayCase/DisplayPearlA/Sprite",
+      "Sortables/DisplayCase/DisplayPearlB/Sprite",
+      "Sortables/Fox/Sprite",
+      "Sortables/Hamster/Sprite",
+      "Sortables/IngredientTable/MilkBottle/Sprite",
+      "Sortables/IngredientTable/PearlJar/Sprite",
+      "Sortables/IngredientTable/TeaTin/Sprite",
+      "Sortables/MachineTable/Brewer",
+      "Sortables/MachineTable/Brewer/Sprite",
+      "Sortables/MachineTable/PearlPot/Sprite",
+      "Sortables/Raccoon/Sprite",
+      "Sortables/Rack/RackCupA/Sprite",
+      "Sortables/Rack/RackCupB/Sprite",
+      "Sortables/Rack/RackCupC/Sprite",
+      "Sortables/Rack/RackCupD/Sprite",
+      "Sortables/Rack/RackCupE/Sprite",
+      "Sortables/Rack/RackCupF/Sprite",
+      "Sortables/SealedCup/Sprite",
+      "Sortables/Sealer",
+      "Sortables/Sealer/Sprite",
+      "Sortables/SealingCup/Sprite",
+      "Sortables/Squirrel/Sprite"
+    ]
+  }
 }

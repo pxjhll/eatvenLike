@@ -1,6 +1,9 @@
 extends Node2D
 ## Existing reference poses animated as movable actors; feet remain the Y-sort anchor.
 
+## The view is orthographic, so a cup is the same size on a belt, a shelf or in a paw.
+const CUP_HEIGHT := 52.0
+
 const TASKS := {
 	"idle": "待命",
 	"take_post": "前往坐班", "move_free": "恢复流动",
@@ -73,7 +76,7 @@ func display(worker: Dictionary, clock: float) -> void:
 		var texture: Texture2D = load("res://art/reference/" + asset + ".png")
 		carried.texture = texture
 		carried.modulate = item_color(item)
-		carried.scale = Vector2.ONE * 44.0 / texture.get_height()
+		carried.scale = Vector2.ONE * CUP_HEIGHT / texture.get_height()
 		carried.position = Vector2(22, -78 + bob)
 	_last_pos = position
 	queue_redraw()

@@ -24,12 +24,34 @@ func test_texture_optimization_preserves_existing_sprite_geometry() -> void:
 		return
 	var audit: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(audit_path))
 	var art: Node2D = load("res://presentation/reference/shop_art.tscn").instantiate()
+	var revised: Array = audit.get("perspective_revision", {}).get("nodes", [])
 	for row in audit.scene_geometry_before:
+		if row.node in revised:
+			continue
 		var sprite: Sprite2D = art.get_node(row.node)
 		var expected_position := Vector2(row.position[0], row.position[1])
 		var expected_size := Vector2(row.size[0], row.size[1])
 		check(sprite.position.distance_to(expected_position) < 0.001, "anchor unchanged: " + row.node)
 		check((sprite.texture.get_size() * sprite.scale).distance_to(expected_size) < 0.001, "display size unchanged: " + row.node)
+	art.free()
+
+
+func test_round_props_share_one_camera_angle() -> void:
+	# Stretching a pot or cup non-uniformly changes its rim ellipse, which reads as a different camera.
+	var art: Node2D = load("res://presentation/reference/shop_art.tscn").instantiate()
+	for layer in ["equipment", "actors", "drinks"]:
+		for node in art.find_children("*", "Node2D", true, false):
+			if node.get_meta("art_layer", "") != layer:
+				continue
+			var sprite: Sprite2D = node.get_node("Sprite")
+			check(absf(sprite.scale.x - sprite.scale.y) < 0.001, "uniform scale: " + str(node.name))
+	var sorted: Node2D = art.get_node("Sortables")
+	var sealer: Sprite2D = sorted.get_node("Sealer/Sprite")
+	var sealer_bottom := sealer.position.y + sealer.texture.get_height() * sealer.scale.y
+	check(sealer_bottom >= 0.0 and sealer_bottom < 4.0, "sealer sorts at its front edge")
+	check(sorted.get_node("Sealer").position.y > sorted.get_node("BeltHorizontal").position.y + 1.0, "cups entering the sealer pass behind its front")
+	var machines: Node2D = sorted.get_node("MachineTable")
+	check(machines.get_node("PearlPot").get_index() > machines.get_node("Brewer").get_index(), "the nearer pot draws over the brewer")
 	art.free()
 
 

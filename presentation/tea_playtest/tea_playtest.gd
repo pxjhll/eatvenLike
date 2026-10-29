@@ -37,7 +37,7 @@ var _drag: Node2D
 var _post_labels := {}
 var ui: Control
 var _station_buttons := {}
-var _lemonade_cup: Sprite2D
+var _lemonade_cup: Node2D
 const STATION_REGIONS := {
 	"supply": Rect2(20, 155, 221, 120), "boil": Rect2(245, 122, 167, 158),
 	"mix": Rect2(415, 121, 106, 160), "topping": Rect2(22, 254, 121, 339),
@@ -196,19 +196,21 @@ func _update_cups() -> void:
 		for unused in mini(sim.shelf_count, 3):
 			shelf_items.append("sealed")
 	for i in shelf_items.size():
-		draws.append({"pos": Vector2(546 + i * 51, 601), "item": shelf_items[i], "height": 53.0, "z": 0})
+		draws.append({"pos": Vector2(546 + i * 51, 601), "item": shelf_items[i], "host": "Rack"})
 	for belt in sim.belt_items:
 		var route := Layout.belt_path(belt.route)
 		var point := _along(route, float(belt.progress))
+		var host := "BeltHorizontal" if belt.route == "topping_to_seal" else "BeltVertical"
 		for i in int(belt.count):
 			var offset := Vector2((i - (int(belt.count) - 1) / 2.0) * 14, -i * 2)
-			draws.append({"pos": point + offset, "item": belt.item, "height": 51.0, "z": 0})
+			draws.append({"pos": point + offset, "item": belt.item, "host": host})
 	var buffer_points := {"mix": Vector2(488, 270), "topping": Vector2(78, 445), "seal": Vector2(613, 405)}
+	var buffer_hosts := {"mix": "MachineTable", "topping": "PrepBench", "seal": "Sealer"}
 	for id in buffer_points:
 		var index := 0
 		for item in sim.stations[id].output:
 			for unused in mini(int(sim.stations[id].output[item]), 3 - index):
-				draws.append({"pos": buffer_points[id] + Vector2(index * 19, 0), "item": item, "height": 37.0, "z": 0})
+				draws.append({"pos": buffer_points[id] + Vector2(index * 19, 0), "item": item, "host": buffer_hosts[id]})
 				index += 1
 	while _cups.size() < draws.size():
 		var sprite := Sprite2D.new()
@@ -224,10 +226,12 @@ func _update_cups() -> void:
 		var texture: Texture2D = load("res://art/reference/" + Actor.item_asset(row.item) + ".png")
 		sprite.texture = texture
 		sprite.modulate = Actor.item_color(row.item)
-		sprite.scale = Vector2.ONE * float(row.height) / texture.get_height()
-		sprite.position = row.pos - Vector2(texture.get_width() * sprite.scale.x / 2.0, float(row.height))
-		# Cup top-left is offset visually; explicit depth keeps it above the belt/shelf.
-		sprite.z_index = 1
+		sprite.scale = Vector2.ONE * Actor.CUP_HEIGHT / texture.get_height()
+		# A cup resting on furniture sorts just in front of that furniture's floor anchor,
+		# so it stays on top of its host but behind staff standing closer to the camera.
+		var sort_y := maxf(row.pos.y, art.get_node("Sortables/" + row.host).position.y + 1.0)
+		sprite.position = Vector2(row.pos.x, sort_y)
+		sprite.offset = Vector2(-texture.get_width() / 2.0, -texture.get_height() - (sort_y - row.pos.y) / sprite.scale.y)
 
 
 func _update_customers(delta: float) -> void:
@@ -431,11 +435,17 @@ func _build_station_signs() -> void:
 		button.pressed.connect(ui.open_station.bind(id))
 		$Canvas/WorldLabels.add_child(button)
 		_station_buttons[id] = button
-	_lemonade_cup = Sprite2D.new()
-	_lemonade_cup.texture = load("res://art/reference/fruit_tea.png")
-	_lemonade_cup.scale = Vector2.ONE * 86.0 / _lemonade_cup.texture.get_height()
-	_lemonade_cup.position = Vector2(170, 920)
-	art.get_node("Sortables").add_child(_lemonade_cup)
+	# The glass is opaque art, so the cups are children of the case and stand on its upper shelf.
+	_lemonade_cup = Node2D.new()
+	art.get_node("Sortables/DisplayCase").add_child(_lemonade_cup)
+	for x in [-80, 0, 80]:
+		var cup := Sprite2D.new()
+		cup.texture = load("res://art/reference/fruit_tea.png")
+		cup.scale = Vector2.ONE * Actor.CUP_HEIGHT / cup.texture.get_height()
+		cup.centered = false
+		cup.offset = Vector2(-cup.texture.get_width() / 2.0, -cup.texture.get_height())
+		cup.position = Vector2(x, -126)
+		_lemonade_cup.add_child(cup)
 
 
 func _refresh_station_signs() -> void:
