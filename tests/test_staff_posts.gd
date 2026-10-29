@@ -17,26 +17,21 @@ func checked_run(sim, seconds: float) -> void:
 			check(false, "assignment preserves inventory and reservations: %s" % report)
 			return
 
-func test_post_assignment_and_release_walk_without_teleporting() -> void:
+func test_post_assignment_and_release_place_employee_immediately() -> void:
 	var sim = session()
 	check(sim.has_method("assign_post"), "simulation exposes post assignment")
 	if not sim.has_method("assign_post"): return
 	var worker: Dictionary = sim.workers[0]
-	var start: Vector2 = worker.pos
 	check_eq(sim.assign_post(worker.id, "topping"), "", "idle assignment accepted")
-	check_eq(worker.pos, start, "assignment never teleports")
-	check(worker.assignment_pending and worker.walking, "assignment walks before becoming available")
+	check_eq(worker.pos, Vector2(190, 410), "drop immediately places employee at operation point")
+	check(not worker.assignment_pending and not worker.walking, "drop has no deferred relocation")
 	checked_run(sim, 15)
 	check_eq(worker.pos, Layout.POST_POINTS.topping, "idle operator waits at its operation point")
 	check_eq(worker.phase, "idle", "a sole seated operator cannot perform mobile hauling")
 	var destination := Vector2(390, 750)
 	check_eq(sim.assign_post(worker.id, "", destination), "", "mobile release accepted")
-	check_eq(worker.pos, Layout.POST_POINTS.topping, "release does not teleport")
-	check_eq(worker.task_label, "move_free", "release moves toward floor target")
-	for unused in 200:
-		sim.advance(0.1)
-		if not worker.assignment_pending: break
-	check_eq(worker.pos, destination, "release reaches requested floor before taking a job")
+	check_eq(worker.pos, destination, "mobile drop immediately places employee at floor target")
+	check_eq(worker.phase, "idle", "employee is ready to take fresh work at new location")
 	check_eq(worker.post, "", "released worker joins mobile pool")
 
 func test_invalid_and_occupied_assignment_preserve_previous_role() -> void:
@@ -91,7 +86,7 @@ func test_three_workers_can_staff_both_posts() -> void:
 		check(sim.sold > 5, "one courier and two operators complete production")
 		check(sim.workers[1].completed > 0 and sim.workers[2].completed > 0, "both seated operators contribute")
 
-func test_carrying_assignment_finishes_delivery_before_moving() -> void:
+func test_carrying_assignment_returns_goods_and_places_employee() -> void:
 	var sim = session(2)
 	if not sim.has_method("assign_post"): return
 	var worker: Dictionary = sim.workers[0]
@@ -100,20 +95,25 @@ func test_carrying_assignment_finishes_delivery_before_moving() -> void:
 		if worker.carry_count > 0: break
 	check(worker.carry_count > 0, "fixture uses a real carried batch")
 	var job: Dictionary = worker.job.duplicate(true)
-	var position: Vector2 = worker.pos
+	var carried: int = worker.carry_count
+	var completed: int = worker.completed
+	var reserved_before: int = sim.stations.boil.reserved_in
+	var before: Dictionary = worker.duplicate(true)
+	check_eq(sim.assign_post(worker.id, "", Vector2(10, 10)), "blocked_ground", "invalid busy drop is rejected")
+	check_eq(worker, before, "rejected drop preserves carrying worker and route")
+	check(sim.audit().valid, "rejected busy drop preserves shared reservations")
 	check_eq(sim.assign_post(worker.id, "topping"), "", "busy assignment accepted")
-	check_eq(worker.job, job, "atomic delivery remains unchanged")
-	check_eq(worker.pos, position, "carried assignment does not teleport")
-	check(worker.assignment_pending, "handoff remains pending")
-	check_eq(sim.post_owner("topping"), worker.id, "new lock takes effect before delivery finishes")
-	for unused in 500:
-		sim.advance(0.1)
-		check(sim.audit().valid, "carried handoff conserves batch and reservations")
-		if not worker.assignment_pending: break
-	check_eq(worker.carry_count, 0, "carried batch was delivered before taking post")
-	check_eq(worker.pos, Layout.POST_POINTS.topping, "worker physically reaches new post")
+	check_eq(job.src, "supply", "fixture carries raw material from unlimited supply")
+	check(carried > 0, "fixture has goods to return")
+	check_eq(worker.job, {}, "delivery is interrupted immediately")
+	check_eq(worker.pos, Vector2(190, 410), "carrying employee lands immediately at chosen post")
+	check(not worker.assignment_pending, "no deferred handoff remains")
+	check_eq(worker.carry_count, 0, "goods returned to source")
+	check_eq(worker.completed, completed, "interruption earns no completed task")
+	check_eq(sim.stations.boil.reserved_in, reserved_before - carried, "canceled delivery releases only this employee's destination space")
+	check(sim.audit().valid, "return to unlimited supply conserves stock accounting")
 
-func test_working_operator_finishes_atomic_batch_before_release() -> void:
+func test_working_operator_leaves_inputs_and_releases_post_on_drop() -> void:
 	var sim = session(2)
 	if not sim.has_method("assign_post"): return
 	sim.assign_post(2, "topping")
@@ -122,17 +122,18 @@ func test_working_operator_finishes_atomic_batch_before_release() -> void:
 		sim.advance(0.1)
 		if worker.phase == "work" and worker.job.kind == "topping": break
 	check_eq(worker.phase, "work", "real topping batch is in progress")
-	var job: Dictionary = worker.job.duplicate(true)
+	var input: int = sim.stations.topping.input.milk_tea
 	var done: int = worker.completed
 	sim.assign_post(worker.id, "", Vector2(390, 750))
-	check_eq(worker.job, job, "active manual operation remains atomic")
-	for unused in 100:
-		sim.advance(0.1)
-		check(sim.audit().valid, "work handoff preserves reservations")
-		if worker.completed > done: break
-	check_eq(worker.completed, done + 1, "pending release completes manual batch")
-	check_eq(worker.task_label, "move_free", "release walks after operation completion")
-	check(worker.assignment_pending, "movement remains pending until floor destination")
+	check_eq(worker.job, {}, "manual operation is interrupted")
+	check_eq(worker.pos, Vector2(390, 750), "working employee lands on floor immediately")
+	check_eq(worker.completed, done, "interrupted work does not complete a batch")
+	check_eq(sim.stations.topping.input.milk_tea, input, "unfinished input stays at original station")
+	check(not sim.stations.topping.work_reserved, "another worker can claim the abandoned operation")
+	check(sim.stations.topping.phase != "working", "abandoned station stops displaying active work")
+	check(sim.audit().valid, "operation cancellation preserves inventory and reservations")
+	checked_run(sim, 180)
+	check(sim.sold > 0, "production resumes after interruption")
 
 func test_boil_requires_manual_start_and_manual_take() -> void:
 	var sim = session()
@@ -192,12 +193,79 @@ func test_full_boil_output_waits_without_losing_goods_or_unseating() -> void:
 	checked_run(sim, 180)
 	check(sim.sold > 0, "explicit mobile release drains backed-up output and serves customers")
 
-func test_unreachable_drop_does_not_mutate_assignment() -> void:
+func test_direct_placement_does_not_require_a_route_from_old_position() -> void:
 	var sim = session()
 	if not sim.has_method("assign_post"): return
 	var worker: Dictionary = sim.workers[0]
-	# A stale position outside the navigable floor cannot reach an otherwise legal post.
+	# Picking up an employee can rescue an old invalid position.
 	worker.pos = Vector2(10, 10)
-	var before: Dictionary = worker.duplicate(true)
-	check_eq(sim.assign_post(worker.id, "boil"), "unreachable", "valid destination without route is rejected")
-	check_eq(worker, before, "unreachable assignment preserves all worker state")
+	check_eq(sim.assign_post(worker.id, "boil"), "", "direct placement only validates destination")
+	check_eq(worker.pos, Vector2(270, 330), "employee is placed at legal operation point")
+
+func test_interrupt_every_task_phase_returns_stock_and_releases_reservations() -> void:
+	for belts in [false, true]:
+		var kinds := ["load_boil", "brew_start", "brew_take", "unload_boil", "transfer_to_topping", "topping", "serve"]
+		kinds.append_array(["load_seal_belt", "load_shelf_belt"] if belts else ["carry_to_seal", "carry_to_shelf"])
+		for kind in kinds:
+			var phases := ["walk_pickup", "work"] if kind in ["brew_start", "brew_take", "topping"] else ["walk_pickup", "pickup", "walk_dropoff", "dropoff"]
+			for phase in phases:
+				var sim = session()
+				sim.set_belts(belts)
+				var worker: Dictionary = sim.workers[0]
+				for unused in 6000:
+					sim.advance(0.1)
+					if worker.task_label == kind and worker.phase == phase: break
+				check(worker.task_label == kind and worker.phase == phase, "real fixture reached %s/%s" % [kind, phase])
+				if worker.task_label != kind or worker.phase != phase: continue
+				var job: Dictionary = worker.job.duplicate(true)
+				var carried: int = worker.carry_count
+				var source_stock := 0
+				if job.src == "shelf": source_stock = sim.shelf_count
+				elif job.src != "supply": source_stock = sim._stock(sim.stations[job.src])
+				var sold_before: int = sim.sold
+				check_eq(sim.assign_post(worker.id, "", Vector2(390, 750)), "", "busy floor drop accepted")
+				check_eq(worker.pos, Vector2(390, 750), "every task phase lands immediately")
+				check(worker.job.is_empty() and not worker.walking and worker.path.is_empty(), "old task and movement are cleared")
+				check_eq(worker.carry_count, 0, "no cargo remains after return")
+				if kind in ["brew_start", "brew_take", "topping"]:
+					check(not sim.stations[job.src].work_reserved, "abandoned manual operation is available again")
+				if job.src == "shelf": check_eq(sim.shelf_count, source_stock + carried, "served cup returns to shelf")
+				elif job.src != "supply": check_eq(sim._stock(sim.stations[job.src]), source_stock + carried, "cargo returns to source station")
+				check(sim.audit().valid, "%s/%s cancellation preserves accounting: %s" % [kind, phase, sim.audit()])
+				checked_run(sim, 180)
+				check(sim.sold > sold_before, "fresh tasks resume after %s/%s cancellation" % [kind, phase])
+
+func test_carried_goods_keep_source_capacity_available_for_return() -> void:
+	for kind in ["unload_boil", "serve"]:
+		var sim = session()
+		var worker: Dictionary = sim.workers[0]
+		for unused in 6000:
+			sim.advance(0.1)
+			if worker.task_label == kind and worker.phase == "pickup": break
+		check_eq(worker.task_label, kind, "real pickup reached")
+		var source: String = worker.job.src
+		var free_before: int = sim._free(source)
+		for unused in 20:
+			sim.advance(0.1)
+			if worker.carry_count > 0: break
+		check(worker.carry_count > 0, "employee is carrying refundable stock")
+		check_eq(sim._free(source), free_before, "pickup retains source slots until delivery or return")
+		check_eq(sim.assign_post(worker.id, "", Vector2(390, 750)), "", "returning cargo succeeds")
+		check(sim.audit().valid, "source capacity and stock remain valid after refund")
+
+func test_repeated_busy_drops_preserve_other_workers_and_keep_selling() -> void:
+	for belts in [false, true]:
+		var sim = session(3)
+		sim.set_belts(belts)
+		for tick in 6000:
+			sim.advance(0.1)
+			if tick % 97 == 0:
+				var index: int = (tick / 97) as int % 3
+				var worker: Dictionary = sim.workers[index]
+				var post: String = "" if index == 0 or not worker.post.is_empty() else ("boil" if index == 1 else "topping")
+				check_eq(sim.assign_post(worker.id, post, Vector2(390, 750)), "", "repeated busy placement accepted")
+				check(worker.job.is_empty() and worker.carry_count == 0, "each accepted drop cancels only its employee's task")
+			if not sim.audit().valid:
+				check(false, "repeated drops preserve shared inventory: %s" % sim.audit())
+				break
+		check(sim.sold > 3, "team still sells through repeated interrupted assignments")

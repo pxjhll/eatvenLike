@@ -1,5 +1,5 @@
 extends Node2D
-## A visual drag proposes an assignment. The simulation owns position and inventory.
+## Valid release directly places an employee; simulation returns interrupted cargo.
 
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
@@ -133,6 +133,9 @@ func _update_ghost() -> void:
 	worker.walking = false
 	worker.phase = "idle"
 	var error := _target_error()
+	if error.is_empty():
+		# Preview the actual landing position, including the workstation snap point.
+		worker.pos = target.point
 	if not error.is_empty():
 		worker.task_label = _error_text(error)
 	elif target.get("kind", "") == "post":
@@ -169,11 +172,7 @@ func _release(screen: Vector2) -> void:
 	if error.is_empty():
 		error = _view.sim.assign_post(worker_id, target.post, target.point)
 	if error.is_empty():
-		var worker := _worker()
-		var pending: bool = worker.get("assignment_pending", false)
 		var message: String = "已恢复流动" if target.kind == "mobile" else "已安排到" + POST_NAMES[target.post] + "坐班"
-		if pending:
-			message += "，完成交接后前往"
 		_view._show_toast(message)
 	else:
 		_view._show_toast(_error_text(error))

@@ -67,7 +67,7 @@ func restart() -> void:
 	_customers.clear()
 	_customer_positions.clear()
 	_last_sold = 0
-	_show_toast("拖到人工工位坐班，拖到空地流动。点选员工可培养。")
+	_show_toast("拖到人工工位坐班，拖到空地流动。员工可培养。")
 	_refresh(0.0)
 	_fit()
 
