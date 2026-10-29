@@ -1,9 +1,10 @@
 extends SceneTree
-## Native input regression: body/card drag, legal/invalid drops and atomic handoff.
+## Native input regression: direct placement, interruption and legal/invalid drops.
 
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
 var view: Node2D
 var failures := 0
+var _focus_losses := 0
 
 
 func _initialize() -> void:
@@ -17,6 +18,10 @@ func _run() -> void:
 	root.add_child(view)
 	await process_frame
 	view.set_process(false)
+	root.focus_exited.connect(func() -> void:
+		_focus_losses += 1
+		print("STAFF POST GUI: focus lost during input verification")
+	)
 	root.grab_focus()
 	for i in 6:
 		await process_frame
@@ -25,13 +30,12 @@ func _run() -> void:
 		quit(1)
 		return
 	var first: Dictionary = view.sim.workers[0]
-	var original: Vector2 = first.pos
 	await _drag(_screen(first.pos + Vector2(0, -65)), _screen(Vector2(86, 430)), true)
 	_check(first.post == "topping", "dragging body into preparation table seats employee")
-	_check(first.pos == original, "visual drag never teleports simulated employee")
+	_check(first.pos == Vector2(190, 410) and not first.assignment_pending, "release immediately places employee at seated operation point")
 	_check(not view._drag.dragging and view._actors[first.id].visible, "drag ghost is removed and actor restored")
 	_until(func() -> bool: return not first.assignment_pending)
-	_check(first.pos == Layout.POST_POINTS.topping and first.post == "topping", "employee physically arrives at seated operation point")
+	_check(first.pos == Layout.POST_POINTS.topping and first.post == "topping", "seated employee remains at operation point")
 	view._toast_left = 0
 	view._process(0)
 	_check(view._mobile_count() == 0 and view._toast.visible, "sole seated employee warns about missing mobile staff")
@@ -39,8 +43,9 @@ func _run() -> void:
 	_check(first.post == "topping", "normal card click selects without changing mode")
 	await _drag(view._staff_cards[0].get_global_rect().get_center(), _screen(Vector2(360, 610)))
 	_check(first.post.is_empty(), "dragging card onto clear floor restores mobile mode")
+	_check(first.pos == Vector2(370, 610) and not first.assignment_pending, "card drop immediately places employee in chosen floor cell")
 	_until(func() -> bool: return not first.assignment_pending)
-	_check(first.pos == Layout.drop_target(Vector2(360, 610)).point, "release physically reaches chosen floor cell")
+	_check(first.pos == Layout.drop_target(Vector2(360, 610)).point, "floor drop remains at chosen cell before new work")
 	await _click(view._hire_button)
 	_check(view.sim.workers.size() == 2, "normal hire interaction survives drag handlers")
 	var second: Dictionary = view.sim.workers[1]
@@ -66,11 +71,11 @@ func _run() -> void:
 	_until(func() -> bool: return view.sim.sold >= 2)
 	_check(view.sim.audit().valid and view.sim.sold >= 2, "seated boil with mobile courier keeps selling and conserving goods")
 	await _capture("boil")
-	# Dragging a real carrying employee must not discard their current delivery.
+	# Dragging interrupts a real delivery and refunds its goods without losing stock.
 	_until(func() -> bool: return second.carry_count > 0)
-	var carried: int = second.carry_count
 	await _drag(view._staff_cards[1].get_global_rect().get_center(), _screen(Vector2(85, 430)))
-	_check(second.post == "topping" and second.assignment_pending and second.carry_count == carried, "busy role change defers movement and retains cargo")
+	_check(second.post == "topping" and not second.assignment_pending and second.carry_count == 0 and second.job.is_empty(), "busy drop cancels job and returns cargo immediately")
+	_check(second.pos == Vector2(190, 410) and view.sim.audit().valid, "busy employee lands immediately with valid stock accounting")
 	await _drag(view._staff_cards[0].get_global_rect().get_center(), _screen(Vector2(350, 610)))
 	_until(func() -> bool: return not second.assignment_pending)
 	var sold_before: int = view.sim.sold
@@ -84,6 +89,7 @@ func _run() -> void:
 	await process_frame
 	await _drag(view._staff_cards[1].get_global_rect().get_center(), _screen(Vector2(350, 610)))
 	_check(second.post.is_empty(), "scaled viewport card-to-floor drag releases employee")
+	_check(second.pos == Vector2(350, 610), "scaled viewport drop places employee immediately")
 	await _capture("small")
 	root.size = Vector2i(1280, 720)
 	await process_frame
@@ -98,6 +104,7 @@ func _run() -> void:
 	await process_frame
 	await _touch_drag(_screen(second.pos + Vector2(0, -65)), _screen(Vector2(350, 610)))
 	_check(second.post.is_empty() and not view._drag.dragging, "touch drag uses the same mobile assignment and clears ghost")
+	_check(second.pos == Vector2(350, 610) and not second.walking, "touch release immediately places employee without old route")
 	await _begin_touch_drag(view._staff_cards[1].get_global_rect().get_center(), _screen(Vector2(85, 430)))
 	_check(view._drag.dragging and view._drag.worker_id == second.id, "touch drag can start from employee card")
 	var other := InputEventScreenTouch.new()
@@ -159,6 +166,7 @@ func _drag(from: Vector2, to: Vector2, capture := false) -> void:
 	_check(view._drag.dragging, "real pointer motion starts a drag")
 	if capture:
 		await _capture("drag-target")
+		print("STAFF POST GUI: captured drag active=%s, focus_losses=%d" % [view._drag.dragging, _focus_losses])
 	await _release(to)
 
 

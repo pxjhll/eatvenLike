@@ -1,5 +1,7 @@
 # Drag Staff to Seated or Mobile Posts Implementation Plan
 
+> Historical implementation record: the original walking/deferred handoff below was superseded by the user's 2026-10-29 feedback. Valid drag release now places the employee immediately, cancels its current task and returns cargo to its source. Current behavior and verification are recorded in docs/design/staff-task-logistics.md and docs/qa/staff-posts.md.
+
 > **For agentic workers:** Use superpowers:subagent-driven-development; complete and review simulation assignment and real GUI drag integration.
 
 **Goal:** Drag an animal onto a manual workstation to seat it; drag onto walkable blank ground to release it into mobile work.

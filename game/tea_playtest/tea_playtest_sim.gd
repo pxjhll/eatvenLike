@@ -99,19 +99,60 @@ func assign_post(worker_id: int, post: String, destination: Vector2 = Vector2.IN
 	var cell := map.world_to_cell(point, Layout.CELL)
 	if not map.contains_cell(cell) or cell in map.blocked_cells:
 		return "blocked_ground"
-	if Layout.path(worker.pos, point).is_empty(): return "unreachable"
-	# Commit the lock only after validating the whole request. Existing atomic jobs
-	# retain their reservations, goods and route until their normal completion.
+	# A valid drop moves the employee itself. Validate before interrupting anything,
+	# so rejected drops preserve both the old task and its inventory reservations.
+	_cancel_job(worker)
 	worker.post = post
 	worker.assignment_point = point
-	worker.assignment_pending = true
-	if worker.job.is_empty(): _begin_assignment(worker)
+	worker.assignment_pending = false
+	worker.pos = point
 	_event("post_assigned", "%s: %s" % [worker.name, post if not post.is_empty() else "mobile"])
 	return ""
 
-func _begin_assignment(worker: Dictionary) -> void:
-	worker.task_label = "move_free" if worker.post.is_empty() else "take_post"
-	_walk(worker, worker.assignment_point, "reposition")
+func _cancel_job(worker: Dictionary) -> void:
+	var job: Dictionary = worker.job
+	if not job.is_empty():
+		if worker.carry_count > 0:
+			# The source keeps these slots while goods are carried, so returning them
+			# cannot overfill storage even when other employees have continued working.
+			if job.src == "supply":
+				_generated -= worker.carry_count
+			elif job.src == "shelf":
+				shelf_count += worker.carry_count
+			else:
+				stations[job.src].output[job.item] += worker.carry_count
+		elif job.kind != "brew_take":
+			if job.src == "shelf":
+				_shelf_reserved_out -= job.count
+			elif job.src != "supply":
+				stations[job.src].reserved_out[job.item] -= job.count
+		if _is_operation(job):
+			stations[job.src].work_reserved = false
+		elif job.dst == "shelf":
+			_shelf_reserved_in -= job.count
+		elif job.dst != "counter":
+			stations[job.dst].reserved_in -= job.count
+		if job.kind == "serve":
+			for order in orders:
+				if order.id == job.order_id: order.reserved = false
+		if job.src in stations:
+			_refresh_after_pickup(stations[job.src])
+	worker.job = {}
+	worker.carry_count = 0
+	worker.carry_item = ""
+	worker.phase = "idle"
+	worker.task_label = "idle"
+	worker.walking = false
+	worker.path = PackedVector2Array()
+	worker.path_index = 0
+	worker.action_left = 0.0
+
+func _return_slots(source: String) -> int:
+	var count := 0
+	for worker in workers:
+		if not worker.job.is_empty() and worker.job.src == source:
+			count += worker.carry_count
+	return count
 
 func _add_worker() -> void:
 	var index := workers.size()
@@ -191,9 +232,9 @@ func _stock(station: Dictionary) -> int:
 
 func _free(destination: String) -> int:
 	if destination == "counter": return 3
-	if destination == "shelf": return SHELF_CAPACITY - shelf_count - _shelf_reserved_in
+	if destination == "shelf": return SHELF_CAPACITY - shelf_count - _shelf_reserved_in - _return_slots(destination)
 	var station: Dictionary = stations[destination]
-	return station.capacity - _stock(station) - station.reserved_in
+	return station.capacity - _stock(station) - station.reserved_in - _return_slots(destination)
 
 func _available(source: String, item: String) -> int:
 	if source == "supply": return 999
@@ -335,11 +376,6 @@ func _update_worker(worker: Dictionary) -> void:
 				distance = 0
 		if worker.path_index < worker.path.size(): return
 		worker.walking = false
-		if worker.phase == "reposition":
-			worker.assignment_pending = false
-			worker.phase = "idle"
-			worker.task_label = "idle"
-			return
 		if worker.phase == "walk_pickup":
 			worker.phase = "work" if _is_operation(job) else "pickup"
 			worker.action_left = (2.0 * job.count if job.kind == "topping" else 0.6) / worker.skill
@@ -439,7 +475,6 @@ func _finish(worker: Dictionary) -> void:
 	worker.phase = "idle"
 	worker.task_label = "idle"
 	worker.walking = false
-	if worker.assignment_pending: _begin_assignment(worker)
 
 func _event(kind: String, text: String) -> void:
 	events.append({"kind": kind, "text": text})
@@ -458,7 +493,7 @@ func audit() -> Dictionary:
 		var station: Dictionary = stations[key]
 		var count := _stock(station)
 		stock += count
-		if count + station.reserved_in > station.capacity or station.reserved_in < 0:
+		if count + station.reserved_in + _return_slots(key) > station.capacity or station.reserved_in < 0:
 			errors.append("capacity: " + key)
 		for value in station.input.values():
 			if value < 0: errors.append("negative input: " + key)
@@ -487,7 +522,7 @@ func audit() -> Dictionary:
 			if stations[key].reserved_out[item] != expected_out.get(key + ":" + item, 0): errors.append("source reservation: " + key)
 	if _shelf_reserved_in != expected_in.shelf or _shelf_reserved_out != expected_out.get("shelf:sealed", 0):
 		errors.append("shelf reservation")
-	if shelf_count < 0 or shelf_count + _shelf_reserved_in > SHELF_CAPACITY: errors.append("shelf capacity")
+	if shelf_count < 0 or shelf_count + _shelf_reserved_in + _return_slots("shelf") > SHELF_CAPACITY: errors.append("shelf capacity")
 	for order in orders:
 		if order.reserved != reserved_orders.has(order.id): errors.append("order reservation")
 	var total := stock + carried + belts + sold
