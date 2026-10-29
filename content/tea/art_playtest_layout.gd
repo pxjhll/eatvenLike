@@ -32,6 +32,8 @@ static func drop_target(point: Vector2) -> Dictionary:
 	var map := grid()
 	var cell := map.world_to_cell(point, CELL)
 	if map.contains_cell(cell) and not cell in map.blocked_cells:
+		if path(map.cell_center(cell, CELL), POINTS.counter).is_empty():
+			return {"kind": "invalid", "reason": "unreachable"}
 		return {"kind": "mobile", "post": "", "point": map.cell_center(cell, CELL)}
 	return {"kind": "invalid", "reason": "blocked_ground"}
 

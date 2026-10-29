@@ -99,6 +99,8 @@ func assign_post(worker_id: int, post: String, destination: Vector2 = Vector2.IN
 	var cell := map.world_to_cell(point, Layout.CELL)
 	if not map.contains_cell(cell) or cell in map.blocked_cells:
 		return "blocked_ground"
+	if Layout.path(point, Layout.POINTS.counter).is_empty():
+		return "unreachable"
 	# A valid drop moves the employee itself. Validate before interrupting anything,
 	# so rejected drops preserve both the old task and its inventory reservations.
 	_cancel_job(worker)

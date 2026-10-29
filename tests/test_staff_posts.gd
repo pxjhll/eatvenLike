@@ -202,6 +202,16 @@ func test_direct_placement_does_not_require_a_route_from_old_position() -> void:
 	check_eq(sim.assign_post(worker.id, "boil"), "", "direct placement only validates destination")
 	check_eq(worker.pos, Vector2(270, 330), "employee is placed at legal operation point")
 
+func test_isolated_floor_rejects_drop_without_interrupting_work() -> void:
+	var sim = session()
+	sim.advance(1.0)
+	var before: Dictionary = sim.workers[0].duplicate(true)
+	var isolated := Vector2(410, 1130)
+	check_eq(Layout.drop_target(isolated).get("reason", ""), "unreachable", "customer-side floor is not a legal employee drop")
+	check_eq(sim.assign_post(1, "", isolated), "unreachable", "simulation rejects floor disconnected from work area")
+	check_eq(sim.workers[0], before, "rejected isolated drop preserves active work and cargo")
+	check(sim.audit().valid, "rejected drop preserves inventory reservations")
+
 func test_interrupt_every_task_phase_returns_stock_and_releases_reservations() -> void:
 	for belts in [false, true]:
 		var kinds := ["load_boil", "brew_start", "brew_take", "unload_boil", "transfer_to_topping", "topping", "serve"]
