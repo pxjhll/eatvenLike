@@ -15,6 +15,7 @@ func _initialize() -> void:
 func _run() -> void:
 	root.size = Vector2i(720, 1280)
 	view = load("res://presentation/tea_playtest/tea_playtest.tscn").instantiate()
+	view.sim = preload("res://game/tea_playtest/tea_playtest_sim.gd").new()
 	root.add_child(view)
 	await process_frame
 	view.set_process(false)
@@ -213,6 +214,12 @@ func _release(point: Vector2) -> void:
 
 
 func _click(button: Button) -> void:
+	await process_frame
+	await process_frame
+	var scroll: ScrollContainer = button.find_parent("HUD").get_node("Sheet/Margin/Column/Scroll") if button.find_parent("HUD") != null else null
+	if scroll != null and scroll.is_ancestor_of(button):
+		scroll.ensure_control_visible(button)
+		await process_frame
 	var close_after := false
 	if button == view._hire_button:
 		await _click(view.ui.recruit_button)

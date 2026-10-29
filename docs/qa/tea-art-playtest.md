@@ -2,6 +2,8 @@
 
 日期：2026-10-28。分支：codex/tea-reference-art。
 
+本页记录最初的无进度生产试玩；当前 F5 已进入可保存的经营版本，最新说明见 [tea-business.md](tea-business.md)。原生产与拖拽测试仍注入独立模拟验证，不写玩家经营存档。
+
 ## 如何体验
 
 项目 F5 默认启动 `presentation/tea_playtest/tea_playtest.tscn`；也可以在 Godot 打开该场景后 F6。旧版游戏右上角和静态美术预览均有“试玩”入口；试玩顶部菜单中的“进入旧版”返回原游戏。UI 已于 10 月 29 日更新，见 [UI 框架验证](shop-ui.md)。

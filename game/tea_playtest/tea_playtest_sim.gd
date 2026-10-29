@@ -158,14 +158,17 @@ func _return_slots(source: String) -> int:
 
 func _add_worker() -> void:
 	var index := workers.size()
-	workers.append({"id": index + 1, "name": ["Cat", "Raccoon", "Fox"][index],
+	workers.append(_make_worker(index))
+
+func _make_worker(index: int) -> Dictionary:
+	return {"id": index + 1, "name": ["Cat", "Raccoon", "Fox"][index],
 		"art": ["cat", "raccoon", "fox"][index], "role": ["speed", "carry", "skill"][index],
 		"pos": Layout.POINTS.counter, "walking": false, "phase": "idle", "task_label": "idle",
 		"carry_item": "", "carry_count": 0, "speed": [112.0, 88.0, 96.0][index],
 		"capacity": [2, 3, 2][index], "skill": [1.0, 1.0, 1.6][index],
 		"fatigue": 0.0, "completed": 0, "level": 1, "job": {},
 		"post": "", "assignment_pending": false, "assignment_point": Vector2.INF,
-		"path": PackedVector2Array(), "path_index": 0, "action_left": 0.0})
+		"path": PackedVector2Array(), "path_index": 0, "action_left": 0.0}
 
 func _add_order() -> void:
 	orders.append({"id": _next_order, "wait": 0.0, "reserved": false})
@@ -175,7 +178,7 @@ func _tick() -> void:
 	elapsed += STEP
 	_order_clock += STEP
 	for order in orders: order.wait += STEP
-	if _order_clock >= 7.0:
+	if _order_clock >= _order_interval():
 		_order_clock = 0.0
 		if orders.size() < 3: _add_order()
 	_update_machines()
@@ -208,7 +211,7 @@ func _update_machines() -> void:
 			if available > 0:
 				station.input[INPUTS[key]] -= available
 				station.processing = available
-				station.duration = {"mix": 4.0, "seal": 3.0}[key]
+				station.duration = _machine_duration(key)
 				station.remaining = station.duration
 				station.progress = 0.0
 				station.phase = {"mix": "mixing", "seal": "sealing"}[key]
@@ -234,7 +237,7 @@ func _stock(station: Dictionary) -> int:
 
 func _free(destination: String) -> int:
 	if destination == "counter": return 3
-	if destination == "shelf": return SHELF_CAPACITY - shelf_count - _shelf_reserved_in - _return_slots(destination)
+	if destination == "shelf": return _shelf_capacity() - shelf_count - _shelf_reserved_in - _return_slots(destination)
 	var station: Dictionary = stations[destination]
 	return station.capacity - _stock(station) - station.reserved_in - _return_slots(destination)
 
@@ -380,7 +383,7 @@ func _update_worker(worker: Dictionary) -> void:
 		worker.walking = false
 		if worker.phase == "walk_pickup":
 			worker.phase = "work" if _is_operation(job) else "pickup"
-			worker.action_left = (2.0 * job.count if job.kind == "topping" else 0.6) / worker.skill
+			worker.action_left = _action_duration(job, worker)
 			if job.kind == "topping":
 				stations.topping.phase = "working"
 				stations.topping.duration = worker.action_left
@@ -403,7 +406,7 @@ func _update_worker(worker: Dictionary) -> void:
 			if job.kind == "brew_start":
 				_take(job)
 				station.processing = job.count
-				station.duration = 7.0
+				station.duration = _machine_duration("boil")
 				station.remaining = station.duration
 				station.progress = 0.0
 				station.phase = "heating"
@@ -415,7 +418,7 @@ func _update_worker(worker: Dictionary) -> void:
 				station.progress = 1.0
 			else:
 				_take(job)
-				station.output.topped += job.count
+				_complete_topping(station, job)
 				station.phase = "ready"
 				station.progress = 1.0
 			station.work_reserved = false
@@ -426,9 +429,7 @@ func _update_worker(worker: Dictionary) -> void:
 					if orders[index].id == job.order_id:
 						orders.remove_at(index)
 						break
-				sold += job.count
-				gold += SALE_PRICE * job.count
-				_event("sale", "Served pearl milk tea +12")
+				_record_sale(job)
 			elif not job.belt.is_empty():
 				var duration: float = maxf(1, _path_length(Layout.belt_path(job.belt)) / 60.0)
 				belt_items.append({"route": job.belt, "item": job.item, "count": job.count,
@@ -522,9 +523,12 @@ func audit() -> Dictionary:
 		if stations[key].reserved_in != expected_in[key]: errors.append("incoming reservation: " + key)
 		for item in stations[key].reserved_out:
 			if stations[key].reserved_out[item] != expected_out.get(key + ":" + item, 0): errors.append("source reservation: " + key)
-	if _shelf_reserved_in != expected_in.shelf or _shelf_reserved_out != expected_out.get("shelf:sealed", 0):
+	var shelf_out := 0
+	for key in expected_out:
+		if key.begins_with("shelf:"): shelf_out += expected_out[key]
+	if _shelf_reserved_in != expected_in.shelf or _shelf_reserved_out != shelf_out:
 		errors.append("shelf reservation")
-	if shelf_count < 0 or shelf_count + _shelf_reserved_in + _return_slots("shelf") > SHELF_CAPACITY: errors.append("shelf capacity")
+	if shelf_count < 0 or shelf_count + _shelf_reserved_in + _return_slots("shelf") > _shelf_capacity(): errors.append("shelf capacity")
 	for order in orders:
 		if order.reserved != reserved_orders.has(order.id): errors.append("order reservation")
 	var total := stock + carried + belts + sold
@@ -532,3 +536,24 @@ func audit() -> Dictionary:
 	return {"valid": errors.is_empty(), "errors": errors, "generated": _generated,
 		"stock": stock, "carried": carried, "belts": belts, "sold": sold, "accounted": total,
 		"reserved_in": expected_in, "reserved_out": expected_out}
+
+# Extension points keep the production sandbox timings and accounting unchanged.
+func _order_interval() -> float:
+	return 7.0
+
+func _machine_duration(key: String) -> float:
+	return {"boil": 7.0, "mix": 4.0, "seal": 3.0}[key]
+
+func _action_duration(job: Dictionary, worker: Dictionary) -> float:
+	return (2.0 * job.count if job.kind == "topping" else 0.6) / worker.skill
+
+func _complete_topping(station: Dictionary, job: Dictionary) -> void:
+	station.output.topped += job.count
+
+func _record_sale(job: Dictionary) -> void:
+	sold += job.count
+	gold += SALE_PRICE * job.count
+	_event("sale", "Served pearl milk tea +12")
+
+func _shelf_capacity() -> int:
+	return SHELF_CAPACITY

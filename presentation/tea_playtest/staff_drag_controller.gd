@@ -64,10 +64,10 @@ func _input(event: InputEvent) -> void:
 func _press_body(screen: Vector2) -> void:
 	if worker_id != -1:
 		return
-	for i in mini(_view._staff_cards.size(), _view.sim.workers.size()):
+	for i in _view._staff_cards.size():
 		var card: Button = _view._staff_cards[i]
 		if _view.ui.card_hit_test(card, screen):
-			_candidate(int(_view.sim.workers[i].id), screen, true)
+			_candidate(int(card.get_meta("worker_id", -1)), screen, true)
 			return
 	if _view.ui.blocks_world(screen):
 		return
@@ -116,8 +116,8 @@ func _start_drag() -> void:
 	_ghost.selected = true
 	_ghost.modulate.a = 0.78
 	add_child(_ghost)
-	for i in _view.sim.workers.size():
-		if int(_view.sim.workers[i].id) == worker_id:
+	for i in _view._staff_cards.size():
+		if int(_view._staff_cards[i].get_meta("worker_id", -1)) == worker_id:
 			_source_card = i
 			# Clear the button's held-down GUI state before release is consumed by drag.
 			_view._staff_cards[i].disabled = true
@@ -158,6 +158,8 @@ func _target_error() -> String:
 	if target.get("kind", "invalid") == "invalid":
 		return target.get("reason", "blocked_ground")
 	if target.kind == "post":
+		if _view.sim.has_method("station_unlocked") and not _view.sim.station_unlocked(target.post):
+			return "请先解锁设备"
 		for worker in _view.sim.workers:
 			if int(worker.id) != worker_id and worker.get("post", "") == target.post:
 				return "occupied_post"
@@ -180,10 +182,14 @@ func _release(screen: Vector2) -> void:
 	target = _drop_target(screen)
 	var error := _target_error()
 	if error.is_empty():
-		error = _view.sim.assign_post(worker_id, target.post, target.point)
+		if _view.sim.has_method("deploy_at"):
+			error = _view.sim.deploy_at(worker_id, target.post, target.point)
+		else:
+			error = _view.sim.assign_post(worker_id, target.post, target.point)
 	if error.is_empty():
 		var message: String = "已恢复流动" if target.kind == "mobile" else "已安排到" + POST_NAMES[target.post] + "坐班"
 		_view._show_toast(message)
+		_view.save_now(false)
 	else:
 		_view._show_toast(_error_text(error))
 	cancel()
@@ -213,7 +219,7 @@ func _notification(what: int) -> void:
 
 
 func _worker() -> Dictionary:
-	for worker in _view.sim.workers:
+	for worker in _view.all_staff():
 		if int(worker.id) == worker_id:
 			return worker
 	return {}
@@ -229,7 +235,7 @@ func _error_text(error: String) -> String:
 		"occupied_post": "岗位已有坐班员工", "blocked_ground": "这里不能站立",
 		"unreachable": "这个位置无法到达", "invalid_worker": "员工不存在",
 		"ui_overlay": "请放到店内工位或空地",
-	}.get(error, "拖放位置无效")
+	}.get(error, "拖放位置无效" if "_" in error else error)
 
 
 func _draw() -> void:
@@ -237,6 +243,8 @@ func _draw() -> void:
 		return
 	for post in Layout.POST_RECTS:
 		var occupied := false
+		if _view.sim.has_method("station_unlocked") and not _view.sim.station_unlocked(post):
+			occupied = true
 		for worker in _view.sim.workers:
 			occupied = occupied or (int(worker.id) != worker_id and worker.get("post", "") == post)
 		var color := Color("c96e59") if occupied else Color("92b76b")

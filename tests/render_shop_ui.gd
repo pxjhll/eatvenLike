@@ -16,6 +16,7 @@ func _initialize() -> void:
 func _run() -> void:
 	root.size = Vector2i(720, 1280)
 	view = load("res://presentation/tea_playtest/tea_playtest.tscn").instantiate()
+	view.sim = preload("res://game/tea_playtest/tea_playtest_sim.gd").new()
 	root.add_child(view)
 	await process_frame
 	view.set_process(false)
@@ -125,6 +126,12 @@ func _layout() -> void:
 	await process_frame
 
 func _click(button: Button) -> void:
+	await process_frame
+	await process_frame
+	var scroll: ScrollContainer = button.find_parent("HUD").get_node("Sheet/Margin/Column/Scroll") if button.find_parent("HUD") != null else null
+	if scroll != null and scroll.is_ancestor_of(button):
+		scroll.ensure_control_visible(button)
+		await process_frame
 	_check(button.is_visible_in_tree() and not button.disabled, "tested control is visible and enabled")
 	var point := button.get_global_rect().get_center() * Vector2(root.size) / view.get_viewport_rect().size
 	for pressed in [true, false]:

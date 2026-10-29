@@ -12,6 +12,7 @@ func _initialize() -> void:
 func _run() -> void:
 	root.size = Vector2i(720, 1280)
 	view = load("res://presentation/tea_playtest/tea_playtest.tscn").instantiate()
+	view.sim = preload("res://game/tea_playtest/tea_playtest_sim.gd").new()
 	root.add_child(view)
 	current_scene = view
 	await process_frame
@@ -76,6 +77,8 @@ func _verify_old_game_round_trip() -> void:
 	var previous_profile: Profile = app.profile
 	var previous_pending: Dictionary = app._pending_shop_state
 	var previous_path: String = app.save_service.path
+	var previous_art_store: RefCounted = app.art_shop_save
+	app.art_shop_save = preload("res://game/tea_playtest/tea_shop_save.gd").new("user://tea-entry-art-test.json")
 	app.save_service.path = "user://tea-playtest-entry-test.json"
 	for from_preview in [false, true]:
 		app.profile = Profile.create(app.catalog)
@@ -118,6 +121,9 @@ func _verify_old_game_round_trip() -> void:
 	app.profile = previous_profile
 	app._pending_shop_state = previous_pending
 	app.save_service.path = previous_path
+	app.art_shop_save = previous_art_store
+	if FileAccess.file_exists("user://tea-entry-art-test.json"):
+		DirAccess.remove_absolute("user://tea-entry-art-test.json")
 	if FileAccess.file_exists("user://tea-playtest-entry-test.json"):
 		DirAccess.remove_absolute("user://tea-playtest-entry-test.json")
 
@@ -149,6 +155,12 @@ func _advance_until(condition: Callable) -> void:
 
 
 func _click(button: Button) -> void:
+	await process_frame
+	await process_frame
+	var scroll: ScrollContainer = button.find_parent("HUD").get_node("Sheet/Margin/Column/Scroll") if button.find_parent("HUD") != null else null
+	if scroll != null and scroll.is_ancestor_of(button):
+		scroll.ensure_control_visible(button)
+		await process_frame
 	var close_after := false
 	var confirm_restart := false
 	if is_instance_valid(view):

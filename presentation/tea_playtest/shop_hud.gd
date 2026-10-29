@@ -2,9 +2,10 @@ extends Control
 ## UI composition and session binding; prices and staff always come from the sim.
 
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
+const StationPanel := preload("res://presentation/tea_playtest/station_panel.gd")
 const NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸"}
 const ROLES := {"speed": "速度型", "carry": "力量型", "skill": "操作型"}
-const PAGE_NAMES := {"staff": "员工伙伴", "recruit": "招募伙伴", "build": "店铺建设", "menu": "店铺菜单", "restart": "重新开始"}
+const PAGE_NAMES := {"staff": "员工伙伴", "recruit": "招募伙伴", "build": "店铺建设", "menu": "店铺菜单", "restart": "重开店铺", "station": "设备详情", "tasks": "经营目标"}
 var page := "shop"
 var show_selection := false
 var _view: Node2D
@@ -18,6 +19,12 @@ var _recruit_portrait: TextureRect
 var _styled_selection := -1
 var _card_content: HBoxContainer
 var _page_nodes := {}
+var _roster_signature := ""
+var _save_caption: Label
+var _task_labels: Array[Label] = []
+var _task_signature := ""
+var _task_column: VBoxContainer
+var _goal_label: Label
 
 @onready var home_button: Button = %Home
 @onready var build_button: Button = %Build
@@ -34,6 +41,10 @@ var restart_button: Button
 var old_button: Button
 var cancel_restart_button: Button
 var confirm_restart_button: Button
+var deploy_button: Button
+var save_button: Button
+var tasks_button: Button
+var station_panel: VBoxContainer
 
 func setup(view: Node2D) -> void:
 	_view = view
@@ -59,6 +70,7 @@ func setup(view: Node2D) -> void:
 	$Selection/Row/Details.pressed.connect(open_page.bind("staff"))
 	$Selection/Row/Dismiss.pressed.connect(func() -> void: show_selection = false; refresh())
 	_build_pages()
+	move_child(%Toast, get_child_count() - 1)
 	open_page("shop")
 
 func _apply_theme() -> void:
@@ -145,6 +157,7 @@ func _build_pages() -> void:
 	_card_content.add_theme_constant_override("separation", 12)
 	staff.add_child(_card_content)
 	_details = _text(staff, "", 24)
+	deploy_button = _action(staff, "派到店内", _view.toggle_deployment)
 	train_button = _action(staff, "培养", _view.train_selected)
 	_action(staff, "回到店铺安排岗位", func() -> void: show_selection = true; open_page("shop"))
 	_text(staff, "按住伙伴卡拖到工位坐班，拖到空地恢复流动。", 20)
@@ -183,25 +196,37 @@ func _build_pages() -> void:
 	_text(menu, "营业设置", 26)
 	pause_button = _action(menu, "暂停营业", func() -> void: _view.sim.paused = not _view.sim.paused; refresh())
 	belt_button = _action(menu, "运输", _view.toggle_transport)
+	save_button = _action(menu, "保存进度", func() -> void: _view.save_now())
+	tasks_button = _action(menu, "经营目标", open_page.bind("tasks"))
 	restart_button = _action(menu, "重新开始", open_page.bind("restart"))
-	old_button = _action(menu, "进入旧版", func() -> void: get_tree().change_scene_to_file("res://presentation/shop.tscn"))
-	_text(menu, "当前试玩进度暂不保存", 20)
+	old_button = _action(menu, "进入旧版", _view.go_to_old_game)
+	_save_caption = _text(menu, "", 20)
 	var restart_page := _column("restart")
 	_text(restart_page, "重新开始这家店？", 28)
-	_text(restart_page, "当前金币、员工和制作进度将重置。", 24)
+	_text(restart_page, "金币、设备与营业进度将重置。已拥有伙伴和培养等级会保留。", 24)
 	confirm_restart_button = _action(restart_page, "确认重新开始", func() -> void: _view.restart(); open_page("shop"))
 	cancel_restart_button = _action(restart_page, "继续经营", open_page.bind("menu"))
+	var station_column := _column("station")
+	station_panel = StationPanel.new()
+	station_column.add_child(station_panel)
+	station_panel.setup(_view)
+	var tasks := _column("tasks")
+	_goal_label = _text(tasks, "", 26)
+	_task_column = VBoxContainer.new()
+	_task_column.add_theme_constant_override("separation", 20)
+	tasks.add_child(_task_column)
 
 func _rebuild_roster() -> void:
 	for child in _card_content.get_children():
 		child.free()
 	_view._staff_cards.clear()
 	_staff_titles.clear()
-	for worker in _view.sim.workers:
+	for worker in _view.all_staff():
 		var card := Button.new()
 		card.custom_minimum_size = Vector2(0, 224)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.focus_mode = Control.FOCUS_NONE
+		card.set_meta("worker_id", int(worker.id))
 		card.pressed.connect(_select_worker.bind(int(worker.id)))
 		_card_content.add_child(card)
 		var content := VBoxContainer.new()
@@ -217,7 +242,8 @@ func _rebuild_roster() -> void:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_staff_titles.append(label)
 		_view._staff_cards.append(card)
-	_roster_size = _view.sim.workers.size()
+	_roster_size = _view.all_staff().size()
+	_roster_signature = str(_view.all_staff().map(func(worker: Dictionary) -> int: return int(worker.id)))
 	_styled_selection = -1
 
 func _select_worker(id: int) -> void:
@@ -231,34 +257,86 @@ func refresh() -> void:
 	%Gold.text = "金币 %d" % sim.gold
 	%Sold.text = "%d 杯" % sim.sold
 	speed_button.text = "×%d" % int(_view._speed_factor)
-	if _roster_size != sim.workers.size():
+	var roster: Array = _view.all_staff()
+	var signature := str(roster.map(func(worker: Dictionary) -> int: return int(worker.id)))
+	if _roster_signature != signature:
 		_rebuild_roster()
-	var selected: Dictionary = sim.workers[0]
-	for i in sim.workers.size():
-		var worker: Dictionary = sim.workers[i]
+	if roster.is_empty():
+		return
+	var selected: Dictionary = roster[0]
+	for i in roster.size():
+		var worker: Dictionary = roster[i]
 		var is_selected: bool = int(worker.id) == _view.selected_worker
 		var mode := "流动" if worker.post.is_empty() else ("煮茶坐班" if worker.post == "boil" else "加料坐班")
+		if not _view.staff_is_deployed(int(worker.id)):
+			mode = "待派遣"
 		_staff_titles[i].text = "%s Lv%d\n%s" % [NAMES[worker.art], worker.level, mode]
 		if _styled_selection != _view.selected_worker:
 			_view._staff_cards[i].add_theme_stylebox_override("normal", _style("f6e6c8" if is_selected else "fff9ed", "a47b50" if is_selected else "e6d8bf", 18))
 		if is_selected:
 			selected = worker
 	_styled_selection = _view.selected_worker
-	_roster_label.text = "已拥有 %d 位伙伴 · 店内 %d 位" % [sim.workers.size(), sim.workers.size()]
+	_roster_label.text = "已拥有 %d 位伙伴 · 店内 %d 位" % [roster.size(), sim.workers.size()]
 	var task_text: String = Actor.TASKS.get(selected.task_label, selected.task_label)
 	_details.text = "%s · %s · Lv%d\n移速 %d    搬量 %d    操作 %.1f\n正在：%s" % [NAMES[selected.art], ROLES[selected.role], selected.level, selected.speed, selected.capacity, selected.skill, task_text]
+	if sim.has_method("all_workers"):
+		_details.text += "\n来源：" + String(selected.get("source", "初始"))
+		if not _view.staff_is_deployed(int(selected.id)):
+			_details.text = _details.text.replace("正在：" + task_text, "状态：待派遣")
+	deploy_button.visible = sim.has_method("deploy_worker")
+	deploy_button.text = "收回到名册" if _view.staff_is_deployed(int(selected.id)) else "派到店内"
+	deploy_button.disabled = false
 	train_button.text = "培养伙伴  ·  %d 金币" % sim.train_cost(_view.selected_worker)
 	train_button.disabled = sim.gold < sim.train_cost(_view.selected_worker)
-	hire_button.disabled = sim.workers.size() >= 3 or sim.gold < sim.hire_cost()
-	hire_button.text = "店内伙伴已满" if sim.workers.size() >= 3 else "邀请伙伴  ·  %d 金币" % sim.hire_cost()
-	var next_art: String = ["cat", "raccoon", "fox"][mini(sim.workers.size(), 2)]
+	hire_button.disabled = sim.hire_cost() < 0 or sim.gold < sim.hire_cost()
+	hire_button.text = "当前伙伴已集齐" if sim.hire_cost() < 0 else "邀请伙伴  ·  %d 金币" % sim.hire_cost()
+	var next_art := "fox"
+	for art in NAMES:
+		if not roster.any(func(worker: Dictionary) -> bool: return worker.art == art):
+			next_art = art
+			break
 	_recruit_portrait.texture = _portraits[next_art]
-	_recruit_label.text = "伙伴已全部加入" if sim.workers.size() >= 3 else ("浣熊 · 力量型\n擅长批量搬运" if next_art == "raccoon" else "狐狸 · 操作型\n擅长手工制作")
+	_recruit_label.text = "伙伴已全部加入" if sim.hire_cost() < 0 else ("浣熊 · 力量型\n擅长批量搬运" if next_art == "raccoon" else "狐狸 · 操作型\n擅长手工制作")
 	pause_button.text = "继续营业" if sim.paused else "暂停营业"
 	belt_button.text = "运输方式  ·  传送带" if sim.use_belts else "运输方式  ·  人工搬运"
 	%Selection.visible = show_selection and page == "shop"
 	$Selection/Row/Avatar.texture = _portraits[selected.art]
 	$Selection/Row/Summary.text = "%s · Lv%d\n%s" % [NAMES[selected.art], selected.level, task_text]
+	save_button.disabled = _view.store == null
+	_save_caption.text = _view.save_status if _view.store != null else "独立练习不会覆盖经营存档"
+	tasks_button.visible = sim.has_method("task_rows")
+	if sim.has_method("task_rows"):
+		if page == "station":
+			station_panel.refresh()
+		if page == "tasks":
+			_refresh_tasks()
+
+func _refresh_tasks() -> void:
+	var rows: Array = _view.sim.task_rows()
+	var signature := str(rows.map(func(row: Dictionary) -> String: return row.name))
+	if signature != _task_signature:
+		for label in _task_labels:
+			label.free()
+		_task_labels.clear()
+		for row in rows:
+			_task_labels.append(_text(_task_column, "", 23))
+		_task_signature = signature
+	_goal_label.text = _view.sim.current_goal()
+	var stock_lines: Array[String] = []
+	for dish in _view.sim.shelf_stock:
+		if _view.sim.shelf_stock[dish] > 0:
+			stock_lines.append("%s %d 杯" % [_view.sim.dish_name(dish), _view.sim.shelf_stock[dish]])
+	if not stock_lines.is_empty():
+		_goal_label.text += "\n货架库存：" + "、".join(stock_lines)
+	for i in rows.size():
+		_task_labels[i].text = "%s\n%d / %d%s" % [rows[i].name, rows[i].current, rows[i].target, " · 已完成" if rows[i].complete else ""]
+
+func open_station(id: String) -> void:
+	if not _view.sim.has_method("station_info"):
+		return
+	station_panel.show_station(id)
+	open_page("station")
+	%Title.text = _view.sim.station_info(id).name
 
 func open_page(next_page: String) -> void:
 	if next_page != "shop" and not _page_nodes.has(next_page):

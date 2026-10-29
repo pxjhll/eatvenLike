@@ -1,8 +1,12 @@
 # eatvenLike
 
-当前默认进入**奶茶店美术试玩**，使用现有分层美术实际运行员工制作、搬运和配送。底部为店铺、建造、员工、招募入口；员工面板查看和培养伙伴，招募面板邀请普通员工，建造与高级招募显示未开放。拖动物或员工面板中的卡片到煮茶台/加料台设为坐班，拖到可走空地恢复流动；支持软疲劳派工、人工/传送带运输及1/2/4倍速。试玩会话暂不保存。
+当前默认进入**奶茶店经营版**，使用现有分层美术运行真实制作、搬运和配送。新店 50 金币与一名小猫，点展示柜解锁柠檬茶；营业额到 300 后支付 240 解锁奶茶线，到 1500 后支付 300 解锁加料。点已开放的设备可升级机器或配料，口味等级与实际售价同步变化，顶部菜单可查看真实经营任务。
 
-当前验证引擎为 Godot 4.6.3（GDScript）。入口是 `presentation/tea_playtest/tea_playtest.tscn`；顶部菜单包含暂停、运输方式、重开和“进入旧版”，旧版和静态美术预览也有“试玩”入口。UI 框架独立为 `presentation/tea_playtest/shop_hud.tscn`。操作及验证见 [UI 框架验证](docs/qa/shop-ui.md)、[拖拽岗位验证](docs/qa/staff-posts.md) 和 [试玩说明](docs/qa/tea-art-playtest.md)。独立图素与场景说明见 [art/reference/README.md](art/reference/README.md)。
+底部为店铺、建造、员工、招募入口。普通招募获得的伙伴进入待派遣名册，可派到店内、收回、培养，也可直接拖卡片到工位完成派遣和坐班。员工拥有关系、培养等级与店内状态独立保存，重开店铺保留已拥有员工和培养。建造与高级招募仍未开放。支持人工/传送带运输及1/2/4倍速。
+
+经营进度自动保存，也可在菜单手动保存。新经营档案使用独立 `user://tea_shop.json`，恢复时保留机器加工、实际口味、在途运输、订单与员工岗位，不覆盖旧版 `save.json`。
+
+当前验证引擎为 Godot 4.6.3（GDScript）。入口是 `presentation/tea_playtest/tea_playtest.tscn`；顶部菜单包含暂停、运输方式、保存、经营目标、重开和“进入旧版”，旧版和静态美术预览也保留“试玩”入口。UI 框架独立为 `presentation/tea_playtest/shop_hud.tscn`。最新操作与验证见 [经营与员工存档验证](docs/qa/tea-business.md)；此前记录见 [UI 框架验证](docs/qa/shop-ui.md)、[拖拽岗位验证](docs/qa/staff-posts.md) 和 [生产试玩说明](docs/qa/tea-art-playtest.md)。独立图素与场景说明见 [art/reference/README.md](art/reference/README.md)。
 
 下文保留旧版经营流程与项目结构的历史说明，数值不代表当前默认试玩。
 
@@ -59,6 +63,7 @@ godot --path .
 | --- | --- |
 | `game/app/` | `app.gd`（唯一 Autoload，换店、存读档）、`profile.gd`、`save_service.gd` |
 | `game/sim/` | `game_sim.gd`（Node，固定步长 0.1 秒，tick 顺序和中转）、`snapshot.gd`、`save_util.gd` |
+| `game/tea_playtest/` | 当前美术店铺的物理生产基类、经营/名册模拟与独立持久化；旧版 GameSim 不改变 |
 | `game/sim/commands/` | 每条命令一个文件（validate + commit）：解锁前厅位点、招人、调岗、换岗、升级、解锁机位、并联、改线、清线、换店 |
 | `game/production/` | 后厨工位、传送带、备料架与预留 |
 | `game/workforce/` | 员工、请求认领、人工进度、效率倍率（唯一一处） |
