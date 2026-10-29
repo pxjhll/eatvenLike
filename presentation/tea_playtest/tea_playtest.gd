@@ -355,11 +355,9 @@ func _fit() -> void:
 	var offset := (size - Vector2(720, 1280) * factor) / 2.0
 	$Canvas.position = offset
 	$Canvas.scale = Vector2.ONE * factor
-	var ui_factor := size.x / 720.0 if size.x / size.y < 1.1 else size.y / 900.0
-	var ui_width := minf(size.x / ui_factor, 1120.0)
-	$Overlay/UI.position = Vector2((size.x - ui_width * ui_factor) / 2.0, 0)
-	$Overlay/UI.scale = Vector2.ONE * ui_factor
-	$Overlay/UI.size = Vector2(ui_width, size.y / ui_factor)
+	$Overlay/UI.position = offset
+	$Overlay/UI.scale = Vector2.ONE * factor
+	$Overlay/UI.size = Vector2(720, 1280)
 	ui.fit_to_size($Overlay/UI.size)
 
 

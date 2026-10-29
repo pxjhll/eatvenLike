@@ -27,6 +27,15 @@ func _run() -> void:
 		quit(1)
 		return
 	await _capture("home")
+	root.size = Vector2i(1340, 1080)
+	await _layout()
+	var desktop_shop := Rect2(view.get_node("Canvas").global_position, Vector2(720, 1280) * view.get_node("Canvas").scale)
+	for path in ["Header", "Navigation"]:
+		var bounds: Rect2 = hud.get_node(path).get_global_rect()
+		_check(bounds.position.x >= desktop_shop.position.x and bounds.end.x <= desktop_shop.end.x, "desktop HUD follows the portrait shop rather than browser width")
+	await _capture("desktop-home")
+	root.size = Vector2i(720, 1280)
+	await _layout()
 	var gold_before: int = view.sim.gold
 	await _click(hud.build_button)
 	_check(hud.page == "build", "build entry opens its panel")
@@ -46,8 +55,19 @@ func _run() -> void:
 	await _capture("staff")
 	root.size = Vector2i(1280, 720)
 	await _layout()
+	var shop_bounds := Rect2(view.get_node("Canvas").global_position, Vector2(720, 1280) * view.get_node("Canvas").scale)
+	var header_bounds: Rect2 = hud.get_node("Header").get_global_rect()
+	var navigation_bounds: Rect2 = hud.get_node("Navigation").get_global_rect()
+	_check(header_bounds.position.x >= shop_bounds.position.x and header_bounds.end.x <= shop_bounds.end.x, "landscape header stays inside the actual shop width")
+	_check(navigation_bounds.position.x >= shop_bounds.position.x and navigation_bounds.end.x <= shop_bounds.end.x, "landscape navigation stays inside the actual shop width")
 	var scroll: ScrollContainer = hud.get_node("Sheet/Margin/Column/Scroll")
-	scroll.scroll_vertical = 10000
+	# Exercise clipping with a short sheet, independently of the shipping layout.
+	var sheet: Control = hud.get_node("Sheet")
+	var original_sheet_top := sheet.offset_top
+	sheet.offset_top = -650
+	await process_frame
+	await process_frame
+	scroll.scroll_vertical = 96
 	await process_frame
 	await process_frame
 	var clipped_point: Vector2 = view._staff_cards[0].get_global_rect().position + Vector2(20, 4)
@@ -55,13 +75,18 @@ func _run() -> void:
 	await _gesture(clipped_point, _world(Vector2(325, 210)))
 	_check(view.sim.workers[0].post == "" and hud.page == "staff", "clipped roster card cannot be dragged through panel heading")
 	scroll.scroll_vertical = 0
+	sheet.offset_top = original_sheet_top
+	var header: Control = hud.get_node("Header")
+	var original_header_bottom := header.offset_bottom
+	header.offset_bottom = 180
 	await process_frame
 	await process_frame
 	var before_header_drop: Dictionary = view.sim.workers[0].duplicate(true)
 	var header_target := _world(Vector2(325, 130))
-	_check(hud.blocks_world(header_target), "landscape header overlaps the upper workstation art")
+	_check(hud.blocks_world(header_target), "expanded header fixture overlaps the upper workstation art")
 	await _gesture(view._staff_cards[0].get_global_rect().get_center(), header_target)
 	_check(view.sim.workers[0] == before_header_drop and not view._drag.dragging, "dropping over header preserves employee assignment and work")
+	header.offset_bottom = original_header_bottom
 	await _click(hud.staff_button)
 	root.size = Vector2i(720, 1280)
 	await _layout()
