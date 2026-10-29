@@ -204,7 +204,7 @@ func _update_cups() -> void:
 		for i in int(belt.count):
 			var offset := Vector2((i - (int(belt.count) - 1) / 2.0) * 14, -i * 2)
 			draws.append({"pos": point + offset, "item": belt.item, "host": host})
-	var buffer_points := {"mix": Vector2(488, 270), "topping": Vector2(78, 445), "seal": Vector2(613, 405)}
+	var buffer_points := {"mix": Vector2(505, 247), "topping": Vector2(78, 445), "seal": Vector2(613, 405)}
 	var buffer_hosts := {"mix": "MachineTable", "topping": "PrepBench", "seal": "Sealer"}
 	# One full-size cup marks a waiting output; the station sign already shows how many.
 	for id in buffer_points:

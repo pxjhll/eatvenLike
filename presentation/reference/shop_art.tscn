@@ -104,7 +104,7 @@ texture = ExtResource("6_800ag")
 centered = false
 
 [node name="Brewer" type="Node2D" parent="Sortables/MachineTable" unique_id=1217752630]
-position = Vector2(86.5, -20)
+position = Vector2(86.5, -44)
 metadata/art_layer = "equipment"
 metadata/asset_id = "brewer"
 
@@ -115,7 +115,7 @@ texture = ExtResource("8_j0eya")
 centered = false
 
 [node name="PearlPot" type="Node2D" parent="Sortables/MachineTable" unique_id=1069753232]
-position = Vector2(-49, -6)
+position = Vector2(-49, -36)
 metadata/art_layer = "equipment"
 metadata/asset_id = "pearl_pot"
 
