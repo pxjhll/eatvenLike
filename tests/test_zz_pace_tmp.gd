@@ -58,5 +58,5 @@ func _run(intervals: Array, slots: Array, seats: Array = [], per_cup := 2.0, exc
 	return text
 
 func test_pace() -> void:
-	for seats in [[], ["topping"], ["boil"], ["boil", "topping"]]:
+	for seats in [["boil", "counter"], ["boil", "topping", "counter"]]:
 		print("PACE " + _run([8.0, 7.0, 7.0, 6.0], [2, 3, 4, 5], seats))

@@ -523,6 +523,8 @@ func test_belt_segments_are_bought_and_move_goods_without_staff() -> void:
 
 func _run_front_split(front: bool) -> Dictionary:
 	var sim = opened()
+	# Brewing needs stirring, so both teams keep someone on the brewer.
+	check_eq(sim.assign_post(sim.workers[2].id, "boil"), "", "worker staffs the brewer")
 	if front: check_eq(sim.assign_post(sim.workers[0].id, "counter"), "", "worker staffs the counter")
 	var lost := 0
 	var mixed := false
