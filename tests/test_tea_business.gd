@@ -571,3 +571,26 @@ func test_counter_post_splits_front_and_kitchen_duties() -> void:
 	check_eq(sim.assign_post(sim.workers[0].id, "counter"), "", "counter post assigned")
 	check_eq(resumed.load_dict(sim.to_dict()), "", "counter post saves and loads")
 	check(not sim.assign_post(sim.workers[1].id, "counter").is_empty(), "counter has one front-of-house post")
+
+func test_seated_topping_worker_runs_its_whole_segment() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.gold = 100000
+	sim.revenue = 100000
+	for unused in 4: sim.hire()
+	for line in ["lemonade", "boil", "mix", "topping"]: sim.unlock_station(line)
+	for id in [2, 3, 4, 5]: sim.deploy_worker(id)
+	check_eq(sim.assign_post(5, "topping"), "", "one worker takes the topping seat")
+	var seen := {}
+	for tick in 3000:
+		sim.advance(0.1)
+		for worker in sim.workers:
+			if worker.job.is_empty(): continue
+			var segment: bool = worker.job.kind in ["transfer_to_topping", "topping"] or (worker.job.kind == "carry_to_seal" and worker.job.src == "topping")
+			if worker.id == 5:
+				check(segment, "the seated worker stays on its segment")
+				seen[worker.job.kind] = true
+			else:
+				check(not segment, "mobile staff leave the topping segment to the seat")
+	check(seen.has("transfer_to_topping") and seen.has("topping") and seen.has("carry_to_seal"), "the seat fetches, tops and delivers")
+	check(sim.audit().valid, "segment ownership preserves simulation invariants")

@@ -650,9 +650,6 @@ func _jobs(worker: Dictionary) -> Array:
 			if not dish in ["lemonade", "plain_milk_tea", "black_tea"]: result.append(_candidate("carry_to_seal", "topping", "seal", dish, worker, 84))
 	return _boost_kitchen(_shelf_jobs(worker, result))
 
-## Temporary: when false, mobile staff still help on the seated topping worker's hops.
-var segment_exclusive := true
-
 # A worker seated at the topping machine runs its whole segment: fetching plain
 # milk tea from the mixer, adding toppings, and carrying finished cups to the sealer.
 func _topping_segment(worker: Dictionary, result: Array) -> Array:
@@ -663,7 +660,7 @@ func _topping_segment(worker: Dictionary, result: Array) -> Array:
 
 # Mobile staff leave the topping segment's hops to whoever is seated there.
 func _topping_segment_open() -> bool:
-	return not segment_exclusive or post_owner("topping") == -1
+	return post_owner("topping") == -1
 
 func _post_job(post: String, job: Dictionary) -> bool:
 	if _is_operation(job): return job.src == post
