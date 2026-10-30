@@ -3,7 +3,7 @@ extends "res://tests/test_case.gd"
 
 func _run(intervals: Array, slots: Array, seats: Array = [], per_cup := 2.0, exclusive := true, bonus := 1.0) -> String:
 	var sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
-		var topping = sim._definition("topping")
+	var topping = sim._definition("topping")
 	var saved_cup: float = topping.art_seconds
 	topping.art_seconds = per_cup
 	var stages: Array = sim.PROGRESSION.stages
