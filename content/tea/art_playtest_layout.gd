@@ -15,8 +15,9 @@ const STATION_ART := {
 	"seal": "Sortables/Sealer", "shelf": "Sortables/Rack", "counter": "Sortables/Checkout",
 }
 ## A seated operator and a mobile courier use different physical interaction points.
-const POST_POINTS := {"boil": Vector2(270, 330), "topping": Vector2(190, 410)}
-const POST_RECTS := {"boil": Rect2(241, 114, 176, 176), "topping": Rect2(20, 246, 128, 350)}
+## The counter post is front-of-house: that employee only serves customers.
+const POST_POINTS := {"boil": Vector2(270, 330), "topping": Vector2(190, 410), "counter": Vector2(410, 930)}
+const POST_RECTS := {"boil": Rect2(241, 114, 176, 176), "topping": Rect2(20, 246, 128, 350), "counter": Rect2(330, 880, 350, 170)}
 const AUTOMATIC_RECTS := [Rect2(418, 115, 100, 165), Rect2(547, 195, 126, 200)]
 static var _grid: ShopGridDef
 static var _paths := {}

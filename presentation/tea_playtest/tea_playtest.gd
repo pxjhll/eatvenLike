@@ -200,7 +200,7 @@ func _refresh(delta: float) -> void:
 		for worker in sim.workers:
 			if worker.get("post", "") == post:
 				owner = int(worker.id)
-				_post_labels[post].text = "坐班"
+				_post_labels[post].text = "前台" if post == "counter" else "坐班"
 		_post_labels[post].visible = owner != -1
 	if _mobile_count() == 0 and _toast_left <= 0:
 		_toast.text = "店内暂无员工，请从员工名册派遣伙伴。" if sim.workers.is_empty() else "缺少流动员工，搬运将等待；拖到空地可恢复流动。"
