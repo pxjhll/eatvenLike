@@ -23,8 +23,8 @@ func _run(intervals: Array, slots: Array, seats: Array = []) -> String:
 		if sim.stage_index == 3 and sim.station_levels.topping < 4 and sim.station_info("topping").upgrade_error.is_empty(): sim.upgrade_station("topping")
 		if tick % 10 == 0:
 			for post in seats:
-				if not sim.station_unlocked(post) or sim.post_owner(post) != -1: continue
-				# Seat the free worker best suited to the post: the most skilled for topping, anyone else for the counter.
+				if sim.stage_index < 3 or not sim.station_unlocked(post) or sim.post_owner(post) != -1: continue
+				# From the topping stage on, seat the most skilled free worker at topping and anyone free at the counter.
 				var best: Dictionary = {}
 				for worker in sim.workers:
 					if not worker.post.is_empty(): continue
