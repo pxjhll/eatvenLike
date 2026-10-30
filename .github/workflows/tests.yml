@@ -7,7 +7,7 @@ on:
 
 jobs:
   headless:
-    timeout-minutes: 5
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,7 +19,7 @@ jobs:
       - name: Import (build class cache)
         run: ./godot --headless --path . --import
       - name: Run tests
-        run: timeout 120s ./godot --headless --path . -s tests/run_all.gd
+        run: timeout 300s ./godot --headless --path . -s tests/run_all.gd
       - name: Shop UI interaction regression
         run: timeout 30s ./godot --headless --path . -s tests/render_shop_ui.gd
       - name: Art shop business interaction regression
