@@ -3,9 +3,11 @@ extends Control
 
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const StationPanel := preload("res://presentation/tea_playtest/station_panel.gd")
-const NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸"}
+const Characters := preload("res://presentation/characters/character_library.gd")
+const CharacterPreview := preload("res://presentation/characters/character_preview.gd")
+const NAMES := Characters.NAMES
 const ROLES := {"speed": "速度型", "carry": "力量型", "skill": "操作型"}
-const PAGE_NAMES := {"staff": "员工", "recruit": "招募伙伴", "menu": "菜单", "restart": "重开店铺", "station": "设备", "goals": "目标"}
+const PAGE_NAMES := {"staff": "员工", "recruit": "招募伙伴", "menu": "菜单", "restart": "重开店铺", "station": "设备", "goals": "目标", "characters": "角色预览"}
 const POST_NAMES := {"boil": "煮茶", "topping": "加料"}
 ## Stat bars are scaled against the best value a fully trained partner can reach.
 const STAT_MAX := {"speed": 220.0, "capacity": 6.0, "skill": 3.0}
@@ -58,12 +60,15 @@ var confirm_restart_button: Button
 var deploy_button: Button
 var save_button: Button
 var station_panel: VBoxContainer
+var character_preview: VBoxContainer
+var character_preview_button: Button
+var staff_preview_button: Button
 
 func setup(view: Node2D) -> void:
 	_view = view
 	_apply_theme()
 	for key in NAMES:
-		_portraits[key] = load("res://art/reference/" + key + ".png")
+		_portraits[key] = Characters.portrait(key)
 	for entry in [[home_button, "shop"], [goals_button, "goals"], [staff_button, "staff"], [recruit_button, "recruit"]]:
 		entry[0].pressed.connect(open_page.bind(entry[1]))
 		entry[0].icon = load("res://art/ui/shop/" + entry[1] + ".svg")
@@ -245,6 +250,11 @@ func _build_pages() -> void:
 	train_button.add_theme_stylebox_override("normal", _style("8b6446", "8b6446", 15))
 	train_button.add_theme_color_override("font_color", Color("fff8e9"))
 	train_button.add_theme_color_override("font_hover_color", Color("583e2d"))
+	staff_preview_button = _action(staff, "查看角色动作", func() -> void:
+		for worker in _view.all_staff():
+			if int(worker.id) == _view.selected_worker:
+				open_character_preview(worker.art)
+				break)
 	_text(staff, "按住卡片拖到工位 = 坐班，拖到空地 = 流动", 19, true).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var recruit := _column("recruit")
 	_text(recruit, "普通招募", 27)
@@ -256,12 +266,16 @@ func _build_pages() -> void:
 	_text(advanced, "高级招募", 25)
 	_text(advanced, "尚未开放，更多伙伴敬请期待。", 21, true)
 	var menu := _column("menu")
+	character_preview_button = _action(menu, "角色预览", open_character_preview)
 	pause_button = _action(menu, "暂停营业", func() -> void: _view.sim.paused = not _view.sim.paused; refresh())
 	belt_button = _action(menu, "运输", _view.toggle_transport)
 	save_button = _action(menu, "保存进度", func() -> void: _view.save_now())
 	restart_button = _action(menu, "重新开始", open_page.bind("restart"))
 	old_button = _action(menu, "进入旧版", _view.go_to_old_game)
 	_save_caption = _text(menu, "", 20, true)
+	var characters := _column("characters")
+	character_preview = CharacterPreview.new()
+	characters.add_child(character_preview)
 	var restart_page := _column("restart")
 	_text(restart_page, "重新开始这家店？", 28)
 	_text(restart_page, "金币、设备与营业进度将重置。已拥有伙伴和培养等级会保留。", 24)
@@ -391,7 +405,8 @@ func refresh() -> void:
 			next_art = art
 			break
 	_recruit_portrait.texture = _portraits[next_art]
-	_recruit_label.text = "伙伴已全部加入" if sim.hire_cost() < 0 else ("浣熊 · 力量型\n擅长批量搬运" if next_art == "raccoon" else "狐狸 · 操作型\n擅长手工制作")
+	var descriptions := {"raccoon": "浣熊 · 力量型\n擅长批量搬运", "fox": "狐狸 · 操作型\n擅长手工制作", "rabbit": "小兔子 · 速度型\n擅长快速搬运"}
+	_recruit_label.text = "伙伴已全部加入" if sim.hire_cost() < 0 else descriptions.get(next_art, NAMES[next_art])
 	pause_button.text = "继续营业" if sim.paused else "暂停营业"
 	belt_button.text = "运输方式  ·  传送带" if sim.use_belts else "运输方式  ·  人工搬运"
 	%Selection.visible = show_selection and page == "shop"
@@ -474,6 +489,10 @@ func open_station(id: String) -> void:
 	station_panel.show_station(id)
 	open_page("station")
 
+func open_character_preview(art_id: String = "rabbit") -> void:
+	open_page("characters")
+	character_preview.select_character(art_id)
+
 func open_page(next_page: String) -> void:
 	if next_page != "shop" and not _page_nodes.has(next_page):
 		return
@@ -508,7 +527,8 @@ func _fit_sheet() -> void:
 		return
 	var margin: MarginContainer = %Sheet.get_node("Margin")
 	var chrome: float = 16.0 + %Heading.get_combined_minimum_size().y + margin.get_theme_constant("margin_top") + margin.get_theme_constant("margin_bottom") + 16.0
-	var limit := maxf(300.0, minf(_sheet_space.y * 0.64, _sheet_space.y - 122.0 - 130.0))
+	var fraction := 0.85 if page == "characters" else 0.64
+	var limit := maxf(300.0, minf(_sheet_space.y * fraction, _sheet_space.y - 122.0 - 130.0))
 	var wanted := clampf(%Content.get_combined_minimum_size().y + chrome, 200.0, limit)
 	if absf(wanted - _sheet_height) < 1.0:
 		return

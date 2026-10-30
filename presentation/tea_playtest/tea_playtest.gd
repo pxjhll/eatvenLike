@@ -5,7 +5,7 @@ const Sim := preload("res://game/tea_playtest/tea_playtest_sim.gd")
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const DragController := preload("res://presentation/tea_playtest/staff_drag_controller.gd")
-const ART_NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸"}
+const ART_NAMES := preload("res://presentation/characters/character_library.gd").NAMES
 const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "seal": "自动封口"}
 ## Machines show no standing text: a bar while working and a bubble only when they need a hand.
 const BADGES := {"boil": Vector2(265, 112), "mix": Vector2(420, 112), "topping": Vector2(36, 612), "seal": Vector2(556, 178)}
@@ -121,7 +121,9 @@ func _revenue() -> int:
 func _process(delta: float) -> void:
 	if sim == null:
 		return
-	sim.advance(minf(delta, 0.25) * _speed_factor)
+	# Viewing a character freezes business without changing the saved pause flag.
+	if ui.page != "characters":
+		sim.advance(minf(delta, 0.25) * _speed_factor)
 	_refresh(delta)
 	_fit()
 	_toast_left = maxf(0, _toast_left - delta)
@@ -189,7 +191,7 @@ func _refresh(delta: float) -> void:
 	if _mobile_count() == 0 and _toast_left <= 0:
 		_toast.text = "店内暂无员工，请从员工名册派遣伙伴。" if sim.workers.is_empty() else "缺少流动员工，搬运将等待；拖到空地可恢复流动。"
 	_update_cups()
-	_update_customers(delta if not sim.paused else 0.0)
+	_update_customers(delta if not sim.paused and ui.page != "characters" else 0.0)
 	if sim.sold > _last_sold:
 		_pop_income(_revenue() - _last_revenue)
 	_last_sold = sim.sold

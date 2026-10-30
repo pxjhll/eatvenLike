@@ -3,6 +3,7 @@ extends Node2D
 
 ## The view is orthographic, so a cup is the same size on a belt, a shelf or in a paw.
 const CUP_HEIGHT := 52.0
+const Characters := preload("res://presentation/characters/character_library.gd")
 
 const TASKS := {
 	"idle": "待命",
@@ -23,6 +24,9 @@ var _base_scale := Vector2.ONE
 var _font: Font
 var _art := ""
 var _height := 128.0
+var frame_actor: Node2D
+var _pose_initialized := false
+var _last_clock := 0.0
 ## A customer's order bubble: the drink they want and how much patience is left (-1 = no limit).
 var _order_item := ""
 var _patience := -1.0
@@ -34,12 +38,17 @@ func setup(art_id: String, font: Font, height := 128.0) -> void:
 	_font = font
 	_art = art_id
 	_height = height
-	body.texture = load("res://art/reference/" + art_id + ".png")
+	body.texture = Characters.portrait(art_id) if art_id in Characters.IDS else load("res://art/reference/" + art_id + ".png")
 	_base_scale = Vector2.ONE * height / body.texture.get_height()
 	body.scale = _base_scale
 	body.centered = false
 	body.position = Vector2(-body.texture.get_width() * _base_scale.x / 2.0, -height)
 	add_child(body)
+	if art_id == "rabbit":
+		body.visible = false
+		frame_actor = Characters.RABBIT_SCENE.instantiate()
+		frame_actor.scale = Vector2.ONE * height / 228.0
+		add_child(frame_actor)
 	carried.centered = false
 	carried.visible = false
 	add_child(carried)
@@ -83,10 +92,16 @@ func show_order(item: String, patience: float) -> void:
 func display(worker: Dictionary, clock: float) -> void:
 	position = worker.pos
 	var movement: Vector2 = position - _last_pos
+	var clock_step := maxf(0.0, clock - _last_clock) if _pose_initialized else 0.0
+	if not _pose_initialized:
+		movement = Vector2.ZERO
+	_pose_initialized = true
 	if absf(movement.x) > 0.1:
 		body.flip_h = movement.x < 0
 	var walking: bool = worker.get("walking", false)
-	var bob := sin(clock * 15.0) * 2.5 if walking else 0.0
+	var bob := sin(clock * 15.0) * 2.5 if walking and frame_actor == null else 0.0
+	if frame_actor != null:
+		_display_frames(worker, movement, clock_step)
 	var working: bool = worker.get("phase", "idle") in ["work", "pickup", "dropoff"]
 	body.position.y = -body.texture.get_height() * _base_scale.y + bob
 	body.rotation = sin(clock * 10.0) * 0.025 if working else 0.0
@@ -104,8 +119,39 @@ func display(worker: Dictionary, clock: float) -> void:
 		carried.modulate = item_color(item)
 		carried.scale = Vector2.ONE * CUP_HEIGHT / texture.get_height()
 		carried.position = Vector2(22, -78 + bob)
+		if frame_actor != null:
+			var facing: int = frame_actor.direction
+			var center := Vector2(0, -65) if facing in [0, 4] else Vector2(-29 if facing > 4 else 29, -69)
+			carried.position = center - texture.get_size() * carried.scale / 2.0
+			amount.position = center + Vector2(10, 10)
+			var behind: bool = facing in [3, 4, 5]
+			if behind and carried.get_index() > frame_actor.get_index():
+				move_child(carried, frame_actor.get_index())
+			elif not behind and carried.get_index() < frame_actor.get_index():
+				move_child(carried, frame_actor.get_index())
 	_last_pos = position
+	_last_clock = clock
 	queue_redraw()
+
+
+func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -> void:
+	var vector := movement
+	var path: PackedVector2Array = worker.get("path", PackedVector2Array())
+	var path_index: int = worker.get("path_index", 0)
+	if worker.get("walking", false) and path_index < path.size():
+		var to_next: Vector2 = path[path_index] - position
+		if to_next.length_squared() > 0.01:
+			vector = to_next
+	if vector.length_squared() > 0.01:
+		var direction := posmod(roundi(atan2(vector.x, vector.y) / (PI / 4.0)), 8)
+		if direction != frame_actor.direction:
+			frame_actor.set_direction(direction)
+	frame_actor.pause()
+	if worker.get("walking", false):
+		var factor := float(worker.get("speed", 104.0)) / 104.0
+		frame_actor.seek_phase(fposmod(frame_actor.get_phase() + clock_step * factor / frame_actor.get_cycle_seconds(), 1.0))
+	else:
+		frame_actor.seek_phase(0.0)
 
 
 static func item_asset(item: String) -> String:

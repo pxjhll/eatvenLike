@@ -1,0 +1,586 @@
+{
+  "external_source": "E:\\Work\\小兔子走路",
+  "frame_size": [
+    256,
+    256
+  ],
+  "columns": 7,
+  "rows": 5,
+  "anchor": [
+    128,
+    244
+  ],
+  "source_preservation": "Byte-identical PNG copies. No recolor, resize, per-frame crop or recenter.",
+  "directions": [
+    {
+      "key": "front",
+      "animation": "walk_front",
+      "row": 0,
+      "source_folder": "正面走路关键帧",
+      "source_facing": "down",
+      "source_preview": "走路循环预览_256x256.gif",
+      "durations_ms": [
+        120,
+        90,
+        120,
+        130,
+        120,
+        90,
+        120
+      ],
+      "cycle_ms": 790,
+      "frame_count": 7,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "endpoint_policy": "Keep all seven: terminal PNG is a distinct gait sample; do not append a closing copy of frame 01.",
+      "visible_height_range": [
+        224,
+        226
+      ],
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "正面走路_01.png",
+          "sha256": "e9778fee2827da0808fe70915c1f98556bcadc060fe11e09e4b20aa597cf7f72",
+          "alpha_bbox_32": [
+            58,
+            18,
+            203,
+            243
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "正面走路_02.png",
+          "sha256": "c9757cf64c4bc2d6fa552bc30055ef7ef1b48c7b63ed47a7dac54d89bea711e3",
+          "alpha_bbox_32": [
+            59,
+            19,
+            204,
+            244
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "正面走路_03.png",
+          "sha256": "a8ac94fd8a3c706aca31ab6a237ec8852bf7d3d26fcfac87866e51fa95c5a871",
+          "alpha_bbox_32": [
+            59,
+            18,
+            204,
+            243
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "正面走路_04.png",
+          "sha256": "1e436197a5c9d901dfa7ccbec456050011a51cf12ce81b615a3c5de85b61b2d0",
+          "alpha_bbox_32": [
+            57,
+            16,
+            202,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "正面走路_05.png",
+          "sha256": "ce6016d25784452dbe29bde0ff2f3b6a54ba7f3407a12c3b55792e1a02d09040",
+          "alpha_bbox_32": [
+            55,
+            18,
+            200,
+            244
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "正面走路_06.png",
+          "sha256": "56349121608f11eaae3350de8687e1f9ca0abf812d86e02f676d235f6bdfc272",
+          "alpha_bbox_32": [
+            54,
+            19,
+            199,
+            243
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "正面走路_07.png",
+          "sha256": "4525414ba9c7c100f1cbc0c12bf5ebc87ba01e1c398203e6edd6095d9873d779",
+          "alpha_bbox_32": [
+            55,
+            17,
+            200,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "front_right",
+      "animation": "walk_front_right",
+      "row": 1,
+      "source_folder": "45度正面走路关键帧",
+      "source_facing": "down-right",
+      "source_preview": "45度正面走路_256x256.gif",
+      "durations_ms": [
+        130,
+        170,
+        120,
+        130,
+        120,
+        170,
+        120
+      ],
+      "cycle_ms": 960,
+      "frame_count": 7,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "endpoint_policy": "Keep all seven: terminal PNG is a distinct gait sample; do not append a closing copy of frame 01.",
+      "visible_height_range": [
+        212,
+        220
+      ],
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "45度正面走路_01.png",
+          "sha256": "417c7543364c4284da6f15269764f629df33ee59965126719ebca51756958ee1",
+          "alpha_bbox_32": [
+            67,
+            26,
+            202,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "45度正面走路_02.png",
+          "sha256": "6de5b107bfeaa35dcc509b787ca6b6680710c590c3779933b910595d802f663e",
+          "alpha_bbox_32": [
+            66,
+            28,
+            201,
+            243
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "45度正面走路_03.png",
+          "sha256": "1b2088637050d9f68189af5f8d74ae24d225c4a35f4559ba51c60b4e500ca857",
+          "alpha_bbox_32": [
+            62,
+            25,
+            196,
+            244
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "45度正面走路_04.png",
+          "sha256": "0d4c83a18e6ff57158a9f606da68e4590ca8df977ebcdfaa9d370d8508a3f5a0",
+          "alpha_bbox_32": [
+            61,
+            23,
+            195,
+            243
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "45度正面走路_05.png",
+          "sha256": "759d516064bd58968fa6d0c14462bb6beeecbda8a131812675a9df77412bd19a",
+          "alpha_bbox_32": [
+            61,
+            24,
+            196,
+            241
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "45度正面走路_06.png",
+          "sha256": "48df0a84704ce3d0d23eb8ac801a776558847a0e0f8a2240e7c5f1416cb033b5",
+          "alpha_bbox_32": [
+            63,
+            27,
+            198,
+            240
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "45度正面走路_07.png",
+          "sha256": "9df029e9fc7e6a72b51c5fb080743437fa0b468f5748b940c8bf1ae451399574",
+          "alpha_bbox_32": [
+            66,
+            27,
+            201,
+            239
+          ]
+        }
+      ]
+    },
+    {
+      "key": "right",
+      "animation": "walk_right",
+      "row": 2,
+      "source_folder": "正侧走路关键帧",
+      "source_facing": "right",
+      "source_preview": "正侧走路_256x256.gif",
+      "durations_ms": [
+        130,
+        170,
+        120,
+        170,
+        120,
+        170,
+        120
+      ],
+      "cycle_ms": 1000,
+      "frame_count": 7,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "endpoint_policy": "Keep all seven: terminal PNG is a distinct gait sample; do not append a closing copy of frame 01.",
+      "visible_height_range": [
+        223,
+        226
+      ],
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "正侧走路_01.png",
+          "sha256": "3f93cac0481367c3fbeaf3f74431a8b6bed5e92ec6f4dd43d7e881741533a84d",
+          "alpha_bbox_32": [
+            69,
+            16,
+            187,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "正侧走路_02.png",
+          "sha256": "be4c2ee4d25958d38d7fd2cd0c7f20de63f6a8d90847a82dd35918de51cefd03",
+          "alpha_bbox_32": [
+            69,
+            18,
+            187,
+            241
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "正侧走路_03.png",
+          "sha256": "087ed0c1e51ca3cde8df9ae116eb8955439ebc717cb93e24a58897cacac12910",
+          "alpha_bbox_32": [
+            69,
+            17,
+            187,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "正侧走路_04.png",
+          "sha256": "17e165ed884a033e21d06bf0aba43f361613db2d9f21317e987d29a0878a3f50",
+          "alpha_bbox_32": [
+            69,
+            16,
+            187,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "正侧走路_05.png",
+          "sha256": "1bbd84ff0d22164a7d950136fc80d0e6c21737b5783bacedc2bcf55442daaaf1",
+          "alpha_bbox_32": [
+            69,
+            17,
+            187,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "正侧走路_06.png",
+          "sha256": "3fdfa4878a127b015f7cbf76f90ae168195b1135092ddfa3dd9da1dd55bc7c80",
+          "alpha_bbox_32": [
+            69,
+            18,
+            187,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "正侧走路_07.png",
+          "sha256": "5dcb88810a9680a628406371fe635f475f42b027daf52791cf40a328430269b6",
+          "alpha_bbox_32": [
+            69,
+            16,
+            187,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "back_right",
+      "animation": "walk_back_right",
+      "row": 3,
+      "source_folder": "45度背面走路关键帧",
+      "source_facing": "up-right",
+      "source_preview": "45度背面走路_256x256.gif",
+      "durations_ms": [
+        130,
+        120,
+        130,
+        120,
+        130,
+        120,
+        130
+      ],
+      "cycle_ms": 880,
+      "frame_count": 7,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "endpoint_policy": "Keep all seven: terminal PNG is a distinct gait sample; do not append a closing copy of frame 01.",
+      "visible_height_range": [
+        224,
+        229
+      ],
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "45度背面走路_01.png",
+          "sha256": "6cb30de3b9acde7d69eeb3840cfcac201e9ec39e70ce87eb274bfd1b63668174",
+          "alpha_bbox_32": [
+            62,
+            13,
+            188,
+            241
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "45度背面走路_02.png",
+          "sha256": "a0632305e6550dbef4ea9b4498a9fb185c0d28646b281c04556e7fc30aee4bc9",
+          "alpha_bbox_32": [
+            60,
+            15,
+            186,
+            239
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "45度背面走路_03.png",
+          "sha256": "00f5d79d040302c155283a48a0ad29676ecc381c774ff5bb0b186a2c072a9636",
+          "alpha_bbox_32": [
+            61,
+            13,
+            186,
+            237
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "45度背面走路_04.png",
+          "sha256": "24241af81d191b59e60c205ec8d0ad60c0676dc2280fb8dcf3a4d17fa958579e",
+          "alpha_bbox_32": [
+            62,
+            12,
+            188,
+            237
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "45度背面走路_05.png",
+          "sha256": "277725096b344605f27a5419cea8a1be89508d1dbc89216b48b8b43bfc91a41e",
+          "alpha_bbox_32": [
+            61,
+            14,
+            189,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "45度背面走路_06.png",
+          "sha256": "72edb78f97b67964a58c53b47a2251bd5004eeab2cd069ea73fcbcc74e37cfe1",
+          "alpha_bbox_32": [
+            62,
+            16,
+            190,
+            243
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "45度背面走路_07.png",
+          "sha256": "30ad8b5d9863876d24c3552037642ef6735ae2abe09359b1dc90b0726ac326c0",
+          "alpha_bbox_32": [
+            64,
+            13,
+            189,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "back",
+      "animation": "walk_back",
+      "row": 4,
+      "source_folder": "背面走路关键帧",
+      "source_facing": "up",
+      "source_preview": "背面走路_256x256.gif",
+      "durations_ms": [
+        120,
+        90,
+        120,
+        90,
+        120,
+        90,
+        120
+      ],
+      "cycle_ms": 750,
+      "frame_count": 7,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "endpoint_policy": "Keep all seven: terminal PNG is a distinct gait sample; do not append a closing copy of frame 01.",
+      "visible_height_range": [
+        211,
+        216
+      ],
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "背面走路_01.png",
+          "sha256": "b5004c9e9e56864467715eacf1cc914863d5ec88014e089f45c318a5605c53e5",
+          "alpha_bbox_32": [
+            56,
+            24,
+            197,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "背面走路_02.png",
+          "sha256": "083c0007999a34604409a0d6ba4aabebdd21933b6bd7f4746a75ff6e490cbf86",
+          "alpha_bbox_32": [
+            58,
+            24,
+            198,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "背面走路_03.png",
+          "sha256": "75acdabee1a76c54a71b6de71303573d13706c37f088ccf4c032c726f00492d0",
+          "alpha_bbox_32": [
+            60,
+            27,
+            200,
+            240
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "背面走路_04.png",
+          "sha256": "bce6a9ff569825b5a0f487edf713a1d0f4459427cff5e3cb3ec5fecf4bf271f4",
+          "alpha_bbox_32": [
+            60,
+            26,
+            200,
+            240
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "背面走路_05.png",
+          "sha256": "4b198b97f48bc0304354e760dbbf7858c3ccff8cf28dacb9fca32c353c8000ee",
+          "alpha_bbox_32": [
+            58,
+            26,
+            198,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "背面走路_06.png",
+          "sha256": "d52346d3de9482025da9c2b61fdfc8c1042953d8f1ca7a240a9dc7f91b96f14d",
+          "alpha_bbox_32": [
+            57,
+            28,
+            196,
+            240
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "背面走路_07.png",
+          "sha256": "eda29ea0db2636adc0e0749d146d4367263cbaa9829f17b65ec7e6f6386c3690",
+          "alpha_bbox_32": [
+            56,
+            29,
+            196,
+            240
+          ]
+        }
+      ]
+    }
+  ]
+}

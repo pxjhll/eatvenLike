@@ -90,6 +90,86 @@ func test_collection_training_recall_and_reset() -> void:
 	check_eq(sim.gold, 50, "reset returns opening economy")
 	check_eq(sim.workers.size(), 1, "reset deploys starter only")
 
+func test_rabbit_is_fourth_paid_recruit_without_expanding_deployment_limit() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.gold = 180
+	for expected in [[35, "raccoon", 2], [60, "fox", 3]]:
+		check_eq(sim.hire_cost(), expected[0], "existing recruitment prices stay ordered")
+		var before: int = sim.gold
+		check(sim.hire(), "recruit existing employee")
+		check_eq(sim.gold, before - expected[0], "recruitment deducts its full price")
+		check_eq(sim.worker_by_id(expected[2]).art, expected[1], "existing employee ids remain stable")
+	check_eq(sim.hire_cost(), 85, "rabbit is the next paid recruit")
+	sim.gold = 84
+	var before: Dictionary = sim.to_dict()
+	check(not sim.hire(), "rabbit cannot be recruited with insufficient gold")
+	check_eq(sim.to_dict(), before, "failed rabbit recruitment is atomic")
+	sim.gold = 85
+	check(sim.hire(), "fourth recruit succeeds at its full price")
+	check_eq(sim.gold, 0, "rabbit recruitment spends 85 gold")
+	check_eq(sim.all_workers().size(), 4, "four employees can be owned")
+	check_eq(sim.workers.size(), 1, "recruits enter reserve")
+	var rabbit: Dictionary = sim.worker_by_id(4)
+	check(not rabbit.is_empty(), "rabbit has stable id four")
+	if rabbit.is_empty(): return
+	check_eq(rabbit.art, "rabbit", "fourth roster entry uses rabbit art")
+	check_eq(rabbit.name, "小兔子", "recruited rabbit has its display name")
+	check_eq(rabbit.role, "speed", "rabbit trains movement speed")
+	check_eq(rabbit.speed, 104.0, "rabbit starts with its movement speed")
+	check_eq(rabbit.capacity, 2, "rabbit starts with two carry slots")
+	check_eq(rabbit.skill, 1.0, "rabbit starts with normal operation skill")
+	check_eq(rabbit.source, "招募", "rabbit records paid recruitment source")
+	check_eq(sim.hire_cost(), -1, "complete roster has no further hire")
+	check(not sim.hire(), "complete roster cannot be hired again")
+	check_eq(sim.deploy_worker(2), "", "second employee deploys")
+	check_eq(sim.deploy_worker(3), "", "third employee deploys")
+	before = sim.to_dict()
+	check(not sim.deploy_worker(4).is_empty(), "owning rabbit does not increase three-deployed cap")
+	check_eq(sim.to_dict(), before, "blocked fourth deployment is atomic")
+	check_eq(sim.recall_worker(2), "", "recall opens a deployment slot")
+	check_eq(sim.deploy_worker(4), "", "rabbit deploys into the open slot")
+	check_eq(sim.workers.size(), 3, "rabbit participates within existing cap")
+	check(is_same(sim.workers[2], rabbit), "deployed rabbit shares owned record")
+	check(sim.audit().valid, "four owned staff preserve simulation invariants")
+
+func test_acquired_rabbit_can_train_work_recall_and_survive_shop_reset() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	check_eq(sim.acquire_staff("rabbit", "活动奖励"), "", "rabbit supports the explicit acquisition path")
+	var rabbit: Dictionary = sim.worker_by_id(4)
+	if rabbit.is_empty(): return
+	var before: Dictionary = sim.to_dict()
+	check(not sim.acquire_staff("rabbit", "活动奖励").is_empty(), "rabbit cannot be acquired twice")
+	check_eq(sim.to_dict(), before, "duplicate acquisition preserves state")
+	sim.gold = 100
+	check(sim.train(4), "reserve rabbit can train")
+	check_eq(sim.worker_by_id(4).speed, 122.0, "rabbit speed training applies")
+	check_eq(sim.recall_worker(1), "", "starter recalled for rabbit service")
+	check_eq(sim.deploy_worker(4), "", "acquired rabbit deploys")
+	check_eq(sim.unlock_station("lemonade"), "", "open real service work")
+	var saw_cargo := false
+	for tick in 1000:
+		sim.advance(0.1)
+		if rabbit.carry_count > 0:
+			saw_cargo = true
+			break
+	check(saw_cargo, "rabbit picks up physical stock")
+	check_eq(sim.recall_worker(4), "", "busy rabbit can recall")
+	check(sim.audit().valid, "rabbit recall returns stock and reservations")
+	check_eq(sim.deploy_worker(4), "", "recalled rabbit can deploy again")
+	sim.reset_shop()
+	check_eq(sim.all_workers().size(), 2, "reset retains acquired rabbit")
+	check_eq(sim.worker_by_id(4).level, 2, "reset retains rabbit level")
+	check_eq(sim.worker_by_id(4).speed, 122.0, "reset retains rabbit speed")
+	check_eq(sim.worker_by_id(4).capacity, 2, "reset retains rabbit carry progression")
+	check_eq(sim.worker_by_id(4).source, "活动奖励", "reset retains rabbit acquisition source")
+	check_eq(sim.workers.size(), 1, "reset deploys only the starter")
+	check_eq(sim.workers[0].id, 1, "reset restores cat deployment")
+	check(not sim.worker_by_id(4).deployed, "rabbit returns to reserve on reset")
+	check_eq(sim.gold, 50, "reset restores starting economy")
+	check(sim.audit().valid, "reset with rabbit preserves stock invariants")
+
 func test_real_flavors_conservation_and_identical_resume() -> void:
 	for belts in [false, true]:
 		var sim = opened()

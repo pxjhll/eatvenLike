@@ -7,7 +7,7 @@ const PROGRESSION = preload("res://content/tea/art_shop_progression.tres")
 const BLACK_TEA_CAP := 3
 ## v2: staged line (black tea stage) changed the station and dish shapes.
 const SAVE_VERSION := 2
-const ARTS := ["cat", "raccoon", "fox"]
+const ARTS := ["cat", "raccoon", "fox", "rabbit"]
 const ALIASES := {"cabinet": "supply", "brewer": "boil", "milk_station": "mix", "lemonade_stand": "lemonade"}
 const RESOURCE_IDS := {"supply": "cabinet", "boil": "brewer", "mix": "milk_station", "topping": "topping", "lemonade": "lemonade_stand", "counter": "counter"}
 const DISHES := ["lemonade", "black_tea", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"]
@@ -82,6 +82,13 @@ func _initialize_shop() -> void:
 		if dish == "black_tea": continue
 		stations.topping.output[dish] = 0
 		stations.seal.input[dish] = 0
+
+func _make_worker(index: int) -> Dictionary:
+	if ARTS[index] != "rabbit": return super._make_worker(index)
+	var worker := super._make_worker(0)
+	worker.merge({"id": index + 1, "name": "小兔子", "art": "rabbit", "role": "speed",
+		"speed": 104.0, "capacity": 2, "skill": 1.0}, true)
+	return worker
 
 func reset_shop() -> void:
 	workers.clear()
@@ -867,7 +874,7 @@ func _validate_state(state: Dictionary) -> String:
 	var worker_sample := _make_worker(0)
 	worker_sample.source = ""
 	worker_sample.deployed = false
-	if state.roster.is_empty() or state.roster.size() > 3 or state.deployed.size() > 3: return "员工名册无效"
+	if state.roster.is_empty() or state.roster.size() > ARTS.size() or state.deployed.size() > 3: return "员工名册无效"
 	var ids: Array = []
 	for worker in state.roster:
 		if not worker is Dictionary: return "员工字段无效"
