@@ -1,0 +1,15 @@
+{
+  "source_commit": "5162a5f20e26fe482bddcc9740653cbc9ec67e5c",
+  "built_at": "2026-10-30T11:15:03+08:00",
+  "entry_scene": "presentation/tea_playtest/tea_playtest.tscn",
+  "feature": "rabbit-frame-gameplay-conveyors-front-counter-roles",
+  "godot": "4.6.3",
+  "pck_sha256": "809de16aa0a531ca30301ecc4b9d4a7dcd92a0a4553ff41c9ee5f49e652265a0",
+  "tests": {
+    "passed": 132,
+    "failed": 0,
+    "shop_ui_failures": 0,
+    "tea_business_gui_failures": 0,
+    "rabbit_native_gui_failures": 0
+  }
+}
