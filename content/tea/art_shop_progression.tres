@@ -81,7 +81,7 @@ unlock_slots = Array[String](["topping"])
 line_cost = 300
 line_name = "加料机"
 staff_slots = 5
-customer_interval = 5.0
+customer_interval = 6.0
 order_weights = Dictionary[String, float]({"lemonade": 0.15, "black_tea": 0.1, "plain_milk_tea": 0.05, "pearl_milk_tea": 0.3, "coconut_milk_tea": 0.15, "redbean_milk_tea": 0.15, "taro_milk_tea": 0.1})
 tasks = Array[ExtResource("task_def")]([SubResource("task_topping4"), SubResource("task_pearl20")])
 

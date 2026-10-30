@@ -44,6 +44,6 @@ func _run(intervals: Array, slots: Array) -> String:
 	return text
 
 func test_pace() -> void:
-	for slots in [[2, 3, 4, 5], [3, 4, 5, 6]]:
-		for intervals in [[8.0, 7.0, 7.0, 5.0], [8.0, 8.0, 8.0, 6.0], [10.0, 9.0, 9.0, 7.0]]:
+	for slots in [[2, 3, 4, 5]]:
+		for intervals in [[8.0, 7.0, 7.0, 6.0]]:
 			print("PACE " + _run(intervals, slots))
