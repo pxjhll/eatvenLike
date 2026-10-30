@@ -581,6 +581,8 @@ func test_seated_topping_worker_runs_its_whole_segment() -> void:
 	for line in ["lemonade", "boil", "mix", "topping"]: sim.unlock_station(line)
 	for id in [2, 3, 4, 5]: sim.deploy_worker(id)
 	check_eq(sim.assign_post(5, "topping"), "", "one worker takes the topping seat")
+	var seated: Dictionary = sim.workers.filter(func(w): return w.id == 5)[0]
+	check(is_equal_approx(sim._walk_speed(seated), seated.speed * 1.3) and is_equal_approx(sim._skill(seated), seated.skill * 1.3), "the seat walks and works 30% faster")
 	var seen := {}
 	for tick in 3000:
 		sim.advance(0.1)

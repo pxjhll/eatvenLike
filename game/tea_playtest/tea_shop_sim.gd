@@ -491,9 +491,9 @@ func _machine_duration(key: String) -> float:
 	return 3.0
 
 func _action_duration(job: Dictionary, worker: Dictionary) -> float:
-	if job.item == "lemonade": return _definition("lemonade").cycle_seconds / _speed("lemonade") / worker.skill
-	if job.kind == "topping": return _topping_seconds() * job.count / worker.skill / _speed("topping")
-	if job.kind == "load_boil": return 0.6 / worker.skill / _speed("supply") / _material_bonus("supply", "tea_leaf")
+	if job.item == "lemonade": return _definition("lemonade").cycle_seconds / _speed("lemonade") / _skill(worker)
+	if job.kind == "topping": return _topping_seconds() * job.count / _skill(worker) / _speed("topping")
+	if job.kind == "load_boil": return 0.6 / _skill(worker) / _speed("supply") / _material_bonus("supply", "tea_leaf")
 	return super._action_duration(job, worker)
 
 ## Seconds of hand work per cup at the topping machine (its art_seconds; 2 when unset).
@@ -657,6 +657,15 @@ func _topping_segment(worker: Dictionary, result: Array) -> Array:
 	for dish in DISHES:
 		if not dish in ["lemonade", "plain_milk_tea", "black_tea"]: result.append(_candidate("carry_to_seal", "topping", "seal", dish, worker, 84))
 	return _boost_kitchen(_without_belted(result))
+
+# The seated topping worker knows its segment: it walks and works this much faster.
+const SEATED_BONUS := 1.3
+
+func _walk_speed(worker: Dictionary) -> float:
+	return worker.speed * (SEATED_BONUS if worker.post == "topping" else 1.0)
+
+func _skill(worker: Dictionary) -> float:
+	return worker.skill * (SEATED_BONUS if worker.post == "topping" else 1.0)
 
 # Mobile staff leave the topping segment's hops to whoever is seated there.
 func _topping_segment_open() -> bool:
