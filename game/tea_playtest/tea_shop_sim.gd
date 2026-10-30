@@ -570,7 +570,7 @@ func _jobs(worker: Dictionary) -> Array:
 		if not kind.is_empty() and count > 0: result.append({"kind": kind, "src": post, "dst": post, "item": item, "count": count, "priority": 72.0 if post == "topping" else 55.0, "belt": "", "order_id": -1})
 	if not worker.post.is_empty() and worker.post != "counter": return result
 	# Once someone staffs the counter, mobile staff leave customers to them and stay in the kitchen.
-	var front_staffed := worker.post.is_empty() and post_owner("counter") != -1
+	var front_staffed: bool = worker.post.is_empty() and post_owner("counter") != -1
 	for order in orders:
 		if order.reserved or front_staffed: continue
 		var source: String = "supply" if order.dish == "lemonade" else "shelf"
