@@ -1,0 +1,16 @@
+name: bench-tmp
+on:
+  push:
+    branches: [claude/project-thread-3q5s6i]
+jobs:
+  bench:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.7-stable_linux.x86_64 godot
+          ./godot --headless --path . --import
+          ./godot --headless --path . -s tests/run_pace_tmp.gd 2>&1 | grep PACE
