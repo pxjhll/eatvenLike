@@ -50,6 +50,10 @@ godot --headless --path . -s art_src/reference/build_assets.gd
 
 The native build script losslessly slices the generated sheets into independent RGBA PNGs using `Image.get_region`, then packs the editable scene. Exact crop bounds, placement rectangles and sorting depths are in `art_src/reference/manifest.json`.
 
+`checkout.png` is no longer a straight crop: it is rebuilt at scene aspect (1400 x 280) from
+`art_src/reference/masters/checkout_620.png` by `art_src/reference/widen_checkout.py`. Re-extracting the
+sheets would bring back the stretched 620 px crop; rerun that script afterwards.
+
 ## Provenance and scope
 
 Source: the portrait image supplied by the user in this chat on 2026-10-27. Parts hidden behind animals, text or other props were reconstructed with the built-in imagegen tool; these are reference-based painted derivatives rather than pixel-identical cutouts. No third-party stock pack was substituted. Prompts are archived in `art_src/reference/generation_prompts.json` and `correction_prompts.json`.

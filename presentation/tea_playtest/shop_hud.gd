@@ -11,6 +11,8 @@ const PAGE_NAMES := {"staff": "员工", "recruit": "招募伙伴", "menu": "菜�
 const POST_NAMES := {"boil": "煮茶", "topping": "加料", "counter": "前台"}
 ## Stat bars are scaled against the best value a fully trained partner can reach.
 const STAT_MAX := {"speed": 220.0, "capacity": 6.0, "skill": 3.0}
+const COIN := preload("res://art/ui/coin.png")
+const COIN_SMALL := preload("res://art/ui/coin_small.png")
 var page := "shop"
 var show_selection := false
 var _view: Node2D
@@ -28,6 +30,8 @@ var _save_caption: Label
 var _task_rows: Array[Dictionary] = []
 var _task_signature := ""
 var _task_column: VBoxContainer
+## Action buttons get a coin icon whenever their label is a price.
+var _action_buttons: Array[Button] = []
 var _goal_title: Label
 var _goal_bar: ProgressBar
 var _goal_value: Label
@@ -116,7 +120,7 @@ func _apply_theme() -> void:
 	var header_style := _style("fff5e2f2", "b38c62", 22)
 	header_style.set_content_margin_all(0)
 	$Header.add_theme_stylebox_override("panel", header_style)
-	%Coin.add_theme_stylebox_override("panel", _style("e6b94f", "a77d2a", 15))
+	%Coin.texture = COIN
 	var flat := StyleBoxEmpty.new()
 	for state in ["normal", "hover", "focus", "disabled"]:
 		goal_button.add_theme_stylebox_override(state, flat)
@@ -173,8 +177,19 @@ func _action(parent: Node, text: String, callback: Callable) -> Button:
 	button.custom_minimum_size.y = 78
 	button.focus_mode = Control.FOCUS_NONE
 	button.pressed.connect(callback)
+	button.expand_icon = true
+	button.add_theme_constant_override("icon_max_width", 24)
+	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_focus_color"]:
+		button.add_theme_color_override(state, Color.WHITE)
+	button.add_theme_color_override("icon_disabled_color", Color(1, 1, 1, 0.5))
 	parent.add_child(button)
+	_action_buttons.append(button)
 	return button
+
+func _update_coin_icons() -> void:
+	for button in _action_buttons:
+		if is_instance_valid(button):
+			button.icon = COIN_SMALL if "金币" in button.text else null
 
 func _card(parent: Node, background := "fffaf0", border := "e6d8bf") -> VBoxContainer:
 	var card := PanelContainer.new()
@@ -431,6 +446,7 @@ func refresh() -> void:
 		"station": station_panel.refresh()
 		"goals": _refresh_goals(sim)
 		"staff": %Subtitle.text = "店内 %d / %d · 拥有 %d 位" % [sim.workers.size(), sim.staff_slots() if sim.has_method("staff_slots") else 3, roster.size()]
+	_update_coin_icons()
 	_fit_sheet()
 
 ## A second fox reads 狐狸 2, so cards of the same animal can be told apart.
