@@ -21,7 +21,7 @@ var _staff_portraits: Array[TextureRect] = []
 var _recruit_label: Label
 var _recruit_portrait: TextureRect
 var _styled_selection := -1
-var _card_content: HBoxContainer
+var _card_content: GridContainer
 var _page_nodes := {}
 var _roster_signature := ""
 var _save_caption: Label
@@ -225,7 +225,14 @@ func _portrait(parent: Node, art: String, height: float) -> TextureRect:
 
 func _build_pages() -> void:
 	var staff := _column("staff")
-	_card_content = _row(staff)
+	# Four cards to a row; a bigger roster wraps onto more rows inside the scrolling sheet.
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 12)
+	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff.add_child(grid)
+	_card_content = grid
 	var details := _card(staff)
 	var heading := _row(details, 10)
 	_selected_name = _nowrap(_text(heading, "", 26))
@@ -377,7 +384,7 @@ func refresh() -> void:
 		var worker: Dictionary = roster[i]
 		var is_selected: bool = int(worker.id) == _view.selected_worker
 		var status := _status(worker)
-		_staff_titles[i].text = "%s Lv%d" % [NAMES[worker.art], worker.level]
+		_staff_titles[i].text = "%s Lv%d" % [_staff_name(worker, roster), worker.level]
 		pill(_staff_tags[i], status[0], status[1], status[2])
 		_staff_portraits[i].modulate = Color.WHITE if _view.staff_is_deployed(int(worker.id)) else Color(1, 1, 1, 0.55)
 		if _styled_selection != _view.selected_worker:
@@ -386,7 +393,7 @@ func refresh() -> void:
 			selected = worker
 	_styled_selection = _view.selected_worker
 	var task_text: String = Actor.TASKS.get(selected.task_label, selected.task_label)
-	_selected_name.text = NAMES[selected.art]
+	_selected_name.text = _staff_name(selected, roster)
 	pill(_selected_role, ROLES[selected.role], "ead4b2", "583e2d")
 	_selected_doing.text = "正在：" + task_text if _view.staff_is_deployed(int(selected.id)) else "在名册中待派遣"
 	for stat in _stat_bars:
@@ -402,26 +409,35 @@ func refresh() -> void:
 	hire_button.disabled = sim.hire_cost() < 0 or sim.gold < sim.hire_cost()
 	hire_button.text = "当前伙伴已集齐" if sim.hire_cost() < 0 else "邀请伙伴  ·  %d 金币" % sim.hire_cost()
 	var next_art := "fox"
-	for art in NAMES:
-		if not roster.any(func(worker: Dictionary) -> bool: return worker.art == art):
-			next_art = art
-			break
+	if sim.has_method("next_hire_art"):
+		next_art = sim.next_hire_art()
+	else:
+		for art in NAMES:
+			if not roster.any(func(worker: Dictionary) -> bool: return worker.art == art):
+				next_art = art
+				break
 	_recruit_portrait.texture = _portraits[next_art]
-	var descriptions := {"raccoon": "浣熊 · 力量型\n擅长批量搬运", "fox": "狐狸 · 操作型\n擅长手工制作", "rabbit": "小兔子 · 速度型\n擅长快速搬运"}
+	var descriptions := {"cat": "小猫 · 速度型\n跑得快的多面手", "raccoon": "浣熊 · 力量型\n擅长批量搬运", "fox": "狐狸 · 操作型\n擅长手工制作", "rabbit": "小兔子 · 速度型\n擅长快速搬运"}
 	_recruit_label.text = "伙伴已全部加入" if sim.hire_cost() < 0 else descriptions.get(next_art, NAMES[next_art])
 	pause_button.text = "继续营业" if sim.paused else "暂停营业"
 	belt_button.text = "运输方式  ·  传送带" if sim.use_belts else "运输方式  ·  人工搬运"
 	belt_button.visible = not sim.has_method("buy_belt")
 	%Selection.visible = show_selection and page == "shop"
 	$Selection/Row/Avatar.texture = _portraits[selected.art]
-	$Selection/Row/Summary.text = "%s · Lv%d\n%s" % [NAMES[selected.art], selected.level, task_text]
+	$Selection/Row/Summary.text = "%s · Lv%d\n%s" % [_staff_name(selected, roster), selected.level, task_text]
 	save_button.disabled = _view.store == null
 	_save_caption.text = _view.save_status if _view.store != null else "独立练习不会覆盖经营存档"
 	match page:
 		"station": station_panel.refresh()
 		"goals": _refresh_goals(sim)
-		"staff": %Subtitle.text = "店内 %d / 3 · 拥有 %d 位" % [sim.workers.size(), roster.size()]
+		"staff": %Subtitle.text = "店内 %d / %d · 拥有 %d 位" % [sim.workers.size(), sim.staff_slots() if sim.has_method("staff_slots") else 3, roster.size()]
 	_fit_sheet()
+
+## A second fox reads 狐狸 2, so cards of the same animal can be told apart.
+func _staff_name(worker: Dictionary, roster: Array) -> String:
+	var same: Array = roster.filter(func(other: Dictionary) -> bool: return other.art == worker.art)
+	if same.size() < 2: return NAMES[worker.art]
+	return "%s %d" % [NAMES[worker.art], same.find(worker) + 1]
 
 func _goal(sim) -> Dictionary:
 	if sim.has_method("goal_progress"):

@@ -88,8 +88,10 @@ func _ready() -> void:
 	_reset_visuals()
 	if sim.has_method("station_info"):
 		_build_station_signs()
-	if sim.has_method("buy_belt"):
+	if _belts_offered():
 		_build_belts()
+	elif sim.has_method("retire_belts") and sim.retire_belts() > 0:
+		save_now(false)
 	_refresh(0.0)
 	_fit()
 	_show_toast(sim.current_goal() if sim.has_method("current_goal") else "欢迎开店，伙伴正在准备第一杯奶茶。")
@@ -180,6 +182,8 @@ func _refresh(delta: float) -> void:
 			pass
 		elif station.phase == "awaiting_take":
 			need = "待取茶"
+		elif station.phase == "stir":
+			need = "待操作"
 		elif output_count > 0:
 			need = "待取 %d" % output_count
 		elif _total(station.input) > 0 and id in ["boil", "topping"]:
@@ -195,7 +199,7 @@ func _refresh(delta: float) -> void:
 	_shelf.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("seal")
 	if sim.has_method("station_info"):
 		_refresh_station_signs()
-	if sim.has_method("buy_belt"):
+	if _belts_offered():
 		_refresh_belts()
 	for post in _post_labels:
 		var owner := -1
@@ -544,6 +548,10 @@ func _refresh_station_signs() -> void:
 			node.modulate = Color.WHITE if sim.station_unlocked(id) else Color(0.6, 0.6, 0.6, 0.48)
 	if is_instance_valid(_lemonade_cup):
 		_lemonade_cup.visible = sim.station_unlocked("lemonade")
+
+
+func _belts_offered() -> bool:
+	return sim.has_method("buy_belt") and sim.BELTS_IN_GAME
 
 
 func _build_belts() -> void:

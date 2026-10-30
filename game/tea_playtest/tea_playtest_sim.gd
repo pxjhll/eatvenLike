@@ -123,7 +123,7 @@ func _cancel_job(worker: Dictionary) -> void:
 				shelf_count += worker.carry_count
 			else:
 				stations[job.src].output[job.item] += worker.carry_count
-		elif job.kind != "brew_take":
+		elif not job.kind in ["brew_take", "stir"]:
 			if job.src == "shelf":
 				_shelf_reserved_out -= job.count
 			elif job.src != "supply":
@@ -298,7 +298,7 @@ func _jobs(worker: Dictionary) -> Array:
 	return result
 
 func _is_operation(job: Dictionary) -> bool:
-	return job.kind in ["topping", "brew_start", "brew_take"]
+	return job.kind in ["topping", "brew_start", "brew_take", "stir"]
 
 func _source_point(job: Dictionary) -> Vector2:
 	return Layout.POST_POINTS[job.src] if _is_operation(job) else Layout.POINTS[job.src]
@@ -327,8 +327,8 @@ func _allocate() -> void:
 				var to_source := Layout.path(worker.pos, _source_point(job))
 				var to_target := Layout.path(_source_point(job), _destination_point(job))
 				if to_source.is_empty() or to_target.is_empty(): continue
-				var travel: float = (_path_length(to_source) + _path_length(to_target)) / worker.speed
-				var work_time: float = (2.0 * job.count if job.kind == "topping" else 1.2) / worker.skill
+				var travel: float = (_path_length(to_source) + _path_length(to_target)) / _walk_speed(worker)
+				var work_time: float = _action_duration(job, worker) if job.kind == "topping" else 1.2 / _skill(worker)
 				var throughput: float = float(job.count) / maxf(0.1, travel + work_time)
 				var score: float = (job.priority + throughput * 18.0 - travel * 1.2) * (1.0 - worker.fatigue * 0.18)
 				if score > best_score:
@@ -339,8 +339,8 @@ func _allocate() -> void:
 		_reserve(best_worker, best_job)
 
 func _reserve(worker: Dictionary, job: Dictionary) -> void:
-	if job.kind == "brew_take":
-		pass # Finished tea stays in the pot until its manual unload finishes.
+	if job.kind in ["brew_take", "stir"]:
+		pass # Tea stays in the pot while it is stirred or until its manual unload finishes.
 	elif job.src == "shelf":
 		_shelf_reserved_out += job.count
 	elif job.src != "supply":
@@ -368,7 +368,7 @@ func _walk(worker: Dictionary, destination: Vector2, phase: String) -> void:
 func _update_worker(worker: Dictionary) -> void:
 	var job: Dictionary = worker.job
 	if worker.walking:
-		var distance: float = worker.speed * STEP
+		var distance: float = _walk_speed(worker) * STEP
 		while distance > 0 and worker.path_index < worker.path.size():
 			var target: Vector2 = worker.path[worker.path_index]
 			var gap: float = worker.pos.distance_to(target)
@@ -389,7 +389,7 @@ func _update_worker(worker: Dictionary) -> void:
 				stations.topping.duration = worker.action_left
 		else:
 			worker.phase = "dropoff"
-			worker.action_left = 0.6 / worker.skill
+			worker.action_left = 0.6 / _skill(worker)
 		return
 	worker.action_left = maxf(0, worker.action_left - STEP)
 	if worker.phase == "work" and job.kind == "topping":
@@ -411,6 +411,8 @@ func _update_worker(worker: Dictionary) -> void:
 				station.progress = 0.0
 				station.phase = "heating"
 				_event("batch_started", "boil started")
+			elif job.kind == "stir":
+				station.phase = "heating"
 			elif job.kind == "brew_take":
 				station.output.tea += station.processing
 				station.processing = 0
@@ -513,7 +515,7 @@ func audit() -> Dictionary:
 		var job: Dictionary = worker.job
 		if job.kind == "serve": reserved_orders.append(job.order_id)
 		if not _is_operation(job) and expected_in.has(job.dst): expected_in[job.dst] += job.count
-		if worker.phase in ["walk_pickup", "pickup", "work"] and job.src != "supply" and job.kind != "brew_take":
+		if worker.phase in ["walk_pickup", "pickup", "work"] and job.src != "supply" and not job.kind in ["brew_take", "stir"]:
 			var key: String = job.src + ":" + job.item
 			expected_out[key] = int(expected_out.get(key, 0)) + job.count
 	for shipment in belt_items:
@@ -551,7 +553,7 @@ func _machine_duration(key: String) -> float:
 	return {"boil": 7.0, "mix": 4.0, "seal": 3.0}[key]
 
 func _action_duration(job: Dictionary, worker: Dictionary) -> float:
-	return (2.0 * job.count if job.kind == "topping" else 0.6) / worker.skill
+	return (2.0 * job.count if job.kind == "topping" else 0.6) / _skill(worker)
 
 func _complete_topping(station: Dictionary, job: Dictionary) -> void:
 	station.output.topped += job.count
@@ -563,3 +565,9 @@ func _record_sale(job: Dictionary) -> void:
 
 func _shelf_capacity() -> int:
 	return SHELF_CAPACITY
+
+func _walk_speed(worker: Dictionary) -> float:
+	return worker.speed
+
+func _skill(worker: Dictionary) -> float:
+	return worker.skill

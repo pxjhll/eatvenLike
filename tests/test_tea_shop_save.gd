@@ -138,9 +138,11 @@ func test_four_owned_staff_with_active_rabbit_roundtrip_and_continue() -> void:
 	check(sim.hire() and sim.hire() and sim.hire(), "recruit all three reserve employees")
 	if sim.worker_by_id(4).is_empty(): return
 	check(sim.train(4), "rabbit progression is saved")
+	check_eq(sim.unlock_station("lemonade"), "", "open service")
+	sim.revenue = 100
+	check_eq(sim.unlock_station("boil"), "", "black tea line makes room for a third employee")
 	check_eq(sim.deploy_worker(2), "", "deploy second employee")
 	check_eq(sim.deploy_worker(4), "", "deploy rabbit while fox stays in reserve")
-	check_eq(sim.unlock_station("lemonade"), "", "open service")
 	sim.advance(2.037)
 	var original: Dictionary = sim.to_dict()
 	check_eq(store.save_game(sim, 2.0), OK, "four-owned roster is valid on disk")
@@ -162,11 +164,11 @@ func test_four_owned_staff_with_active_rabbit_roundtrip_and_continue() -> void:
 	var malformed: Dictionary = before.duplicate(true)
 	malformed.deployed.append(3)
 	malformed.roster[2].deployed = true
-	check(not resumed.load_dict(malformed).is_empty(), "save still rejects four deployed employees")
+	check(not resumed.load_dict(malformed).is_empty(), "save rejects more deployed employees than the stage allows")
 	check_eq(resumed.to_dict(), before, "excess deployment cannot mutate current shop")
 	malformed = before.duplicate(true)
-	malformed.roster[3].id = 5
-	check(not resumed.load_dict(malformed).is_empty(), "rabbit save requires stable id four")
+	malformed.roster[3].id = 2
+	check(not resumed.load_dict(malformed).is_empty(), "save rejects two employees sharing an id")
 	check_eq(resumed.to_dict(), before, "invalid rabbit identity cannot mutate shop")
 
 func test_pre_rabbit_current_schema_roster_loads_and_can_recruit_rabbit() -> void:

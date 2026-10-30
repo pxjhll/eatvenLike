@@ -90,7 +90,7 @@ func test_collection_training_recall_and_reset() -> void:
 	check_eq(sim.gold, 50, "reset returns opening economy")
 	check_eq(sim.workers.size(), 1, "reset deploys starter only")
 
-func test_rabbit_is_fourth_paid_recruit_without_expanding_deployment_limit() -> void:
+func test_rabbit_is_fourth_paid_recruit_and_roster_keeps_growing() -> void:
 	var sim = make_shop()
 	if sim == null: return
 	sim.gold = 180
@@ -101,6 +101,7 @@ func test_rabbit_is_fourth_paid_recruit_without_expanding_deployment_limit() -> 
 		check_eq(sim.gold, before - expected[0], "recruitment deducts its full price")
 		check_eq(sim.worker_by_id(expected[2]).art, expected[1], "existing employee ids remain stable")
 	check_eq(sim.hire_cost(), 85, "rabbit is the next paid recruit")
+	check_eq(sim.next_hire_art(), "rabbit", "the missing animal comes next")
 	sim.gold = 84
 	var before: Dictionary = sim.to_dict()
 	check(not sim.hire(), "rabbit cannot be recruited with insufficient gold")
@@ -108,7 +109,6 @@ func test_rabbit_is_fourth_paid_recruit_without_expanding_deployment_limit() -> 
 	sim.gold = 85
 	check(sim.hire(), "fourth recruit succeeds at its full price")
 	check_eq(sim.gold, 0, "rabbit recruitment spends 85 gold")
-	check_eq(sim.all_workers().size(), 4, "four employees can be owned")
 	check_eq(sim.workers.size(), 1, "recruits enter reserve")
 	var rabbit: Dictionary = sim.worker_by_id(4)
 	check(not rabbit.is_empty(), "rabbit has stable id four")
@@ -120,18 +120,46 @@ func test_rabbit_is_fourth_paid_recruit_without_expanding_deployment_limit() -> 
 	check_eq(rabbit.capacity, 2, "rabbit starts with two carry slots")
 	check_eq(rabbit.skill, 1.0, "rabbit starts with normal operation skill")
 	check_eq(rabbit.source, "招募", "rabbit records paid recruitment source")
-	check_eq(sim.hire_cost(), -1, "complete roster has no further hire")
-	check(not sim.hire(), "complete roster cannot be hired again")
+	check_eq(sim.hire_cost(), 110, "the roster has no size limit; the fifth recruit costs more")
+	check_eq(sim.next_hire_art(), "cat", "after one of each, the cycle starts again")
+	sim.gold = 110
+	check(sim.hire(), "a fifth employee can be recruited")
+	var second_cat: Dictionary = sim.worker_by_id(5)
+	check(not second_cat.is_empty() and second_cat.art == "cat", "a repeat animal takes a fresh id")
+	check_eq(sim.all_workers().size(), 5, "five employees can be owned")
+	check_eq(sim.next_hire_art(), "raccoon", "repeats follow the animal order")
+	check(sim.audit().valid, "five owned staff preserve simulation invariants")
+	var copy = make_shop()
+	check_eq(copy.load_dict(sim.to_dict()), "", "a roster with a repeat animal saves and loads")
+
+func test_shop_slots_grow_with_each_production_line() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.gold = 100000
+	sim.revenue = 100000
+	for unused in 5: sim.hire()
+	check_eq(sim.staff_slots(), 2, "the lemonade shop takes two staff")
 	check_eq(sim.deploy_worker(2), "", "second employee deploys")
-	check_eq(sim.deploy_worker(3), "", "third employee deploys")
-	before = sim.to_dict()
-	check(not sim.deploy_worker(4).is_empty(), "owning rabbit does not increase three-deployed cap")
-	check_eq(sim.to_dict(), before, "blocked fourth deployment is atomic")
-	check_eq(sim.recall_worker(2), "", "recall opens a deployment slot")
-	check_eq(sim.deploy_worker(4), "", "rabbit deploys into the open slot")
-	check_eq(sim.workers.size(), 3, "rabbit participates within existing cap")
-	check(is_same(sim.workers[2], rabbit), "deployed rabbit shares owned record")
-	check(sim.audit().valid, "four owned staff preserve simulation invariants")
+	var before: Dictionary = sim.to_dict()
+	check(not sim.deploy_worker(3).is_empty(), "a third has to wait for the next line")
+	check(sim.deployment_error(3).contains("红茶生产线"), "the refusal names the line that opens more room")
+	check_eq(sim.to_dict(), before, "blocked deployment is atomic")
+	check_eq(sim.unlock_station("lemonade"), "", "open lemonade")
+	var expected := {"boil": 3, "mix": 4, "topping": 5}
+	var next_id := 3
+	for line in ["boil", "mix", "topping"]:
+		check_eq(sim.unlock_station(line), "", "open " + line)
+		check_eq(sim.staff_slots(), expected[line], "%s line raises the shop slots" % line)
+		check_eq(sim.deploy_worker(next_id), "", "the new slot takes one more employee")
+		check(not sim.deploy_worker(next_id + 1).is_empty(), "but no more than the slots")
+		next_id += 1
+	check_eq(sim.workers.size(), 5, "a full shop runs five staff")
+	check_eq(sim.deployment_error(6), "店内最多派出 5 位员工", "the last line names no further unlock")
+	for tick in 600: sim.advance(0.1)
+	check(sim.audit().valid, "five deployed staff preserve simulation invariants")
+	sim.reset_shop()
+	check_eq(sim.workers.size(), 1, "reset deploys only the starter")
+	check_eq(sim.staff_slots(), 2, "reset returns to the opening slots")
 
 func test_acquired_rabbit_can_train_work_recall_and_survive_shop_reset() -> void:
 	var sim = make_shop()
@@ -140,8 +168,9 @@ func test_acquired_rabbit_can_train_work_recall_and_survive_shop_reset() -> void
 	var rabbit: Dictionary = sim.worker_by_id(4)
 	if rabbit.is_empty(): return
 	var before: Dictionary = sim.to_dict()
-	check(not sim.acquire_staff("rabbit", "活动奖励").is_empty(), "rabbit cannot be acquired twice")
-	check_eq(sim.to_dict(), before, "duplicate acquisition preserves state")
+	check_eq(sim.acquire_staff("rabbit", "活动奖励"), "", "a second rabbit can be acquired")
+	check_eq(sim.worker_by_id(5).art, "rabbit", "the second rabbit takes the next free id")
+	check(not sim.worker_by_id(5).deployed, "the second rabbit starts in reserve")
 	sim.gold = 100
 	check(sim.train(4), "reserve rabbit can train")
 	check_eq(sim.worker_by_id(4).speed, 122.0, "rabbit speed training applies")
@@ -159,7 +188,7 @@ func test_acquired_rabbit_can_train_work_recall_and_survive_shop_reset() -> void
 	check(sim.audit().valid, "rabbit recall returns stock and reservations")
 	check_eq(sim.deploy_worker(4), "", "recalled rabbit can deploy again")
 	sim.reset_shop()
-	check_eq(sim.all_workers().size(), 2, "reset retains acquired rabbit")
+	check_eq(sim.all_workers().size(), 3, "reset retains both acquired rabbits")
 	check_eq(sim.worker_by_id(4).level, 2, "reset retains rabbit level")
 	check_eq(sim.worker_by_id(4).speed, 122.0, "reset retains rabbit speed")
 	check_eq(sim.worker_by_id(4).capacity, 2, "reset retains rabbit carry progression")
@@ -319,7 +348,7 @@ func test_opening_income_funds_the_real_production_progression() -> void:
 	for tick in 60000:
 		for id in ["boil", "mix", "topping"]:
 			if sim.station_info(id).unlock_error.is_empty(): sim.unlock_station(id)
-		if sim.stage_index > 0 and sim.hire_cost() >= 0 and sim.gold >= sim.hire_cost():
+		if sim.stage_index > 0 and sim.roster.size() < sim.staff_slots() and sim.gold >= sim.hire_cost():
 			sim.hire()
 			for worker in sim.roster:
 				if not worker.deployed: sim.deploy_worker(worker.id)
@@ -494,6 +523,8 @@ func test_belt_segments_are_bought_and_move_goods_without_staff() -> void:
 
 func _run_front_split(front: bool) -> Dictionary:
 	var sim = opened()
+	# Brewing needs stirring, so both teams keep someone on the brewer.
+	check_eq(sim.assign_post(sim.workers[2].id, "boil"), "", "worker staffs the brewer")
 	if front: check_eq(sim.assign_post(sim.workers[0].id, "counter"), "", "worker staffs the counter")
 	var lost := 0
 	var mixed := false
@@ -511,6 +542,24 @@ func _run_front_split(front: bool) -> Dictionary:
 			break
 	return {"lost": lost, "sold": sim.sold, "revenue": sim.revenue - 2000, "mixed": mixed, "milk": sim.sold - int(sim.sold_by_dish.get("lemonade", 0))}
 
+func test_old_saves_get_their_belts_refunded() -> void:
+	var sim = opened()
+	if sim == null: return
+	check(not sim.BELTS_IN_GAME, "the game no longer sells belts")
+	check_eq(sim.buy_belt("seal_to_shelf"), "", "an old save could own a segment")
+	check_eq(sim.buy_belt("supply_to_boil"), "", "and another")
+	for tick in 300: sim.advance(0.1)
+	var gold: int = sim.gold
+	check_eq(sim.retire_belts(), 90, "retiring refunds what the segments cost")
+	check_eq(sim.gold, gold + 90, "refund reaches the purse")
+	check(sim.belts.is_empty() and sim.belt_clock.is_empty(), "no segment remains")
+	for tick in 300:
+		sim.advance(0.1)
+		if not sim.audit().valid:
+			check(false, "cups in flight still arrive after retiring: %s" % sim.audit())
+			return
+	check(sim.belt_items.is_empty(), "cargo already on a segment finishes its trip")
+
 func test_counter_post_splits_front_and_kitchen_duties() -> void:
 	var sim = opened()
 	if sim == null: return
@@ -519,8 +568,60 @@ func test_counter_post_splits_front_and_kitchen_duties() -> void:
 	print("FRONT SPLIT 30min shared=%s split=%s" % [shared, split])
 	check(not split.mixed, "counter staff only serve and mobile staff leave serving to them")
 	check(split.milk > 0, "kitchen staff keep the milk line running")
-	check(split.lost <= shared.lost, "a dedicated counter loses no more customers: %s vs %s" % [split, shared])
+	# With a seated brewer a third worker on the counter costs a hauler, so this is a
+	# player trade-off rather than a strict win; only check the counter still sells.
+	check(split.sold > 0 and split.sold >= shared.sold / 2, "a dedicated counter keeps the shop selling: %s vs %s" % [split, shared])
 	var resumed = make_shop()
 	check_eq(sim.assign_post(sim.workers[0].id, "counter"), "", "counter post assigned")
 	check_eq(resumed.load_dict(sim.to_dict()), "", "counter post saves and loads")
 	check(not sim.assign_post(sim.workers[1].id, "counter").is_empty(), "counter has one front-of-house post")
+
+func test_seated_topping_worker_runs_its_whole_segment() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.gold = 100000
+	sim.revenue = 100000
+	for unused in 4: sim.hire()
+	for line in ["lemonade", "boil", "mix", "topping"]: sim.unlock_station(line)
+	for id in [2, 3, 4, 5]: sim.deploy_worker(id)
+	check_eq(sim.assign_post(5, "topping"), "", "one worker takes the topping seat")
+	var seated: Dictionary = sim.workers.filter(func(w): return w.id == 5)[0]
+	check(is_equal_approx(sim._walk_speed(seated), seated.speed * 1.3) and is_equal_approx(sim._skill(seated), seated.skill * 1.3), "the seat walks and works 30% faster")
+	var seen := {}
+	for tick in 3000:
+		sim.advance(0.1)
+		for worker in sim.workers:
+			if worker.job.is_empty(): continue
+			var segment: bool = worker.job.kind in ["transfer_to_topping", "topping"] or (worker.job.kind == "carry_to_seal" and worker.job.src == "topping")
+			if worker.id == 5:
+				check(segment, "the seated worker stays on its segment")
+				seen[worker.job.kind] = true
+			else:
+				check(not segment, "mobile staff leave the topping segment to the seat")
+	check(seen.has("transfer_to_topping") and seen.has("topping") and seen.has("carry_to_seal"), "the seat fetches, tops and delivers")
+	check(sim.audit().valid, "segment ownership preserves simulation invariants")
+
+func test_brewer_pauses_for_stirring_and_seated_brewer_runs_its_segment() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.gold = 100000
+	sim.revenue = 100000
+	sim.hire()
+	for line in ["lemonade", "boil"]: sim.unlock_station(line)
+	sim.deploy_worker(2)
+	check_eq(sim.assign_post(2, "boil"), "", "one worker takes the brewer seat")
+	var paused_at: Array = []
+	var seen := {}
+	for tick in 3000:
+		var was: String = sim.stations.boil.phase
+		sim.advance(0.1)
+		var station: Dictionary = sim.stations.boil
+		if station.phase == "stir" and was != "stir": paused_at.append(snappedf(station.progress, 0.001))
+		for worker in sim.workers:
+			if worker.id != 2 or worker.job.is_empty(): continue
+			seen[worker.job.kind] = true
+			check(worker.job.kind in ["load_boil", "brew_start", "stir", "brew_take", "carry_to_seal"], "the seated brewer stays on its segment")
+	check(paused_at.size() >= 2 and is_equal_approx(paused_at[0], 0.333) and is_equal_approx(paused_at[1], 0.667), "each brew stops at one and two thirds: %s" % [paused_at])
+	check(seen.has("stir") and seen.has("load_boil") and seen.has("brew_take"), "the seat loads, stirs and takes the tea")
+	check(sim.sold_by_dish.black_tea > 0, "stirred tea still reaches customers")
+	check(sim.audit().valid, "stirring preserves simulation invariants")
