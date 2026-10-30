@@ -621,10 +621,10 @@ func _on_chip_input(event: InputEvent) -> void:
 	if press and event.pressed:
 		_chip_dragging = true
 	elif (event is InputEventMouseMotion or event is InputEventScreenDrag) and _chip_dragging:
-		_belt_chip.global_position = _belt_chip.get_global_mouse_position() - _belt_chip.get_global_rect().size / 2.0
+		_belt_chip.global_position = _belt_chip.get_global_transform() * event.position - _belt_chip.get_global_rect().size / 2.0
 	elif press and not event.pressed and _chip_dragging:
 		_chip_dragging = false
-		var point := _belt_chip.get_global_mouse_position()
+		var point: Vector2 = _belt_chip.get_global_transform() * event.position
 		_belt_chip.position = _chip_home
 		for id in _belt_slots:
 			var slot: Button = _belt_slots[id]
