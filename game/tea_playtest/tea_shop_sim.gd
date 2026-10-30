@@ -609,6 +609,7 @@ func _jobs(worker: Dictionary) -> Array:
 			count = station.processing
 			item = "tea"
 		if not kind.is_empty() and count > 0: result.append({"kind": kind, "src": post, "dst": post, "item": item, "count": count, "priority": 72.0 if post == "topping" else 55.0, "belt": "", "order_id": -1})
+	if worker.post == "topping": return _topping_segment(worker, result)
 	if not worker.post.is_empty() and worker.post != "counter": return result
 	# Once someone staffs the counter, mobile staff leave customers to them and stay in the kitchen.
 	var front_staffed: bool = worker.post.is_empty() and post_owner("counter") != -1
@@ -641,12 +642,32 @@ func _jobs(worker: Dictionary) -> Array:
 			var original := _candidate("carry_to_seal", "mix", "seal", "plain_milk_tea", worker, 68)
 			if not original.is_empty(): original.count = 1
 			result.append(original)
-		result.append(_candidate("transfer_to_topping", "mix", "topping", "plain_milk_tea", worker, 62))
+		if _topping_segment_open(): result.append(_candidate("transfer_to_topping", "mix", "topping", "plain_milk_tea", worker, 62))
 	else:
 		result.append(_candidate("carry_to_seal", "mix", "seal", "plain_milk_tea", worker, 84))
+	if _topping_segment_open():
+		for dish in DISHES:
+			if not dish in ["lemonade", "plain_milk_tea", "black_tea"]: result.append(_candidate("carry_to_seal", "topping", "seal", dish, worker, 84))
+	return _boost_kitchen(_shelf_jobs(worker, result))
+
+## Temporary: when false, mobile staff still help on the seated topping worker's hops.
+var segment_exclusive := true
+
+# A worker seated at the topping machine runs its whole segment: fetching plain
+# milk tea from the mixer, adding toppings, and carrying finished cups to the sealer.
+func _topping_segment(worker: Dictionary, result: Array) -> Array:
+	result.append(_candidate("transfer_to_topping", "mix", "topping", "plain_milk_tea", worker, 62))
 	for dish in DISHES:
 		if not dish in ["lemonade", "plain_milk_tea", "black_tea"]: result.append(_candidate("carry_to_seal", "topping", "seal", dish, worker, 84))
-	return _boost_kitchen(_shelf_jobs(worker, result))
+	return _boost_kitchen(_without_belted(result))
+
+# Mobile staff leave the topping segment's hops to whoever is seated there.
+func _topping_segment_open() -> bool:
+	return not segment_exclusive or post_owner("topping") == -1
+
+func _post_job(post: String, job: Dictionary) -> bool:
+	if _is_operation(job): return job.src == post
+	return post == "topping" and ((job.kind == "transfer_to_topping") or (job.kind == "carry_to_seal" and job.src == "topping"))
 
 # Customers waiting on an empty shelf flavor pull mobile staff back into the kitchen;
 # otherwise a lone worker serving lemonade would never start the new line.
@@ -1054,7 +1075,7 @@ func _validate_state(state: Dictionary) -> String:
 				if not worker.phase in ["walk_pickup", "work"]: return "人工操作阶段无效"
 			elif worker.phase == "work": return "运输任务不能进行机器操作"
 			if worker.post == "counter" and job.kind != "serve": return "员工岗位与任务不一致"
-			if not worker.post in ["", "counter"] and (not _is_operation(job) or job.src != worker.post): return "员工岗位与任务不一致"
+			if not worker.post in ["", "counter"] and not _post_job(worker.post, job): return "员工岗位与任务不一致"
 			if not _is_operation(job) and job.count > worker.capacity: return "员工运单超过搬运能力"
 			if worker.phase in ["walk_dropoff", "dropoff"]:
 				if worker.carry_count != job.count or worker.carry_item != job.item: return "员工在途货物不一致"
