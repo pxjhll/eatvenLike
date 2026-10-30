@@ -95,17 +95,27 @@ func _initialize_shop() -> void:
 
 func _make_worker(index: int) -> Dictionary:
 	if ARTS[index] != "rabbit": return super._make_worker(index)
+	return _rabbit()
+
+## The roster may hold several of one animal, so a staff member's id is its own number, not its art.
+func _new_staff(art: String, id: int) -> Dictionary:
+	var worker := _make_worker(ARTS.find(art))
+	worker.id = id
+	return worker
+
+func _rabbit() -> Dictionary:
 	var worker := super._make_worker(0)
-	worker.merge({"id": index + 1, "name": "小兔子", "art": "rabbit", "role": "speed",
+	worker.merge({"id": 4, "name": "小兔子", "art": "rabbit", "role": "speed",
 		"speed": 104.0, "capacity": 2, "skill": 1.0}, true)
 	return worker
 
 func reset_shop() -> void:
 	workers.clear()
+	var starter: int = roster[0].id
 	for worker in roster:
-		var fresh := _make_worker(ARTS.find(worker.art))
-		for key in ["level", "speed", "capacity", "skill", "source"]: fresh[key] = worker[key]
-		fresh.deployed = worker.art == "cat"
+		var fresh := _new_staff(worker.art, worker.id)
+		for key in ["name", "level", "speed", "capacity", "skill", "source"]: fresh[key] = worker[key]
+		fresh.deployed = worker.id == starter
 		worker.clear()
 		worker.merge(fresh)
 		if worker.deployed: workers.append(worker)
@@ -122,9 +132,13 @@ func worker_by_id(id: int) -> Dictionary:
 func acquire_staff(art: String, source: String) -> String:
 	if not art in ARTS: return "未知员工类型"
 	if source.strip_edges().is_empty(): return "员工来源不能为空"
-	for worker in roster:
-		if worker.art == art: return "已拥有这位员工"
-	var worker := _make_worker(ARTS.find(art))
+	# The first of each animal keeps its old id (cat 1 to rabbit 4); repeats number on from there.
+	var id := ARTS.find(art) + 1
+	var next_id := ARTS.size() + 1
+	for owned in roster:
+		next_id = maxi(next_id, owned.id + 1)
+		if owned.id == id: id = -1
+	var worker := _new_staff(art, id if id > 0 else next_id)
 	worker.source = source
 	worker.deployed = false
 	roster.append(worker)
@@ -135,8 +149,19 @@ func deployment_error(id: int) -> String:
 	var worker := worker_by_id(id)
 	if worker.is_empty(): return "未拥有这位员工"
 	if worker.deployed: return ""
-	if workers.size() >= 3: return "店内最多派出 3 位员工"
+	if workers.size() >= staff_slots():
+		var more := "" if stage_index + 1 >= PROGRESSION.stages.size() else "，解锁%s后可再派 1 位" % PROGRESSION.stages[stage_index + 1].line_name
+		return "店内最多派出 %d 位员工%s" % [staff_slots(), more]
 	return ""
+
+## How many staff may work in the shop at once; each production line opens more room.
+func staff_slots() -> int:
+	return PROGRESSION.stages[stage_index].staff_slots
+
+func _max_staff_slots() -> int:
+	var most := 0
+	for stage in PROGRESSION.stages: most = maxi(most, stage.staff_slots)
+	return most
 
 func deploy_worker(id: int) -> String:
 	var error := deployment_error(id)
@@ -188,19 +213,26 @@ func recall_worker(id: int) -> String:
 	return ""
 
 func hire_cost() -> int:
-	return 35 + maxi(0, roster.size() - 1) * 25 if roster.size() < ARTS.size() else -1
+	return 35 + maxi(0, roster.size() - 1) * 25
+
+## Recruits come as the animal the roster has fewest of, in ARTS order on a tie.
+func next_hire_art() -> String:
+	var best: String = ARTS[0]
+	var fewest := -1
+	for art in ARTS:
+		var count := 0
+		for worker in roster: count += 1 if worker.art == art else 0
+		if fewest < 0 or count < fewest:
+			best = art
+			fewest = count
+	return best
 
 func hire() -> bool:
 	var price := hire_cost()
-	if price < 0 or gold < price: return false
-	for art in ARTS:
-		var owned := false
-		for worker in roster: owned = owned or worker.art == art
-		if owned: continue
-		if not acquire_staff(art, "招募").is_empty(): return false
-		gold -= price
-		return true
-	return false
+	if gold < price: return false
+	if not acquire_staff(next_hire_art(), "招募").is_empty(): return false
+	gold -= price
+	return true
 
 func train_cost(id: int) -> int:
 	var worker := worker_by_id(id)
@@ -985,7 +1017,7 @@ func _validate_state(state: Dictionary) -> String:
 	var worker_sample := _make_worker(0)
 	worker_sample.source = ""
 	worker_sample.deployed = false
-	if state.roster.is_empty() or state.roster.size() > ARTS.size() or state.deployed.size() > 3: return "员工名册无效"
+	if state.roster.is_empty() or state.deployed.size() > _max_staff_slots(): return "员工名册无效"
 	var ids: Array = []
 	for worker in state.roster:
 		if not worker is Dictionary: return "员工字段无效"
@@ -994,7 +1026,7 @@ func _validate_state(state: Dictionary) -> String:
 		if not fields.has("job") or not fields.job is Dictionary: return "员工运单无效"
 		fields.job = {}
 		if not _same_shape(fields, worker_sample): return "员工字段无效"
-		if not worker.art in ARTS or worker.id != ARTS.find(worker.art) + 1 or worker.id in ids: return "员工身份无效"
+		if not worker.art in ARTS or worker.id < 1 or worker.id in ids: return "员工身份无效"
 		ids.append(worker.id)
 		if worker.level < 1 or worker.speed <= 0 or worker.skill <= 0 or worker.capacity < 1 or worker.carry_count < 0 or worker.carry_count > worker.capacity: return "员工能力或货物无效"
 		if not worker.role in ["speed", "carry", "skill"] or worker.source.is_empty(): return "员工来源或能力无效"

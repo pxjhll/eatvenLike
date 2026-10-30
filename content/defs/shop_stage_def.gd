@@ -11,6 +11,8 @@ extends Resource
 @export var line_cost: int = 0
 ## 整条线的名字，显示在价格牌和解锁按钮上（如「奶茶生产线」）；空 = 用菜名
 @export var line_name: String = ""
+## 美术店：到本阶段时店内最多同时派出几位员工（旧版 GameSim 不读）
+@export var staff_slots: int = 3
 ## 本阶段的平均来客间隔（秒）
 @export var customer_interval: float = 0.0
 ## 本阶段起的点单权重：dish_id -> 权重
