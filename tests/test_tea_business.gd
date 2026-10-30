@@ -408,10 +408,8 @@ func test_belt_segments_are_bought_and_move_goods_without_staff() -> void:
 	check_eq(sim.gold, gold + 40, "taking a segment back refunds it")
 	check(sim.audit().valid, "removing a segment keeps cargo conserved")
 
-func _run_front_split(front: bool, belted := false) -> Dictionary:
+func _run_front_split(front: bool) -> Dictionary:
 	var sim = opened()
-	if belted:
-		for row in sim.belt_rows(): sim.buy_belt(row.id)
 	if front: check_eq(sim.assign_post(sim.workers[0].id, "counter"), "", "worker staffs the counter")
 	var lost := 0
 	var mixed := false
@@ -435,7 +433,6 @@ func test_counter_post_splits_front_and_kitchen_duties() -> void:
 	var shared := _run_front_split(false)
 	var split := _run_front_split(true)
 	print("FRONT SPLIT 30min shared=%s split=%s" % [shared, split])
-	print("FRONT SPLIT belted 30min shared=%s split=%s" % [_run_front_split(false, true), _run_front_split(true, true)])
 	check(not split.mixed, "counter staff only serve and mobile staff leave serving to them")
 	check(split.milk > 0, "kitchen staff keep the milk line running")
 	check(split.lost <= shared.lost, "a dedicated counter loses no more customers: %s vs %s" % [split, shared])
