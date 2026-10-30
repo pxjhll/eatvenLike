@@ -158,11 +158,6 @@ func deployment_error(id: int) -> String:
 func staff_slots() -> int:
 	return PROGRESSION.stages[stage_index].staff_slots
 
-func _max_staff_slots() -> int:
-	var most := 0
-	for stage in PROGRESSION.stages: most = maxi(most, stage.staff_slots)
-	return most
-
 func deploy_worker(id: int) -> String:
 	var error := deployment_error(id)
 	if not error.is_empty(): return error
@@ -1017,7 +1012,11 @@ func _validate_state(state: Dictionary) -> String:
 	var worker_sample := _make_worker(0)
 	worker_sample.source = ""
 	worker_sample.deployed = false
-	if state.roster.is_empty() or state.deployed.size() > _max_staff_slots(): return "员工名册无效"
+	# Saves from before per-stage slots could deploy three at any stage.
+	var slots := 3
+	if state.stage_index is int and state.stage_index >= 0 and state.stage_index < PROGRESSION.stages.size():
+		slots = maxi(slots, PROGRESSION.stages[state.stage_index].staff_slots)
+	if state.roster.is_empty() or state.deployed.size() > slots: return "员工名册无效"
 	var ids: Array = []
 	for worker in state.roster:
 		if not worker is Dictionary: return "员工字段无效"

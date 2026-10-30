@@ -21,7 +21,7 @@ var _staff_portraits: Array[TextureRect] = []
 var _recruit_label: Label
 var _recruit_portrait: TextureRect
 var _styled_selection := -1
-var _card_content: HBoxContainer
+var _card_content: GridContainer
 var _page_nodes := {}
 var _roster_signature := ""
 var _save_caption: Label
