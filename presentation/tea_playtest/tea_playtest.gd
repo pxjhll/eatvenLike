@@ -182,6 +182,8 @@ func _refresh(delta: float) -> void:
 			pass
 		elif station.phase == "awaiting_take":
 			need = "待取茶"
+		elif station.phase == "stir":
+			need = "待操作"
 		elif output_count > 0:
 			need = "待取 %d" % output_count
 		elif _total(station.input) > 0 and id in ["boil", "topping"]:

@@ -5,6 +5,9 @@ const CONFIG = preload("res://content/tea/tea.tres")
 const PROGRESSION = preload("res://content/tea/art_shop_progression.tres")
 ## Black tea is brewed directly into the sealer; once milk opens, only this many are kept in stock.
 const BLACK_TEA_CAP := 3
+## The pot pauses at these points of each brew until someone stirs it.
+const STIR_POINTS := [1.0 / 3.0, 2.0 / 3.0]
+const STIR_SECONDS := 1.0
 ## v2: staged line (black tea stage) changed the station and dish shapes.
 ## v3: belts became bought segments (belts / belt_clock), shipments route by segment id.
 const SAVE_VERSION := 3
@@ -493,6 +496,7 @@ func _machine_duration(key: String) -> float:
 func _action_duration(job: Dictionary, worker: Dictionary) -> float:
 	if job.item == "lemonade": return _definition("lemonade").cycle_seconds / _speed("lemonade") / _skill(worker)
 	if job.kind == "topping": return _topping_seconds() * job.count / _skill(worker) / _speed("topping")
+	if job.kind == "stir": return STIR_SECONDS / _skill(worker)
 	if job.kind == "load_boil": return 0.6 / _skill(worker) / _speed("supply") / _material_bonus("supply", "tea_leaf")
 	return super._action_duration(job, worker)
 
@@ -604,12 +608,17 @@ func _jobs(worker: Dictionary) -> Array:
 		elif post == "boil" and station.processing == 0 and _available(post, "raw") >= _brew_batch():
 			kind = "brew_start"
 			count = _brew_batch()
+		elif post == "boil" and station.phase == "stir":
+			kind = "stir"
+			count = station.processing
+			item = "tea"
 		elif post == "boil" and station.phase == "awaiting_take" and station.processing > 0:
 			kind = "brew_take"
 			count = station.processing
 			item = "tea"
-		if not kind.is_empty() and count > 0: result.append({"kind": kind, "src": post, "dst": post, "item": item, "count": count, "priority": 72.0 if post == "topping" else 55.0, "belt": "", "order_id": -1})
+		if not kind.is_empty() and count > 0: result.append({"kind": kind, "src": post, "dst": post, "item": item, "count": count, "priority": {"topping": 72.0, "stir": 80.0}.get(kind, 55.0), "belt": "", "order_id": -1})
 	if worker.post == "topping": return _topping_segment(worker, result)
+	if worker.post == "boil": return _boil_segment(worker, result)
 	if not worker.post.is_empty() and worker.post != "counter": return result
 	# Once someone staffs the counter, mobile staff leave customers to them and stay in the kitchen.
 	var front_staffed: bool = worker.post.is_empty() and post_owner("counter") != -1
@@ -623,16 +632,7 @@ func _jobs(worker: Dictionary) -> Array:
 		serve.priority += minf(20, order.wait * 0.1)
 		result.append(serve)
 	if worker.post == "counter" or not station_unlocked("boil"): return result
-	result.append(_candidate("load_boil", "supply", "boil", "raw", worker, 26))
-	if station_unlocked("mix"):
-		result.append(_candidate("unload_boil", "boil", "mix", "tea", worker, 47))
-		var room := BLACK_TEA_CAP - _flavor_inventory("black_tea")
-		var black := _candidate("carry_to_seal", "boil", "seal", "tea", worker, 50)
-		if room <= 0: black = {}
-		elif not black.is_empty(): black.count = mini(black.count, room)
-		result.append(black)
-	else:
-		result.append(_candidate("carry_to_seal", "boil", "seal", "tea", worker, 84))
+	if post_owner("boil") == -1 or _belt_courier: _append_boil_hops(worker, result)
 	if not station_unlocked("mix"): return _boost_kitchen(_shelf_jobs(worker, result))
 	if station_unlocked("topping"):
 		var original_need := false
@@ -650,6 +650,23 @@ func _jobs(worker: Dictionary) -> Array:
 			if not dish in ["lemonade", "plain_milk_tea", "black_tea"]: result.append(_candidate("carry_to_seal", "topping", "seal", dish, worker, 84))
 	return _boost_kitchen(_shelf_jobs(worker, result))
 
+func _append_boil_hops(worker: Dictionary, result: Array) -> void:
+	result.append(_candidate("load_boil", "supply", "boil", "raw", worker, 26))
+	if station_unlocked("mix"):
+		result.append(_candidate("unload_boil", "boil", "mix", "tea", worker, 47))
+		var room := BLACK_TEA_CAP - _flavor_inventory("black_tea")
+		var black := _candidate("carry_to_seal", "boil", "seal", "tea", worker, 50)
+		if room <= 0: black = {}
+		elif not black.is_empty(): black.count = mini(black.count, room)
+		result.append(black)
+	else:
+		result.append(_candidate("carry_to_seal", "boil", "seal", "tea", worker, 84))
+
+# A worker seated at the brewer loads tea leaves, brews, stirs and carries the tea on.
+func _boil_segment(worker: Dictionary, result: Array) -> Array:
+	_append_boil_hops(worker, result)
+	return _boost_kitchen(_without_belted(result))
+
 # A worker seated at the topping machine runs its whole segment: fetching plain
 # milk tea from the mixer, adding toppings, and carrying finished cups to the sealer.
 func _topping_segment(worker: Dictionary, result: Array) -> Array:
@@ -658,21 +675,22 @@ func _topping_segment(worker: Dictionary, result: Array) -> Array:
 		if not dish in ["lemonade", "plain_milk_tea", "black_tea"]: result.append(_candidate("carry_to_seal", "topping", "seal", dish, worker, 84))
 	return _boost_kitchen(_without_belted(result))
 
-# The seated topping worker knows its segment: it walks and works this much faster.
+# Seated brewer and topping workers know their segment: it walks and works this much faster.
 const SEATED_BONUS := 1.3
 
 func _walk_speed(worker: Dictionary) -> float:
-	return worker.speed * (SEATED_BONUS if worker.post == "topping" else 1.0)
+	return worker.speed * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0)
 
 func _skill(worker: Dictionary) -> float:
-	return worker.skill * (SEATED_BONUS if worker.post == "topping" else 1.0)
+	return worker.skill * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0)
 
 # Mobile staff leave the topping segment's hops to whoever is seated there.
 func _topping_segment_open() -> bool:
-	return post_owner("topping") == -1
+	return post_owner("topping") == -1 or _belt_courier
 
 func _post_job(post: String, job: Dictionary) -> bool:
 	if _is_operation(job): return job.src == post
+	if post == "boil": return job.kind == "load_boil" or (job.kind in ["unload_boil", "carry_to_seal"] and job.src == "boil")
 	return post == "topping" and ((job.kind == "transfer_to_topping") or (job.kind == "carry_to_seal" and job.src == "topping"))
 
 # Customers waiting on an empty shelf flavor pull mobile staff back into the kitchen;
@@ -817,13 +835,25 @@ func _complete_topping(station: Dictionary, job: Dictionary) -> void:
 			station.output[dish] += 1
 			break
 
+# The pot stops at each stir point until someone stirs it, so it needs watching.
+func _pause_for_stir(station: Dictionary, before: float) -> bool:
+	for point in STIR_POINTS:
+		if before < point and station.progress >= point:
+			station.progress = point
+			station.remaining = station.duration * (1.0 - point)
+			station.phase = "stir"
+			return true
+	return false
+
 func _update_machines() -> void:
 	for key in ["boil", "mix", "seal"]:
 		if not station_unlocked(key): continue
 		var station: Dictionary = stations[key]
-		if station.processing > 0 and station.phase != "awaiting_take":
+		if station.processing > 0 and not station.phase in ["awaiting_take", "stir"]:
+			var before: float = station.progress
 			station.remaining = maxf(0, station.remaining - STEP)
 			station.progress = 1.0 - station.remaining / station.duration
+			if key == "boil" and _pause_for_stir(station, before): continue
 			if station.remaining <= 0.000001:
 				if key == "boil": station.phase = "awaiting_take"
 				else:
@@ -977,7 +1007,7 @@ func _valid_job_route(job: Dictionary) -> bool:
 		"serve":
 			return job.dst == "counter" and job.count == 1 and job.belt == "" and ((job.src == "supply" and job.item == "lemonade") or (job.src == "shelf" and job.item in DISHES and job.item != "lemonade"))
 		"brew_start": return job.src == "boil" and job.dst == "boil" and job.item == "raw" and job.count == 3 and job.belt == ""
-		"brew_take": return job.src == "boil" and job.dst == "boil" and job.item == "tea" and job.count == 3 and job.belt == ""
+		"brew_take", "stir": return job.src == "boil" and job.dst == "boil" and job.item == "tea" and job.count == 3 and job.belt == ""
 		"topping": return job.src == "topping" and job.dst == "topping" and job.item == "plain_milk_tea" and job.belt == ""
 		"load_boil": return job.src == "supply" and job.dst == "boil" and job.item == "raw" and job.belt == ""
 		"unload_boil": return job.src == "boil" and job.dst == "mix" and job.item == "tea" and job.belt == ""
@@ -1039,7 +1069,7 @@ func _validate_state(state: Dictionary) -> String:
 		for key in ["progress", "remaining", "duration"]:
 			if not is_finite(station[key]) or station[key] < 0: return "机器进度无效"
 		if station.progress > 1 or (station.processing > 0 and station.duration <= 0): return "机器进度无效"
-		if not station.phase in ["idle", "ready", "working", "heating", "awaiting_take", "mixing", "sealing"]: return "机器阶段无效"
+		if not station.phase in ["idle", "ready", "working", "heating", "stir", "awaiting_take", "mixing", "sealing"]: return "机器阶段无效"
 		if station.processing > 0 and id in ["mix", "seal"] and not station.processing_item in expected.output: return "加工口味无效"
 	var worker_sample := _make_worker(0)
 	worker_sample.source = ""
@@ -1072,7 +1102,7 @@ func _validate_state(state: Dictionary) -> String:
 			var job_sample := {"kind": "", "src": "", "dst": "", "item": "", "count": 1, "priority": 1.0, "belt": "", "order_id": -1}
 			if not _same_shape(worker.job, job_sample): return "员工运单字段无效"
 			var job: Dictionary = worker.job
-			if not job.kind in ["serve", "topping", "brew_start", "brew_take", "load_boil", "unload_boil", "transfer_to_topping", "load_seal_belt", "carry_to_seal", "load_shelf_belt", "carry_to_shelf"]: return "员工任务无效"
+			if not job.kind in ["serve", "topping", "brew_start", "brew_take", "stir", "load_boil", "unload_boil", "transfer_to_topping", "load_seal_belt", "carry_to_seal", "load_shelf_belt", "carry_to_shelf"]: return "员工任务无效"
 			if not job.src in ["supply", "shelf", "boil", "mix", "topping", "seal"] or not job.dst in ["boil", "mix", "topping", "seal", "shelf", "counter"]: return "员工运输端点无效"
 			if not job.item in DISHES + ["raw", "tea"] or job.count <= 0: return "员工运单货物无效"
 			if not job.belt in ["", "topping_to_seal", "seal_to_shelf"]: return "员工传送带无效"

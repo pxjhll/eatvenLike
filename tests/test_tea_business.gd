@@ -596,3 +596,28 @@ func test_seated_topping_worker_runs_its_whole_segment() -> void:
 				check(not segment, "mobile staff leave the topping segment to the seat")
 	check(seen.has("transfer_to_topping") and seen.has("topping") and seen.has("carry_to_seal"), "the seat fetches, tops and delivers")
 	check(sim.audit().valid, "segment ownership preserves simulation invariants")
+
+func test_brewer_pauses_for_stirring_and_seated_brewer_runs_its_segment() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.gold = 100000
+	sim.revenue = 100000
+	sim.hire()
+	for line in ["lemonade", "boil"]: sim.unlock_station(line)
+	sim.deploy_worker(2)
+	check_eq(sim.assign_post(2, "boil"), "", "one worker takes the brewer seat")
+	var paused_at: Array = []
+	var seen := {}
+	for tick in 3000:
+		var was: String = sim.stations.boil.phase
+		sim.advance(0.1)
+		var station: Dictionary = sim.stations.boil
+		if station.phase == "stir" and was != "stir": paused_at.append(snappedf(station.progress, 0.001))
+		for worker in sim.workers:
+			if worker.id != 2 or worker.job.is_empty(): continue
+			seen[worker.job.kind] = true
+			check(worker.job.kind in ["load_boil", "brew_start", "stir", "brew_take", "carry_to_seal"], "the seated brewer stays on its segment")
+	check(paused_at.size() >= 2 and is_equal_approx(paused_at[0], 0.333) and is_equal_approx(paused_at[1], 0.667), "each brew stops at one and two thirds: %s" % [paused_at])
+	check(seen.has("stir") and seen.has("load_boil") and seen.has("brew_take"), "the seat loads, stirs and takes the tea")
+	check(sim.sold_by_dish.black_tea > 0, "stirred tea still reaches customers")
+	check(sim.audit().valid, "stirring preserves simulation invariants")

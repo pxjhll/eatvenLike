@@ -123,7 +123,7 @@ func _cancel_job(worker: Dictionary) -> void:
 				shelf_count += worker.carry_count
 			else:
 				stations[job.src].output[job.item] += worker.carry_count
-		elif job.kind != "brew_take":
+		elif not job.kind in ["brew_take", "stir"]:
 			if job.src == "shelf":
 				_shelf_reserved_out -= job.count
 			elif job.src != "supply":
@@ -298,7 +298,7 @@ func _jobs(worker: Dictionary) -> Array:
 	return result
 
 func _is_operation(job: Dictionary) -> bool:
-	return job.kind in ["topping", "brew_start", "brew_take"]
+	return job.kind in ["topping", "brew_start", "brew_take", "stir"]
 
 func _source_point(job: Dictionary) -> Vector2:
 	return Layout.POST_POINTS[job.src] if _is_operation(job) else Layout.POINTS[job.src]
@@ -339,8 +339,8 @@ func _allocate() -> void:
 		_reserve(best_worker, best_job)
 
 func _reserve(worker: Dictionary, job: Dictionary) -> void:
-	if job.kind == "brew_take":
-		pass # Finished tea stays in the pot until its manual unload finishes.
+	if job.kind in ["brew_take", "stir"]:
+		pass # Tea stays in the pot while it is stirred or until its manual unload finishes.
 	elif job.src == "shelf":
 		_shelf_reserved_out += job.count
 	elif job.src != "supply":
@@ -411,6 +411,8 @@ func _update_worker(worker: Dictionary) -> void:
 				station.progress = 0.0
 				station.phase = "heating"
 				_event("batch_started", "boil started")
+			elif job.kind == "stir":
+				station.phase = "heating"
 			elif job.kind == "brew_take":
 				station.output.tea += station.processing
 				station.processing = 0
@@ -513,7 +515,7 @@ func audit() -> Dictionary:
 		var job: Dictionary = worker.job
 		if job.kind == "serve": reserved_orders.append(job.order_id)
 		if not _is_operation(job) and expected_in.has(job.dst): expected_in[job.dst] += job.count
-		if worker.phase in ["walk_pickup", "pickup", "work"] and job.src != "supply" and job.kind != "brew_take":
+		if worker.phase in ["walk_pickup", "pickup", "work"] and job.src != "supply" and not job.kind in ["brew_take", "stir"]:
 			var key: String = job.src + ":" + job.item
 			expected_out[key] = int(expected_out.get(key, 0)) + job.count
 	for shipment in belt_items:
