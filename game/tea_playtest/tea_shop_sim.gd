@@ -26,6 +26,8 @@ var _flavor_cursor := 0
 ## Bought conveyor segments (BeltSlotDef ids) and each one's countdown to its next cup.
 var belts: Dictionary = {}
 var belt_clock: Dictionary = {}
+## The game no longer offers belts (2026-10-30); the segment rules stay so they can come back.
+const BELTS_IN_GAME := false
 var _belt_courier := false
 var _rng: RandomNumberGenerator
 
@@ -674,6 +676,15 @@ func remove_belt(id: String) -> String:
 	gold += definition.cost
 	_event("belt_removed", definition.display_name + " 传送带已收起")
 	return ""
+
+## Takes back every bought segment with a full refund (old saves from when belts were for sale).
+## Cups already on a segment still arrive, the same as remove_belt.
+func retire_belts() -> int:
+	var refund := 0
+	for id in belts.keys():
+		refund += _belt_def(id).cost
+		remove_belt(id)
+	return refund
 
 func belt_rows() -> Array:
 	var rows: Array = []

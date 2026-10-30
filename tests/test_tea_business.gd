@@ -511,6 +511,24 @@ func _run_front_split(front: bool) -> Dictionary:
 			break
 	return {"lost": lost, "sold": sim.sold, "revenue": sim.revenue - 2000, "mixed": mixed, "milk": sim.sold - int(sim.sold_by_dish.get("lemonade", 0))}
 
+func test_old_saves_get_their_belts_refunded() -> void:
+	var sim = opened()
+	if sim == null: return
+	check(not sim.BELTS_IN_GAME, "the game no longer sells belts")
+	check_eq(sim.buy_belt("seal_to_shelf"), "", "an old save could own a segment")
+	check_eq(sim.buy_belt("supply_to_boil"), "", "and another")
+	for tick in 300: sim.advance(0.1)
+	var gold: int = sim.gold
+	check_eq(sim.retire_belts(), 90, "retiring refunds what the segments cost")
+	check_eq(sim.gold, gold + 90, "refund reaches the purse")
+	check(sim.belts.is_empty() and sim.belt_clock.is_empty(), "no segment remains")
+	for tick in 300:
+		sim.advance(0.1)
+		if not sim.audit().valid:
+			check(false, "cups in flight still arrive after retiring: %s" % sim.audit())
+			return
+	check(sim.belt_items.is_empty(), "cargo already on a segment finishes its trip")
+
 func test_counter_post_splits_front_and_kitchen_duties() -> void:
 	var sim = opened()
 	if sim == null: return
