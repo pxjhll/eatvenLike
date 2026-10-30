@@ -44,7 +44,7 @@ amount = 20.0
 [sub_resource type="Resource" id="stage_lemon"]
 script = ExtResource("shop_stage_def")
 dish_id = "lemonade"
-customer_interval = 4.0
+customer_interval = 8.0
 order_weights = Dictionary[String, float]({"lemonade": 1.0})
 tasks = Array[ExtResource("task_def")]([SubResource("task_lemon30")])
 
@@ -55,7 +55,7 @@ revenue_threshold = 100
 unlock_slots = Array[String](["cabinet", "brewer"])
 line_cost = 100
 line_name = "红茶生产线"
-customer_interval = 3.0
+customer_interval = 7.0
 order_weights = Dictionary[String, float]({"lemonade": 0.5, "black_tea": 0.5})
 tasks = Array[ExtResource("task_def")]([SubResource("task_black20")])
 
@@ -66,7 +66,7 @@ revenue_threshold = 400
 unlock_slots = Array[String](["milk_station"])
 line_cost = 200
 line_name = "调奶台"
-customer_interval = 2.0
+customer_interval = 7.0
 order_weights = Dictionary[String, float]({"lemonade": 0.25, "black_tea": 0.25, "plain_milk_tea": 0.5})
 tasks = Array[ExtResource("task_def")]([SubResource("task_plain20")])
 
@@ -77,7 +77,7 @@ revenue_threshold = 1500
 unlock_slots = Array[String](["topping"])
 line_cost = 300
 line_name = "加料机"
-customer_interval = 1.5
+customer_interval = 5.0
 order_weights = Dictionary[String, float]({"lemonade": 0.15, "black_tea": 0.1, "plain_milk_tea": 0.05, "pearl_milk_tea": 0.3, "coconut_milk_tea": 0.15, "redbean_milk_tea": 0.15, "taro_milk_tea": 0.1})
 tasks = Array[ExtResource("task_def")]([SubResource("task_topping4"), SubResource("task_pearl20")])
 

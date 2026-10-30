@@ -6,7 +6,7 @@ const StationPanel := preload("res://presentation/tea_playtest/station_panel.gd"
 const NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸"}
 const ROLES := {"speed": "速度型", "carry": "力量型", "skill": "操作型"}
 const PAGE_NAMES := {"staff": "员工", "recruit": "招募伙伴", "menu": "菜单", "restart": "重开店铺", "station": "设备", "goals": "目标"}
-const POST_NAMES := {"boil": "煮茶", "topping": "加料"}
+const POST_NAMES := {"boil": "煮茶", "topping": "加料", "counter": "前台"}
 ## Stat bars are scaled against the best value a fully trained partner can reach.
 const STAT_MAX := {"speed": 220.0, "capacity": 6.0, "skill": 3.0}
 var page := "shop"
@@ -245,7 +245,7 @@ func _build_pages() -> void:
 	train_button.add_theme_stylebox_override("normal", _style("8b6446", "8b6446", 15))
 	train_button.add_theme_color_override("font_color", Color("fff8e9"))
 	train_button.add_theme_color_override("font_hover_color", Color("583e2d"))
-	_text(staff, "按住卡片拖到工位 = 坐班，拖到空地 = 流动", 19, true).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_text(staff, "拖到工位 = 坐班，拖到柜台 = 前台接单，拖到空地 = 流动", 19, true).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var recruit := _column("recruit")
 	_text(recruit, "普通招募", 27)
 	_recruit_portrait = _portrait(recruit, "raccoon", 154)
@@ -341,6 +341,8 @@ func _status(worker: Dictionary) -> Array:
 		return ["待派遣", "e5dfd2", "5d5548"]
 	if worker.post.is_empty():
 		return ["流动", "dcebcf", "3d5a2a"]
+	if worker.post == "counter":
+		return ["前台", "dfe8f6", "2f4a6b"]
 	return ["坐班·" + POST_NAMES.get(worker.post, worker.post), "f3dfb8", "6b4a1c"]
 
 func refresh() -> void:

@@ -352,7 +352,11 @@ func test_customer_queue_uses_configured_capacity() -> void:
 	if sim == null: return
 	sim.unlock_station("lemonade")
 	for worker in sim.workers.duplicate(): sim.recall_worker(worker.id)
-	sim.advance(20)
+	# Keep everyone patient so only the queue cap limits arrivals, whatever the stage interval.
+	var seconds: float = sim.PROGRESSION.stages[0].customer_interval * (sim.CONFIG.queue_capacity + 1)
+	for tick in int(seconds * 10):
+		for order in sim.orders: order.wait = 0.0
+		sim.advance(0.1)
 	check_eq(sim.orders.size(), sim.CONFIG.queue_capacity, "queue fills to the configured capacity, not a fixed 3")
 
 func _base_price(sim, dish: String) -> int:
@@ -407,3 +411,36 @@ func test_belt_segments_are_bought_and_move_goods_without_staff() -> void:
 	check_eq(sim.remove_belt("seal_to_shelf"), "", "segment can be taken back")
 	check_eq(sim.gold, gold + 40, "taking a segment back refunds it")
 	check(sim.audit().valid, "removing a segment keeps cargo conserved")
+
+func _run_front_split(front: bool) -> Dictionary:
+	var sim = opened()
+	if front: check_eq(sim.assign_post(sim.workers[0].id, "counter"), "", "worker staffs the counter")
+	var lost := 0
+	var mixed := false
+	for tick in 18000:
+		sim.events.clear()
+		sim.advance(0.1)
+		for event in sim.events:
+			if event.kind == "customer_left": lost += 1
+		for worker in sim.workers:
+			if worker.job.is_empty(): continue
+			if worker.post == "counter" and worker.job.kind != "serve": mixed = true
+			if front and worker.post.is_empty() and worker.job.kind == "serve": mixed = true
+		if tick % 500 == 0 and not sim.audit().valid:
+			check(false, "front split conserves goods: %s" % sim.audit())
+			break
+	return {"lost": lost, "sold": sim.sold, "revenue": sim.revenue - 2000, "mixed": mixed, "milk": sim.sold - int(sim.sold_by_dish.get("lemonade", 0))}
+
+func test_counter_post_splits_front_and_kitchen_duties() -> void:
+	var sim = opened()
+	if sim == null: return
+	var shared := _run_front_split(false)
+	var split := _run_front_split(true)
+	print("FRONT SPLIT 30min shared=%s split=%s" % [shared, split])
+	check(not split.mixed, "counter staff only serve and mobile staff leave serving to them")
+	check(split.milk > 0, "kitchen staff keep the milk line running")
+	check(split.lost <= shared.lost, "a dedicated counter loses no more customers: %s vs %s" % [split, shared])
+	var resumed = make_shop()
+	check_eq(sim.assign_post(sim.workers[0].id, "counter"), "", "counter post assigned")
+	check_eq(resumed.load_dict(sim.to_dict()), "", "counter post saves and loads")
+	check(not sim.assign_post(sim.workers[1].id, "counter").is_empty(), "counter has one front-of-house post")

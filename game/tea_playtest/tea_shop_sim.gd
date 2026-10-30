@@ -568,9 +568,11 @@ func _jobs(worker: Dictionary) -> Array:
 			count = station.processing
 			item = "tea"
 		if not kind.is_empty() and count > 0: result.append({"kind": kind, "src": post, "dst": post, "item": item, "count": count, "priority": 72.0 if post == "topping" else 55.0, "belt": "", "order_id": -1})
-	if not worker.post.is_empty(): return result
+	if not worker.post.is_empty() and worker.post != "counter": return result
+	# Once someone staffs the counter, mobile staff leave customers to them and stay in the kitchen.
+	var front_staffed: bool = worker.post.is_empty() and post_owner("counter") != -1
 	for order in orders:
-		if order.reserved: continue
+		if order.reserved or front_staffed: continue
 		var source: String = "supply" if order.dish == "lemonade" else "shelf"
 		var serve := _candidate("serve", source, "counter", order.dish, worker, 110)
 		if serve.is_empty(): continue
@@ -578,7 +580,7 @@ func _jobs(worker: Dictionary) -> Array:
 		serve.order_id = order.id
 		serve.priority += minf(20, order.wait * 0.1)
 		result.append(serve)
-	if not station_unlocked("boil"): return result
+	if worker.post == "counter" or not station_unlocked("boil"): return result
 	result.append(_candidate("load_boil", "supply", "boil", "raw", worker, 26))
 	if station_unlocked("mix"):
 		result.append(_candidate("unload_boil", "boil", "mix", "tea", worker, 47))
@@ -997,7 +999,8 @@ func _validate_state(state: Dictionary) -> String:
 			if _is_operation(job):
 				if not worker.phase in ["walk_pickup", "work"]: return "人工操作阶段无效"
 			elif worker.phase == "work": return "运输任务不能进行机器操作"
-			if not worker.post.is_empty() and (not _is_operation(job) or job.src != worker.post): return "员工岗位与任务不一致"
+			if worker.post == "counter" and job.kind != "serve": return "员工岗位与任务不一致"
+			if not worker.post in ["", "counter"] and (not _is_operation(job) or job.src != worker.post): return "员工岗位与任务不一致"
 			if not _is_operation(job) and job.count > worker.capacity: return "员工运单超过搬运能力"
 			if worker.phase in ["walk_dropoff", "dropoff"]:
 				if worker.carry_count != job.count or worker.carry_item != job.item: return "员工在途货物不一致"

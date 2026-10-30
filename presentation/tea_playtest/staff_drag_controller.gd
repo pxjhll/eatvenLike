@@ -3,7 +3,7 @@ extends Node2D
 
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
-const POST_NAMES := {"boil": "煮茶台", "topping": "加料台"}
+const POST_NAMES := {"boil": "煮茶台", "topping": "加料台", "counter": "前台"}
 var dragging := false
 var worker_id := -1
 var target: Dictionary = {}
@@ -144,7 +144,7 @@ func _update_ghost() -> void:
 	if not error.is_empty():
 		worker.task_label = _error_text(error)
 	elif target.get("kind", "") == "post":
-		worker.task_label = "坐班" + POST_NAMES[target.post]
+		worker.task_label = "前台接单" if target.post == "counter" else "坐班" + POST_NAMES[target.post]
 	else:
 		worker.task_label = "恢复流动"
 	_ghost.display(worker, _view.sim.elapsed)
@@ -194,6 +194,8 @@ func _release(screen: Vector2) -> void:
 			error = _view.sim.assign_post(worker_id, target.post, target.point)
 	if error.is_empty():
 		var message: String = "已恢复流动" if target.kind == "mobile" else "已安排到" + POST_NAMES[target.post] + "坐班"
+		if target.get("post", "") == "counter":
+			message = "已安排到前台：只负责接单，流动员工不再去柜台。"
 		_view._show_toast(message)
 		_view.save_now(false)
 	else:
