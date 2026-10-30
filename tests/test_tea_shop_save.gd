@@ -130,6 +130,65 @@ func test_bench_training_and_deployed_roster_reference_survive_reload() -> void:
 	resumed.worker_by_id(deployed_id).fatigue = 0.123
 	check_eq(resumed.workers[0].fatigue, 0.123, "deployed record still refers to its owned roster dictionary")
 
+func test_four_owned_staff_with_active_rabbit_roundtrip_and_continue() -> void:
+	var store = _store()
+	if store == null: return
+	var sim = _sim()
+	sim.gold = 500
+	check(sim.hire() and sim.hire() and sim.hire(), "recruit all three reserve employees")
+	if sim.worker_by_id(4).is_empty(): return
+	check(sim.train(4), "rabbit progression is saved")
+	check_eq(sim.deploy_worker(2), "", "deploy second employee")
+	check_eq(sim.deploy_worker(4), "", "deploy rabbit while fox stays in reserve")
+	check_eq(sim.unlock_station("lemonade"), "", "open service")
+	sim.advance(2.037)
+	var original: Dictionary = sim.to_dict()
+	check_eq(store.save_game(sim, 2.0), OK, "four-owned roster is valid on disk")
+	var resumed = store.load_game()
+	check_eq(store.last_error, "", "rabbit save loads without recovery")
+	check_eq(var_to_bytes(resumed.to_dict()), var_to_bytes(original), "rabbit state roundtrips with exact values and types")
+	check_eq(resumed.all_workers().size(), 4, "all four owned employees reload")
+	check_eq(resumed.workers.size(), 3, "only three deployed employees reload")
+	check_eq(resumed.worker_by_id(4).level, 2, "rabbit training reloads")
+	check_eq(resumed.worker_by_id(4).source, "招募", "rabbit source reloads")
+	check(not resumed.worker_by_id(3).deployed, "fox remains in reserve")
+	check(is_same(resumed.workers[2], resumed.worker_by_id(4)), "rabbit deployment uses owned record after load")
+	for tick in 600:
+		sim.advance(0.1)
+		resumed.advance(0.1)
+	check_eq(var_to_bytes(resumed.to_dict()), var_to_bytes(sim.to_dict()), "rabbit production resumes identically")
+	check(resumed.sold > 0 and resumed.audit().valid, "resumed deployed rabbit roster serves conserved stock")
+	var before: Dictionary = resumed.to_dict()
+	var malformed: Dictionary = before.duplicate(true)
+	malformed.deployed.append(3)
+	malformed.roster[2].deployed = true
+	check(not resumed.load_dict(malformed).is_empty(), "save still rejects four deployed employees")
+	check_eq(resumed.to_dict(), before, "excess deployment cannot mutate current shop")
+	malformed = before.duplicate(true)
+	malformed.roster[3].id = 5
+	check(not resumed.load_dict(malformed).is_empty(), "rabbit save requires stable id four")
+	check_eq(resumed.to_dict(), before, "invalid rabbit identity cannot mutate shop")
+
+func test_pre_rabbit_current_schema_roster_loads_and_can_recruit_rabbit() -> void:
+	var store = _store()
+	if store == null: return
+	var legacy = _sim()
+	legacy.gold = 180
+	check(legacy.hire() and legacy.hire(), "prepare the pre-rabbit three-owned roster")
+	var state: Dictionary = legacy.to_dict()
+	check_eq(state.version, 3, "rabbit retains main's bought-belt simulation schema")
+	var envelope := _envelope(state, 2)
+	_write(_path(), JSON.stringify(envelope))
+	var resumed = store.load_game()
+	check_eq(store.last_error, "", "existing three-worker file is accepted in the version-two envelope")
+	check_eq(var_to_bytes(resumed.to_dict()), var_to_bytes(state), "existing three-worker save has no shape migration")
+	check_eq(resumed.all_workers().size(), 3, "loading an old save does not grant free rabbit")
+	check_eq(resumed.hire_cost(), 85, "existing collection continues at rabbit price")
+	check(resumed.hire(), "old save can recruit fourth staff through normal flow")
+	check_eq(resumed.gold, 0, "old-save rabbit recruitment charges full price")
+	check_eq(store.save_game(resumed), OK, "upgraded roster saves in current envelope")
+	check_eq(store.load_game().all_workers().size(), 4, "rabbit remains owned after saving upgraded roster")
+
 
 func test_malformed_files_are_backed_up_before_recovery() -> void:
 	var store = _store()
