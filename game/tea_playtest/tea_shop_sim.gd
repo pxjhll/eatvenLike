@@ -492,9 +492,12 @@ func _machine_duration(key: String) -> float:
 
 func _action_duration(job: Dictionary, worker: Dictionary) -> float:
 	if job.item == "lemonade": return _definition("lemonade").cycle_seconds / _speed("lemonade") / worker.skill
-	if job.kind == "topping": return _topping_seconds() * job.count / worker.skill / _speed("topping")
+	if job.kind == "topping": return _topping_seconds() * job.count / worker.skill / _speed("topping") / (seated_bonus if worker.post == "topping" else 1.0)
 	if job.kind == "load_boil": return 0.6 / worker.skill / _speed("supply") / _material_bonus("supply", "tea_leaf")
 	return super._action_duration(job, worker)
+
+## Temporary: how much faster a worker seated at the topping machine adds toppings.
+var seated_bonus := 1.0
 
 ## Seconds of hand work per cup at the topping machine (its art_seconds; 2 when unset).
 func _topping_seconds() -> float:

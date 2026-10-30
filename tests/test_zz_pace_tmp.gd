@@ -1,8 +1,9 @@
 extends "res://tests/test_case.gd"
 ## 临时：没有传送带、名额按阶段时的客流节奏模拟（分析用，合并前删除）
 
-func _run(intervals: Array, slots: Array, seats: Array = [], per_cup := 2.0) -> String:
+func _run(intervals: Array, slots: Array, seats: Array = [], per_cup := 2.0, bonus := 1.0) -> String:
 	var sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
+	sim.seated_bonus = bonus
 	var topping = sim._definition("topping")
 	var saved_cup: float = topping.art_seconds
 	topping.art_seconds = per_cup
@@ -50,13 +51,13 @@ func _run(intervals: Array, slots: Array, seats: Array = [], per_cup := 2.0) -> 
 		stages[i].customer_interval = saved[i][0]
 		stages[i].staff_slots = saved[i][1]
 	topping.art_seconds = saved_cup
-	var text := "cup=%.0fs seats=%s slots=%s intervals=%s revenue=%d brewer=%d |" % [per_cup, seats, slots, intervals, sim.revenue, sim.station_levels.get("boil", 1)]
+	var text := "bonus=%.1f cup=%.0fs seats=%s slots=%s intervals=%s revenue=%d brewer=%d |" % [bonus, per_cup, seats, slots, intervals, sim.revenue, sim.station_levels.get("boil", 1)]
 	for key in rows:
 		var r: Dictionary = rows[key]
 		text += " S%d %d-%ds staff %d-%d arrived %d served %d lost %d |" % [key, r.start, r.end, r.staff, r.staff_end, r.arrived, r.served, r.lost]
 	return text
 
 func test_pace() -> void:
-	for per_cup in [2.0, 4.0, 6.0]:
-		for seats in [[], ["topping"]]:
-			print("PACE " + _run([8.0, 7.0, 7.0, 6.0], [2, 3, 4, 5], seats, per_cup))
+	for per_cup in [4.0, 6.0]:
+		for bonus in [2.0, 3.0]:
+			print("PACE " + _run([8.0, 7.0, 7.0, 6.0], [2, 3, 4, 5], ["topping"], per_cup, bonus))
