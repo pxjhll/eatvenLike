@@ -1,7 +1,7 @@
 extends "res://tests/test_case.gd"
 ## 临时：没有传送带、名额按阶段时的客流节奏模拟（分析用，合并前删除）
 
-func _run(intervals: Array, slots: Array, seats: Array = [], per_cup := 2.0, exclusive := true) -> String:
+func _run(intervals: Array, slots: Array, seats: Array = [], per_cup := 2.0, exclusive := true, bonus := 1.0) -> String:
 	var sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
 	sim.segment_exclusive = exclusive
 	var topping = sim._definition("topping")
@@ -33,7 +33,10 @@ func _run(intervals: Array, slots: Array, seats: Array = [], per_cup := 2.0, exc
 				for worker in sim.workers:
 					if not worker.post.is_empty(): continue
 					if best.is_empty() or (post == "topping" and worker.skill > best.skill): best = worker
-				if not best.is_empty(): sim.assign_post(best.id, post)
+				if not best.is_empty():
+					sim.assign_post(best.id, post)
+					best.speed *= bonus
+					best.skill *= bonus
 		if tick % 50 == 0 and sim.station_info("boil").upgrade_error.is_empty() and sim.gold >= 200: sim.upgrade_station("boil")
 		if sim.stage_index != stage:
 			stage = sim.stage_index
@@ -51,14 +54,13 @@ func _run(intervals: Array, slots: Array, seats: Array = [], per_cup := 2.0, exc
 		stages[i].customer_interval = saved[i][0]
 		stages[i].staff_slots = saved[i][1]
 	topping.art_seconds = saved_cup
-	var text := "exclusive=%s cup=%.0fs seats=%s slots=%s intervals=%s revenue=%d brewer=%d |" % [exclusive, per_cup, seats, slots, intervals, sim.revenue, sim.station_levels.get("boil", 1)]
+	var text := "bonus=%.1f exclusive=%s cup=%.0fs seats=%s slots=%s intervals=%s revenue=%d brewer=%d |" % [bonus, exclusive, per_cup, seats, slots, intervals, sim.revenue, sim.station_levels.get("boil", 1)]
 	for key in rows:
 		var r: Dictionary = rows[key]
 		text += " S%d %d-%ds staff %d-%d arrived %d served %d lost %d |" % [key, r.start, r.end, r.staff, r.staff_end, r.arrived, r.served, r.lost]
 	return text
 
 func test_pace() -> void:
-	for per_cup in [2.0, 4.0]:
-		print("PACE " + _run([8.0, 7.0, 7.0, 6.0], [2, 3, 4, 5], [], per_cup))
-		print("PACE " + _run([8.0, 7.0, 7.0, 6.0], [2, 3, 4, 5], ["topping"], per_cup, true))
-	print("PACE " + _run([8.0, 7.0, 7.0, 6.0], [2, 3, 4, 5], ["topping"], 2.0, false))
+	for bonus in [1.3, 1.6]:
+		for exclusive in [true, false]:
+			print("PACE " + _run([8.0, 7.0, 7.0, 6.0], [2, 3, 4, 5], ["topping"], 2.0, exclusive, bonus))
