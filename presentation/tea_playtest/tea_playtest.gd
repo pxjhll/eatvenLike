@@ -43,6 +43,17 @@ var _post_labels := {}
 var ui: Control
 var _station_buttons := {}
 var _lemonade_cup: Node2D
+## Belt mode shows a plate on every hop that can take a conveyor; drag the chip onto one (or tap it).
+var belt_mode := false
+var _belt_toggle: Button
+var _belt_chip: Button
+var _belt_slots := {}
+var _belt_lines := {}
+var _belt_points := {}
+var _chip_home := Vector2(296, 560)
+var _chip_dragging := false
+## These two hops already have conveyor art in the scene; the rest are drawn as lines.
+const ART_BELTS := {"BeltHorizontal": "topping_to_seal", "BeltVertical": "seal_to_shelf"}
 const STATION_REGIONS := {
 	"supply": Rect2(20, 155, 221, 120), "boil": Rect2(245, 122, 167, 158),
 	"mix": Rect2(415, 121, 106, 160), "topping": Rect2(22, 254, 121, 339),
@@ -77,6 +88,8 @@ func _ready() -> void:
 	_reset_visuals()
 	if sim.has_method("station_info"):
 		_build_station_signs()
+	if sim.has_method("buy_belt"):
+		_build_belts()
 	_refresh(0.0)
 	_fit()
 	_show_toast(sim.current_goal() if sim.has_method("current_goal") else "欢迎开店，伙伴正在准备第一杯奶茶。")
@@ -145,7 +158,8 @@ func _refresh(delta: float) -> void:
 			_actors.erase(id)
 	for node in art.find_children("*", "Node2D", true, false):
 		if node.get_meta("art_layer", "") == "belts":
-			node.visible = sim.use_belts or not sim.belt_items.is_empty()
+			if sim.has_method("buy_belt"): node.visible = sim.belts.has(ART_BELTS.get(String(node.name), ""))
+			else: node.visible = sim.use_belts or not sim.belt_items.is_empty()
 	for worker in sim.workers:
 		if not _actors.has(worker.id):
 			var actor := Actor.new()
@@ -179,6 +193,8 @@ func _refresh(delta: float) -> void:
 	_shelf.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("seal")
 	if sim.has_method("station_info"):
 		_refresh_station_signs()
+	if sim.has_method("buy_belt"):
+		_refresh_belts()
 	for post in _post_labels:
 		var owner := -1
 		for worker in sim.workers:
@@ -216,9 +232,9 @@ func _update_cups() -> void:
 	for i in shelf_items.size():
 		draws.append({"pos": Vector2(546 + i * 51, 601), "item": shelf_items[i], "host": "Rack"})
 	for belt in sim.belt_items:
-		var route := Layout.belt_path(belt.route)
+		var route: PackedVector2Array = _belt_points.get(belt.route, Layout.belt_path(belt.route))
 		var point := _along(route, float(belt.progress))
-		var host := "BeltHorizontal" if belt.route == "topping_to_seal" else "BeltVertical"
+		var host := "BeltHorizontal" if belt.route == "topping_to_seal" else "BeltVertical" if belt.route == "seal_to_shelf" or not _belt_points.has(belt.route) else ""
 		for i in int(belt.count):
 			var offset := Vector2((i - (int(belt.count) - 1) / 2.0) * 14, -i * 2)
 			draws.append({"pos": point + offset, "item": belt.item, "host": host})
@@ -247,7 +263,7 @@ func _update_cups() -> void:
 		sprite.scale = Vector2.ONE * Actor.CUP_HEIGHT / texture.get_height()
 		# A cup resting on furniture sorts just in front of that furniture's floor anchor,
 		# so it stays on top of its host but behind staff standing closer to the camera.
-		var sort_y := maxf(row.pos.y, art.get_node("Sortables/" + row.host).position.y + 1.0)
+		var sort_y: float = row.pos.y if row.host.is_empty() else maxf(row.pos.y, art.get_node("Sortables/" + row.host).position.y + 1.0)
 		sprite.position = Vector2(row.pos.x, sort_y)
 		sprite.offset = Vector2(-texture.get_width() / 2.0, -texture.get_height() - (sort_y - row.pos.y) / sprite.scale.y)
 
@@ -526,6 +542,96 @@ func _refresh_station_signs() -> void:
 			node.modulate = Color.WHITE if sim.station_unlocked(id) else Color(0.6, 0.6, 0.6, 0.48)
 	if is_instance_valid(_lemonade_cup):
 		_lemonade_cup.visible = sim.station_unlocked("lemonade")
+
+
+func _build_belts() -> void:
+	var lines := Node2D.new()
+	lines.name = "BeltSegments"
+	art.add_child(lines)
+	art.move_child(lines, art.get_node("Sortables").get_index())
+	for row in sim.belt_rows():
+		_belt_points[row.id] = row.points
+		if not row.id in ART_BELTS.values():
+			var line := Line2D.new()
+			line.points = row.points
+			line.width = 24
+			line.default_color = Color("6b5444")
+			line.joint_mode = Line2D.LINE_JOINT_ROUND
+			var inner := Line2D.new()
+			inner.points = row.points
+			inner.width = 14
+			inner.default_color = Color("a68b70")
+			line.add_child(inner)
+			lines.add_child(line)
+			_belt_lines[row.id] = line
+		var slot := Button.new()
+		slot.theme = ui.theme
+		slot.add_theme_font_size_override("font_size", 17)
+		slot.focus_mode = Control.FOCUS_NONE
+		slot.size = Vector2(118, 46)
+		slot.position = _along(row.points, 0.5) - slot.size / 2.0
+		slot.pressed.connect(belt_action.bind(row.id))
+		$Canvas/WorldLabels.add_child(slot)
+		_belt_slots[row.id] = slot
+	_belt_toggle = Button.new()
+	_belt_toggle.theme = ui.theme
+	_belt_toggle.focus_mode = Control.FOCUS_NONE
+	_belt_toggle.position = Vector2(290, 616)
+	_belt_toggle.size = Vector2(150, 48)
+	_belt_toggle.pressed.connect(func() -> void: belt_mode = not belt_mode; _refresh(0))
+	$Canvas/WorldLabels.add_child(_belt_toggle)
+	_belt_chip = Button.new()
+	_belt_chip.theme = ui.theme
+	_belt_chip.focus_mode = Control.FOCUS_NONE
+	_belt_chip.text = "拖动装带"
+	_belt_chip.size = Vector2(118, 48)
+	_belt_chip.position = _chip_home
+	_belt_chip.gui_input.connect(_on_chip_input)
+	$Canvas/WorldLabels.add_child(_belt_chip)
+
+
+func _refresh_belts() -> void:
+	var can_place := false
+	for row in sim.belt_rows():
+		if _belt_lines.has(row.id):
+			_belt_lines[row.id].visible = row.owned
+		var slot: Button = _belt_slots[row.id]
+		slot.visible = belt_mode and row.available
+		slot.text = "收起 +%d" % row.cost if row.owned else "传送带\n%d 金币" % row.cost
+		slot.tooltip_text = row.name + ("" if row.owned else "\n" + row.error)
+		can_place = can_place or (row.available and not row.owned)
+	_belt_toggle.visible = sim.stage_index >= 1
+	_belt_toggle.text = "完成" if belt_mode else "传送带"
+	_belt_chip.visible = belt_mode and can_place
+	if not _chip_dragging:
+		_belt_chip.position = _chip_home
+
+
+func belt_action(id: String) -> void:
+	var owned: bool = sim.belts.has(id)
+	var error: String = sim.remove_belt(id) if owned else sim.buy_belt(id)
+	_show_toast(error if not error.is_empty() else "传送带已收起，金币已退回。" if owned else "传送带已装上，这段不用再人工搬运。")
+	if error.is_empty():
+		save_now(false)
+	_refresh(0)
+
+
+func _on_chip_input(event: InputEvent) -> void:
+	var press: bool = (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT) or event is InputEventScreenTouch
+	if press and event.pressed:
+		_chip_dragging = true
+	elif (event is InputEventMouseMotion or event is InputEventScreenDrag) and _chip_dragging:
+		_belt_chip.global_position = _belt_chip.get_global_transform() * event.position - _belt_chip.get_global_rect().size / 2.0
+	elif press and not event.pressed and _chip_dragging:
+		_chip_dragging = false
+		var point: Vector2 = _belt_chip.get_global_transform() * event.position
+		_belt_chip.position = _chip_home
+		for id in _belt_slots:
+			var slot: Button = _belt_slots[id]
+			if slot.visible and not sim.belts.has(id) and slot.get_global_rect().grow(24).has_point(point):
+				belt_action(id)
+				return
+		_show_toast("把传送带拖到两台机器之间的价格牌上。")
 
 
 func _unhandled_input(event: InputEvent) -> void:

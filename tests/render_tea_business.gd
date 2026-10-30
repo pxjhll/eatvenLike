@@ -42,6 +42,21 @@ func _run() -> void:
 	_advance(300)
 	_check(int(view.sim.sold_by_dish.get("black_tea", 0)) > 0, "brewed tea is sealed and sold as black tea before the milk machine")
 	await _capture("black-tea")
+	view.sim.gold = maxi(view.sim.gold, 300) # belt prices are what this step checks, not opening income
+	await _click(hud.home_button)
+	await _click(view._belt_toggle)
+	_check(view.belt_mode and view._belt_slots.seal_to_shelf.visible and not view._belt_slots.boil_to_mix.visible, "belt mode shows plates only on hops the stage allows")
+	gold = view.sim.gold
+	var chip: Vector2 = view._belt_chip.get_global_rect().get_center()
+	await _gesture(chip, view._belt_slots.seal_to_shelf.get_global_rect().get_center())
+	_check(view.sim.belts.has("seal_to_shelf") and view.sim.gold == gold - 40, "dragging the belt chip onto a hop buys that segment")
+	await _click(view._belt_slots.supply_to_boil)
+	_check(view.sim.belts.has("supply_to_boil"), "tapping a hop plate also places a belt")
+	_advance(200)
+	_check(view.sim.audit().valid, "belted black tea line keeps goods conserved")
+	await _capture("belts")
+	await _click(view._belt_toggle)
+	_check(not view.belt_mode and not view._belt_slots.seal_to_shelf.visible, "finishing belt mode hides the plates")
 	await _click(hud.home_button)
 	await _click(view._station_buttons.mix)
 	gold = view.sim.gold
