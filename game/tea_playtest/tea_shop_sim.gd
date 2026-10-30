@@ -492,9 +492,14 @@ func _machine_duration(key: String) -> float:
 
 func _action_duration(job: Dictionary, worker: Dictionary) -> float:
 	if job.item == "lemonade": return _definition("lemonade").cycle_seconds / _speed("lemonade") / worker.skill
-	if job.kind == "topping": return 2.0 * job.count / worker.skill / _speed("topping")
+	if job.kind == "topping": return _topping_seconds() * job.count / worker.skill / _speed("topping")
 	if job.kind == "load_boil": return 0.6 / worker.skill / _speed("supply") / _material_bonus("supply", "tea_leaf")
 	return super._action_duration(job, worker)
+
+## Seconds of hand work per cup at the topping machine (its art_seconds; 2 when unset).
+func _topping_seconds() -> float:
+	var seconds: float = _definition("topping").art_seconds
+	return seconds if seconds > 0 else 2.0
 
 func _order_interval() -> float:
 	return PROGRESSION.stages[stage_index].customer_interval

@@ -328,7 +328,7 @@ func _allocate() -> void:
 				var to_target := Layout.path(_source_point(job), _destination_point(job))
 				if to_source.is_empty() or to_target.is_empty(): continue
 				var travel: float = (_path_length(to_source) + _path_length(to_target)) / worker.speed
-				var work_time: float = (2.0 * job.count if job.kind == "topping" else 1.2) / worker.skill
+				var work_time: float = _action_duration(job, worker) if job.kind == "topping" else 1.2 / worker.skill
 				var throughput: float = float(job.count) / maxf(0.1, travel + work_time)
 				var score: float = (job.priority + throughput * 18.0 - travel * 1.2) * (1.0 - worker.fatigue * 0.18)
 				if score > best_score:
