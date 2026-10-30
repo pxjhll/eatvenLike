@@ -352,7 +352,11 @@ func test_customer_queue_uses_configured_capacity() -> void:
 	if sim == null: return
 	sim.unlock_station("lemonade")
 	for worker in sim.workers.duplicate(): sim.recall_worker(worker.id)
-	sim.advance(20)
+	# Keep everyone patient so only the queue cap limits arrivals, whatever the stage interval.
+	var seconds: float = sim.PROGRESSION.stages[0].customer_interval * (sim.CONFIG.queue_capacity + 1)
+	for tick in int(seconds * 10):
+		for order in sim.orders: order.wait = 0.0
+		sim.advance(0.1)
 	check_eq(sim.orders.size(), sim.CONFIG.queue_capacity, "queue fills to the configured capacity, not a fixed 3")
 
 func _base_price(sim, dish: String) -> int:
