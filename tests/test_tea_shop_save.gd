@@ -70,7 +70,8 @@ func test_full_shop_state_and_continuation_roundtrip() -> void:
 			if employee.id != sim.workers[0].id:
 				check_eq(sim.deploy_worker(employee.id), "", "deploy owned employee")
 		check(sim.train(sim.workers[0].id), "training included in save")
-		sim.set_belts(belts)
+		if belts:
+			for row in sim.belt_rows(): check_eq(sim.buy_belt(row.id), "", "buy belt " + row.id)
 		var saw_machine := false
 		var saw_transport := false
 		for tick in 12000:
