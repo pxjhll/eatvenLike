@@ -394,6 +394,7 @@ func refresh() -> void:
 	_recruit_label.text = "伙伴已全部加入" if sim.hire_cost() < 0 else ("浣熊 · 力量型\n擅长批量搬运" if next_art == "raccoon" else "狐狸 · 操作型\n擅长手工制作")
 	pause_button.text = "继续营业" if sim.paused else "暂停营业"
 	belt_button.text = "运输方式  ·  传送带" if sim.use_belts else "运输方式  ·  人工搬运"
+	belt_button.visible = not sim.has_method("buy_belt")
 	%Selection.visible = show_selection and page == "shop"
 	$Selection/Row/Avatar.texture = _portraits[selected.art]
 	$Selection/Row/Summary.text = "%s · Lv%d\n%s" % [NAMES[selected.art], selected.level, task_text]

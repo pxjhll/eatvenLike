@@ -6,7 +6,8 @@ const PROGRESSION = preload("res://content/tea/art_shop_progression.tres")
 ## Black tea is brewed directly into the sealer; once milk opens, only this many are kept in stock.
 const BLACK_TEA_CAP := 3
 ## v2: staged line (black tea stage) changed the station and dish shapes.
-const SAVE_VERSION := 2
+## v3: belts became bought segments (belts / belt_clock), shipments route by segment id.
+const SAVE_VERSION := 3
 const ARTS := ["cat", "raccoon", "fox"]
 const ALIASES := {"cabinet": "supply", "brewer": "boil", "milk_station": "mix", "lemonade_stand": "lemonade"}
 const RESOURCE_IDS := {"supply": "cabinet", "boil": "brewer", "mix": "milk_station", "topping": "topping", "lemonade": "lemonade_stand", "counter": "counter"}
@@ -22,6 +23,10 @@ var station_levels: Dictionary = {}
 var material_levels: Dictionary = {}
 var unlocked_stations: Dictionary = {}
 var _flavor_cursor := 0
+## Bought conveyor segments (BeltSlotDef ids) and each one's countdown to its next cup.
+var belts: Dictionary = {}
+var belt_clock: Dictionary = {}
+var _belt_courier := false
 var _rng: RandomNumberGenerator
 
 func _init() -> void:
@@ -47,12 +52,15 @@ func _initialize_shop() -> void:
 	_next_order = 1
 	_order_clock = 0.0
 	_flavor_cursor = 0
+	belts.clear()
+	belt_clock.clear()
 	shelf_count = 0
 	orders.clear()
 	belt_items.clear()
 	events.clear()
 	paused = false
-	use_belts = true
+	# Workers always carry by hand; bought belt segments move goods on their own.
+	use_belts = false
 	_rng.seed = CONFIG.random_seed
 	shelf_stock.clear()
 	sold_by_dish.clear()
@@ -460,6 +468,7 @@ func _queue_capacity() -> int:
 
 func _tick() -> void:
 	super._tick()
+	_run_belts()
 	# A reserved order belongs to a real delivery and must survive the walk.
 	if CONFIG.customer_patience <= 0: return
 	for index in range(orders.size() - 1, -1, -1):
@@ -593,7 +602,7 @@ func _jobs(worker: Dictionary) -> Array:
 	else:
 		result.append(_candidate("carry_to_seal", "mix", "seal", "plain_milk_tea", worker, 84))
 	for dish in DISHES:
-		if not dish in ["lemonade", "plain_milk_tea", "black_tea"]: result.append(_candidate("load_seal_belt" if use_belts else "carry_to_seal", "topping", "seal", dish, worker, 84, "topping_to_seal" if use_belts else ""))
+		if not dish in ["lemonade", "plain_milk_tea", "black_tea"]: result.append(_candidate("carry_to_seal", "topping", "seal", dish, worker, 84))
 	return _boost_kitchen(_shelf_jobs(worker, result))
 
 # Customers waiting on an empty shelf flavor pull mobile staff back into the kitchen;
@@ -609,8 +618,86 @@ func _boost_kitchen(result: Array) -> Array:
 
 func _shelf_jobs(worker: Dictionary, result: Array) -> Array:
 	for dish in DISHES:
-		if dish != "lemonade": result.append(_candidate("load_shelf_belt" if use_belts else "carry_to_shelf", "seal", "shelf", dish, worker, 96, "seal_to_shelf" if use_belts else ""))
-	return result
+		if dish != "lemonade": result.append(_candidate("carry_to_shelf", "seal", "shelf", dish, worker, 96))
+	return _without_belted(result)
+
+func _belt_def(id: String):
+	for definition in PROGRESSION.belts:
+		if definition.id == id: return definition
+	return null
+
+func _belted(source: String, destination: String) -> bool:
+	for id in belts:
+		var definition = _belt_def(id)
+		if definition.from == source and definition.to == destination: return true
+	return false
+
+# A bought segment owns its hop: staff stop hand-carrying along it.
+func _without_belted(result: Array) -> Array:
+	if _belt_courier: return result
+	return result.filter(func(job: Dictionary) -> bool:
+		return job.is_empty() or job.kind == "serve" or _is_operation(job) or not _belted(job.src, job.dst))
+
+func belt_error(id: String) -> String:
+	var definition = _belt_def(id)
+	if definition == null: return "未知传送带"
+	if belts.has(id): return "这里已经装了传送带"
+	if not station_unlocked("lemonade") or stage_index < definition.stage: return "请先解锁" + PROGRESSION.stages[definition.stage].line_name
+	if gold < definition.cost: return "金币不足，需要 %d" % definition.cost
+	return ""
+
+func buy_belt(id: String) -> String:
+	var error := belt_error(id)
+	if not error.is_empty(): return error
+	var definition = _belt_def(id)
+	gold -= definition.cost
+	belts[id] = true
+	belt_clock[id] = 0.0
+	_event("belt_built", definition.display_name + " 传送带已装上")
+	return ""
+
+## Taking a segment back refunds it; cups already on it still arrive.
+func remove_belt(id: String) -> String:
+	if not belts.has(id): return "这里没有传送带"
+	var definition = _belt_def(id)
+	belts.erase(id)
+	belt_clock.erase(id)
+	gold += definition.cost
+	_event("belt_removed", definition.display_name + " 传送带已收起")
+	return ""
+
+func belt_rows() -> Array:
+	var rows: Array = []
+	for definition in PROGRESSION.belts:
+		rows.append({"id": definition.id, "name": definition.display_name, "from": definition.from, "to": definition.to,
+			"cost": definition.cost, "owned": belts.has(definition.id), "error": belt_error(definition.id),
+			"available": station_unlocked("lemonade") and stage_index >= definition.stage, "points": definition.view_points})
+	return rows
+
+# Each bought segment acts as a courier with room for one cup: it takes the same job a
+# worker would on its hop (same caps and flavor rules) and ships it along the belt.
+func _run_belts() -> void:
+	for id in belts:
+		belt_clock[id] = maxf(0.0, belt_clock[id] - STEP)
+		if belt_clock[id] > 0.0: continue
+		var definition = _belt_def(id)
+		var courier := {"id": -1, "post": "", "assignment_pending": false, "capacity": 1}
+		_belt_courier = true
+		var options := _jobs(courier)
+		_belt_courier = false
+		var best: Dictionary = {}
+		for job in options:
+			if job.is_empty() or job.kind == "serve" or _is_operation(job): continue
+			if job.src != definition.from or job.dst != definition.to: continue
+			if best.is_empty() or job.priority > best.priority: best = job
+		if best.is_empty(): continue
+		if best.src == "shelf": _shelf_reserved_out += best.count
+		elif best.src != "supply": stations[best.src].reserved_out[best.item] = int(stations[best.src].reserved_out.get(best.item, 0)) + best.count
+		if best.dst == "shelf": _shelf_reserved_in += best.count
+		else: stations[best.dst].reserved_in += best.count
+		_take(best)
+		belt_items.append({"route": id, "item": best.item, "count": best.count, "progress": 0.0, "duration": definition.seconds, "dst": best.dst})
+		belt_clock[id] = definition.interval
 
 func _flavor_inventory(dish: String) -> int:
 	var count: int = shelf_stock.get(dish, 0)
@@ -619,6 +706,8 @@ func _flavor_inventory(dish: String) -> int:
 		count += stations.seal.input.tea
 		for worker in workers:
 			if not worker.job.is_empty() and worker.job.dst == "seal" and worker.job.item == "tea": count += worker.job.count
+		for shipment in belt_items:
+			if shipment.dst == "seal" and shipment.item == "tea": count += shipment.count
 	for key in ["topping", "seal"]:
 		count += stations[key].output.get(dish, 0)
 		if key == "seal": count += stations[key].input.get(dish, 0)
@@ -742,7 +831,8 @@ func to_dict() -> Dictionary:
 		"shelf_reserved_out": _shelf_reserved_out, "next_order": _next_order, "order_clock": _order_clock,
 		"stage_index": stage_index, "station_levels": station_levels.duplicate(true),
 		"material_levels": material_levels.duplicate(true), "unlocked_stations": unlocked_stations.duplicate(true),
-		"sold_by_dish": sold_by_dish.duplicate(true), "flavor_cursor": _flavor_cursor, "rng_state": _rng.state}
+		"sold_by_dish": sold_by_dish.duplicate(true), "flavor_cursor": _flavor_cursor, "rng_state": _rng.state,
+		"belts": belts.duplicate(true), "belt_clock": belt_clock.duplicate(true)}
 
 func _apply_state(state: Dictionary) -> void:
 	roster = state.roster.duplicate(true)
@@ -772,6 +862,8 @@ func _apply_state(state: Dictionary) -> void:
 	unlocked_stations = state.unlocked_stations.duplicate(true)
 	sold_by_dish = state.sold_by_dish.duplicate(true)
 	_flavor_cursor = state.flavor_cursor
+	belts = state.belts.duplicate(true)
+	belt_clock = state.belt_clock.duplicate(true)
 	_rng.state = state.rng_state
 
 func load_dict(state: Dictionary) -> String:
@@ -831,6 +923,12 @@ func _validate_state(state: Dictionary) -> String:
 	if state.accumulator >= STEP + 0.000001: return "存档时间余量无效"
 	if not _same_shape(state.station_levels, template.station_levels) or not _same_shape(state.unlocked_stations, template.unlocked_stations): return "设备字段无效"
 	if not _same_shape(state.material_levels, template.material_levels): return "配料字段无效"
+	if state.belts.size() != state.belt_clock.size(): return "传送带字段无效"
+	for id in state.belts:
+		var belt = _belt_def(id) if id is String else null
+		if belt == null or state.belts[id] != true or state.stage_index < belt.stage or not state.unlocked_stations.lemonade: return "传送带字段无效"
+		var clock: Variant = state.belt_clock.get(id)
+		if not clock is float or not is_finite(clock) or clock < 0 or clock > belt.interval + 0.000001: return "传送带计时无效"
 	for id in MACHINE_IDS:
 		var definition = _definition(id)
 		# Saves from before price upgrades may hold old speed levels (e.g. cabinet Lv3).
@@ -940,8 +1038,9 @@ func _validate_state(state: Dictionary) -> String:
 	for shipment in state.belt_items:
 		var sample := {"route": "", "item": "", "count": 1, "progress": 0.0, "duration": 1.0, "dst": ""}
 		if not shipment is Dictionary or not _same_shape(shipment, sample): return "传送带字段无效"
-		if not shipment.route in ["topping_to_seal", "seal_to_shelf"] or not shipment.item in DISHES or shipment.item == "lemonade" or shipment.count <= 0 or shipment.duration <= 0 or shipment.progress < 0 or shipment.progress >= 1 or not shipment.dst in ["seal", "shelf"]: return "传送带内容无效"
-		if shipment.dst != ("seal" if shipment.route == "topping_to_seal" else "shelf"): return "传送带终点不一致"
+		var route = _belt_def(shipment.route)
+		if route == null or not shipment.item in DISHES + ["raw", "tea"] or shipment.item == "lemonade" or shipment.count <= 0 or shipment.duration <= 0 or shipment.progress < 0 or shipment.progress >= 1: return "传送带内容无效"
+		if shipment.dst != route.to: return "传送带终点不一致"
 	for event in state.events:
 		if not event is Dictionary or not _same_shape(event, {"kind": "", "text": ""}): return "事件字段无效"
 	return ""

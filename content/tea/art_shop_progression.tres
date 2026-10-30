@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://content/defs/task_def.gd" id="task_def"]
 [ext_resource type="Script" path="res://content/defs/shop_stage_def.gd" id="shop_stage_def"]
 [ext_resource type="Script" path="res://content/defs/shop_progression_def.gd" id="shop_progression_def"]
+[ext_resource type="Script" path="res://content/defs/belt_slot_def.gd" id="belt_slot_def"]
 
 [sub_resource type="Resource" id="task_lemon30"]
 script = ExtResource("task_def")
@@ -80,6 +81,77 @@ customer_interval = 1.5
 order_weights = Dictionary[String, float]({"lemonade": 0.15, "black_tea": 0.1, "plain_milk_tea": 0.05, "pearl_milk_tea": 0.3, "coconut_milk_tea": 0.15, "redbean_milk_tea": 0.15, "taro_milk_tea": 0.1})
 tasks = Array[ExtResource("task_def")]([SubResource("task_topping4"), SubResource("task_pearl20")])
 
+[sub_resource type="Resource" id="belt_seal_to_shelf"]
+script = ExtResource("belt_slot_def")
+id = "seal_to_shelf"
+display_name = "封口机 → 货架"
+from = "seal"
+to = "shelf"
+cost = 40
+stage = 1
+view_points = PackedVector2Array(620, 400, 620, 550, 556, 580)
+
+[sub_resource type="Resource" id="belt_supply_to_boil"]
+script = ExtResource("belt_slot_def")
+id = "supply_to_boil"
+display_name = "原料柜 → 煮茶机"
+from = "supply"
+to = "boil"
+cost = 50
+stage = 1
+view_points = PackedVector2Array(200, 350, 340, 350)
+
+[sub_resource type="Resource" id="belt_boil_to_seal"]
+script = ExtResource("belt_slot_def")
+id = "boil_to_seal"
+display_name = "煮茶机 → 封口机"
+from = "boil"
+to = "seal"
+cost = 60
+stage = 1
+view_points = PackedVector2Array(360, 362, 545, 362, 545, 415)
+
+[sub_resource type="Resource" id="belt_boil_to_mix"]
+script = ExtResource("belt_slot_def")
+id = "boil_to_mix"
+display_name = "煮茶机 → 调奶台"
+from = "boil"
+to = "mix"
+cost = 80
+stage = 2
+view_points = PackedVector2Array(360, 376, 470, 376, 470, 398)
+
+[sub_resource type="Resource" id="belt_mix_to_seal"]
+script = ExtResource("belt_slot_def")
+id = "mix_to_seal"
+display_name = "调奶台 → 封口机"
+from = "mix"
+to = "seal"
+cost = 80
+stage = 2
+view_points = PackedVector2Array(482, 428, 518, 428)
+
+[sub_resource type="Resource" id="belt_mix_to_topping"]
+script = ExtResource("belt_slot_def")
+id = "mix_to_topping"
+display_name = "调奶台 → 加料机"
+from = "mix"
+to = "topping"
+cost = 120
+stage = 3
+view_points = PackedVector2Array(460, 425, 460, 470, 205, 470, 205, 495)
+
+[sub_resource type="Resource" id="belt_topping_to_seal"]
+script = ExtResource("belt_slot_def")
+id = "topping_to_seal"
+display_name = "加料机 → 封口机"
+from = "topping"
+to = "seal"
+cost = 120
+stage = 3
+view_points = PackedVector2Array(400, 320, 610, 320)
+
 [resource]
 script = ExtResource("shop_progression_def")
 stages = Array[ExtResource("shop_stage_def")]([SubResource("stage_lemon"), SubResource("stage_black_tea"), SubResource("stage_milk_tea"), SubResource("stage_topping")])
+belts = Array[ExtResource("belt_slot_def")]([SubResource("belt_seal_to_shelf"), SubResource("belt_supply_to_boil"), SubResource("belt_boil_to_seal"), SubResource("belt_boil_to_mix"), SubResource("belt_mix_to_seal"), SubResource("belt_mix_to_topping"), SubResource("belt_topping_to_seal")])

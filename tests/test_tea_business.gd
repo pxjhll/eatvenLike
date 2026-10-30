@@ -371,3 +371,39 @@ func test_price_preview_matches_the_price_after_upgrading() -> void:
 	var row: Dictionary = sim.station_info("supply").materials[1]
 	check_eq(sim.upgrade_material("supply", "milk"), "", "milk slot upgrade succeeds")
 	check_eq(sim._dish_price("plain_milk_tea"), int(row.next), "slot preview equals the real milk tea price")
+
+func test_belt_segments_are_bought_and_move_goods_without_staff() -> void:
+	var fresh = make_shop()
+	if fresh == null: return
+	check(not fresh.buy_belt("seal_to_shelf").is_empty(), "belts wait for the black tea line")
+	check(not fresh.buy_belt("nowhere").is_empty(), "unknown belt segment rejected")
+	var sim = opened()
+	var gold: int = sim.gold
+	check_eq(sim.buy_belt("seal_to_shelf"), "", "belt segment bought")
+	check_eq(sim.gold, gold - 40, "segment charges its price")
+	check(not sim.buy_belt("seal_to_shelf").is_empty(), "segment cannot be bought twice")
+	for row in sim.belt_rows():
+		if row.id != "seal_to_shelf": check_eq(sim.buy_belt(row.id), "", "buy " + row.id)
+	var hand_carried := {}
+	var shipped := {}
+	var resumed = make_shop()
+	for tick in 6000:
+		sim.advance(0.1)
+		for worker in sim.workers:
+			if not worker.job.is_empty() and worker.job.kind != "serve" and not sim._is_operation(worker.job):
+				hand_carried[worker.job.src + ">" + worker.job.dst] = true
+		for shipment in sim.belt_items: shipped[shipment.route] = true
+		if not sim.audit().valid:
+			check(false, "belted shop conserves goods: %s" % sim.audit())
+			return
+		if tick == 2500:
+			check_eq(resumed.load_dict(sim.to_dict()), "", "state with belts in flight loads")
+			check_eq(resumed.to_dict(), sim.to_dict(), "belts and their cargo restore exactly")
+	check(hand_carried.is_empty(), "staff stop carrying on belted hops: %s" % hand_carried)
+	for route in ["seal_to_shelf", "supply_to_boil", "boil_to_mix", "mix_to_topping", "topping_to_seal"]:
+		check(shipped.has(route), "belt actually carries goods: " + route)
+	check(sim.sold_by_dish.pearl_milk_tea > 0, "belted line still sells topped tea")
+	gold = sim.gold
+	check_eq(sim.remove_belt("seal_to_shelf"), "", "segment can be taken back")
+	check_eq(sim.gold, gold + 40, "taking a segment back refunds it")
+	check(sim.audit().valid, "removing a segment keeps cargo conserved")
