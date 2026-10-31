@@ -15,7 +15,7 @@ extends Resource
 @export var box_machine: String = ""
 ## 下标 i = 从 Lv(i+1) 升到 Lv(i+2) 的价格
 @export var upgrade_costs: Array[int] = []
-## 美术店加价升级（同 StationDef.art_*）：art_costs 非空时用这一套、不再影响速度
+## 美术店加价升级（同 StationDef.art_*，每级售价 ×(1 + art_price_step)）：art_costs 非空时用这一套、不再影响速度
 @export var art_costs: Array[int] = []
 @export var art_price_step: float = 0.0
 @export var art_price_dishes: Array[String] = []
