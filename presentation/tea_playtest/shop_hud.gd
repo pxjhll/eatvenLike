@@ -419,8 +419,12 @@ func refresh() -> void:
 	deploy_button.visible = sim.has_method("deploy_worker")
 	deploy_button.text = "收回到名册" if _view.staff_is_deployed(int(selected.id)) else "派到店内"
 	deploy_button.disabled = false
-	train_button.text = "培养 · %d 金币" % sim.train_cost(_view.selected_worker)
-	train_button.disabled = sim.gold < sim.train_cost(_view.selected_worker)
+	var train_cost: int = sim.train_cost(_view.selected_worker)
+	var star_next := false
+	if "PROGRESSION" in sim:
+		star_next = int(selected.level) + 1 in sim.PROGRESSION.train_star_levels
+	train_button.text = "已满级" if train_cost < 0 else ("升星培养" if star_next else "培养") + " Lv%d · %d 金币" % [int(selected.level) + 1, train_cost]
+	train_button.disabled = train_cost < 0 or sim.gold < train_cost
 	hire_button.disabled = sim.hire_cost() < 0 or sim.gold < sim.hire_cost()
 	hire_button.text = "当前伙伴已集齐" if sim.hire_cost() < 0 else "邀请伙伴  ·  %d 金币" % sim.hire_cost()
 	var next_art := "fox"

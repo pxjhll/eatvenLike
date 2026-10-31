@@ -23,6 +23,10 @@ var _condition_text: Label
 var _condition_value: Label
 var _condition_bar: ProgressBar
 var seat_button: Button
+var flyer_button: Button
+var _flyer_row: Control
+var _flyer_title: Label
+var _flyer_effect: Label
 var _seat_row: Control
 var _seat_title: Label
 var _seat_effect: Label
@@ -53,6 +57,16 @@ func setup(view: Node2D, hud: Control) -> void:
 	_seat_title = _hud._text(seat_copy, "", 23)
 	_seat_effect = _hud._text(seat_copy, "", 19, true)
 	seat_button = _buy_button(seat_line, func() -> void: _view.station_action("seat", station_id))
+	var flyer: VBoxContainer = _hud._card(self, "f6ead3", "d7bd97")
+	_flyer_row = flyer.get_parent()
+	var flyer_line: HBoxContainer = _hud._row(flyer, 12)
+	var flyer_copy := VBoxContainer.new()
+	flyer_copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	flyer_copy.add_theme_constant_override("separation", 4)
+	flyer_line.add_child(flyer_copy)
+	_flyer_title = _hud._text(flyer_copy, "", 23)
+	_flyer_effect = _hud._text(flyer_copy, "", 19, true)
+	flyer_button = _buy_button(flyer_line, func() -> void: _view.station_action("flyers", station_id))
 	_material_title = _hud._text(self, "", 21)
 	_materials = VBoxContainer.new()
 	_materials.add_theme_constant_override("separation", 10)
@@ -97,6 +111,9 @@ func refresh() -> void:
 	_seat_row.visible = unlocked and info.has("seats")
 	if _seat_row.visible:
 		_refresh_seats(info)
+	_flyer_row.visible = unlocked and info.has("flyers")
+	if _flyer_row.visible:
+		_refresh_flyers(info)
 	_locked.visible = not unlocked
 	if unlocked:
 		_refresh_upgrade(info)
@@ -226,6 +243,20 @@ func _refresh_seats(info: Dictionary) -> void:
 	_seat_effect.text = "加一张座位 · 现在 %d 位客人在座" % info.diners
 	seat_button.text = "%d 金币" % cost
 	seat_button.disabled = not String(info.seat_error).is_empty()
+
+func _refresh_flyers(info: Dictionary) -> void:
+	var cost := int(info.flyer_cost)
+	_flyer_title.text = "发传单 Lv%d" % info.flyers if cost < 0 else "发传单 Lv%d → Lv%d" % [info.flyers, int(info.flyers) + 1]
+	# When the line is already full, more customers only wait outside: point at the kitchen instead.
+	var hint := " · 队伍已满，先升产能" if info.queue_full else ""
+	if cost < 0:
+		_flyer_effect.text = "客流 ×%.2f%s" % [info.flow, hint]
+		flyer_button.text = "满级"
+		flyer_button.disabled = true
+		return
+	_flyer_effect.text = "客流 ×%.2f → ×%.2f%s" % [info.flow, info.next_flow, hint]
+	flyer_button.text = "%d 金币" % cost
+	flyer_button.disabled = not String(info.flyer_error).is_empty()
 
 func _refresh_locked(info: Dictionary) -> void:
 	var members: Array = info.get("line_members", [])

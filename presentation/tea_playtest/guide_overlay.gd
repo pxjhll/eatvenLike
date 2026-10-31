@@ -14,7 +14,7 @@ const HAND := Color("8b6446")
 
 var enabled := false
 var seen := {}
-## The guide currently on screen: "", "welcome", "opening", "done", "line_N" or "lost".
+## The guide currently on screen: "", "welcome", "opening", "done", "line_N", "box_*", "shop_done" or "lost".
 var active := ""
 var _view: Node2D
 var _hud: Control
@@ -112,7 +112,7 @@ func refresh(delta: float) -> void:
 	if enabled and _view.sim.has_method("station_info"):
 		_pick_guide()
 		match active:
-			"welcome", "done": _show_card()
+			"welcome", "done", "shop_done": _show_card()
 			"opening": _opening_step()
 			"lost": _lost_step()
 			"box_tea_leaf", "box_milk": _box_step(active.trim_prefix("box_"))
@@ -144,6 +144,9 @@ func _pick_guide() -> void:
 		if String(info.unlock_error).is_empty():
 			active = "line_%d" % next
 			return
+	if sim.has_method("shop_complete") and sim.shop_complete() and not seen.has("shop_done"):
+		active = "shop_done"
+		return
 	var box: String = sim.pending_box()
 	if not box.is_empty() and not seen.has("box_" + box) and sim.box_error(box).is_empty():
 		active = "box_" + box
@@ -284,6 +287,15 @@ func _show_card() -> void:
 			label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			# Wrapped labels need a width up front, or the card measures one glyph per line.
 			label.custom_minimum_size.x = 420
+	elif active == "shop_done":
+		var sim = _view.sim
+		_card_title.text = "首店完成！"
+		_card_secondary.visible = false
+		_card_primary.text = "继续营业"
+		var minutes := int(sim.elapsed) / 60
+		var label: Label = _hud._text(_card_body, "用时 %d 分 %02d 秒 · 总营业额 %d 金\n第二家店还在准备中，可以继续把这家店做大。" % [minutes, int(sim.elapsed) % 60, sim.revenue], 23)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.custom_minimum_size.x = 500
 	else:
 		_card_title.text = "开店上手了！"
 		_card_secondary.visible = false

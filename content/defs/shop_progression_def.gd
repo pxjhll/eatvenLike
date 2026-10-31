@@ -16,3 +16,11 @@ extends Resource
 @export var seal_costs: Array[int] = []
 @export var seal_speeds: Array[float] = [1.0]
 @export var seal_slots: Array[int] = [1]
+## 客流（产能类）：每开一种口味客人来得快 flavor_flow；发传单每级再快 flyer_flow；flyer_costs 下标 i = Lv(i+1)→Lv(i+2)
+@export var flavor_flow: float = 0.05
+@export var flyer_flow: float = 0.10
+@export var flyer_costs: Array[int] = []
+## 员工培养（产能类）：每级走路、干活 ×(1 + train_step)，到 train_star_levels 时一次多搬 1 杯
+@export var train_costs: Array[int] = []
+@export var train_step: float = 0.05
+@export var train_star_levels: Array[int] = [5, 10]
