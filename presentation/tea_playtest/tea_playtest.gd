@@ -66,7 +66,7 @@ const STATION_REGIONS := {
 }
 ## A locked machine is not drawn; its floor spot shows a dashed frame instead.
 ## The black tea line opens several machines at once: its other spots open the same panel.
-## Only the next line's frames show, so the milk machine's frame waits for the table it stands on.
+## Only the very next unlock shows: the lemonade stand first, then one line at a time.
 const FRAME_RECTS := {
 	"supply": Rect2(30, 228, 204, 46), "boil": Rect2(250, 228, 158, 76),
 	"mix": Rect2(420, 160, 98, 82), "topping": Rect2(30, 284, 112, 300),
@@ -563,11 +563,12 @@ func _build_station_signs() -> void:
 
 
 func _refresh_station_signs() -> void:
+	var next_stage: int = int(sim.stage_index) + 1 if sim.station_unlocked("lemonade") else 0
 	for id in _station_buttons:
 		var sign: String = FRAME_OPENS.get(id, id)
 		var info: Dictionary = sim.station_info(sign)
 		var frame: Button = _station_buttons[id]
-		frame.visible = not info.unlocked and int(info.stage) <= int(sim.stage_index) + 1
+		frame.visible = not info.unlocked and int(info.stage) == next_stage
 		frame.can_unlock = id == sign and String(info.unlock_error).is_empty()
 		frame.tooltip_text = info.description + "\n" + info.get("unlock_error", "")
 		if id != sign:
