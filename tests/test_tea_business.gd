@@ -1014,3 +1014,25 @@ func test_v7_save_loads_with_nobody_following_yet() -> void:
 	check(copy.workers.all(func(worker): return worker.ticket.is_empty()), "nobody is following anything yet")
 	for tick in 600: copy.advance(0.1)
 	check(copy.audit().valid and copy.sold > old.sold, "the loaded shop keeps selling")
+
+func test_cups_left_at_the_topping_machine_are_picked_up_by_the_next_follower() -> void:
+	var sim = _full_line(1)
+	if sim == null: return
+	var follower: Dictionary = sim.workers.filter(func(worker): return worker.post != "counter")[0]
+	var left := 0
+	for tick in 3000:
+		sim.advance(0.1)
+		if follower.ticket.get("stage", "") == "topping":
+			left = follower.ticket.count
+			break
+	check(left > 0, "a follower brings milk tea to the topping machine")
+	check_eq(sim.recall_worker(follower.id), "", "and is called away before topping it")
+	check_eq(sim.stations.topping.input.plain_milk_tea, left, "the cups stay at the machine")
+	check_eq(sim.deploy_worker(follower.id), "", "someone comes back")
+	var resumed := false
+	for tick in 50:
+		sim.advance(0.1)
+		if follower.ticket.get("stage", "") in ["topping", "topped"] and sim.stations.topping.input.plain_milk_tea < left: resumed = true
+		if resumed: break
+	check(resumed, "the next follower tops the cups left behind instead of fetching new ones")
+	check(sim.audit().valid, "picking up left cups keeps every cup accounted for")

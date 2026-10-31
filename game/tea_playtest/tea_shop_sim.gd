@@ -1098,6 +1098,11 @@ func _loose(station: String, dish: String = "") -> int:
 		count = int(stations.mix.input.tea) + int(stations.mix.output.plain_milk_tea) - int(stations.mix.reserved_out.get("plain_milk_tea", 0)) + stations.mix.processing
 		for worker in workers:
 			if not worker.ticket.is_empty() and worker.ticket.stage == "mix" and (worker.job.is_empty() or worker.job.src != "mix"): waiting += worker.ticket.count
+	elif dish.is_empty():
+		# Plain milk tea already at the topping machine.
+		count = int(stations.topping.input.plain_milk_tea) - int(stations.topping.reserved_out.get("plain_milk_tea", 0))
+		for worker in workers:
+			if not worker.ticket.is_empty() and worker.ticket.stage == "topping" and worker.job.is_empty(): waiting += worker.ticket.count
 	else:
 		count = int(stations.topping.output.get(dish, 0)) - int(stations.topping.reserved_out.get(dish, 0))
 		for worker in workers:
@@ -1107,6 +1112,7 @@ func _loose(station: String, dish: String = "") -> int:
 
 func _start_stage(dish: String, count: int) -> String:
 	if _is_topped(dish) and _loose("topping", dish) >= count: return "topped"
+	if _is_topped(dish) and _loose("topping") >= count: return "topping"
 	if dish != "black_tea" and _loose("mix") >= count: return "mix"
 	return "boil"
 
