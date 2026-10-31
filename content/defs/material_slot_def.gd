@@ -9,6 +9,10 @@ extends Resource
 @export var item_id: String = ""
 ## 机器升到几级这个槽才开放（1 = 机器一解锁就有）
 @export var unlock_level: int = 1
+## 原料柜：这一格（原料箱）要单独花钱解锁，0 = 不用解锁
+@export var box_cost: int = 0
+## 原料箱跟着哪台机器出现（这台机器解锁后才能买箱）
+@export var box_machine: String = ""
 ## 下标 i = 从 Lv(i+1) 升到 Lv(i+2) 的价格
 @export var upgrade_costs: Array[int] = []
 ## 美术店加价升级（同 StationDef.art_*）：art_costs 非空时用这一套、不再影响速度

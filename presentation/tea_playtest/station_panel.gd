@@ -22,6 +22,12 @@ var _condition: Control
 var _condition_text: Label
 var _condition_value: Label
 var _condition_bar: ProgressBar
+var seat_button: Button
+var _seat_row: Control
+var _seat_title: Label
+var _seat_effect: Label
+## Rows whose ingredient box is still locked: their button buys the box instead of a level.
+var _box_rows := {}
 
 func setup(view: Node2D, hud: Control) -> void:
 	_view = view
@@ -37,6 +43,16 @@ func setup(view: Node2D, hud: Control) -> void:
 	_upgrade_title = _hud._text(copy, "", 23)
 	_upgrade_effect = _hud._text(copy, "", 19, true)
 	upgrade_button = _buy_button(line, func() -> void: _view.station_action("upgrade", station_id))
+	var seat: VBoxContainer = _hud._card(self, "f6ead3", "d7bd97")
+	_seat_row = seat.get_parent()
+	var seat_line: HBoxContainer = _hud._row(seat, 12)
+	var seat_copy := VBoxContainer.new()
+	seat_copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	seat_copy.add_theme_constant_override("separation", 4)
+	seat_line.add_child(seat_copy)
+	_seat_title = _hud._text(seat_copy, "", 23)
+	_seat_effect = _hud._text(seat_copy, "", 19, true)
+	seat_button = _buy_button(seat_line, func() -> void: _view.station_action("seat", station_id))
 	_material_title = _hud._text(self, "", 21)
 	_materials = VBoxContainer.new()
 	_materials.add_theme_constant_override("separation", 10)
@@ -77,6 +93,9 @@ func refresh() -> void:
 	var in_line: bool = not unlocked and not info.get("line_members", []).is_empty()
 	_hud.set_heading(info.line_name if in_line else info.name, "Lv%d" % info.level if unlocked else "未解锁", not unlocked, info.get("description", "") if unlocked else "")
 	_upgrade_row.visible = unlocked
+	_seat_row.visible = unlocked and info.has("seats")
+	if _seat_row.visible:
+		_refresh_seats(info)
 	_locked.visible = not unlocked
 	if unlocked:
 		_refresh_upgrade(info)
@@ -132,7 +151,7 @@ func _refresh_materials(info: Dictionary) -> void:
 			copy.add_theme_constant_override("separation", 4)
 			line.add_child(copy)
 			_material_rows[row.id] = {"card": card.get_parent(), "name": _hud._text(copy, "", 22), "effect": _hud._text(copy, "", 19, true)}
-			material_buttons[row.id] = _buy_button(line, _view.station_action.bind("material", station_id, String(row.id)))
+			material_buttons[row.id] = _buy_button(line, _material_pressed.bind(String(row.id)))
 		_material_signature = signature
 		_hud._sheet_height = -1.0
 	var flavors := materials.any(func(row: Dictionary) -> bool: return int(row.get("base_price", 0)) > 0)
@@ -147,6 +166,19 @@ func _refresh_materials(info: Dictionary) -> void:
 		var label := "售价 " if base > 0 else "效率 "
 		var cost := int(row.get("upgrade_cost", -1))
 		nodes.card.modulate.a = 1.0
+		_box_rows.erase(row.id)
+		if row.get("box", false) and not row.box_unlocked:
+			nodes.name.text = row.name + "箱"
+			button.text = "%d 金币" % row.box_cost
+			button.disabled = not String(row.box_error).is_empty()
+			if String(row.box_error).begins_with("请先解锁"):
+				nodes.effect.text = "解锁%s后开放" % row.box_machine
+				nodes.card.modulate.a = 0.6
+				button.text = "未开放"
+			else:
+				nodes.effect.text = "解锁后%s才有原料" % row.box_machine
+				_box_rows[row.id] = true
+			continue
 		if int(info.level) < int(row.get("unlock_level", 1)):
 			nodes.name.text = row.name
 			nodes.effect.text = "%s Lv%d 开放" % [info.name, row.unlock_level]
@@ -169,10 +201,27 @@ func _refresh_materials(info: Dictionary) -> void:
 		button.text = "%d 金币" % cost
 		button.disabled = not String(row.get("upgrade_error", "")).is_empty()
 
+func _material_pressed(material: String) -> void:
+	_view.station_action("box" if _box_rows.has(material) else "material", station_id, material)
+
+func _refresh_seats(info: Dictionary) -> void:
+	_seat_title.text = "堂食座位 %d / %d" % [info.seats, info.seat_max]
+	var cost := int(info.seat_cost)
+	if cost < 0:
+		_seat_effect.text = "座位已加满 · 现在 %d 位客人在座" % info.diners
+		seat_button.text = "满级"
+		seat_button.disabled = true
+		return
+	_seat_effect.text = "加一张座位 · 现在 %d 位客人在座" % info.diners
+	seat_button.text = "%d 金币" % cost
+	seat_button.disabled = not String(info.seat_error).is_empty()
+
 func _refresh_locked(info: Dictionary) -> void:
 	var members: Array = info.get("line_members", [])
 	var price := int(info.get("dish_price", 0))
-	if members.is_empty():
+	if not String(info.get("unlock_note", "")).is_empty():
+		_locked_summary.text = String(info.unlock_note)
+	elif members.is_empty():
 		_locked_summary.text = String(info.get("description", ""))
 	else:
 		_locked_summary.text = "一次开放 %d 台机器，开始卖%s（售价 %d）" % [members.size(), info.dish_name, price]
@@ -188,7 +237,7 @@ func _refresh_locked(info: Dictionary) -> void:
 			_members.add_child(chip)
 		_member_signature = str(members)
 		_hud._sheet_height = -1.0
-	_members.visible = not members.is_empty()
+	_members.visible = members.size() > 1
 	var gate := int(info.get("unlock_revenue", 0))
 	var revenue := int(_view.sim.revenue)
 	var error := String(info.get("unlock_error", ""))

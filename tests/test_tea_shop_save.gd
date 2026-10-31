@@ -63,7 +63,10 @@ func test_full_shop_state_and_continuation_roundtrip() -> void:
 		sim.revenue = 10000
 		check_eq(sim.unlock_station("lemonade"), "", "open lemonade")
 		check_eq(sim.unlock_station("boil"), "", "open black tea line")
+		check_eq(sim.unlock_box("tea_leaf"), "", "open tea leaf box")
+		check_eq(sim.unlock_station("seal"), "", "open sealer")
 		check_eq(sim.unlock_station("mix"), "", "open milk machine")
+		check_eq(sim.unlock_box("milk"), "", "open milk box")
 		check_eq(sim.unlock_station("topping"), "", "open topping")
 		check(sim.hire() and sim.hire(), "own two additional employees")
 		for employee in sim.all_workers():
@@ -178,7 +181,7 @@ func test_pre_rabbit_current_schema_roster_loads_and_can_recruit_rabbit() -> voi
 	legacy.gold = 180
 	check(legacy.hire() and legacy.hire(), "prepare the pre-rabbit three-owned roster")
 	var state: Dictionary = legacy.to_dict()
-	check_eq(state.version, 3, "rabbit retains main's bought-belt simulation schema")
+	check_eq(state.version, 4, "current simulation schema (seats and boxes)")
 	var envelope := _envelope(state, 2)
 	_write(_path(), JSON.stringify(envelope))
 	var resumed = store.load_game()

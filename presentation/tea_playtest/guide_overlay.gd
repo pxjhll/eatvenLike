@@ -6,7 +6,7 @@ extends Control
 ## second partner → deploy them → done card. Later, once each: a hint when the next line can
 ## be bought, and a hint the first time a customer leaves. Dimmed steps freeze the shop.
 
-const STAGE_SIGNS := ["", "boil", "mix", "topping"]
+const STAGE_SIGNS := ["", "boil", "seal", "mix", "topping"]
 const COUNTER_AREA := Rect2(410, 850, 120, 110)
 const DIM := Color(0.16, 0.1, 0.06, 0.62)
 const GLOW := Color("ffd98a")
@@ -115,6 +115,7 @@ func refresh(delta: float) -> void:
 			"welcome", "done": _show_card()
 			"opening": _opening_step()
 			"lost": _lost_step()
+			"box_tea_leaf", "box_milk": _box_step(active.trim_prefix("box_"))
 			"": pass
 			_: _line_step(int(active.trim_prefix("line_")))
 	visible = enabled and not active.is_empty()
@@ -143,13 +144,22 @@ func _pick_guide() -> void:
 		if String(info.unlock_error).is_empty():
 			active = "line_%d" % next
 			return
+	var box: String = sim.pending_box()
+	if not box.is_empty() and not seen.has("box_" + box) and sim.box_error(box).is_empty():
+		active = "box_" + box
+		return
 	if _lost_pending and not seen.has("lost"):
 		active = "lost"
 		_lost_pending = false
 
 
-## True when a customer gave up since the last check; events is a short rolling log.
+## True once a customer in line is angry (customers never leave in the tea shop),
+## or, in the older shop, when one gave up since the last check.
 func _customer_left() -> bool:
+	if _view.sim.has_method("order_mood"):
+		for order in _view.sim.orders:
+			if _view.sim.order_mood(order) >= 2: return true
+		return false
 	var events: Array = _view.sim.events
 	var left := false
 	for index in range(events.size() - 1, -1, -1):
@@ -222,6 +232,22 @@ func _line_step(stage: int) -> void:
 		_focus(_view._station_buttons[sign], "金币够了！开通%s，能卖新饮品" % definition.line_name)
 
 
+func _box_step(material: String) -> void:
+	var sim = _view.sim
+	if sim.pending_box() != material or not sim.box_error(material).is_empty():
+		_finish()
+		return
+	_bubble_skip.text = "以后再说"
+	var definition = sim._box_def(material)
+	var machine: String = sim.station_info_name(definition.box_machine)
+	if _hud.page == "station" and _hud.station_panel.station_id == "supply":
+		_focus(_hud.station_panel.material_buttons[material], "解锁%s箱，%s才有原料" % [definition.display_name, machine])
+	elif _hud.page != "shop":
+		_hud.open_page("shop")
+	else:
+		_focus(_view._station_buttons["supply"], "%s要用%s：去原料柜解锁%s箱" % [machine, definition.display_name, definition.display_name])
+
+
 func _lost_step() -> void:
 	var sim = _view.sim
 	if _hud.page != "shop":
@@ -229,9 +255,9 @@ func _lost_step() -> void:
 		return
 	_bubble_skip.text = "知道了"
 	if sim.workers.size() < sim.staff_slots():
-		_focus(_hud.recruit_button, "有客人等太久走了！\n多招伙伴上岗，出杯更快")
+		_focus(_hud.recruit_button, "有客人等急了！\n多招伙伴上岗，出杯更快")
 	else:
-		_focus_world(_view.STATION_REGIONS.lemonade, "有客人等太久走了！\n点设备升级，出杯更快")
+		_focus_world(_view.STATION_REGIONS.lemonade, "有客人等急了！\n点设备升级，出杯更快")
 
 
 func _show_card() -> void:
