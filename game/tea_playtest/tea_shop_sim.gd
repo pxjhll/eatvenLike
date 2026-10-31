@@ -12,7 +12,8 @@ const STIR_SECONDS := 1.0
 ## v3: belts became bought segments (belts / belt_clock), shipments route by segment id.
 ## v4: one machine per stage, ingredient boxes, dine-in seats, takeaway sealed at the sealer, customers never leave.
 ## v5: multiplicative prices with stars, brewer pot sizes and sealer levels; the lemonade stand stops at Lv5.
-const SAVE_VERSION := 5
+## v6: flyer level (customer flow upgrade).
+const SAVE_VERSION := 6
 ## What the lemonade stand's old levels 6–10 cost; v4 saves above Lv5 get it back.
 const LEMONADE_V4_COSTS := [20, 30, 40, 55, 75, 110, 150, 210, 295]
 ## A waiting customer gets impatient, then angry; they never leave (the face just pushes the player to upgrade).
@@ -37,6 +38,8 @@ var unlocked_stations: Dictionary = {}
 var boxes: Dictionary = {}
 ## Dine-in seats owned, and the customers sitting in them: {"seat", "dish", "left"}.
 var seats := 0
+## 发传单 level: each level brings customers 10% more often.
+var flyers := 1
 var diners: Array = []
 var _flavor_cursor := 0
 ## Bought conveyor segments (BeltSlotDef ids) and each one's countdown to its next cup.
@@ -94,6 +97,7 @@ func _initialize_shop() -> void:
 	material_levels = {"supply": {"tea_leaf": 1, "milk": 1}, "topping": {"pearl": 1, "coconut": 1, "redbean": 1, "taro": 1}}
 	boxes = {"tea_leaf": false, "milk": false}
 	seats = PROGRESSION.seat_start
+	flyers = 1
 	diners.clear()
 	for id in ["boil", "mix", "topping", "seal"]:
 		stations[id] = {"input": {}, "output": {}, "phase": "idle", "progress": 0.0,
@@ -253,9 +257,11 @@ func hire() -> bool:
 	gold -= price
 	return true
 
+## Staff training works like a machine: ten levels, each +5% walking and working, and the Lv5 / Lv10 stars carry one more cup.
 func train_cost(id: int) -> int:
 	var worker := worker_by_id(id)
-	return -1 if worker.is_empty() else 25 * worker.level
+	if worker.is_empty() or worker.level - 1 >= PROGRESSION.train_costs.size(): return -1
+	return PROGRESSION.train_costs[worker.level - 1]
 
 func train(id: int) -> bool:
 	var price := train_cost(id)
@@ -263,10 +269,9 @@ func train(id: int) -> bool:
 	var worker := worker_by_id(id)
 	gold -= price
 	worker.level += 1
-	match worker.role:
-		"speed": worker.speed += 18.0
-		"carry": worker.capacity += 1
-		"skill": worker.skill += 0.35
+	worker.speed *= 1.0 + PROGRESSION.train_step
+	worker.skill *= 1.0 + PROGRESSION.train_step
+	if worker.level in PROGRESSION.train_star_levels: worker.capacity += 1
 	_event("trained", worker.name + "已培养")
 	return true
 
@@ -497,7 +502,12 @@ func station_info(requested: String) -> Dictionary:
 	var stage := _unlock_stage(id)
 	var seating := {}
 	# Dine-in seats are bought at the counter.
-	if id == "counter": seating = {"seats": seats, "seat_max": seat_max(), "diners": diners.size(), "seat_cost": seat_cost(), "seat_error": seat_error()}
+	if id == "counter":
+		seating = {"seats": seats, "seat_max": seat_max(), "diners": diners.size(), "seat_cost": seat_cost(), "seat_error": seat_error(),
+			"flyers": flyers, "flyer_max": PROGRESSION.flyer_costs.size() + 1, "flyer_cost": flyer_cost(), "flyer_error": flyer_error(),
+			"flow": flow_multiplier(), "next_flow": flow_multiplier(flyers + 1) if flyer_cost() >= 0 else -1.0,
+			# A full line means more customers would only wait outside: the kitchen is the limit.
+			"queue_full": orders.size() >= _queue_capacity()}
 	# Capacity machines (brewer, sealer, topping) speed up the line; price machines raise what each cup earns.
 	seating.kind = "capacity" if id in ["boil", "seal", "topping"] else ("price" if id in ["lemonade", "mix", "supply"] else "")
 	seating.stars = stars(id)
@@ -583,6 +593,13 @@ func task_rows() -> Array:
 			rows.append({"name": task.display_name, "current": current, "target": task.amount, "complete": current >= task.amount})
 	return rows
 
+## Every task of every stage is done: the first shop is complete (the next shop is not built yet).
+func shop_complete() -> bool:
+	if stage_index < PROGRESSION.stages.size() - 1: return false
+	for row in task_rows():
+		if not row.complete: return false
+	return true
+
 func current_goal() -> String:
 	if not station_unlocked("lemonade"): return "支付 10 金币解锁柠檬茶台，开始营业"
 	var box := pending_box()
@@ -657,8 +674,33 @@ func _topping_seconds() -> float:
 	var seconds: float = _definition("topping").art_seconds
 	return seconds if seconds > 0 else 2.0
 
+## Customers come faster with each stage, each flavor on the menu (+5% each) and each flyer level (+10% each).
 func _order_interval() -> float:
-	return PROGRESSION.stages[stage_index].customer_interval
+	return PROGRESSION.stages[stage_index].customer_interval / flow_multiplier()
+
+func flow_multiplier(flyer_level: int = -1) -> float:
+	var flavors := 0
+	for material in _definition("topping").materials:
+		if _dish_unlocked(material.item_id): flavors += 1
+	var level: int = flyers if flyer_level < 0 else flyer_level
+	return (1.0 + PROGRESSION.flavor_flow * flavors) * (1.0 + PROGRESSION.flyer_flow * (level - 1))
+
+func flyer_cost() -> int:
+	return PROGRESSION.flyer_costs[flyers - 1] if flyers - 1 < PROGRESSION.flyer_costs.size() else -1
+
+func flyer_error() -> String:
+	if not station_unlocked("lemonade"): return "请先解锁柠檬茶台"
+	if flyer_cost() < 0: return "传单已满级"
+	if gold < flyer_cost(): return "金币不足，需要 %d" % flyer_cost()
+	return ""
+
+func buy_flyers() -> String:
+	var error := flyer_error()
+	if not error.is_empty(): return error
+	gold -= flyer_cost()
+	flyers += 1
+	_event("flyers", "发了更多传单，客人来得更勤了")
+	return ""
 
 func _queue_capacity() -> int:
 	return PROGRESSION.stages[stage_index].queue_capacity
@@ -1135,7 +1177,7 @@ func to_dict() -> Dictionary:
 		"material_levels": material_levels.duplicate(true), "unlocked_stations": unlocked_stations.duplicate(true),
 		"sold_by_dish": sold_by_dish.duplicate(true), "flavor_cursor": _flavor_cursor, "rng_state": _rng.state,
 		"belts": belts.duplicate(true), "belt_clock": belt_clock.duplicate(true),
-		"boxes": boxes.duplicate(true), "seats": seats, "diners": diners.duplicate(true)}
+		"boxes": boxes.duplicate(true), "seats": seats, "diners": diners.duplicate(true), "flyers": flyers}
 
 func _apply_state(state: Dictionary) -> void:
 	roster = state.roster.duplicate(true)
@@ -1169,6 +1211,7 @@ func _apply_state(state: Dictionary) -> void:
 	belt_clock = state.belt_clock.duplicate(true)
 	boxes = state.boxes.duplicate(true)
 	seats = state.seats
+	flyers = state.flyers
 	diners = state.diners.duplicate(true)
 	_rng.state = state.rng_state
 
@@ -1177,6 +1220,10 @@ func load_dict(state: Dictionary) -> String:
 		state = _migrate_v3(state)
 		state.version = 4
 	if state.get("version") is int and state.version == 4: state = _migrate_v4(state)
+	if state.get("version") is int and state.version == 5:
+		state = state.duplicate(true)
+		state.version = SAVE_VERSION
+		state.flyers = 1
 	var error := _validate_state(state)
 	if not error.is_empty(): return error
 	var candidate = get_script().new()
@@ -1189,7 +1236,7 @@ func load_dict(state: Dictionary) -> String:
 ## v4 → v5: the brewer pot holds up to six cups, and lemonade levels above the new cap are refunded.
 func _migrate_v4(old: Dictionary) -> Dictionary:
 	var state: Dictionary = old.duplicate(true)
-	state.version = SAVE_VERSION
+	state.version = 5
 	if state.get("stations") is Dictionary and state.stations.get("boil") is Dictionary: state.stations.boil.capacity = BOIL_CAPACITY
 	if state.get("station_levels") is Dictionary and state.station_levels.get("lemonade") is int and state.get("gold") is int:
 		var cap := _max_level("lemonade")
@@ -1402,6 +1449,7 @@ func _validate_state(state: Dictionary) -> String:
 		var machine := _canonical(_box_def(material).box_machine)
 		if state.boxes[material] and not state.unlocked_stations[machine]: return "原料箱解锁状态无效"
 	if state.seats < PROGRESSION.seat_start or state.seats > seat_max() or state.diners.size() > state.seats: return "座位无效"
+	if state.flyers < 1 or state.flyers > PROGRESSION.flyer_costs.size() + 1: return "传单等级无效"
 	var seat_ids: Array = []
 	for diner in state.diners:
 		if not diner is Dictionary or not _same_shape(diner, {"seat": 0, "dish": "", "left": 0.0}): return "堂食客人字段无效"

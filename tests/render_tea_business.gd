@@ -95,8 +95,9 @@ func _run() -> void:
 	await _world_click(Vector2(390, 150))
 	_check(hud.station_panel.station_id == "boil", "brewer artwork opens its own panel")
 	gold = view.sim.gold
+	var brew_cost: int = view.sim.station_info("boil").upgrade_cost
 	await _click(hud.station_panel.upgrade_button)
-	_check(view.sim.station_info("boil").level == 2 and view.sim.gold == gold - 60, "device panel upgrades actual machine")
+	_check(view.sim.station_info("boil").level == 2 and view.sim.gold == gold - brew_cost, "device panel upgrades actual machine")
 	await _capture("machine")
 	await _click(hud.home_button)
 	await _world_click(Vector2(120, 210))
