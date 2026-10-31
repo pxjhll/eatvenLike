@@ -42,12 +42,17 @@ enum Mode { AUTO, COOP, MANUAL, SUPPLY, DISPENSER, TOPPING }
 ## 美术店升级（旧版 GameSim 不读这几项）。art_costs 非空时美术店改用这一套：
 ## 下标 i = 从 Lv(i+1) 升到 Lv(i+2) 的价格
 @export var art_costs: Array[int] = []
-## 加价：每升 1 级，art_price_dishes 里的饮品每杯 +底价 × art_price_step（多台机器相加，不连乘）
+## 加价（售价类机器）：每升 1 级，art_price_dishes 里的饮品售价 ×(1 + art_price_step)，各机器、原料连乘
 @export var art_price_step: float = 0.0
 @export var art_price_dishes: Array[String] = []
 ## 提速：机器做一批的秒数（Lv1），和每级速度倍率（下标 0 = Lv1，长度 = art_costs + 1）
 @export var art_seconds: float = 0.0
 @export var art_speeds: Array[float] = []
+## 煮茶机：每级一锅煮几杯（下标 0 = Lv1）
+@export var art_batch: Array[int] = []
+## 升星：到这些等级时这台机器带的饮品售价再 ×art_star_mult
+@export var art_star_levels: Array[int] = []
+@export var art_star_mult: float = 1.0
 ## TOPPING：每个口味在货架上最多几杯（含传送带上和机器里的）
 @export var flavor_cap: int = 0
 

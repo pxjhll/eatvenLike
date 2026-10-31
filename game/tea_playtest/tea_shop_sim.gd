@@ -11,8 +11,12 @@ const STIR_SECONDS := 1.0
 ## v2: staged line (black tea stage) changed the station and dish shapes.
 ## v3: belts became bought segments (belts / belt_clock), shipments route by segment id.
 ## v4: one machine per stage, ingredient boxes, dine-in seats, takeaway sealed at the sealer, customers never leave.
-const SAVE_VERSION := 4
+## v5: multiplicative prices with stars, brewer pot sizes and sealer levels; the lemonade stand stops at Lv5.
+const SAVE_VERSION := 5
+## What the lemonade stand's old levels 6–10 cost; v4 saves above Lv5 get it back.
+const LEMONADE_V4_COSTS := [20, 30, 40, 55, 75, 110, 150, 210, 295]
 ## A waiting customer gets impatient, then angry; they never leave (the face just pushes the player to upgrade).
+const BOIL_CAPACITY := 12
 const MOOD_IMPATIENT := 15.0
 const MOOD_ANGRY := 30.0
 const ARTS := ["cat", "raccoon", "fox", "rabbit"]
@@ -97,6 +101,8 @@ func _initialize_shop() -> void:
 			"duration": 0.0, "reserved_in": 0, "reserved_out": {}, "work_reserved": false,
 			"processing_item": ""}
 	stations.boil.input = {"raw": 0}
+	# Room for a full pot of up to six cups plus the next pot's leaves.
+	stations.boil.capacity = BOIL_CAPACITY
 	stations.boil.output = {"tea": 0}
 	stations.mix.input = {"tea": 0}
 	stations.mix.output = {"plain_milk_tea": 0}
@@ -395,11 +401,13 @@ func _art_mode(definition) -> bool:
 	return definition != null and not definition.art_costs.is_empty()
 
 func _upgrade_costs(id: String) -> Array:
+	if id == "seal": return PROGRESSION.seal_costs
 	var definition = _definition(id)
 	if definition == null or id == "supply": return []
 	return definition.art_costs if _art_mode(definition) else definition.upgrade_costs
 
 func _max_level(id: String) -> int:
+	if id == "seal": return PROGRESSION.seal_costs.size() + 1
 	var definition = _definition(id)
 	if definition == null: return 1
 	if _art_mode(definition) or id == "supply": return _upgrade_costs(id).size() + 1
@@ -417,7 +425,7 @@ func _upgrade_error(id: String) -> String:
 	if not id in MACHINE_IDS: return "未知设备"
 	if not station_unlocked(id): return "请先解锁设备"
 	var definition = _definition(id)
-	if definition == null or _upgrade_costs(id).is_empty(): return "设备无需升级"
+	if (definition == null and id != "seal") or _upgrade_costs(id).is_empty(): return "设备无需升级"
 	var level: int = station_levels[id]
 	if level >= _max_level(id): return "设备已满级"
 	if gold < _upgrade_costs(id)[level - 1]: return "金币不足，需要 %d" % _upgrade_costs(id)[level - 1]
@@ -478,8 +486,8 @@ func station_info(requested: String) -> Dictionary:
 					"box_error": box_error(material.id), "box_machine": station_info_name(machine)})
 			if _art_mode(material): row.merge(_price_preview(id, material.id, mat_level < mat_max))
 			materials.append(row)
-	var descriptions := {"supply": "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价", "boil": "人工装料、煮茶、取茶；每批 3 份，升级煮得更快", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "seal": "外带的杯子都要来这里封口，一次封一杯", "lemonade": "服务员到展示柜现取柠檬茶", "counter": "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"}
-	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "加料速度", "lemonade": "售价"}
+	var descriptions := {"supply": "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价", "boil": "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "seal": "外带的杯子都要来这里封口；升级封得更快，5 级、10 级各加一个封口位", "lemonade": "服务员到展示柜现取柠檬茶", "counter": "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"}
+	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "加料速度", "lemonade": "售价", "seal": "封口速度"}
 	var speeds: Array = [1.0]
 	if definition != null: speeds = definition.art_speeds if _art_mode(definition) and not definition.art_speeds.is_empty() else definition.level_speed
 	var next_flavor := ""
@@ -490,6 +498,18 @@ func station_info(requested: String) -> Dictionary:
 	var seating := {}
 	# Dine-in seats are bought at the counter.
 	if id == "counter": seating = {"seats": seats, "seat_max": seat_max(), "diners": diners.size(), "seat_cost": seat_cost(), "seat_error": seat_error()}
+	# Capacity machines (brewer, sealer, topping) speed up the line; price machines raise what each cup earns.
+	seating.kind = "capacity" if id in ["boil", "seal", "topping"] else ("price" if id in ["lemonade", "mix", "supply"] else "")
+	seating.stars = stars(id)
+	seating.max_stars = 2 if id == "seal" else (definition.art_star_levels.size() if definition != null else 0)
+	seating.next_star = upgrade_cost >= 0 and stars(id, level + 1) > stars(id)
+	seating.star_mult = definition.art_star_mult if definition != null else 1.0
+	if id == "boil":
+		seating.batch = brew_batch()
+		seating.next_batch = brew_batch(level + 1) if upgrade_cost >= 0 else -1
+	if id == "seal":
+		seating.merge({"slots": seal_slots(), "next_slots": seal_slots(level + 1) if upgrade_cost >= 0 else -1,
+			"seconds": seal_seconds(), "next_seconds": seal_seconds(level + 1) if upgrade_cost >= 0 else -1.0}, true)
 	var line: Array = []
 	if stage > 0:
 		for key in STAGE_MACHINES[stage]: line.append(_definition(key).display_name if _definition(key) != null else "封口机")
@@ -504,7 +524,7 @@ func station_info(requested: String) -> Dictionary:
 		"dish_name": dish_name(PROGRESSION.stages[stage].dish_id), "dish_price": _base_price(PROGRESSION.stages[stage].dish_id),
 		"price": _price_preview(id, "", upgrade_cost >= 0) if _art_mode(definition) and definition.art_price_step > 0 else {},
 		"seconds": definition.art_seconds / speeds[level - 1] if _art_mode(definition) and definition.art_seconds > 0 else -1.0,
-		"next_seconds": definition.art_seconds / speeds[level] if _art_mode(definition) and definition.art_seconds > 0 and upgrade_cost >= 0 else -1.0}.merged(seating)
+		"next_seconds": definition.art_seconds / speeds[level] if _art_mode(definition) and definition.art_seconds > 0 and upgrade_cost >= 0 else -1.0}.merged(seating, true)
 
 ## What one more level is worth, shown on a sample cup the player already sells.
 func _price_preview(id: String, material: String, has_next: bool) -> Dictionary:
@@ -576,6 +596,7 @@ func current_goal() -> String:
 	return "经营任务已全部完成，继续营业"
 
 func _speed(id: String) -> float:
+	if id == "seal": return PROGRESSION.seal_speeds[mini(station_levels.seal, PROGRESSION.seal_speeds.size()) - 1]
 	var definition = _definition(id)
 	if definition == null or id == "supply": return 1.0
 	if _art_mode(definition): return 1.0 if definition.art_speeds.is_empty() else definition.art_speeds[station_levels[id] - 1]
@@ -591,7 +612,38 @@ func _machine_duration(key: String) -> float:
 			var seconds: float = _definition("boil").art_seconds
 			return (seconds if seconds > 0 else 7.0) / _speed("boil") / _speed("supply") / _material_bonus("supply", "tea_leaf")
 		"mix": return 4.0 / _speed("mix") / _material_bonus("supply", "milk")
-	return PROGRESSION.seal_seconds
+	return seal_seconds()
+
+## Time per takeaway cup at the sealer: faster per level, and each extra slot (stars at Lv5 / Lv10) adds another cup at once.
+func seal_seconds(level: int = -1) -> float:
+	var lv: int = station_levels.seal if level < 0 else level
+	var speed: float = PROGRESSION.seal_speeds[mini(lv, PROGRESSION.seal_speeds.size()) - 1]
+	return PROGRESSION.seal_seconds / speed / seal_slots(lv)
+
+func seal_slots(level: int = -1) -> int:
+	var lv: int = station_levels.seal if level < 0 else level
+	return PROGRESSION.seal_slots[mini(lv, PROGRESSION.seal_slots.size()) - 1]
+
+## Cups per pot: the brewer starts with two and odd levels add one (up to six).
+func _brew_batch() -> int:
+	return brew_batch()
+
+func brew_batch(level: int = -1) -> int:
+	var batch: Array = _definition("boil").art_batch
+	if batch.is_empty(): return 3
+	var lv: int = station_levels.boil if level < 0 else level
+	return batch[mini(lv, batch.size()) - 1]
+
+## Star levels a station has reached; each multiplies the price of the drinks it touches.
+func stars(id: String, level: int = -1) -> int:
+	if id == "seal": return seal_slots(level) - 1
+	var definition = _definition(id)
+	if definition == null: return 0
+	var lv: int = station_levels.get(id, 1) if level < 0 else level
+	var count := 0
+	for star in definition.art_star_levels:
+		if lv >= star: count += 1
+	return count
 
 func _action_duration(job: Dictionary, worker: Dictionary) -> float:
 	if job.item == "lemonade" and job.src == "supply": return _definition("lemonade").cycle_seconds / _speed("lemonade") / _skill(worker)
@@ -788,8 +840,12 @@ func _append_boil_hops(worker: Dictionary, result: Array) -> void:
 	if boxes.tea_leaf: result.append(_candidate("load_boil", "supply", "boil", "raw", worker, 26))
 	if _mix_ready():
 		result.append(_candidate("unload_boil", "boil", "mix", "tea", worker, 47))
-		var room := BLACK_TEA_CAP - _flavor_inventory("black_tea")
-		var black := _candidate("carry_to_shelf", "boil", "shelf", "tea", worker, 50)
+		# Tea is split between black tea and the milk machine; customers waiting on black tea come first,
+		# otherwise a line full of black tea orders would starve while the shelf fills with milk tea.
+		var waiting := _waiting("black_tea")
+		var short: bool = waiting > _flavor_inventory("black_tea")
+		var room := maxi(BLACK_TEA_CAP, waiting) - _flavor_inventory("black_tea")
+		var black := _candidate("carry_to_shelf", "boil", "shelf", "tea", worker, 95 if short else 50)
 		if room <= 0: black = {}
 		elif not black.is_empty(): black.count = mini(black.count, room)
 		result.append(black)
@@ -933,6 +989,13 @@ func _flavor_inventory(dish: String) -> int:
 		if _shelf_item(worker.job.item) == dish: count += worker.job.count
 	return count
 
+## Customers in line still waiting for this drink.
+func _waiting(dish: String) -> int:
+	var count := 0
+	for order in orders:
+		if not order.reserved and order.dish == dish: count += 1
+	return count
+
 ## Brewed tea set on the shelf is served as black tea.
 func _shelf_item(item: String) -> String:
 	return "black_tea" if item == "tea" else item
@@ -1018,16 +1081,18 @@ func _cancel_job(worker: Dictionary) -> void:
 
 func _dish_price(dish: String) -> int:
 	var price := _base_price(dish)
-	var bonus := 0.0
+	# Price upgrades multiply: each level ×(1 + step), each star ×star_mult, across machines and ingredients.
+	var bonus := 1.0
 	for id in ["lemonade", "boil", "mix", "supply"]:
 		var definition = _definition(id)
-		if _art_mode(definition) and dish in definition.art_price_dishes: bonus += definition.art_price_step * (station_levels[id] - 1)
+		if _art_mode(definition) and dish in definition.art_price_dishes:
+			bonus *= pow(1.0 + definition.art_price_step, station_levels[id] - 1) * pow(definition.art_star_mult, stars(id))
 		for material in definition.materials:
-			if _art_mode(material) and dish in material.art_price_dishes: bonus += material.art_price_step * (material_levels[id][material.id] - 1)
+			if _art_mode(material) and dish in material.art_price_dishes: bonus *= pow(1.0 + material.art_price_step, material_levels[id][material.id] - 1)
 	var flavor := 1.0
 	for material in _definition("topping").materials:
 		if material.item_id == dish: flavor = _material_bonus("topping", material.id)
-	return roundi(price * (1.0 + bonus) * flavor)
+	return roundi(price * bonus * flavor)
 
 func _record_sale(job: Dictionary) -> void:
 	# A cup handed over from the shelf or the stand is drunk here: the customer takes a seat for a while.
@@ -1108,7 +1173,10 @@ func _apply_state(state: Dictionary) -> void:
 	_rng.state = state.rng_state
 
 func load_dict(state: Dictionary) -> String:
-	if state.get("version") is int and state.version == 3: state = _migrate_v3(state)
+	if state.get("version") is int and state.version == 3:
+		state = _migrate_v3(state)
+		state.version = 4
+	if state.get("version") is int and state.version == 4: state = _migrate_v4(state)
 	var error := _validate_state(state)
 	if not error.is_empty(): return error
 	var candidate = get_script().new()
@@ -1117,6 +1185,18 @@ func load_dict(state: Dictionary) -> String:
 	if not report.valid: return "存档库存或预留不一致：%s" % report.errors
 	_apply_state(state)
 	return ""
+
+## v4 → v5: the brewer pot holds up to six cups, and lemonade levels above the new cap are refunded.
+func _migrate_v4(old: Dictionary) -> Dictionary:
+	var state: Dictionary = old.duplicate(true)
+	state.version = SAVE_VERSION
+	if state.get("stations") is Dictionary and state.stations.get("boil") is Dictionary: state.stations.boil.capacity = BOIL_CAPACITY
+	if state.get("station_levels") is Dictionary and state.station_levels.get("lemonade") is int and state.get("gold") is int:
+		var cap := _max_level("lemonade")
+		while state.station_levels.lemonade > cap and state.station_levels.lemonade - 2 < LEMONADE_V4_COSTS.size():
+			state.gold += LEMONADE_V4_COSTS[state.station_levels.lemonade - 2]
+			state.station_levels.lemonade -= 1
+	return state
 
 ## v3 had the whole black tea line as one stage and sealed every kitchen cup. Keep the player's
 ## progress (money, sales, levels, staff) and start the floor fresh: cups in flight and the queue are dropped.
@@ -1169,8 +1249,8 @@ func _valid_job_route(job: Dictionary) -> bool:
 	match job.kind:
 		"serve":
 			return job.dst == "counter" and job.count == 1 and job.belt == "" and ((job.src == "supply" and job.item == "lemonade") or (job.src == "shelf" and job.item in DISHES and job.item != "lemonade") or (job.src == "seal" and job.item in DISHES))
-		"brew_start": return job.src == "boil" and job.dst == "boil" and job.item == "raw" and job.count == 3 and job.belt == ""
-		"brew_take", "stir": return job.src == "boil" and job.dst == "boil" and job.item == "tea" and job.count == 3 and job.belt == ""
+		"brew_start": return job.src == "boil" and job.dst == "boil" and job.item == "raw" and job.count >= 1 and job.count <= 6 and job.belt == ""
+		"brew_take", "stir": return job.src == "boil" and job.dst == "boil" and job.item == "tea" and job.count >= 1 and job.count <= 6 and job.belt == ""
 		"topping": return job.src == "topping" and job.dst == "topping" and job.item == "plain_milk_tea" and job.belt == ""
 		"load_boil": return job.src == "supply" and job.dst == "boil" and job.item == "raw" and job.belt == ""
 		"unload_boil": return job.src == "boil" and job.dst == "mix" and job.item == "tea" and job.belt == ""
@@ -1227,7 +1307,7 @@ func _validate_state(state: Dictionary) -> String:
 			if not station.has(key) or typeof(station[key]) != typeof(expected[key]): return "机器字段类型无效"
 		if not _counts(station.input, expected.input.keys()) or not _counts(station.output, expected.output.keys()) or not _counts(station.reserved_out, expected.input.keys() + expected.output.keys()): return "机器库存无效"
 		if station.input.size() != expected.input.size() or station.output.size() != expected.output.size(): return "机器库存字段不完整"
-		if station.processing < 0 or station.reserved_in < 0 or station.capacity != 6: return "机器数量无效"
+		if station.processing < 0 or station.reserved_in < 0 or station.capacity != expected.capacity: return "机器数量无效"
 		for key in ["progress", "remaining", "duration"]:
 			if not is_finite(station[key]) or station[key] < 0: return "机器进度无效"
 		if station.progress > 1 or (station.processing > 0 and station.duration <= 0): return "机器进度无效"

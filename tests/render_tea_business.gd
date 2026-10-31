@@ -92,7 +92,7 @@ func _run() -> void:
 	_check(int(view.sim.sold_by_dish.get("plain_milk_tea", 0)) > 0, "unlocked art production sells real plain milk tea")
 	await _click(hud.home_button)
 	await _capture("takeaway")
-	await _world_click(Vector2(328, 200))
+	await _world_click(Vector2(390, 150))
 	_check(hud.station_panel.station_id == "boil", "brewer artwork opens its own panel")
 	gold = view.sim.gold
 	await _click(hud.station_panel.upgrade_button)
