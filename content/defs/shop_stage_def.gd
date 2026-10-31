@@ -17,4 +17,10 @@ extends Resource
 @export var customer_interval: float = 0.0
 ## 本阶段起的点单权重：dish_id -> 权重
 @export var order_weights: Dictionary[String, float] = {}
+## 美术店：本阶段排队上限（排满后新客人不进店）
+@export var queue_capacity: int = 6
+## 美术店：本阶段想外带的顾客比例（需已解锁封口机）
+@export var takeaway_share: float = 0.0
+## 美术店：未解锁时面板上的一句说明（空 = 用菜名）
+@export var unlock_note: String = ""
 @export var tasks: Array[TaskDef] = []

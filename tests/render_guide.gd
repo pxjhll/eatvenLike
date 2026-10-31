@@ -80,16 +80,28 @@ func _run() -> void:
 	await _click(hud.station_panel.unlock_button)
 	_check(view.sim.stage_index == 1 and guide.active.is_empty(), "unlocking the line closes its hint")
 	await _click(hud.home_button)
+	view.sim.gold = maxi(view.sim.gold, 20)
+	guide.refresh(0)
+	_check(guide.active == "box_tea_leaf" and guide._hole.intersects(_local(view._station_buttons.supply)), "the brewer's tea leaf box gets a hint at the cabinet")
+	await _click(view._station_buttons.supply)
+	guide.refresh(0)
+	await _click(hud.station_panel.material_buttons.tea_leaf)
+	guide.refresh(0)
+	_check(view.sim.boxes.tea_leaf and guide.active.is_empty(), "buying the box closes its hint")
+	await _click(hud.home_button)
+	# Calm the line the run left behind, so only the customer made angry below counts.
+	for order in view.sim.orders: order.wait = 0.0
+	guide._lost_pending = false
 	guide.seen.erase("lost")
 	await _click(hud.staff_button)
-	view.sim._event("customer_left", "顾客等待过久，已离开")
+	_make_angry()
 	guide.refresh(0)
-	_check(guide.active.is_empty(), "a walk-out seen from another page waits for the shop floor")
+	_check(guide.active.is_empty(), "an angry customer seen from another page waits for the shop floor")
 	await _click(hud.home_button)
-	_check(guide.active == "lost" and guide.freezes(), "the first customer who walks out pauses on a short hint")
+	_check(guide.active == "lost" and guide.freezes(), "the first angry customer pauses on a short hint")
 	await _capture("lost")
 	await _click(guide._bubble_skip)
-	view.sim._event("customer_left", "顾客等待过久，已离开")
+	_make_angry()
 	guide.refresh(0)
 	_check(guide.active.is_empty(), "each hint shows only once")
 	view.free()
@@ -201,3 +213,10 @@ func _check(condition: bool, label: String) -> void:
 	if not condition:
 		failures += 1
 		print("FAIL: " + label)
+
+
+## Customers never walk out of the tea shop; one who waited long enough turns angry instead.
+func _make_angry() -> void:
+	if view.sim.orders.is_empty():
+		view.sim._add_order()
+	view.sim.orders[-1].wait = view.sim.MOOD_ANGRY + 1.0

@@ -47,42 +47,66 @@ dish_id = "lemonade"
 staff_slots = 2
 customer_interval = 8.0
 order_weights = Dictionary[String, float]({"lemonade": 1.0})
+queue_capacity = 4
 tasks = Array[ExtResource("task_def")]([SubResource("task_lemon30")])
 
 [sub_resource type="Resource" id="stage_black_tea"]
 script = ExtResource("shop_stage_def")
 dish_id = "black_tea"
 revenue_threshold = 100
-unlock_slots = Array[String](["cabinet", "brewer"])
+unlock_slots = Array[String](["brewer"])
 line_cost = 100
-line_name = "红茶生产线"
+line_name = "煮茶机"
+staff_slots = 3
+customer_interval = 7.5
+order_weights = Dictionary[String, float]({"lemonade": 0.5, "black_tea": 0.5})
+queue_capacity = 5
+unlock_note = "开始卖红茶（售价 28）。原料柜里还要解锁茶叶箱"
+tasks = Array[ExtResource("task_def")]([SubResource("task_black20")])
+
+[sub_resource type="Resource" id="stage_seal"]
+script = ExtResource("shop_stage_def")
+dish_id = "black_tea"
+revenue_threshold = 250
+unlock_slots = Array[String](["sealer"])
+line_cost = 150
+line_name = "封口机"
 staff_slots = 3
 customer_interval = 7.0
 order_weights = Dictionary[String, float]({"lemonade": 0.5, "black_tea": 0.5})
-tasks = Array[ExtResource("task_def")]([SubResource("task_black20")])
+queue_capacity = 6
+takeaway_share = 0.5
+unlock_note = "开放打包外带：想外带或坐不下的客人，封好口带走"
+tasks = Array[ExtResource("task_def")]([])
 
 [sub_resource type="Resource" id="stage_milk_tea"]
 script = ExtResource("shop_stage_def")
 dish_id = "plain_milk_tea"
-revenue_threshold = 400
+revenue_threshold = 600
 unlock_slots = Array[String](["milk_station"])
-line_cost = 200
+line_cost = 250
 line_name = "调奶台"
 staff_slots = 4
-customer_interval = 7.0
+customer_interval = 6.5
 order_weights = Dictionary[String, float]({"lemonade": 0.25, "black_tea": 0.25, "plain_milk_tea": 0.5})
+queue_capacity = 7
+takeaway_share = 0.5
+unlock_note = "开始卖原味奶茶（售价 30）。原料柜里还要解锁牛奶箱"
 tasks = Array[ExtResource("task_def")]([SubResource("task_plain20")])
 
 [sub_resource type="Resource" id="stage_topping"]
 script = ExtResource("shop_stage_def")
 dish_id = "pearl_milk_tea"
-revenue_threshold = 1500
+revenue_threshold = 1200
 unlock_slots = Array[String](["topping"])
-line_cost = 300
+line_cost = 400
 line_name = "加料机"
 staff_slots = 5
 customer_interval = 6.0
 order_weights = Dictionary[String, float]({"lemonade": 0.15, "black_tea": 0.1, "plain_milk_tea": 0.05, "pearl_milk_tea": 0.3, "coconut_milk_tea": 0.15, "redbean_milk_tea": 0.15, "taro_milk_tea": 0.1})
+queue_capacity = 8
+takeaway_share = 0.55
+unlock_note = "开始卖珍珠奶茶，升级加料机开放更多口味"
 tasks = Array[ExtResource("task_def")]([SubResource("task_topping4"), SubResource("task_pearl20")])
 
 [sub_resource type="Resource" id="belt_seal_to_shelf"]
@@ -92,7 +116,7 @@ display_name = "封口机 → 货架"
 from = "seal"
 to = "shelf"
 cost = 40
-stage = 1
+stage = 2
 view_points = PackedVector2Array(620, 400, 620, 550, 556, 580)
 
 [sub_resource type="Resource" id="belt_supply_to_boil"]
@@ -112,7 +136,7 @@ display_name = "煮茶机 → 封口机"
 from = "boil"
 to = "seal"
 cost = 60
-stage = 1
+stage = 2
 view_points = PackedVector2Array(360, 362, 545, 362, 545, 415)
 
 [sub_resource type="Resource" id="belt_boil_to_mix"]
@@ -122,7 +146,7 @@ display_name = "煮茶机 → 调奶台"
 from = "boil"
 to = "mix"
 cost = 80
-stage = 2
+stage = 3
 view_points = PackedVector2Array(360, 376, 470, 376, 470, 398)
 
 [sub_resource type="Resource" id="belt_mix_to_seal"]
@@ -132,7 +156,7 @@ display_name = "调奶台 → 封口机"
 from = "mix"
 to = "seal"
 cost = 80
-stage = 2
+stage = 3
 view_points = PackedVector2Array(482, 428, 518, 428)
 
 [sub_resource type="Resource" id="belt_mix_to_topping"]
@@ -142,7 +166,7 @@ display_name = "调奶台 → 加料机"
 from = "mix"
 to = "topping"
 cost = 120
-stage = 3
+stage = 4
 view_points = PackedVector2Array(460, 425, 460, 470, 205, 470, 205, 495)
 
 [sub_resource type="Resource" id="belt_topping_to_seal"]
@@ -152,10 +176,14 @@ display_name = "加料机 → 封口机"
 from = "topping"
 to = "seal"
 cost = 120
-stage = 3
+stage = 4
 view_points = PackedVector2Array(400, 320, 610, 320)
 
 [resource]
 script = ExtResource("shop_progression_def")
-stages = Array[ExtResource("shop_stage_def")]([SubResource("stage_lemon"), SubResource("stage_black_tea"), SubResource("stage_milk_tea"), SubResource("stage_topping")])
+seat_start = 3
+seat_costs = Array[int]([30, 45, 65, 95, 135])
+seat_seconds = 40.0
+seal_seconds = 14.0
+stages = Array[ExtResource("shop_stage_def")]([SubResource("stage_lemon"), SubResource("stage_black_tea"), SubResource("stage_seal"), SubResource("stage_milk_tea"), SubResource("stage_topping")])
 belts = Array[ExtResource("belt_slot_def")]([SubResource("belt_seal_to_shelf"), SubResource("belt_supply_to_boil"), SubResource("belt_boil_to_seal"), SubResource("belt_boil_to_mix"), SubResource("belt_mix_to_seal"), SubResource("belt_mix_to_topping"), SubResource("belt_topping_to_seal")])

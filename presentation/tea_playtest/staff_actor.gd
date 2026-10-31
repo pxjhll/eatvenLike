@@ -31,6 +31,9 @@ var _last_clock := 0.0
 ## A customer's order bubble: the drink they want and how much patience is left (-1 = no limit).
 var _order_item := ""
 var _patience := -1.0
+## 0 calm, 1 impatient, 2 angry; customers never leave, they show it on their face instead.
+var _mood := 0
+var _takeaway := false
 var _order_cup := Sprite2D.new()
 
 
@@ -73,9 +76,13 @@ func setup(art_id: String, font: Font, height := 128.0) -> void:
 	add_child(_order_cup)
 
 
-func show_order(item: String, patience: float) -> void:
+func show_order(item: String, patience: float, mood := 0, takeaway := false) -> void:
+	if item != _order_item or mood != _mood or takeaway != _takeaway or patience != _patience:
+		queue_redraw()
 	_order_item = item
 	_patience = patience
+	_mood = mood
+	_takeaway = takeaway
 	task.visible = false
 	var texture := drink_icon(item)
 	_order_cup.texture = texture
@@ -181,3 +188,25 @@ func _draw() -> void:
 		var color := Color("6b8f4e") if fill > 0.6 else Color("d08a2e") if fill > 0.3 else Color("b4482f")
 		draw_rect(Rect2(-4, top + 19, 42, 10), Color("efe3cc"))
 		draw_rect(Rect2(-4, top + 19, 42 * fill, 10), color)
+	if _takeaway and _font != null:
+		draw_string(_font, Vector2(-2, top + 30), "外带", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("8a5a35"))
+	if _mood > 0:
+		_draw_mood(Vector2(40, top + 8))
+
+
+## A small face above the bubble: a sweating straight face when impatient, a red frown when angry.
+func _draw_mood(center: Vector2) -> void:
+	var angry := _mood >= 2
+	var face := Color("e2533b") if angry else Color("f2c14e")
+	var ink := Color("4a2a1a")
+	draw_circle(center, 15, face)
+	draw_arc(center, 15, 0, TAU, 32, ink, 2, true)
+	draw_circle(center + Vector2(-5, -2), 2.2, ink)
+	draw_circle(center + Vector2(5, -2), 2.2, ink)
+	if angry:
+		draw_line(center + Vector2(-9, -9), center + Vector2(-2, -6), ink, 2.5, true)
+		draw_line(center + Vector2(9, -9), center + Vector2(2, -6), ink, 2.5, true)
+		draw_arc(center + Vector2(0, 10), 6, PI * 1.15, PI * 1.85, 10, ink, 2.5, true)
+	else:
+		draw_line(center + Vector2(-5, 6), center + Vector2(5, 6), ink, 2.5, true)
+		draw_circle(center + Vector2(14, -10), 4, Color("7cc4f0"))

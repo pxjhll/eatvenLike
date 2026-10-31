@@ -27,6 +27,7 @@ var _bars := {}
 var _pops: Array[Dictionary] = []
 var _staff_cards: Array[Button] = []
 var _shelf: Label
+var _seats: Label
 var _toast: Label
 var _toast_left := 0.0
 var _last_sold := 0
@@ -65,20 +66,20 @@ const STATION_REGIONS := {
 	"seal": Rect2(548, 207, 120, 184), "lemonade": Rect2(40, 838, 250, 200),
 }
 ## A locked machine is not drawn; its floor spot shows a dashed frame instead.
-## The black tea line opens several machines at once: its other spots open the same panel.
-## Only the very next unlock shows: the lemonade stand first, then one line at a time.
+## The cabinet is furniture; its spot shows a frame only while an ingredient box waits to be bought.
+## The shelf opens with the brewer. Only the very next unlock shows: lemonade first, then one machine at a time.
 const FRAME_RECTS := {
 	"supply": Rect2(30, 228, 204, 46), "boil": Rect2(250, 228, 158, 76),
 	"mix": Rect2(420, 160, 98, 82), "topping": Rect2(30, 284, 112, 300),
 	"seal": Rect2(556, 228, 108, 154), "shelf": Rect2(520, 548, 162, 144),
 	"lemonade": Rect2(48, 872, 236, 112),
 }
-const FRAME_OPENS := {"supply": "boil", "seal": "boil", "shelf": "boil"}
+const FRAME_OPENS := {"shelf": "boil"}
 ## Machine art that appears only once its station is unlocked (the table carries the pot and the milk machine).
 const LOCKED_ART := {
 	"Sortables/IngredientTable": "supply", "Sortables/MachineTable": "boil",
 	"Sortables/MachineTable/PearlPot": "boil", "Sortables/MachineTable/Brewer": "mix",
-	"Sortables/PrepBench": "topping", "Sortables/Sealer": "seal", "Sortables/Rack": "seal",
+	"Sortables/PrepBench": "topping", "Sortables/Sealer": "seal", "Sortables/Rack": "boil",
 	"Sortables/DisplayCase": "lemonade",
 }
 
@@ -221,7 +222,10 @@ func _refresh(delta: float) -> void:
 		_badges[id].tooltip_text = "%s · 输入 %d · 加工 %d · 输出 %d" % [STATION_NAMES[id], _total(station.input), station.get("processing", 0), output_count]
 	var limit: int = sim.shelf_limit() if sim.has_method("shelf_limit") else 3
 	_shelf.text = "货架 %d/%d" % [sim.shelf_count, limit]
-	_shelf.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("seal")
+	_shelf.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("boil")
+	if sim.has_method("free_seats"):
+		_seats.text = "堂食 %d/%d" % [sim.diners.size(), sim.seats]
+		_seats.visible = sim.station_unlocked("lemonade")
 	if sim.has_method("station_info"):
 		_refresh_station_signs()
 	if _belts_offered():
@@ -301,8 +305,8 @@ func _update_cups() -> void:
 
 func _update_customers(delta: float) -> void:
 	var active := {}
-	# Up to three customers stand at the counter; the rest wait in a second row behind them.
-	for i in mini(sim.orders.size(), 6):
+	# Three customers stand at the counter; up to five more wait in a second row behind them.
+	for i in mini(sim.orders.size(), 8):
 		var order: Dictionary = sim.orders[i]
 		active[order.id] = true
 		if not _customers.has(order.id):
@@ -311,12 +315,15 @@ func _update_customers(delta: float) -> void:
 			art.get_node("Sortables").add_child(actor)
 			_customers[order.id] = actor
 			_customer_positions[order.id] = Vector2(740, 1163)
-		var goal := Vector2(350 + i * 126, 1163) if i < 3 else Vector2(287 + (i - 3) * 126, 1108)
+		var goal := Vector2(350 + i * 126, 1163) if i < 3 else Vector2(250 + (i - 3) * 100, 1108)
 		var point: Vector2 = _customer_positions[order.id]
 		point = point.move_toward(goal, delta * 170.0)
 		_customer_positions[order.id] = point
-		var patience: float = sim.CONFIG.customer_patience if "CONFIG" in sim else 0.0
-		_customers[order.id].show_order(String(order.get("dish", "sealed")), 1.0 - float(order.wait) / patience if patience > 0 else -1.0)
+		if sim.has_method("order_mood"):
+			_customers[order.id].show_order(String(order.dish), -1.0, sim.order_mood(order), order.get("takeaway", false))
+		else:
+			var patience: float = sim.CONFIG.customer_patience if "CONFIG" in sim else 0.0
+			_customers[order.id].show_order(String(order.get("dish", "sealed")), 1.0 - float(order.wait) / patience if patience > 0 else -1.0)
 		_customers[order.id].display({"pos": point, "walking": point.distance_to(goal) > 1, "phase": "idle", "task_label": ""}, sim.elapsed)
 	for id in _customers.keys():
 		if not active.has(id):
@@ -367,6 +374,12 @@ func _build_badges() -> void:
 		label.mouse_filter = Control.MOUSE_FILTER_PASS
 		_badges[id] = label
 	_shelf = _chip(parent, Vector2(560, 706))
+	# Seats have no art yet: a chip by the queue shows who is sitting, and opens the counter to buy more.
+	_seats = _chip(parent, Vector2(48, 1050))
+	_seats.mouse_filter = Control.MOUSE_FILTER_STOP
+	_seats.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT: ui.open_station("counter"))
+	_seats.visible = false
 	for post in Layout.POST_POINTS:
 		var label := _chip(parent, Layout.POST_POINTS[post] + Vector2(-26, 14))
 		label.visible = false
@@ -516,7 +529,10 @@ func station_action(action: String, station: String, material := "") -> void:
 		"unlock": error = sim.unlock_station(station)
 		"upgrade": error = sim.upgrade_station(station)
 		"material": error = sim.upgrade_material(station, material)
-	_show_toast(error if not error.is_empty() else "设备已解锁。" if action == "unlock" else "升级完成。")
+		"box": error = sim.unlock_box(material)
+		"seat": error = sim.buy_seat()
+	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了一张座位。"}.get(action, "升级完成。")
+	_show_toast(error if not error.is_empty() else done)
 	if error.is_empty():
 		save_now(false)
 	_refresh(0)
@@ -564,7 +580,19 @@ func _build_station_signs() -> void:
 
 func _refresh_station_signs() -> void:
 	var next_stage: int = int(sim.stage_index) + 1 if sim.station_unlocked("lemonade") else 0
+	var box: String = sim.pending_box()
 	for id in _station_buttons:
+		if id == "supply":
+			# The cabinet frame asks for the ingredient box the newest machine needs.
+			var box_frame: Button = _station_buttons[id]
+			box_frame.visible = not box.is_empty()
+			if box.is_empty():
+				continue
+			var definition = sim._box_def(box)
+			box_frame.can_unlock = sim.box_error(box).is_empty()
+			box_frame.text = "%s箱\n%d 金币" % [definition.display_name, definition.box_cost]
+			box_frame.tooltip_text = "解锁后%s才有原料" % sim.station_info_name(definition.box_machine)
+			continue
 		var sign: String = FRAME_OPENS.get(id, id)
 		var info: Dictionary = sim.station_info(sign)
 		var frame: Button = _station_buttons[id]
