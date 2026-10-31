@@ -166,7 +166,7 @@ func _make_worker(index: int) -> Dictionary:
 		"pos": Layout.POINTS.counter, "walking": false, "phase": "idle", "task_label": "idle",
 		"carry_item": "", "carry_count": 0, "speed": [112.0, 88.0, 96.0][index],
 		"capacity": [2, 3, 2][index], "skill": [1.0, 1.0, 1.6][index],
-		"fatigue": 0.0, "completed": 0, "level": 1, "job": {},
+		"fatigue": 0.0, "completed": 0, "level": 1, "job": {}, "ticket": {},
 		"post": "", "assignment_pending": false, "assignment_point": Vector2.INF,
 		"path": PackedVector2Array(), "path_index": 0, "action_left": 0.0}
 
