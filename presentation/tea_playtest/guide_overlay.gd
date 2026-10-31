@@ -23,6 +23,8 @@ var _hole := Rect2()
 var _point := Vector2.INF
 var _time := 0.0
 var _seen_event: Variant = null
+## A walk-out waits here until its hint can show (shop page, no other guide up).
+var _lost_pending := false
 var _bubble: PanelContainer
 var _bubble_text: Label
 var _bubble_skip: Button
@@ -122,7 +124,8 @@ func refresh(delta: float) -> void:
 
 func _pick_guide() -> void:
 	var sim = _view.sim
-	var lost := _customer_left()
+	# Walk-outs during the opening are part of learning the ropes, not the later hint.
+	_lost_pending = (_customer_left() or _lost_pending) and seen.has("opening")
 	if not active.is_empty():
 		return
 	if not seen.has("opening"):
@@ -140,8 +143,9 @@ func _pick_guide() -> void:
 		if String(info.unlock_error).is_empty():
 			active = "line_%d" % next
 			return
-	if lost and not seen.has("lost"):
+	if _lost_pending and not seen.has("lost"):
 		active = "lost"
+		_lost_pending = false
 
 
 ## True when a customer gave up since the last check; events is a short rolling log.

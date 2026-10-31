@@ -33,6 +33,9 @@ func _run() -> void:
 	await process_frame
 	guide.refresh(0)
 	await _capture("welcome")
+	var cat: Dictionary = view.sim.workers[0]
+	await _drag(view.get_node("Canvas").get_global_transform_with_canvas() * cat.pos, view.get_node("Canvas").get_global_transform_with_canvas() * Vector2(470, 905))
+	_check(String(cat.get("post", "")).is_empty() and view._drag.worker_id == -1, "staff cannot be dragged while a dimmed step is up")
 	await _click(guide._card_primary)
 	_check(guide.active == "opening" and guide._hole.intersects(_local(view._station_buttons.lemonade)), "the hand points at the lemonade sign")
 	await _capture("unlock-sign")
@@ -78,8 +81,11 @@ func _run() -> void:
 	_check(view.sim.stage_index == 1 and guide.active.is_empty(), "unlocking the line closes its hint")
 	await _click(hud.home_button)
 	guide.seen.erase("lost")
+	await _click(hud.staff_button)
 	view.sim._event("customer_left", "顾客等待过久，已离开")
 	guide.refresh(0)
+	_check(guide.active.is_empty(), "a walk-out seen from another page waits for the shop floor")
+	await _click(hud.home_button)
 	_check(guide.active == "lost" and guide.freezes(), "the first customer who walks out pauses on a short hint")
 	await _capture("lost")
 	await _click(guide._bubble_skip)
@@ -147,6 +153,26 @@ func _press(point: Vector2) -> void:
 	guide.refresh(0)
 	await process_frame
 	guide.refresh(0)
+
+func _drag(from: Vector2, to: Vector2) -> void:
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.position = from
+	press.pressed = true
+	Input.parse_input_event(press)
+	for i in 6:
+		var motion := InputEventMouseMotion.new()
+		motion.position = from.lerp(to, (i + 1) / 6.0)
+		motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+		Input.parse_input_event(motion)
+		Input.flush_buffered_events()
+		await process_frame
+	var release := press.duplicate()
+	release.position = to
+	release.pressed = false
+	Input.parse_input_event(release)
+	Input.flush_buffered_events()
+	await process_frame
 
 func _capture(suffix: String) -> void:
 	if DisplayServer.get_name() == "headless":

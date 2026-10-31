@@ -25,6 +25,11 @@ func setup(view: Node2D) -> void:
 func _input(event: InputEvent) -> void:
 	if not is_instance_valid(_view) or _view.sim == null:
 		return
+	# A dimmed tutorial step only lets its highlighted control through, so no staff drags.
+	if _view.guide != null and _view.guide.freezes():
+		if worker_id != -1 or _source_card >= 0:
+			cancel()
+		return
 	# Native touch is handled below. Its synthetic mouse events must not commit twice.
 	if event is InputEventMouse and event.device == InputEvent.DEVICE_ID_EMULATION:
 		return
