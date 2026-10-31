@@ -450,11 +450,27 @@ func hire_worker() -> void:
 	_refresh(0.0)
 
 
-func train_selected() -> void:
+func _train_selected() -> void:
 	if sim.train(selected_worker):
 		_show_toast("培养完成，擅长的能力已提升。")
 		save_now(false)
 	_refresh(0.0)
+
+
+func buy_staff_upgrade(side: String) -> void:
+	var info: Dictionary = sim.staff_upgrade_info(side)
+	var error: String = sim.buy_staff_upgrade(side)
+	_show_toast(error if not error.is_empty() else "%s升级：%s" % ["前台" if side == "front" else "后厨", info.name])
+	if error.is_empty():
+		save_now(false)
+	_refresh(0.0)
+
+
+func train_selected() -> void:
+	if sim.has_method("buy_staff_upgrade"):
+		buy_staff_upgrade("front")
+		return
+	_train_selected()
 
 
 func toggle_transport() -> void:

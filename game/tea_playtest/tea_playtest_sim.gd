@@ -249,7 +249,7 @@ func _available(source: String, item: String) -> int:
 	return int(stock.get(item, 0)) - int(station.reserved_out.get(item, 0))
 
 func _candidate(kind: String, source: String, destination: String, item: String, worker: Dictionary, priority: float, belt: String = "") -> Dictionary:
-	var count: int = mini(worker.capacity, mini(_available(source, item), _free(destination)))
+	var count: int = mini(_carry(worker), mini(_available(source, item), _free(destination)))
 	if count <= 0: return {}
 	return {"kind": kind, "src": source, "dst": destination, "item": item,
 		"count": count, "priority": priority, "belt": belt, "order_id": -1}
@@ -267,7 +267,7 @@ func _jobs(worker: Dictionary) -> Array:
 		var item: String = INPUTS[post]
 		if post == "topping" and _available(post, item) > 0:
 			kind = "topping"
-			count = mini(worker.capacity, _available(post, item))
+			count = mini(_carry(worker), _available(post, item))
 		elif post == "boil" and station.processing == 0 and _available(post, "raw") >= _brew_batch():
 			kind = "brew_start"
 			count = _brew_batch()
@@ -507,10 +507,10 @@ func audit() -> Dictionary:
 	for worker in workers:
 		if not worker.post.is_empty():
 			if not Layout.POST_POINTS.has(worker.post): errors.append("invalid post")
-			if owners.has(worker.post): errors.append("duplicate post: " + worker.post)
+			if owners.has(worker.post) and not _shared_post(worker.post): errors.append("duplicate post: " + worker.post)
 			owners[worker.post] = worker.id
 		carried += worker.carry_count
-		if worker.carry_count < 0 or worker.carry_count > worker.capacity: errors.append("worker capacity")
+		if worker.carry_count < 0 or worker.carry_count > _carry(worker): errors.append("worker capacity")
 		if worker.job.is_empty(): continue
 		var job: Dictionary = worker.job
 		if job.kind == "serve": reserved_orders.append(job.order_id)
@@ -565,6 +565,14 @@ func _record_sale(job: Dictionary) -> void:
 
 func _shelf_capacity() -> int:
 	return SHELF_CAPACITY
+
+## Posts several workers may hold at once (shops can open more counter places).
+func _shared_post(_post: String) -> bool:
+	return false
+
+## How many cups a worker carries per trip; shops can add upgrades on top.
+func _carry(worker: Dictionary) -> int:
+	return worker.capacity
 
 func _walk_speed(worker: Dictionary) -> float:
 	return worker.speed

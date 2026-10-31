@@ -72,7 +72,7 @@ func test_full_shop_state_and_continuation_roundtrip() -> void:
 		for employee in sim.all_workers():
 			if employee.id != sim.workers[0].id:
 				check_eq(sim.deploy_worker(employee.id), "", "deploy owned employee")
-		check(sim.train(sim.workers[0].id), "training included in save")
+		check_eq(sim.buy_staff_upgrade("kitchen"), "", "staff upgrades included in save")
 		if belts:
 			for row in sim.belt_rows(): check_eq(sim.buy_belt(row.id), "", "buy belt " + row.id)
 		var saw_machine := false
@@ -122,13 +122,12 @@ func test_bench_training_and_deployed_roster_reference_survive_reload() -> void:
 	sim.gold = 500
 	check(sim.hire(), "hire creates an owned bench employee")
 	var bench_id: int = sim.all_workers()[1].id
-	check(sim.train(bench_id), "train while on bench")
 	var original: Dictionary = sim.to_dict()
 	check_eq(store.save_game(sim), OK, "save roster with bench employee")
 	var resumed = store.load_game()
-	check_eq(var_to_bytes(resumed.to_dict()), var_to_bytes(original), "bench record and training restored")
+	check_eq(var_to_bytes(resumed.to_dict()), var_to_bytes(original), "bench record restored")
 	check_eq(resumed.workers.size(), 1, "bench employee remains undeployed")
-	check_eq(resumed.worker_by_id(bench_id).level, 2, "bench level retained")
+	check(not resumed.worker_by_id(bench_id).deployed, "bench employee retained")
 	var deployed_id: int = resumed.workers[0].id
 	resumed.worker_by_id(deployed_id).fatigue = 0.123
 	check_eq(resumed.workers[0].fatigue, 0.123, "deployed record still refers to its owned roster dictionary")
@@ -140,10 +139,10 @@ func test_four_owned_staff_with_active_rabbit_roundtrip_and_continue() -> void:
 	sim.gold = 500
 	check(sim.hire() and sim.hire() and sim.hire(), "recruit all three reserve employees")
 	if sim.worker_by_id(4).is_empty(): return
-	check(sim.train(4), "rabbit progression is saved")
 	check_eq(sim.unlock_station("lemonade"), "", "open service")
-	sim.revenue = 100
-	check_eq(sim.unlock_station("boil"), "", "black tea line makes room for a third employee")
+	sim.revenue = 10000
+	check_eq(sim.unlock_station("boil"), "", "black tea line opens the kitchen")
+	check_eq(sim.unlock_station("seal"), "", "the sealer makes room for a second kitchen hand")
 	check_eq(sim.deploy_worker(2), "", "deploy second employee")
 	check_eq(sim.deploy_worker(4), "", "deploy rabbit while fox stays in reserve")
 	sim.advance(2.037)
@@ -154,7 +153,6 @@ func test_four_owned_staff_with_active_rabbit_roundtrip_and_continue() -> void:
 	check_eq(var_to_bytes(resumed.to_dict()), var_to_bytes(original), "rabbit state roundtrips with exact values and types")
 	check_eq(resumed.all_workers().size(), 4, "all four owned employees reload")
 	check_eq(resumed.workers.size(), 3, "only three deployed employees reload")
-	check_eq(resumed.worker_by_id(4).level, 2, "rabbit training reloads")
 	check_eq(resumed.worker_by_id(4).source, "招募", "rabbit source reloads")
 	check(not resumed.worker_by_id(3).deployed, "fox remains in reserve")
 	check(is_same(resumed.workers[2], resumed.worker_by_id(4)), "rabbit deployment uses owned record after load")
@@ -181,7 +179,7 @@ func test_pre_rabbit_current_schema_roster_loads_and_can_recruit_rabbit() -> voi
 	legacy.gold = 180
 	check(legacy.hire() and legacy.hire(), "prepare the pre-rabbit three-owned roster")
 	var state: Dictionary = legacy.to_dict()
-	check_eq(state.version, 6, "current simulation schema")
+	check_eq(state.version, 7, "current simulation schema")
 	var envelope := _envelope(state, 2)
 	_write(_path(), JSON.stringify(envelope))
 	var resumed = store.load_game()

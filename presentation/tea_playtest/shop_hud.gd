@@ -55,6 +55,8 @@ var _sheet_height := -1.0
 @onready var toast: Label = %Toast
 var hire_button: Button
 var train_button: Button
+## Tea shop: the front and kitchen upgrade lists (train_button shows the front list there).
+var kitchen_upgrade_button: Button
 var pause_button: Button
 var belt_button: Button
 var restart_button: Button
@@ -269,15 +271,24 @@ func _build_pages() -> void:
 	train_button = _action(actions, "培养", _view.train_selected)
 	for button in [deploy_button, train_button]:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	train_button.add_theme_stylebox_override("normal", _style("8b6446", "8b6446", 15))
-	train_button.add_theme_color_override("font_color", Color("fff8e9"))
-	train_button.add_theme_color_override("font_hover_color", Color("583e2d"))
+	var upgrades := _row(staff)
+	kitchen_upgrade_button = _action(upgrades, "后厨升级", func() -> void: _view.buy_staff_upgrade("kitchen"))
+	if _view.sim != null and _view.sim.has_method("buy_staff_upgrade"):
+		# The tea shop has upgrade lists instead of per-worker training: both buttons sit on their own row.
+		actions.remove_child(train_button)
+		upgrades.add_child(train_button)
+		upgrades.move_child(train_button, 0)
+	for button in [train_button, kitchen_upgrade_button]:
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.add_theme_stylebox_override("normal", _style("8b6446", "8b6446", 15))
+		button.add_theme_color_override("font_color", Color("fff8e9"))
+		button.add_theme_color_override("font_hover_color", Color("583e2d"))
 	staff_preview_button = _action(staff, "查看角色动作", func() -> void:
 		for worker in _view.all_staff():
 			if int(worker.id) == _view.selected_worker:
 				open_character_preview(worker.art)
 				break)
-	_text(staff, "拖到工位 = 坐班，拖到柜台 = 前台接单，拖到空地 = 流动", 19, true).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_text(staff, "拖到柜台 = 前台（只接待客人）；拖到工位或空地 = 后厨", 19, true).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var recruit := _column("recruit")
 	_text(recruit, "普通招募", 27)
 	_recruit_portrait = _portrait(recruit, "raccoon", 154)
@@ -376,7 +387,7 @@ func _status(worker: Dictionary) -> Array:
 	if not _view.staff_is_deployed(int(worker.id)):
 		return ["待派遣", "e5dfd2", "5d5548"]
 	if worker.post.is_empty():
-		return ["流动", "dcebcf", "3d5a2a"]
+		return ["后厨" if _view.sim.has_method("front_slots") else "流动", "dcebcf", "3d5a2a"]
 	if worker.post == "counter":
 		return ["前台", "dfe8f6", "2f4a6b"]
 	return ["坐班·" + POST_NAMES.get(worker.post, worker.post), "f3dfb8", "6b4a1c"]
@@ -419,12 +430,18 @@ func refresh() -> void:
 	deploy_button.visible = sim.has_method("deploy_worker")
 	deploy_button.text = "收回到名册" if _view.staff_is_deployed(int(selected.id)) else "派到店内"
 	deploy_button.disabled = false
-	var train_cost: int = sim.train_cost(_view.selected_worker)
-	var star_next := false
-	if "PROGRESSION" in sim:
-		star_next = int(selected.level) + 1 in sim.PROGRESSION.train_star_levels
-	train_button.text = "已满级" if train_cost < 0 else ("升星培养" if star_next else "培养") + " Lv%d · %d 金币" % [int(selected.level) + 1, train_cost]
-	train_button.disabled = train_cost < 0 or sim.gold < train_cost
+	kitchen_upgrade_button.visible = sim.has_method("buy_staff_upgrade")
+	if sim.has_method("buy_staff_upgrade"):
+		for side in ["front", "kitchen"]:
+			var button: Button = train_button if side == "front" else kitchen_upgrade_button
+			var info: Dictionary = sim.staff_upgrade_info(side)
+			var title: String = "前台" if side == "front" else "后厨"
+			button.text = ("%s升级已买完" % title) if info.cost < 0 else "%s %d/%d：%s\n%d 金币" % [title, int(info.bought) + 1, int(info.total), info.name, int(info.cost)]
+			button.disabled = info.cost < 0 or sim.gold < int(info.cost)
+	else:
+		var train_cost: int = sim.train_cost(_view.selected_worker)
+		train_button.text = "已满级" if train_cost < 0 else "培养 Lv%d · %d 金币" % [int(selected.level) + 1, train_cost]
+		train_button.disabled = train_cost < 0 or sim.gold < train_cost
 	hire_button.disabled = sim.hire_cost() < 0 or sim.gold < sim.hire_cost()
 	hire_button.text = "当前伙伴已集齐" if sim.hire_cost() < 0 else "邀请伙伴  ·  %d 金币" % sim.hire_cost()
 	var next_art := "fox"
@@ -449,7 +466,7 @@ func refresh() -> void:
 	match page:
 		"station": station_panel.refresh()
 		"goals": _refresh_goals(sim)
-		"staff": %Subtitle.text = "店内 %d / %d · 拥有 %d 位" % [sim.workers.size(), sim.staff_slots() if sim.has_method("staff_slots") else 3, roster.size()]
+		"staff": %Subtitle.text = ("前台 %d/%d · 后厨 %d/%d · 拥有 %d 位" % [sim.front_staff(), sim.front_slots(), sim.kitchen_staff(), sim.kitchen_slots(), roster.size()]) if sim.has_method("front_slots") else "店内 %d / %d · 拥有 %d 位" % [sim.workers.size(), sim.staff_slots() if sim.has_method("staff_slots") else 3, roster.size()]
 	_update_coin_icons()
 	_fit_sheet()
 

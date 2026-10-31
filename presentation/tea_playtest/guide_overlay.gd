@@ -14,7 +14,7 @@ const HAND := Color("8b6446")
 
 var enabled := false
 var seen := {}
-## The guide currently on screen: "", "welcome", "opening", "done", "line_N", "box_*", "shop_done" or "lost".
+## The guide currently on screen: "", "welcome", "opening", "done", "line_N", "box_*", "kitchen", "shop_done" or "lost".
 var active := ""
 var _view: Node2D
 var _hud: Control
@@ -115,6 +115,7 @@ func refresh(delta: float) -> void:
 			"welcome", "done", "shop_done": _show_card()
 			"opening": _opening_step()
 			"lost": _lost_step()
+			"kitchen": _kitchen_step()
 			"box_tea_leaf", "box_milk": _box_step(active.trim_prefix("box_"))
 			"": pass
 			_: _line_step(int(active.trim_prefix("line_")))
@@ -150,6 +151,9 @@ func _pick_guide() -> void:
 	var box: String = sim.pending_box()
 	if not box.is_empty() and not seen.has("box_" + box) and sim.box_error(box).is_empty():
 		active = "box_" + box
+		return
+	if sim.has_method("kitchen_staff") and sim.stage_index > 0 and sim.kitchen_staff() == 0 and box.is_empty() and not seen.has("kitchen"):
+		active = "kitchen"
 		return
 	if _lost_pending and not seen.has("lost"):
 		active = "lost"
@@ -217,6 +221,31 @@ func _opening_step() -> void:
 	active = "done"
 	_hud.open_page("shop")
 	_show_card()
+
+
+## The brewer is the first kitchen job: the front worker can't leave the counter, so someone new has to come in.
+func _kitchen_step() -> void:
+	var sim = _view.sim
+	if sim.kitchen_staff() > 0:
+		_finish()
+		return
+	_bubble_skip.text = "以后再说"
+	var page: String = _hud.page
+	var waiting: Array = sim.all_workers().filter(func(worker: Dictionary) -> bool: return not _view.staff_is_deployed(int(worker.id)))
+	if not waiting.is_empty():
+		if page != "staff":
+			_focus(_hud.staff_button, "后厨还没人！新伙伴在名册里，点「员工」")
+		else:
+			if _view.staff_is_deployed(_view.selected_worker):
+				_view.select_worker(int(waiting[0].id), true)
+			_focus(_hud.deploy_button, "点「派到店内」，让伙伴去后厨煮茶")
+	elif sim.gold < sim.hire_cost():
+		_point = _hud.get_node("%Gold").get_global_rect().get_center()
+		_say("前台只管接待客人，煮茶要后厨员工。\n攒够 %d 金币招一位伙伴" % sim.hire_cost())
+	elif page != "recruit":
+		_focus(_hud.recruit_button, "前台只管接待客人，煮茶要后厨员工：点「招募」")
+	else:
+		_focus(_hud.hire_button, "邀请一位后厨伙伴")
 
 
 func _line_step(stage: int) -> void:
