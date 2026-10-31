@@ -5,6 +5,7 @@ const Sim := preload("res://game/tea_playtest/tea_playtest_sim.gd")
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const DragController := preload("res://presentation/tea_playtest/staff_drag_controller.gd")
+const UnlockFrame := preload("res://presentation/tea_playtest/unlock_frame.gd")
 const ART_NAMES := preload("res://presentation/characters/character_library.gd").NAMES
 const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "seal": "自动封口"}
 ## Machines show no standing text: a bar while working and a bubble only when they need a hand.
@@ -59,10 +60,22 @@ const STATION_REGIONS := {
 	"mix": Rect2(415, 121, 106, 160), "topping": Rect2(22, 254, 121, 339),
 	"seal": Rect2(548, 207, 120, 184), "lemonade": Rect2(40, 838, 250, 200),
 }
-const SIGN_RECTS := {
-	"supply": Rect2(28, 277, 190, 44), "boil": Rect2(246, 276, 164, 44),
-	"mix": Rect2(414, 276, 132, 44), "topping": Rect2(24, 603, 168, 52),
-	"seal": Rect2(543, 157, 148, 44), "lemonade": Rect2(43, 1000, 235, 52),
+## A locked machine is not drawn; its floor spot shows a dashed frame instead.
+## The black tea line opens several machines at once: its other spots open the same panel.
+## Only the next line's frames show, so the milk machine's frame waits for the table it stands on.
+const FRAME_RECTS := {
+	"supply": Rect2(30, 228, 204, 46), "boil": Rect2(250, 228, 158, 76),
+	"mix": Rect2(420, 160, 98, 82), "topping": Rect2(30, 284, 112, 300),
+	"seal": Rect2(556, 228, 108, 154), "shelf": Rect2(520, 548, 162, 144),
+	"lemonade": Rect2(48, 872, 236, 112),
+}
+const FRAME_OPENS := {"supply": "boil", "seal": "boil", "shelf": "boil"}
+## Machine art that appears only once its station is unlocked (the table carries the pot and the milk machine).
+const LOCKED_ART := {
+	"Sortables/IngredientTable": "supply", "Sortables/MachineTable": "boil",
+	"Sortables/MachineTable/PearlPot": "boil", "Sortables/MachineTable/Brewer": "mix",
+	"Sortables/PrepBench": "topping", "Sortables/Sealer": "seal", "Sortables/Rack": "seal",
+	"Sortables/DisplayCase": "lemonade",
 }
 
 
@@ -515,16 +528,15 @@ func go_to_old_game() -> void:
 
 
 func _build_station_signs() -> void:
-	for id in SIGN_RECTS:
-		var button := Button.new()
-		button.position = SIGN_RECTS[id].position
-		button.size = SIGN_RECTS[id].size
-		button.theme = ui.theme
-		button.add_theme_font_size_override("font_size", 18)
-		button.focus_mode = Control.FOCUS_NONE
-		button.pressed.connect(ui.open_station.bind(id))
-		$Canvas/WorldLabels.add_child(button)
-		_station_buttons[id] = button
+	for id in FRAME_RECTS:
+		var frame := UnlockFrame.new()
+		frame.position = FRAME_RECTS[id].position
+		frame.size = FRAME_RECTS[id].size
+		frame.theme = ui.theme
+		frame.add_theme_font_size_override("font_size", 17)
+		frame.pressed.connect(ui.open_station.bind(FRAME_OPENS.get(id, id)))
+		$Canvas/WorldLabels.add_child(frame)
+		_station_buttons[id] = frame
 	# The glass is opaque art, so the cups are children of the case and stand on its upper shelf.
 	_lemonade_cup = Node2D.new()
 	art.get_node("Sortables/DisplayCase").add_child(_lemonade_cup)
@@ -540,21 +552,22 @@ func _build_station_signs() -> void:
 
 func _refresh_station_signs() -> void:
 	for id in _station_buttons:
-		var info: Dictionary = sim.station_info(id)
-		_station_buttons[id].visible = not info.unlocked and id in ["boil", "mix", "topping", "lemonade"]
-		# Before the revenue gate the plate says when it opens; after it, what it costs.
+		var sign: String = FRAME_OPENS.get(id, id)
+		var info: Dictionary = sim.station_info(sign)
+		var frame: Button = _station_buttons[id]
+		frame.visible = not info.unlocked and int(info.stage) <= int(sim.stage_index) + 1
+		frame.can_unlock = id == sign and String(info.unlock_error).is_empty()
+		frame.tooltip_text = info.description + "\n" + info.get("unlock_error", "")
+		if id != sign:
+			continue
+		# Before the revenue gate the frame says when it opens; after it, what it costs.
 		var gated: bool = String(info.unlock_error).begins_with("营业额")
 		var title: String = info.get("line_name", info.name) if id == "boil" else info.name
-		_station_buttons[id].text = "%s\n%s" % [title, "营业额 %d 开放" % info.get("unlock_revenue", 0) if gated else "%d 金币" % info.unlock_cost]
-		_station_buttons[id].tooltip_text = info.description + "\n" + info.get("unlock_error", "")
-	for id in Layout.STATION_ART:
-		if id in ["counter", "shelf"]:
-			continue
-		var node: Node2D = art.get_node_or_null(Layout.STATION_ART[id])
+		frame.text = "%s\n%s" % [title, "营业额 %d 开放" % info.get("unlock_revenue", 0) if gated else "%d 金币" % info.unlock_cost]
+	for path in LOCKED_ART:
+		var node: Node2D = art.get_node_or_null(path)
 		if node != null:
-			node.modulate = Color.WHITE if sim.station_unlocked(id) else Color(0.6, 0.6, 0.6, 0.48)
-	if is_instance_valid(_lemonade_cup):
-		_lemonade_cup.visible = sim.station_unlocked("lemonade")
+			node.visible = sim.station_unlocked(LOCKED_ART[path])
 
 
 func _belts_offered() -> bool:
