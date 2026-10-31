@@ -28,15 +28,16 @@ func _run() -> void:
 		return
 	_check(view.sim.gold == 50 and view.sim.stage_index == 0, "fresh shop begins at configured opening stage")
 	_check(_art_hidden(["IngredientTable", "MachineTable", "PrepBench", "Sealer", "Rack", "DisplayCase"]), "locked machines draw no art before unlock")
-	_check(_frames_shown(["lemonade", "boil", "supply", "seal", "shelf"]) and not _frames_shown(["mix"]) and not _frames_shown(["topping"]), "fresh shop shows dashed frames only for the lemonade stand and the next line")
-	_check(view._station_buttons.lemonade.can_unlock and not view._station_buttons.boil.can_unlock, "red arrow marks only what can be bought now")
+	_check(_frames_shown(["lemonade"]) and _frames_hidden(["boil", "supply", "seal", "shelf", "mix", "topping"]), "fresh shop shows only the lemonade stand's dashed frame")
+	_check(view._station_buttons.lemonade.can_unlock, "red arrow marks what can be bought now")
 	await _capture("opening")
-	await _click(view._station_buttons.supply)
-	_check(hud.page == "station" and hud.station_panel.station_id == "boil", "any black tea line frame opens the line's unlock panel")
-	await _click(hud.home_button)
 	await _click(view._station_buttons.lemonade)
 	_check(hud.page == "station", "clicking the in-world spot opens real unlock panel")
 	await _click(hud.station_panel.unlock_button)
+	_check(_frames_shown(["boil", "supply", "seal", "shelf"]) and _frames_hidden(["lemonade", "mix", "topping"]), "after opening only the black tea line's frames show")
+	await _click(hud.home_button)
+	await _click(view._station_buttons.supply)
+	_check(hud.page == "station" and hud.station_panel.station_id == "boil", "any black tea line frame opens the line's unlock panel")
 	_check(view.sim.station_unlocked("lemonade") and view.sim.gold == 40, "lemonade unlock spends configured ten coins")
 	_advance(500)
 	_check(view.sim.revenue >= 300 and view.sim.sold > 0, "opening business earns actual revenue")
@@ -46,7 +47,7 @@ func _run() -> void:
 	await _click(hud.station_panel.unlock_button)
 	_check(view.sim.stage_index == 1 and view.sim.gold == gold - 100 and not view.sim.station_unlocked("mix"), "black tea line opens cabinet, brewer and sealer for its stage price")
 	_check(not _art_hidden(["IngredientTable", "MachineTable", "MachineTable/PearlPot", "Sealer", "Rack", "DisplayCase"]) and _art_hidden(["MachineTable/Brewer", "PrepBench"]), "unlocked line's machines appear, later ones stay hidden")
-	_check(not _frames_shown(["boil"]) and not _frames_shown(["seal"]) and _frames_shown(["mix"]) and not _frames_shown(["topping"]), "the milk machine frame appears once its table is in")
+	_check(_frames_shown(["mix"]) and _frames_hidden(["boil", "seal", "topping"]), "the milk machine frame appears once its table is in")
 	await _click(hud.home_button)
 	await _capture("frames")
 	_advance(300)
@@ -170,6 +171,12 @@ func _art_hidden(paths: Array) -> bool:
 func _frames_shown(ids: Array) -> bool:
 	for id in ids:
 		if not view._station_buttons[id].is_visible_in_tree():
+			return false
+	return true
+
+func _frames_hidden(ids: Array) -> bool:
+	for id in ids:
+		if view._station_buttons[id].is_visible_in_tree():
 			return false
 	return true
 
