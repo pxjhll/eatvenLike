@@ -92,3 +92,16 @@ func test_layers_hide_independently_without_moving_other_pieces() -> void:
 	preview.set_layer_visible(true, "walls")
 	check_eq(partition.position, original_position, "layer toggles preserve layout")
 	preview.free()
+
+
+func test_ui_p0_art_covers_every_dish_and_checkout_keeps_its_aspect() -> void:
+	var sim_script: GDScript = load("res://game/tea_playtest/tea_shop_sim.gd")
+	for dish in sim_script.DISHES:
+		check(ResourceLoader.exists("res://art/ui/drink_%s.png" % dish), "order bubble icon for " + dish)
+	for name in ["coin", "coin_small", "bubble"]:
+		check(ResourceLoader.exists("res://art/ui/%s.png" % name), "UI art " + name)
+	# The counter used to be a 620 px image stretched 2.3x sideways; it is now drawn at scene width.
+	var art: Node2D = load("res://presentation/reference/shop_art.tscn").instantiate()
+	var checkout: Sprite2D = art.get_node("Sortables/Checkout/Sprite")
+	check(absf(checkout.scale.x - checkout.scale.y) < 0.001, "checkout is not stretched")
+	art.free()

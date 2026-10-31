@@ -370,6 +370,13 @@ func _pop_income(amount: int) -> void:
 	var label := _label($Canvas/WorldLabels, SALE_POINT, 30)
 	label.text = "+%d" % amount
 	label.add_theme_color_override("font_color", Color("8b6446"))
+	var coin := TextureRect.new()
+	coin.texture = preload("res://art/ui/coin_small.png")
+	coin.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	coin.size = Vector2(26, 26)
+	coin.position = Vector2(-30, 6)
+	coin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_child(coin)
 	label.add_theme_constant_override("outline_size", 7)
 	_pops.append({"label": label, "age": 0.0})
 

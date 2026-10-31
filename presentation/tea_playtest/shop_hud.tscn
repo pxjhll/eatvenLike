@@ -30,12 +30,14 @@ theme_override_constants/margin_bottom = 8
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Coin" type="Panel" parent="Header/Margin/Row"]
+[node name="Coin" type="TextureRect" parent="Header/Margin/Row"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Gold" type="Label" parent="Header/Margin/Row"]
 unique_name_in_owner = true

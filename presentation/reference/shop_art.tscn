@@ -385,7 +385,7 @@ metadata/asset_id = "checkout"
 
 [node name="Sprite" type="Sprite2D" parent="Sortables/Checkout" unique_id=1436337364]
 position = Vector2(-317.5, -74)
-scale = Vector2(1.0241935, 0.45357144)
+scale = Vector2(0.45357144, 0.45357144)
 texture = ExtResource("22_28ce3")
 centered = false
 
