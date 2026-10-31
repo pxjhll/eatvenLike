@@ -33,12 +33,12 @@ func _run() -> void:
 	await process_frame
 	guide.refresh(0)
 	await _capture("welcome")
-	var cat: Dictionary = view.sim.workers[0]
-	await _drag(view.get_node("Canvas").get_global_transform_with_canvas() * cat.pos, view.get_node("Canvas").get_global_transform_with_canvas() * Vector2(470, 905))
-	_check(String(cat.get("post", "")).is_empty() and view._drag.worker_id == -1, "staff cannot be dragged while a dimmed step is up")
 	await _click(guide._card_primary)
 	_check(guide.active == "opening" and guide._hole.intersects(_local(view._station_buttons.lemonade)), "the hand points at the lemonade sign")
 	await _capture("unlock-sign")
+	var cat: Dictionary = view.sim.workers[0]
+	await _drag(view.get_node("Canvas").get_global_transform_with_canvas() * cat.pos, view.get_node("Canvas").get_global_transform_with_canvas() * Vector2(470, 905))
+	_check(String(cat.get("post", "")).is_empty() and view._drag.worker_id == -1, "staff cannot be dragged while a dimmed step is up")
 	var elapsed: float = view.sim.elapsed
 	await _press(hud.recruit_button.get_global_rect().get_center())
 	_check(hud.page == "shop", "taps outside the highlight are swallowed")
@@ -66,8 +66,8 @@ func _run() -> void:
 	_check(view.sim.workers.size() == 2 and guide.active == "done", "deploying finishes the opening")
 	_check(hud.page == "shop", "the done card shows over the shop floor")
 	await _capture("done")
-	await _click(guide._card_primary)
-	_check(guide.active.is_empty() and guide.seen.has("opening") and not guide.freezes(), "the done card hands the shop back")
+	await _touch(guide.get_global_transform_with_canvas() * Vector2(360, 1100))
+	_check(guide.active.is_empty() and guide.seen.has("opening") and not guide.freezes(), "a touch anywhere closes the done card, even when the browser sends no mouse events")
 	var resumed = Store.new(save_path)
 	resumed.load_game()
 	_check("opening" in resumed.loaded_guides, "finished guides are saved beside the shop")
@@ -139,6 +139,21 @@ func _click(button: Button) -> void:
 	guide.refresh(0)
 	_check(button.is_visible_in_tree() and not button.disabled, "control is visible and enabled: " + button.text)
 	await _press(button.get_global_transform_with_canvas() * (button.size / 2.0))
+
+## A raw touch, without the mouse events Godot would usually synthesize from it.
+func _touch(point: Vector2) -> void:
+	var emulate := Input.is_emulating_mouse_from_touch()
+	Input.emulate_mouse_from_touch = false
+	for pressed in [true, false]:
+		var event := InputEventScreenTouch.new()
+		event.position = point
+		event.pressed = pressed
+		Input.parse_input_event(event)
+		Input.flush_buffered_events()
+		await process_frame
+	Input.emulate_mouse_from_touch = emulate
+	guide.refresh(0)
+	await process_frame
 
 func _press(point: Vector2) -> void:
 	for pressed in [true, false]:
