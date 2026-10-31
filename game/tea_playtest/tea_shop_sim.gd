@@ -1368,15 +1368,35 @@ func _migrate_v6(old: Dictionary) -> Dictionary:
 		worker.merge({"job": {}, "phase": "idle", "task_label": "idle", "carry_item": "", "carry_count": 0, "walking": false,
 			"path": PackedVector2Array(), "path_index": 0, "action_left": 0.0, "assignment_pending": false}, true)
 	state.roster = roster_copy
-	state.deployed = old.deployed.duplicate()
-	var front := roster_copy.filter(func(worker): return worker.id in state.deployed and worker.post == "counter")
-	if front.is_empty():
-		for worker in roster_copy:
-			if worker.id in state.deployed and worker.post == "":
-				worker.post = "counter"
-				worker.pos = Layout.POST_POINTS.counter
-				worker.assignment_point = Layout.POST_POINTS.counter
-				break
+	# Old saves had one shared staff cap; now there is one front seat and the stage's kitchen seats.
+	# Someone takes the counter (a counter worker, else a mobile one, else a posted one), then kitchen
+	# seats fill in the old deployment order, and anyone left over goes back to the roster.
+	var deployed_workers := roster_copy.filter(func(worker): return worker.id in old.deployed)
+	var front_pick: Dictionary = {}
+	for wanted in ["counter", ""]:
+		for worker in deployed_workers:
+			if front_pick.is_empty() and worker.get("post", "") == wanted: front_pick = worker
+	if front_pick.is_empty() and not deployed_workers.is_empty(): front_pick = deployed_workers[0]
+	var stage: int = state.stage_index if state.stage_index is int else 0
+	var kitchen_room: int = PROGRESSION.stages[clampi(stage, 0, PROGRESSION.stages.size() - 1)].staff_slots
+	state.deployed = []
+	for worker in deployed_workers:
+		if worker == front_pick:
+			_seat_at_counter(worker)
+		elif kitchen_room > 0:
+			kitchen_room -= 1
+			if worker.get("post", "") == "counter": worker.post = ""
+		else:
+			worker.post = ""
+			worker.deployed = false
+			continue
+		worker.deployed = true
+		state.deployed.append(worker.id)
+	# Belts are no longer sold; refund any the old save still owned, as v3 and startup do.
+	if old.get("belts") is Dictionary:
+		for id in old.belts:
+			var belt = fresh._belt_def(String(id))
+			if belt != null: state.gold += belt.cost
 	return state
 
 ## v4 → v5: the brewer pot holds up to six cups, and lemonade levels above the new cap are refunded.

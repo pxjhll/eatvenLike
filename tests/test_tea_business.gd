@@ -879,3 +879,34 @@ func test_v6_save_refunds_training_and_puts_someone_at_the_counter() -> void:
 	check(copy.audit().valid, "the migrated floor is consistent")
 	for tick in 600: copy.advance(0.1)
 	check(copy.audit().valid and copy.sold > old.sold, "the migrated shop keeps selling")
+
+func test_v6_save_over_the_new_role_limits_recalls_extras_and_refunds_belts() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.gold = 20000
+	sim.unlock_station("lemonade")
+	sim.unlock_station("boil")
+	sim.hire()
+	sim.hire()
+	var old: Dictionary = sim.to_dict()
+	old.version = 6
+	old.erase("front_upgrades")
+	old.erase("kitchen_upgrades")
+	# Under the shared cap all three could be out, and nobody had to stand at the counter.
+	old.deployed = []
+	for worker in old.roster:
+		worker.post = "boil" if worker == old.roster[0] else "topping"
+		worker.deployed = true
+		old.deployed.append(worker.id)
+	old.belts = {"seal_to_shelf": true}
+	old.belt_clock = {"seal_to_shelf": 0.0}
+	var belt_cost: int = sim._belt_def("seal_to_shelf").cost
+	var copy = make_shop()
+	check_eq(copy.load_dict(old), "", "a v6 save over the new limits still loads")
+	check_eq(copy.front_staff(), 1, "a posted worker is moved to the counter when nobody else can serve")
+	check_eq(copy.kitchen_staff(), copy.kitchen_slots(), "kitchen keeps only the seats this stage has")
+	check_eq(copy.roster.size(), 3, "extra workers go back to the roster, not away")
+	check_eq(copy.gold, old.gold + belt_cost, "owned belts are refunded")
+	check(copy.belts.is_empty(), "belts are dropped")
+	for tick in 600: copy.advance(0.1)
+	check(copy.audit().valid and copy.sold > old.sold, "the migrated shop keeps selling")
