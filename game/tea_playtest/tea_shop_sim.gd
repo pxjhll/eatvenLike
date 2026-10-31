@@ -398,7 +398,7 @@ func station_info(requested: String) -> Dictionary:
 	var line: Array = []
 	if stage > 0:
 		for key in STAGE_MACHINES[stage]: line.append(_definition(key).display_name if _definition(key) != null else "封口机")
-	return {"id": id, "name": name, "unlocked": station_unlocked(id), "level": level,
+	return {"id": id, "name": name, "unlocked": station_unlocked(id), "level": level, "stage": stage,
 		"description": descriptions.get(id, ""), "unlock_cost": _unlock_cost(id), "unlock_error": _unlock_error(id),
 		"upgrade_cost": upgrade_cost, "upgrade_error": _upgrade_error(id), "materials": materials,
 		"effect": effects.get(id, ""), "speed": speeds[mini(level, speeds.size()) - 1],
