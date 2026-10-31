@@ -27,7 +27,13 @@ func _run() -> void:
 		quit(1)
 		return
 	_check(view.sim.gold == 50 and view.sim.stage_index == 0, "fresh shop begins at configured opening stage")
+	_check(_art_hidden(["IngredientTable", "MachineTable", "PrepBench", "Sealer", "Rack", "DisplayCase"]), "locked machines draw no art before unlock")
+	_check(_frames_shown(["lemonade", "boil", "supply", "seal", "shelf"]) and not _frames_shown(["mix"]) and not _frames_shown(["topping"]), "fresh shop shows dashed frames only for the lemonade stand and the next line")
+	_check(view._station_buttons.lemonade.can_unlock and not view._station_buttons.boil.can_unlock, "red arrow marks only what can be bought now")
 	await _capture("opening")
+	await _click(view._station_buttons.supply)
+	_check(hud.page == "station" and hud.station_panel.station_id == "boil", "any black tea line frame opens the line's unlock panel")
+	await _click(hud.home_button)
 	await _click(view._station_buttons.lemonade)
 	_check(hud.page == "station", "clicking the in-world spot opens real unlock panel")
 	await _click(hud.station_panel.unlock_button)
@@ -39,6 +45,10 @@ func _run() -> void:
 	var gold: int = view.sim.gold
 	await _click(hud.station_panel.unlock_button)
 	_check(view.sim.stage_index == 1 and view.sim.gold == gold - 100 and not view.sim.station_unlocked("mix"), "black tea line opens cabinet, brewer and sealer for its stage price")
+	_check(not _art_hidden(["IngredientTable", "MachineTable", "MachineTable/PearlPot", "Sealer", "Rack", "DisplayCase"]) and _art_hidden(["MachineTable/Brewer", "PrepBench"]), "unlocked line's machines appear, later ones stay hidden")
+	_check(not _frames_shown(["boil"]) and not _frames_shown(["seal"]) and _frames_shown(["mix"]) and not _frames_shown(["topping"]), "the milk machine frame appears once its table is in")
+	await _click(hud.home_button)
+	await _capture("frames")
 	_advance(300)
 	_check(int(view.sim.sold_by_dish.get("black_tea", 0)) > 0, "brewed tea is sealed and sold as black tea before the milk machine")
 	await _capture("black-tea")
@@ -150,6 +160,18 @@ func _run() -> void:
 	OS.remove_logger(errors)
 	print("TEA BUSINESS GUI: %d failures" % failures)
 	quit(1 if failures else 0)
+
+func _art_hidden(paths: Array) -> bool:
+	for path in paths:
+		if view.art.get_node("Sortables/" + path).is_visible_in_tree():
+			return false
+	return true
+
+func _frames_shown(ids: Array) -> bool:
+	for id in ids:
+		if not view._station_buttons[id].is_visible_in_tree():
+			return false
+	return true
 
 func _advance(seconds: float) -> void:
 	view.sim.advance(seconds)
