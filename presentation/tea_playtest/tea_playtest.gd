@@ -5,6 +5,7 @@ const Sim := preload("res://game/tea_playtest/tea_playtest_sim.gd")
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const DragController := preload("res://presentation/tea_playtest/staff_drag_controller.gd")
+const Guide := preload("res://presentation/tea_playtest/guide_overlay.gd")
 const UnlockFrame := preload("res://presentation/tea_playtest/unlock_frame.gd")
 const ART_NAMES := preload("res://presentation/characters/character_library.gd").NAMES
 const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "seal": "自动封口"}
@@ -42,6 +43,9 @@ var _font: Font
 var _drag: Node2D
 var _post_labels := {}
 var ui: Control
+## The tutorial runs only in the real game (a scene that loads its own save); tests inject a sim.
+var guide: Control
+var guide_enabled := false
 var _station_buttons := {}
 var _lemonade_cup: Node2D
 ## Belt mode shows a plate on every hop that can take a conveyor; drag the chip onto one (or tap it).
@@ -83,17 +87,24 @@ func _ready() -> void:
 	DisplayServer.window_set_title("手作奶茶店")
 	art = $Canvas/ShopArt
 	_font = load("res://art/ui/graybox_font.ttf")
+	var guides_seen: Array = []
 	if sim == null:
+		guide_enabled = true
 		if store == null:
 			store = get_node("/root/App").art_shop_save
 		sim = store.load_game()
 		_speed_factor = store.loaded_speed
+		guides_seen = store.loaded_guides
 		if not store.last_error.is_empty():
 			save_status = store.last_error
 	for node in art.find_children("*", "Node2D", true, false):
 		if node.get_meta("art_layer", "") in ["actors", "drinks"]:
 			node.visible = false
 	_build_ui()
+	guide = Guide.new()
+	$Overlay/UI.add_child(guide)
+	guide.setup(self, guides_seen)
+	guide.enabled = guide_enabled
 	_build_badges()
 	_drag = DragController.new()
 	$Canvas.add_child(_drag)
@@ -150,9 +161,10 @@ func _process(delta: float) -> void:
 	if sim == null:
 		return
 	# Viewing a character freezes business without changing the saved pause flag.
-	if ui.page != "characters":
+	if ui.page != "characters" and not guide.freezes():
 		sim.advance(minf(delta, 0.25) * _speed_factor)
 	_refresh(delta)
+	guide.refresh(delta)
 	_fit()
 	_toast_left = maxf(0, _toast_left - delta)
 	_toast.visible = _toast_left > 0 or _mobile_count() == 0
@@ -224,7 +236,7 @@ func _refresh(delta: float) -> void:
 	if _mobile_count() == 0 and _toast_left <= 0:
 		_toast.text = "店内暂无员工，请从员工名册派遣伙伴。" if sim.workers.is_empty() else "缺少流动员工，搬运将等待；拖到空地可恢复流动。"
 	_update_cups()
-	_update_customers(delta if not sim.paused and ui.page != "characters" else 0.0)
+	_update_customers(delta if not sim.paused and ui.page != "characters" and not (guide != null and guide.freezes()) else 0.0)
 	if sim.sold > _last_sold:
 		_pop_income(_revenue() - _last_revenue)
 	_last_sold = sim.sold
@@ -513,7 +525,7 @@ func station_action(action: String, station: String, material := "") -> void:
 func save_now(notify := true) -> Error:
 	if store == null:
 		return OK
-	var result: Error = store.save_game(sim, _speed_factor)
+	var result: Error = store.save_game(sim, _speed_factor, guide.seen_list() if guide != null else [])
 	save_status = "进度已保存" if result == OK else store.last_error
 	if notify:
 		_show_toast(save_status)

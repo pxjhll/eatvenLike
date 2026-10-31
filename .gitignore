@@ -2,3 +2,6 @@
 .godot/
 /android/
 *.tmp
+# Per-step tutorial captures from tests/render_guide.gd; only the contact sheet is kept.
+/docs/qa/guide-*.png
+!/docs/qa/guide-flow.png
