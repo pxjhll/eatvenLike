@@ -76,6 +76,9 @@ func test_black_tea_sells_before_the_milk_machine() -> void:
 	sim.unlock_station("boil")
 	sim.gold = 20
 	sim.unlock_box("tea_leaf")
+	sim.gold = 35
+	check(sim.hire(), "the brewer gets a kitchen hand")
+	check_eq(sim.deploy_worker(2), "", "the kitchen hand starts work")
 	for tick in 3000:
 		sim.advance(0.1)
 		if sim.sold_by_dish.black_tea >= 3: break
@@ -93,20 +96,25 @@ func test_collection_training_recall_and_reset() -> void:
 	check(sim.hire(), "hire succeeds")
 	check_eq(sim.workers.size(), 1, "new employee remains in reserve")
 	var reserve: Dictionary = sim.all_workers()[1]
-	check(sim.train(reserve.id), "reserve employee can train")
-	check_eq(sim.deploy_worker(reserve.id), "", "owned reserve deploys")
-	check(is_same(sim.worker_by_id(reserve.id), sim.workers[1]), "deployed employee shares the owned record")
+	check(sim.deployment_error(reserve.id).contains("煮茶机"), "no kitchen staff before the brewer")
+	check(not sim.train(reserve.id), "per-worker training is gone")
 	sim.unlock_station("lemonade")
-	for tick in 400:
+	sim.revenue = 100
+	sim.unlock_station("boil")
+	sim.unlock_box("tea_leaf")
+	check_eq(sim.deploy_worker(reserve.id), "", "owned reserve deploys to the kitchen")
+	check(is_same(sim.worker_by_id(reserve.id), sim.workers[1]), "deployed employee shares the owned record")
+	for tick in 600:
 		sim.advance(0.1)
 		if reserve.carry_count > 0: break
+	check(reserve.carry_count > 0, "the kitchen hand carries goods")
 	check_eq(sim.recall_worker(reserve.id), "", "busy employee recalls")
 	check(sim.audit().valid, "busy recall returns cargo and reservations")
 	sim.reset_shop()
 	check_eq(sim.all_workers().size(), 2, "reset retains owned staff")
-	check_eq(sim.worker_by_id(reserve.id).level, 2, "reset retains training")
 	check_eq(sim.gold, 50, "reset returns opening economy")
 	check_eq(sim.workers.size(), 1, "reset deploys starter only")
+	check_eq(sim.workers[0].post, "counter", "the starter opens at the counter")
 
 func test_rabbit_is_fourth_paid_recruit_and_roster_keeps_growing() -> void:
 	var sim = make_shop()
@@ -155,32 +163,71 @@ func test_shop_slots_grow_with_each_production_line() -> void:
 	if sim == null: return
 	sim.gold = 100000
 	sim.revenue = 100000
-	for unused in 5: sim.hire()
-	check_eq(sim.staff_slots(), 2, "the lemonade shop takes two staff")
-	check_eq(sim.deploy_worker(2), "", "second employee deploys")
+	for unused in 6: sim.hire()
+	check_eq(sim.staff_slots(), 1, "the lemonade shop runs on one front worker")
+	check_eq(sim.workers[0].post, "counter", "who starts at the counter")
 	var before: Dictionary = sim.to_dict()
-	check(not sim.deploy_worker(3).is_empty(), "a third has to wait for the next line")
-	check(sim.deployment_error(3).contains("煮茶机"), "the refusal names the line that opens more room")
+	check(not sim.deploy_worker(2).is_empty(), "a kitchen hand waits for the first line")
+	check(sim.deployment_error(2).contains("煮茶机"), "the refusal names the line that opens the kitchen")
 	check_eq(sim.to_dict(), before, "blocked deployment is atomic")
 	check_eq(sim.unlock_station("lemonade"), "", "open lemonade")
-	var expected := {"boil": 3, "seal": 3, "mix": 4, "topping": 5}
-	var next_id := 3
+	var next_id := 2
 	for line in ["boil", "seal", "mix", "topping"]:
-		var before_slots: int = sim.staff_slots()
+		var before_slots: int = sim.kitchen_slots()
 		check_eq(sim.unlock_station(line), "", "open " + line)
-		check_eq(sim.staff_slots(), expected[line], "%s line sets the shop slots" % line)
-		if sim.staff_slots() > before_slots:
-			check_eq(sim.deploy_worker(next_id), "", "the new slot takes one more employee")
-			next_id += 1
+		check_eq(sim.kitchen_slots(), before_slots + 1, "%s line adds a kitchen slot" % line)
+		check_eq(sim.deploy_worker(next_id), "", "the new slot takes one more employee")
+		next_id += 1
 		check(not sim.deploy_worker(next_id).is_empty(), "but no more than the slots")
-		if line == "seal": check(sim.deployment_error(next_id).contains("调奶台"), "the sealer adds no slot, so the refusal points at the milk machine")
-	check_eq(sim.workers.size(), 5, "a full shop runs five staff")
-	check_eq(sim.deployment_error(6), "店内最多派出 5 位员工", "the last line names no further unlock")
+	check_eq(sim.kitchen_staff(), 4, "a full kitchen runs four staff")
+	check_eq(sim.deployment_error(next_id), "后厨最多 4 位员工", "the last line names no further unlock")
+	check_eq(sim.front_staff(), 1, "the front still has one worker")
 	for tick in 600: sim.advance(0.1)
 	check(sim.audit().valid, "five deployed staff preserve simulation invariants")
 	sim.reset_shop()
 	check_eq(sim.workers.size(), 1, "reset deploys only the starter")
-	check_eq(sim.staff_slots(), 2, "reset returns to the opening slots")
+	check_eq(sim.staff_slots(), 1, "reset returns to the opening slots")
+
+func test_front_and_kitchen_staff_have_their_own_duties_and_upgrade_lists() -> void:
+	var sim = opened()
+	if sim == null: return
+	var front: Dictionary = sim.workers.filter(func(w): return w.post == "counter")[0]
+	var kitchen: Dictionary = sim.workers.filter(func(w): return w.post != "counter")[0]
+	var walk_front: float = sim._walk_speed(front)
+	var walk_kitchen: float = sim._walk_speed(kitchen)
+	var info: Dictionary = sim.staff_upgrade_info("front")
+	check_eq(info.kind, sim.PROGRESSION.front_upgrade_kinds[0], "the front list starts with its first item")
+	var gold: int = sim.gold
+	check_eq(sim.buy_staff_upgrade("front"), "", "a front upgrade can be bought")
+	check_eq(sim.gold, gold - info.cost, "it costs its listed price")
+	if info.kind == "walk":
+		check(is_equal_approx(sim._walk_speed(front), walk_front * (1.0 + sim.PROGRESSION.walk_step)), "front staff walk faster")
+		check(is_equal_approx(sim._walk_speed(kitchen), walk_kitchen), "kitchen staff are not affected")
+	# Buy the whole front list: it adds front slots.
+	while sim.staff_upgrade_info("front").cost > 0: check_eq(sim.buy_staff_upgrade("front"), "", "front list item bought")
+	check_eq(sim.front_slots(), 1 + sim.PROGRESSION.front_upgrade_kinds.count("slot"), "slot items open more front posts")
+	check(not sim.buy_staff_upgrade("front").is_empty(), "a finished list cannot be bought again")
+	var capacity: int = sim._carry(kitchen)
+	while sim.staff_upgrade_info("kitchen").cost > 0: sim.buy_staff_upgrade("kitchen")
+	check_eq(sim._carry(kitchen), capacity + sim.PROGRESSION.kitchen_upgrade_kinds.count("carry"), "kitchen carry items add cups per trip")
+	check_eq(sim._carry(front), front.capacity, "front staff carry one customer's cup regardless")
+	# A second front worker can take the counter once there is a slot.
+	sim.gold = 1000
+	sim.hire()
+	var extra: Dictionary = sim.all_workers().back()
+	check_eq(sim.deploy_at(extra.id, "counter", Vector2(410, 930)), "", "a second front worker takes the counter")
+	check_eq(sim.front_staff(), 2, "two front staff serve")
+	var copy = make_shop()
+	check_eq(copy.load_dict(sim.to_dict()), "", "front and kitchen upgrades save")
+	check_eq(copy.front_upgrades, sim.front_upgrades, "front upgrades load")
+	check_eq(copy.kitchen_upgrades, sim.kitchen_upgrades, "kitchen upgrades load")
+	for tick in 3000:
+		sim.advance(0.1)
+		for worker in sim.workers:
+			if worker.job.is_empty(): continue
+			if worker.post == "counter": check(worker.job.kind == "serve", "front staff only serve")
+			else: check(worker.job.kind != "serve", "kitchen staff never serve")
+	check(sim.audit().valid, "split duties conserve goods")
 
 func test_acquired_rabbit_can_train_work_recall_and_survive_shop_reset() -> void:
 	var sim = make_shop()
@@ -192,11 +239,9 @@ func test_acquired_rabbit_can_train_work_recall_and_survive_shop_reset() -> void
 	check_eq(sim.acquire_staff("rabbit", "活动奖励"), "", "a second rabbit can be acquired")
 	check_eq(sim.worker_by_id(5).art, "rabbit", "the second rabbit takes the next free id")
 	check(not sim.worker_by_id(5).deployed, "the second rabbit starts in reserve")
-	sim.gold = 100
-	check(sim.train(4), "reserve rabbit can train")
-	check(is_equal_approx(sim.worker_by_id(4).speed, 104.0 * 1.05), "rabbit training adds 5% walking speed")
 	check_eq(sim.recall_worker(1), "", "starter recalled for rabbit service")
 	check_eq(sim.deploy_worker(4), "", "acquired rabbit deploys")
+	check_eq(sim.worker_by_id(4).post, "counter", "with no kitchen yet, the rabbit takes the empty counter")
 	check_eq(sim.unlock_station("lemonade"), "", "open real service work")
 	var saw_cargo := false
 	for tick in 1000:
@@ -210,8 +255,8 @@ func test_acquired_rabbit_can_train_work_recall_and_survive_shop_reset() -> void
 	check_eq(sim.deploy_worker(4), "", "recalled rabbit can deploy again")
 	sim.reset_shop()
 	check_eq(sim.all_workers().size(), 3, "reset retains both acquired rabbits")
-	check_eq(sim.worker_by_id(4).level, 2, "reset retains rabbit level")
-	check(is_equal_approx(sim.worker_by_id(4).speed, 104.0 * 1.05), "reset retains rabbit speed")
+	check_eq(sim.worker_by_id(4).level, 1, "reset keeps the rabbit at its base level")
+	check(is_equal_approx(sim.worker_by_id(4).speed, 104.0), "reset keeps rabbit speed")
 	check_eq(sim.worker_by_id(4).capacity, 2, "reset retains rabbit carry progression")
 	check_eq(sim.worker_by_id(4).source, "活动奖励", "reset retains rabbit acquisition source")
 	check_eq(sim.workers.size(), 1, "reset deploys only the starter")
@@ -270,8 +315,11 @@ func test_reserved_employee_drop_validates_before_deploying() -> void:
 	if sim == null: return
 	sim.gold = 500
 	sim.hire()
+	sim.unlock_station("lemonade")
+	sim.revenue = 100
+	sim.unlock_station("boil")
 	var before: Dictionary = sim.to_dict()
-	check(not sim.deploy_at(2, "boil", Vector2(270, 330)).is_empty(), "locked work post rejects deployment")
+	check(not sim.deploy_at(2, "topping", Vector2(190, 410)).is_empty(), "locked work post rejects deployment")
 	check_eq(sim.to_dict(), before, "locked drop does not deploy or mutate roster")
 	check(not sim.deploy_at(2, "", Vector2(-50, -50)).is_empty(), "blocked drop rejects deployment")
 	check_eq(sim.to_dict(), before, "blocked drop preserves all state")
@@ -621,27 +669,6 @@ func test_belt_segments_are_bought_and_move_goods_without_staff() -> void:
 	check_eq(sim.gold, gold + 40, "taking a segment back refunds it")
 	check(sim.audit().valid, "removing a segment keeps cargo conserved")
 
-func _run_front_split(front: bool) -> Dictionary:
-	var sim = opened()
-	# Brewing needs stirring, so both teams keep someone on the brewer.
-	check_eq(sim.assign_post(sim.workers[2].id, "boil"), "", "worker staffs the brewer")
-	if front: check_eq(sim.assign_post(sim.workers[0].id, "counter"), "", "worker staffs the counter")
-	var lost := 0
-	var mixed := false
-	for tick in 18000:
-		sim.events.clear()
-		sim.advance(0.1)
-		for event in sim.events:
-			if event.kind == "customer_left": lost += 1
-		for worker in sim.workers:
-			if worker.job.is_empty(): continue
-			if worker.post == "counter" and not worker.job.kind in ["serve", "carry_to_seal"]: mixed = true
-			if front and worker.post.is_empty() and worker.job.kind == "serve": mixed = true
-		if tick % 500 == 0 and not sim.audit().valid:
-			check(false, "front split conserves goods: %s" % sim.audit())
-			break
-	return {"lost": lost, "sold": sim.sold, "revenue": sim.revenue - 2000, "mixed": mixed, "milk": sim.sold - int(sim.sold_by_dish.get("lemonade", 0))}
-
 func test_old_saves_get_their_belts_refunded() -> void:
 	var sim = opened()
 	if sim == null: return
@@ -660,21 +687,13 @@ func test_old_saves_get_their_belts_refunded() -> void:
 			return
 	check(sim.belt_items.is_empty(), "cargo already on a segment finishes its trip")
 
-func test_counter_post_splits_front_and_kitchen_duties() -> void:
+func test_counter_post_holds_only_the_front_slots() -> void:
 	var sim = opened()
 	if sim == null: return
-	var shared := _run_front_split(false)
-	var split := _run_front_split(true)
-	print("FRONT SPLIT 30min shared=%s split=%s" % [shared, split])
-	check(not split.mixed, "counter staff only serve and pack, mobile staff leave serving to them")
-	check(split.milk > 0, "kitchen staff keep the milk line running")
-	# With a seated brewer a third worker on the counter costs a hauler, so this is a
-	# player trade-off rather than a strict win; only check the counter still sells.
-	check(split.sold > 0 and split.sold >= shared.sold / 2, "a dedicated counter keeps the shop selling: %s vs %s" % [split, shared])
+	var kitchen: Dictionary = sim.workers.filter(func(w): return w.post != "counter")[0]
+	check(not sim.assign_post(kitchen.id, "counter").is_empty(), "the counter has one front post to start")
 	var resumed = make_shop()
-	check_eq(sim.assign_post(sim.workers[0].id, "counter"), "", "counter post assigned")
 	check_eq(resumed.load_dict(sim.to_dict()), "", "counter post saves and loads")
-	check(not sim.assign_post(sim.workers[1].id, "counter").is_empty(), "counter has one front-of-house post")
 
 func test_seated_topping_worker_runs_its_whole_segment() -> void:
 	var sim = make_shop()
@@ -702,23 +721,21 @@ func test_seated_topping_worker_runs_its_whole_segment() -> void:
 	check(seen.has("transfer_to_topping") and seen.has("topping") and seen.has("carry_to_shelf"), "the seat fetches, tops and shelves")
 	check(sim.audit().valid, "segment ownership preserves simulation invariants")
 
-func test_counter_packer_saves_and_takeaway_lemonade_is_fetched_at_the_sealer() -> void:
+func test_kitchen_packer_saves_and_takeaway_lemonade_is_fetched_at_the_sealer() -> void:
 	var sim = opened()
 	if sim == null: return
-	check_eq(sim.assign_post(sim.workers[0].id, "counter"), "", "worker staffs the counter")
-	for worker in sim.workers.duplicate():
-		if worker.post != "counter": sim.recall_worker(worker.id)
 	sim.orders = [{"id": sim._next_order, "dish": "lemonade", "wait": 0.0, "reserved": false, "takeaway": true}]
 	sim._next_order += 1
 	var packing_saved := false
 	for tick in 600:
 		sim.advance(0.1)
-		var counter: Dictionary = sim.workers.filter(func(w): return w.post == "counter")[0]
-		if not counter.job.is_empty() and counter.job.kind == "carry_to_seal" and not packing_saved:
-			check_eq(make_shop().load_dict(sim.to_dict()), "", "a counter worker packing a cup can be saved")
-			packing_saved = true
+		for worker in sim.workers:
+			if not worker.job.is_empty() and worker.job.kind == "carry_to_seal" and not packing_saved:
+				check(worker.post != "counter", "kitchen staff carry takeaway cups to the sealer")
+				check_eq(make_shop().load_dict(sim.to_dict()), "", "a worker packing a cup can be saved")
+				packing_saved = true
 		if packing_saved: break
-	check(packing_saved, "the counter worker packs takeaway cups")
+	check(packing_saved, "the kitchen packs takeaway cups")
 	var job := {"kind": "serve", "src": "seal", "dst": "counter", "item": "lemonade", "count": 1}
 	check(sim._source_point(job) != Vector2(330, 910), "takeaway lemonade is picked up at the sealer, not the stand")
 	job.src = "supply"
@@ -788,6 +805,10 @@ func test_dine_in_needs_a_seat_and_takeaway_goes_through_the_sealer() -> void:
 	sim.unlock_station("boil")
 	sim.unlock_box("tea_leaf")
 	check_eq(sim.unlock_station("seal"), "", "sealer opens")
+	sim.hire()
+	sim.hire()
+	for worker in sim.all_workers():
+		if not worker.deployed: sim.deploy_worker(worker.id)
 	var sealed := false
 	var takeaway_seen := false
 	for tick in 3000:
@@ -800,23 +821,6 @@ func test_dine_in_needs_a_seat_and_takeaway_goes_through_the_sealer() -> void:
 	check(takeaway_seen, "customers start asking for takeaway")
 	check(sealed, "takeaway cups pass through the sealer")
 	check(sim.diners.size() <= sim.seats, "seats still cap the diners")
-
-func test_staff_training_has_ten_levels_with_carry_stars() -> void:
-	var sim = make_shop()
-	if sim == null: return
-	sim.gold = 100000
-	var worker: Dictionary = sim.worker_by_id(1)
-	var speed: float = worker.speed
-	var skill: float = worker.skill
-	var capacity: int = worker.capacity
-	for level in range(2, 11):
-		check(sim.train(1), "training to Lv%d" % level)
-		if level == 5: check_eq(worker.capacity, capacity + 1, "the Lv5 star carries one more cup")
-	check_eq(worker.level, 10, "training stops at Lv10")
-	check_eq(worker.capacity, capacity + 2, "the Lv10 star carries another cup")
-	check(is_equal_approx(worker.speed, speed * pow(1.05, 9)) and is_equal_approx(worker.skill, skill * pow(1.05, 9)), "each level adds 5% walking and working")
-	check_eq(sim.train_cost(1), -1, "a Lv10 worker cannot train further")
-	check(not sim.train(1), "training past Lv10 is refused")
 
 func test_flyers_and_flavors_bring_customers_faster() -> void:
 	var sim = opened()
@@ -850,3 +854,28 @@ func test_star_tasks_finish_the_first_shop() -> void:
 	for dish in sim.sold_by_dish: sim.sold_by_dish[dish] = 100
 	check(sim.shop_complete(), "with every task done the first shop is complete")
 	check_eq(sim.stars("boil"), 1, "the brewer shows its star")
+
+func test_v6_save_refunds_training_and_puts_someone_at_the_counter() -> void:
+	var sim = opened()
+	if sim == null: return
+	sim.advance(30)
+	var old: Dictionary = sim.to_dict()
+	old.version = 6
+	old.erase("front_upgrades")
+	old.erase("kitchen_upgrades")
+	# Under the old rules nobody had to stand at the counter, and workers carried their own training.
+	for worker in old.roster:
+		worker.post = ""
+	old.roster[1].level = 3
+	old.roster[1].speed *= 1.1025
+	old.roster[1].capacity += 0
+	var copy = make_shop()
+	check_eq(copy.load_dict(old), "", "a v6 save loads")
+	var refund: int = sim.PROGRESSION.train_costs[0] + sim.PROGRESSION.train_costs[1]
+	check_eq(copy.gold, old.gold + refund, "training levels are refunded")
+	check_eq(copy.worker_by_id(old.roster[1].id).level, 1, "training is undone")
+	check_eq(copy.front_staff(), 1, "someone takes the counter")
+	check_eq(copy.stage_index, old.stage_index, "progress is kept")
+	check(copy.audit().valid, "the migrated floor is consistent")
+	for tick in 600: copy.advance(0.1)
+	check(copy.audit().valid and copy.sold > old.sold, "the migrated shop keeps selling")

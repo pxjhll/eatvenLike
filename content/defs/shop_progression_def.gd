@@ -24,3 +24,11 @@ extends Resource
 @export var train_costs: Array[int] = []
 @export var train_step: float = 0.05
 @export var train_star_levels: Array[int] = [5, 10]
+## 员工升级清单（原版式）：前台、后厨各一串一次性升级，按顺序买，每条效果不同。
+## 种类：walk = 走路快 walk_step；work = 干活快 work_step；carry = 一次多搬 1 杯；slot = 多一个前台位。
+@export var front_upgrade_kinds: Array[String] = []
+@export var front_upgrade_costs: Array[int] = []
+@export var kitchen_upgrade_kinds: Array[String] = []
+@export var kitchen_upgrade_costs: Array[int] = []
+@export var walk_step: float = 0.2
+@export var work_step: float = 0.25

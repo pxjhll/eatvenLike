@@ -13,7 +13,8 @@ const STIR_SECONDS := 1.0
 ## v4: one machine per stage, ingredient boxes, dine-in seats, takeaway sealed at the sealer, customers never leave.
 ## v5: multiplicative prices with stars, brewer pot sizes and sealer levels; the lemonade stand stops at Lv5.
 ## v6: flyer level (customer flow upgrade).
-const SAVE_VERSION := 6
+## v7: front and kitchen staff are separate; per-worker training became the front / kitchen upgrade lists.
+const SAVE_VERSION := 7
 ## What the lemonade stand's old levels 6–10 cost; v4 saves above Lv5 get it back.
 const LEMONADE_V4_COSTS := [20, 30, 40, 55, 75, 110, 150, 210, 295]
 ## A waiting customer gets impatient, then angry; they never leave (the face just pushes the player to upgrade).
@@ -40,6 +41,9 @@ var boxes: Dictionary = {}
 var seats := 0
 ## 发传单 level: each level brings customers 10% more often.
 var flyers := 1
+## How many items of the front / kitchen upgrade lists are bought (bought in order).
+var front_upgrades := 0
+var kitchen_upgrades := 0
 var diners: Array = []
 var _flavor_cursor := 0
 ## Bought conveyor segments (BeltSlotDef ids) and each one's countdown to its next cup.
@@ -59,6 +63,7 @@ func _init() -> void:
 		worker.deployed = true
 		worker.source = "初始"
 	_initialize_shop()
+	_seat_at_counter(workers[0])
 
 func _initialize_shop() -> void:
 	gold = CONFIG.starting_gold
@@ -98,6 +103,8 @@ func _initialize_shop() -> void:
 	boxes = {"tea_leaf": false, "milk": false}
 	seats = PROGRESSION.seat_start
 	flyers = 1
+	front_upgrades = 0
+	kitchen_upgrades = 0
 	diners.clear()
 	for id in ["boil", "mix", "topping", "seal"]:
 		stations[id] = {"input": {}, "output": {}, "phase": "idle", "progress": 0.0,
@@ -144,6 +151,13 @@ func reset_shop() -> void:
 		worker.merge(fresh)
 		if worker.deployed: workers.append(worker)
 	_initialize_shop()
+	_seat_at_counter(worker_by_id(starter))
+
+## The shop opens with one front-of-house worker at the counter.
+func _seat_at_counter(worker: Dictionary) -> void:
+	worker.post = "counter"
+	worker.pos = Layout.POST_POINTS.counter
+	worker.assignment_point = Layout.POST_POINTS.counter
 
 func all_workers() -> Array:
 	return roster
@@ -169,36 +183,80 @@ func acquire_staff(art: String, source: String) -> String:
 	_event("acquired", "获得员工：" + worker.name)
 	return ""
 
-func deployment_error(id: int) -> String:
+## Front staff (posted at the counter) only serve; kitchen staff (everyone else) only make and carry.
+func deployment_error(id: int, post: String = "") -> String:
 	var worker := worker_by_id(id)
 	if worker.is_empty(): return "未拥有这位员工"
 	if worker.deployed: return ""
-	if workers.size() >= staff_slots():
+	return _role_room(post, id)
+
+## Why one more worker can't join the front (post "counter") or the kitchen (any other post), or "".
+func _role_room(post: String, exclude_id: int = -1) -> String:
+	var front := post == "counter"
+	var count := 0
+	for worker in workers:
+		if worker.id != exclude_id and (worker.post == "counter") == front: count += 1
+	if front:
+		if count >= front_slots(): return "前台最多 %d 位，前台升级可以加前台位" % front_slots()
+		return ""
+	if count >= kitchen_slots():
 		var more := ""
 		for next in range(stage_index + 1, PROGRESSION.stages.size()):
-			if PROGRESSION.stages[next].staff_slots > staff_slots():
-				more = "，解锁%s后可再派 %d 位" % [PROGRESSION.stages[next].line_name, PROGRESSION.stages[next].staff_slots - staff_slots()]
+			if PROGRESSION.stages[next].staff_slots > kitchen_slots():
+				more = "，解锁%s后可再派 %d 位" % [PROGRESSION.stages[next].line_name, PROGRESSION.stages[next].staff_slots - kitchen_slots()]
 				break
-		return "店内最多派出 %d 位员工%s" % [staff_slots(), more]
+		if kitchen_slots() == 0: return "还没有后厨，解锁%s后才能派后厨员工" % PROGRESSION.stages[1].line_name
+		return "后厨最多 %d 位员工%s" % [kitchen_slots(), more]
 	return ""
 
-## How many staff may work in the shop at once; each production line opens more room.
-func staff_slots() -> int:
+## Kitchen staff: each production line opens more room.
+func kitchen_slots() -> int:
 	return PROGRESSION.stages[stage_index].staff_slots
 
-func deploy_worker(id: int) -> String:
-	var error := deployment_error(id)
-	if not error.is_empty(): return error
+## Front staff: one at the start, more from the front upgrade list.
+func front_slots() -> int:
+	return 1 + _bought("front", "slot")
+
+## Everyone who may work in the shop at once.
+func staff_slots() -> int:
+	return front_slots() + kitchen_slots()
+
+func _shared_post(post: String) -> bool:
+	return post == "counter"
+
+func front_staff() -> int:
+	return workers.filter(func(worker): return worker.post == "counter").size()
+
+func kitchen_staff() -> int:
+	return workers.size() - front_staff()
+
+## Deploying without a post fills the kitchen first, then the counter.
+func deploy_worker(id: int, post: String = "") -> String:
 	var worker := worker_by_id(id)
+	if not worker.is_empty() and not worker.deployed and post.is_empty() and not _role_room("").is_empty() and _role_room("counter").is_empty(): post = "counter"
+	var error := deployment_error(id, post)
+	if not error.is_empty(): return error
 	if worker.deployed: return ""
 	worker.deployed = true
 	workers.append(worker)
+	if post == "counter": _seat_at_counter(worker)
 	_event("deployed", worker.name + "已派出")
 	return ""
 
+## The counter takes as many front staff as there are front slots; other posts take one.
+func post_owner(post: String, exclude_id: int = -1) -> int:
+	if post != "counter": return super.post_owner(post, exclude_id)
+	var owners: Array = workers.filter(func(worker): return worker.id != exclude_id and worker.post == "counter")
+	return owners[0].id if owners.size() >= front_slots() else -1
+
 func _placement_error(id: int, post: String, point: Vector2) -> String:
-	var error := deployment_error(id)
+	var error := deployment_error(id, post)
 	if not error.is_empty(): return error
+	var worker := worker_by_id(id)
+	# Moving between the counter and the kitchen needs room on the other side.
+	if worker.deployed and (post == "counter") != (worker.post == "counter"):
+		error = _role_room(post, id)
+		if not error.is_empty(): return error
 	if not post.is_empty() and not Layout.POST_POINTS.has(post): return "无效岗位"
 	if not post.is_empty() and not station_unlocked(post): return "请先解锁设备"
 	if not post.is_empty() and post_owner(post, id) != -1: return "岗位已有员工"
@@ -213,7 +271,7 @@ func deploy_at(id: int, post: String, point: Vector2) -> String:
 	var target: Vector2 = Layout.POST_POINTS.get(post, point)
 	var error := _placement_error(id, post, target)
 	if not error.is_empty(): return error
-	deploy_worker(id)
+	deploy_worker(id, post)
 	return assign_post(id, post, target)
 
 func assign_post(id: int, post: String, destination: Vector2 = Vector2.INF) -> String:
@@ -257,23 +315,60 @@ func hire() -> bool:
 	gold -= price
 	return true
 
-## Staff training works like a machine: ten levels, each +5% walking and working, and the Lv5 / Lv10 stars carry one more cup.
-func train_cost(id: int) -> int:
-	var worker := worker_by_id(id)
-	if worker.is_empty() or worker.level - 1 >= PROGRESSION.train_costs.size(): return -1
-	return PROGRESSION.train_costs[worker.level - 1]
+## Per-worker training is gone: the front and kitchen upgrade lists raise everyone on that side.
+func train_cost(_id: int) -> int:
+	return -1
 
-func train(id: int) -> bool:
-	var price := train_cost(id)
-	if price < 0 or gold < price: return false
-	var worker := worker_by_id(id)
-	gold -= price
-	worker.level += 1
-	worker.speed *= 1.0 + PROGRESSION.train_step
-	worker.skill *= 1.0 + PROGRESSION.train_step
-	if worker.level in PROGRESSION.train_star_levels: worker.capacity += 1
-	_event("trained", worker.name + "已培养")
-	return true
+func train(_id: int) -> bool:
+	return false
+
+const STAFF_UPGRADE_NAMES := {"walk": "走路快 +%d%%", "work": "手脚快 +%d%%", "carry": "一次多搬 1 杯", "slot": "多一个前台位"}
+
+func _upgrade_kinds(side: String) -> Array:
+	return PROGRESSION.front_upgrade_kinds if side == "front" else PROGRESSION.kitchen_upgrade_kinds
+
+func _upgrade_costs_for(side: String) -> Array:
+	return PROGRESSION.front_upgrade_costs if side == "front" else PROGRESSION.kitchen_upgrade_costs
+
+func _upgrades_bought(side: String) -> int:
+	return front_upgrades if side == "front" else kitchen_upgrades
+
+## How many upgrades of one kind the side has bought so far (or would have after `bought` items).
+func _bought(side: String, kind: String, bought: int = -1) -> int:
+	var count := 0
+	var kinds := _upgrade_kinds(side)
+	for index in mini(_upgrades_bought(side) if bought < 0 else bought, kinds.size()):
+		if kinds[index] == kind: count += 1
+	return count
+
+func staff_upgrade_name(kind: String) -> String:
+	var text: String = STAFF_UPGRADE_NAMES.get(kind, kind)
+	if kind == "walk": return text % roundi(PROGRESSION.walk_step * 100)
+	if kind == "work": return text % roundi(PROGRESSION.work_step * 100)
+	return text
+
+## The next item on a side's list, or {} when it is all bought.
+func staff_upgrade_info(side: String) -> Dictionary:
+	var index := _upgrades_bought(side)
+	var kinds := _upgrade_kinds(side)
+	var rows: Array = []
+	for i in kinds.size(): rows.append({"name": staff_upgrade_name(kinds[i]), "cost": _upgrade_costs_for(side)[i], "bought": i < index})
+	var info := {"side": side, "bought": index, "total": kinds.size(), "rows": rows,
+		"walk": pow(1.0 + PROGRESSION.walk_step, _bought(side, "walk")), "work": pow(1.0 + PROGRESSION.work_step, _bought(side, "work")),
+		"carry": _bought(side, "carry"), "slots": front_slots() if side == "front" else kitchen_slots()}
+	if index >= kinds.size(): return info.merged({"kind": "", "name": "", "cost": -1, "error": "已全部升级"})
+	var cost: int = _upgrade_costs_for(side)[index]
+	return info.merged({"kind": kinds[index], "name": staff_upgrade_name(kinds[index]), "cost": cost, "error": "" if gold >= cost else "金币不足"})
+
+func buy_staff_upgrade(side: String) -> String:
+	if not side in ["front", "kitchen"]: return "未知升级"
+	var info := staff_upgrade_info(side)
+	if not info.error.is_empty(): return info.error
+	gold -= info.cost
+	if side == "front": front_upgrades += 1
+	else: kitchen_upgrades += 1
+	_event("staff_upgrade", ("前台" if side == "front" else "后厨") + info.name)
+	return ""
 
 func _canonical(id: String) -> String:
 	return ALIASES.get(id, id)
@@ -803,7 +898,7 @@ func _jobs(worker: Dictionary) -> Array:
 		var count := 0
 		if post == "topping" and _available(post, item) > 0:
 			kind = "topping"
-			count = mini(worker.capacity, mini(_available(post, item), _topping_room()))
+			count = mini(_carry(worker), mini(_available(post, item), _topping_room()))
 		elif post == "boil" and station.processing == 0 and _available(post, "raw") >= _brew_batch():
 			kind = "brew_start"
 			count = _brew_batch()
@@ -819,11 +914,11 @@ func _jobs(worker: Dictionary) -> Array:
 	if worker.post == "topping": return _topping_segment(worker, result)
 	if worker.post == "boil": return _boil_segment(worker, result)
 	if not worker.post.is_empty() and worker.post != "counter": return result
-	# Once someone staffs the counter, mobile staff leave customers to them and stay in the kitchen.
-	var front_staffed: bool = worker.post.is_empty() and post_owner("counter") != -1
+	if worker.post.is_empty(): return _kitchen_jobs(worker, result)
+	# Front staff only serve: lemonade from the stand, cups from the shelf, sealed takeaway from the sealer.
 	var seats_left := free_seats()
 	for order in orders:
-		if order.reserved or front_staffed: continue
+		if order.reserved: continue
 		# Takeaway cups are handed over from the sealer; dine-in cups need a free seat.
 		var source: String = "seal" if order.get("takeaway", false) else ("supply" if order.dish == "lemonade" else "shelf")
 		if not order.get("takeaway", false):
@@ -835,8 +930,12 @@ func _jobs(worker: Dictionary) -> Array:
 		serve.order_id = order.id
 		serve.priority += minf(20, order.wait * 0.1)
 		result.append(serve)
+	return result
+
+## Kitchen staff make drinks and carry takeaway cups to the sealer; they never serve customers.
+func _kitchen_jobs(worker: Dictionary, result: Array) -> Array:
 	_append_pack_jobs(worker, result)
-	if worker.post == "counter" or not station_unlocked("boil"): return result
+	if not station_unlocked("boil"): return result
 	if post_owner("boil") == -1 or _belt_courier: _append_boil_hops(worker, result)
 	if not _mix_ready(): return _boost_kitchen(result)
 	if station_unlocked("topping"):
@@ -909,11 +1008,17 @@ func _topping_segment(worker: Dictionary, result: Array) -> Array:
 
 const SEATED_BONUS := 1.3
 
+func _side(worker: Dictionary) -> String:
+	return "front" if worker.post == "counter" else "kitchen"
+
 func _walk_speed(worker: Dictionary) -> float:
-	return worker.speed * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0)
+	return worker.speed * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0) * pow(1.0 + PROGRESSION.walk_step, _bought(_side(worker), "walk"))
 
 func _skill(worker: Dictionary) -> float:
-	return worker.skill * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0)
+	return worker.skill * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0) * pow(1.0 + PROGRESSION.work_step, _bought(_side(worker), "work"))
+
+func _carry(worker: Dictionary) -> int:
+	return worker.capacity + _bought(_side(worker), "carry")
 
 # Mobile staff leave the topping segment's hops to whoever is seated there.
 func _topping_segment_open() -> bool:
@@ -1054,12 +1159,17 @@ func _complete_topping(station: Dictionary, job: Dictionary) -> void:
 	for material in _definition("topping").materials:
 		if station_levels.topping >= material.unlock_level: flavors.append(material.item_id)
 	for unused in job.count:
+		var placed := false
 		for attempt in flavors.size():
 			var dish: String = flavors[_flavor_cursor % flavors.size()]
 			_flavor_cursor += 1
 			if _flavor_inventory(dish) >= _definition("topping").flavor_cap: continue
 			station.output[dish] += 1
+			placed = true
 			break
+		# Every flavor filled up while this cup was being topped: it goes back to wait as plain milk tea
+		# instead of vanishing.
+		if not placed: station.input.plain_milk_tea += 1
 
 # The pot stops at each stir point until someone stirs it, so it needs watching.
 func _pause_for_stir(station: Dictionary, before: float) -> bool:
@@ -1177,7 +1287,8 @@ func to_dict() -> Dictionary:
 		"material_levels": material_levels.duplicate(true), "unlocked_stations": unlocked_stations.duplicate(true),
 		"sold_by_dish": sold_by_dish.duplicate(true), "flavor_cursor": _flavor_cursor, "rng_state": _rng.state,
 		"belts": belts.duplicate(true), "belt_clock": belt_clock.duplicate(true),
-		"boxes": boxes.duplicate(true), "seats": seats, "diners": diners.duplicate(true), "flyers": flyers}
+		"boxes": boxes.duplicate(true), "seats": seats, "diners": diners.duplicate(true), "flyers": flyers,
+		"front_upgrades": front_upgrades, "kitchen_upgrades": kitchen_upgrades}
 
 func _apply_state(state: Dictionary) -> void:
 	roster = state.roster.duplicate(true)
@@ -1212,6 +1323,8 @@ func _apply_state(state: Dictionary) -> void:
 	boxes = state.boxes.duplicate(true)
 	seats = state.seats
 	flyers = state.flyers
+	front_upgrades = state.front_upgrades
+	kitchen_upgrades = state.kitchen_upgrades
 	diners = state.diners.duplicate(true)
 	_rng.state = state.rng_state
 
@@ -1222,8 +1335,9 @@ func load_dict(state: Dictionary) -> String:
 	if state.get("version") is int and state.version == 4: state = _migrate_v4(state)
 	if state.get("version") is int and state.version == 5:
 		state = state.duplicate(true)
-		state.version = SAVE_VERSION
+		state.version = 6
 		state.flyers = 1
+	if state.get("version") is int and state.version == 6: state = _migrate_v6(state)
 	var error := _validate_state(state)
 	if not error.is_empty(): return error
 	var candidate = get_script().new()
@@ -1232,6 +1346,38 @@ func load_dict(state: Dictionary) -> String:
 	if not report.valid: return "存档库存或预留不一致：%s" % report.errors
 	_apply_state(state)
 	return ""
+
+## v6 → v7: training is refunded and undone (the upgrade lists replace it), and someone takes the counter,
+## because kitchen staff no longer serve. Jobs from the old rules can't be kept, so like v3 the floor
+## starts fresh: progress, money, levels, seats and staff stay; cups in flight and the queue are dropped.
+func _migrate_v6(old: Dictionary) -> Dictionary:
+	var fresh = get_script().new()
+	var state: Dictionary = fresh.to_dict()
+	for key in ["gold", "sold", "revenue", "elapsed", "paused", "sold_by_dish", "station_levels", "material_levels", "flavor_cursor", "rng_state", "next_order",
+			"stage_index", "unlocked_stations", "boxes", "seats", "flyers"]:
+		if old.has(key) and typeof(old[key]) == typeof(state[key]): state[key] = old[key].duplicate(true) if old[key] is Dictionary else old[key]
+	state.generated = state.sold
+	if not old.get("roster") is Array or not old.get("deployed") is Array or old.roster.is_empty(): return state
+	var roster_copy: Array = old.roster.duplicate(true)
+	for worker in roster_copy:
+		if not worker is Dictionary or not worker.get("art") in ARTS or not worker.get("id") is int or not worker.get("level") is int: return old
+		for level in range(1, worker.level):
+			if level - 1 < PROGRESSION.train_costs.size(): state.gold += PROGRESSION.train_costs[level - 1]
+		var base := _new_staff(worker.art, worker.id)
+		for key in ["level", "speed", "skill", "capacity"]: worker[key] = base[key]
+		worker.merge({"job": {}, "phase": "idle", "task_label": "idle", "carry_item": "", "carry_count": 0, "walking": false,
+			"path": PackedVector2Array(), "path_index": 0, "action_left": 0.0, "assignment_pending": false}, true)
+	state.roster = roster_copy
+	state.deployed = old.deployed.duplicate()
+	var front := roster_copy.filter(func(worker): return worker.id in state.deployed and worker.post == "counter")
+	if front.is_empty():
+		for worker in roster_copy:
+			if worker.id in state.deployed and worker.post == "":
+				worker.post = "counter"
+				worker.pos = Layout.POST_POINTS.counter
+				worker.assignment_point = Layout.POST_POINTS.counter
+				break
+	return state
 
 ## v4 → v5: the brewer pot holds up to six cups, and lemonade levels above the new cap are refunded.
 func _migrate_v4(old: Dictionary) -> Dictionary:
@@ -1363,11 +1509,18 @@ func _validate_state(state: Dictionary) -> String:
 	var worker_sample := _make_worker(0)
 	worker_sample.source = ""
 	worker_sample.deployed = false
-	# Saves from before per-stage slots could deploy three at any stage.
-	var slots := 3
-	if state.stage_index is int and state.stage_index >= 0 and state.stage_index < PROGRESSION.stages.size():
-		slots = maxi(slots, PROGRESSION.stages[state.stage_index].staff_slots)
-	if state.roster.is_empty() or state.deployed.size() > slots: return "员工名册无效"
+	if state.roster.is_empty(): return "员工名册无效"
+	if not state.front_upgrades is int or not state.kitchen_upgrades is int: return "员工升级无效"
+	# Front staff (at the counter) fill the front slots; everyone else fills the kitchen slots of this stage.
+	var front_room := 1
+	for index in mini(state.front_upgrades, PROGRESSION.front_upgrade_kinds.size()): front_room += 1 if PROGRESSION.front_upgrade_kinds[index] == "slot" else 0
+	var front_count := 0
+	var kitchen_count := 0
+	for worker in state.roster:
+		if worker is Dictionary and worker.get("id") in state.deployed:
+			if worker.get("post") == "counter": front_count += 1
+			else: kitchen_count += 1
+	if front_count > front_room or kitchen_count > PROGRESSION.stages[state.stage_index].staff_slots: return "派出员工超过岗位数"
 	var ids: Array = []
 	for worker in state.roster:
 		if not worker is Dictionary: return "员工字段无效"
@@ -1378,7 +1531,12 @@ func _validate_state(state: Dictionary) -> String:
 		if not _same_shape(fields, worker_sample): return "员工字段无效"
 		if not worker.art in ARTS or worker.id < 1 or worker.id in ids: return "员工身份无效"
 		ids.append(worker.id)
-		if worker.level < 1 or worker.speed <= 0 or worker.skill <= 0 or worker.capacity < 1 or worker.carry_count < 0 or worker.carry_count > worker.capacity: return "员工能力或货物无效"
+		var carry_bonus := 0
+		var side_kinds: Array = PROGRESSION.front_upgrade_kinds if worker.post == "counter" else PROGRESSION.kitchen_upgrade_kinds
+		var side_bought: int = state.front_upgrades if worker.post == "counter" else state.kitchen_upgrades
+		if side_bought is int and side_bought >= 0:
+			for index in mini(side_bought, side_kinds.size()): carry_bonus += 1 if side_kinds[index] == "carry" else 0
+		if worker.level < 1 or worker.speed <= 0 or worker.skill <= 0 or worker.capacity < 1 or worker.carry_count < 0 or worker.carry_count > worker.capacity + carry_bonus: return "员工能力或货物无效"
 		if not worker.role in ["speed", "carry", "skill"] or worker.source.is_empty(): return "员工来源或能力无效"
 		if not worker.post.is_empty() and not Layout.POST_POINTS.has(worker.post): return "员工岗位无效"
 		if not worker.phase in ["idle", "walk_pickup", "pickup", "work", "walk_dropoff", "dropoff"]: return "员工阶段无效"
@@ -1399,9 +1557,10 @@ func _validate_state(state: Dictionary) -> String:
 			if _is_operation(job):
 				if not worker.phase in ["walk_pickup", "work"]: return "人工操作阶段无效"
 			elif worker.phase == "work": return "运输任务不能进行机器操作"
-			if worker.post == "counter" and not job.kind in ["serve", "carry_to_seal"]: return "员工岗位与任务不一致"
+			if worker.post == "counter" and job.kind != "serve": return "员工岗位与任务不一致"
+			if worker.post != "counter" and job.kind == "serve": return "后厨员工不上菜"
 			if not worker.post in ["", "counter"] and not _post_job(worker.post, job): return "员工岗位与任务不一致"
-			if not _is_operation(job) and job.count > worker.capacity: return "员工运单超过搬运能力"
+			if not _is_operation(job) and job.count > worker.capacity + carry_bonus: return "员工运单超过搬运能力"
 			if worker.phase in ["walk_dropoff", "dropoff"]:
 				if worker.carry_count != job.count or worker.carry_item != job.item: return "员工在途货物不一致"
 			elif worker.carry_count != 0 or not worker.carry_item.is_empty(): return "员工取货状态无效"
@@ -1450,6 +1609,7 @@ func _validate_state(state: Dictionary) -> String:
 		if state.boxes[material] and not state.unlocked_stations[machine]: return "原料箱解锁状态无效"
 	if state.seats < PROGRESSION.seat_start or state.seats > seat_max() or state.diners.size() > state.seats: return "座位无效"
 	if state.flyers < 1 or state.flyers > PROGRESSION.flyer_costs.size() + 1: return "传单等级无效"
+	if state.front_upgrades < 0 or state.front_upgrades > PROGRESSION.front_upgrade_kinds.size() or state.kitchen_upgrades < 0 or state.kitchen_upgrades > PROGRESSION.kitchen_upgrade_kinds.size(): return "员工升级无效"
 	var seat_ids: Array = []
 	for diner in state.diners:
 		if not diner is Dictionary or not _same_shape(diner, {"seat": 0, "dish": "", "left": 0.0}): return "堂食客人字段无效"

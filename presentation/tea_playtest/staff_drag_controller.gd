@@ -171,10 +171,21 @@ func _target_error() -> String:
 	if target.kind == "post":
 		if _view.sim.has_method("station_unlocked") and not _view.sim.station_unlocked(target.post):
 			return "请先解锁设备"
-		for worker in _view.sim.workers:
-			if int(worker.id) != worker_id and worker.get("post", "") == target.post:
-				return "occupied_post"
+		if _post_taken(target.post):
+			if target.post == "counter" and _view.sim.has_method("front_slots"):
+				return "前台最多 %d 位，前台升级可以加前台位" % _view.sim.front_slots()
+			return "occupied_post"
 	return ""
+
+
+## The counter can hold several front staff in the tea shop; ask the sim when it can.
+func _post_taken(post: String) -> bool:
+	if _view.sim.has_method("front_slots"):
+		return _view.sim.post_owner(post, worker_id) != -1
+	for worker in _view.sim.workers:
+		if int(worker.id) != worker_id and worker.get("post", "") == post:
+			return true
+	return false
 
 
 func _drop_target(screen: Vector2) -> Dictionary:
@@ -198,9 +209,9 @@ func _release(screen: Vector2) -> void:
 		else:
 			error = _view.sim.assign_post(worker_id, target.post, target.point)
 	if error.is_empty():
-		var message: String = "已恢复流动" if target.kind == "mobile" else "已安排到" + POST_NAMES[target.post] + "坐班"
+		var message: String = ("已安排到后厨" if _view.sim.has_method("front_slots") else "已恢复流动") if target.kind == "mobile" else "已安排到" + POST_NAMES[target.post] + "坐班"
 		if target.get("post", "") == "counter":
-			message = "已安排到前台：只负责接单，流动员工不再去柜台。"
+			message = "已安排到前台：只负责接待客人、取杯上菜。"
 		_view._show_toast(message)
 		_view.save_now(false)
 	else:
@@ -261,8 +272,7 @@ func _draw() -> void:
 		var occupied := false
 		if _view.sim.has_method("station_unlocked") and not _view.sim.station_unlocked(post):
 			occupied = true
-		for worker in _view.sim.workers:
-			occupied = occupied or (int(worker.id) != worker_id and worker.get("post", "") == post)
+		occupied = occupied or _post_taken(post)
 		var color := Color("c96e59") if occupied else Color("92b76b")
 		draw_rect(Layout.POST_RECTS[post], Color(color, 0.18))
 		draw_rect(Layout.POST_RECTS[post], color, false, 4)
