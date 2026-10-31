@@ -682,7 +682,7 @@ func _add_order() -> void:
 	_next_order += 1
 
 func _source_point(job: Dictionary) -> Vector2:
-	if job.item == "lemonade": return Vector2(330, 910)
+	if job.item == "lemonade" and job.src == "supply": return Vector2(330, 910)
 	return super._source_point(job)
 
 func _available(source: String, item: String) -> int:
@@ -1127,6 +1127,11 @@ func _migrate_v3(old: Dictionary) -> Dictionary:
 		if old.has(key) and typeof(old[key]) == typeof(state[key]): state[key] = old[key].duplicate(true) if old[key] is Dictionary else old[key]
 	# The floor starts empty, so every cup ever made has been sold.
 	state.generated = state.sold
+	# Belts are no longer sold; refund any the old save owned, as the shop does on startup.
+	if old.get("belts") is Dictionary:
+		for id in old.belts:
+			var belt = fresh._belt_def(String(id))
+			if belt != null: state.gold += belt.cost
 	var old_stage: int = old.get("stage_index", 0) if old.get("stage_index", 0) is int else 0
 	var lemon: bool = old.get("unlocked_stations", {}).get("lemonade", false) == true
 	state.stage_index = [0, 2, 3, 4][clampi(old_stage, 0, 3)] if lemon else 0
@@ -1267,7 +1272,7 @@ func _validate_state(state: Dictionary) -> String:
 			if _is_operation(job):
 				if not worker.phase in ["walk_pickup", "work"]: return "人工操作阶段无效"
 			elif worker.phase == "work": return "运输任务不能进行机器操作"
-			if worker.post == "counter" and job.kind != "serve": return "员工岗位与任务不一致"
+			if worker.post == "counter" and not job.kind in ["serve", "carry_to_seal"]: return "员工岗位与任务不一致"
 			if not worker.post in ["", "counter"] and not _post_job(worker.post, job): return "员工岗位与任务不一致"
 			if not _is_operation(job) and job.count > worker.capacity: return "员工运单超过搬运能力"
 			if worker.phase in ["walk_dropoff", "dropoff"]:

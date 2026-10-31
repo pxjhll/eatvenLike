@@ -625,6 +625,28 @@ func test_seated_topping_worker_runs_its_whole_segment() -> void:
 	check(seen.has("transfer_to_topping") and seen.has("topping") and seen.has("carry_to_shelf"), "the seat fetches, tops and shelves")
 	check(sim.audit().valid, "segment ownership preserves simulation invariants")
 
+func test_counter_packer_saves_and_takeaway_lemonade_is_fetched_at_the_sealer() -> void:
+	var sim = opened()
+	if sim == null: return
+	check_eq(sim.assign_post(sim.workers[0].id, "counter"), "", "worker staffs the counter")
+	for worker in sim.workers.duplicate():
+		if worker.post != "counter": sim.recall_worker(worker.id)
+	sim.orders = [{"id": sim._next_order, "dish": "lemonade", "wait": 0.0, "reserved": false, "takeaway": true}]
+	sim._next_order += 1
+	var packing_saved := false
+	for tick in 600:
+		sim.advance(0.1)
+		var counter: Dictionary = sim.workers.filter(func(w): return w.post == "counter")[0]
+		if not counter.job.is_empty() and counter.job.kind == "carry_to_seal" and not packing_saved:
+			check_eq(make_shop().load_dict(sim.to_dict()), "", "a counter worker packing a cup can be saved")
+			packing_saved = true
+		if packing_saved: break
+	check(packing_saved, "the counter worker packs takeaway cups")
+	var job := {"kind": "serve", "src": "seal", "dst": "counter", "item": "lemonade", "count": 1}
+	check(sim._source_point(job) != Vector2(330, 910), "takeaway lemonade is picked up at the sealer, not the stand")
+	job.src = "supply"
+	check_eq(sim._source_point(job), Vector2(330, 910), "dine-in lemonade is still poured at the stand")
+
 func test_brewer_pauses_for_stirring_and_seated_brewer_runs_its_segment() -> void:
 	var sim = make_shop()
 	if sim == null: return
@@ -659,12 +681,14 @@ func test_v3_save_keeps_progress_on_the_new_unlock_order() -> void:
 	old.version = 3
 	old.stage_index = 3
 	for key in ["boxes", "seats", "diners"]: old.erase(key)
+	old.belts = {"supply_to_boil": true}
 	var copy = make_shop()
 	check_eq(copy.load_dict(old), "", "a save from before the split loads")
 	check_eq(copy.stage_index, 4, "the old topping stage maps to the new last stage")
 	check(copy.boxes.tea_leaf and copy.boxes.milk, "boxes of lines already open are owned")
 	check(copy.station_unlocked("seal") and copy.station_unlocked("topping"), "every machine the player had stays open")
-	check_eq(copy.gold, old.gold, "money is kept")
+	check_eq(copy.gold, old.gold + 50, "money is kept and the old belt is refunded")
+	check(copy.belts.is_empty(), "no belt survives the migration")
 	check_eq(copy.station_levels, old.station_levels, "machine levels are kept")
 	check_eq(copy.all_workers().size(), sim.all_workers().size(), "the roster is kept")
 	check(copy.audit().valid, "the migrated floor is consistent")
