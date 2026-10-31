@@ -342,6 +342,24 @@ func _place_bubble() -> void:
 	_bubble.position = Vector2(clampf(anchor.x - _bubble.size.x / 2.0, 16, size.x - _bubble.size.x - 16), clampf(y, 120, size.y - _bubble.size.y - 16))
 
 
+## A welcome or done card answers any finished tap, touch or mouse, before the buttons see it:
+## some phone browsers never turn touches into button presses, and a tap beside the card
+## (or slightly off it) must not leave the player stuck behind the dim.
+func _input(event: InputEvent) -> void:
+	if not enabled or not _card.visible:
+		return
+	var released: bool = event is InputEventScreenTouch and not event.pressed and not event.canceled
+	released = released or (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
+		and not event.pressed and event.device != InputEvent.DEVICE_ID_EMULATION)
+	if not released:
+		return
+	get_viewport().set_input_as_handled()
+	if _card_secondary.is_visible_in_tree() and _card_secondary.get_global_rect().has_point(event.position):
+		_skip()
+	else:
+		_confirm()
+
+
 ## Only the cut-out lets clicks through while a dimmed step is up.
 func _has_point(point: Vector2) -> bool:
 	return _blocking and not _hole.has_point(point)
