@@ -9,6 +9,8 @@ const SHOP_SCRIPT := "res://game/tea_playtest/tea_shop_sim.gd"
 
 var path: String
 var loaded_speed := 1.0
+## Ids of tutorial guides the player has already seen; kept beside the shop state, not inside it.
+var loaded_guides: Array = []
 var last_error := ""
 var _write_blocked := false
 
@@ -20,6 +22,7 @@ func _init(path_: String = DEFAULT_PATH) -> void:
 func load_game() -> RefCounted:
 	last_error = ""
 	loaded_speed = 1.0
+	loaded_guides = []
 	var sim: RefCounted = load(SHOP_SCRIPT).new()
 	var result := _read_existing()
 	if result.get("missing", false): return sim
@@ -36,10 +39,11 @@ func load_game() -> RefCounted:
 		_backup_corrupt()
 		return load(SHOP_SCRIPT).new()
 	loaded_speed = result.speed
+	loaded_guides = result.guides
 	return sim
 
 
-func save_game(sim: RefCounted, speed: float = 1.0) -> Error:
+func save_game(sim: RefCounted, speed: float = 1.0, guides: Array = []) -> Error:
 	last_error = ""
 	if sim == null or not sim.has_method("to_dict") or not is_finite(speed) or speed <= 0.0:
 		last_error = "存档失败：模拟状态或播放速度无效"
@@ -75,6 +79,7 @@ func save_game(sim: RefCounted, speed: float = 1.0) -> Error:
 	var bytes := var_to_bytes(state)
 	var payload := {"format": FORMAT, "version": VERSION, "speed": speed,
 		"state": Marshalls.raw_to_base64(bytes), "state_sha256": bytes.hex_encode().sha256_text()}
+	if not guides.is_empty(): payload.guides = guides.map(func(id: Variant) -> String: return str(id))
 	var error := SaveService.new(path).save(payload)
 	if error != OK:
 		last_error = "存档写入失败：%s" % error_string(error)
@@ -122,7 +127,13 @@ func _read_existing() -> Dictionary:
 	# bytes_to_var deliberately excludes objects; never use bytes_to_var_with_objects.
 	var state: Variant = bytes_to_var(bytes)
 	if not state is Dictionary: return {"error": "店铺存档状态必须是字典"}
-	return {"state": state, "speed": speed}
+	# Saves from before the tutorial have no guide list; a malformed one only replays guides.
+	var guides: Array = []
+	var raw_guides: Variant = wrapper.get("guides", [])
+	if raw_guides is Array:
+		for id in raw_guides:
+			if id is String: guides.append(id)
+	return {"state": state, "speed": speed, "guides": guides}
 
 
 func _read_speed(value: Variant) -> float:

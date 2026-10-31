@@ -24,6 +24,8 @@ jobs:
         run: timeout 30s ./godot --headless --path . -s tests/render_shop_ui.gd
       - name: Art shop business interaction regression
         run: timeout 45s ./godot --headless --path . -s tests/render_tea_business.gd
+      - name: First-shop tutorial interaction regression
+        run: timeout 45s ./godot --headless --path . -s tests/render_guide.gd
       # 真窗口 QA 要装 xvfb、跑好几分钟，只在合进 main 时跑，PR 上靠本地跑（省 Actions 分钟数）
       - name: Tea window input and screenshot QA
         if: github.event_name == 'push'
