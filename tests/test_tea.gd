@@ -1,5 +1,5 @@
 extends "res://tests/test_case.gd"
-## 奶茶店（固定产线方向，PXJ-49）：柜台货架开局就在 → 买柠檬茶台、招人 → 营业额够了整条奶茶线一次解锁 →
+## 奶茶店（固定产线方向，PXJ-49）：柜台货架开局就在 → 买柠檬水台、招人 → 营业额够了整条奶茶线一次解锁 →
 ## 加料机（珍珠默认，升级依次开椰果 / 红豆 / 芋泥）→ 机器和每个物料槽按需升级。
 
 const TEA := "res://content/tea/tea.tres"
@@ -27,14 +27,14 @@ func hire(sim: GameSim, post: String) -> String:
 	return command.staff_id
 
 
-## 开场：买柠檬茶台，招一个人拖到柜台（柜台开局就在）
+## 开场：买柠檬水台，招一个人拖到柜台（柜台开局就在）
 func open_front(sim: GameSim) -> String:
 	sim.submit(UnlockFrontSpotCommand.new("lemonade_stand"))
 	sim.step()
 	return hire(sim, "counter")
 
 
-## 卖柠檬茶攒到门槛和线价，整条奶茶线一次解锁，再招一名后厨员工
+## 卖柠檬水攒到门槛和线价，整条奶茶线一次解锁，再招一名后厨员工
 func open_line(sim: GameSim) -> String:
 	var stage: ShopStageDef = sim.config.progression.stages[1]
 	for i in 6000:
@@ -74,7 +74,7 @@ func test_fresh_tea_and_legacy_bakery_identity() -> void:
 	check(make_sim().progress.kitchen_open(), "bakery stage zero remains accessible")
 
 
-# 首店流程稿 1–2：后厨空、柜台和货架开局就在、柠檬茶要花钱、开局只需买柠檬茶台和招人。
+# 首店流程稿 1–2：后厨空、柜台和货架开局就在、柠檬水要花钱、开局只需买柠檬水台和招人。
 func test_opening_counter_is_there_and_lemonade_is_bought() -> void:
 	var sim := tea()
 	check(sim.front_hall.is_active("counter"), "the counter is there from the start")

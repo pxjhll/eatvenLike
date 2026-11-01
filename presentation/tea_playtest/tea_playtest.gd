@@ -8,9 +8,9 @@ const DragController := preload("res://presentation/tea_playtest/staff_drag_cont
 const Guide := preload("res://presentation/tea_playtest/guide_overlay.gd")
 const UnlockFrame := preload("res://presentation/tea_playtest/unlock_frame.gd")
 const ART_NAMES := preload("res://presentation/characters/character_library.gd").NAMES
-const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "seal": "自动封口"}
+const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "press": "手打果茶", "seal": "自动封口"}
 ## Machines show no standing text: a bar while working and a bubble only when they need a hand.
-const BADGES := {"boil": Vector2(265, 112), "mix": Vector2(420, 112), "topping": Vector2(36, 612), "seal": Vector2(556, 178)}
+const BADGES := {"boil": Vector2(265, 112), "mix": Vector2(420, 112), "topping": Vector2(36, 612), "press": Vector2(566, 400), "seal": Vector2(556, 178)}
 const SALE_POINT := Vector2(470, 905)
 var sim: RefCounted
 var store: RefCounted
@@ -64,6 +64,7 @@ const STATION_REGIONS := {
 	"supply": Rect2(20, 155, 221, 120), "boil": Rect2(245, 122, 167, 158),
 	"mix": Rect2(415, 121, 106, 160), "topping": Rect2(22, 254, 121, 339),
 	"seal": Rect2(548, 207, 120, 184), "lemonade": Rect2(40, 838, 250, 200),
+	"press": Rect2(555, 412, 135, 125),
 }
 ## A locked machine is not drawn; its floor spot shows a dashed frame instead.
 ## The cabinet is furniture; its spot shows a frame only while an ingredient box waits to be bought.
@@ -72,7 +73,7 @@ const FRAME_RECTS := {
 	"supply": Rect2(30, 228, 204, 46), "boil": Rect2(250, 228, 158, 76),
 	"mix": Rect2(420, 160, 98, 82), "topping": Rect2(30, 284, 112, 300),
 	"seal": Rect2(556, 228, 108, 154), "shelf": Rect2(520, 548, 162, 144),
-	"lemonade": Rect2(48, 872, 236, 112),
+	"lemonade": Rect2(48, 872, 236, 112), "press": Rect2(562, 420, 122, 112),
 }
 const FRAME_OPENS := {"shelf": "boil"}
 ## Machine art that appears only once its station is unlocked (the table carries the pot and the milk machine).
@@ -80,8 +81,12 @@ const LOCKED_ART := {
 	"Sortables/IngredientTable": "supply", "Sortables/MachineTable": "boil",
 	"Sortables/MachineTable/PearlPot": "boil", "Sortables/MachineTable/Brewer": "mix",
 	"Sortables/PrepBench": "topping", "Sortables/Sealer": "seal", "Sortables/Rack": "boil",
-	"Sortables/DisplayCase": "lemonade",
+	"Sortables/DisplayCase": "lemonade", "Sortables/PressTable": "press",
 }
+## The press table is new art the reference scene doesn't have; it is added beside the sealer at runtime.
+const PRESS_TABLE := preload("res://art/machine/press_table.png")
+const PRESS_ANCHOR := Vector2(622, 530)
+const PRESS_WIDTH := 140.0
 
 
 func _ready() -> void:
@@ -106,6 +111,8 @@ func _ready() -> void:
 	$Overlay/UI.add_child(guide)
 	guide.setup(self, guides_seen)
 	guide.enabled = guide_enabled
+	if sim.stations.has("press"):
+		_build_press_table()
 	_build_badges()
 	_drag = DragController.new()
 	$Canvas.add_child(_drag)
@@ -212,7 +219,7 @@ func _refresh(delta: float) -> void:
 			need = "待操作"
 		elif output_count > 0:
 			need = "待取 %d" % output_count
-		elif _total(station.input) > 0 and id in ["boil", "topping"]:
+		elif _total(station.input) > 0 and id in ["boil", "topping", "press"]:
 			need = "待操作"
 		var open: bool = not sim.has_method("station_unlocked") or sim.station_unlocked(id)
 		_bars[id].visible = open and working
@@ -273,10 +280,12 @@ func _update_cups() -> void:
 		for i in int(belt.count):
 			var offset := Vector2((i - (int(belt.count) - 1) / 2.0) * 14, -i * 2)
 			draws.append({"pos": point + offset, "item": belt.item, "host": host})
-	var buffer_points := {"mix": Vector2(505, 247), "topping": Vector2(78, 445), "seal": Vector2(613, 405)}
-	var buffer_hosts := {"mix": "MachineTable", "topping": "PrepBench", "seal": "Sealer"}
+	var buffer_points := {"mix": Vector2(505, 247), "topping": Vector2(78, 445), "seal": Vector2(613, 405), "press": Vector2(660, 470)}
+	var buffer_hosts := {"mix": "MachineTable", "topping": "PrepBench", "seal": "Sealer", "press": "PressTable"}
 	# One full-size cup marks a waiting output; the station sign already shows how many.
 	for id in buffer_points:
+		if not sim.stations.has(id):
+			continue
 		for item in sim.stations[id].output:
 			if int(sim.stations[id].output[item]) > 0:
 				draws.append({"pos": buffer_points[id], "item": item, "host": buffer_hosts[id]})
@@ -358,9 +367,27 @@ func _build_ui() -> void:
 	_toast = ui.toast
 
 
+func _build_press_table() -> void:
+	var table := Node2D.new()
+	table.name = "PressTable"
+	table.position = PRESS_ANCHOR
+	table.set_meta("art_layer", "equipment")
+	table.set_meta("asset_id", "press_table")
+	var sprite := Sprite2D.new()
+	sprite.texture = PRESS_TABLE
+	sprite.centered = false
+	sprite.scale = Vector2.ONE * PRESS_WIDTH / PRESS_TABLE.get_width()
+	sprite.position = Vector2(-PRESS_WIDTH / 2.0, -PRESS_TABLE.get_height() * sprite.scale.y)
+	table.add_child(sprite)
+	art.get_node("Sortables").add_child(table)
+	table.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("press")
+
+
 func _build_badges() -> void:
 	var parent: Node = $Canvas/WorldLabels
 	for id in BADGES:
+		if not sim.stations.has(id):
+			continue
 		var bar := ProgressBar.new()
 		bar.position = BADGES[id]
 		bar.size = Vector2(110, 14)

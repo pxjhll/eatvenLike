@@ -298,7 +298,7 @@ func _jobs(worker: Dictionary) -> Array:
 	return result
 
 func _is_operation(job: Dictionary) -> bool:
-	return job.kind in ["topping", "brew_start", "brew_take", "stir"]
+	return job.kind in ["topping", "press", "brew_start", "brew_take", "stir"]
 
 func _source_point(job: Dictionary) -> Vector2:
 	return Layout.POST_POINTS[job.src] if _is_operation(job) else Layout.POINTS[job.src]
@@ -328,7 +328,7 @@ func _allocate() -> void:
 				var to_target := Layout.path(_source_point(job), _destination_point(job))
 				if to_source.is_empty() or to_target.is_empty(): continue
 				var travel: float = (_path_length(to_source) + _path_length(to_target)) / _walk_speed(worker)
-				var work_time: float = _action_duration(job, worker) if job.kind == "topping" else 1.2 / _skill(worker)
+				var work_time: float = _action_duration(job, worker) if job.kind in ["topping", "press"] else 1.2 / _skill(worker)
 				var throughput: float = float(job.count) / maxf(0.1, travel + work_time)
 				var score: float = (job.priority + throughput * 18.0 - travel * 1.2) * (1.0 - worker.fatigue * 0.18)
 				if score > best_score:
@@ -384,16 +384,16 @@ func _update_worker(worker: Dictionary) -> void:
 		if worker.phase == "walk_pickup":
 			worker.phase = "work" if _is_operation(job) else "pickup"
 			worker.action_left = _action_duration(job, worker)
-			if job.kind == "topping":
-				stations.topping.phase = "working"
-				stations.topping.duration = worker.action_left
+			if job.kind in ["topping", "press"]:
+				stations[job.src].phase = "working"
+				stations[job.src].duration = worker.action_left
 		else:
 			worker.phase = "dropoff"
 			worker.action_left = 0.6 / _skill(worker)
 		return
 	worker.action_left = maxf(0, worker.action_left - STEP)
-	if worker.phase == "work" and job.kind == "topping":
-		stations.topping.progress = 1.0 - worker.action_left / stations.topping.duration
+	if worker.phase == "work" and job.kind in ["topping", "press"]:
+		stations[job.src].progress = 1.0 - worker.action_left / stations[job.src].duration
 	if worker.action_left > 0.000001: return
 	match worker.phase:
 		"pickup":
@@ -427,11 +427,12 @@ func _update_worker(worker: Dictionary) -> void:
 			_finish(worker)
 		"dropoff":
 			if job.kind == "serve":
+				# The sale is recorded while the order is still in line, so it can read how the customer wanted it.
+				_record_sale(job)
 				for index in orders.size():
 					if orders[index].id == job.order_id:
 						orders.remove_at(index)
 						break
-				_record_sale(job)
 			elif not job.belt.is_empty():
 				var duration: float = maxf(1, _path_length(Layout.belt_path(job.belt)) / 60.0)
 				belt_items.append({"route": job.belt, "item": job.item, "count": job.count,
@@ -449,7 +450,7 @@ func _take(job: Dictionary) -> void:
 		_shelf_reserved_out -= job.count
 	else:
 		var station: Dictionary = stations[job.src]
-		var stock: Dictionary = station.input if job.kind in ["topping", "brew_start"] else station.output
+		var stock: Dictionary = station.input if job.kind in ["topping", "press", "brew_start"] else station.output
 		stock[job.item] -= job.count
 		station.reserved_out[job.item] -= job.count
 		_refresh_after_pickup(station)
@@ -490,7 +491,8 @@ func audit() -> Dictionary:
 	var stock := shelf_count
 	var carried := 0
 	var belts := 0
-	var expected_in := {"boil": 0, "mix": 0, "topping": 0, "seal": 0, "shelf": 0}
+	var expected_in := {"shelf": 0}
+	for key in stations: expected_in[key] = 0
 	var expected_out := {}
 	var reserved_orders: Array = []
 	var owners := {}

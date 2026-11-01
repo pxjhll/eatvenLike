@@ -1,6 +1,6 @@
 extends "res://tests/render_toast.gd"
 ## Real portrait renderer/input QA. Helpers are shared with the existing bakery QA.
-## PXJ-49：柜台开局就在，买柠檬茶台、招人拖到柜台；营业额够了点价格牌整条奶茶线一次解锁；
+## PXJ-49：柜台开局就在，买柠檬水台、招人拖到柜台；营业额够了点价格牌整条奶茶线一次解锁；
 ## 加料机；点开机器看机器和各物料槽的升级。截图在 docs/qa/pxj49-*.png。
 
 var _failures := 0
@@ -31,7 +31,7 @@ func _run() -> void:
 	await _advance(sim, 10.0)
 	await _capture("res://docs/qa/pxj49-opening.png")
 
-	# 价格牌：点柠檬茶台，卡片按钮买下
+	# 价格牌：点柠檬水台，卡片按钮买下
 	await _click(_center_of(shop, "lemonade_stand"))
 	_check(shop.controls._selected == "lemonade_stand", "the locked stand can actually be tapped")
 	await _click(_button_center(shop, 0))

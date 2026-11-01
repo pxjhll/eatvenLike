@@ -15,12 +15,16 @@ const STIR_SECONDS := 1.0
 ## v6: flyer level (customer flow upgrade).
 ## v7: front and kitchen staff are separate; per-worker training became the front / kitchen upgrade lists.
 ## v8: kitchen staff follow orders (worker.ticket); the topping machine tops the flavor that was ordered.
-const SAVE_VERSION := 8
+## v9: the press table (fruit teas on a black tea base) and its stage; lemonade to go skips the sealer.
+const SAVE_VERSION := 9
+## The press table lives in its own file so the legacy GameSim (which builds every slot in tea.tres) never sees it.
+const PRESS_DEF = preload("res://content/tea/press_table.tres")
 ## Kitchen staff follow orders from the pot to the shelf (v0.3 process blocks). Off = the shared task pool
 ## from before, kept as a fallback and for comparison.
 const FOLLOW_ORDERS := true
-## Ticket stages: tea from the pot, waiting at the mixer, topping, carrying the finished cup out.
-const TICKET_STAGES := ["boil", "mix", "topping", "topped"]
+## Ticket stages: tea from the pot, waiting at the mixer, topping, carrying the finished cup out;
+## fruit teas go from the pot to the press table ("press"), then out ("pressed").
+const TICKET_STAGES := ["boil", "mix", "topping", "topped", "press", "pressed"]
 ## What the lemonade stand's old levels 6–10 cost; v4 saves above Lv5 get it back.
 const LEMONADE_V4_COSTS := [20, 30, 40, 55, 75, 110, 150, 210, 295]
 ## A waiting customer gets impatient, then angry; they never leave (the face just pushes the player to upgrade).
@@ -28,10 +32,10 @@ const BOIL_CAPACITY := 12
 const MOOD_IMPATIENT := 15.0
 const MOOD_ANGRY := 30.0
 const ARTS := ["cat", "raccoon", "fox", "rabbit"]
-const ALIASES := {"cabinet": "supply", "brewer": "boil", "milk_station": "mix", "lemonade_stand": "lemonade"}
-const RESOURCE_IDS := {"supply": "cabinet", "boil": "brewer", "mix": "milk_station", "topping": "topping", "lemonade": "lemonade_stand", "counter": "counter"}
-const DISHES := ["lemonade", "black_tea", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"]
-const MACHINE_IDS := ["supply", "boil", "mix", "topping", "seal", "lemonade", "counter"]
+const ALIASES := {"cabinet": "supply", "brewer": "boil", "milk_station": "mix", "lemonade_stand": "lemonade", "press_table": "press"}
+const RESOURCE_IDS := {"supply": "cabinet", "boil": "brewer", "mix": "milk_station", "topping": "topping", "press": "press_table", "lemonade": "lemonade_stand", "counter": "counter"}
+const DISHES := ["lemonade", "black_tea", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea", "lemon_tea", "banana_tea"]
+const MACHINE_IDS := ["supply", "boil", "mix", "topping", "press", "seal", "lemonade", "counter"]
 
 var roster: Array = []
 var revenue := 0
@@ -106,14 +110,14 @@ func _initialize_shop() -> void:
 		station_levels[id] = 1
 		unlocked_stations[id] = id == "counter"
 	unlocked_stations.supply = true
-	material_levels = {"supply": {"tea_leaf": 1, "milk": 1}, "topping": {"pearl": 1, "coconut": 1, "redbean": 1, "taro": 1}}
+	material_levels = {"supply": {"tea_leaf": 1, "milk": 1}, "topping": {"pearl": 1, "coconut": 1, "redbean": 1, "taro": 1}, "press": {"lemon": 1, "banana": 1}}
 	boxes = {"tea_leaf": false, "milk": false}
 	seats = PROGRESSION.seat_start
 	flyers = 1
 	front_upgrades = 0
 	kitchen_upgrades = 0
 	diners.clear()
-	for id in ["boil", "mix", "topping", "seal"]:
+	for id in ["boil", "mix", "topping", "press", "seal"]:
 		stations[id] = {"input": {}, "output": {}, "phase": "idle", "progress": 0.0,
 			"label": id, "capacity": 6, "processing": 0, "remaining": 0.0,
 			"duration": 0.0, "reserved_in": 0, "reserved_out": {}, "work_reserved": false,
@@ -125,11 +129,14 @@ func _initialize_shop() -> void:
 	stations.mix.input = {"tea": 0}
 	stations.mix.output = {"plain_milk_tea": 0}
 	stations.topping.input = {"plain_milk_tea": 0}
-	# The sealer packs takeaway cups of any drink, one at a time.
+	# Followers bring black tea to the press table and press the fruit their order asked for.
+	stations.press.input = {"tea": 0}
+	# The sealer packs takeaway cups of any kitchen drink, one at a time.
 	for dish in DISHES:
 		stations.seal.input[dish] = 0
 		stations.seal.output[dish] = 0
-		if not dish in ["lemonade", "black_tea", "plain_milk_tea"]: stations.topping.output[dish] = 0
+		if _is_topped(dish): stations.topping.output[dish] = 0
+		if _is_pressed(dish): stations.press.output[dish] = 0
 
 func _make_worker(index: int) -> Dictionary:
 	if ARTS[index] != "rabbit": return super._make_worker(index)
@@ -382,6 +389,7 @@ func _canonical(id: String) -> String:
 
 func _definition(id: String):
 	var resource_id: String = RESOURCE_IDS.get(_canonical(id), "")
+	if resource_id == PRESS_DEF.id: return PRESS_DEF
 	for slot in CONFIG.slots:
 		if slot.station.id == resource_id: return slot.station
 	for spot in CONFIG.front_spots:
@@ -392,7 +400,7 @@ func station_unlocked(id: String) -> bool:
 	return unlocked_stations.get(_canonical(id), false)
 
 ## Each stage opens one machine; the cabinet is furniture and its boxes are bought separately.
-const STAGE_MACHINES := [[], ["boil"], ["seal"], ["mix"], ["topping"]]
+const STAGE_MACHINES := [[], ["boil"], ["seal"], ["mix"], ["topping"], ["press"]]
 
 func _unlock_stage(id: String) -> int:
 	for stage in STAGE_MACHINES.size():
@@ -404,7 +412,7 @@ func _unlock_error(id: String) -> String:
 	if station_unlocked(id): return "设备已经解锁"
 	var stage := _unlock_stage(id)
 	if stage > 0:
-		if not station_unlocked("lemonade"): return "请先解锁柠檬茶台"
+		if not station_unlocked("lemonade"): return "请先解锁柠檬水台"
 		if stage > stage_index + 1: return "请先解锁" + PROGRESSION.stages[stage - 1].line_name
 		var definition = PROGRESSION.stages[stage]
 		if revenue < definition.revenue_threshold: return "营业额需达到 %d" % definition.revenue_threshold
@@ -415,7 +423,7 @@ func _unlock_cost(id: String) -> int:
 	if id == "lemonade":
 		for spot in CONFIG.front_spots:
 			if spot.station.id == "lemonade_stand": return spot.unlock_cost
-	if id in ["boil", "mix", "seal", "topping"]: return PROGRESSION.stages[_unlock_stage(id)].line_cost
+	if _unlock_stage(id) > 0: return PROGRESSION.stages[_unlock_stage(id)].line_cost
 	return 0
 
 func unlock_station(requested: String) -> String:
@@ -478,7 +486,7 @@ func seat_max() -> int:
 	return PROGRESSION.seat_start + PROGRESSION.seat_costs.size()
 
 func seat_error() -> String:
-	if not station_unlocked("lemonade"): return "请先解锁柠檬茶台"
+	if not station_unlocked("lemonade"): return "请先解锁柠檬水台"
 	if seat_cost() < 0: return "座位已满"
 	if gold < seat_cost(): return "金币不足，需要 %d" % seat_cost()
 	return ""
@@ -495,8 +503,15 @@ func buy_seat() -> String:
 func free_seats() -> int:
 	var promised := 0
 	for worker in workers:
-		if not worker.job.is_empty() and worker.job.kind == "serve" and worker.job.src != "seal": promised += 1
+		if not worker.job.is_empty() and worker.job.kind == "serve" and not _to_go(worker.job): promised += 1
 	return seats - diners.size() - promised
+
+## A served cup leaves with the customer: sealed takeaway, or a lemonade poured to go.
+func _to_go(job: Dictionary) -> bool:
+	if job.src == "seal": return true
+	for order in orders:
+		if order.id == job.order_id: return order.get("takeaway", false)
+	return false
 
 ## 0 calm, 1 impatient, 2 angry.
 func order_mood(order: Dictionary) -> int:
@@ -593,8 +608,8 @@ func station_info(requested: String) -> Dictionary:
 					"box_error": box_error(material.id), "box_machine": station_info_name(machine)})
 			if _art_mode(material): row.merge(_price_preview(id, material.id, mat_level < mat_max))
 			materials.append(row)
-	var descriptions := {"supply": "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价", "boil": "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "seal": "外带的杯子都要来这里封口；升级封得更快，5 级、10 级各加一个封口位", "lemonade": "服务员到展示柜现取柠檬茶", "counter": "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"}
-	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "加料速度", "lemonade": "售价", "seal": "封口速度"}
+	var descriptions := {"supply": "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价", "boil": "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "press": "员工拿红茶来亲手捣水果，全程要人；客人点什么水果就捣什么", "seal": "外带的杯子都要来这里封口；升级封得更快，5 级、10 级各加一个封口位", "lemonade": "服务员到展示柜现取柠檬水，外带不用封口", "counter": "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"}
+	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "加料速度", "press": "手打速度", "lemonade": "售价", "seal": "封口速度"}
 	var speeds: Array = [1.0]
 	if definition != null: speeds = definition.art_speeds if _art_mode(definition) and not definition.art_speeds.is_empty() else definition.level_speed
 	var next_flavor := ""
@@ -611,7 +626,8 @@ func station_info(requested: String) -> Dictionary:
 			# A full line means more customers would only wait outside: the kitchen is the limit.
 			"queue_full": orders.size() >= _queue_capacity()}
 	# Capacity machines (brewer, sealer, topping) speed up the line; price machines raise what each cup earns.
-	seating.kind = "capacity" if id in ["boil", "seal", "topping"] else ("price" if id in ["lemonade", "mix", "supply"] else "")
+	# The press table is both: a faster hand and a dearer cup each level.
+	seating.kind = "capacity" if id in ["boil", "seal", "topping"] else "both" if id == "press" else ("price" if id in ["lemonade", "mix", "supply"] else "")
 	seating.stars = stars(id)
 	seating.max_stars = 2 if id == "seal" else (definition.art_star_levels.size() if definition != null else 0)
 	seating.next_star = upgrade_cost >= 0 and stars(id, level + 1) > stars(id)
@@ -644,16 +660,17 @@ func _price_preview(id: String, material: String, has_next: bool) -> Dictionary:
 	var dishes: Array = source.art_price_dishes
 	var step: float = source.art_price_step
 	var sample := ""
-	for dish in ["lemonade", "black_tea", "plain_milk_tea"]:
+	for dish in ["lemonade", "black_tea", "plain_milk_tea", "lemon_tea"]:
 		if dish in dishes: sample = dish
-	for dish in ["plain_milk_tea", "black_tea", "lemonade"]:
+	for dish in ["lemon_tea", "plain_milk_tea", "black_tea", "lemonade"]:
 		if dish in dishes and _dish_unlocked(dish):
 			sample = dish
 			break
 	var names: Array = []
-	if "lemonade" in dishes: names.append("柠檬茶")
+	if "lemonade" in dishes: names.append("柠檬水")
 	if "black_tea" in dishes: names.append("红茶")
 	if "plain_milk_tea" in dishes: names.append("奶茶")
+	if "lemon_tea" in dishes: names.append("果茶")
 	# Price the next level with the same combined bonus and single rounding as real sales.
 	var now := _dish_price(sample)
 	var next := -1
@@ -671,7 +688,7 @@ func _base_price(dish: String) -> int:
 	return 0
 
 func goal_progress() -> Dictionary:
-	if not station_unlocked("lemonade"): return {"text": "解锁柠檬茶台，开始营业", "current": 0, "target": 1}
+	if not station_unlocked("lemonade"): return {"text": "解锁柠檬水台，开始营业", "current": 0, "target": 1}
 	var box := pending_box()
 	if not box.is_empty(): return {"text": "解锁%s箱" % _box_def(box).display_name, "current": mini(gold, _box_def(box).box_cost), "target": _box_def(box).box_cost}
 	if stage_index < PROGRESSION.stages.size() - 1:
@@ -703,7 +720,7 @@ func shop_complete() -> bool:
 	return true
 
 func current_goal() -> String:
-	if not station_unlocked("lemonade"): return "支付 10 金币解锁柠檬茶台，开始营业"
+	if not station_unlocked("lemonade"): return "支付 10 金币解锁柠檬水台，开始营业"
 	var box := pending_box()
 	if not box.is_empty(): return "支付 %d 金币在原料柜解锁%s箱" % [_box_def(box).box_cost, _box_def(box).display_name]
 	if stage_index < PROGRESSION.stages.size() - 1:
@@ -767,6 +784,7 @@ func stars(id: String, level: int = -1) -> int:
 func _action_duration(job: Dictionary, worker: Dictionary) -> float:
 	if job.item == "lemonade" and job.src == "supply": return _definition("lemonade").cycle_seconds / _speed("lemonade") / _skill(worker)
 	if job.kind == "topping": return _topping_seconds() * job.count / _skill(worker) / _speed("topping")
+	if job.kind == "press": return PRESS_DEF.art_seconds * job.count / _skill(worker) / _speed("press")
 	if job.kind == "stir": return STIR_SECONDS / _skill(worker)
 	if job.kind == "load_boil": return 0.6 / _skill(worker) / _speed("supply") / _material_bonus("supply", "tea_leaf")
 	return super._action_duration(job, worker)
@@ -782,7 +800,7 @@ func _order_interval() -> float:
 
 func flow_multiplier(flyer_level: int = -1) -> float:
 	var flavors := 0
-	for material in _definition("topping").materials:
+	for material in _definition("topping").materials + PRESS_DEF.materials:
 		if _dish_unlocked(material.item_id): flavors += 1
 	var level: int = flyers if flyer_level < 0 else flyer_level
 	return (1.0 + PROGRESSION.flavor_flow * flavors) * (1.0 + PROGRESSION.flyer_flow * (level - 1))
@@ -791,7 +809,7 @@ func flyer_cost() -> int:
 	return PROGRESSION.flyer_costs[flyers - 1] if flyers - 1 < PROGRESSION.flyer_costs.size() else -1
 
 func flyer_error() -> String:
-	if not station_unlocked("lemonade"): return "请先解锁柠檬茶台"
+	if not station_unlocked("lemonade"): return "请先解锁柠檬水台"
 	if flyer_cost() < 0: return "传单已满级"
 	if gold < flyer_cost(): return "金币不足，需要 %d" % flyer_cost()
 	return ""
@@ -859,8 +877,9 @@ func _dish_unlocked(dish: String) -> bool:
 	if dish == "lemonade": return station_unlocked("lemonade")
 	if dish == "black_tea": return _brew_ready()
 	if dish == "plain_milk_tea": return _mix_ready()
-	for material in _definition("topping").materials:
-		if material.item_id == dish: return station_unlocked("topping") and station_levels.topping >= material.unlock_level
+	for id in ["topping", "press"]:
+		for material in _definition(id).materials:
+			if material.item_id == dish: return station_unlocked(id) and station_levels[id] >= material.unlock_level
 	return false
 
 func _add_order() -> void:
@@ -884,6 +903,8 @@ func _add_order() -> void:
 
 func _source_point(job: Dictionary) -> Vector2:
 	if job.item == "lemonade" and job.src == "supply": return Vector2(330, 910)
+	# Nobody sits at the press table: whoever presses stands at it, where cups are also dropped off.
+	if job.kind == "press": return Layout.POINTS.press
 	return super._source_point(job)
 
 func _available(source: String, item: String) -> int:
@@ -894,8 +915,13 @@ func _available(source: String, item: String) -> int:
 			if not worker.job.is_empty() and worker.job.src == "shelf" and worker.job.item == item and worker.carry_count == 0: reserved += worker.job.count
 		return int(shelf_stock.get(item, 0)) - reserved
 	var station: Dictionary = stations[source]
-	var stock: Dictionary = station.input if (source == "boil" and item == "raw") or (source == "topping" and item == "plain_milk_tea") else station.output
+	var stock: Dictionary = station.input if _input_item(source, item) else station.output
 	return int(stock.get(item, 0)) - int(station.reserved_out.get(item, 0))
+
+## Items a station keeps in its input until a hand works them: leaves in the pot, plain milk tea at the
+## topping machine, black tea at the press table.
+func _input_item(station: String, item: String) -> bool:
+	return (station == "boil" and item == "raw") or (station == "topping" and item == "plain_milk_tea") or (station == "press" and item == "tea")
 
 func _jobs(worker: Dictionary) -> Array:
 	var result: Array = []
@@ -934,7 +960,9 @@ func _jobs(worker: Dictionary) -> Array:
 	for order in orders:
 		if order.reserved: continue
 		# Takeaway cups are handed over from the sealer; dine-in cups need a free seat.
-		var source: String = "seal" if order.get("takeaway", false) else ("supply" if order.dish == "lemonade" else "shelf")
+		# Lemonade is poured at the stand and handed over unsealed, to go or not (a cup an old save left in the sealer goes first).
+		var source: String = "seal" if order.get("takeaway", false) else "shelf"
+		if order.dish == "lemonade": source = "seal" if order.get("takeaway", false) and _available("seal", "lemonade") > 0 else "supply"
 		if not order.get("takeaway", false):
 			if seats_left <= 0: continue
 		var serve := _candidate("serve", source, "counter", order.dish, worker, 110)
@@ -951,6 +979,7 @@ func _kitchen_jobs(worker: Dictionary, result: Array) -> Array:
 	_append_pack_jobs(worker, result)
 	if not station_unlocked("boil"): return result
 	if post_owner("boil") == -1 or _belt_courier: _append_boil_hops(worker, result)
+	if not _belt_courier: _append_press_jobs(worker, result)
 	if not _mix_ready(): return _boost_kitchen(result)
 	if station_unlocked("topping"):
 		var original_need := false
@@ -965,8 +994,35 @@ func _kitchen_jobs(worker: Dictionary, result: Array) -> Array:
 		result.append(_candidate("carry_to_shelf", "mix", "shelf", "plain_milk_tea", worker, 84))
 	if _topping_segment_open():
 		for dish in DISHES:
-			if not dish in ["lemonade", "plain_milk_tea", "black_tea"]: result.append(_candidate("carry_to_shelf", "topping", "shelf", dish, worker, 84))
+			if _is_topped(dish): result.append(_candidate("carry_to_shelf", "topping", "shelf", dish, worker, 84))
 	return _boost_kitchen(result)
+
+## Task pool at the press table: bring black tea when a fruit tea is short, press it, carry it out.
+func _append_press_jobs(worker: Dictionary, result: Array) -> void:
+	if not station_unlocked("press"): return
+	var short := false
+	for dish in DISHES:
+		if _is_pressed(dish) and _waiting(dish) > _flavor_inventory(dish): short = true
+	if short and int(stations.press.input.tea) + int(stations.press.reserved_in) == 0:
+		var tea := _candidate("transfer_to_press", "boil", "press", "tea", worker, 75)
+		if not tea.is_empty(): tea.count = 1
+		result.append(tea)
+	if not stations.press.work_reserved and _available("press", "tea") > 0 and not _pool_fruit().is_empty():
+		result.append({"kind": "press", "src": "press", "dst": "press", "item": "tea", "count": 1, "priority": 72.0, "belt": "", "order_id": -1})
+	for dish in DISHES:
+		if _is_pressed(dish): result.append(_candidate("carry_to_shelf", "press", "shelf", dish, worker, 84))
+
+## Task pool: the fruit the press makes next is the open fruit tea with the most customers waiting beyond stock.
+func _pool_fruit() -> String:
+	var best := ""
+	var best_need := 0
+	for dish in DISHES:
+		if not _is_pressed(dish) or not _dish_unlocked(dish): continue
+		var need := _waiting(dish) - _flavor_inventory(dish) - int(stations.press.output.get(dish, 0))
+		if need > best_need:
+			best = dish
+			best_need = need
+	return best
 
 ## Takeaway cups still to be packed for each drink: waiting takeaway orders minus cups already at or headed to the sealer.
 func _pack_need(dish: String) -> int:
@@ -984,9 +1040,10 @@ func _pack_need(dish: String) -> int:
 func _append_pack_jobs(worker: Dictionary, result: Array) -> void:
 	if not station_unlocked("seal"): return
 	for dish in DISHES:
+		if dish == "lemonade": continue
 		var need := _pack_need(dish)
 		if need <= 0: continue
-		var job := _candidate("carry_to_seal", "supply" if dish == "lemonade" else "shelf", "seal", dish, worker, 100)
+		var job := _candidate("carry_to_seal", "shelf", "seal", dish, worker, 100)
 		if job.is_empty(): continue
 		job.count = mini(job.count, need)
 		result.append(job)
@@ -1017,7 +1074,7 @@ func _boil_segment(worker: Dictionary, result: Array) -> Array:
 func _topping_segment(worker: Dictionary, result: Array) -> Array:
 	result.append(_candidate("transfer_to_topping", "mix", "topping", "plain_milk_tea", worker, 62))
 	for dish in DISHES:
-		if not dish in ["lemonade", "plain_milk_tea", "black_tea"]: result.append(_candidate("carry_to_shelf", "topping", "shelf", dish, worker, 84))
+		if _is_topped(dish): result.append(_candidate("carry_to_shelf", "topping", "shelf", dish, worker, 84))
 	return _boost_kitchen(_without_belted(result))
 
 const SEATED_BONUS := 1.3
@@ -1064,7 +1121,15 @@ func _is_kitchen_dish(dish: String) -> bool:
 	return dish in DISHES and dish != "lemonade"
 
 func _is_topped(dish: String) -> bool:
-	return dish in DISHES and not dish in ["lemonade", "black_tea", "plain_milk_tea"]
+	for material in _definition("topping").materials:
+		if material.item_id == dish: return true
+	return false
+
+## Fruit teas: black tea pressed with a fruit at the press table.
+func _is_pressed(dish: String) -> bool:
+	for material in PRESS_DEF.materials:
+		if material.item_id == dish: return true
+	return false
 
 ## Kitchen drinks for each dish that are already made or being followed, and not yet promised to a customer.
 func _kitchen_supply() -> Dictionary:
@@ -1098,6 +1163,16 @@ func _loose(station: String, dish: String = "") -> int:
 		count = int(stations.mix.input.tea) + int(stations.mix.output.plain_milk_tea) - int(stations.mix.reserved_out.get("plain_milk_tea", 0)) + stations.mix.processing
 		for worker in workers:
 			if not worker.ticket.is_empty() and worker.ticket.stage == "mix" and (worker.job.is_empty() or worker.job.src != "mix"): waiting += worker.ticket.count
+	elif station == "press":
+		# Black tea waiting at the press table, or fruit tea already pressed.
+		if dish.is_empty():
+			count = int(stations.press.input.tea) - int(stations.press.reserved_out.get("tea", 0))
+		else:
+			count = int(stations.press.output.get(dish, 0)) - int(stations.press.reserved_out.get(dish, 0))
+		for worker in workers:
+			if worker.ticket.is_empty() or not worker.ticket.stage in ["press", "pressed"]: continue
+			if dish.is_empty() and worker.ticket.stage == "press" and worker.job.is_empty(): waiting += worker.ticket.count
+			if not dish.is_empty() and worker.ticket.dish == dish and (worker.job.is_empty() or worker.job.kind == "press"): waiting += worker.ticket.count
 	elif dish.is_empty():
 		# Plain milk tea already at the topping machine.
 		count = int(stations.topping.input.plain_milk_tea) - int(stations.topping.reserved_out.get("plain_milk_tea", 0))
@@ -1111,6 +1186,9 @@ func _loose(station: String, dish: String = "") -> int:
 	return count - waiting
 
 func _start_stage(dish: String, count: int) -> String:
+	if _is_pressed(dish) and _loose("press", dish) >= count: return "pressed"
+	if _is_pressed(dish) and _loose("press") >= count: return "press"
+	if _is_pressed(dish): return "boil"
 	if _is_topped(dish) and _loose("topping", dish) >= count: return "topped"
 	if _is_topped(dish) and _loose("topping") >= count: return "topping"
 	if dish != "black_tea" and _loose("mix") >= count: return "mix"
@@ -1136,6 +1214,7 @@ func _ticket_job(worker: Dictionary, ticket: Dictionary) -> Dictionary:
 	match ticket.stage:
 		"boil":
 			if dish == "black_tea": return _final_job("boil", "tea", dish, count, worker)
+			if _is_pressed(dish): return _exact(_candidate("transfer_to_press", "boil", "press", "tea", worker, 95), count)
 			return _exact(_candidate("unload_boil", "boil", "mix", "tea", worker, 95), count)
 		"mix":
 			if dish == "plain_milk_tea": return _final_job("mix", "plain_milk_tea", dish, count, worker)
@@ -1146,6 +1225,11 @@ func _ticket_job(worker: Dictionary, ticket: Dictionary) -> Dictionary:
 			if stations.topping.work_reserved or _available("topping", "plain_milk_tea") < count: return {}
 			return {"kind": "topping", "src": "topping", "dst": "topping", "item": "plain_milk_tea", "count": count, "priority": 95.0, "belt": "", "order_id": -1}
 		"topped": return _final_job("topping", dish, dish, count, worker)
+		"press":
+			# The follower presses the fruit by hand, the whole time.
+			if stations.press.work_reserved or _available("press", "tea") < count: return {}
+			return {"kind": "press", "src": "press", "dst": "press", "item": "tea", "count": count, "priority": 95.0, "belt": "", "order_id": -1}
+		"pressed": return _final_job("press", dish, dish, count, worker)
 	return {}
 
 func _new_ticket_job(worker: Dictionary, pot: Array) -> Dictionary:
@@ -1230,6 +1314,9 @@ func _reserve(worker: Dictionary, job: Dictionary) -> void:
 	if follow_orders and job.kind == "topping":
 		var flavor: String = ticket.get("dish", worker.ticket.get("dish", ""))
 		stations.topping.processing_item = flavor if not flavor.is_empty() else _seated_flavor()
+	if job.kind == "press":
+		var fruit: String = ticket.get("dish", worker.ticket.get("dish", ""))
+		stations.press.processing_item = fruit if not fruit.is_empty() else _pool_fruit()
 	super._reserve(worker, job)
 	if not ticket.is_empty(): worker.ticket = ticket
 
@@ -1242,6 +1329,7 @@ func _finish(worker: Dictionary) -> void:
 			"boil":
 				if job.src == "boil" and not _is_operation(job):
 					if ticket.dish == "black_tea": done = true
+					elif _is_pressed(ticket.dish): ticket.stage = "press"
 					else: ticket.stage = "mix"
 			"mix":
 				if job.src == "mix":
@@ -1252,6 +1340,10 @@ func _finish(worker: Dictionary) -> void:
 				elif job.src == "topping": done = true
 			"topped":
 				if job.src == "topping" and not _is_operation(job): done = true
+			"press":
+				if job.kind == "press": ticket.stage = "pressed"
+			"pressed":
+				if job.src == "press" and not _is_operation(job): done = true
 		ticket.wait = 0.0
 		if done: worker.ticket = {}
 	super._finish(worker)
@@ -1381,6 +1473,14 @@ func _topping_room() -> int:
 	return room
 
 func _complete_topping(station: Dictionary, job: Dictionary) -> void:
+	if job.kind == "press":
+		# The fruit was picked when the hand stepped up: the one that was ordered (the pool picks the shortest).
+		var fruit: String = station.processing_item
+		if not fruit in station.output: fruit = _pool_fruit()
+		if fruit.is_empty(): station.input.tea += job.count
+		else: station.output[fruit] += job.count
+		station.processing_item = ""
+		return
 	# Following orders, the flavor was chosen when the job was taken: the one that was ordered.
 	if follow_orders and not station.processing_item.is_empty():
 		station.output[station.processing_item] += job.count
@@ -1461,7 +1561,7 @@ func _deliver(destination: String, item: String, count: int) -> void:
 func _cancel_job(worker: Dictionary) -> void:
 	if not worker.job.is_empty() and worker.job.src == "shelf" and worker.carry_count > 0:
 		shelf_stock[worker.job.item] += worker.carry_count
-	if not worker.job.is_empty() and worker.job.kind == "topping": stations.topping.processing_item = ""
+	if not worker.job.is_empty() and worker.job.kind in ["topping", "press"]: stations[worker.job.src].processing_item = ""
 	super._cancel_job(worker)
 	# Whatever this hand was following is left where it stands; the next follower picks it up from there.
 	worker.ticket = {}
@@ -1470,20 +1570,21 @@ func _dish_price(dish: String) -> int:
 	var price := _base_price(dish)
 	# Price upgrades multiply: each level ×(1 + step), each star ×star_mult, across machines and ingredients.
 	var bonus := 1.0
-	for id in ["lemonade", "boil", "mix", "supply"]:
+	for id in ["lemonade", "boil", "mix", "supply", "press"]:
 		var definition = _definition(id)
 		if _art_mode(definition) and dish in definition.art_price_dishes:
 			bonus *= pow(1.0 + definition.art_price_step, station_levels[id] - 1) * pow(definition.art_star_mult, stars(id))
 		for material in definition.materials:
 			if _art_mode(material) and dish in material.art_price_dishes: bonus *= pow(1.0 + material.art_price_step, material_levels[id][material.id] - 1)
 	var flavor := 1.0
-	for material in _definition("topping").materials:
-		if material.item_id == dish: flavor = _material_bonus("topping", material.id)
+	for id in ["topping", "press"]:
+		for material in _definition(id).materials:
+			if material.item_id == dish: flavor = _material_bonus(id, material.id)
 	return roundi(price * bonus * flavor)
 
 func _record_sale(job: Dictionary) -> void:
 	# A cup handed over from the shelf or the stand is drunk here: the customer takes a seat for a while.
-	if job.src != "seal":
+	if not _to_go(job):
 		var taken: Array = diners.map(func(diner: Dictionary) -> int: return diner.seat)
 		var seat := 0
 		while seat in taken: seat += 1
@@ -1574,6 +1675,7 @@ func load_dict(state: Dictionary) -> String:
 		state.flyers = 1
 	if state.get("version") is int and state.version == 6: state = _migrate_v6(state)
 	if state.get("version") is int and state.version == 7: state = _migrate_v7(state)
+	if state.get("version") is int and state.version == 8: state = _migrate_v8(state)
 	var error := _validate_state(state)
 	if not error.is_empty(): return error
 	var candidate = get_script().new()
@@ -1644,6 +1746,21 @@ func _migrate_v7(old: Dictionary) -> Dictionary:
 			if worker is Dictionary: worker["ticket"] = {}
 	return state
 
+## v8 → v9: the press table, its fruits and the two fruit teas are new; every new key starts empty or at Lv1.
+func _migrate_v8(old: Dictionary) -> Dictionary:
+	var state: Dictionary = old.duplicate(true)
+	state.version = 9
+	var fresh: Dictionary = get_script().new().to_dict()
+	for key in ["shelf_stock", "sold_by_dish", "station_levels", "unlocked_stations", "material_levels", "stations"]:
+		if state.get(key) is Dictionary: _fill_missing(state[key], fresh[key])
+	return state
+
+## Adds the keys `sample` has and `target` lacks (recursing into nested dictionaries); existing values stay.
+func _fill_missing(target: Dictionary, sample: Dictionary) -> void:
+	for key in sample:
+		if not target.has(key): target[key] = sample[key].duplicate(true) if sample[key] is Dictionary else sample[key]
+		elif target[key] is Dictionary and sample[key] is Dictionary: _fill_missing(target[key], sample[key])
+
 ## v4 → v5: the brewer pot holds up to six cups, and lemonade levels above the new cap are refunded.
 func _migrate_v4(old: Dictionary) -> Dictionary:
 	var state: Dictionary = old.duplicate(true)
@@ -1710,14 +1827,16 @@ func _valid_job_route(job: Dictionary) -> bool:
 		"brew_start": return job.src == "boil" and job.dst == "boil" and job.item == "raw" and job.count >= 1 and job.count <= 6 and job.belt == ""
 		"brew_take", "stir": return job.src == "boil" and job.dst == "boil" and job.item == "tea" and job.count >= 1 and job.count <= 6 and job.belt == ""
 		"topping": return job.src == "topping" and job.dst == "topping" and job.item == "plain_milk_tea" and job.belt == ""
+		"press": return job.src == "press" and job.dst == "press" and job.item == "tea" and job.belt == ""
+		"transfer_to_press": return job.src == "boil" and job.dst == "press" and job.item == "tea" and job.belt == ""
 		"load_boil": return job.src == "supply" and job.dst == "boil" and job.item == "raw" and job.belt == ""
 		"unload_boil": return job.src == "boil" and job.dst == "mix" and job.item == "tea" and job.belt == ""
 		"transfer_to_topping": return job.src == "mix" and job.dst == "topping" and job.item == "plain_milk_tea" and job.belt == ""
 		"carry_to_seal":
 			return job.dst == "seal" and job.belt == "" and ((job.src == "supply" and job.item == "lemonade") or (job.src == "shelf" and job.item in DISHES and job.item != "lemonade")
-				or (job.src == "boil" and job.item == "tea") or (job.src == "mix" and job.item == "plain_milk_tea") or (job.src == "topping" and _is_topped(job.item)))
+				or (job.src == "boil" and job.item == "tea") or (job.src == "mix" and job.item == "plain_milk_tea") or (job.src == "topping" and _is_topped(job.item)) or (job.src == "press" and _is_pressed(job.item)))
 		"carry_to_shelf":
-			return job.dst == "shelf" and job.belt == "" and ((job.src == "boil" and job.item == "tea") or (job.src == "mix" and job.item == "plain_milk_tea") or (job.src == "topping" and job.item in DISHES and not job.item in ["lemonade", "black_tea", "plain_milk_tea"]))
+			return job.dst == "shelf" and job.belt == "" and ((job.src == "boil" and job.item == "tea") or (job.src == "mix" and job.item == "plain_milk_tea") or (job.src == "topping" and _is_topped(job.item)) or (job.src == "press" and _is_pressed(job.item)))
 	return false
 
 func _validate_state(state: Dictionary) -> String:
@@ -1756,7 +1875,7 @@ func _validate_state(state: Dictionary) -> String:
 	var sale_total := 0
 	for value in state.sold_by_dish.values(): sale_total += value
 	if sale_total != state.sold: return "销量总数不一致"
-	if state.stations.size() != 4: return "机器状态不完整"
+	if state.stations.size() != template.stations.size(): return "机器状态不完整"
 	for id in template.stations:
 		if not state.stations.has(id) or not state.stations[id] is Dictionary: return "机器字段无效"
 		var station: Dictionary = state.stations[id]
@@ -1821,8 +1940,8 @@ func _validate_state(state: Dictionary) -> String:
 			var job_sample := {"kind": "", "src": "", "dst": "", "item": "", "count": 1, "priority": 1.0, "belt": "", "order_id": -1}
 			if not _same_shape(worker.job, job_sample): return "员工运单字段无效"
 			var job: Dictionary = worker.job
-			if not job.kind in ["serve", "topping", "brew_start", "brew_take", "stir", "load_boil", "unload_boil", "transfer_to_topping", "load_seal_belt", "carry_to_seal", "load_shelf_belt", "carry_to_shelf"]: return "员工任务无效"
-			if not job.src in ["supply", "shelf", "boil", "mix", "topping", "seal"] or not job.dst in ["boil", "mix", "topping", "seal", "shelf", "counter"]: return "员工运输端点无效"
+			if not job.kind in ["serve", "topping", "press", "transfer_to_press", "brew_start", "brew_take", "stir", "load_boil", "unload_boil", "transfer_to_topping", "load_seal_belt", "carry_to_seal", "load_shelf_belt", "carry_to_shelf"]: return "员工任务无效"
+			if not job.src in ["supply", "shelf", "boil", "mix", "topping", "press", "seal"] or not job.dst in ["boil", "mix", "topping", "press", "seal", "shelf", "counter"]: return "员工运输端点无效"
 			if not job.item in DISHES + ["raw", "tea"] or job.count <= 0: return "员工运单货物无效"
 			if not job.belt in ["", "topping_to_seal", "seal_to_shelf"]: return "员工传送带无效"
 			if not _valid_job_route(job): return "员工运单路线或口味无效"
@@ -1850,7 +1969,7 @@ func _validate_state(state: Dictionary) -> String:
 		if order.id < 1 or order.id >= state.next_order or order.id in order_ids or order.wait < 0 or not order.dish in DISHES: return "订单内容无效"
 		order_ids.append(order.id)
 	var served_orders: Array = []
-	var operations := {"boil": 0, "topping": 0}
+	var operations := {"boil": 0, "topping": 0, "press": 0}
 	for worker in state.roster:
 		if worker.job.is_empty(): continue
 		var job: Dictionary = worker.job
@@ -1867,7 +1986,7 @@ func _validate_state(state: Dictionary) -> String:
 	for id in state.stations:
 		var station: Dictionary = state.stations[id]
 		for item in station.reserved_out:
-			var stock: Dictionary = station.input if (id == "boil" and item == "raw") or (id == "topping" and item == "plain_milk_tea") else station.output
+			var stock: Dictionary = station.input if _input_item(id, item) else station.output
 			if station.reserved_out[item] > stock.get(item, 0): return "取货预留超过实际库存"
 	for shipment in state.belt_items:
 		var sample := {"route": "", "item": "", "count": 1, "progress": 0.0, "duration": 1.0, "dst": ""}

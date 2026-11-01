@@ -138,24 +138,26 @@ func _refresh_upgrade(info: Dictionary) -> void:
 		if not price.is_empty(): _upgrade_effect.text = "%s %d 金" % [price.sample, price.now]
 		elif info.has("slots"): _upgrade_effect.text = "封口位 %d · 每杯 %.1f 秒" % [info.slots, info.seconds]
 		elif info.has("batch"): _upgrade_effect.text = "一锅 %d 杯 · 每锅 %.1f 秒" % [info.batch, info.seconds]
-		elif float(info.get("seconds", -1.0)) > 0: _upgrade_effect.text = "每批 %.1f 秒" % info.seconds
+		elif float(info.get("seconds", -1.0)) > 0: _upgrade_effect.text = "%s %.1f 秒" % [_per(), info.seconds]
 		else: _upgrade_effect.text = "%s ×%.2f" % [effect, info.speed]
 		upgrade_button.text = "满级"
 		upgrade_button.disabled = true
 		return
 	var star: bool = info.get("next_star", false)
-	var kind: String = {"capacity": "产能升级", "price": "售价升级"}.get(String(info.get("kind", "")), "设备升级")
+	var kind: String = {"capacity": "产能升级", "price": "售价升级", "both": "产能售价升级"}.get(String(info.get("kind", "")), "设备升级")
 	_upgrade_title.text = ("升星！" if star else kind) + " Lv%d → Lv%d" % [level, level + 1]
 	if not price.is_empty() and star:
 		_upgrade_effect.text = "%s每杯 ×%.1f · %s %d → %d 金" % [price.scope, info.star_mult, price.sample, price.now, price.next]
+		if info.get("kind", "") == "both": _upgrade_effect.text += " · 更快"
 	elif not price.is_empty():
 		_upgrade_effect.text = "%s每杯 ×%.2f · %s %d → %d 金" % [price.scope, 1.0 + price.step / 100.0, price.sample, price.now, price.next]
+		if info.get("kind", "") == "both": _upgrade_effect.text = "%s %d → %d 金 · %s %.1f → %.1f 秒" % [price.sample, price.now, price.next, _per(), info.seconds, info.next_seconds]
 	elif info.has("slots"):
 		_upgrade_effect.text = "封口位 %d → %d" % [info.slots, info.next_slots] if info.next_slots > info.slots else "每杯 %.1f → %.1f 秒" % [info.seconds, info.next_seconds]
 	elif info.has("batch") and int(info.next_batch) > int(info.batch):
 		_upgrade_effect.text = "一锅 %d → %d 杯" % [info.batch, info.next_batch]
 	elif float(info.get("seconds", -1.0)) > 0:
-		_upgrade_effect.text = "%s · 每批 %.1f → %.1f 秒" % [effect, info.seconds, info.next_seconds]
+		_upgrade_effect.text = "%s · %s %.1f → %.1f 秒" % [effect, _per(), info.seconds, info.next_seconds]
 	else:
 		_upgrade_effect.text = "%s ×%.2f → ×%.2f" % [effect, info.speed, info.next_speed]
 	if not String(info.get("next_unlock", "")).is_empty():
@@ -183,7 +185,7 @@ func _refresh_materials(info: Dictionary) -> void:
 		_material_signature = signature
 		_hud._sheet_height = -1.0
 	var flavors := materials.any(func(row: Dictionary) -> bool: return int(row.get("base_price", 0)) > 0)
-	_material_title.text = "配料 · 升级提高售价" if flavors else "原料 · 升级提高售价"
+	_material_title.text = ("水果" if station_id == "press" else "配料" if flavors else "原料") + " · 升级提高售价"
 	_material_title.visible = not materials.is_empty()
 	_materials.visible = not materials.is_empty()
 	for row in materials:
@@ -297,3 +299,8 @@ func _refresh_locked(info: Dictionary) -> void:
 	else:
 		unlock_button.text = error
 	unlock_button.disabled = not error.is_empty()
+
+
+## The brewer works a pot at a time; the press table one cup at a time.
+func _per() -> String:
+	return "每杯" if station_id == "press" else "每批"

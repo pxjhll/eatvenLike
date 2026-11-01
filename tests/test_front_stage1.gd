@@ -1,6 +1,6 @@
 extends "res://tests/test_case.gd"
 ## PXJ-46 阶段 1：空店开局、前厅点解锁、招人与一人一岗、饮水机式出品台。
-## PXJ-49 起柜台开局就在，只有柠檬茶台要买。
+## PXJ-49 起柜台开局就在，只有柠檬水台要买。
 
 const TEA := "res://content/tea/tea.tres"
 
