@@ -1665,6 +1665,7 @@ func _apply_state(state: Dictionary) -> void:
 	_rng.state = state.rng_state
 
 func load_dict(state: Dictionary) -> String:
+	var from_version: Variant = state.get("version")
 	if state.get("version") is int and state.version == 3:
 		state = _migrate_v3(state)
 		state.version = 4
@@ -1675,7 +1676,9 @@ func load_dict(state: Dictionary) -> String:
 		state.flyers = 1
 	if state.get("version") is int and state.version == 6: state = _migrate_v6(state)
 	if state.get("version") is int and state.version == 7: state = _migrate_v7(state)
-	if state.get("version") is int and state.version == 8: state = _migrate_v8(state)
+	# v8 and every older path (v6 rebuilds from a fresh shop but copies the old level and sales tables)
+	# need the press table's keys filled in.
+	if from_version is int and from_version <= 8 and state.get("version") in [8, SAVE_VERSION]: state = _migrate_v8(state)
 	var error := _validate_state(state)
 	if not error.is_empty(): return error
 	var candidate = get_script().new()

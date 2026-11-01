@@ -1121,6 +1121,32 @@ func test_lemonade_to_go_is_handed_over_without_the_sealer() -> void:
 	check_eq(sim.dish_name("lemonade"), "柠檬水", "the front drink is called lemonade (柠檬水)")
 	check_eq(sim.dish_name("lemon_tea"), "柠檬茶", "lemon tea is the new kitchen drink")
 
+## Takes the press table and fruit teas out of a save, as saves from before v9 had them.
+func _strip_press(old: Dictionary) -> void:
+	old.stations.erase("press")
+	for key in ["shelf_stock", "sold_by_dish"]:
+		for dish in ["lemon_tea", "banana_tea"]: old[key].erase(dish)
+	for dish in ["lemon_tea", "banana_tea"]:
+		old.stations.seal.input.erase(dish)
+		old.stations.seal.output.erase(dish)
+	old.station_levels.erase("press")
+	old.unlocked_stations.erase("press")
+	old.material_levels.erase("press")
+
+func test_v6_save_without_the_press_table_still_loads() -> void:
+	var sim = opened()
+	if sim == null: return
+	sim.advance(30)
+	var old: Dictionary = sim.to_dict()
+	old.version = 6
+	old.erase("front_upgrades")
+	old.erase("kitchen_upgrades")
+	for worker in old.roster: worker.erase("ticket")
+	_strip_press(old)
+	var copy = make_shop()
+	check_eq(copy.load_dict(old), "", "a v6 save from before the press table loads")
+	check(not copy.station_unlocked("press") and copy.station_levels.press == 1, "with the press table locked at Lv1")
+
 func test_v8_save_loads_with_the_press_table_still_locked() -> void:
 	var sim = _full_line(2)
 	if sim == null: return
