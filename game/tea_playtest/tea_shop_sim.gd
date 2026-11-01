@@ -16,7 +16,12 @@ const STIR_SECONDS := 1.0
 ## v7: front and kitchen staff are separate; per-worker training became the front / kitchen upgrade lists.
 ## v8: kitchen staff follow orders (worker.ticket); the topping machine tops the flavor that was ordered.
 ## v9: the press table (fruit teas on a black tea base) and its stage; lemonade to go skips the sealer.
-const SAVE_VERSION := 9
+## v10: order_ramp (orders seen since each dish / takeaway opened) so new things ease in.
+const SAVE_VERSION := 10
+## A newly opened dish (and takeaway once the sealer opens) starts at RAMP_START of its order weight
+## and reaches full weight after RAMP_ORDERS customers.
+const RAMP_START := 0.25
+const RAMP_ORDERS := 12
 ## The press table lives in its own file so the legacy GameSim (which builds every slot in tea.tres) never sees it.
 const PRESS_DEF = preload("res://content/tea/press_table.tres")
 ## Kitchen staff follow orders from the pot to the shelf (v0.3 process blocks). Off = the shared task pool
@@ -55,6 +60,8 @@ var flyers := 1
 var front_upgrades := 0
 var kitchen_upgrades := 0
 var diners: Array = []
+## Customers who arrived since each dish (and "takeaway") opened, capped at RAMP_ORDERS.
+var order_ramp: Dictionary = {}
 var _flavor_cursor := 0
 ## Bought conveyor segments (BeltSlotDef ids) and each one's countdown to its next cup.
 var belts: Dictionary = {}
@@ -117,6 +124,9 @@ func _initialize_shop() -> void:
 	front_upgrades = 0
 	kitchen_upgrades = 0
 	diners.clear()
+	order_ramp.clear()
+	for dish in DISHES: order_ramp[dish] = 0
+	order_ramp.takeaway = 0
 	for id in ["boil", "mix", "topping", "press", "seal"]:
 		stations[id] = {"input": {}, "output": {}, "phase": "idle", "progress": 0.0,
 			"label": id, "capacity": 6, "processing": 0, "remaining": 0.0,
@@ -883,22 +893,37 @@ func _dish_unlocked(dish: String) -> bool:
 			if material.item_id == dish: return station_unlocked(id) and station_levels[id] >= material.unlock_level
 	return false
 
+## How far a new dish (or takeaway) has eased in: RAMP_START right after it opens, 1.0 after RAMP_ORDERS customers.
+func ramp(key: String) -> float:
+	return lerpf(RAMP_START, 1.0, clampf(float(order_ramp.get(key, 0)) / RAMP_ORDERS, 0.0, 1.0))
+
+## This stage's order weight for each dish on the menu, new dishes scaled down while they ease in.
+func order_weights() -> Dictionary:
+	var result := {}
+	var weights: Dictionary = PROGRESSION.stages[stage_index].order_weights
+	for dish in weights:
+		if _dish_unlocked(dish): result[dish] = weights[dish] * ramp(dish)
+	return result
+
+func takeaway_share() -> float:
+	return PROGRESSION.stages[stage_index].takeaway_share * ramp("takeaway")
+
 func _add_order() -> void:
 	if _rng == null or not station_unlocked("lemonade"): return
-	var weights: Dictionary = PROGRESSION.stages[stage_index].order_weights
+	var weights := order_weights()
 	var total := 0.0
-	for dish in weights:
-		if _dish_unlocked(dish): total += weights[dish]
+	for dish in weights: total += weights[dish]
 	if total <= 0: return
 	var sample := _rng.randf() * total
 	var selected := "lemonade"
 	for dish in weights:
-		if not _dish_unlocked(dish): continue
 		sample -= weights[dish]
 		if sample <= 0:
 			selected = dish
 			break
-	var takeaway := station_unlocked("seal") and _rng.randf() < PROGRESSION.stages[stage_index].takeaway_share
+	var takeaway := station_unlocked("seal") and _rng.randf() < takeaway_share()
+	for dish in weights: order_ramp[dish] = mini(int(order_ramp.get(dish, 0)) + 1, RAMP_ORDERS)
+	if station_unlocked("seal"): order_ramp.takeaway = mini(int(order_ramp.get("takeaway", 0)) + 1, RAMP_ORDERS)
 	orders.append({"id": _next_order, "wait": 0.0, "reserved": false, "dish": selected, "takeaway": takeaway})
 	_next_order += 1
 
@@ -1626,7 +1651,7 @@ func to_dict() -> Dictionary:
 		"sold_by_dish": sold_by_dish.duplicate(true), "flavor_cursor": _flavor_cursor, "rng_state": _rng.state,
 		"belts": belts.duplicate(true), "belt_clock": belt_clock.duplicate(true),
 		"boxes": boxes.duplicate(true), "seats": seats, "diners": diners.duplicate(true), "flyers": flyers,
-		"front_upgrades": front_upgrades, "kitchen_upgrades": kitchen_upgrades}
+		"front_upgrades": front_upgrades, "kitchen_upgrades": kitchen_upgrades, "order_ramp": order_ramp.duplicate(true)}
 
 func _apply_state(state: Dictionary) -> void:
 	roster = state.roster.duplicate(true)
@@ -1664,6 +1689,7 @@ func _apply_state(state: Dictionary) -> void:
 	front_upgrades = state.front_upgrades
 	kitchen_upgrades = state.kitchen_upgrades
 	diners = state.diners.duplicate(true)
+	order_ramp = state.order_ramp.duplicate(true)
 	_rng.state = state.rng_state
 
 func load_dict(state: Dictionary) -> String:
@@ -1681,6 +1707,7 @@ func load_dict(state: Dictionary) -> String:
 	# v8 and every older path (v6 rebuilds from a fresh shop but copies the old level and sales tables)
 	# need the press table's keys filled in.
 	if from_version is int and from_version <= 8 and state.get("version") in [8, SAVE_VERSION]: state = _migrate_v8(state)
+	if state.get("version") is int and state.version == 9: state = _migrate_v9(state)
 	var error := _validate_state(state)
 	if not error.is_empty(): return error
 	var candidate = get_script().new()
@@ -1758,6 +1785,22 @@ func _migrate_v8(old: Dictionary) -> Dictionary:
 	var fresh: Dictionary = get_script().new().to_dict()
 	for key in ["shelf_stock", "sold_by_dish", "station_levels", "unlocked_stations", "material_levels", "stations"]:
 		if state.get(key) is Dictionary: _fill_missing(state[key], fresh[key])
+	return state
+
+## v9 → v10: dishes already on the menu count as fully eased in; ones not yet open start from zero.
+func _migrate_v9(old: Dictionary) -> Dictionary:
+	var state: Dictionary = old.duplicate(true)
+	state.version = SAVE_VERSION
+	if state.get("order_ramp") is Dictionary: return state
+	var probe = get_script().new()
+	if state.get("station_levels") is Dictionary and state.get("unlocked_stations") is Dictionary and state.get("boxes") is Dictionary:
+		probe.station_levels = state.station_levels
+		probe.unlocked_stations = state.unlocked_stations
+		probe.boxes = state.boxes
+	var ramp_state := {}
+	for dish in DISHES: ramp_state[dish] = RAMP_ORDERS if probe._dish_unlocked(dish) else 0
+	ramp_state.takeaway = RAMP_ORDERS if probe.station_unlocked("seal") else 0
+	state.order_ramp = ramp_state
 	return state
 
 ## Adds the keys `sample` has and `target` lacks (recursing into nested dictionaries); existing values stay.
@@ -1857,6 +1900,9 @@ func _validate_state(state: Dictionary) -> String:
 	if state.accumulator >= STEP + 0.000001: return "存档时间余量无效"
 	if not _same_shape(state.station_levels, template.station_levels) or not _same_shape(state.unlocked_stations, template.unlocked_stations): return "设备字段无效"
 	if not _same_shape(state.material_levels, template.material_levels): return "配料字段无效"
+	if not _same_shape(state.order_ramp, template.order_ramp): return "出单字段无效"
+	for key in state.order_ramp:
+		if state.order_ramp[key] < 0 or state.order_ramp[key] > RAMP_ORDERS: return "出单字段无效"
 	if state.belts.size() != state.belt_clock.size(): return "传送带字段无效"
 	for id in state.belts:
 		var belt = _belt_def(id) if id is String else null

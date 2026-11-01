@@ -546,8 +546,8 @@ func test_full_other_flavors_do_not_block_the_requested_flavor() -> void:
 			sim.workers[0].pos = Vector2(530, 430)
 			sim.orders.clear()
 			for id in 3: sim.orders.append({"id": id + 1, "dish": requested, "wait": 0.0, "reserved": false, "takeaway": false})
-			# The front worker may also serve walk-in lemonade, so allow up to a minute.
-			for tick in 600:
+			# The kitchen brews a fresh pot for the order and the front may serve walk-ins too, so allow two minutes.
+			for tick in 1200:
 				sim.advance(0.1)
 				if not sim.audit().valid:
 					check(false, "full other flavors conserve while requested flavor moves: %s" % sim.audit())
@@ -845,12 +845,12 @@ func test_flyers_and_flavors_bring_customers_faster() -> void:
 	for material in sim._definition("topping").materials:
 		if sim._dish_unlocked(material.item_id): flavors += 1
 	check(flavors > 0, "the opened shop sells topped flavors")
-	check(is_equal_approx(sim._order_interval(), base / (1.0 + 0.05 * flavors)), "each flavor on the menu brings customers 5% faster")
+	check(is_equal_approx(sim._order_interval(), base), "flavors make cups dearer; they no longer bring customers faster")
 	var info: Dictionary = sim.station_info("counter")
 	check_eq(info.flyers, 1, "flyers start at Lv1")
 	for level in range(2, 11): check_eq(sim.buy_flyers(), "", "flyers to Lv%d" % level)
 	check(not sim.buy_flyers().is_empty(), "flyers stop at Lv10")
-	check(is_equal_approx(sim._order_interval(), base / (1.0 + 0.05 * flavors) / 1.9), "nine flyer levels bring customers 90% faster")
+	check(is_equal_approx(sim._order_interval(), base / 1.9), "nine flyer levels bring customers 90% faster")
 	var copy = make_shop()
 	check_eq(copy.load_dict(sim.to_dict()), "", "flyer level saves")
 	check_eq(copy.flyers, 10, "flyer level loads")
@@ -1176,3 +1176,32 @@ func test_v8_save_loads_with_the_press_table_still_locked() -> void:
 	check_eq(copy.station_levels.press, 1, "at Lv1")
 	for tick in 600: copy.advance(0.1)
 	check(copy.audit().valid and copy.sold > old.sold, "the loaded shop keeps selling")
+
+func test_new_dishes_and_takeaway_ease_in_over_a_dozen_customers() -> void:
+	var sim = opened()
+	if sim == null: return
+	var full: Dictionary = sim.PROGRESSION.stages[sim.stage_index].order_weights
+	var weights: Dictionary = sim.order_weights()
+	check(is_equal_approx(weights.pearl_milk_tea, full.pearl_milk_tea * sim.RAMP_START), "a dish that just opened starts at a quarter of its weight")
+	check(is_equal_approx(sim.takeaway_share(), sim.PROGRESSION.stages[sim.stage_index].takeaway_share * sim.RAMP_START), "takeaway starts low when the sealer opens")
+	for i in sim.RAMP_ORDERS: sim._add_order()
+	weights = sim.order_weights()
+	check(is_equal_approx(weights.pearl_milk_tea, full.pearl_milk_tea), "after a dozen customers the dish has its full weight")
+	check(is_equal_approx(sim.takeaway_share(), sim.PROGRESSION.stages[sim.stage_index].takeaway_share), "takeaway reaches its full share too")
+	check(not weights.has("banana_tea"), "dishes not on the menu get no weight")
+	check_eq(sim.order_ramp.banana_tea, 0, "a closed dish does not count customers yet")
+	var copy = make_shop()
+	check_eq(copy.load_dict(sim.to_dict()), "", "the ease-in counters save")
+	check_eq(copy.order_ramp, sim.order_ramp, "the ease-in counters load")
+
+func test_v9_save_counts_open_dishes_as_eased_in() -> void:
+	var sim = opened()
+	if sim == null: return
+	var state: Dictionary = sim.to_dict()
+	state.version = 9
+	state.erase("order_ramp")
+	var copy = make_shop()
+	check_eq(copy.load_dict(state), "", "a v9 save loads")
+	check_eq(copy.order_ramp.pearl_milk_tea, copy.RAMP_ORDERS, "dishes already sold keep their full weight")
+	check_eq(copy.order_ramp.takeaway, copy.RAMP_ORDERS, "takeaway keeps its full share")
+	check_eq(copy.order_ramp.lemon_tea, 0, "a dish that opens later still eases in")
