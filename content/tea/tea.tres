@@ -61,7 +61,7 @@ display_name = "芋泥奶茶"
 [sub_resource type="Resource" id="item_lemonade"]
 script = ExtResource("item_def")
 id = "lemonade"
-display_name = "柠檬茶"
+display_name = "柠檬水"
 
 [sub_resource type="Resource" id="item_black_tea"]
 script = ExtResource("item_def")
@@ -78,7 +78,7 @@ price = 28
 [sub_resource type="Resource" id="dish_lemonade"]
 script = ExtResource("dish_def")
 id = "lemonade"
-display_name = "柠檬茶"
+display_name = "柠檬水"
 item_id = "lemonade"
 price = 12
 
@@ -117,6 +117,20 @@ display_name = "芋泥奶茶"
 item_id = "taro_milk_tea"
 price = 46
 
+[sub_resource type="Resource" id="dish_lemon_tea"]
+script = ExtResource("dish_def")
+id = "lemon_tea"
+display_name = "柠檬茶"
+item_id = "lemon_tea"
+price = 34
+
+[sub_resource type="Resource" id="dish_banana_tea"]
+script = ExtResource("dish_def")
+id = "banana_tea"
+display_name = "香蕉果茶"
+item_id = "banana_tea"
+price = 40
+
 [sub_resource type="Resource" id="recipe_cabinet_supply"]
 script = ExtResource("recipe_def")
 id = "cabinet_supply"
@@ -152,7 +166,7 @@ box_machine = "boil"
 upgrade_costs = Array[int]([40, 80, 160])
 level_bonus = Array[float]([1.0, 1.3, 1.6, 2.0])
 art_price_step = 0.07
-art_price_dishes = Array[String](["black_tea", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+art_price_dishes = Array[String](["black_tea", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea", "lemon_tea", "banana_tea"])
 art_costs = Array[int]([50, 75, 110, 170])
 
 [sub_resource type="Resource" id="mat_milk"]
@@ -273,7 +287,7 @@ flavor_cap = 3
 [sub_resource type="Resource" id="station_lemonade_stand"]
 script = ExtResource("station_def")
 id = "lemonade_stand"
-display_name = "柠檬茶台"
+display_name = "柠檬水台"
 owner = 1
 mode = 4
 zone = "front"
@@ -401,7 +415,7 @@ length_cells = 2.0
 [sub_resource type="Resource" id="task_lemon30"]
 script = ExtResource("task_def")
 id = "lemon30"
-display_name = "柠檬茶卖出 30 杯"
+display_name = "柠檬水卖出 30 杯"
 target_id = "lemonade"
 amount = 30.0
 
@@ -466,7 +480,7 @@ id = "tea"
 display_name = "奶茶店"
 kitchen_unlock_stage = 1
 items = Array[ExtResource("item_def")]([SubResource("item_tea_leaf"), SubResource("item_milk"), SubResource("item_tea"), SubResource("item_plain_milk_tea"), SubResource("item_pearl_milk_tea"), SubResource("item_coconut_milk_tea"), SubResource("item_redbean_milk_tea"), SubResource("item_taro_milk_tea"), SubResource("item_lemonade"), SubResource("item_black_tea")])
-dishes = Array[ExtResource("dish_def")]([SubResource("dish_lemonade"), SubResource("dish_plain_milk_tea"), SubResource("dish_pearl_milk_tea"), SubResource("dish_coconut_milk_tea"), SubResource("dish_redbean_milk_tea"), SubResource("dish_taro_milk_tea"), SubResource("dish_black_tea")])
+dishes = Array[ExtResource("dish_def")]([SubResource("dish_lemonade"), SubResource("dish_plain_milk_tea"), SubResource("dish_pearl_milk_tea"), SubResource("dish_coconut_milk_tea"), SubResource("dish_redbean_milk_tea"), SubResource("dish_taro_milk_tea"), SubResource("dish_black_tea"), SubResource("dish_lemon_tea"), SubResource("dish_banana_tea")])
 slots = Array[ExtResource("slot_def")]([SubResource("slot_cabinet"), SubResource("slot_brewer"), SubResource("slot_milk_station"), SubResource("slot_topping")])
 connections = Array[ExtResource("connection_def")]([SubResource("conn_cabinet_to_brewer"), SubResource("conn_cabinet_to_milk"), SubResource("conn_brewer_to_milk"), SubResource("conn_milk_to_shelf"), SubResource("conn_milk_to_topping"), SubResource("conn_topping_to_shelf")])
 belt_speed = 3.0

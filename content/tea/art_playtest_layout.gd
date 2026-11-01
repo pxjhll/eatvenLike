@@ -7,12 +7,15 @@ const POINTS := {
 	"mix": Vector2(470, 410), "topping": Vector2(190, 490),
 	"seal": Vector2(530, 430), "shelf": Vector2(470, 670),
 	"counter": Vector2(410, 930), "belt_in": Vector2(410, 390),
+	# Standing spot at the press table (right wall, between the sealer and the shelf).
+	"press": Vector2(540, 490),
 	"seal_belt": Vector2(530, 430),
 }
 const STATION_ART := {
 	"supply": "Sortables/IngredientTable", "boil": "Sortables/MachineTable/PearlPot",
 	"mix": "Sortables/MachineTable/Brewer", "topping": "Sortables/PrepBench",
 	"seal": "Sortables/Sealer", "shelf": "Sortables/Rack", "counter": "Sortables/Checkout",
+	"press": "Sortables/PressTable",
 }
 ## A seated operator and a mobile courier use different physical interaction points.
 ## The counter post is front-of-house: that employee only serves customers.
@@ -51,6 +54,7 @@ static func grid() -> ShopGridDef:
 		Rect2(11, 218, 249, 89), # ingredient table
 		Rect2(364, 290, 306, 90), # horizontal conveyor base
 		Rect2(575, 362, 88, 206), # vertical conveyor base
+		Rect2(560, 415, 130, 120), # press table
 		Rect2(500, 565, 205, 148), # shelf
 		Rect2(-30, 690, 260, 176), # partition, with real doorway
 		Rect2(474, 690, 260, 176),

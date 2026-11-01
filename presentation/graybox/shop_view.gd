@@ -353,7 +353,7 @@ func _closed_text(snapshot: Dictionary, revealed: Dictionary) -> Array[String]:
 		return []
 	var stage: ShopStageDef = stages[next]
 	var name := stage.line_name if stage.line_name != "" else _dish_name(stage.dish_id)
-	return ["营业额 %d / %d 后可解锁%s" % [int(snapshot.revenue), stage.revenue_threshold, name], "先在前厅卖柠檬茶"]
+	return ["营业额 %d / %d 后可解锁%s" % [int(snapshot.revenue), stage.revenue_threshold, name], "先在前厅卖柠檬水"]
 
 
 func _dish_name(dish_id: String) -> String:

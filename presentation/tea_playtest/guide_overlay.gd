@@ -6,7 +6,7 @@ extends Control
 ## second partner → deploy them → done card. Later, once each: a hint when the next line can
 ## be bought, and a hint the first time a customer leaves. Dimmed steps freeze the shop.
 
-const STAGE_SIGNS := ["", "boil", "seal", "mix", "topping"]
+const STAGE_SIGNS := ["", "boil", "seal", "mix", "topping", "press"]
 const COUNTER_AREA := Rect2(410, 850, 120, 110)
 const DIM := Color(0.16, 0.1, 0.06, 0.62)
 const GLOW := Color("ffd98a")
@@ -191,15 +191,15 @@ func _opening_step() -> void:
 	_bubble_skip.text = "跳过引导"
 	if not sim.station_unlocked("lemonade"):
 		if page == "station" and _hud.station_panel.station_id == "lemonade":
-			_focus(_hud.station_panel.unlock_button, "点「解锁」，花 10 金币摆上柠檬茶台")
+			_focus(_hud.station_panel.unlock_button, "点「解锁」，花 10 金币摆上柠檬水台")
 		elif page != "shop":
 			_hud.open_page("shop")
 		else:
-			_focus(_view._station_buttons.lemonade, "先开张！点这里摆上柠檬茶台")
+			_focus(_view._station_buttons.lemonade, "先开张！点这里摆上柠檬水台")
 		return
 	if sim.sold == 0:
 		_point = _world_rect(COUNTER_AREA).get_center()
-		_say("小猫会自己做柠檬茶、招呼客人。\n看看第一杯卖出去！")
+		_say("小猫会自己做柠檬水、招呼客人。\n看看第一杯卖出去！")
 		return
 	if sim.workers.size() < _opening_staff():
 		var waiting: Array = sim.all_workers().filter(func(worker: Dictionary) -> bool: return not _view.staff_is_deployed(int(worker.id)))

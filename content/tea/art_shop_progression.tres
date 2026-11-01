@@ -8,7 +8,7 @@
 [sub_resource type="Resource" id="task_lemon30"]
 script = ExtResource("task_def")
 id = "lemon30"
-display_name = "柠檬茶卖出 30 杯"
+display_name = "柠檬水卖出 30 杯"
 target_id = "lemonade"
 amount = 30.0
 
@@ -44,7 +44,7 @@ amount = 20.0
 [sub_resource type="Resource" id="task_lemon_star"]
 script = ExtResource("task_def")
 id = "lemon_star"
-display_name = "柠檬茶台升 1 星（Lv5）"
+display_name = "柠檬水台升 1 星（Lv5）"
 condition = 2
 target_id = "lemonade_stand"
 amount = 5.0
@@ -72,6 +72,21 @@ display_name = "调奶台升 2 星（Lv10）"
 condition = 2
 target_id = "milk_station"
 amount = 10.0
+
+[sub_resource type="Resource" id="task_lemontea20"]
+script = ExtResource("task_def")
+id = "lemontea20"
+display_name = "柠檬茶卖出 20 杯"
+target_id = "lemon_tea"
+amount = 20.0
+
+[sub_resource type="Resource" id="task_press5"]
+script = ExtResource("task_def")
+id = "press5"
+display_name = "手打台升到 Lv5"
+condition = 2
+target_id = "press_table"
+amount = 5.0
 
 [sub_resource type="Resource" id="stage_lemon"]
 script = ExtResource("shop_stage_def")
@@ -140,6 +155,21 @@ queue_capacity = 8
 takeaway_share = 0.55
 unlock_note = "开始卖珍珠奶茶，升级加料机开放更多口味"
 tasks = Array[ExtResource("task_def")]([SubResource("task_topping4"), SubResource("task_pearl20"), SubResource("task_mix_star2")])
+
+[sub_resource type="Resource" id="stage_press"]
+script = ExtResource("shop_stage_def")
+dish_id = "lemon_tea"
+revenue_threshold = 3000
+unlock_slots = Array[String](["press_table"])
+line_cost = 700
+line_name = "手打台"
+staff_slots = 6
+customer_interval = 5.5
+order_weights = Dictionary[String, float]({"lemonade": 0.12, "black_tea": 0.08, "plain_milk_tea": 0.04, "pearl_milk_tea": 0.2, "coconut_milk_tea": 0.1, "redbean_milk_tea": 0.1, "taro_milk_tea": 0.08, "lemon_tea": 0.18, "banana_tea": 0.1})
+queue_capacity = 9
+takeaway_share = 0.55
+unlock_note = "开始卖柠檬茶：员工拿红茶到手打台亲手捣柠檬。升级手打台开放香蕉"
+tasks = Array[ExtResource("task_def")]([SubResource("task_lemontea20"), SubResource("task_press5")])
 
 [sub_resource type="Resource" id="belt_seal_to_shelf"]
 script = ExtResource("belt_slot_def")
@@ -226,5 +256,5 @@ front_upgrade_kinds = Array[String](["walk", "slot", "work", "walk", "slot", "wo
 front_upgrade_costs = Array[int]([30, 90, 160, 260, 420, 650])
 kitchen_upgrade_kinds = Array[String](["walk", "work", "carry", "walk", "work", "carry", "walk", "work"])
 kitchen_upgrade_costs = Array[int]([50, 90, 150, 230, 340, 480, 680, 950])
-stages = Array[ExtResource("shop_stage_def")]([SubResource("stage_lemon"), SubResource("stage_black_tea"), SubResource("stage_seal"), SubResource("stage_milk_tea"), SubResource("stage_topping")])
+stages = Array[ExtResource("shop_stage_def")]([SubResource("stage_lemon"), SubResource("stage_black_tea"), SubResource("stage_seal"), SubResource("stage_milk_tea"), SubResource("stage_topping"), SubResource("stage_press")])
 belts = Array[ExtResource("belt_slot_def")]([SubResource("belt_seal_to_shelf"), SubResource("belt_supply_to_boil"), SubResource("belt_boil_to_seal"), SubResource("belt_boil_to_mix"), SubResource("belt_mix_to_seal"), SubResource("belt_mix_to_topping"), SubResource("belt_topping_to_seal")])

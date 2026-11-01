@@ -289,7 +289,7 @@ func _on_snapshot(snapshot: Dictionary) -> void:
 			_unlock.text = "解锁%s · 金币 %d · 营业额 %d/%d" % [_dish_name(next.dish_id), cost, snapshot.revenue, next.revenue_threshold]
 			_unlock.disabled = snapshot.gold < cost or snapshot.revenue < next.revenue_threshold
 	_refresh_staff_bar()
-	_hint.text = "按住员工拖到工位上上岗，拖回员工栏是下岗；点机器看升级" if snapshot.kitchen_open else "点价格牌解锁柠檬茶台，招一个人拖到柜台"
+	_hint.text = "按住员工拖到工位上上岗，拖回员工栏是下岗；点机器看升级" if snapshot.kitchen_open else "点价格牌解锁柠檬水台，招一个人拖到柜台"
 	if snapshot.progress.completed:
 		_goal.text = "本店目标已达成"
 	elif current != "":

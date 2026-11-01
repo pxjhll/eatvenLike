@@ -12,6 +12,7 @@ const TASKS := {
 	"brew_start": "人工投料", "brew_take": "取出茶汤",
 	"supply": "补原料", "load_boil": "投料煮茶", "unload_boil": "取茶汤",
 	"transfer_to_topping": "送去加料", "topping": "手工加料",
+	"transfer_to_press": "送去手打", "press": "手打果茶",
 	"load_seal_belt": "放上传送带", "carry_to_seal": "送去封口",
 	"load_shelf_belt": "放上传送带", "carry_to_shelf": "成品上架", "serve": "取杯送餐",
 }
@@ -158,7 +159,7 @@ func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -
 
 static func item_asset(item: String) -> String:
 	if item == "raw": return "tea_tin"
-	if item == "lemonade": return "fruit_tea"
+	if item in ["lemonade", "lemon_tea", "banana_tea"]: return "fruit_tea"
 	if item in ["tea", "black_tea", "milk_tea", "plain_milk_tea", "coconut_milk_tea", "taro_milk_tea"]: return "cream_tea"
 	return "pearl_tea"
 
@@ -170,7 +171,7 @@ static func drink_icon(item: String) -> Texture2D:
 
 
 static func item_color(item: String) -> Color:
-	return {"black_tea": Color("d9935f"), "coconut_milk_tea": Color("fff8df"), "redbean_milk_tea": Color("ffd8cf"), "taro_milk_tea": Color("e1d0ff")}.get(item, Color.WHITE)
+	return {"black_tea": Color("d9935f"), "coconut_milk_tea": Color("fff8df"), "redbean_milk_tea": Color("ffd8cf"), "taro_milk_tea": Color("e1d0ff"), "lemon_tea": Color("f2b36a"), "banana_tea": Color("ffe9a8")}.get(item, Color.WHITE)
 
 
 func _draw() -> void:
