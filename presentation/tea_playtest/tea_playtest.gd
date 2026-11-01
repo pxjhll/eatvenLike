@@ -741,6 +741,10 @@ func _on_chip_input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Handle the native touch once; its emulated mouse press would open the sheet
+	# before the touch reaches the GUI, where the new shade would close it again.
+	if event is InputEventMouse and event.device == InputEvent.DEVICE_ID_EMULATION:
+		return
 	if not sim.has_method("station_info"):
 		return
 	var pressed: bool = event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed

@@ -197,6 +197,7 @@ func _run() -> void:
 		queue_view._refresh(0.1)
 	_check(queue_sim.orders.size() > 3 and queue_view._customers.size() == queue_sim.orders.size(), "every queued customer is drawn, not just the first three")
 	queue_view.free()
+	await _test_touch_station_panels()
 	if FileAccess.file_exists(save_path):
 		DirAccess.remove_absolute(save_path)
 	for error in errors.take():
@@ -205,6 +206,61 @@ func _run() -> void:
 	OS.remove_logger(errors)
 	print("TEA BUSINESS GUI: %d failures" % failures)
 	quit(1 if failures else 0)
+
+func _test_touch_station_panels() -> void:
+	# A phone tap also produces a mouse event. Both must leave the opened panel up.
+	var emulated_mouse := Input.emulate_mouse_from_touch
+	Input.emulate_mouse_from_touch = true
+	view = load("res://presentation/tea_playtest/tea_playtest.tscn").instantiate()
+	view.sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
+	view.sim.gold = 1000000
+	view.sim.revenue = 1000000
+	for id in ["lemonade", "boil", "seal", "mix", "topping", "press"]:
+		_check(view.sim.unlock_station(id).is_empty(), "touch fixture unlocks " + id)
+	for material in view.sim.boxes:
+		_check(view.sim.unlock_box(material).is_empty(), "touch fixture buys " + material)
+	for worker in view.sim.workers.duplicate():
+		view.sim.recall_worker(worker.id)
+	root.add_child(view)
+	view.set_process(false)
+	hud = view.ui
+	var points := {"supply": Vector2(120, 210), "boil": Vector2(390, 150),
+		"mix": Vector2(465, 200), "topping": Vector2(85, 420), "seal": Vector2(600, 280),
+		"lemonade": Vector2(160, 920), "press": Vector2(622, 475)}
+	for viewport_size in [Vector2i(720, 1280), Vector2i(360, 640)]:
+		root.size = viewport_size
+		await _layout()
+		for id in points:
+			hud.open_page("shop")
+			await _world_click(points[id])
+			_check(hud.page == "station" and hud.station_panel.station_id == id, "mouse opens " + id)
+			hud.open_page("shop")
+			await _touch(_world(points[id]))
+			_check(hud.page == "station" and hud.station_panel.station_id == id, "touch keeps " + id + " panel open at " + str(viewport_size))
+			if id == "boil" and hud.page == "station":
+				var level: int = view.sim.station_info(id).level
+				var gold: int = view.sim.gold
+				var cost: int = view.sim.station_info(id).upgrade_cost
+				await _touch(hud.station_panel.upgrade_button.get_global_rect().get_center())
+				_check(view.sim.station_info(id).level == level + 1 and view.sim.gold == gold - cost, "one touch buys exactly one machine level")
+			await _touch(_world(Vector2(350, 400)))
+			_check(hud.page == "shop", "touching the shade closes the station panel")
+	view.free()
+	Input.emulate_mouse_from_touch = emulated_mouse
+
+func _touch(point: Vector2) -> void:
+	await process_frame
+	await process_frame
+	var position := point * Vector2(root.size) / view.get_viewport_rect().size
+	for pressed in [true, false]:
+		var event := InputEventScreenTouch.new()
+		event.position = position
+		event.pressed = pressed
+		Input.parse_input_event(event)
+		Input.flush_buffered_events()
+		await process_frame
+	view._refresh(0)
+	await process_frame
 
 func _art_hidden(paths: Array) -> bool:
 	for path in paths:
