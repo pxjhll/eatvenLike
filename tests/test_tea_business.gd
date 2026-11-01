@@ -175,12 +175,15 @@ func test_shop_slots_grow_with_each_production_line() -> void:
 	for line in ["boil", "seal", "mix", "topping"]:
 		var before_slots: int = sim.kitchen_slots()
 		check_eq(sim.unlock_station(line), "", "open " + line)
-		check_eq(sim.kitchen_slots(), before_slots + 1, "%s line adds a kitchen slot" % line)
-		check_eq(sim.deploy_worker(next_id), "", "the new slot takes one more employee")
-		next_id += 1
+		# The topping line opens two: following orders, a late kitchen needs a fifth hand.
+		var added: int = 2 if line == "topping" else 1
+		check_eq(sim.kitchen_slots(), before_slots + added, "%s line adds %d kitchen slot(s)" % [line, added])
+		for unused in added:
+			check_eq(sim.deploy_worker(next_id), "", "the new slot takes one more employee")
+			next_id += 1
 		check(not sim.deploy_worker(next_id).is_empty(), "but no more than the slots")
-	check_eq(sim.kitchen_staff(), 4, "a full kitchen runs four staff")
-	check_eq(sim.deployment_error(next_id), "后厨最多 4 位员工", "the last line names no further unlock")
+	check_eq(sim.kitchen_staff(), 5, "a full kitchen runs five staff")
+	check_eq(sim.deployment_error(next_id), "后厨最多 5 位员工", "the last line names no further unlock")
 	check_eq(sim.front_staff(), 1, "the front still has one worker")
 	for tick in 600: sim.advance(0.1)
 	check(sim.audit().valid, "five deployed staff preserve simulation invariants")
