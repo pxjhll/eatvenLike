@@ -1,0 +1,54 @@
+{
+  "source": "D:/Tes/eatventure/art_src/rabbit_skeleton/photoshop/rabbit_parts_smartobjects.pcraft",
+  "referenceSource": "Actual Bone2D rest transforms rendered by Godot 4.6.1",
+  "references": [
+    {
+      "view": "front",
+      "name": "骨骼参考 / bones_front",
+      "group": "正面 / front",
+      "groupId": 3,
+      "referenceId": 279
+    },
+    {
+      "view": "front_right",
+      "name": "骨骼参考 / bones_front_right",
+      "group": "右前 / front_right",
+      "groupId": 58,
+      "referenceId": 283
+    },
+    {
+      "view": "right",
+      "name": "骨骼参考 / bones_right",
+      "group": "右侧 / right",
+      "groupId": 113,
+      "referenceId": 287
+    },
+    {
+      "view": "back_right",
+      "name": "骨骼参考 / bones_back_right",
+      "group": "右后 / back_right",
+      "groupId": 168,
+      "referenceId": 291
+    },
+    {
+      "view": "back",
+      "name": "骨骼参考 / bones_back",
+      "group": "背面 / back",
+      "groupId": 223,
+      "referenceId": 295
+    }
+  ],
+  "preservedOriginalLayerCount": 50,
+  "files": {
+    "rabbit_parts_with_bones.pcraft": {
+      "embeddedSmartObjects": 50,
+      "boneReferenceLayers": 5,
+      "viewGroups": 5
+    },
+    "rabbit_parts_with_bones.psd": {
+      "embeddedSmartObjects": 50,
+      "boneReferenceLayers": 5,
+      "viewGroups": 5
+    }
+  }
+}

@@ -1,0 +1,710 @@
+{
+	"artwork": "complete_parts",
+	"views": {
+		"back": {
+			"parts": {
+				"arm_far": {
+					"flip_h": true,
+					"position": [
+						-7.91223382949829,
+						-4.07999992370605
+					],
+					"rect": [
+						590,
+						635,
+						175,
+						188
+					],
+					"scale": 0.180851063829787,
+					"visible": true
+				},
+				"arm_near": {
+					"flip_h": true,
+					"position": [
+						-23.4722213745117,
+						-4.68000030517578
+					],
+					"rect": [
+						965,
+						635,
+						175,
+						189
+					],
+					"scale": 0.206349206349206,
+					"visible": true
+				},
+				"body": {
+					"flip_h": false,
+					"position": [
+						-42.825927734375,
+						-42.0
+					],
+					"rect": [
+						110,
+						605,
+						373,
+						270
+					],
+					"scale": 0.22962962962963,
+					"visible": true
+				},
+				"ear_far": {
+					"flip_h": false,
+					"position": [
+						-27.2284107208252,
+						-76.5
+					],
+					"rect": [
+						590,
+						84,
+						230,
+						359
+					],
+					"scale": 0.236768802228412,
+					"visible": true
+				},
+				"ear_near": {
+					"flip_h": false,
+					"position": [
+						-28.2541904449463,
+						-76.5
+					],
+					"rect": [
+						950,
+						84,
+						238,
+						358
+					],
+					"scale": 0.237430167597765,
+					"visible": true
+				},
+				"foot_far": {
+					"flip_h": false,
+					"position": [
+						-6.90000057220459,
+						-7.32043027877808
+					],
+					"rect": [
+						166,
+						1030,
+						186,
+						148
+					],
+					"scale": 0.123655913978495,
+					"visible": true
+				},
+				"foot_near": {
+					"flip_h": true,
+					"position": [
+						-15.6600008010864,
+						-8.66310119628906
+					],
+					"rect": [
+						570,
+						1028,
+						187,
+						150
+					],
+					"scale": 0.144385026737968,
+					"visible": true
+				},
+				"head": {
+					"flip_h": false,
+					"position": [
+						-76.0,
+						-101.68879699707
+					],
+					"rect": [
+						54,
+						159,
+						482,
+						348
+					],
+					"scale": 0.300829875518672,
+					"visible": true
+				},
+				"tail": {
+					"flip_h": false,
+					"position": [
+						-11.0,
+						-10.9153852462769
+					],
+					"rect": [
+						980,
+						1050,
+						130,
+						129
+					],
+					"scale": 0.169230769230769,
+					"visible": true
+				}
+			},
+			"sha256": "89e481014d0a90f9d6cd7ca55fa5bbf2e2c3847c32f356f4a6e86293ac604e33",
+			"source": "res://art_src/rabbit_skeleton/complete_atlases/back.png"
+		},
+		"back_right": {
+			"parts": {
+				"arm_far": {
+					"flip_h": false,
+					"position": [
+						-22.016393661499,
+						-4.07999992370605
+					],
+					"rect": [
+						615,
+						639,
+						158,
+						183
+					],
+					"scale": 0.185792349726776,
+					"visible": true
+				},
+				"arm_near": {
+					"flip_h": false,
+					"position": [
+						-13.1012554168701,
+						-4.67999982833862
+					],
+					"rect": [
+						968,
+						645,
+						191,
+						199
+					],
+					"scale": 0.195979899497487,
+					"visible": true
+				},
+				"body": {
+					"flip_h": false,
+					"position": [
+						-41.8165435791016,
+						-43.0
+					],
+					"rect": [
+						118,
+						604,
+						375,
+						278
+					],
+					"scale": 0.223021582733813,
+					"visible": true
+				},
+				"ear_far": {
+					"flip_h": false,
+					"position": [
+						-26.3147678375244,
+						-76.5
+					],
+					"rect": [
+						553,
+						76,
+						239,
+						386
+					],
+					"scale": 0.22020725388601,
+					"visible": true
+				},
+				"ear_near": {
+					"flip_h": false,
+					"position": [
+						-27.6478500366211,
+						-76.5
+					],
+					"rect": [
+						948,
+						92,
+						242,
+						372
+					],
+					"scale": 0.228494623655914,
+					"visible": true
+				},
+				"foot_far": {
+					"flip_h": false,
+					"position": [
+						-6.90000009536743,
+						-6.47810697555542
+					],
+					"rect": [
+						175,
+						1041,
+						169,
+						119
+					],
+					"scale": 0.136094674556213,
+					"visible": true
+				},
+				"foot_near": {
+					"flip_h": false,
+					"position": [
+						-11.3400001525879,
+						-7.82857179641724
+					],
+					"rect": [
+						594,
+						1032,
+						189,
+						137
+					],
+					"scale": 0.142857142857143,
+					"visible": true
+				},
+				"head": {
+					"flip_h": false,
+					"position": [
+						-66.0,
+						-100.501197814941
+					],
+					"rect": [
+						80,
+						168,
+						417,
+						332
+					],
+					"scale": 0.311750599520384,
+					"visible": true
+				},
+				"tail": {
+					"flip_h": false,
+					"position": [
+						-11.0,
+						-10.8417272567749
+					],
+					"rect": [
+						995,
+						1037,
+						139,
+						137
+					],
+					"scale": 0.158273381294964,
+					"visible": true
+				}
+			},
+			"sha256": "0dcee05f6ffb210729ede26b79ce8ec32409e329746990c8b7195855130deb21",
+			"source": "res://art_src/rabbit_skeleton/complete_atlases/back_right.png"
+		},
+		"front": {
+			"parts": {
+				"arm_far": {
+					"flip_h": true,
+					"position": [
+						-7.58333349227905,
+						-4.07999992370605
+					],
+					"rect": [
+						603,
+						687,
+						182,
+						204
+					],
+					"scale": 0.166666666666667,
+					"visible": true
+				},
+				"arm_near": {
+					"flip_h": true,
+					"position": [
+						-23.8440589904785,
+						-4.67999982833862
+					],
+					"rect": [
+						953,
+						688,
+						190,
+						202
+					],
+					"scale": 0.193069306930693,
+					"visible": true
+				},
+				"body": {
+					"flip_h": false,
+					"position": [
+						-41.8813858032227,
+						-40.0
+					],
+					"rect": [
+						115,
+						650,
+						389,
+						274
+					],
+					"scale": 0.215328467153285,
+					"visible": true
+				},
+				"ear_far": {
+					"flip_h": false,
+					"position": [
+						-26.9166660308838,
+						-76.5
+					],
+					"rect": [
+						570,
+						90,
+						247,
+						390
+					],
+					"scale": 0.217948717948718,
+					"visible": true
+				},
+				"ear_near": {
+					"flip_h": false,
+					"position": [
+						-27.0256404876709,
+						-76.5
+					],
+					"rect": [
+						916,
+						90,
+						248,
+						390
+					],
+					"scale": 0.217948717948718,
+					"visible": true
+				},
+				"foot_far": {
+					"flip_h": false,
+					"position": [
+						-6.90000057220459,
+						-7.63878774642944
+					],
+					"rect": [
+						152,
+						1045,
+						165,
+						137
+					],
+					"scale": 0.139393939393939,
+					"visible": true
+				},
+				"foot_near": {
+					"flip_h": true,
+					"position": [
+						-15.6600008010864,
+						-8.84819316864014
+					],
+					"rect": [
+						555,
+						1046,
+						166,
+						136
+					],
+					"scale": 0.162650602409639,
+					"visible": true
+				},
+				"head": {
+					"flip_h": false,
+					"position": [
+						-74.0,
+						-108.742980957031
+					],
+					"rect": [
+						72,
+						167,
+						463,
+						348
+					],
+					"scale": 0.323974082073434,
+					"visible": true
+				},
+				"tail": {
+					"flip_h": false,
+					"position": [
+						-11.0,
+						-10.8370370864868
+					],
+					"rect": [
+						969,
+						1055,
+						135,
+						133
+					],
+					"scale": 0.162962962962963,
+					"visible": false
+				}
+			},
+			"sha256": "f92443580a17134ef0dc414a5b613d0fe8a477ed4726b21dc74901d9672ac4f3",
+			"source": "res://art_src/rabbit_skeleton/complete_atlases/front.png"
+		},
+		"front_right": {
+			"parts": {
+				"arm_far": {
+					"flip_h": true,
+					"position": [
+						-8.14948463439941,
+						-4.0799994468689
+					],
+					"rect": [
+						579,
+						640,
+						186,
+						194
+					],
+					"scale": 0.175257731958763,
+					"visible": true
+				},
+				"arm_near": {
+					"flip_h": true,
+					"position": [
+						-27.9683094024658,
+						-4.67999982833862
+					],
+					"rect": [
+						926,
+						645,
+						235,
+						213
+					],
+					"scale": 0.183098591549296,
+					"visible": true
+				},
+				"body": {
+					"flip_h": false,
+					"position": [
+						-38.9000015258789,
+						-38.0
+					],
+					"rect": [
+						91,
+						600,
+						389,
+						275
+					],
+					"scale": 0.2,
+					"visible": true
+				},
+				"ear_far": {
+					"flip_h": false,
+					"position": [
+						-27.2375679016113,
+						-76.5
+					],
+					"rect": [
+						579,
+						73,
+						232,
+						362
+					],
+					"scale": 0.234806629834254,
+					"visible": true
+				},
+				"ear_near": {
+					"flip_h": false,
+					"position": [
+						-27.5484771728516,
+						-76.5
+					],
+					"rect": [
+						941,
+						74,
+						234,
+						361
+					],
+					"scale": 0.235457063711911,
+					"visible": true
+				},
+				"foot_far": {
+					"flip_h": false,
+					"position": [
+						-6.90000057220459,
+						-6.3604941368103
+					],
+					"rect": [
+						176,
+						1030,
+						162,
+						112
+					],
+					"scale": 0.141975308641975,
+					"visible": true
+				},
+				"foot_near": {
+					"flip_h": true,
+					"position": [
+						-15.6600017547607,
+						-8.23135185241699
+					],
+					"rect": [
+						562,
+						1018,
+						185,
+						141
+					],
+					"scale": 0.145945945945946,
+					"visible": true
+				},
+				"head": {
+					"flip_h": false,
+					"position": [
+						-76.0,
+						-98.6271209716797
+					],
+					"rect": [
+						59,
+						157,
+						472,
+						346
+					],
+					"scale": 0.296610169491525,
+					"visible": true
+				},
+				"tail": {
+					"flip_h": false,
+					"position": [
+						-11.0,
+						-10.9090909957886
+					],
+					"rect": [
+						978,
+						1031,
+						121,
+						120
+					],
+					"scale": 0.181818181818182,
+					"visible": false
+				}
+			},
+			"sha256": "7cb88cf990529f129329ced9df83b8192344159eafaaa8359c4e0ff4387437e6",
+			"source": "res://art_src/rabbit_skeleton/complete_atlases/front_right.png"
+		},
+		"right": {
+			"parts": {
+				"arm_far": {
+					"flip_h": true,
+					"position": [
+						-7.45061683654785,
+						-4.0799994468689
+					],
+					"rect": [
+						622,
+						673,
+						142,
+						162
+					],
+					"scale": 0.209876543209877,
+					"visible": true
+				},
+				"arm_near": {
+					"flip_h": false,
+					"position": [
+						-11.8521947860718,
+						-4.67999982833862
+					],
+					"rect": [
+						969,
+						655,
+						178,
+						205
+					],
+					"scale": 0.190243902439024,
+					"visible": true
+				},
+				"body": {
+					"flip_h": false,
+					"position": [
+						-34.9538497924805,
+						-43.0
+					],
+					"rect": [
+						171,
+						612,
+						284,
+						260
+					],
+					"scale": 0.246153846153846,
+					"visible": true
+				},
+				"ear_far": {
+					"flip_h": false,
+					"position": [
+						-22.9761905670166,
+						-76.5
+					],
+					"rect": [
+						615,
+						74,
+						193,
+						357
+					],
+					"scale": 0.238095238095238,
+					"visible": true
+				},
+				"ear_near": {
+					"flip_h": false,
+					"position": [
+						-23.777027130127,
+						-76.5
+					],
+					"rect": [
+						964,
+						86,
+						207,
+						370
+					],
+					"scale": 0.22972972972973,
+					"visible": true
+				},
+				"foot_far": {
+					"flip_h": false,
+					"position": [
+						-6.90000104904175,
+						-6.49411773681641
+					],
+					"rect": [
+						206,
+						1027,
+						170,
+						120
+					],
+					"scale": 0.135294117647059,
+					"visible": true
+				},
+				"foot_near": {
+					"flip_h": false,
+					"position": [
+						-11.3400001525879,
+						-7.23654842376709
+					],
+					"rect": [
+						613,
+						1026,
+						197,
+						132
+					],
+					"scale": 0.137055837563452,
+					"visible": true
+				},
+				"head": {
+					"flip_h": false,
+					"position": [
+						-66.0,
+						-98.617431640625
+					],
+					"rect": [
+						118,
+						162,
+						413,
+						344
+					],
+					"scale": 0.295399515738499,
+					"visible": true
+				},
+				"tail": {
+					"flip_h": false,
+					"position": [
+						-11.0,
+						-10.7518796920776
+					],
+					"rect": [
+						996,
+						1025,
+						133,
+						130
+					],
+					"scale": 0.165413533834586,
+					"visible": true
+				}
+			},
+			"sha256": "04758838288e486d6aa024f803dace8218d1d1f8b931364017b3aadf529e30ed",
+			"source": "res://art_src/rabbit_skeleton/complete_atlases/right.png"
+		}
+	}
+}

@@ -1,0 +1,212 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://art/rabbit_skeleton/complete/front_right/ear_far.png" id="1_5v6b6"]
+[ext_resource type="Texture2D" path="res://art/rabbit_skeleton/complete/front_right/ear_near.png" id="2_njydd"]
+[ext_resource type="Texture2D" path="res://art/rabbit_skeleton/complete/front_right/head.png" id="3_wdnm3"]
+[ext_resource type="Texture2D" path="res://art/rabbit_skeleton/complete/front_right/arm_far.png" id="4_5li0g"]
+[ext_resource type="Texture2D" path="res://art/rabbit_skeleton/complete/front_right/arm_near.png" id="5_hhkgh"]
+[ext_resource type="Texture2D" path="res://art/rabbit_skeleton/complete/front_right/tail.png" id="6_q4m0r"]
+[ext_resource type="Texture2D" path="res://art/rabbit_skeleton/complete/front_right/body.png" id="7_j5ako"]
+[ext_resource type="Texture2D" path="res://art/rabbit_skeleton/complete/front_right/foot_far.png" id="8_6y26h"]
+[ext_resource type="Texture2D" path="res://art/rabbit_skeleton/complete/front_right/foot_near.png" id="9_2n4ri"]
+[ext_resource type="AnimationLibrary" path="res://art/rabbit_skeleton/motions/front_right.tres" id="10_fhsk5"]
+
+[node name="RabbitFrontRight" type="Node2D" unique_id=626307745]
+texture_filter = 2
+metadata/source = "rabbit_walk_frames"
+metadata/view = "front_right"
+metadata/cycle_seconds = 0.96
+metadata/source_sha256 = "1b2088637050d9f68189af5f8d74ae24d225c4a35f4559ba51c60b4e500ca857"
+metadata/artwork = "complete_parts"
+metadata/artwork_atlas = "res://art_src/rabbit_skeleton/complete_atlases/front_right.png"
+metadata/artwork_sha256 = "7cb88cf990529f129329ced9df83b8192344159eafaaa8359c4e0ff4387437e6"
+metadata/binding = "rigid_cutouts"
+
+[node name="Skeleton2D" type="Skeleton2D" parent="." unique_id=2051235029]
+
+[node name="Root" type="Bone2D" parent="Skeleton2D" unique_id=1014813866]
+rest = Transform2D(1, 0, 0, 1, 0, 0)
+auto_calculate_length_and_angle = false
+length = 10.0
+bone_angle = -90.0
+
+[node name="Body" type="Bone2D" parent="Skeleton2D/Root" unique_id=620135212]
+position = Vector2(7, -30)
+rest = Transform2D(1, 0, 0, 1, 7, -30)
+auto_calculate_length_and_angle = false
+length = 20.0
+bone_angle = -90.0
+
+[node name="Chest" type="Bone2D" parent="Skeleton2D/Root/Body" unique_id=778176470]
+position = Vector2(0, -25)
+rest = Transform2D(1, 0, 0, 1, 0, -25)
+auto_calculate_length_and_angle = false
+length = 10.0
+bone_angle = -90.0
+
+[node name="Head" type="Bone2D" parent="Skeleton2D/Root/Body/Chest" unique_id=1483937027]
+position = Vector2(0, -10)
+rest = Transform2D(1, 0, 0, 1, 0, -10)
+auto_calculate_length_and_angle = false
+length = 45.0
+bone_angle = -90.0
+
+[node name="EarFar" type="Bone2D" parent="Skeleton2D/Root/Body/Chest/Head" unique_id=343643109]
+position = Vector2(-29, -73)
+rest = Transform2D(1, 0, 0, 1, -29, -73)
+auto_calculate_length_and_angle = false
+length = 23.0
+bone_angle = -90.0
+
+[node name="Middle" type="Bone2D" parent="Skeleton2D/Root/Body/Chest/Head/EarFar" unique_id=941895876]
+position = Vector2(0, -23)
+rest = Transform2D(1, 0, 0, 1, 0, -23)
+auto_calculate_length_and_angle = false
+length = 23.0
+bone_angle = -90.0
+
+[node name="Tip" type="Bone2D" parent="Skeleton2D/Root/Body/Chest/Head/EarFar/Middle" unique_id=866952455]
+position = Vector2(0, -23)
+rest = Transform2D(1, 0, 0, 1, 0, -23)
+auto_calculate_length_and_angle = false
+length = 12.0
+bone_angle = -90.0
+
+[node name="Visual" type="Sprite2D" parent="Skeleton2D/Root/Body/Chest/Head/EarFar" unique_id=1408637949]
+z_index = 10
+position = Vector2(-27.237568, -76.5)
+scale = Vector2(0.23480663, 0.23480663)
+texture = ExtResource("1_5v6b6")
+centered = false
+
+[node name="EarNear" type="Bone2D" parent="Skeleton2D/Root/Body/Chest/Head" unique_id=1308161497]
+position = Vector2(19, -76)
+rest = Transform2D(1, 0, 0, 1, 19, -76)
+auto_calculate_length_and_angle = false
+length = 23.0
+bone_angle = -90.0
+
+[node name="Middle" type="Bone2D" parent="Skeleton2D/Root/Body/Chest/Head/EarNear" unique_id=1849283213]
+position = Vector2(0, -23)
+rest = Transform2D(1, 0, 0, 1, 0, -23)
+auto_calculate_length_and_angle = false
+length = 23.0
+bone_angle = -90.0
+
+[node name="Tip" type="Bone2D" parent="Skeleton2D/Root/Body/Chest/Head/EarNear/Middle" unique_id=1811052687]
+position = Vector2(0, -23)
+rest = Transform2D(1, 0, 0, 1, 0, -23)
+auto_calculate_length_and_angle = false
+length = 12.0
+bone_angle = -90.0
+
+[node name="Visual" type="Sprite2D" parent="Skeleton2D/Root/Body/Chest/Head/EarNear" unique_id=1952251345]
+z_index = 11
+position = Vector2(-27.548477, -76.5)
+scale = Vector2(0.23545706, 0.23545706)
+texture = ExtResource("2_njydd")
+centered = false
+
+[node name="Visual" type="Sprite2D" parent="Skeleton2D/Root/Body/Chest/Head" unique_id=1386833997]
+z_index = 14
+position = Vector2(-76, -98.62712)
+scale = Vector2(0.29661018, 0.29661018)
+texture = ExtResource("3_wdnm3")
+centered = false
+
+[node name="ArmFar" type="Bone2D" parent="Skeleton2D/Root/Body/Chest" unique_id=1472314790]
+position = Vector2(34, -8)
+rest = Transform2D(1, 0, 0, 1, 34, -8)
+auto_calculate_length_and_angle = false
+length = 13.0
+bone_angle = 90.0
+
+[node name="ArmFarTip" type="Bone2D" parent="Skeleton2D/Root/Body/Chest/ArmFar" unique_id=468847448]
+position = Vector2(0, 14)
+rest = Transform2D(1, 0, 0, 1, 0, 14)
+auto_calculate_length_and_angle = false
+length = 9.0
+bone_angle = 90.0
+
+[node name="Visual" type="Sprite2D" parent="Skeleton2D/Root/Body/Chest/ArmFar" unique_id=630815158]
+z_index = 3
+position = Vector2(-8.149485, -4.0799994)
+scale = Vector2(0.17525773, 0.17525773)
+texture = ExtResource("4_5li0g")
+centered = false
+flip_h = true
+
+[node name="ArmNear" type="Bone2D" parent="Skeleton2D/Root/Body/Chest" unique_id=600665443]
+position = Vector2(-32, -8)
+rest = Transform2D(1, 0, 0, 1, -32, -8)
+auto_calculate_length_and_angle = false
+length = 13.0
+bone_angle = 90.0
+
+[node name="ArmNearTip" type="Bone2D" parent="Skeleton2D/Root/Body/Chest/ArmNear" unique_id=739678567]
+position = Vector2(0, 14)
+rest = Transform2D(1, 0, 0, 1, 0, 14)
+auto_calculate_length_and_angle = false
+length = 9.0
+bone_angle = 90.0
+
+[node name="Visual" type="Sprite2D" parent="Skeleton2D/Root/Body/Chest/ArmNear" unique_id=1874699711]
+z_index = 9
+position = Vector2(-27.96831, -4.68)
+scale = Vector2(0.18309858, 0.18309858)
+texture = ExtResource("5_hhkgh")
+centered = false
+flip_h = true
+
+[node name="Tail" type="Bone2D" parent="Skeleton2D/Root/Body" unique_id=1279759265]
+position = Vector2(-25, 7)
+rest = Transform2D(1, 0, 0, 1, -25, 7)
+auto_calculate_length_and_angle = false
+length = 8.0
+bone_angle = 180.0
+
+[node name="Visual" type="Sprite2D" parent="Skeleton2D/Root/Body/Tail" unique_id=293047231]
+visible = false
+z_index = 4
+position = Vector2(-11, -10.909091)
+scale = Vector2(0.18181819, 0.18181819)
+texture = ExtResource("6_q4m0r")
+centered = false
+
+[node name="Visual" type="Sprite2D" parent="Skeleton2D/Root/Body" unique_id=127238527]
+z_index = 6
+position = Vector2(-38.9, -38)
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("7_j5ako")
+centered = false
+
+[node name="FootFar" type="Bone2D" parent="Skeleton2D/Root" unique_id=965228262]
+position = Vector2(23, -12)
+rest = Transform2D(1, 0, 0, 1, 23, -12)
+auto_calculate_length_and_angle = false
+length = 12.0
+bone_angle = 0.0
+
+[node name="Visual" type="Sprite2D" parent="Skeleton2D/Root/FootFar" unique_id=494884509]
+position = Vector2(-6.9000006, -6.360494)
+scale = Vector2(0.14197531, 0.14197531)
+texture = ExtResource("8_6y26h")
+centered = false
+
+[node name="FootNear" type="Bone2D" parent="Skeleton2D/Root" unique_id=511045253]
+position = Vector2(-8, -13)
+rest = Transform2D(1, 0, 0, 1, -8, -13)
+auto_calculate_length_and_angle = false
+length = 12.0
+bone_angle = 0.0
+
+[node name="Visual" type="Sprite2D" parent="Skeleton2D/Root/FootNear" unique_id=760602714]
+z_index = 1
+position = Vector2(-15.660002, -8.231352)
+scale = Vector2(0.14594595, 0.14594595)
+texture = ExtResource("9_2n4ri")
+centered = false
+flip_h = true
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1532376378]
+libraries/ = ExtResource("10_fhsk5")

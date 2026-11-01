@@ -27,10 +27,15 @@ func test_content_names_have_glyphs() -> void:
 
 func test_script_strings_have_glyphs() -> void:
 	# 表现层文案和命令的拒绝理由都会显示在界面上
-	var font: FontFile = load(FONT)
+	var default_font: FontFile = load(FONT)
 	var literal := RegEx.create_from_string("\"([^\"\\\\]*)\"")
 	for folder in ["res://presentation", "res://game"]:
 		for path in _scripts(folder):
+			var font: FontFile = default_font
+			if path.begins_with("res://presentation/rabbit_skeleton/"):
+				font = load("res://art/rabbit_skeleton/preview_font.ttf")
+			elif path.begins_with("res://presentation/rabbit_walk/"):
+				font = load("res://art/rabbit_walk/preview_font.ttf")
 			var source := FileAccess.get_file_as_string(path)
 			for line in source.split("\n"):
 				if line.strip_edges().begins_with("#"):

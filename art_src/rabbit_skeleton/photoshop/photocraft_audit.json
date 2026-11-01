@@ -1,0 +1,21 @@
+{
+  "application": "PhotoCraft 0.17.0",
+  "files": {
+    "rabbit_parts_smartobjects.pcraft": {
+      "groups": 5,
+      "embeddedSmartObjects": 45,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    "rabbit_parts_smartobjects.psd": {
+      "groups": 5,
+      "embeddedSmartObjects": 45,
+      "size": [
+        1024,
+        1024
+      ]
+    }
+  }
+}

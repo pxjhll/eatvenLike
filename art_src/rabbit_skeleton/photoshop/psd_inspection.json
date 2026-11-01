@@ -1,0 +1,1707 @@
+{
+  "activeLayer": 465,
+  "canRedo": false,
+  "canUndo": false,
+  "channels": {
+    "alpha": [],
+    "colors": [
+      {
+        "name": "Red",
+        "visible": true
+      },
+      {
+        "name": "Green",
+        "visible": true
+      },
+      {
+        "name": "Blue",
+        "visible": true
+      }
+    ],
+    "composite": "RGB",
+    "compositeVisible": true,
+    "layerMaskView": null,
+    "quickMask": null,
+    "target": {
+      "kind": "composite"
+    }
+  },
+  "depth": 8,
+  "hasSelection": false,
+  "height": 1024,
+  "history": [
+    "Open"
+  ],
+  "historySource": {
+    "label": "Open",
+    "state": 0
+  },
+  "isolatedLayers": [],
+  "lastAppliedComp": null,
+  "layerComps": [],
+  "layerMaskView": null,
+  "layers": [
+    {
+      "blend": "Pass Through",
+      "bounds": null,
+      "children": [
+        {
+          "blend": "Normal",
+          "bounds": [
+            221,
+            254,
+            599,
+            445
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 464,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "头部 / head",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 463,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "head.png",
+            "kind": "embedded",
+            "uuid": "ce0553a3-eec9-786b-ba58-79f0a506785e"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            510,
+            73,
+            211,
+            335
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 462,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧耳朵 / ear_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 461,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "ear_near.png",
+            "kind": "embedded",
+            "uuid": "516bcbc7-dcc7-8145-161c-9cdac469e02e"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            321,
+            73,
+            212,
+            337
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 460,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧耳朵 / ear_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 459,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "ear_far.png",
+            "kind": "embedded",
+            "uuid": "c22c1777-140b-2023-f1fb-5675fd97dd6c"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            298,
+            683,
+            145,
+            152
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 458,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧手臂 / arm_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 457,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "arm_near.png",
+            "kind": "embedded",
+            "uuid": "34c26dcb-2baa-0b58-ac27-69590d7705f0"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            622,
+            690,
+            118,
+            131
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 456,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧手臂 / arm_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 455,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "arm_far.png",
+            "kind": "embedded",
+            "uuid": "4c43c6d3-b1be-d252-8668-55cf0da249ad"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            350,
+            672,
+            334,
+            234
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 454,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "身体 / body",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 453,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "body.png",
+            "kind": "embedded",
+            "uuid": "421d7c3f-0f0d-5206-f87b-64a8d5fe9e29"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            470,
+            814,
+            84,
+            85
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 452,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "尾巴 / tail",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 451,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "tail.png",
+            "kind": "embedded",
+            "uuid": "3b523a2a-57c8-ab7e-d681-411188f25e26"
+          },
+          "vectorMaskEnabled": null,
+          "visible": false
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            370,
+            862,
+            106,
+            86
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 450,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧脚 / foot_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 449,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "foot_near.png",
+            "kind": "embedded",
+            "uuid": "b4f1a561-766d-21d8-a7d4-f540ba7ee87c"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            576,
+            867,
+            91,
+            74
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 448,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧脚 / foot_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 447,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "foot_far.png",
+            "kind": "embedded",
+            "uuid": "57f31c09-8cc7-e6ee-10ce-c430396a0e60"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        }
+      ],
+      "clipped": false,
+      "expanded": false,
+      "fill": 1.0,
+      "hasMask": false,
+      "hasVectorMask": false,
+      "hasXmp": false,
+      "id": 465,
+      "kind": "Group",
+      "labelColor": "none",
+      "linkGroup": null,
+      "name": "正面 / front",
+      "opacity": 1.0,
+      "selected": true,
+      "vectorMaskEnabled": null,
+      "visible": false
+    },
+    {
+      "blend": "Pass Through",
+      "bounds": null,
+      "children": [
+        {
+          "blend": "Normal",
+          "bounds": [
+            238,
+            310,
+            558,
+            406
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 445,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "头部 / head",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 444,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "head.png",
+            "kind": "embedded",
+            "uuid": "e16754bc-0b3a-af91-4f1e-7102d389da85"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            508,
+            92,
+            217,
+            337
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 443,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧耳朵 / ear_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 442,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "ear_near.png",
+            "kind": "embedded",
+            "uuid": "542cc692-d821-adf6-77e9-cbf17bd215d8"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            317,
+            105,
+            213,
+            336
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 441,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧耳朵 / ear_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 440,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "ear_far.png",
+            "kind": "embedded",
+            "uuid": "fdf4e844-5107-67f4-7807-b5e51b6eb620"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            302,
+            691,
+            168,
+            152
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 439,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧手臂 / arm_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 438,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "arm_near.png",
+            "kind": "embedded",
+            "uuid": "ce12b873-54fd-c06e-6b4b-8fed8c26cc6a"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            387,
+            692,
+            308,
+            214
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 437,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "身体 / body",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 436,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "body.png",
+            "kind": "embedded",
+            "uuid": "3e4863b5-bc20-bf27-6684-b0647c150bf6"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            398,
+            827,
+            83,
+            84
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 435,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "尾巴 / tail",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 434,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "tail.png",
+            "kind": "embedded",
+            "uuid": "c66c6877-d2e4-af73-15bc-018bb160398a"
+          },
+          "vectorMaskEnabled": null,
+          "visible": false
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            645,
+            694,
+            128,
+            133
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 433,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧手臂 / arm_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 432,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "arm_far.png",
+            "kind": "embedded",
+            "uuid": "1a8df404-d54e-52da-2982-e76e8aff8e1d"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            418,
+            877,
+            106,
+            81
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 431,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧脚 / foot_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 430,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "foot_near.png",
+            "kind": "embedded",
+            "uuid": "cdcd3d89-24c2-7b83-d178-2ad81484a322"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            577,
+            888,
+            91,
+            61
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 429,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧脚 / foot_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 428,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "foot_far.png",
+            "kind": "embedded",
+            "uuid": "084ecd66-8999-d20f-a914-c7db328c6761"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        }
+      ],
+      "clipped": false,
+      "expanded": true,
+      "fill": 1.0,
+      "hasMask": false,
+      "hasVectorMask": false,
+      "hasXmp": false,
+      "id": 446,
+      "kind": "Group",
+      "labelColor": "none",
+      "linkGroup": null,
+      "name": "右前 / front_right",
+      "opacity": 1.0,
+      "selected": false,
+      "vectorMaskEnabled": null,
+      "visible": true
+    },
+    {
+      "blend": "Pass Through",
+      "bounds": null,
+      "children": [
+        {
+          "blend": "Normal",
+          "bounds": [
+            268,
+            277,
+            486,
+            402
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 426,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "头部 / head",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 425,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "head.png",
+            "kind": "embedded",
+            "uuid": "d60e7dc0-31f2-45fe-9ec6-ad6862d495bd"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            435,
+            75,
+            188,
+            336
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 424,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧耳朵 / ear_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 423,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "ear_near.png",
+            "kind": "embedded",
+            "uuid": "04052d8d-61e5-0f72-098f-52e65e592181"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            328,
+            37,
+            181,
+            336
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 422,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧耳朵 / ear_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 421,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "ear_far.png",
+            "kind": "embedded",
+            "uuid": "92bf69b8-8ac3-eee8-0bbf-a4e225d4341e"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            482,
+            676,
+            133,
+            153
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 420,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧手臂 / arm_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 419,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "arm_near.png",
+            "kind": "embedded",
+            "uuid": "d9252c75-b2d2-ce35-b760-36e948cc5e0f"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            404,
+            655,
+            273,
+            250
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 418,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "身体 / body",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 417,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "body.png",
+            "kind": "embedded",
+            "uuid": "01343f30-f3d4-58ba-e67a-e50b42499602"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            321,
+            775,
+            86,
+            84
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 416,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "尾巴 / tail",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 415,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "tail.png",
+            "kind": "embedded",
+            "uuid": "be535844-722f-a1f1-19c0-35ab678dbc43"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            609,
+            674,
+            114,
+            134
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 414,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧手臂 / arm_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 413,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "arm_far.png",
+            "kind": "embedded",
+            "uuid": "6aad2020-e629-8208-a18c-7891909ebc46"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            524,
+            877,
+            105,
+            70
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 412,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧脚 / foot_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 411,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "foot_near.png",
+            "kind": "embedded",
+            "uuid": "230ddebb-d18b-2dad-d25b-5f235612946f"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            426,
+            876,
+            89,
+            62
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 410,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧脚 / foot_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 409,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "foot_far.png",
+            "kind": "embedded",
+            "uuid": "5de49a1d-6a69-ade7-bad0-0fdfb8ad3980"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        }
+      ],
+      "clipped": false,
+      "expanded": false,
+      "fill": 1.0,
+      "hasMask": false,
+      "hasVectorMask": false,
+      "hasXmp": false,
+      "id": 427,
+      "kind": "Group",
+      "labelColor": "none",
+      "linkGroup": null,
+      "name": "右侧 / right",
+      "opacity": 1.0,
+      "selected": false,
+      "vectorMaskEnabled": null,
+      "visible": false
+    },
+    {
+      "blend": "Pass Through",
+      "bounds": null,
+      "children": [
+        {
+          "blend": "Normal",
+          "bounds": [
+            242,
+            278,
+            514,
+            408
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 407,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "头部 / head",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 406,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "head.png",
+            "kind": "embedded",
+            "uuid": "10d28355-d3e4-b8da-1b0f-2b24ae45d3d7"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            451,
+            129,
+            218,
+            337
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 405,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧耳朵 / ear_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 404,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "ear_near.png",
+            "kind": "embedded",
+            "uuid": "5f06ca5f-e33f-b1cc-1f77-8c9c31ed644f"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            295,
+            92,
+            208,
+            338
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 403,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧耳朵 / ear_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 402,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "ear_far.png",
+            "kind": "embedded",
+            "uuid": "f206e88f-576f-e9e7-c015-93d73ea27ac5"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            521,
+            684,
+            146,
+            151
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 401,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧手臂 / arm_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 400,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "arm_near.png",
+            "kind": "embedded",
+            "uuid": "71258bd7-e492-e86a-2683-6f70a3ad0d4a"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            334,
+            786,
+            84,
+            84
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 399,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "尾巴 / tail",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 398,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "tail.png",
+            "kind": "embedded",
+            "uuid": "e520a192-8776-a56f-f1a2-be6ce03de673"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            338,
+            663,
+            334,
+            245
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 397,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "身体 / body",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 396,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "body.png",
+            "kind": "embedded",
+            "uuid": "654984e0-34ba-4c6b-d9f0-6c0067950ce0"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            301,
+            686,
+            116,
+            133
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 395,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧手臂 / arm_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 394,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "arm_far.png",
+            "kind": "embedded",
+            "uuid": "4fd3f7b9-3150-99ac-ddd2-0b6b626d2c3c"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            532,
+            874,
+            105,
+            77
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 393,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧脚 / foot_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 392,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "foot_near.png",
+            "kind": "embedded",
+            "uuid": "1137b977-9357-3594-6b41-630372f66622"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            386,
+            880,
+            89,
+            62
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 391,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧脚 / foot_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 390,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "foot_far.png",
+            "kind": "embedded",
+            "uuid": "b6776b9e-c27b-096d-de78-7a9537208f5a"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        }
+      ],
+      "clipped": false,
+      "expanded": false,
+      "fill": 1.0,
+      "hasMask": false,
+      "hasVectorMask": false,
+      "hasXmp": false,
+      "id": 408,
+      "kind": "Group",
+      "labelColor": "none",
+      "linkGroup": null,
+      "name": "右后 / back_right",
+      "opacity": 1.0,
+      "selected": false,
+      "vectorMaskEnabled": null,
+      "visible": false
+    },
+    {
+      "blend": "Pass Through",
+      "bounds": null,
+      "children": [
+        {
+          "blend": "Normal",
+          "bounds": [
+            218,
+            274,
+            575,
+            414
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 388,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "头部 / head",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 387,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "head.png",
+            "kind": "embedded",
+            "uuid": "380fa906-e1a0-d132-ddcb-b6d1741b7f0a"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            513,
+            113,
+            224,
+            333
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 386,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧耳朵 / ear_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 385,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "ear_near.png",
+            "kind": "embedded",
+            "uuid": "78edc84a-7561-f4f8-3223-dc53861a0812"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            302,
+            113,
+            213,
+            335
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 384,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧耳朵 / ear_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 383,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "ear_far.png",
+            "kind": "embedded",
+            "uuid": "72e74691-50ec-e6a4-9ef5-81bd8cafcfc0"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            295,
+            688,
+            141,
+            151
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 382,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧手臂 / arm_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 381,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "arm_near.png",
+            "kind": "embedded",
+            "uuid": "579b9042-48f6-02e6-28f8-0c33cf12df1a"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            473,
+            803,
+            86,
+            83
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 380,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "尾巴 / tail",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 379,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "tail.png",
+            "kind": "embedded",
+            "uuid": "d6208c1a-ba7c-2f1b-3da2-13854ffcf03e"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            633,
+            690,
+            123,
+            133
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 378,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧手臂 / arm_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 377,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "arm_far.png",
+            "kind": "embedded",
+            "uuid": "65323bcf-e6a9-dba4-2a3c-ce691c917acc"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            350,
+            664,
+            339,
+            242
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 376,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "身体 / body",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 375,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "body.png",
+            "kind": "embedded",
+            "uuid": "7453ccb6-d11c-3fb1-904f-6cef6aa951a8"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            373,
+            871,
+            107,
+            84
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 374,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "近侧脚 / foot_near",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 373,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "foot_near.png",
+            "kind": "embedded",
+            "uuid": "2545ead8-c335-4c2b-add3-802b6c1065ef"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        },
+        {
+          "blend": "Normal",
+          "bounds": [
+            578,
+            875,
+            89,
+            72
+          ],
+          "clipped": false,
+          "fill": 1.0,
+          "hasMask": false,
+          "hasVectorMask": false,
+          "hasXmp": false,
+          "id": 372,
+          "kind": "Smart Object",
+          "labelColor": "none",
+          "linkGroup": null,
+          "name": "远侧脚 / foot_far",
+          "opacity": 1.0,
+          "selected": false,
+          "smartContents": {
+            "id": 371,
+            "instances": 1
+          },
+          "smartFilters": [],
+          "smartFiltersEnabled": true,
+          "smartSource": {
+            "fileName": "foot_far.png",
+            "kind": "embedded",
+            "uuid": "0de0f60e-0455-fcef-371a-15ead9b3f190"
+          },
+          "vectorMaskEnabled": null,
+          "visible": true
+        }
+      ],
+      "clipped": false,
+      "expanded": false,
+      "fill": 1.0,
+      "hasMask": false,
+      "hasVectorMask": false,
+      "hasXmp": false,
+      "id": 389,
+      "kind": "Group",
+      "labelColor": "none",
+      "linkGroup": null,
+      "name": "背面 / back",
+      "opacity": 1.0,
+      "selected": false,
+      "vectorMaskEnabled": null,
+      "visible": false
+    }
+  ],
+  "measurement": {
+    "count": 0,
+    "countGroups": 0,
+    "ruler": null,
+    "scale": "1 pixels = 1.0000 pixels"
+  },
+  "mode": "Rgb",
+  "name": "rabbit_parts_smartobjects.psd",
+  "notes": [],
+  "path": "D:/Tes/eatventure/art_src/rabbit_skeleton/photoshop/rabbit_parts_smartobjects.psd",
+  "quickMask": false,
+  "resolution": 72.0,
+  "revision": 1,
+  "selectedLayers": [
+    465
+  ],
+  "selectionBounds": null,
+  "snapshots": [
+    {
+      "id": 0,
+      "name": "rabbit_parts_smartobjects.psd"
+    }
+  ],
+  "symmetry": null,
+  "timeline": null,
+  "variables": null,
+  "width": 1024
+}

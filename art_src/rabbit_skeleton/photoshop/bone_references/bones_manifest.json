@@ -1,0 +1,634 @@
+{
+	"canvas": [
+		1024,
+		1024
+	],
+	"pose": "scene rest",
+	"root": [
+		512,
+		960
+	],
+	"scale": 4,
+	"views": {
+		"back": {
+			"joints": [
+				{
+					"path": "Root",
+					"position": [
+						512.0,
+						960.0
+					]
+				},
+				{
+					"path": "Root/Body",
+					"position": [
+						520.0,
+						828.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest",
+					"position": [
+						520.0,
+						728.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head",
+					"position": [
+						520.0,
+						676.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar",
+					"position": [
+						408.0,
+						416.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar/Middle",
+					"position": [
+						408.0,
+						324.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar/Middle/Tip",
+					"position": [
+						408.0,
+						232.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear",
+					"position": [
+						624.0,
+						416.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear/Middle",
+					"position": [
+						624.0,
+						324.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear/Middle/Tip",
+					"position": [
+						624.0,
+						232.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmFar",
+					"position": [
+						664.0,
+						704.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmFar/ArmFarTip",
+					"position": [
+						664.0,
+						760.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmNear",
+					"position": [
+						388.0,
+						704.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmNear/ArmNearTip",
+					"position": [
+						388.0,
+						760.0
+					]
+				},
+				{
+					"path": "Root/Body/Tail",
+					"position": [
+						516.0,
+						844.0
+					]
+				},
+				{
+					"path": "Root/FootFar",
+					"position": [
+						604.0,
+						904.0
+					]
+				},
+				{
+					"path": "Root/FootNear",
+					"position": [
+						436.0,
+						904.0
+					]
+				}
+			],
+			"scene": "presentation/rabbit_skeleton/rabbit_back.tscn"
+		},
+		"back_right": {
+			"joints": [
+				{
+					"path": "Root",
+					"position": [
+						512.0,
+						960.0
+					]
+				},
+				{
+					"path": "Root/Body",
+					"position": [
+						504.0,
+						832.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest",
+					"position": [
+						504.0,
+						732.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head",
+					"position": [
+						504.0,
+						676.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar",
+					"position": [
+						400.0,
+						396.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar/Middle",
+					"position": [
+						400.0,
+						304.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar/Middle/Tip",
+					"position": [
+						400.0,
+						212.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear",
+					"position": [
+						560.0,
+						432.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear/Middle",
+					"position": [
+						560.0,
+						340.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear/Middle/Tip",
+					"position": [
+						560.0,
+						248.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmFar",
+					"position": [
+						388.0,
+						700.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmFar/ArmFarTip",
+					"position": [
+						388.0,
+						756.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmNear",
+					"position": [
+						572.0,
+						700.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmNear/ArmNearTip",
+					"position": [
+						572.0,
+						756.0
+					]
+				},
+				{
+					"path": "Root/Body/Tail",
+					"position": [
+						376.0,
+						828.0
+					]
+				},
+				{
+					"path": "Root/FootFar",
+					"position": [
+						412.0,
+						904.0
+					]
+				},
+				{
+					"path": "Root/FootNear",
+					"position": [
+						576.0,
+						904.0
+					]
+				}
+			],
+			"scene": "presentation/rabbit_skeleton/rabbit_back_right.tscn"
+		},
+		"front": {
+			"joints": [
+				{
+					"path": "Root",
+					"position": [
+						512.0,
+						960.0
+					]
+				},
+				{
+					"path": "Root/Body",
+					"position": [
+						516.0,
+						832.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest",
+					"position": [
+						516.0,
+						732.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head",
+					"position": [
+						516.0,
+						684.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar",
+					"position": [
+						428.0,
+						376.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar/Middle",
+					"position": [
+						428.0,
+						284.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar/Middle/Tip",
+					"position": [
+						428.0,
+						192.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear",
+					"position": [
+						616.0,
+						376.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear/Middle",
+					"position": [
+						616.0,
+						284.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear/Middle/Tip",
+					"position": [
+						616.0,
+						192.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmFar",
+					"position": [
+						652.0,
+						704.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmFar/ArmFarTip",
+					"position": [
+						652.0,
+						760.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmNear",
+					"position": [
+						392.0,
+						700.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmNear/ArmNearTip",
+					"position": [
+						392.0,
+						756.0
+					]
+				},
+				{
+					"path": "Root/Body/Tail",
+					"position": [
+						512.0,
+						856.0
+					]
+				},
+				{
+					"path": "Root/FootFar",
+					"position": [
+						604.0,
+						896.0
+					]
+				},
+				{
+					"path": "Root/FootNear",
+					"position": [
+						432.0,
+						896.0
+					]
+				}
+			],
+			"scene": "presentation/rabbit_skeleton/rabbit_front.tscn"
+		},
+		"front_right": {
+			"joints": [
+				{
+					"path": "Root",
+					"position": [
+						512.0,
+						960.0
+					]
+				},
+				{
+					"path": "Root/Body",
+					"position": [
+						540.0,
+						840.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest",
+					"position": [
+						540.0,
+						740.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head",
+					"position": [
+						540.0,
+						700.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar",
+					"position": [
+						424.0,
+						408.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar/Middle",
+					"position": [
+						424.0,
+						316.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar/Middle/Tip",
+					"position": [
+						424.0,
+						224.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear",
+					"position": [
+						616.0,
+						396.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear/Middle",
+					"position": [
+						616.0,
+						304.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear/Middle/Tip",
+					"position": [
+						616.0,
+						212.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmFar",
+					"position": [
+						676.0,
+						708.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmFar/ArmFarTip",
+					"position": [
+						676.0,
+						764.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmNear",
+					"position": [
+						412.0,
+						708.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmNear/ArmNearTip",
+					"position": [
+						412.0,
+						764.0
+					]
+				},
+				{
+					"path": "Root/Body/Tail",
+					"position": [
+						440.0,
+						868.0
+					]
+				},
+				{
+					"path": "Root/FootFar",
+					"position": [
+						604.0,
+						912.0
+					]
+				},
+				{
+					"path": "Root/FootNear",
+					"position": [
+						480.0,
+						908.0
+					]
+				}
+			],
+			"scene": "presentation/rabbit_skeleton/rabbit_front_right.tscn"
+		},
+		"right": {
+			"joints": [
+				{
+					"path": "Root",
+					"position": [
+						512.0,
+						960.0
+					]
+				},
+				{
+					"path": "Root/Body",
+					"position": [
+						540.0,
+						824.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest",
+					"position": [
+						540.0,
+						724.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head",
+					"position": [
+						532.0,
+						668.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar",
+					"position": [
+						420.0,
+						340.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar/Middle",
+					"position": [
+						420.0,
+						248.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarFar/Middle/Tip",
+					"position": [
+						420.0,
+						156.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear",
+					"position": [
+						528.0,
+						380.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear/Middle",
+					"position": [
+						528.0,
+						288.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/Head/EarNear/Middle/Tip",
+					"position": [
+						528.0,
+						196.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmFar",
+					"position": [
+						636.0,
+						688.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmFar/ArmFarTip",
+					"position": [
+						636.0,
+						744.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmNear",
+					"position": [
+						528.0,
+						692.0
+					]
+				},
+				{
+					"path": "Root/Body/Chest/ArmNear/ArmNearTip",
+					"position": [
+						528.0,
+						748.0
+					]
+				},
+				{
+					"path": "Root/Body/Tail",
+					"position": [
+						364.0,
+						816.0
+					]
+				},
+				{
+					"path": "Root/FootFar",
+					"position": [
+						452.0,
+						900.0
+					]
+				},
+				{
+					"path": "Root/FootNear",
+					"position": [
+						568.0,
+						904.0
+					]
+				}
+			],
+			"scene": "presentation/rabbit_skeleton/rabbit_right.tscn"
+		}
+	}
+}

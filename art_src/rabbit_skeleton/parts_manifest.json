@@ -1,0 +1,490 @@
+{
+	"source": "rabbit_walk_frames",
+	"views": {
+		"back": {
+			"parts": {
+				"arm_far": {
+					"rect": [
+						158,
+						174,
+						31,
+						42
+					],
+					"visible": true
+				},
+				"arm_near": {
+					"rect": [
+						67,
+						174,
+						39,
+						42
+					],
+					"visible": true
+				},
+				"body": {
+					"rect": [
+						64,
+						174,
+						107,
+						50
+					],
+					"visible": true
+				},
+				"ear_far": {
+					"rect": [
+						63,
+						25,
+						65,
+						88
+					],
+					"visible": true
+				},
+				"ear_near": {
+					"rect": [
+						132,
+						22,
+						58,
+						93
+					],
+					"visible": true
+				},
+				"face": {
+					"rect": [
+						0,
+						0,
+						1,
+						1
+					],
+					"visible": false
+				},
+				"foot_far": {
+					"rect": [
+						132,
+						224,
+						37,
+						14
+					],
+					"visible": true
+				},
+				"foot_near": {
+					"rect": [
+						86,
+						224,
+						43,
+						19
+					],
+					"visible": true
+				},
+				"head": {
+					"rect": [
+						54,
+						42,
+						145,
+						132
+					],
+					"visible": true
+				},
+				"tail": {
+					"rect": [
+						111,
+						199,
+						37,
+						31
+					],
+					"visible": true
+				}
+			},
+			"sha256": "b5004c9e9e56864467715eacf1cc914863d5ec88014e089f45c318a5605c53e5",
+			"source": "res://art_src/rabbit_walk_frames/frames/back/01.png",
+			"visible_pixels_preserved": true
+		},
+		"back_right": {
+			"parts": {
+				"arm_far": {
+					"rect": [
+						73,
+						174,
+						35,
+						44
+					],
+					"visible": true
+				},
+				"arm_near": {
+					"rect": [
+						125,
+						174,
+						48,
+						42
+					],
+					"visible": true
+				},
+				"body": {
+					"rect": [
+						73,
+						174,
+						103,
+						55
+					],
+					"visible": true
+				},
+				"ear_far": {
+					"rect": [
+						72,
+						11,
+						52,
+						97
+					],
+					"visible": true
+				},
+				"ear_near": {
+					"rect": [
+						114,
+						21,
+						64,
+						95
+					],
+					"visible": true
+				},
+				"face": {
+					"rect": [
+						161,
+						121,
+						22,
+						31
+					],
+					"visible": true
+				},
+				"foot_far": {
+					"rect": [
+						80,
+						225,
+						44,
+						11
+					],
+					"visible": true
+				},
+				"foot_near": {
+					"rect": [
+						124,
+						224,
+						43,
+						19
+					],
+					"visible": true
+				},
+				"head": {
+					"rect": [
+						60,
+						92,
+						130,
+						82
+					],
+					"visible": true
+				},
+				"tail": {
+					"rect": [
+						76,
+						195,
+						34,
+						33
+					],
+					"visible": true
+				}
+			},
+			"sha256": "6cb30de3b9acde7d69eeb3840cfcac201e9ec39e70ce87eb274bfd1b63668174",
+			"source": "res://art_src/rabbit_walk_frames/frames/back_right/01.png",
+			"visible_pixels_preserved": true
+		},
+		"front": {
+			"parts": {
+				"arm_far": {
+					"rect": [
+						157,
+						177,
+						33,
+						40
+					],
+					"visible": true
+				},
+				"arm_near": {
+					"rect": [
+						71,
+						177,
+						38,
+						40
+					],
+					"visible": true
+				},
+				"body": {
+					"rect": [
+						85,
+						177,
+						110,
+						47
+					],
+					"visible": true
+				},
+				"ear_far": {
+					"rect": [
+						72,
+						16,
+						57,
+						86
+					],
+					"visible": true
+				},
+				"ear_near": {
+					"rect": [
+						131,
+						16,
+						60,
+						88
+					],
+					"visible": true
+				},
+				"face": {
+					"rect": [
+						97,
+						130,
+						64,
+						33
+					],
+					"visible": true
+				},
+				"foot_far": {
+					"rect": [
+						130,
+						224,
+						44,
+						22
+					],
+					"visible": true
+				},
+				"foot_near": {
+					"rect": [
+						86,
+						222,
+						44,
+						20
+					],
+					"visible": true
+				},
+				"head": {
+					"rect": [
+						55,
+						33,
+						150,
+						144
+					],
+					"visible": true
+				},
+				"tail": {
+					"rect": [
+						0,
+						0,
+						1,
+						1
+					],
+					"visible": false
+				}
+			},
+			"sha256": "e9778fee2827da0808fe70915c1f98556bcadc060fe11e09e4b20aa597cf7f72",
+			"source": "res://art_src/rabbit_walk_frames/frames/front/01.png",
+			"visible_pixels_preserved": true
+		},
+		"front_right": {
+			"parts": {
+				"arm_far": {
+					"rect": [
+						164,
+						181,
+						26,
+						34
+					],
+					"visible": true
+				},
+				"arm_near": {
+					"rect": [
+						72,
+						181,
+						44,
+						39
+					],
+					"visible": true
+				},
+				"body": {
+					"rect": [
+						65,
+						181,
+						104,
+						60
+					],
+					"visible": true
+				},
+				"ear_far": {
+					"rect": [
+						74,
+						30,
+						53,
+						82
+					],
+					"visible": true
+				},
+				"ear_near": {
+					"rect": [
+						131,
+						23,
+						58,
+						89
+					],
+					"visible": true
+				},
+				"face": {
+					"rect": [
+						116,
+						136,
+						66,
+						30
+					],
+					"visible": true
+				},
+				"foot_far": {
+					"rect": [
+						138,
+						226,
+						21,
+						9
+					],
+					"visible": true
+				},
+				"foot_near": {
+					"rect": [
+						102,
+						225,
+						36,
+						21
+					],
+					"visible": true
+				},
+				"head": {
+					"rect": [
+						59,
+						51,
+						140,
+						130
+					],
+					"visible": true
+				},
+				"tail": {
+					"rect": [
+						0,
+						0,
+						1,
+						1
+					],
+					"visible": false
+				}
+			},
+			"sha256": "1b2088637050d9f68189af5f8d74ae24d225c4a35f4559ba51c60b4e500ca857",
+			"source": "res://art_src/rabbit_walk_frames/frames/front_right/03.png",
+			"visible_pixels_preserved": true
+		},
+		"right": {
+			"parts": {
+				"arm_far": {
+					"rect": [
+						158,
+						172,
+						15,
+						39
+					],
+					"visible": true
+				},
+				"arm_near": {
+					"rect": [
+						108,
+						172,
+						47,
+						46
+					],
+					"visible": true
+				},
+				"body": {
+					"rect": [
+						78,
+						172,
+						92,
+						54
+					],
+					"visible": true
+				},
+				"ear_far": {
+					"rect": [
+						84,
+						13,
+						37,
+						86
+					],
+					"visible": true
+				},
+				"ear_near": {
+					"rect": [
+						112,
+						18,
+						48,
+						87
+					],
+					"visible": true
+				},
+				"face": {
+					"rect": [
+						158,
+						118,
+						26,
+						37
+					],
+					"visible": true
+				},
+				"foot_far": {
+					"rect": [
+						100,
+						224,
+						24,
+						17
+					],
+					"visible": true
+				},
+				"foot_near": {
+					"rect": [
+						124,
+						224,
+						41,
+						18
+					],
+					"visible": true
+				},
+				"head": {
+					"rect": [
+						67,
+						39,
+						122,
+						133
+					],
+					"visible": true
+				},
+				"tail": {
+					"rect": [
+						73,
+						192,
+						31,
+						32
+					],
+					"visible": true
+				}
+			},
+			"sha256": "3f93cac0481367c3fbeaf3f74431a8b6bed5e92ec6f4dd43d7e881741533a84d",
+			"source": "res://art_src/rabbit_walk_frames/frames/right/01.png",
+			"visible_pixels_preserved": true
+		}
+	}
+}
