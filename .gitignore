@@ -2,3 +2,14 @@
 .godot/
 /android/
 *.tmp
+
+# Local tooling and generated QA output
+__pycache__/
+*.py[cod]
+docs/qa/*.png
+docs/qa/*.gif
+docs/qa/*.log
+docs/qa/*.txt
+*.psd
+*.psb
+*.pcraft

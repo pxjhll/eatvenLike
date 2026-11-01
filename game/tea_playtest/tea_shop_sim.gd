@@ -1,7 +1,7 @@
 extends "res://game/tea_playtest/tea_playtest_sim.gd"
 ## Business rules preserve physical goods from collection to service.
 const CONFIG = preload("res://content/tea/tea.tres")
-## The art shop opens its line one machine group at a time; the legacy GameSim keeps tea.tres stages.
+## The shop opens its line one machine group at a time.
 const PROGRESSION = preload("res://content/tea/art_shop_progression.tres")
 ## Black tea is brewed directly into the sealer; once milk opens, only this many are kept in stock.
 const BLACK_TEA_CAP := 3

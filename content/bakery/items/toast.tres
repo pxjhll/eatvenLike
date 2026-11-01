@@ -1,8 +1,0 @@
-[gd_resource type="Resource" script_class="ItemDef" format=3]
-
-[ext_resource type="Script" path="res://content/defs/item_def.gd" id="1_t0ast"]
-
-[resource]
-script = ExtResource("1_t0ast")
-id = "toast"
-display_name = "切片吐司"

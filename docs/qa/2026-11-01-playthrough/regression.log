@@ -1,0 +1,155 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+  ok    test_tea_business.test_opening_and_unlock_validation
+  ok    test_tea_business.test_black_tea_sells_before_the_milk_machine
+  ok    test_tea_business.test_collection_training_recall_and_reset
+  ok    test_tea_business.test_rabbit_is_fourth_paid_recruit_without_expanding_deployment_limit
+  ok    test_tea_business.test_acquired_rabbit_can_train_work_recall_and_survive_shop_reset
+  ok    test_tea_business.test_real_flavors_conservation_and_identical_resume
+  ok    test_tea_business.test_upgrades_tasks_and_malformed_load_are_atomic
+  ok    test_tea_business.test_reserved_employee_drop_validates_before_deploying
+  ok    test_tea_business.test_exact_flavor_dispatch_and_upgraded_sale_price
+  ok    test_tea_business.test_brewer_upgrades_speed_and_ingredient_upgrades_price
+  ok    test_tea_business.test_recalling_every_observed_job_phase_preserves_goods_and_reservations
+  ok    test_tea_business.test_malformed_active_job_cannot_load_or_break_later_ticks
+  ok    test_tea_business.test_opening_income_funds_the_real_production_progression
+  ok    test_tea_business.test_corrupt_operation_phase_rejected_before_applying
+  ok    test_tea_business.test_full_other_flavors_do_not_block_the_requested_flavor
+  ok    test_tea_business.test_shelf_capacity_is_per_flavor_and_reserves_in_flight_slots
+  ok    test_tea_business.test_unreserved_orders_leave_after_configured_patience_and_reserved_orders_finish
+  ok    test_tea_business.test_carried_service_retains_its_flavor_slot_until_delivery_or_recall
+  ok    test_tea_business.test_customer_queue_uses_configured_capacity
+  ok    test_tea_business.test_price_preview_matches_the_price_after_upgrading
+  ok    test_tea_shop_save.test_missing_save_returns_fresh_shop_without_creating_file
+  ok    test_tea_shop_save.test_full_shop_state_and_continuation_roundtrip
+  ok    test_tea_shop_save.test_save_paths_remain_independent
+  ok    test_tea_shop_save.test_bench_training_and_deployed_roster_reference_survive_reload
+  ok    test_tea_shop_save.test_four_owned_staff_with_active_rabbit_roundtrip_and_continue
+  ok    test_tea_shop_save.test_pre_rabbit_version_two_roster_loads_and_can_recruit_rabbit
+  ok    test_tea_shop_save.test_malformed_files_are_backed_up_before_recovery
+  ok    test_tea_shop_save.test_direct_save_protects_existing_corrupt_file
+  ok    test_tea_shop_save.test_future_version_stays_read_only_even_before_loading
+  ok    test_tea_shop_save.test_failed_write_and_invalid_speed_report_errors_without_overwrite
+  ok    test_staff_posts.test_post_assignment_and_release_place_employee_immediately
+  ok    test_staff_posts.test_invalid_and_occupied_assignment_preserve_previous_role
+  ok    test_staff_posts.test_seated_manual_posts_work_and_mobile_logistics_continue
+  ok    test_staff_posts.test_three_workers_can_staff_both_posts
+  ok    test_staff_posts.test_carrying_assignment_returns_goods_and_places_employee
+  ok    test_staff_posts.test_working_operator_leaves_inputs_and_releases_post_on_drop
+  ok    test_staff_posts.test_boil_requires_manual_start_and_manual_take
+  ok    test_staff_posts.test_soft_fatigue_never_unseats_and_full_line_stays_conserved
+  ok    test_staff_posts.test_full_boil_output_waits_without_losing_goods_or_unseating
+  ok    test_staff_posts.test_direct_placement_does_not_require_a_route_from_old_position
+  ok    test_staff_posts.test_isolated_floor_rejects_drop_without_interrupting_work
+  ok    test_staff_posts.test_interrupt_every_task_phase_returns_stock_and_releases_reservations
+  ok    test_staff_posts.test_carried_goods_keep_source_capacity_available_for_return
+  ok    test_staff_posts.test_repeated_busy_drops_preserve_other_workers_and_keep_selling
+  ok    test_tea_playtest.test_one_worker_completes_the_real_chain_in_both_modes
+  ok    test_tea_playtest.test_multiworker_stock_and_capacity_survive_route_toggles
+  ok    test_tea_playtest.test_training_changes_specialty_and_charges_gold
+  ok    test_tea_playtest.test_soft_fatigue_keeps_real_speed_and_recovers_while_idle
+  ok    test_tea_playtest.test_pause_and_fixed_steps_preserve_session_state
+  ok    test_tea_playtest.test_switching_modes_keeps_in_flight_belt_delivery
+  ok    test_tea_playtest.test_each_transport_mode_keeps_long_run_stock_and_reservations_valid
+  ok    test_tea_playtest.test_toggling_before_pickup_does_not_rewrite_reserved_belt_job
+  ok    test_tea_playtest.test_training_changes_real_trip_batches_movement_and_work_duration
+  ok    test_tea_playtest.test_allocation_considers_path_and_soft_fatigue
+  ok    test_tea_playtest.test_empty_topping_clears_ready_after_real_pickup_and_preserves_work_phase
+  ok    test_shop_grid.test_grid_uses_both_rooms_and_excludes_outside_cells
+  ok    test_shop_grid.test_long_table_occupancy_and_rotated_operation_point
+  ok    test_shop_grid.test_placement_rejects_invalid_bounds_walls_and_other_furniture
+  ok    test_shop_grid.test_worker_route_goes_through_door_and_counts_actual_travel
+  ok    test_shop_grid.test_unreachable_tasks_and_blocked_endpoints_have_no_route
+  ok    test_shop_grid.test_grid_and_picture_coordinates_are_independent
+  ok    test_reference_art.test_reference_textures_fit_256_pixels_per_cell_budget
+  ok    test_reference_art.test_texture_optimization_preserves_existing_sprite_geometry
+  ok    test_reference_art.test_round_props_share_one_camera_angle
+  ok    test_reference_art.test_art_scene_has_independent_occluders_and_clear_doorway
+  ok    test_reference_art.test_layers_hide_independently_without_moving_other_pieces
+  ok    test_tea.test_fresh_tea_and_legacy_bakery_identity
+  ok    test_tea.test_opening_counter_is_there_and_lemonade_is_bought
+  ok    test_tea.test_milk_tea_line_unlocks_as_one_purchase
+  ok    test_tea.test_cabinet_slot_backed_up_does_not_block_the_other
+  ok    test_tea.test_cabinet_material_upgrade_speeds_only_that_raw
+  ok    test_tea.test_topping_machine_starts_with_pearl_and_upgrades_open_flavors
+  ok    test_tea.test_flavor_cap_counts_in_flight_and_skips_full_flavors
+  ok    test_tea.test_topping_slot_upgrade_raises_that_flavor_price
+  ok    test_tea.test_customers_only_order_what_the_shop_can_make
+  ok    test_tea.test_save_resume_keeps_line_flavors_and_slot_levels
+TEA PACE topping=224s done=427s revenue=4202 gold=2682
+  ok    test_tea.test_shop_completes_with_plain_play
+  ok    test_front_stage1.test_empty_shop_sells_lemonade_after_unlock_hire_and_assign
+  ok    test_front_stage1.test_lemonade_stand_pours_on_demand_and_never_runs_out
+  ok    test_front_stage1.test_one_staff_per_post_and_swapping_them
+  ok    test_front_stage1.test_rejected_front_commands_change_nothing
+  ok    test_front_stage1.test_staff_bar_hires_and_drag_to_post_uses_commands
+  ok    test_white_bread.test_line_sells_white_bread
+  ok    test_white_bread.test_shop_completes_after_tasks
+  ok    test_white_bread.test_parallel_oven_raises_output
+  ok    test_white_bread.test_splitter_alternates
+  ok    test_white_bread.test_splitter_skips_blocked_lane
+  ok    test_toast.test_slicer_locked_until_revenue_threshold
+  ok    test_toast.test_unlock_slicer_splits_bread_and_sells_toast
+  ok    test_toast.test_new_stage_keeps_old_dish_majority_and_raises_traffic
+  ok    test_font.test_content_names_have_glyphs
+  ok    test_font.test_script_strings_have_glyphs
+  ok    test_invariants.test_1_sale_settles_once
+  ok    test_invariants.test_2_spend_keeps_revenue
+  ok    test_invariants.test_3_stockout_does_not_hold_staff
+  ok    test_invariants.test_4_snapshot_is_a_copy
+  ok    test_invariants.test_5_material_conserved
+  ok    test_invariants.test_6_rejected_command_changes_nothing
+  ok    test_invariants.test_7_one_staff_one_task
+  ok    test_invariants.test_8_defs_unchanged
+  ok    test_invariants.test_9_step_independent
+  ok    test_invariants.test_10_save_load_lossless
+  ok    test_commands.test_upgrade_routes_to_front_hall
+  ok    test_commands.test_unlock_station_adds_dish
+  ok    test_commands.test_assign_staff_finishes_current_step
+  ok    test_commands.test_set_connection_keeps_items_and_clear_removes_them
+  ok    test_commands.test_switch_shop_needs_completion
+  ok    test_commands.test_long_frame_catchup_is_capped
+  ok    test_save.test_save_file_roundtrip
+  ok    test_save.test_missing_save_is_empty
+WARNING: 存档无法解析，已另存为 user://corrupt_test/save.json.corrupt-1793515724
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] load_data (res://game/app/save_service.gd:37)
+       [1] test_corrupt_save_is_kept (res://tests/test_save.gd:37)
+       [2] _initialize (res://tests/run_all.gd:41)
+  ok    test_save.test_corrupt_save_is_kept
+  ok    test_save.test_save_from_before_new_dish_still_loads
+  ok    test_save.test_tea_save_from_before_empty_shop_restarts_the_shop
+  ok    test_save.test_tea_save_from_before_fixed_line_restarts_the_shop
+  ok    test_workforce.test_manual_waits_for_staff_then_runs_after_assignment
+  ok    test_workforce.test_manual_uses_staff_efficiency_once
+  ok    test_workforce.test_manual_transfer_finishes_exactly_one_step
+  ok    test_workforce.test_one_worker_services_two_coop_ovens_and_is_released_during_baking
+  ok    test_logistics.test_real_slicing_chain_conserves_material
+    PXJ-23 fixture: 10 Hz, 5 stations, 6 belt segments, 600 ticks; sliced output single=56 parallel=112
+  ok    test_logistics.test_parallel_slicers_raise_output_without_dispatch_changes
+  ok    test_logistics.test_full_shelf_backpressures_upstream_and_resumes_after_consumption
+  ok    test_logistics.test_empty_and_reserved_inventory_do_not_create_stock
+  ok    test_presentation.test_station_visual_state_uses_actual_mode_and_phase
+  ok    test_presentation.test_buffer_visuals_preserve_input_and_output_identities
+  ok    test_presentation.test_graybox_rebind_and_detach_do_not_change_simulation
+  ok    test_presentation.test_service_reaches_pickup_before_carrying_and_customer_before_sale
+  ok    test_presentation.test_ui_font_covers_staff_bar_and_drag_hint
+WARNING: 存档失败：File not found
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] save_now (res://game/app/app.gd:58)
+       [1] <anonymous lambda> (res://presentation/graybox/shop_ui.gd:131)
+       [2] test_save_button_reports_real_write_failure_and_success (res://tests/test_presentation.gd:120)
+       [3] _initialize (res://tests/run_all.gd:41)
+  ok    test_presentation.test_save_button_reports_real_write_failure_and_success
+  ok    test_presentation.test_front_service_fetches_from_window_then_serves_its_customer
+  ok    test_presentation.test_idle_kitchen_worker_stays_at_last_station
+
+130 个用例，0 个失败
+WARNING: 1 RID of type "Canvas" was leaked.
+   at: _free_rids (servers/rendering/renderer_canvas_cull.cpp:2690)
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2663)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:810)

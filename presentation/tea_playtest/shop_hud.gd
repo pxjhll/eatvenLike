@@ -54,7 +54,6 @@ var train_button: Button
 var pause_button: Button
 var belt_button: Button
 var restart_button: Button
-var old_button: Button
 var cancel_restart_button: Button
 var confirm_restart_button: Button
 var deploy_button: Button
@@ -271,7 +270,6 @@ func _build_pages() -> void:
 	belt_button = _action(menu, "运输", _view.toggle_transport)
 	save_button = _action(menu, "保存进度", func() -> void: _view.save_now())
 	restart_button = _action(menu, "重新开始", open_page.bind("restart"))
-	old_button = _action(menu, "进入旧版", _view.go_to_old_game)
 	_save_caption = _text(menu, "", 20, true)
 	var characters := _column("characters")
 	character_preview = CharacterPreview.new()

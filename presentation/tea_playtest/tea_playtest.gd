@@ -34,7 +34,6 @@ var _train_button: Button
 var _pause_button: Button
 var _belt_button: Button
 var _restart_button: Button
-var _old_button: Button
 var _speed_button: Button
 var _speed_factor := 1.0
 var _font: Font
@@ -301,7 +300,6 @@ func _build_ui() -> void:
 	_pause_button = ui.pause_button
 	_belt_button = ui.belt_button
 	_restart_button = ui.restart_button
-	_old_button = ui.old_button
 	_speed_button = ui.speed_button
 	_toast = ui.toast
 
@@ -478,13 +476,6 @@ func save_now(notify := true) -> Error:
 	if notify:
 		_show_toast(save_status)
 	return result
-
-
-func go_to_old_game() -> void:
-	if save_now(false) != OK:
-		_show_toast(save_status)
-		return
-	get_tree().change_scene_to_file("res://presentation/shop.tscn")
 
 
 func _build_station_signs() -> void:

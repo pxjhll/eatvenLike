@@ -24,15 +24,19 @@ jobs:
         run: timeout 30s ./godot --headless --path . -s tests/render_shop_ui.gd
       - name: Art shop business interaction regression
         run: timeout 45s ./godot --headless --path . -s tests/render_tea_business.gd
+      - name: Rabbit frame and gameplay regression
+        run: |
+          timeout 30s ./godot --headless --path . -s tests/test_rabbit_frame_atlas.gd
+          timeout 30s ./godot --headless --path . -s tests/test_rabbit_game_visuals.gd
       # 真窗口 QA 要装 xvfb、跑好几分钟，只在合进 main 时跑，PR 上靠本地跑（省 Actions 分钟数）
       - name: Tea window input and screenshot QA
         if: github.event_name == 'push'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y xvfb libgl1-mesa-dri
-          timeout 180s xvfb-run -a ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_tea.gd
+          timeout 180s xvfb-run -a ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_tea_business.gd
       - uses: actions/upload-artifact@v4
         if: always() && github.event_name == 'push'
         with:
           name: tea-qa
-          path: docs/qa/pxj49-*.png
+          path: docs/qa/tea-business-*.png
