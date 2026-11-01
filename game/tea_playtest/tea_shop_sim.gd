@@ -71,6 +71,16 @@ const BELTS_IN_GAME := false
 var _belt_courier := false
 var _rng: RandomNumberGenerator
 var follow_orders := FOLLOW_ORDERS
+## Playtest tuning knobs (调参面板): multipliers on top of the .tres numbers, 1.0 = as designed.
+## Times (seat, customer, boil, mix, seal, topping, press, lemonade) are multiplied; walk, work and price
+## multiply speed / skill / sale price. Not part of the shop save; the panel keeps them in its own file.
+const TUNE_KEYS := ["seat", "customer", "boil", "mix", "seal", "topping", "press", "lemonade", "walk", "work", "price"]
+const TUNE_MIN := 0.25
+const TUNE_MAX := 3.0
+var tune: Dictionary = {}
+
+func tuned(key: String) -> float:
+	return clampf(float(tune.get(key, 1.0)), TUNE_MIN, TUNE_MAX)
 
 func _init() -> void:
 	_rng = RandomNumberGenerator.new()
@@ -498,12 +508,13 @@ func seat_cost() -> int:
 ## How long a dine-in customer sits at this stage: short early so seats turn over, longer as the menu grows.
 func seat_seconds(stage: int = -1) -> float:
 	var seconds: float = PROGRESSION.stages[stage_index if stage < 0 else stage].seat_seconds
-	return seconds if seconds > 0 else PROGRESSION.seat_seconds
+	return (seconds if seconds > 0 else PROGRESSION.seat_seconds) * tuned("seat")
 
 func _longest_seat_seconds() -> float:
 	var longest := 0.0
 	for index in PROGRESSION.stages.size(): longest = maxf(longest, seat_seconds(index))
-	return longest
+	# A save made with a longer tuned dine-in time must still load after the knob is turned back.
+	return longest / tuned("seat") * TUNE_MAX
 
 func seat_max() -> int:
 	return PROGRESSION.seat_start + PROGRESSION.seat_costs.size()
@@ -767,15 +778,15 @@ func _machine_duration(key: String) -> float:
 	match key:
 		"boil":
 			var seconds: float = _definition("boil").art_seconds
-			return (seconds if seconds > 0 else 7.0) / _speed("boil") / _speed("supply") / _material_bonus("supply", "tea_leaf")
-		"mix": return 4.0 / _speed("mix") / _material_bonus("supply", "milk")
+			return (seconds if seconds > 0 else 7.0) / _speed("boil") / _speed("supply") / _material_bonus("supply", "tea_leaf") * tuned("boil")
+		"mix": return 4.0 / _speed("mix") / _material_bonus("supply", "milk") * tuned("mix")
 	return seal_seconds()
 
 ## Time per takeaway cup at the sealer: faster per level, and each extra slot (stars at Lv5 / Lv10) adds another cup at once.
 func seal_seconds(level: int = -1) -> float:
 	var lv: int = station_levels.seal if level < 0 else level
 	var speed: float = PROGRESSION.seal_speeds[mini(lv, PROGRESSION.seal_speeds.size()) - 1]
-	return PROGRESSION.seal_seconds / speed / seal_slots(lv)
+	return PROGRESSION.seal_seconds / speed / seal_slots(lv) * tuned("seal")
 
 func seal_slots(level: int = -1) -> int:
 	var lv: int = station_levels.seal if level < 0 else level
@@ -803,9 +814,9 @@ func stars(id: String, level: int = -1) -> int:
 	return count
 
 func _action_duration(job: Dictionary, worker: Dictionary) -> float:
-	if job.item == "lemonade" and job.src == "supply": return _definition("lemonade").cycle_seconds / _speed("lemonade") / _skill(worker)
-	if job.kind == "topping": return _topping_seconds() * job.count / _skill(worker) / _speed("topping")
-	if job.kind == "press": return PRESS_DEF.art_seconds * job.count / _skill(worker) / _speed("press")
+	if job.item == "lemonade" and job.src == "supply": return _definition("lemonade").cycle_seconds / _speed("lemonade") / _skill(worker) * tuned("lemonade")
+	if job.kind == "topping": return _topping_seconds() * job.count / _skill(worker) / _speed("topping") * tuned("topping")
+	if job.kind == "press": return PRESS_DEF.art_seconds * job.count / _skill(worker) / _speed("press") * tuned("press")
 	if job.kind == "stir": return STIR_SECONDS / _skill(worker)
 	if job.kind == "load_boil": return 0.6 / _skill(worker) / _speed("supply") / _material_bonus("supply", "tea_leaf")
 	return super._action_duration(job, worker)
@@ -817,7 +828,7 @@ func _topping_seconds() -> float:
 
 ## Customers come faster with each stage, each flavor on the menu (+5% each) and each flyer level (+10% each).
 func _order_interval() -> float:
-	return PROGRESSION.stages[stage_index].customer_interval / flow_multiplier()
+	return PROGRESSION.stages[stage_index].customer_interval / flow_multiplier() * tuned("customer")
 
 func flow_multiplier(flyer_level: int = -1) -> float:
 	var flavors := 0
@@ -1119,10 +1130,10 @@ func _side(worker: Dictionary) -> String:
 	return "front" if worker.post == "counter" else "kitchen"
 
 func _walk_speed(worker: Dictionary) -> float:
-	return worker.speed * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0) * pow(1.0 + PROGRESSION.walk_step, _bought(_side(worker), "walk"))
+	return worker.speed * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0) * pow(1.0 + PROGRESSION.walk_step, _bought(_side(worker), "walk")) * tuned("walk")
 
 func _skill(worker: Dictionary) -> float:
-	return worker.skill * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0) * pow(1.0 + PROGRESSION.work_step, _bought(_side(worker), "work"))
+	return worker.skill * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0) * pow(1.0 + PROGRESSION.work_step, _bought(_side(worker), "work")) * tuned("work")
 
 func _carry(worker: Dictionary) -> int:
 	return worker.capacity + _bought(_side(worker), "carry")
@@ -1617,7 +1628,7 @@ func _dish_price(dish: String) -> int:
 	for id in ["topping", "press"]:
 		for material in _definition(id).materials:
 			if material.item_id == dish: bonus += _material_bonus(id, material.id) - 1.0
-	return roundi(price * bonus)
+	return roundi(price * bonus * tuned("price"))
 
 func _record_sale(job: Dictionary) -> void:
 	# A cup handed over from the shelf or the stand is drunk here: the customer takes a seat for a while.

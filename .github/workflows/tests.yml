@@ -26,6 +26,8 @@ jobs:
         run: timeout 45s ./godot --headless --path . -s tests/render_tea_business.gd
       - name: First-shop tutorial interaction regression
         run: timeout 45s ./godot --headless --path . -s tests/render_guide.gd
+      - name: Tuning panel and playtest log regression
+        run: timeout 30s ./godot --headless --path . -s tests/render_tuning.gd
       - name: Animated character frame and gameplay regression
         run: |
           timeout 30s ./godot --headless --path . -s tests/test_rabbit_frame_atlas.gd

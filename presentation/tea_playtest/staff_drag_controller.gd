@@ -75,7 +75,7 @@ func _press_body(screen: Vector2) -> void:
 		if _view.ui.card_hit_test(card, screen):
 			_candidate(int(card.get_meta("worker_id", -1)), screen, true)
 			return
-	if _view.ui.blocks_world(screen):
+	if _view.ui.blocks_world(screen) or _view.tuning_covers(screen):
 		return
 	var point := _world(screen)
 	if point.y < 98 or point.y >= 1200:
@@ -189,7 +189,7 @@ func _post_taken(post: String) -> bool:
 
 
 func _drop_target(screen: Vector2) -> Dictionary:
-	if _view.ui.blocks_world(screen):
+	if _view.ui.blocks_world(screen) or _view.tuning_covers(screen):
 		return {"kind": "invalid", "reason": "ui_overlay"}
 	return Layout.drop_target(_world(screen))
 
