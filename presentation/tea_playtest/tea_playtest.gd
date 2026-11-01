@@ -611,7 +611,8 @@ func _build_station_signs() -> void:
 		$Canvas/WorldLabels.add_child(frame)
 		_station_buttons[id] = frame
 	for id in STATION_REGIONS:
-		if not sim.stations.has(id) and id != "supply":
+		# The cabinet and the lemonade stand are not processing stations but still level up; only a missing press is skipped.
+		if id == "press" and not sim.stations.has(id):
 			continue
 		var mark := UpgradeBadge.new()
 		var region: Rect2 = STATION_REGIONS[id]
