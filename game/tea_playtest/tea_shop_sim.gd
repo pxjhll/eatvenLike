@@ -495,6 +495,16 @@ func seat_cost() -> int:
 	var index := seats - PROGRESSION.seat_start
 	return PROGRESSION.seat_costs[index] if index >= 0 and index < PROGRESSION.seat_costs.size() else -1
 
+## How long a dine-in customer sits at this stage: short early so seats turn over, longer as the menu grows.
+func seat_seconds(stage: int = -1) -> float:
+	var seconds: float = PROGRESSION.stages[stage_index if stage < 0 else stage].seat_seconds
+	return seconds if seconds > 0 else PROGRESSION.seat_seconds
+
+func _longest_seat_seconds() -> float:
+	var longest := 0.0
+	for index in PROGRESSION.stages.size(): longest = maxf(longest, seat_seconds(index))
+	return longest
+
 func seat_max() -> int:
 	return PROGRESSION.seat_start + PROGRESSION.seat_costs.size()
 
@@ -1615,7 +1625,7 @@ func _record_sale(job: Dictionary) -> void:
 		var taken: Array = diners.map(func(diner: Dictionary) -> int: return diner.seat)
 		var seat := 0
 		while seat in taken: seat += 1
-		diners.append({"seat": seat, "dish": job.item, "left": PROGRESSION.seat_seconds})
+		diners.append({"seat": seat, "dish": job.item, "left": seat_seconds()})
 	sold += job.count
 	sold_by_dish[job.item] += job.count
 	var income: int = _dish_price(job.item) * job.count
@@ -2055,7 +2065,7 @@ func _validate_state(state: Dictionary) -> String:
 	var seat_ids: Array = []
 	for diner in state.diners:
 		if not diner is Dictionary or not _same_shape(diner, {"seat": 0, "dish": "", "left": 0.0}): return "堂食客人字段无效"
-		if diner.seat < 0 or diner.seat >= state.seats or diner.seat in seat_ids or not diner.dish in DISHES or diner.left < 0 or diner.left > PROGRESSION.seat_seconds + 0.000001: return "堂食客人无效"
+		if diner.seat < 0 or diner.seat >= state.seats or diner.seat in seat_ids or not diner.dish in DISHES or diner.left < 0 or diner.left > _longest_seat_seconds() + 0.000001: return "堂食客人无效"
 		seat_ids.append(diner.seat)
 	for event in state.events:
 		if not event is Dictionary or not _same_shape(event, {"kind": "", "text": ""}): return "事件字段无效"

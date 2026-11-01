@@ -1205,3 +1205,9 @@ func test_v9_save_counts_open_dishes_as_eased_in() -> void:
 	check_eq(copy.order_ramp.pearl_milk_tea, copy.RAMP_ORDERS, "dishes already sold keep their full weight")
 	check_eq(copy.order_ramp.takeaway, copy.RAMP_ORDERS, "takeaway keeps its full share")
 	check_eq(copy.order_ramp.lemon_tea, 0, "a dish that opens later still eases in")
+
+func test_dine_in_customers_sit_shorter_early_and_longer_later() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	check(sim.seat_seconds(0) < sim.seat_seconds(sim.PROGRESSION.stages.size() - 1), "early customers leave their seat sooner than late ones")
+	check(is_equal_approx(sim.seat_seconds(), sim.seat_seconds(0)), "the current stage sets how long a customer sits")

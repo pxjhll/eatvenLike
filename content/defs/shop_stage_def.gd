@@ -21,6 +21,8 @@ extends Resource
 @export var queue_capacity: int = 6
 ## 美术店：本阶段想外带的顾客比例（需已解锁封口机）
 @export var takeaway_share: float = 0.0
+## 美术店：本阶段每位堂食客人坐多久（秒）；0 = 用 ShopProgressionDef.seat_seconds
+@export var seat_seconds: float = 0.0
 ## 美术店：未解锁时面板上的一句说明（空 = 用菜名）
 @export var unlock_note: String = ""
 @export var tasks: Array[TaskDef] = []
