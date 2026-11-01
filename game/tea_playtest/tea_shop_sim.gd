@@ -611,7 +611,7 @@ func station_info(requested: String) -> Dictionary:
 					"box_error": box_error(material.id), "box_machine": station_info_name(machine)})
 			if _art_mode(material): row.merge(_price_preview(id, material.id, mat_level < mat_max))
 			materials.append(row)
-	var descriptions := {"supply": "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价", "boil": "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "press": "员工拿红茶来亲手捣水果，全程要人；客人点什么水果就捣什么", "seal": "外带的杯子都要来这里封口；升级封得更快，5 级、10 级各加一个封口位", "lemonade": "服务员到展示柜现取柠檬水，外带不用封口", "counter": "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"}
+	var descriptions := {"supply": "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价", "boil": "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "press": "员工拿红茶来亲手捣水果，全程要人；客人点什么水果就捣什么", "seal": "外带的杯子都要来这里封口；升级封得更快，5 级、10 级各加一个封口位", "lemonade": "服务员到展示柜现取柠檬水，外带不用封口；升级提高售价，出杯也更快", "counter": "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"}
 	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "加料速度", "press": "手打速度", "lemonade": "售价", "seal": "封口速度"}
 	var speeds: Array = [1.0]
 	if definition != null: speeds = definition.art_speeds if _art_mode(definition) and not definition.art_speeds.is_empty() else definition.level_speed
@@ -1570,18 +1570,19 @@ func _cancel_job(worker: Dictionary) -> void:
 func _dish_price(dish: String) -> int:
 	var price := _base_price(dish)
 	# Price upgrades multiply: each level ×(1 + step), each star ×star_mult, across machines and ingredients.
+	# Every bonus on a cup adds to one sum (levels, stars, ingredients, flavour), so a maxed milk tea ends
+	# near ×3.5 rather than the ×10 that stacked multipliers reached.
 	var bonus := 1.0
 	for id in ["lemonade", "boil", "mix", "supply", "press"]:
 		var definition = _definition(id)
 		if _art_mode(definition) and dish in definition.art_price_dishes:
-			bonus *= pow(1.0 + definition.art_price_step, station_levels[id] - 1) * pow(definition.art_star_mult, stars(id))
+			bonus += definition.art_price_step * (station_levels[id] - 1) + (definition.art_star_mult - 1.0) * stars(id)
 		for material in definition.materials:
-			if _art_mode(material) and dish in material.art_price_dishes: bonus *= pow(1.0 + material.art_price_step, material_levels[id][material.id] - 1)
-	var flavor := 1.0
+			if _art_mode(material) and dish in material.art_price_dishes: bonus += material.art_price_step * (material_levels[id][material.id] - 1)
 	for id in ["topping", "press"]:
 		for material in _definition(id).materials:
-			if material.item_id == dish: flavor = _material_bonus(id, material.id)
-	return roundi(price * bonus * flavor)
+			if material.item_id == dish: bonus += _material_bonus(id, material.id) - 1.0
+	return roundi(price * bonus)
 
 func _record_sale(job: Dictionary) -> void:
 	# A cup handed over from the shelf or the stand is drunk here: the customer takes a seat for a while.

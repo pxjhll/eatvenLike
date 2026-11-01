@@ -48,7 +48,7 @@ func _run() -> void:
 	await _click(view._station_buttons.boil)
 	var gold: int = view.sim.gold
 	await _click(hud.station_panel.unlock_button)
-	_check(view.sim.stage_index == 1 and view.sim.gold == gold - 100 and not view.sim.station_unlocked("seal"), "the brewer opens on its own for its stage price")
+	_check(view.sim.stage_index == 1 and view.sim.gold == gold - view.sim.PROGRESSION.stages[1].line_cost and not view.sim.station_unlocked("seal"), "the brewer opens on its own for its stage price")
 	_check(not _art_hidden(["IngredientTable", "MachineTable", "MachineTable/PearlPot", "Rack", "DisplayCase"]) and _art_hidden(["MachineTable/Brewer", "PrepBench", "Sealer"]), "the brewer and shelf appear, later machines stay hidden")
 	_check(_frames_shown(["supply", "seal"]) and _frames_hidden(["boil", "mix", "topping"]), "the cabinet asks for the tea leaf box, the sealer is next")
 	await _click(hud.home_button)
@@ -88,7 +88,7 @@ func _run() -> void:
 	await _click(view._station_buttons.mix)
 	gold = view.sim.gold
 	await _click(hud.station_panel.unlock_button)
-	_check(view.sim.stage_index == 3 and view.sim.gold == gold - 250, "milk machine has its own sign, price and revenue gate")
+	_check(view.sim.stage_index == 3 and view.sim.gold == gold - view.sim.PROGRESSION.stages[3].line_cost, "milk machine has its own sign and price")
 	await _click(hud.home_button)
 	_check(_frames_shown(["supply"]), "the cabinet now asks for the milk box")
 	await _click(view._station_buttons.supply)
@@ -185,6 +185,9 @@ func _run() -> void:
 	var queue_view = load("res://presentation/tea_playtest/tea_playtest.tscn").instantiate()
 	var queue_sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
 	queue_sim.unlock_station("lemonade")
+	# The lemonade stage only queues three; the black tea stage lets a fourth wait in the second row.
+	queue_sim.gold = 1000
+	queue_sim.unlock_station("boil")
 	for worker in queue_sim.workers.duplicate(): queue_sim.recall_worker(worker.id)
 	queue_view.sim = queue_sim
 	root.add_child(queue_view)
