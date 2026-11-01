@@ -19,6 +19,7 @@ var _static := Sprite2D.new()
 var _details: Label
 var _frame_label: Label
 var _updating := false
+var _frame_art := "rabbit"
 
 
 func _ready() -> void:
@@ -118,6 +119,12 @@ func select_character(id: String) -> void:
 	if not is_node_ready():
 		return
 	character_select.select(Library.IDS.find(id))
+	if id in Library.FRAME_SCENES and id != _frame_art:
+		frame_actor.free()
+		frame_actor = Library.FRAME_SCENES[id].instantiate()
+		_stage.add_child(frame_actor)
+		frame_actor.set_speed(speed_slider.value)
+		_frame_art = id
 	available_actions = Library.actions(id)
 	action_select.clear()
 	for action: Dictionary in available_actions:

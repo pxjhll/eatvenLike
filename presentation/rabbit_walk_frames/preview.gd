@@ -5,6 +5,8 @@ const ACTOR := preload("res://presentation/rabbit_walk_frames/rabbit_walk.tscn")
 const FONT := preload("res://art/ui/graybox_font.ttf")
 const INK := Color("293c37")
 const MUTED := Color("7e8981")
+@export var actor_scene: PackedScene = ACTOR
+@export var character_name := "兔子"
 var actor: Node2D
 var small: Node2D
 var paused := false
@@ -23,23 +25,23 @@ var _cards: StyleBoxFlat
 
 
 func _ready() -> void:
-	get_window().title = "Rabbit walking frames"
+	get_window().title = character_name + "走路帧动画"
 	get_window().content_scale_size = Vector2i(1100, 740)
 	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
 	get_window().size = Vector2i(1100, 740)
 	_cards = StyleBoxFlat.new()
 	_cards.bg_color = Color.WHITE
 	_cards.set_corner_radius_all(18)
-	_label("RABBIT / FRAME ANIMATION", Vector2(34, 18), 12, Color("498374"))
-	_label("兔子走路", Vector2(32, 44), 29, INK)
+	_label("WALK / FRAME ANIMATION", Vector2(34, 18), 12, Color("498374"))
+	_label(character_name + "走路", Vector2(32, 44), 29, INK)
 	_label("Five views / seven poses each / shared atlas / original timing", Vector2(34, 89), 13, MUTED)
 	_label("256 x 256 / 100%", Vector2(60, 147), 14, INK)
 	_label("128 x 128 / 50%", Vector2(525, 147), 14, INK)
 	_label("方向", Vector2(860, 147), 18, INK)
-	actor = ACTOR.instantiate()
+	actor = actor_scene.instantiate()
 	actor.position = Vector2(270, 475)
 	add_child(actor)
-	small = ACTOR.instantiate()
+	small = actor_scene.instantiate()
 	small.position = Vector2(650, 475)
 	small.scale = Vector2(0.5, 0.5)
 	add_child(small)

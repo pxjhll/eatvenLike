@@ -1,0 +1,584 @@
+{
+  "asset_prefix": "gray_cat_walk",
+  "output": "res://art/gray_cat_walk_frames/",
+  "external_source": "E:\\Work\\小灰猫走路",
+  "frame_size": [
+    256,
+    256
+  ],
+  "columns": 7,
+  "rows": 5,
+  "anchor": [
+    128,
+    247
+  ],
+  "visible_height": 240,
+  "source_preservation": "Byte-identical PNG copies; fixed canvas; no redraw, recolor, resize or per-frame recenter.",
+  "directions": [
+    {
+      "key": "front",
+      "animation": "walk_front",
+      "row": 0,
+      "source_folder": "小灰猫正面走关键帧",
+      "source_preview": "小灰猫正面走_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        130,
+        160,
+        130,
+        120,
+        130,
+        170,
+        120
+      ],
+      "cycle_ms": 960,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "endpoint_policy": "Remove only a visually identical terminal pose; keep distinct gait samples and interior holds.",
+      "visible_height_range": [
+        215,
+        217
+      ],
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小灰猫正面走_01.png",
+          "sha256": "5fe0fc4b3670c72c86dbb401ebc4cbc36fd57c83c790b368a2416d8671fbf834",
+          "alpha_bbox_32": [
+            39,
+            25,
+            223,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小灰猫正面走_02.png",
+          "sha256": "a03da6d9f1e5d83a17dd882f6a8d7ccd3aa5e9ecffd11718cf8b34112d4056cf",
+          "alpha_bbox_32": [
+            39,
+            26,
+            220,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小灰猫正面走_03.png",
+          "sha256": "30db5395c824d4dfd1910954aadb44d46acdb09514e75b153998c681618dde22",
+          "alpha_bbox_32": [
+            38,
+            27,
+            216,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小灰猫正面走_04.png",
+          "sha256": "5ef5486fe6edf1182118fa009db2d2e1735f003ebb6ac6f69ac44daf04f7b569",
+          "alpha_bbox_32": [
+            38,
+            26,
+            217,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小灰猫正面走_05.png",
+          "sha256": "cda3d74cc1b1a4b4aa3ab0348151538188357ddf8b8e409ab4ff1d30179e11c6",
+          "alpha_bbox_32": [
+            38,
+            25,
+            219,
+            241
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小灰猫正面走_06.png",
+          "sha256": "9ceeff43bdbe2b052f809dc290c8ae7f74bac43c76c290d032958eaa7160bd0e",
+          "alpha_bbox_32": [
+            39,
+            28,
+            222,
+            243
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小灰猫正面走_07.png",
+          "sha256": "e01cc8ec29efb38071b05f2fbb62ca167d17364a52e659074da1d1ba89c582cd",
+          "alpha_bbox_32": [
+            39,
+            27,
+            224,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "front_right",
+      "animation": "walk_front_right",
+      "row": 1,
+      "source_folder": "小灰猫正侧45走关键帧",
+      "source_preview": "小灰猫正侧45走_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        130,
+        120,
+        130,
+        170,
+        120,
+        130,
+        120
+      ],
+      "cycle_ms": 920,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "endpoint_policy": "Remove only a visually identical terminal pose; keep distinct gait samples and interior holds.",
+      "visible_height_range": [
+        221,
+        225
+      ],
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小灰猫正侧45走_01.png",
+          "sha256": "2166408f47a67769f22bf90a5f6f6478e95cd22c4f087249e19e7c7690c5937a",
+          "alpha_bbox_32": [
+            40,
+            19,
+            217,
+            243
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小灰猫正侧45走_02.png",
+          "sha256": "4986ac9a698abdf6157e57ef1acdf5ecc98c2cff85a33ecf8fc31e29ad0c9e2a",
+          "alpha_bbox_32": [
+            41,
+            18,
+            217,
+            243
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小灰猫正侧45走_03.png",
+          "sha256": "3fe725250e7493056374b1e4bb318cb859b6e1eb522edc5c5281f4946cad53c6",
+          "alpha_bbox_32": [
+            40,
+            17,
+            217,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小灰猫正侧45走_04.png",
+          "sha256": "c2440bf2a4e1ae6564d584adea382a629f5d1d1bf96e3d6e86c6d8e7d9693c62",
+          "alpha_bbox_32": [
+            38,
+            18,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小灰猫正侧45走_05.png",
+          "sha256": "1089aef64bf5b215a7f1cb7b9b098c8ba007f5c24b9c54429053cc68348f9465",
+          "alpha_bbox_32": [
+            36,
+            19,
+            218,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小灰猫正侧45走_06.png",
+          "sha256": "5b3f27ec038b380b1f30604dbc36475d9f9bc2339d01f5b6fab5376f1b05097f",
+          "alpha_bbox_32": [
+            36,
+            19,
+            218,
+            240
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小灰猫正侧45走_07.png",
+          "sha256": "cf966f604ddfe118ff62fbabbf0bacb1f3f411f02397a1bb80b72927e488f286",
+          "alpha_bbox_32": [
+            38,
+            19,
+            218,
+            240
+          ]
+        }
+      ]
+    },
+    {
+      "key": "right",
+      "animation": "walk_right",
+      "row": 2,
+      "source_folder": "小灰猫侧面走关键帧",
+      "source_preview": "小灰猫侧面走_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        120,
+        90,
+        120,
+        130,
+        120,
+        90,
+        120
+      ],
+      "cycle_ms": 790,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "endpoint_policy": "Remove only a visually identical terminal pose; keep distinct gait samples and interior holds.",
+      "visible_height_range": [
+        220,
+        224
+      ],
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小灰猫侧面走_01.png",
+          "sha256": "de1e1178a68c5a40e12be9d195a213f5a5742503a149e4a6a99caf6fb6408e8d",
+          "alpha_bbox_32": [
+            51,
+            19,
+            208,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小灰猫侧面走_02.png",
+          "sha256": "a567a7598dca1e79c75f8586bf84b06f253d05bf484cb0f5b1d8e83f23dc0638",
+          "alpha_bbox_32": [
+            48,
+            18,
+            208,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小灰猫侧面走_03.png",
+          "sha256": "e9dfd5f31312f0e237802eae2d1caa77ca041cca9d4ab8f021eaba76c5a7834f",
+          "alpha_bbox_32": [
+            44,
+            20,
+            209,
+            241
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小灰猫侧面走_04.png",
+          "sha256": "5695dfc6e357745c30ceadce88cec70573c781f8614a823a4d898269c0036acb",
+          "alpha_bbox_32": [
+            39,
+            21,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小灰猫侧面走_05.png",
+          "sha256": "d73e686b6529696aaf07bddf6bfc43c1503dcb3dd9a1e3ea87b5dbb74f33847a",
+          "alpha_bbox_32": [
+            40,
+            19,
+            210,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小灰猫侧面走_06.png",
+          "sha256": "20ab56414c52de2922e1b67b68a8943065048f306ac5bee73da6ebf541242ae2",
+          "alpha_bbox_32": [
+            44,
+            21,
+            209,
+            241
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小灰猫侧面走_07.png",
+          "sha256": "72c37e989fbdb580cae46a40bdb279836db052a448b83f558c7ca6eefb5ee178",
+          "alpha_bbox_32": [
+            47,
+            22,
+            209,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "back_right",
+      "animation": "walk_back_right",
+      "row": 3,
+      "source_folder": "小灰猫背侧45走关键帧",
+      "source_preview": "小灰猫背侧45走_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        130,
+        80,
+        130,
+        80,
+        130,
+        80,
+        120
+      ],
+      "cycle_ms": 750,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "endpoint_policy": "Remove only a visually identical terminal pose; keep distinct gait samples and interior holds.",
+      "visible_height_range": [
+        223,
+        236
+      ],
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小灰猫背侧45走_01.png",
+          "sha256": "952160c28737f2c1f75735541f8cef624515b1848627d6421ec127aa0c9a2392",
+          "alpha_bbox_32": [
+            48,
+            9,
+            217,
+            245
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小灰猫背侧45走_02.png",
+          "sha256": "ab471af65b26ef492fb9e7262bf4163ae946e412aa0d619b5ed2d5b6fee1bd94",
+          "alpha_bbox_32": [
+            44,
+            16,
+            212,
+            239
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小灰猫背侧45走_03.png",
+          "sha256": "41eb13c8a47f309b7a99877e0da95a5d42ad6f4fb7f707613a15368ae1d10827",
+          "alpha_bbox_32": [
+            43,
+            13,
+            212,
+            238
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小灰猫背侧45走_04.png",
+          "sha256": "e746af6c8eff8448ea0b167a9d91cf79902903b9d26a629bdd490b3a599309e6",
+          "alpha_bbox_32": [
+            50,
+            10,
+            213,
+            238
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小灰猫背侧45走_05.png",
+          "sha256": "d78d9e6954937444d527b0572ae4623b53369a75b5f848e9dad29e6de5eebbd3",
+          "alpha_bbox_32": [
+            47,
+            14,
+            217,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小灰猫背侧45走_06.png",
+          "sha256": "9e48912759cdf9c544b79d73b07d260dffae4359e6faf7455be395dbabc7ceb8",
+          "alpha_bbox_32": [
+            44,
+            15,
+            219,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小灰猫背侧45走_07.png",
+          "sha256": "1f3e1b2c90ee3316fb1b3e6730cb347ca95ccdfe8ba1db75453cdfa5135258c2",
+          "alpha_bbox_32": [
+            43,
+            10,
+            220,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "back",
+      "animation": "walk_back",
+      "row": 4,
+      "source_folder": "小灰猫背面走关键帧",
+      "source_preview": "小灰猫背面走_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        80,
+        130,
+        80,
+        130,
+        80,
+        130,
+        80
+      ],
+      "cycle_ms": 710,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "endpoint_policy": "Remove only a visually identical terminal pose; keep distinct gait samples and interior holds.",
+      "visible_height_range": [
+        216,
+        219
+      ],
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小灰猫背面走_01.png",
+          "sha256": "6a7ad197d0d916c243aebf421dde6e8038f0ffcc5155e407de354bfac0ab76ee",
+          "alpha_bbox_32": [
+            47,
+            28,
+            210,
+            245
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小灰猫背面走_02.png",
+          "sha256": "8fcaf433d8932afc254caddbbd9b0eaaf19984282fb5100fa9812a0b2d44c5c3",
+          "alpha_bbox_32": [
+            44,
+            25,
+            208,
+            244
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小灰猫背面走_03.png",
+          "sha256": "30c566da869af9a4c1b07dee12b0d3c507e0fceffa6a6eab5a2d84ed3f23cb6d",
+          "alpha_bbox_32": [
+            43,
+            28,
+            206,
+            244
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小灰猫背面走_04.png",
+          "sha256": "2994a099f240f593fe95561190e42945d40703eec8bb305a72027ec02f4eeaa0",
+          "alpha_bbox_32": [
+            44,
+            29,
+            207,
+            245
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小灰猫背面走_05.png",
+          "sha256": "2cb30e815e7e04b2ee20877b85e0ae189efd8726fc2cf5779d7526127e0e409e",
+          "alpha_bbox_32": [
+            47,
+            25,
+            210,
+            244
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小灰猫背面走_06.png",
+          "sha256": "365c044a8c51f08d7e59cf675992451d75138dc8c9f1205a1ca727d5e893e2fe",
+          "alpha_bbox_32": [
+            48,
+            25,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小灰猫背面走_07.png",
+          "sha256": "21bf899b279884ba44e7559a028b018122228f44022136bb27c46aa5bc0b2ff4",
+          "alpha_bbox_32": [
+            49,
+            28,
+            212,
+            244
+          ]
+        }
+      ]
+    }
+  ]
+}

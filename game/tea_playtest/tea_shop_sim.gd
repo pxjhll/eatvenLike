@@ -31,7 +31,7 @@ const LEMONADE_V4_COSTS := [20, 30, 40, 55, 75, 110, 150, 210, 295]
 const BOIL_CAPACITY := 12
 const MOOD_IMPATIENT := 15.0
 const MOOD_ANGRY := 30.0
-const ARTS := ["cat", "raccoon", "fox", "rabbit"]
+const ARTS := ["cat", "raccoon", "fox", "rabbit", "gray_cat"]
 const ALIASES := {"cabinet": "supply", "brewer": "boil", "milk_station": "mix", "lemonade_stand": "lemonade", "press_table": "press"}
 const RESOURCE_IDS := {"supply": "cabinet", "boil": "brewer", "mix": "milk_station", "topping": "topping", "press": "press_table", "lemonade": "lemonade_stand", "counter": "counter"}
 const DISHES := ["lemonade", "black_tea", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea", "lemon_tea", "banana_tea"]
@@ -139,6 +139,10 @@ func _initialize_shop() -> void:
 		if _is_pressed(dish): stations.press.output[dish] = 0
 
 func _make_worker(index: int) -> Dictionary:
+	if ARTS[index] == "gray_cat":
+		var worker := super._make_worker(0)
+		worker.merge({"id": 5, "name": "小灰猫", "art": "gray_cat"}, true)
+		return worker
 	if ARTS[index] != "rabbit": return super._make_worker(index)
 	return _rabbit()
 
@@ -184,7 +188,7 @@ func worker_by_id(id: int) -> Dictionary:
 func acquire_staff(art: String, source: String) -> String:
 	if not art in ARTS: return "未知员工类型"
 	if source.strip_edges().is_empty(): return "员工来源不能为空"
-	# The first of each animal keeps its old id (cat 1 to rabbit 4); repeats number on from there.
+	# Preferred ids follow animal order; existing duplicate staff may already occupy one.
 	var id := ARTS.find(art) + 1
 	var next_id := ARTS.size() + 1
 	for owned in roster:

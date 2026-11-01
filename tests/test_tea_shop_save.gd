@@ -193,6 +193,30 @@ func test_pre_rabbit_current_schema_roster_loads_and_can_recruit_rabbit() -> voi
 	check_eq(store.load_game().all_workers().size(), 4, "rabbit remains owned after saving upgraded roster")
 
 
+func test_gray_cat_recruitment_preserves_an_old_repeat_cat_with_id_five() -> void:
+	var store = _store()
+	var legacy = _sim()
+	legacy.gold = 1000
+	for unused in 3: check(legacy.hire(), "prepare the original four animal types")
+	check_eq(legacy.acquire_staff("cat", "招募"), "", "prepare an extra original cat")
+	var state: Dictionary = legacy.to_dict()
+	state.roster[-1].id = 5 # Before gray-cat import, this was the next repeat-employee id.
+	_write(_path(), JSON.stringify(_envelope(state, 2)))
+	var resumed = store.load_game()
+	check_eq(store.last_error, "", "old repeat-cat file loads without recovery")
+	check_eq(resumed.worker_by_id(5).art, "cat", "existing id five retains its original animal")
+	check_eq(resumed.next_hire_art(), "gray_cat", "the missing gray cat is next")
+	var gold: int = resumed.gold
+	var cost: int = resumed.hire_cost()
+	check(resumed.hire(), "old roster recruits gray cat normally")
+	check_eq(resumed.gold, gold - cost, "existing roster pays its current recruit price")
+	check_eq(resumed.worker_by_id(6).art, "gray_cat", "gray cat receives a fresh unoccupied id")
+	check_eq(store.save_game(resumed), OK, "expanded roster is persisted")
+	var copy = store.load_game()
+	check_eq(copy.worker_by_id(5).art, "cat", "original employee survives disk roundtrip")
+	check_eq(copy.worker_by_id(6).art, "gray_cat", "gray-cat ownership survives disk roundtrip")
+
+
 func test_malformed_files_are_backed_up_before_recovery() -> void:
 	var store = _store()
 	if store == null: return

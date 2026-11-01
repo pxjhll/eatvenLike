@@ -48,10 +48,10 @@ func setup(art_id: String, font: Font, height := 128.0) -> void:
 	body.centered = false
 	body.position = Vector2(-body.texture.get_width() * _base_scale.x / 2.0, -height)
 	add_child(body)
-	if art_id == "rabbit":
+	if art_id in Characters.FRAME_SCENES:
 		body.visible = false
-		frame_actor = Characters.RABBIT_SCENE.instantiate()
-		frame_actor.scale = Vector2.ONE * height / 228.0
+		frame_actor = Characters.FRAME_SCENES[art_id].instantiate()
+		frame_actor.scale = Vector2.ONE * height / Characters.frame_height(art_id)
 		add_child(frame_actor)
 	carried.centered = false
 	carried.visible = false
@@ -151,7 +151,7 @@ func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -
 			frame_actor.set_direction(direction)
 	frame_actor.pause()
 	if worker.get("walking", false):
-		var factor := float(worker.get("speed", 104.0)) / 104.0
+		var factor := float(worker.get("speed", Characters.walk_speed(_art))) / Characters.walk_speed(_art)
 		frame_actor.seek_phase(fposmod(frame_actor.get_phase() + clock_step * factor / frame_actor.get_cycle_seconds(), 1.0))
 	else:
 		frame_actor.seek_phase(0.0)

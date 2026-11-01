@@ -1,0 +1,10 @@
+{
+  "cycle_ms": {
+    "walk_front": 565.2173913043479,
+    "walk_front_right": 565.2173913043479,
+    "walk_right": 800,
+    "walk_back_right": 800,
+    "walk_back": 800
+  },
+  "note": "User-selected screenshot setting: front group 1.15x relative to 650 ms, giving 650/1.15 ms; side/back remain 800 ms at 1.00x. Baked into native clip speeds. Source pixels, timing records and relative frame holds remain unchanged."
+}

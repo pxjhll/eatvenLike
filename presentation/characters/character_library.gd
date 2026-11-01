@@ -1,27 +1,32 @@
 extends RefCounted
 ## Shared visual data. Only actions actually present in resources are advertised.
 
-const IDS := ["cat", "raccoon", "fox", "rabbit"]
-const NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸", "rabbit": "小兔子"}
+const IDS := ["cat", "raccoon", "fox", "rabbit", "gray_cat"]
+const NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸", "rabbit": "小兔子", "gray_cat": "小灰猫"}
 const ACTION_NAMES := {"walk": "走路", "idle": "待机", "work": "操作", "carry": "搬运", "pose": "站姿"}
 const RABBIT_FRAMES := preload("res://art/rabbit_walk_frames/rabbit_walk_frames.tres")
 const RABBIT_SCENE := preload("res://presentation/rabbit_walk_frames/rabbit_walk.tscn")
+const GRAY_CAT_FRAMES := preload("res://art/gray_cat_walk_frames/gray_cat_walk_frames.tres")
+const GRAY_CAT_SCENE := preload("res://presentation/gray_cat_walk_frames/gray_cat_walk.tscn")
+const FRAME_ASSETS := {"rabbit": RABBIT_FRAMES, "gray_cat": GRAY_CAT_FRAMES}
+const FRAME_SCENES := {"rabbit": RABBIT_SCENE, "gray_cat": GRAY_CAT_SCENE}
 const DIRECTION_SUFFIXES := ["_front_right", "_back_right", "_front", "_right", "_back"]
 
 
 static func portrait(art: String) -> Texture2D:
-	if art == "rabbit":
-		return RABBIT_FRAMES.get_frame_texture("walk_front", 0)
+	if art in FRAME_ASSETS:
+		return FRAME_ASSETS[art].get_frame_texture("walk_front", 0)
 	if art in IDS:
 		return load("res://art/reference/" + art + ".png")
 	return null
 
 
 static func actions(art: String) -> Array:
-	if art != "rabbit":
+	if art not in FRAME_ASSETS:
 		return [{"id": "pose", "label": "站姿", "type": "static", "directional": false}] if art in IDS else []
+	var frames: SpriteFrames = FRAME_ASSETS[art]
 	var names: Array[String] = []
-	for animation: String in RABBIT_FRAMES.get_animation_names():
+	for animation: String in frames.get_animation_names():
 		var matched := false
 		for suffix: String in DIRECTION_SUFFIXES:
 			if animation.ends_with(suffix):
@@ -34,5 +39,13 @@ static func actions(art: String) -> Array:
 			names.append(animation)
 	var result: Array = []
 	for action in names:
-		result.append({"id": action, "label": ACTION_NAMES.get(action, action), "type": "frames", "directional": RABBIT_FRAMES.has_animation(action + "_front")})
+		result.append({"id": action, "label": ACTION_NAMES.get(action, action), "type": "frames", "directional": frames.has_animation(action + "_front")})
 	return result
+
+
+static func frame_height(art: String) -> float:
+	return 240.0 if art == "gray_cat" else 228.0
+
+
+static func walk_speed(art: String) -> float:
+	return 112.0 if art == "gray_cat" else 104.0
