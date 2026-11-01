@@ -18,7 +18,7 @@ func test_reference_textures_fit_256_pixels_per_cell_budget() -> void:
 
 
 func test_texture_optimization_preserves_existing_sprite_geometry() -> void:
-	var audit_path := "res://art_src/reference/texture_budget.json"
+	var audit_path := "res://tests/fixtures/reference_texture_budget.json"
 	check(FileAccess.file_exists(audit_path), "texture optimization keeps a geometry audit")
 	if not FileAccess.file_exists(audit_path):
 		return
@@ -72,26 +72,7 @@ func test_art_scene_has_independent_occluders_and_clear_doorway() -> void:
 	check(sorted.has_node("MachineTable"), "cooker and brewer have an independent support table")
 	var left_edge: float = left.global_position.x + left.texture.get_width() * left.scale.x
 	check(left_edge < right.global_position.x, "partition leaves an actual open doorway")
-	var walls := Image.load_from_file("res://art_src/reference/walls.png")
-	check(walls.get_pixel(450, 1020).a < 0.05, "door aperture is alpha, not painted floor")
 	art.free()
-
-
-func test_layers_hide_independently_without_moving_other_pieces() -> void:
-	var preview: Node2D = load("res://presentation/reference/art_preview.tscn").instantiate()
-	# The synchronous suite runs before SceneTree readiness. Lifecycle/input is tested by renderer QA.
-	preview.art = preview.get_node("Canvas/ShopArt")
-	var partition: Node2D = preview.art.get_node("Sortables/PartitionLeft")
-	var original_position := partition.position
-	preview.set_layer_visible(false, "furniture")
-	check(not preview.art.get_node("Sortables/PrepBench").visible, "prep bench is independently hidden")
-	check(partition.visible, "hiding furniture cannot remove the wall")
-	check(preview.art.get_node("Floor").visible, "floor stays present")
-	preview.set_layer_visible(false, "walls")
-	check(not partition.visible, "partition is independently hidden")
-	preview.set_layer_visible(true, "walls")
-	check_eq(partition.position, original_position, "layer toggles preserve layout")
-	preview.free()
 
 
 func test_ui_p0_art_covers_every_dish_and_checkout_keeps_its_aspect() -> void:

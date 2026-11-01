@@ -2,6 +2,14 @@
 .godot/
 /android/
 *.tmp
-# Per-step tutorial captures from tests/render_guide.gd; only the contact sheet is kept.
-/docs/qa/guide-*.png
-!/docs/qa/guide-flow.png
+
+# Local tooling and generated QA output
+__pycache__/
+*.py[cod]
+docs/qa/*.png
+docs/qa/*.gif
+docs/qa/*.log
+docs/qa/*.txt
+*.psd
+*.psb
+*.pcraft

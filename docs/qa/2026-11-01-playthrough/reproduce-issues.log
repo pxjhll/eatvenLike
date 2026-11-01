@@ -1,0 +1,7 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 560.94 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3060
+
+PRICING_UI label=售价 38 → 41 actual_now=43
+PRICING_UI_AFTER actual_price=46
+ACTUAL_SALE gold_delta=46 sold_pearl=1 audit=true
+QUEUE_VISUAL orders=6 positions={ 1: (350.0, 1163.0), 2: (476.0, 1163.0), 3: (602.0, 1163.0), 4: (287.0, 1108.0), 5: (413.0, 1108.0), 6: (539.0, 1108.0) }

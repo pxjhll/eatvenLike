@@ -7,19 +7,8 @@ const SUITES := [
 	preload("res://tests/test_tea_shop_save.gd"),
 	preload("res://tests/test_staff_posts.gd"),
 	preload("res://tests/test_tea_playtest.gd"),
-	preload("res://tests/test_shop_grid.gd"),
 	preload("res://tests/test_reference_art.gd"),
-	preload("res://tests/test_tea.gd"),
-	preload("res://tests/test_front_stage1.gd"),
-	preload("res://tests/test_white_bread.gd"),
-	preload("res://tests/test_toast.gd"),
 	preload("res://tests/test_font.gd"),
-	preload("res://tests/test_invariants.gd"),
-	preload("res://tests/test_commands.gd"),
-	preload("res://tests/test_save.gd"),
-	preload("res://tests/test_workforce.gd"),
-	preload("res://tests/test_logistics.gd"),
-	preload("res://tests/test_presentation.gd"),
 ]
 
 

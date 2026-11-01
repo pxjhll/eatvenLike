@@ -1,36 +1,37 @@
 extends "res://tests/test_case.gd"
-## UI 字体是按仓库文字裁剪的子集（art_src/graybox/subset_font.py）。加了新文案没重新裁剪，界面就会出方框。
+## UI 字体是按仓库文字裁剪的子集（tools/subset_font.py）。加了新文案没重新裁剪，界面就会出方框。
 
 const FONT := "res://art/ui/graybox_font.ttf"
 
 
 func test_content_names_have_glyphs() -> void:
 	var font: FontFile = load(FONT)
-	var catalog: GameCatalog = load(CATALOG)
-	var names := []
-	for staff in catalog.staff:
+	var shop: ShopConfig = load("res://content/tea/tea.tres")
+	var names: Array = preload("res://presentation/characters/character_library.gd").NAMES.values()
+	for staff in shop.hire_defs:
 		names.append(staff.display_name)
-	for shop in catalog.shops:
-		names.append(shop.display_name)
-		for item in shop.items:
-			names.append(item.display_name)
-		for dish in shop.dishes:
-			names.append(dish.display_name)
-		for slot in shop.slots:
-			names.append(slot.station.display_name)
-		for stage in shop.progression.stages:
-			for task in stage.tasks:
-				names.append(task.display_name)
+	names.append(shop.display_name)
+	for item in shop.items:
+		names.append(item.display_name)
+	for dish in shop.dishes:
+		names.append(dish.display_name)
+	for slot in shop.slots:
+		names.append(slot.station.display_name)
+	var progression = load("res://content/tea/art_shop_progression.tres")
+	for stage in progression.stages:
+		for task in stage.tasks:
+			names.append(task.display_name)
 	for name in names:
 		check(_missing(font, name).is_empty(), "「%s」缺字：%s" % [name, _missing(font, name)])
 
 
 func test_script_strings_have_glyphs() -> void:
 	# 表现层文案和命令的拒绝理由都会显示在界面上
-	var font: FontFile = load(FONT)
+	var default_font: FontFile = load(FONT)
 	var literal := RegEx.create_from_string("\"([^\"\\\\]*)\"")
 	for folder in ["res://presentation", "res://game"]:
 		for path in _scripts(folder):
+			var font: FontFile = default_font
 			var source := FileAccess.get_file_as_string(path)
 			for line in source.split("\n"):
 				if line.strip_edges().begins_with("#"):
