@@ -41,7 +41,7 @@ func _run() -> void:
 	await _drag(view.get_node("Canvas").get_global_transform_with_canvas() * cat.pos, view.get_node("Canvas").get_global_transform_with_canvas() * Vector2(250, 600))
 	_check(cat.get("post", "") == "counter" and cat.pos == cat_pos and view._drag.worker_id == -1, "staff cannot be dragged while a dimmed step is up")
 	var elapsed: float = view.sim.elapsed
-	await _press(hud.recruit_button.get_global_rect().get_center())
+	await _press(hud.staff_button.get_global_rect().get_center())
 	_check(hud.page == "shop", "taps outside the highlight are swallowed")
 	view._process(1.0)
 	_check(view.sim.elapsed == elapsed, "the shop clock stops while a dimmed step is up")
@@ -64,7 +64,7 @@ func _run() -> void:
 	resumed.load_game()
 	_check("opening" in resumed.loaded_guides, "finished guides are saved beside the shop")
 	view.sim.gold = maxi(view.sim.gold, 200)
-	guide.seen.lost = true # a walk-out during the run is covered separately below
+	for cause in ["seats", "staff", "machine"]: guide.seen["lost_" + cause] = true # angry customers are covered separately below
 	_run_until(func() -> bool: return guide.active == "line_1", 300.0)
 	_check(guide.freezes() and guide._hole.intersects(_local(view._station_buttons.boil)), "the black tea line gets one guided unlock once it is affordable")
 	await _capture("line")
@@ -83,33 +83,40 @@ func _run() -> void:
 	await _click(hud.home_button)
 	view.sim.gold = maxi(view.sim.gold, view.sim.hire_cost())
 	guide.refresh(0)
-	_check(guide.active == "kitchen" and guide._hole.intersects(_local(hud.recruit_button)), "with no kitchen hand yet, the hand points at recruiting")
+	_check(guide.active == "kitchen" and guide._hole.intersects(_local(hud.staff_button)), "with no kitchen hand yet, the hand points at the staff tab")
 	await _capture("hire")
-	await _click(hud.recruit_button)
-	await _click(hud.hire_button)
-	_check(view.sim.roster.size() == 2, "the guided hire adds a partner to the roster")
-	_check(guide._hole.intersects(_local(hud.staff_button)), "the hand then points at the staff tab")
 	await _click(hud.staff_button)
-	_check(guide._hole.intersects(_local(hud.deploy_button)) and not view.staff_is_deployed(view.selected_worker), "the staff page selects the waiting partner and points at deploy")
+	_check(guide._hole.intersects(_local(hud.hire_button)), "on the staff page the hand points at hiring")
 	await _capture("deploy")
-	await _click(hud.deploy_button)
-	_check(view.sim.kitchen_staff() == 1 and guide.active.is_empty(), "deploying the kitchen hand closes the hint")
+	await _click(hud.hire_button)
+	_check(view.sim.roster.size() == 2 and view.sim.kitchen_staff() == 1 and guide.active.is_empty(), "the guided hire goes straight to the kitchen and closes the hint")
 	await _click(hud.home_button)
 	# Calm the line the run left behind, so only the customer made angry below counts.
 	for order in view.sim.orders: order.wait = 0.0
 	guide._lost_pending = false
-	guide.seen.erase("lost")
+	for cause in ["seats", "staff", "machine"]: guide.seen.erase("lost_" + cause)
 	await _click(hud.staff_button)
-	_make_angry()
+	_make_angry(true)
 	guide.refresh(0)
 	_check(guide.active.is_empty(), "an angry customer seen from another page waits for the shop floor")
 	await _click(hud.home_button)
-	_check(guide.active == "lost" and guide.freezes(), "the first angry customer pauses on a short hint")
+	var slow: String = "lemonade" if view.sim.orders[-1].dish == "lemonade" else "boil"
+	_check(guide.active == "lost_machine" and guide.freezes() and guide._hole.intersects(_world(view.STATION_REGIONS[slow])), "a takeaway customer with every spot filled points at the machine making their drink")
 	await _capture("lost")
 	await _click(guide._bubble_skip)
-	_make_angry()
+	_make_angry(true)
 	guide.refresh(0)
 	_check(guide.active.is_empty(), "each hint shows only once")
+	# Dine-in customers with every seat taken: the hint points at the seats, not at a machine.
+	view.sim.seats = view.sim.PROGRESSION.seat_start
+	view.sim.diners.clear()
+	for seat in view.sim.seats: view.sim.diners.append({"seat": seat, "dish": "lemonade", "left": 99.0})
+	view.sim.gold = 0
+	_make_angry(false)
+	guide.refresh(0)
+	_check(guide.active == "lost_seats" and guide._hole.intersects(_local(view._seats)), "full seats point at the seat chip")
+	await _capture("lost-seats")
+	await _click(guide._bubble_skip)
 	view.free()
 	var reopened = load("res://presentation/tea_playtest/tea_playtest.tscn").instantiate()
 	reopened.store = Store.new(save_path)
@@ -117,7 +124,7 @@ func _run() -> void:
 	await process_frame
 	reopened.set_process(false)
 	reopened.guide.refresh(0)
-	_check(reopened.guide.enabled and reopened.guide.active.is_empty() and reopened.guide.seen.has("lost"), "a reopened game remembers which guides were seen")
+	_check(reopened.guide.enabled and reopened.guide.active.is_empty() and reopened.guide.seen.has("lost_machine"), "a reopened game remembers which guides were seen")
 	reopened.free()
 	var old_save = load("res://game/tea_playtest/tea_shop_sim.gd").new()
 	old_save.unlock_station("lemonade")
@@ -222,7 +229,11 @@ func _check(condition: bool, label: String) -> void:
 
 
 ## Customers never walk out of the tea shop; one who waited long enough turns angry instead.
-func _make_angry() -> void:
+func _make_angry(takeaway: bool) -> void:
 	if view.sim.orders.is_empty():
 		view.sim._add_order()
 	view.sim.orders[-1].wait = view.sim.MOOD_ANGRY + 1.0
+	view.sim.orders[-1].takeaway = takeaway
+
+func _world(rect: Rect2) -> Rect2:
+	return guide._world_rect(rect)

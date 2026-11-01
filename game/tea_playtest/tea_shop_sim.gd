@@ -417,9 +417,8 @@ func _unlock_error(id: String) -> String:
 	var stage := _unlock_stage(id)
 	if stage > 0:
 		if not station_unlocked("lemonade"): return "请先解锁柠檬水台"
+		# Only the very next line is offered, so its price alone paces the unlocks (no revenue gate).
 		if stage > stage_index + 1: return "请先解锁" + PROGRESSION.stages[stage - 1].line_name
-		var definition = PROGRESSION.stages[stage]
-		if revenue < definition.revenue_threshold: return "营业额需达到 %d" % definition.revenue_threshold
 	if gold < _unlock_cost(id): return "金币不足，需要 %d" % _unlock_cost(id)
 	return ""
 
@@ -650,7 +649,7 @@ func station_info(requested: String) -> Dictionary:
 		"upgrade_cost": upgrade_cost, "upgrade_error": _upgrade_error(id), "materials": materials,
 		"effect": effects.get(id, ""), "speed": speeds[mini(level, speeds.size()) - 1],
 		"next_speed": speeds[level] if upgrade_cost >= 0 and level < speeds.size() else -1.0, "next_unlock": next_flavor,
-		"unlock_revenue": PROGRESSION.stages[stage].revenue_threshold if stage > 0 else 0,
+		"unlock_revenue": 0,
 		"line_name": PROGRESSION.stages[stage].line_name if stage > 0 else name, "line_members": line,
 		"unlock_note": PROGRESSION.stages[stage].unlock_note if stage > 0 else "",
 		"dish_name": dish_name(PROGRESSION.stages[stage].dish_id), "dish_price": _base_price(PROGRESSION.stages[stage].dish_id),
@@ -697,7 +696,6 @@ func goal_progress() -> Dictionary:
 	if not box.is_empty(): return {"text": "解锁%s箱" % _box_def(box).display_name, "current": mini(gold, _box_def(box).box_cost), "target": _box_def(box).box_cost}
 	if stage_index < PROGRESSION.stages.size() - 1:
 		var stage = PROGRESSION.stages[stage_index + 1]
-		if revenue < stage.revenue_threshold: return {"text": "营业额 · 解锁" + stage.line_name, "current": revenue, "target": stage.revenue_threshold}
 		return {"text": "攒金币 · 解锁" + stage.line_name, "current": mini(gold, stage.line_cost), "target": stage.line_cost}
 	for row in task_rows():
 		if not row.complete: return {"text": row.name, "current": row.current, "target": row.target}
@@ -729,7 +727,6 @@ func current_goal() -> String:
 	if not box.is_empty(): return "支付 %d 金币在原料柜解锁%s箱" % [_box_def(box).box_cost, _box_def(box).display_name]
 	if stage_index < PROGRESSION.stages.size() - 1:
 		var stage = PROGRESSION.stages[stage_index + 1]
-		if revenue < stage.revenue_threshold: return "营业额 %d / %d，随后解锁%s" % [revenue, stage.revenue_threshold, stage.line_name]
 		return "支付 %d 金币解锁%s" % [stage.line_cost, stage.line_name]
 	for row in task_rows():
 		if not row.complete: return "%s（%d / %d）" % [row.name, row.current, row.target]

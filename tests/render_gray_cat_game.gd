@@ -66,7 +66,7 @@ func _run() -> void:
 	_check(sim.elapsed == clock, "preview freezes business")
 	await _capture("gray-cat-game-preview.png")
 	await _click(view.ui.close_button)
-	view.ui.open_page("recruit")
+	view.ui.open_page("staff")
 	for cost in [35, 60, 85, 110]:
 		var gold: int = sim.gold
 		await _click(view.ui.hire_button)

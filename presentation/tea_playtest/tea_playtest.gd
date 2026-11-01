@@ -7,6 +7,7 @@ const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const DragController := preload("res://presentation/tea_playtest/staff_drag_controller.gd")
 const Guide := preload("res://presentation/tea_playtest/guide_overlay.gd")
 const UnlockFrame := preload("res://presentation/tea_playtest/unlock_frame.gd")
+const UpgradeBadge := preload("res://presentation/tea_playtest/upgrade_badge.gd")
 const ART_NAMES := preload("res://presentation/characters/character_library.gd").NAMES
 const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "press": "手打果茶", "seal": "自动封口"}
 ## Machines show no standing text: a bar while working and a bubble only when they need a hand.
@@ -47,6 +48,10 @@ var ui: Control
 var guide: Control
 var guide_enabled := false
 var _station_buttons := {}
+## Red ↑ marks: on each open machine (and the seats chip for the counter) and on the 员工 tab,
+## shown whenever something there can be bought with the coins on hand.
+var _upgrade_marks := {}
+var _staff_mark: Control
 var _lemonade_cup: Node2D
 ## Belt mode shows a plate on every hop that can take a conveyor; drag the chip onto one (or tap it).
 var belt_mode := false
@@ -467,10 +472,15 @@ func _label(parent: Node, point: Vector2, size: int) -> Label:
 	return label
 
 
+## A hire goes straight to work (kitchen first, then the counter); drag them onto a post later to change jobs.
 func hire_worker() -> void:
+	if sim.has_method("staff_slots") and not ui.has_staff_room():
+		_show_toast("店里没有空位了，解锁新设备后可以多派伙伴。")
+		return
 	if sim.hire():
 		selected_worker = int(all_staff().back().id)
-		_show_toast("新伙伴已加入名册，可在员工界面派遣。" if sim.has_method("all_workers") else "新伙伴加入，会自动领取适合的任务。")
+		var deployed: bool = not sim.has_method("deploy_worker") or sim.deploy_worker(selected_worker).is_empty()
+		_show_toast("新伙伴上岗了！拖动伙伴可以换岗位。" if deployed else "新伙伴已加入名册，可在员工界面派遣。")
 		save_now(false)
 	_refresh(0.0)
 
@@ -600,6 +610,18 @@ func _build_station_signs() -> void:
 		frame.pressed.connect(ui.open_station.bind(FRAME_OPENS.get(id, id)))
 		$Canvas/WorldLabels.add_child(frame)
 		_station_buttons[id] = frame
+	for id in STATION_REGIONS:
+		if not sim.stations.has(id) and id != "supply":
+			continue
+		var mark := UpgradeBadge.new()
+		var region: Rect2 = STATION_REGIONS[id]
+		mark.center_on(Vector2(region.end.x - 14, region.position.y + 14))
+		$Canvas/WorldLabels.add_child(mark)
+		_upgrade_marks[id] = mark
+	_upgrade_marks.counter = UpgradeBadge.new()
+	_seats.add_child(_upgrade_marks.counter)
+	_staff_mark = UpgradeBadge.new()
+	ui.staff_button.add_child(_staff_mark)
 	# The glass is opaque art, so the cups are children of the case and stand on its upper shelf.
 	_lemonade_cup = Node2D.new()
 	art.get_node("Sortables/DisplayCase").add_child(_lemonade_cup)
@@ -636,14 +658,36 @@ func _refresh_station_signs() -> void:
 		frame.tooltip_text = info.description + "\n" + info.get("unlock_error", "")
 		if id != sign:
 			continue
-		# Before the revenue gate the frame says when it opens; after it, what it costs.
-		var gated: bool = String(info.unlock_error).begins_with("营业额")
 		var title: String = info.get("line_name", info.name) if id == "boil" else info.name
-		frame.text = "%s\n%s" % [title, "营业额 %d 开放" % info.get("unlock_revenue", 0) if gated else "%d 金币" % info.unlock_cost]
+		frame.text = "%s\n%d 金币" % [title, info.unlock_cost]
 	for path in LOCKED_ART:
 		var node: Node2D = art.get_node_or_null(path)
 		if node != null:
 			node.visible = sim.station_unlocked(LOCKED_ART[path])
+	for id in _upgrade_marks:
+		var frame: Button = _station_buttons.get(id)
+		_upgrade_marks[id].visible = can_buy_at(id) and not (frame != null and frame.visible)
+	# Beside the seats chip rather than on it, so the seat count stays readable.
+	_upgrade_marks.counter.center_on(Vector2(_seats.size.x + 16, _seats.size.y / 2.0))
+	_staff_mark.visible = ui.staff_affordable()
+	_staff_mark.center_on(Vector2(ui.staff_button.size.x - 14, 12))
+
+
+## Anything in this machine's panel the player can pay for right now: its next level, an ingredient
+## level, or for the counter a seat or a flyer round. Locked machines use their dashed frame instead.
+func can_buy_at(id: String) -> bool:
+	if not sim.station_unlocked(id):
+		return false
+	if sim._upgrade_error(id).is_empty():
+		return true
+	if id == "counter":
+		return sim.seat_error().is_empty() or sim.flyer_error().is_empty()
+	var definition = sim._definition(id)
+	if definition != null:
+		for material in definition.materials:
+			if sim._material_error(id, material.id).is_empty():
+				return true
+	return false
 
 
 func _belts_offered() -> bool:

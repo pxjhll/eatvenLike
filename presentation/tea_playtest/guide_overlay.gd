@@ -14,7 +14,8 @@ const HAND := Color("8b6446")
 
 var enabled := false
 var seen := {}
-## The guide currently on screen: "", "welcome", "opening", "done", "line_N", "box_*", "kitchen", "shop_done" or "lost".
+## The guide currently on screen: "", "welcome", "opening", "done", "line_N", "box_*", "kitchen", "shop_done"
+## or "lost_<cause>" (seats / staff / machine: each cause of an angry customer is explained once).
 var active := ""
 var _view: Node2D
 var _hud: Control
@@ -114,7 +115,7 @@ func refresh(delta: float) -> void:
 		match active:
 			"welcome", "done", "shop_done": _show_card()
 			"opening": _opening_step()
-			"lost": _lost_step()
+			"lost_seats", "lost_staff", "lost_machine": _lost_step()
 			"kitchen": _kitchen_step()
 			"box_tea_leaf", "box_milk": _box_step(active.trim_prefix("box_"))
 			"": pass
@@ -152,12 +153,14 @@ func _pick_guide() -> void:
 	if not box.is_empty() and not seen.has("box_" + box) and sim.box_error(box).is_empty():
 		active = "box_" + box
 		return
-	if sim.has_method("kitchen_staff") and sim.stage_index > 0 and sim.kitchen_staff() == 0 and box.is_empty() and not seen.has("kitchen"):
+	if sim.has_method("kitchen_staff") and sim.stage_index > 0 and sim.kitchen_staff() == 0 and box.is_empty() and not seen.has("kitchen") and _can_staff_kitchen():
 		active = "kitchen"
 		return
-	if _lost_pending and not seen.has("lost"):
-		active = "lost"
+	if _lost_pending:
+		var cause := _lost_cause()
 		_lost_pending = false
+		if not cause.is_empty() and not seen.has("lost_" + cause):
+			active = "lost_" + cause
 
 
 ## True once a customer in line is angry (customers never leave in the tea shop),
@@ -211,12 +214,12 @@ func _opening_step() -> void:
 					_view.select_worker(int(waiting[0].id), true)
 				_focus(_hud.deploy_button, "点「派到店内」，让伙伴一起干活")
 		elif sim.gold < sim.hire_cost():
-			_point = _hud.get_node("%Gold").get_global_rect().get_center()
-			_say("攒够 %d 金币就能招第二位伙伴" % sim.hire_cost())
-		elif page != "recruit":
-			_focus(_hud.recruit_button, "收到金币了！人手多出杯更快，点「招募」")
+			# Nothing to tap yet: the hint comes back once the coins are there.
+			return
+		elif page != "staff":
+			_focus(_hud.staff_button, "收到金币了！人手多出杯更快，点「员工」")
 		else:
-			_focus(_hud.hire_button, "邀请一位新伙伴")
+			_focus(_hud.hire_button, "招一位新伙伴，招来直接上岗")
 		return
 	active = "done"
 	_hud.open_page("shop")
@@ -240,12 +243,12 @@ func _kitchen_step() -> void:
 				_view.select_worker(int(waiting[0].id), true)
 			_focus(_hud.deploy_button, "点「派到店内」，让伙伴去后厨煮茶")
 	elif sim.gold < sim.hire_cost():
-		_point = _hud.get_node("%Gold").get_global_rect().get_center()
-		_say("前台只管接待客人，煮茶要后厨员工。\n攒够 %d 金币招一位伙伴" % sim.hire_cost())
-	elif page != "recruit":
-		_focus(_hud.recruit_button, "前台只管接待客人，煮茶要后厨员工：点「招募」")
+		# Coins were spent elsewhere: step back and offer the hint again once a hire is affordable.
+		active = ""
+	elif page != "staff":
+		_focus(_hud.staff_button, "前台只管接待客人，煮茶要后厨员工：点「员工」")
 	else:
-		_focus(_hud.hire_button, "邀请一位后厨伙伴")
+		_focus(_hud.hire_button, "招一位伙伴，招来直接去后厨")
 
 
 func _line_step(stage: int) -> void:
@@ -280,16 +283,45 @@ func _box_step(material: String) -> void:
 		_focus(_view._station_buttons["supply"], "%s要用%s：去原料柜解锁%s箱" % [machine, definition.display_name, definition.display_name])
 
 
-func _lost_step() -> void:
+## The kitchen hint only shows when the player can act on it: a partner waiting in the roster, or coins for a hire.
+func _can_staff_kitchen() -> bool:
 	var sim = _view.sim
+	if sim.all_workers().any(func(worker: Dictionary) -> bool: return not _view.staff_is_deployed(int(worker.id))): return true
+	return sim.hire_cost() >= 0 and sim.gold >= sim.hire_cost()
+
+
+## Why customers are getting angry, checked in the order a player would fix it:
+## dine-in seats all taken → buy a seat; an open staff spot → hire; otherwise the machine making their drink.
+func _lost_cause() -> String:
+	var sim = _view.sim
+	var angry: Array = sim.orders.filter(func(order: Dictionary) -> bool: return sim.order_mood(order) >= 2)
+	if angry.is_empty(): return ""
+	var dine_in: bool = angry.any(func(order: Dictionary) -> bool: return not order.get("takeaway", false))
+	if dine_in and sim.free_seats() <= 0 and sim.seat_cost() >= 0: return "seats"
+	if sim.workers.size() < sim.staff_slots(): return "staff"
+	return "machine"
+
+
+## The machine behind the angriest order: lemonade comes from the stand, every kitchen drink starts at the brewer.
+func _slow_machine() -> String:
+	var sim = _view.sim
+	var oldest: Dictionary = {}
+	for order in sim.orders:
+		if oldest.is_empty() or order.wait > oldest.wait: oldest = order
+	return "lemonade" if oldest.is_empty() or oldest.dish == "lemonade" else "boil"
+
+
+func _lost_step() -> void:
 	if _hud.page != "shop":
 		_finish()
 		return
 	_bubble_skip.text = "知道了"
-	if sim.workers.size() < sim.staff_slots():
-		_focus(_hud.recruit_button, "有客人等急了！\n多招伙伴上岗，出杯更快")
-	else:
-		_focus_world(_view.STATION_REGIONS.lemonade, "有客人等急了！\n点设备升级，出杯更快")
+	match active:
+		"lost_seats": _focus(_view._seats, "有客人等急了！堂食坐满了，\n点这里加座位，客人才能坐下")
+		"lost_staff": _focus(_hud.staff_button, "有客人等急了！还有空岗位，\n点「员工」招一位伙伴")
+		_:
+			var machine := _slow_machine()
+			_focus_world(_view.STATION_REGIONS[machine], "有客人等急了！%s跟不上，\n点它升级，出杯更快" % _view.sim.station_info_name(machine))
 
 
 func _show_card() -> void:
@@ -330,7 +362,7 @@ func _show_card() -> void:
 		_card_secondary.visible = false
 		_card_primary.text = "继续营业"
 		var goal = _view.sim.PROGRESSION.stages[1]
-		var label: Label = _hud._text(_card_body, "接下来自己经营：营业额到 %d，就能开%s。\n点机器可以升级，点「员工」可以调整岗位。" % [goal.revenue_threshold, goal.line_name], 23)
+		var label: Label = _hud._text(_card_body, "接下来自己经营：攒够 %d 金币，就能开%s。\n点机器可以升级，点「员工」可以调整岗位。" % [goal.line_cost, goal.line_name], 23)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.custom_minimum_size.x = 500
 

@@ -292,8 +292,6 @@ func _refresh_locked(info: Dictionary) -> void:
 	var cost := int(info.get("unlock_cost", 0))
 	if error.is_empty():
 		unlock_button.text = "解锁 · %d 金币" % cost
-	elif gate > 0 and revenue < gate and error.begins_with("营业额"):
-		unlock_button.text = "还差 %d 营业额 · %d 金币" % [gate - revenue, cost]
 	elif error.begins_with("金币不足"):
 		unlock_button.text = "金币不足 · %d 金币" % cost
 	else:

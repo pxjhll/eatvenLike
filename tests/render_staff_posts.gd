@@ -222,7 +222,7 @@ func _click(button: Button) -> void:
 		await process_frame
 	var close_after := false
 	if button == view._hire_button:
-		await _click(view.ui.recruit_button)
+		await _click(view.ui.staff_button)
 		close_after = true
 	elif button in view._staff_cards and not button.is_visible_in_tree():
 		await _click(view.ui.staff_button)
