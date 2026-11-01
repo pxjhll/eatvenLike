@@ -175,12 +175,15 @@ func test_shop_slots_grow_with_each_production_line() -> void:
 	for line in ["boil", "seal", "mix", "topping"]:
 		var before_slots: int = sim.kitchen_slots()
 		check_eq(sim.unlock_station(line), "", "open " + line)
-		check_eq(sim.kitchen_slots(), before_slots + 1, "%s line adds a kitchen slot" % line)
-		check_eq(sim.deploy_worker(next_id), "", "the new slot takes one more employee")
-		next_id += 1
+		# The topping line opens two: following orders, a late kitchen needs a fifth hand.
+		var added: int = 2 if line == "topping" else 1
+		check_eq(sim.kitchen_slots(), before_slots + added, "%s line adds %d kitchen slot(s)" % [line, added])
+		for unused in added:
+			check_eq(sim.deploy_worker(next_id), "", "the new slot takes one more employee")
+			next_id += 1
 		check(not sim.deploy_worker(next_id).is_empty(), "but no more than the slots")
-	check_eq(sim.kitchen_staff(), 4, "a full kitchen runs four staff")
-	check_eq(sim.deployment_error(next_id), "后厨最多 4 位员工", "the last line names no further unlock")
+	check_eq(sim.kitchen_staff(), 5, "a full kitchen runs five staff")
+	check_eq(sim.deployment_error(next_id), "后厨最多 5 位员工", "the last line names no further unlock")
 	check_eq(sim.front_staff(), 1, "the front still has one worker")
 	for tick in 600: sim.advance(0.1)
 	check(sim.audit().valid, "five deployed staff preserve simulation invariants")
@@ -703,6 +706,8 @@ func test_seated_topping_worker_runs_its_whole_segment() -> void:
 	for unused in 4: sim.hire()
 	for line in ["lemonade", "boil", "seal", "mix", "topping"]: sim.unlock_station(line)
 	for material in ["tea_leaf", "milk"]: sim.unlock_box(material)
+	# The task-pool rules (kept as a fallback) give the seat a whole segment.
+	sim.follow_orders = false
 	for id in [2, 3, 4, 5]: sim.deploy_worker(id)
 	check_eq(sim.assign_post(5, "topping"), "", "one worker takes the topping seat")
 	var seated: Dictionary = sim.workers.filter(func(w): return w.id == 5)[0]
@@ -749,6 +754,7 @@ func test_brewer_pauses_for_stirring_and_seated_brewer_runs_its_segment() -> voi
 	sim.hire()
 	for line in ["lemonade", "boil"]: sim.unlock_station(line)
 	sim.unlock_box("tea_leaf")
+	sim.follow_orders = false
 	sim.deploy_worker(2)
 	check_eq(sim.assign_post(2, "boil"), "", "one worker takes the brewer seat")
 	var paused_at: Array = []
@@ -910,3 +916,126 @@ func test_v6_save_over_the_new_role_limits_recalls_extras_and_refunds_belts() ->
 	check(copy.belts.is_empty(), "belts are dropped")
 	for tick in 600: copy.advance(0.1)
 	check(copy.audit().valid and copy.sold > old.sold, "the migrated shop keeps selling")
+
+func _full_line(kitchen: int):
+	var sim = make_shop()
+	if sim == null: return null
+	sim.gold = 100000
+	sim.revenue = 100000
+	for unused in kitchen: sim.hire()
+	for line in ["lemonade", "boil", "seal", "mix", "topping"]: sim.unlock_station(line)
+	for material in ["tea_leaf", "milk"]: sim.unlock_box(material)
+	for unused in 3: sim.upgrade_station("topping")
+	for index in kitchen: check_eq(sim.deploy_worker(index + 2), "", "kitchen hand %d deployed" % (index + 2))
+	return sim
+
+func test_kitchen_staff_follow_an_order_from_the_pot_to_the_shelf() -> void:
+	var sim = _full_line(3)
+	if sim == null: return
+	check(sim.follow_orders, "following orders is the default")
+	var stages := {}
+	var finished := 0
+	var wrong_flavor := 0
+	var made := {}
+	for dish in sim.DISHES: made[dish] = sim.stations.topping.output.get(dish, 0)
+	for tick in 4000:
+		var before := {}
+		var done_before := {}
+		for worker in sim.workers:
+			before[worker.id] = worker.ticket.duplicate()
+			done_before[worker.id] = worker.completed
+		sim.advance(0.1)
+		for dish in made:
+			var now: int = sim.stations.topping.output.get(dish, 0)
+			if now > made[dish] and not sim.orders.any(func(order): return order.dish == dish): wrong_flavor += 1
+			made[dish] = now
+		for worker in sim.workers:
+			var was: Dictionary = before[worker.id]
+			if worker.ticket.is_empty() and not was.is_empty() and was.stage in ["topped", "topping"]: finished += 1
+			if worker.ticket.is_empty(): continue
+			stages[worker.ticket.stage] = true
+			check(worker.post != "counter", "only kitchen staff follow orders")
+			check(was.is_empty() or was.dish == worker.ticket.dish or worker.completed > done_before[worker.id], "a follower keeps its drink until it is done")
+	check(stages.has("boil") and stages.has("mix") and stages.has("topping") and stages.has("topped"), "followers walk the whole route: %s" % [stages.keys()])
+	check(finished > 5, "flavored cups are followed to the end (%d)" % finished)
+	check_eq(wrong_flavor, 0, "the topping machine only makes flavors someone in line ordered")
+	var flavors := 0
+	for dish in ["pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"]: flavors += 1 if sim.sold_by_dish[dish] > 0 else 0
+	check(flavors >= 2, "several ordered flavors are sold")
+	check(sim.audit().valid, "following orders keeps every cup accounted for: %s" % [sim.audit().errors])
+	check_eq(make_shop().load_dict(sim.to_dict()), "", "a shop with followers on the way saves and loads")
+
+func test_orders_next_to_each_other_for_the_same_drink_share_one_follower() -> void:
+	var sim = _full_line(1)
+	if sim == null: return
+	sim.orders.clear()
+	for unused in 3:
+		sim.orders.append({"id": sim._next_order, "wait": 0.0, "reserved": false, "dish": "pearl_milk_tea", "takeaway": false})
+		sim._next_order += 1
+	sim.advance(0.1)
+	var follower: Dictionary = sim.workers.filter(func(worker): return worker.post != "counter")[0]
+	check_eq(follower.ticket.get("dish", ""), "pearl_milk_tea", "the oldest order is taken")
+	check_eq(follower.ticket.get("count", 0), mini(3, sim._carry(follower)), "the same drink right behind it comes along")
+	check(sim.open_orders().size() == 3 - follower.ticket.count, "those orders are no longer open")
+
+func test_a_seated_brewer_keeps_the_pot_while_followers_carry_the_tea() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.gold = 100000
+	sim.revenue = 100000
+	sim.hire()
+	sim.hire()
+	for line in ["lemonade", "boil", "seal"]: sim.unlock_station(line)
+	sim.unlock_box("tea_leaf")
+	sim.deploy_worker(2)
+	sim.deploy_worker(3)
+	check_eq(sim.assign_post(2, "boil"), "", "one worker keeps the pot")
+	var seen := {}
+	var stirred := false
+	for tick in 3000:
+		sim.advance(0.1)
+		for worker in sim.workers:
+			if worker.job.is_empty(): continue
+			if worker.id == 2:
+				check(worker.job.kind in ["load_boil", "brew_start", "stir", "brew_take"], "the seat only keeps the pot going")
+				stirred = stirred or worker.job.kind == "stir"
+			elif worker.id == 3: seen[worker.job.kind] = true
+	check(stirred, "the pot still needs stirring")
+	check(seen.has("carry_to_shelf") or seen.has("carry_to_seal"), "the follower carries the tea out")
+	check(sim.sold_by_dish.black_tea > 0, "black tea reaches customers")
+	check(sim.audit().valid, "pot keeping preserves simulation invariants")
+
+func test_v7_save_loads_with_nobody_following_yet() -> void:
+	var sim = _full_line(2)
+	if sim == null: return
+	for tick in 300: sim.advance(0.1)
+	var old: Dictionary = sim.to_dict()
+	old.version = 7
+	for worker in old.roster: worker.erase("ticket")
+	var copy = make_shop()
+	check_eq(copy.load_dict(old), "", "a v7 save loads")
+	check(copy.workers.all(func(worker): return worker.ticket.is_empty()), "nobody is following anything yet")
+	for tick in 600: copy.advance(0.1)
+	check(copy.audit().valid and copy.sold > old.sold, "the loaded shop keeps selling")
+
+func test_cups_left_at_the_topping_machine_are_picked_up_by_the_next_follower() -> void:
+	var sim = _full_line(1)
+	if sim == null: return
+	var follower: Dictionary = sim.workers.filter(func(worker): return worker.post != "counter")[0]
+	var left := 0
+	for tick in 3000:
+		sim.advance(0.1)
+		if follower.ticket.get("stage", "") == "topping":
+			left = follower.ticket.count
+			break
+	check(left > 0, "a follower brings milk tea to the topping machine")
+	check_eq(sim.recall_worker(follower.id), "", "and is called away before topping it")
+	check_eq(sim.stations.topping.input.plain_milk_tea, left, "the cups stay at the machine")
+	check_eq(sim.deploy_worker(follower.id), "", "someone comes back")
+	var resumed := false
+	for tick in 50:
+		sim.advance(0.1)
+		if follower.ticket.get("stage", "") in ["topping", "topped"] and sim.stations.topping.input.plain_milk_tea < left: resumed = true
+		if resumed: break
+	check(resumed, "the next follower tops the cups left behind instead of fetching new ones")
+	check(sim.audit().valid, "picking up left cups keeps every cup accounted for")
