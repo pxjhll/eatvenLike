@@ -54,7 +54,8 @@ func test_opening_and_unlock_validation() -> void:
 	check(not sim.unlock_box("tea_leaf").is_empty(), "the box still costs money")
 	sim.gold = 20
 	check_eq(sim.unlock_box("tea_leaf"), "", "tea leaf box unlocks")
-	check(sim._dish_unlocked("black_tea") and sim.pending_box().is_empty(), "black tea goes on sale")
+	check(sim._dish_unlocked("black_tea", false) and sim.pending_box().is_empty(), "black tea can be made once the box is in")
+	check(sim.kitchen_staff() > 0 or not sim._dish_unlocked("black_tea"), "black tea is not ordered while nobody works the kitchen")
 	check(not sim.unlock_box("milk").is_empty(), "the milk box waits for the milk machine")
 	sim.revenue = 10000
 	sim.gold = 10000
@@ -64,7 +65,7 @@ func test_opening_and_unlock_validation() -> void:
 	check_eq(sim.stage_index, 3, "milk tea stage reached")
 	check(not sim._dish_unlocked("plain_milk_tea") and sim.pending_box() == "milk", "milk tea waits for the milk box")
 	check_eq(sim.unlock_box("milk"), "", "milk box unlocks")
-	check(sim._dish_unlocked("plain_milk_tea"), "milk tea goes on sale")
+	check(sim._dish_unlocked("plain_milk_tea", false), "milk tea goes on sale")
 
 func test_black_tea_sells_before_the_milk_machine() -> void:
 	var sim = make_shop()
@@ -1211,3 +1212,22 @@ func test_dine_in_customers_sit_shorter_early_and_longer_later() -> void:
 	if sim == null: return
 	check(sim.seat_seconds(0) < sim.seat_seconds(sim.PROGRESSION.stages.size() - 1), "early customers leave their seat sooner than late ones")
 	check(is_equal_approx(sim.seat_seconds(), sim.seat_seconds(0)), "the current stage sets how long a customer sits")
+
+
+## 2026-11-02 playtest: brewer bought with the last coins, no kitchen hand, and black tea orders filled
+## the queue for good (customers never leave), so lemonade stopped selling and hiring was out of reach.
+func test_kitchen_drinks_wait_for_a_kitchen_hand_so_lemonade_keeps_selling() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.unlock_station("lemonade")
+	sim.gold = sim.PROGRESSION.stages[1].line_cost + 20
+	check_eq(sim.unlock_station("boil"), "", "brewer bought")
+	check_eq(sim.unlock_box("tea_leaf"), "", "tea leaf box bought")
+	check_eq(sim.kitchen_staff(), 0, "only the counter worker so far")
+	sim.advance(600.0)
+	check(sim.orders.all(func(order: Dictionary) -> bool: return order.dish == "lemonade"), "only lemonade is ordered without a kitchen hand")
+	check(sim.gold >= sim.hire_cost(), "lemonade earns enough to hire the first kitchen hand")
+	check(sim.hire(), "the kitchen hand can be hired")
+	for worker in sim.all_workers():
+		if not worker.deployed: sim.deploy_worker(worker.id)
+	check(sim._dish_unlocked("black_tea"), "black tea goes on sale once someone works the kitchen")

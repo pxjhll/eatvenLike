@@ -905,8 +905,11 @@ func _candidate(kind: String, source: String, destination: String, item: String,
 		if job.count <= 0: return {}
 	return job
 
-func _dish_unlocked(dish: String) -> bool:
+func _dish_unlocked(dish: String, needs_kitchen_hand := true) -> bool:
 	if dish == "lemonade": return station_unlocked("lemonade")
+	# Kitchen drinks go on the menu only once someone works the kitchen. Customers never leave, so
+	# orders nobody can make would fill the queue, stop lemonade sales and leave no money to hire.
+	if needs_kitchen_hand and kitchen_staff() <= 0: return false
 	if dish == "black_tea": return _brew_ready()
 	if dish == "plain_milk_tea": return _mix_ready()
 	for id in ["topping", "press"]:
@@ -1819,7 +1822,7 @@ func _migrate_v9(old: Dictionary) -> Dictionary:
 		probe.unlocked_stations = state.unlocked_stations
 		probe.boxes = state.boxes
 	var ramp_state := {}
-	for dish in DISHES: ramp_state[dish] = RAMP_ORDERS if probe._dish_unlocked(dish) else 0
+	for dish in DISHES: ramp_state[dish] = RAMP_ORDERS if probe._dish_unlocked(dish, false) else 0
 	ramp_state.takeaway = RAMP_ORDERS if probe.station_unlocked("seal") else 0
 	state.order_ramp = ramp_state
 	return state
