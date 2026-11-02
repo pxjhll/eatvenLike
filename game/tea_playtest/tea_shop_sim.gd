@@ -17,7 +17,11 @@ const STIR_SECONDS := 1.0
 ## v8: kitchen staff follow orders (worker.ticket); the topping machine tops the flavor that was ordered.
 ## v9: the press table (fruit teas on a black tea base) and its stage; lemonade to go skips the sealer.
 ## v10: order_ramp (orders seen since each dish / takeaway opened) so new things ease in.
-const SAVE_VERSION := 10
+## v11: the takeaway rack on the shelf (stations.pickup): the kitchen carries sealed cups there and
+## the front serves only from the shelf and the lemonade stand.
+const SAVE_VERSION := 11
+## Sealed takeaway cups the rack on the shelf's lower tier holds.
+const PICKUP_CAPACITY := 6
 ## A newly opened dish (and takeaway once the sealer opens) starts at RAMP_START of its order weight
 ## and reaches full weight after RAMP_ORDERS customers.
 const RAMP_START := 0.25
@@ -137,7 +141,7 @@ func _initialize_shop() -> void:
 	order_ramp.clear()
 	for dish in DISHES: order_ramp[dish] = 0
 	order_ramp.takeaway = 0
-	for id in ["boil", "mix", "topping", "press", "seal"]:
+	for id in ["boil", "mix", "topping", "press", "seal", "pickup"]:
 		stations[id] = {"input": {}, "output": {}, "phase": "idle", "progress": 0.0,
 			"label": id, "capacity": 6, "processing": 0, "remaining": 0.0,
 			"duration": 0.0, "reserved_in": 0, "reserved_out": {}, "work_reserved": false,
@@ -151,10 +155,13 @@ func _initialize_shop() -> void:
 	stations.topping.input = {"plain_milk_tea": 0}
 	# Followers bring black tea to the press table and press the fruit their order asked for.
 	stations.press.input = {"tea": 0}
-	# The sealer packs takeaway cups of any kitchen drink, one at a time.
+	# The sealer packs takeaway cups of any kitchen drink, one at a time; the kitchen carries
+	# them on to the takeaway rack on the shelf, where the front picks them up.
+	stations.pickup.capacity = PICKUP_CAPACITY
 	for dish in DISHES:
 		stations.seal.input[dish] = 0
 		stations.seal.output[dish] = 0
+		stations.pickup.output[dish] = 0
 		if _is_topped(dish): stations.topping.output[dish] = 0
 		if _is_pressed(dish): stations.press.output[dish] = 0
 
@@ -542,7 +549,7 @@ func free_seats() -> int:
 
 ## A served cup leaves with the customer: sealed takeaway, or a lemonade poured to go.
 func _to_go(job: Dictionary) -> bool:
-	if job.src == "seal": return true
+	if job.src in ["seal", "pickup"]: return true
 	for order in orders:
 		if order.id == job.order_id: return order.get("takeaway", false)
 	return false
@@ -953,9 +960,15 @@ func _add_order() -> void:
 
 func _source_point(job: Dictionary) -> Vector2:
 	if job.item == "lemonade" and job.src == "supply": return Vector2(330, 910)
+	# The takeaway rack is the shelf's lower tier: picked up where the shelf is.
+	if job.src == "pickup": return Layout.POINTS.shelf
 	# Nobody sits at the press table: whoever presses stands at it, where cups are also dropped off.
 	if job.kind == "press": return Layout.POINTS.press
 	return super._source_point(job)
+
+func _destination_point(job: Dictionary) -> Vector2:
+	if job.dst == "pickup": return Layout.POINTS.shelf
+	return super._destination_point(job)
 
 func _available(source: String, item: String) -> int:
 	if source == "supply": return 999
@@ -1005,14 +1018,14 @@ func _jobs(worker: Dictionary) -> Array:
 	if not worker.post.is_empty() and worker.post != "counter": return result
 	# Bought belts (old saves, tests) still move goods by the task-pool rules.
 	if worker.post.is_empty(): return _follow_jobs(worker, result) if follow_orders and not _belt_courier else _kitchen_jobs(worker, result)
-	# Front staff only serve: lemonade from the stand, cups from the shelf, sealed takeaway from the sealer.
+	# Front staff only serve: lemonade from the stand, cups from the shelf, sealed takeaway from the rack on the shelf.
 	var seats_left := free_seats()
 	for order in orders:
 		if order.reserved: continue
-		# Takeaway cups are handed over from the sealer; dine-in cups need a free seat.
-		# Lemonade is poured at the stand and handed over unsealed, to go or not (a cup an old save left in the sealer goes first).
-		var source: String = "seal" if order.get("takeaway", false) else "shelf"
-		if order.dish == "lemonade": source = "seal" if order.get("takeaway", false) and _available("seal", "lemonade") > 0 else "supply"
+		# Sealed takeaway cups wait on the shelf's takeaway rack; dine-in cups need a free seat.
+		# Lemonade is poured at the stand and handed over unsealed, to go or not (a cup an old save left sealed goes first).
+		var source: String = "pickup" if order.get("takeaway", false) else "shelf"
+		if order.dish == "lemonade": source = "pickup" if order.get("takeaway", false) and _available("pickup", "lemonade") > 0 else "supply"
 		if not order.get("takeaway", false):
 			if seats_left <= 0: continue
 		var serve := _candidate("serve", source, "counter", order.dish, worker, 110)
@@ -1079,16 +1092,26 @@ func _pack_need(dish: String) -> int:
 	var need := 0
 	for order in orders:
 		if order.get("takeaway", false) and not order.reserved and order.dish == dish: need += 1
-	var seal: Dictionary = stations.seal
-	need -= int(seal.input[dish]) + int(seal.output[dish]) - int(seal.reserved_out.get(dish, 0))
-	if seal.processing_item == dish: need -= seal.processing
-	for other in workers:
-		if not other.job.is_empty() and other.job.kind == "carry_to_seal" and _shelf_item(other.job.item) == dish: need -= other.job.count
-	return need
+	return need - _sealed_supply(dish)
 
-## A takeaway cup is fetched from the shelf (or poured at the lemonade stand) and carried to the sealer.
+## Takeaway cups of a drink already packed or on their way: headed to or at the sealer, carried to the rack, or on it.
+func _sealed_supply(dish: String) -> int:
+	var seal: Dictionary = stations.seal
+	var pickup: Dictionary = stations.pickup
+	var count: int = int(seal.input[dish]) + int(seal.output[dish]) - int(seal.reserved_out.get(dish, 0))
+	count += int(pickup.output[dish]) - int(pickup.reserved_out.get(dish, 0))
+	if seal.processing_item == dish: count += seal.processing
+	for other in workers:
+		if other.job.is_empty() or _shelf_item(other.job.item) != dish: continue
+		if other.job.kind in ["carry_to_seal", "carry_to_pickup"]: count += other.job.count
+	return count
+
+## A takeaway cup is fetched from the shelf and carried to the sealer; sealed cups go on to the
+## takeaway rack on the shelf, the only place the front picks them up.
 func _append_pack_jobs(worker: Dictionary, result: Array) -> void:
 	if not station_unlocked("seal"): return
+	for dish in DISHES:
+		result.append(_candidate("carry_to_pickup", "seal", "pickup", dish, worker, 105))
 	for dish in DISHES:
 		if dish == "lemonade": continue
 		var need := _pack_need(dish)
@@ -1188,11 +1211,14 @@ func _kitchen_supply() -> Dictionary:
 		supply[dish] = 0
 		if dish == "lemonade": continue
 		var seal: Dictionary = stations.seal
+		var pickup: Dictionary = stations.pickup
 		supply[dish] += maxi(0, _available("shelf", dish)) + int(seal.input[dish]) + int(seal.output[dish]) - int(seal.reserved_out.get(dish, 0))
+		supply[dish] += int(pickup.output[dish]) - int(pickup.reserved_out.get(dish, 0))
 		if seal.processing_item == dish: supply[dish] += seal.processing
 	for worker in workers:
 		if not worker.ticket.is_empty(): supply[worker.ticket.dish] += worker.ticket.count
 		elif not worker.job.is_empty() and worker.job.kind == "carry_to_seal" and worker.job.src == "shelf": supply[worker.job.item] += worker.job.count
+		elif not worker.job.is_empty() and worker.job.kind == "carry_to_pickup": supply[worker.job.item] += worker.job.count
 	return supply
 
 ## Orders in line (oldest first) that no cup on hand or in the making covers yet.
@@ -1604,6 +1630,11 @@ func _take(job: Dictionary) -> void:
 	super._take(job)
 
 func _deliver(destination: String, item: String, count: int) -> void:
+	if destination == "pickup":
+		# The rack only holds: cups go straight to where the front takes them from.
+		stations.pickup.output[item] += count
+		stations.pickup.reserved_in -= count
+		return
 	if destination == "shelf": shelf_stock[_shelf_item(item)] += count
 	# The sealer packs drinks by name: tea from the pot is black tea.
 	super._deliver(destination, _shelf_item(item) if destination == "seal" else item, count)
@@ -1732,6 +1763,7 @@ func load_dict(state: Dictionary) -> String:
 	# need the press table's keys filled in.
 	if from_version is int and from_version <= 8 and state.get("version") in [8, SAVE_VERSION]: state = _migrate_v8(state)
 	if state.get("version") is int and state.version == 9: state = _migrate_v9(state)
+	if state.get("version") is int and state.version == 10: state = _migrate_v10(state)
 	var error := _validate_state(state)
 	if not error.is_empty(): return error
 	var candidate = get_script().new()
@@ -1814,7 +1846,7 @@ func _migrate_v8(old: Dictionary) -> Dictionary:
 ## v9 → v10: dishes already on the menu count as fully eased in; ones not yet open start from zero.
 func _migrate_v9(old: Dictionary) -> Dictionary:
 	var state: Dictionary = old.duplicate(true)
-	state.version = SAVE_VERSION
+	state.version = 10
 	if state.get("order_ramp") is Dictionary: return state
 	var probe = get_script().new()
 	if state.get("station_levels") is Dictionary and state.get("unlocked_stations") is Dictionary and state.get("boxes") is Dictionary:
@@ -1825,6 +1857,15 @@ func _migrate_v9(old: Dictionary) -> Dictionary:
 	for dish in DISHES: ramp_state[dish] = RAMP_ORDERS if probe._dish_unlocked(dish, false) else 0
 	ramp_state.takeaway = RAMP_ORDERS if probe.station_unlocked("seal") else 0
 	state.order_ramp = ramp_state
+	return state
+
+## v10 → v11: the takeaway rack starts empty. Sealed cups an old save left at the sealer are carried
+## to it by the kitchen; a front worker already fetching one there finishes the trip.
+func _migrate_v10(old: Dictionary) -> Dictionary:
+	var state: Dictionary = old.duplicate(true)
+	state.version = SAVE_VERSION
+	if state.get("stations") is Dictionary and not state.stations.has("pickup"):
+		state.stations.pickup = get_script().new().stations.pickup.duplicate(true)
 	return state
 
 ## Adds the keys `sample` has and `target` lacks (recursing into nested dictionaries); existing values stay.
@@ -1895,7 +1936,8 @@ func _counts(value: Variant, allowed: Array) -> bool:
 func _valid_job_route(job: Dictionary) -> bool:
 	match job.kind:
 		"serve":
-			return job.dst == "counter" and job.count == 1 and job.belt == "" and ((job.src == "supply" and job.item == "lemonade") or (job.src == "shelf" and job.item in DISHES and job.item != "lemonade") or (job.src == "seal" and job.item in DISHES))
+			return job.dst == "counter" and job.count == 1 and job.belt == "" and ((job.src == "supply" and job.item == "lemonade") or (job.src == "shelf" and job.item in DISHES and job.item != "lemonade") or (job.src in ["seal", "pickup"] and job.item in DISHES))
+		"carry_to_pickup": return job.src == "seal" and job.dst == "pickup" and job.item in DISHES and job.belt == ""
 		"brew_start": return job.src == "boil" and job.dst == "boil" and job.item == "raw" and job.count >= 1 and job.count <= 6 and job.belt == ""
 		"brew_take", "stir": return job.src == "boil" and job.dst == "boil" and job.item == "tea" and job.count >= 1 and job.count <= 6 and job.belt == ""
 		"topping": return job.src == "topping" and job.dst == "topping" and job.item == "plain_milk_tea" and job.belt == ""
@@ -2015,8 +2057,8 @@ func _validate_state(state: Dictionary) -> String:
 			var job_sample := {"kind": "", "src": "", "dst": "", "item": "", "count": 1, "priority": 1.0, "belt": "", "order_id": -1}
 			if not _same_shape(worker.job, job_sample): return "员工运单字段无效"
 			var job: Dictionary = worker.job
-			if not job.kind in ["serve", "topping", "press", "transfer_to_press", "brew_start", "brew_take", "stir", "load_boil", "unload_boil", "transfer_to_topping", "load_seal_belt", "carry_to_seal", "load_shelf_belt", "carry_to_shelf"]: return "员工任务无效"
-			if not job.src in ["supply", "shelf", "boil", "mix", "topping", "press", "seal"] or not job.dst in ["boil", "mix", "topping", "press", "seal", "shelf", "counter"]: return "员工运输端点无效"
+			if not job.kind in ["serve", "topping", "press", "transfer_to_press", "brew_start", "brew_take", "stir", "load_boil", "unload_boil", "transfer_to_topping", "load_seal_belt", "carry_to_seal", "load_shelf_belt", "carry_to_shelf", "carry_to_pickup"]: return "员工任务无效"
+			if not job.src in ["supply", "shelf", "boil", "mix", "topping", "press", "seal", "pickup"] or not job.dst in ["boil", "mix", "topping", "press", "seal", "shelf", "counter", "pickup"]: return "员工运输端点无效"
 			if not job.item in DISHES + ["raw", "tea"] or job.count <= 0: return "员工运单货物无效"
 			if not job.belt in ["", "topping_to_seal", "seal_to_shelf"]: return "员工传送带无效"
 			if not _valid_job_route(job): return "员工运单路线或口味无效"

@@ -69,6 +69,8 @@ var _belt_points := {}
 var _chip_home := Vector2(296, 560)
 var _chip_dragging := false
 ## These two hops already have conveyor art in the scene; the rest are drawn as lines.
+## The shelf's lower tier, where sealed takeaway cups wait.
+const PICKUP_ROW_Y := 662.0
 const ART_BELTS := {"BeltHorizontal": "topping_to_seal", "BeltVertical": "seal_to_shelf"}
 const STATION_REGIONS := {
 	"supply": Rect2(20, 155, 221, 120), "boil": Rect2(245, 122, 167, 158),
@@ -286,6 +288,14 @@ func _update_cups() -> void:
 			shelf_items.append("sealed")
 	for i in shelf_items.size():
 		draws.append({"pos": Vector2(546 + i * 51, 601), "item": shelf_items[i], "host": "Rack"})
+	# Sealed takeaway cups wait on the shelf's lower tier, where the front picks them up.
+	if sim.stations.has("pickup"):
+		var sealed: Array = []
+		for dish in sim.stations.pickup.output:
+			for unused in mini(int(sim.stations.pickup.output[dish]), 3 - sealed.size()):
+				sealed.append(dish)
+		for i in sealed.size():
+			draws.append({"pos": Vector2(546 + i * 51, PICKUP_ROW_Y), "item": sealed[i], "host": "Rack"})
 	for belt in sim.belt_items:
 		var route: PackedVector2Array = _belt_points.get(belt.route, Layout.belt_path(belt.route))
 		var point := _along(route, float(belt.progress))
