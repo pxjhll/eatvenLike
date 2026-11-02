@@ -5,8 +5,7 @@ extends Button
 const LINE := Color(0.36, 0.25, 0.18, 0.8)
 const TEXT := Color("5a4030")
 const FILL := Color(1, 1, 1, 0.4)
-const BADGE := Color("e5483b")
-const BADGE_RADIUS := 17.0
+const UpgradeBadge := preload("res://presentation/tea_playtest/upgrade_badge.gd")
 var can_unlock := false:
 	set(value):
 		if value != can_unlock:
@@ -32,8 +31,4 @@ func _draw() -> void:
 		draw_dashed_line(corners[i], corners[(i + 1) % 4], LINE, 3.0, 12.0)
 	if not can_unlock:
 		return
-	var center := Vector2(box.end.x - 4, box.position.y + 4)
-	draw_circle(center, BADGE_RADIUS + 2, Color.WHITE)
-	draw_circle(center, BADGE_RADIUS, BADGE)
-	draw_colored_polygon(PackedVector2Array([center + Vector2(0, -11), center + Vector2(9, -1), center + Vector2(-9, -1)]), Color.WHITE)
-	draw_rect(Rect2(center + Vector2(-4, -2), Vector2(8, 11)), Color.WHITE)
+	UpgradeBadge.draw_badge(self, Vector2(box.end.x - 4, box.position.y + 4))

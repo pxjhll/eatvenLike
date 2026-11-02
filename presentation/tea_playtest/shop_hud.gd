@@ -7,7 +7,7 @@ const Characters := preload("res://presentation/characters/character_library.gd"
 const CharacterPreview := preload("res://presentation/characters/character_preview.gd")
 const NAMES := Characters.NAMES
 const ROLES := {"speed": "速度型", "carry": "力量型", "skill": "操作型"}
-const PAGE_NAMES := {"staff": "员工", "recruit": "招募伙伴", "menu": "菜单", "restart": "重开店铺", "station": "设备", "goals": "目标", "characters": "角色预览"}
+const PAGE_NAMES := {"staff": "员工", "menu": "菜单", "restart": "重开店铺", "station": "设备", "goals": "目标", "characters": "角色预览"}
 const POST_NAMES := {"boil": "煮茶", "topping": "加料", "counter": "前台"}
 ## Stat bars are scaled against the best value a fully trained partner can reach.
 const STAT_MAX := {"speed": 220.0, "capacity": 6.0, "skill": 3.0}
@@ -20,6 +20,7 @@ var _portraits := {}
 var _staff_titles: Array[Label] = []
 var _staff_tags: Array[Label] = []
 var _staff_portraits: Array[TextureRect] = []
+## Hiring sits at the top of the staff page: one tap hires and puts the new partner straight to work.
 var _recruit_label: Label
 var _recruit_portrait: TextureRect
 var _styled_selection := -1
@@ -47,7 +48,6 @@ var _sheet_height := -1.0
 @onready var home_button: Button = %Home
 @onready var goals_button: Button = %Goals
 @onready var staff_button: Button = %Staff
-@onready var recruit_button: Button = %Recruit
 @onready var menu_button: Button = %Menu
 @onready var close_button: Button = %Close
 @onready var speed_button: Button = %Speed
@@ -74,7 +74,7 @@ func setup(view: Node2D) -> void:
 	_apply_theme()
 	for key in NAMES:
 		_portraits[key] = Characters.portrait(key)
-	for entry in [[home_button, "shop"], [goals_button, "goals"], [staff_button, "staff"], [recruit_button, "recruit"]]:
+	for entry in [[home_button, "shop"], [goals_button, "goals"], [staff_button, "staff"]]:
 		entry[0].pressed.connect(open_page.bind(entry[1]))
 		entry[0].icon = load("res://art/ui/shop/" + entry[1] + ".svg")
 		entry[0].expand_icon = true
@@ -241,6 +241,14 @@ func _portrait(parent: Node, art: String, height: float) -> TextureRect:
 
 func _build_pages() -> void:
 	var staff := _column("staff")
+	var recruit := _card(staff, "f6ead3", "d7bd97")
+	var recruit_line := _row(recruit, 12)
+	_recruit_portrait = _portrait(recruit_line, "raccoon", 72)
+	_recruit_label = _text(recruit_line, "", 21)
+	_recruit_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hire_button = _action(recruit_line, "招一位", _view.hire_worker)
+	hire_button.custom_minimum_size.x = 210
+	hire_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	# Four cards to a row; a bigger roster wraps onto more rows inside the scrolling sheet.
 	var grid := GridContainer.new()
 	grid.columns = 4
@@ -288,15 +296,6 @@ func _build_pages() -> void:
 				open_character_preview(worker.art)
 				break)
 	_text(staff, "拖到柜台 = 前台（只接待客人）；拖到工位或空地 = 后厨", 19, true).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var recruit := _column("recruit")
-	_text(recruit, "普通招募", 27)
-	_recruit_portrait = _portrait(recruit, "raccoon", 154)
-	_recruit_label = _text(recruit, "", 25)
-	_recruit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hire_button = _action(recruit, "邀请伙伴", _view.hire_worker)
-	var advanced := _card(recruit)
-	_text(advanced, "高级招募", 25)
-	_text(advanced, "尚未开放，更多伙伴敬请期待。", 21, true)
 	var menu := _column("menu")
 	character_preview_button = _action(menu, "角色预览", open_character_preview)
 	pause_button = _action(menu, "暂停营业", func() -> void: _view.sim.paused = not _view.sim.paused; refresh())
@@ -440,8 +439,9 @@ func refresh() -> void:
 		var train_cost: int = sim.train_cost(_view.selected_worker)
 		train_button.text = "已满级" if train_cost < 0 else "培养 Lv%d · %d 金币" % [int(selected.level) + 1, train_cost]
 		train_button.disabled = train_cost < 0 or sim.gold < train_cost
-	hire_button.disabled = sim.hire_cost() < 0 or sim.gold < sim.hire_cost()
-	hire_button.text = "当前伙伴已集齐" if sim.hire_cost() < 0 else "邀请伙伴  ·  %d 金币" % sim.hire_cost()
+	var room := has_staff_room()
+	hire_button.disabled = sim.hire_cost() < 0 or sim.gold < sim.hire_cost() or not room
+	hire_button.text = "暂无空位" if not room else "招一位\n%d 金币" % sim.hire_cost()
 	var next_art := "fox"
 	if sim.has_method("next_hire_art"):
 		next_art = sim.next_hire_art()
@@ -452,7 +452,7 @@ func refresh() -> void:
 				break
 	_recruit_portrait.texture = _portraits[next_art]
 	var descriptions := {"cat": "小猫 · 速度型\n跑得快的多面手", "raccoon": "浣熊 · 力量型\n擅长批量搬运", "fox": "狐狸 · 操作型\n擅长手工制作", "rabbit": "小兔子 · 速度型\n擅长快速搬运", "gray_cat": "小灰猫 · 速度型\n跑得快的多面手"}
-	_recruit_label.text = "伙伴已全部加入" if sim.hire_cost() < 0 else descriptions.get(next_art, NAMES[next_art])
+	_recruit_label.text = descriptions.get(next_art, NAMES[next_art]) + ("\n招来直接上岗" if room else "\n解锁新设备后有更多空位")
 	pause_button.text = "继续营业" if sim.paused else "暂停营业"
 	belt_button.text = "运输方式  ·  传送带" if sim.use_belts else "运输方式  ·  人工搬运"
 	belt_button.visible = not sim.has_method("buy_belt")
@@ -467,6 +467,22 @@ func refresh() -> void:
 		"staff": %Subtitle.text = ("前台 %d/%d · 后厨 %d/%d · 拥有 %d 位" % [sim.front_staff(), sim.front_slots(), sim.kitchen_staff(), sim.kitchen_slots(), roster.size()]) if sim.has_method("front_slots") else "店内 %d / %d · 拥有 %d 位" % [sim.workers.size(), sim.staff_slots() if sim.has_method("staff_slots") else 3, roster.size()]
 	_update_coin_icons()
 	_fit_sheet()
+
+## A hire goes straight to work, so hiring only makes sense while the shop has an open spot.
+func has_staff_room() -> bool:
+	var sim = _view.sim
+	if not sim.has_method("staff_slots"): return true
+	return sim.workers.size() < sim.staff_slots()
+
+## Something on the staff page can be bought right now (drives the red ↑ on the 员工 tab).
+func staff_affordable() -> bool:
+	var sim = _view.sim
+	if sim.hire_cost() >= 0 and sim.gold >= sim.hire_cost() and has_staff_room(): return true
+	if sim.has_method("staff_upgrade_info"):
+		for side in ["front", "kitchen"]:
+			var info: Dictionary = sim.staff_upgrade_info(side)
+			if int(info.cost) >= 0 and sim.gold >= int(info.cost): return true
+	return false
 
 ## A second fox reads 狐狸 2, so cards of the same animal can be told apart.
 func _staff_name(worker: Dictionary, roster: Array) -> String:
@@ -561,7 +577,7 @@ func open_page(next_page: String) -> void:
 	%Scroll.scroll_vertical = 0
 	for id in _page_nodes:
 		_page_nodes[id].visible = id == page
-	for pair in [[home_button, "shop"], [goals_button, "goals"], [staff_button, "staff"], [recruit_button, "recruit"]]:
+	for pair in [[home_button, "shop"], [goals_button, "goals"], [staff_button, "staff"]]:
 		pair[0].add_theme_stylebox_override("normal", _style("ead4b2" if pair[1] == page else "fff5e2", "b38c62" if pair[1] == page else "fff5e2", 16))
 	_sheet_height = -1.0
 	refresh()

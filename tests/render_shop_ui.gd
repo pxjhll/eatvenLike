@@ -41,11 +41,11 @@ func _run() -> void:
 	_check(hud.page == "goals", "goals entry opens its panel")
 	_check(view.sim.gold == gold_before and view.sim.workers.size() == 1, "opening goals has no economic side effects")
 	await _capture("goals")
-	await _click(hud.recruit_button)
-	_check(hud.page == "recruit", "recruit entry opens real normal recruitment")
+	await _click(hud.staff_button)
+	_check(hud.page == "staff" and hud.hire_button.is_visible_in_tree(), "hiring sits at the top of the staff page (no separate recruit tab)")
 	await _capture("recruit")
 	await _click(hud.hire_button)
-	_check(view.sim.workers.size() == 2 and view.sim.gold == gold_before - 35, "recruit spends actual price and adds actual worker")
+	_check(view.sim.workers.size() == 2 and view.sim.gold == gold_before - 35, "hire spends actual price and adds actual worker")
 	await _click(hud.staff_button)
 	_check(hud.page == "staff", "staff entry opens owned roster")
 	await _click(view._staff_cards[0])
@@ -67,7 +67,9 @@ func _run() -> void:
 	sheet.offset_top = -650
 	await process_frame
 	await process_frame
-	scroll.scroll_vertical = 96
+	# Hiring sits above the roster, so scroll past it until the first card's top slides under the heading.
+	var lift: float = view._staff_cards[0].get_global_rect().position.y - scroll.get_global_rect().position.y
+	scroll.scroll_vertical = int(lift / scroll.get_global_transform().get_scale().y) + 96
 	await process_frame
 	await process_frame
 	var clipped_point: Vector2 = view._staff_cards[0].get_global_rect().position + Vector2(20, 4)

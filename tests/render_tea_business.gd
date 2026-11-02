@@ -48,7 +48,7 @@ func _run() -> void:
 	await _click(view._station_buttons.boil)
 	var gold: int = view.sim.gold
 	await _click(hud.station_panel.unlock_button)
-	_check(view.sim.stage_index == 1 and view.sim.gold == gold - 100 and not view.sim.station_unlocked("seal"), "the brewer opens on its own for its stage price")
+	_check(view.sim.stage_index == 1 and view.sim.gold == gold - view.sim.PROGRESSION.stages[1].line_cost and not view.sim.station_unlocked("seal"), "the brewer opens on its own for its stage price")
 	_check(not _art_hidden(["IngredientTable", "MachineTable", "MachineTable/PearlPot", "Rack", "DisplayCase"]) and _art_hidden(["MachineTable/Brewer", "PrepBench", "Sealer"]), "the brewer and shelf appear, later machines stay hidden")
 	_check(_frames_shown(["supply", "seal"]) and _frames_hidden(["boil", "mix", "topping"]), "the cabinet asks for the tea leaf box, the sealer is next")
 	await _click(hud.home_button)
@@ -62,12 +62,12 @@ func _run() -> void:
 	_check(_frames_hidden(["supply"]), "the cabinet frame goes away once the box is in")
 	# The front worker stays at the counter; brewing needs a kitchen hand.
 	view.sim.gold = maxi(view.sim.gold, 200)
-	await _click(hud.recruit_button)
-	await _click(hud.hire_button)
 	await _click(hud.staff_button)
-	await _click(view._staff_cards[1])
-	await _click(hud.deploy_button)
-	_check(view.sim.kitchen_staff() == 1 and view.sim.front_staff() == 1, "the recruit deploys to the kitchen, the starter keeps the counter")
+	await _click(hud.hire_button)
+	_check(view.sim.kitchen_staff() == 1 and view.sim.front_staff() == 1, "a hire goes straight to the kitchen, the starter keeps the counter")
+	view.sim.gold = maxi(view.sim.gold, 200)
+	view._refresh(0)
+	_check(view._upgrade_marks.has("lemonade") and view._upgrade_marks.lemonade.visible, "an affordable lemonade stand upgrade shows the red arrow")
 	await _click(hud.home_button)
 	_advance(300)
 	_check(int(view.sim.sold_by_dish.get("black_tea", 0)) > 0, "brewed tea is shelved and served to seated customers")
@@ -91,7 +91,7 @@ func _run() -> void:
 	await _click(view._station_buttons.mix)
 	gold = view.sim.gold
 	await _click(hud.station_panel.unlock_button)
-	_check(view.sim.stage_index == 3 and view.sim.gold == gold - 250, "milk machine has its own sign, price and revenue gate")
+	_check(view.sim.stage_index == 3 and view.sim.gold == gold - view.sim.PROGRESSION.stages[3].line_cost, "milk machine has its own sign and price")
 	await _click(hud.home_button)
 	_check(_frames_shown(["supply"]), "the cabinet now asks for the milk box")
 	await _click(view._station_buttons.supply)
@@ -126,13 +126,9 @@ func _run() -> void:
 	await _click(hud.station_panel.material_buttons.coconut)
 	_check(view.sim.station_info("topping").level == 2 and view.sim.material_levels.topping.coconut == 2, "machine level opens actual coconut flavor upgrade")
 	await _capture("flavors")
-	await _click(hud.recruit_button)
-	await _click(hud.hire_button)
-	_check(view.sim.roster.size() == 3 and view.sim.workers.size() == 2, "recruit owns employee without automatically deploying")
 	await _click(hud.staff_button)
-	await _click(view._staff_cards[2])
-	await _click(hud.deploy_button)
-	_check(view.sim.workers.size() == 3, "staff panel deploys selected owned employee")
+	await _click(hud.hire_button)
+	_check(view.sim.roster.size() == 3 and view.sim.workers.size() == 3, "a hire with an open spot starts work at once")
 	_advance(15)
 	await _click(hud.deploy_button)
 	_check(view.sim.workers.size() == 2 and view.sim.audit().valid, "recall refunds busy cargo and preserves owned employee")
@@ -170,6 +166,11 @@ func _run() -> void:
 	_check(view.sim.to_dict() == saved_state and view._speed_factor == 2.0, "fresh art scene automatically restores store and playback speed")
 	view._process(10.1)
 	_check(view.store.load_game().to_dict() == view.sim.to_dict(), "autosave writes running production state")
+	# With no revenue gate the saved coins already afford the next line; that hint (and the angry-customer
+	# hints for this busy restored shop) would take this tap, so mark them seen.
+	for key in ["line_1", "line_2", "line_3", "line_4", "line_5", "lost_seats", "lost_staff", "lost_machine"]: view.guide.seen[key] = true
+	view.guide.active = ""
+	view.guide.refresh(0)
 	await _click(hud.goal_button)
 	_check(hud.page == "goals", "tapping the header goal opens the goals page")
 	await _capture("tasks")
@@ -187,6 +188,9 @@ func _run() -> void:
 	var queue_view = load("res://presentation/tea_playtest/tea_playtest.tscn").instantiate()
 	var queue_sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
 	queue_sim.unlock_station("lemonade")
+	# The lemonade stage only queues three; the black tea stage lets a fourth wait in the second row.
+	queue_sim.gold = 1000
+	queue_sim.unlock_station("boil")
 	for worker in queue_sim.workers.duplicate(): queue_sim.recall_worker(worker.id)
 	queue_view.sim = queue_sim
 	root.add_child(queue_view)

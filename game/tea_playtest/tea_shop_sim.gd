@@ -16,7 +16,12 @@ const STIR_SECONDS := 1.0
 ## v7: front and kitchen staff are separate; per-worker training became the front / kitchen upgrade lists.
 ## v8: kitchen staff follow orders (worker.ticket); the topping machine tops the flavor that was ordered.
 ## v9: the press table (fruit teas on a black tea base) and its stage; lemonade to go skips the sealer.
-const SAVE_VERSION := 9
+## v10: order_ramp (orders seen since each dish / takeaway opened) so new things ease in.
+const SAVE_VERSION := 10
+## A newly opened dish (and takeaway once the sealer opens) starts at RAMP_START of its order weight
+## and reaches full weight after RAMP_ORDERS customers.
+const RAMP_START := 0.25
+const RAMP_ORDERS := 12
 ## The press table lives in its own file so the legacy GameSim (which builds every slot in tea.tres) never sees it.
 const PRESS_DEF = preload("res://content/tea/press_table.tres")
 ## Kitchen staff follow orders from the pot to the shelf (v0.3 process blocks). Off = the shared task pool
@@ -55,6 +60,8 @@ var flyers := 1
 var front_upgrades := 0
 var kitchen_upgrades := 0
 var diners: Array = []
+## Customers who arrived since each dish (and "takeaway") opened, capped at RAMP_ORDERS.
+var order_ramp: Dictionary = {}
 var _flavor_cursor := 0
 ## Bought conveyor segments (BeltSlotDef ids) and each one's countdown to its next cup.
 var belts: Dictionary = {}
@@ -64,6 +71,16 @@ const BELTS_IN_GAME := false
 var _belt_courier := false
 var _rng: RandomNumberGenerator
 var follow_orders := FOLLOW_ORDERS
+## Playtest tuning knobs (调参面板): multipliers on top of the .tres numbers, 1.0 = as designed.
+## Times (seat, customer, boil, mix, seal, topping, press, lemonade) are multiplied; walk, work and price
+## multiply speed / skill / sale price. Not part of the shop save; the panel keeps them in its own file.
+const TUNE_KEYS := ["seat", "customer", "boil", "mix", "seal", "topping", "press", "lemonade", "walk", "work", "price"]
+const TUNE_MIN := 0.25
+const TUNE_MAX := 3.0
+var tune: Dictionary = {}
+
+func tuned(key: String) -> float:
+	return clampf(float(tune.get(key, 1.0)), TUNE_MIN, TUNE_MAX)
 
 func _init() -> void:
 	_rng = RandomNumberGenerator.new()
@@ -117,6 +134,9 @@ func _initialize_shop() -> void:
 	front_upgrades = 0
 	kitchen_upgrades = 0
 	diners.clear()
+	order_ramp.clear()
+	for dish in DISHES: order_ramp[dish] = 0
+	order_ramp.takeaway = 0
 	for id in ["boil", "mix", "topping", "press", "seal"]:
 		stations[id] = {"input": {}, "output": {}, "phase": "idle", "progress": 0.0,
 			"label": id, "capacity": 6, "processing": 0, "remaining": 0.0,
@@ -417,9 +437,8 @@ func _unlock_error(id: String) -> String:
 	var stage := _unlock_stage(id)
 	if stage > 0:
 		if not station_unlocked("lemonade"): return "请先解锁柠檬水台"
+		# Only the very next line is offered, so its price alone paces the unlocks (no revenue gate).
 		if stage > stage_index + 1: return "请先解锁" + PROGRESSION.stages[stage - 1].line_name
-		var definition = PROGRESSION.stages[stage]
-		if revenue < definition.revenue_threshold: return "营业额需达到 %d" % definition.revenue_threshold
 	if gold < _unlock_cost(id): return "金币不足，需要 %d" % _unlock_cost(id)
 	return ""
 
@@ -485,6 +504,17 @@ func _brew_ready() -> bool:
 func seat_cost() -> int:
 	var index := seats - PROGRESSION.seat_start
 	return PROGRESSION.seat_costs[index] if index >= 0 and index < PROGRESSION.seat_costs.size() else -1
+
+## How long a dine-in customer sits at this stage: short early so seats turn over, longer as the menu grows.
+func seat_seconds(stage: int = -1) -> float:
+	var seconds: float = PROGRESSION.stages[stage_index if stage < 0 else stage].seat_seconds
+	return (seconds if seconds > 0 else PROGRESSION.seat_seconds) * tuned("seat")
+
+func _longest_seat_seconds() -> float:
+	var longest := 0.0
+	for index in PROGRESSION.stages.size(): longest = maxf(longest, seat_seconds(index))
+	# A save made with a longer tuned dine-in time must still load after the knob is turned back.
+	return longest / tuned("seat") * TUNE_MAX
 
 func seat_max() -> int:
 	return PROGRESSION.seat_start + PROGRESSION.seat_costs.size()
@@ -612,7 +642,7 @@ func station_info(requested: String) -> Dictionary:
 					"box_error": box_error(material.id), "box_machine": station_info_name(machine)})
 			if _art_mode(material): row.merge(_price_preview(id, material.id, mat_level < mat_max))
 			materials.append(row)
-	var descriptions := {"supply": "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价", "boil": "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "press": "员工拿红茶来亲手捣水果，全程要人；客人点什么水果就捣什么", "seal": "外带的杯子都要来这里封口；升级封得更快，5 级、10 级各加一个封口位", "lemonade": "服务员到展示柜现取柠檬水，外带不用封口", "counter": "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"}
+	var descriptions := {"supply": "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价", "boil": "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "press": "员工拿红茶来亲手捣水果，全程要人；客人点什么水果就捣什么", "seal": "外带的杯子都要来这里封口；升级封得更快，5 级、10 级各加一个封口位", "lemonade": "服务员到展示柜现取柠檬水，外带不用封口；升级提高售价，出杯也更快", "counter": "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"}
 	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "加料速度", "press": "手打速度", "lemonade": "售价", "seal": "封口速度"}
 	var speeds: Array = [1.0]
 	if definition != null: speeds = definition.art_speeds if _art_mode(definition) and not definition.art_speeds.is_empty() else definition.level_speed
@@ -650,7 +680,7 @@ func station_info(requested: String) -> Dictionary:
 		"upgrade_cost": upgrade_cost, "upgrade_error": _upgrade_error(id), "materials": materials,
 		"effect": effects.get(id, ""), "speed": speeds[mini(level, speeds.size()) - 1],
 		"next_speed": speeds[level] if upgrade_cost >= 0 and level < speeds.size() else -1.0, "next_unlock": next_flavor,
-		"unlock_revenue": PROGRESSION.stages[stage].revenue_threshold if stage > 0 else 0,
+		"unlock_revenue": 0,
 		"line_name": PROGRESSION.stages[stage].line_name if stage > 0 else name, "line_members": line,
 		"unlock_note": PROGRESSION.stages[stage].unlock_note if stage > 0 else "",
 		"dish_name": dish_name(PROGRESSION.stages[stage].dish_id), "dish_price": _base_price(PROGRESSION.stages[stage].dish_id),
@@ -697,7 +727,6 @@ func goal_progress() -> Dictionary:
 	if not box.is_empty(): return {"text": "解锁%s箱" % _box_def(box).display_name, "current": mini(gold, _box_def(box).box_cost), "target": _box_def(box).box_cost}
 	if stage_index < PROGRESSION.stages.size() - 1:
 		var stage = PROGRESSION.stages[stage_index + 1]
-		if revenue < stage.revenue_threshold: return {"text": "营业额 · 解锁" + stage.line_name, "current": revenue, "target": stage.revenue_threshold}
 		return {"text": "攒金币 · 解锁" + stage.line_name, "current": mini(gold, stage.line_cost), "target": stage.line_cost}
 	for row in task_rows():
 		if not row.complete: return {"text": row.name, "current": row.current, "target": row.target}
@@ -729,7 +758,6 @@ func current_goal() -> String:
 	if not box.is_empty(): return "支付 %d 金币在原料柜解锁%s箱" % [_box_def(box).box_cost, _box_def(box).display_name]
 	if stage_index < PROGRESSION.stages.size() - 1:
 		var stage = PROGRESSION.stages[stage_index + 1]
-		if revenue < stage.revenue_threshold: return "营业额 %d / %d，随后解锁%s" % [revenue, stage.revenue_threshold, stage.line_name]
 		return "支付 %d 金币解锁%s" % [stage.line_cost, stage.line_name]
 	for row in task_rows():
 		if not row.complete: return "%s（%d / %d）" % [row.name, row.current, row.target]
@@ -750,15 +778,15 @@ func _machine_duration(key: String) -> float:
 	match key:
 		"boil":
 			var seconds: float = _definition("boil").art_seconds
-			return (seconds if seconds > 0 else 7.0) / _speed("boil") / _speed("supply") / _material_bonus("supply", "tea_leaf")
-		"mix": return 4.0 / _speed("mix") / _material_bonus("supply", "milk")
+			return (seconds if seconds > 0 else 7.0) / _speed("boil") / _speed("supply") / _material_bonus("supply", "tea_leaf") * tuned("boil")
+		"mix": return 4.0 / _speed("mix") / _material_bonus("supply", "milk") * tuned("mix")
 	return seal_seconds()
 
 ## Time per takeaway cup at the sealer: faster per level, and each extra slot (stars at Lv5 / Lv10) adds another cup at once.
 func seal_seconds(level: int = -1) -> float:
 	var lv: int = station_levels.seal if level < 0 else level
 	var speed: float = PROGRESSION.seal_speeds[mini(lv, PROGRESSION.seal_speeds.size()) - 1]
-	return PROGRESSION.seal_seconds / speed / seal_slots(lv)
+	return PROGRESSION.seal_seconds / speed / seal_slots(lv) * tuned("seal")
 
 func seal_slots(level: int = -1) -> int:
 	var lv: int = station_levels.seal if level < 0 else level
@@ -786,9 +814,9 @@ func stars(id: String, level: int = -1) -> int:
 	return count
 
 func _action_duration(job: Dictionary, worker: Dictionary) -> float:
-	if job.item == "lemonade" and job.src == "supply": return _definition("lemonade").cycle_seconds / _speed("lemonade") / _skill(worker)
-	if job.kind == "topping": return _topping_seconds() * job.count / _skill(worker) / _speed("topping")
-	if job.kind == "press": return PRESS_DEF.art_seconds * job.count / _skill(worker) / _speed("press")
+	if job.item == "lemonade" and job.src == "supply": return _definition("lemonade").cycle_seconds / _speed("lemonade") / _skill(worker) * tuned("lemonade")
+	if job.kind == "topping": return _topping_seconds() * job.count / _skill(worker) / _speed("topping") * tuned("topping")
+	if job.kind == "press": return PRESS_DEF.art_seconds * job.count / _skill(worker) / _speed("press") * tuned("press")
 	if job.kind == "stir": return STIR_SECONDS / _skill(worker)
 	if job.kind == "load_boil": return 0.6 / _skill(worker) / _speed("supply") / _material_bonus("supply", "tea_leaf")
 	return super._action_duration(job, worker)
@@ -800,7 +828,7 @@ func _topping_seconds() -> float:
 
 ## Customers come faster with each stage, each flavor on the menu (+5% each) and each flyer level (+10% each).
 func _order_interval() -> float:
-	return PROGRESSION.stages[stage_index].customer_interval / flow_multiplier()
+	return PROGRESSION.stages[stage_index].customer_interval / flow_multiplier() * tuned("customer")
 
 func flow_multiplier(flyer_level: int = -1) -> float:
 	var flavors := 0
@@ -877,8 +905,11 @@ func _candidate(kind: String, source: String, destination: String, item: String,
 		if job.count <= 0: return {}
 	return job
 
-func _dish_unlocked(dish: String) -> bool:
+func _dish_unlocked(dish: String, needs_kitchen_hand := true) -> bool:
 	if dish == "lemonade": return station_unlocked("lemonade")
+	# Kitchen drinks go on the menu only once someone works the kitchen. Customers never leave, so
+	# orders nobody can make would fill the queue, stop lemonade sales and leave no money to hire.
+	if needs_kitchen_hand and kitchen_staff() <= 0: return false
 	if dish == "black_tea": return _brew_ready()
 	if dish == "plain_milk_tea": return _mix_ready()
 	for id in ["topping", "press"]:
@@ -886,22 +917,37 @@ func _dish_unlocked(dish: String) -> bool:
 			if material.item_id == dish: return station_unlocked(id) and station_levels[id] >= material.unlock_level
 	return false
 
+## How far a new dish (or takeaway) has eased in: RAMP_START right after it opens, 1.0 after RAMP_ORDERS customers.
+func ramp(key: String) -> float:
+	return lerpf(RAMP_START, 1.0, clampf(float(order_ramp.get(key, 0)) / RAMP_ORDERS, 0.0, 1.0))
+
+## This stage's order weight for each dish on the menu, new dishes scaled down while they ease in.
+func order_weights() -> Dictionary:
+	var result := {}
+	var weights: Dictionary = PROGRESSION.stages[stage_index].order_weights
+	for dish in weights:
+		if _dish_unlocked(dish): result[dish] = weights[dish] * ramp(dish)
+	return result
+
+func takeaway_share() -> float:
+	return PROGRESSION.stages[stage_index].takeaway_share * ramp("takeaway")
+
 func _add_order() -> void:
 	if _rng == null or not station_unlocked("lemonade"): return
-	var weights: Dictionary = PROGRESSION.stages[stage_index].order_weights
+	var weights := order_weights()
 	var total := 0.0
-	for dish in weights:
-		if _dish_unlocked(dish): total += weights[dish]
+	for dish in weights: total += weights[dish]
 	if total <= 0: return
 	var sample := _rng.randf() * total
 	var selected := "lemonade"
 	for dish in weights:
-		if not _dish_unlocked(dish): continue
 		sample -= weights[dish]
 		if sample <= 0:
 			selected = dish
 			break
-	var takeaway := station_unlocked("seal") and _rng.randf() < PROGRESSION.stages[stage_index].takeaway_share
+	var takeaway := station_unlocked("seal") and _rng.randf() < takeaway_share()
+	for dish in weights: order_ramp[dish] = mini(int(order_ramp.get(dish, 0)) + 1, RAMP_ORDERS)
+	if station_unlocked("seal"): order_ramp.takeaway = mini(int(order_ramp.get("takeaway", 0)) + 1, RAMP_ORDERS)
 	orders.append({"id": _next_order, "wait": 0.0, "reserved": false, "dish": selected, "takeaway": takeaway})
 	_next_order += 1
 
@@ -1087,10 +1133,10 @@ func _side(worker: Dictionary) -> String:
 	return "front" if worker.post == "counter" else "kitchen"
 
 func _walk_speed(worker: Dictionary) -> float:
-	return worker.speed * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0) * pow(1.0 + PROGRESSION.walk_step, _bought(_side(worker), "walk"))
+	return worker.speed * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0) * pow(1.0 + PROGRESSION.walk_step, _bought(_side(worker), "walk")) * tuned("walk")
 
 func _skill(worker: Dictionary) -> float:
-	return worker.skill * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0) * pow(1.0 + PROGRESSION.work_step, _bought(_side(worker), "work"))
+	return worker.skill * (SEATED_BONUS if worker.post in ["topping", "boil"] else 1.0) * pow(1.0 + PROGRESSION.work_step, _bought(_side(worker), "work")) * tuned("work")
 
 func _carry(worker: Dictionary) -> int:
 	return worker.capacity + _bought(_side(worker), "carry")
@@ -1573,18 +1619,19 @@ func _cancel_job(worker: Dictionary) -> void:
 func _dish_price(dish: String) -> int:
 	var price := _base_price(dish)
 	# Price upgrades multiply: each level ×(1 + step), each star ×star_mult, across machines and ingredients.
+	# Every bonus on a cup adds to one sum (levels, stars, ingredients, flavour), so a maxed milk tea ends
+	# near ×3.5 rather than the ×10 that stacked multipliers reached.
 	var bonus := 1.0
 	for id in ["lemonade", "boil", "mix", "supply", "press"]:
 		var definition = _definition(id)
 		if _art_mode(definition) and dish in definition.art_price_dishes:
-			bonus *= pow(1.0 + definition.art_price_step, station_levels[id] - 1) * pow(definition.art_star_mult, stars(id))
+			bonus += definition.art_price_step * (station_levels[id] - 1) + (definition.art_star_mult - 1.0) * stars(id)
 		for material in definition.materials:
-			if _art_mode(material) and dish in material.art_price_dishes: bonus *= pow(1.0 + material.art_price_step, material_levels[id][material.id] - 1)
-	var flavor := 1.0
+			if _art_mode(material) and dish in material.art_price_dishes: bonus += material.art_price_step * (material_levels[id][material.id] - 1)
 	for id in ["topping", "press"]:
 		for material in _definition(id).materials:
-			if material.item_id == dish: flavor = _material_bonus(id, material.id)
-	return roundi(price * bonus * flavor)
+			if material.item_id == dish: bonus += _material_bonus(id, material.id) - 1.0
+	return roundi(price * bonus * tuned("price"))
 
 func _record_sale(job: Dictionary) -> void:
 	# A cup handed over from the shelf or the stand is drunk here: the customer takes a seat for a while.
@@ -1592,7 +1639,7 @@ func _record_sale(job: Dictionary) -> void:
 		var taken: Array = diners.map(func(diner: Dictionary) -> int: return diner.seat)
 		var seat := 0
 		while seat in taken: seat += 1
-		diners.append({"seat": seat, "dish": job.item, "left": PROGRESSION.seat_seconds})
+		diners.append({"seat": seat, "dish": job.item, "left": seat_seconds()})
 	sold += job.count
 	sold_by_dish[job.item] += job.count
 	var income: int = _dish_price(job.item) * job.count
@@ -1628,7 +1675,7 @@ func to_dict() -> Dictionary:
 		"sold_by_dish": sold_by_dish.duplicate(true), "flavor_cursor": _flavor_cursor, "rng_state": _rng.state,
 		"belts": belts.duplicate(true), "belt_clock": belt_clock.duplicate(true),
 		"boxes": boxes.duplicate(true), "seats": seats, "diners": diners.duplicate(true), "flyers": flyers,
-		"front_upgrades": front_upgrades, "kitchen_upgrades": kitchen_upgrades}
+		"front_upgrades": front_upgrades, "kitchen_upgrades": kitchen_upgrades, "order_ramp": order_ramp.duplicate(true)}
 
 func _apply_state(state: Dictionary) -> void:
 	roster = state.roster.duplicate(true)
@@ -1666,6 +1713,7 @@ func _apply_state(state: Dictionary) -> void:
 	front_upgrades = state.front_upgrades
 	kitchen_upgrades = state.kitchen_upgrades
 	diners = state.diners.duplicate(true)
+	order_ramp = state.order_ramp.duplicate(true)
 	_rng.state = state.rng_state
 
 func load_dict(state: Dictionary) -> String:
@@ -1683,6 +1731,7 @@ func load_dict(state: Dictionary) -> String:
 	# v8 and every older path (v6 rebuilds from a fresh shop but copies the old level and sales tables)
 	# need the press table's keys filled in.
 	if from_version is int and from_version <= 8 and state.get("version") in [8, SAVE_VERSION]: state = _migrate_v8(state)
+	if state.get("version") is int and state.version == 9: state = _migrate_v9(state)
 	var error := _validate_state(state)
 	if not error.is_empty(): return error
 	var candidate = get_script().new()
@@ -1760,6 +1809,22 @@ func _migrate_v8(old: Dictionary) -> Dictionary:
 	var fresh: Dictionary = get_script().new().to_dict()
 	for key in ["shelf_stock", "sold_by_dish", "station_levels", "unlocked_stations", "material_levels", "stations"]:
 		if state.get(key) is Dictionary: _fill_missing(state[key], fresh[key])
+	return state
+
+## v9 → v10: dishes already on the menu count as fully eased in; ones not yet open start from zero.
+func _migrate_v9(old: Dictionary) -> Dictionary:
+	var state: Dictionary = old.duplicate(true)
+	state.version = SAVE_VERSION
+	if state.get("order_ramp") is Dictionary: return state
+	var probe = get_script().new()
+	if state.get("station_levels") is Dictionary and state.get("unlocked_stations") is Dictionary and state.get("boxes") is Dictionary:
+		probe.station_levels = state.station_levels
+		probe.unlocked_stations = state.unlocked_stations
+		probe.boxes = state.boxes
+	var ramp_state := {}
+	for dish in DISHES: ramp_state[dish] = RAMP_ORDERS if probe._dish_unlocked(dish, false) else 0
+	ramp_state.takeaway = RAMP_ORDERS if probe.station_unlocked("seal") else 0
+	state.order_ramp = ramp_state
 	return state
 
 ## Adds the keys `sample` has and `target` lacks (recursing into nested dictionaries); existing values stay.
@@ -1859,6 +1924,9 @@ func _validate_state(state: Dictionary) -> String:
 	if state.accumulator >= STEP + 0.000001: return "存档时间余量无效"
 	if not _same_shape(state.station_levels, template.station_levels) or not _same_shape(state.unlocked_stations, template.unlocked_stations): return "设备字段无效"
 	if not _same_shape(state.material_levels, template.material_levels): return "配料字段无效"
+	if not _same_shape(state.order_ramp, template.order_ramp): return "出单字段无效"
+	for key in state.order_ramp:
+		if state.order_ramp[key] < 0 or state.order_ramp[key] > RAMP_ORDERS: return "出单字段无效"
 	if state.belts.size() != state.belt_clock.size(): return "传送带字段无效"
 	for id in state.belts:
 		var belt = _belt_def(id) if id is String else null
@@ -2011,7 +2079,7 @@ func _validate_state(state: Dictionary) -> String:
 	var seat_ids: Array = []
 	for diner in state.diners:
 		if not diner is Dictionary or not _same_shape(diner, {"seat": 0, "dish": "", "left": 0.0}): return "堂食客人字段无效"
-		if diner.seat < 0 or diner.seat >= state.seats or diner.seat in seat_ids or not diner.dish in DISHES or diner.left < 0 or diner.left > PROGRESSION.seat_seconds + 0.000001: return "堂食客人无效"
+		if diner.seat < 0 or diner.seat >= state.seats or diner.seat in seat_ids or not diner.dish in DISHES or diner.left < 0 or diner.left > _longest_seat_seconds() + 0.000001: return "堂食客人无效"
 		seat_ids.append(diner.seat)
 	for event in state.events:
 		if not event is Dictionary or not _same_shape(event, {"kind": "", "text": ""}): return "事件字段无效"

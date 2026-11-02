@@ -9,7 +9,7 @@ id = "lemon"
 display_name = "柠檬"
 item_id = "lemon_tea"
 unlock_level = 1
-upgrade_costs = Array[int]([70, 115, 175, 250])
+upgrade_costs = Array[int]([100, 160, 245, 390])
 level_bonus = Array[float]([1.0, 1.08, 1.17, 1.26, 1.36])
 
 [sub_resource type="Resource" id="mat_banana"]
@@ -18,7 +18,7 @@ id = "banana"
 display_name = "香蕉"
 item_id = "banana_tea"
 unlock_level = 3
-upgrade_costs = Array[int]([90, 145, 215, 300])
+upgrade_costs = Array[int]([125, 205, 300, 470])
 level_bonus = Array[float]([1.0, 1.08, 1.17, 1.26, 1.36])
 
 [resource]
@@ -31,7 +31,7 @@ cycle_seconds = 4.0
 level_speed = Array[float]([1.0])
 art_seconds = 4.0
 art_speeds = Array[float]([1.0, 1.15, 1.3, 1.45, 1.6, 1.8, 2.0, 2.25])
-art_costs = Array[int]([120, 170, 240, 330, 450, 600, 800])
+art_costs = Array[int]([170, 240, 335, 515, 790, 1180, 1760])
 art_price_step = 0.08
 art_price_dishes = Array[String](["lemon_tea", "banana_tea"])
 art_star_levels = Array[int]([4, 8])

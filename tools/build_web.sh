@@ -16,9 +16,10 @@ unzip -q -o -j "$build_tools/templates.tpz" 'templates/web_*' -d "$templates_dir
 
 # Import and run regressions before publishing anything.
 timeout 180s "$godot" --headless --path . --import
-timeout 120s "$godot" --headless --path . -s tests/run_all.gd
-timeout 30s "$godot" --headless --path . -s tests/render_shop_ui.gd
-timeout 45s "$godot" --headless --path . -s tests/render_tea_business.gd
+# The suite takes ~90 s on a fast machine; Pages builders are slower, so leave room.
+timeout 300s "$godot" --headless --path . -s tests/run_all.gd
+timeout 90s "$godot" --headless --path . -s tests/render_shop_ui.gd
+timeout 120s "$godot" --headless --path . -s tests/render_tea_business.gd
 
 mkdir -p build/web
 touch build/.gdignore

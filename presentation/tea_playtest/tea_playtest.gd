@@ -7,6 +7,9 @@ const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const DragController := preload("res://presentation/tea_playtest/staff_drag_controller.gd")
 const Guide := preload("res://presentation/tea_playtest/guide_overlay.gd")
 const UnlockFrame := preload("res://presentation/tea_playtest/unlock_frame.gd")
+const UpgradeBadge := preload("res://presentation/tea_playtest/upgrade_badge.gd")
+const TuningPanel := preload("res://presentation/tea_playtest/tuning_panel.gd")
+const Recorder := preload("res://presentation/tea_playtest/play_recorder.gd")
 const ART_NAMES := preload("res://presentation/characters/character_library.gd").NAMES
 const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "press": "手打果茶", "seal": "自动封口"}
 ## Machines show no standing text: a bar while working and a bubble only when they need a hand.
@@ -46,7 +49,15 @@ var ui: Control
 ## The tutorial runs only in the real game (a scene that loads its own save); tests inject a sim.
 var guide: Control
 var guide_enabled := false
+## 调参 knobs and the playtest log (written only in the real game, not when tests inject a sim).
+var tuning: PanelContainer
+var tuning_button: Button
+var recorder: RefCounted
 var _station_buttons := {}
+## Red ↑ marks: on each open machine (and the seats chip for the counter) and on the 员工 tab,
+## shown whenever something there can be bought with the coins on hand.
+var _upgrade_marks := {}
+var _staff_mark: Control
 var _lemonade_cup: Node2D
 ## Belt mode shows a plate on every hop that can take a conveyor; drag the chip onto one (or tap it).
 var belt_mode := false
@@ -106,6 +117,7 @@ func _ready() -> void:
 		if node.get_meta("art_layer", "") in ["actors", "drinks"]:
 			node.visible = false
 	_build_ui()
+	_build_tuning()
 	guide = Guide.new()
 	$Overlay/UI.add_child(guide)
 	guide.setup(self, guides_seen)
@@ -169,7 +181,9 @@ func _process(delta: float) -> void:
 		return
 	# Viewing a character freezes business without changing the saved pause flag.
 	if ui.page != "characters" and not guide.freezes():
+		var before: float = sim.elapsed
 		sim.advance(minf(delta, 0.25) * _speed_factor)
+		if recorder != null: recorder.tick(sim.elapsed - before)
 	_refresh(delta)
 	guide.refresh(delta)
 	_fit()
@@ -365,6 +379,36 @@ func _build_ui() -> void:
 	_toast = ui.toast
 
 
+func _build_tuning() -> void:
+	if not sim.has_method("tuned"):
+		return
+	recorder = Recorder.new()
+	recorder.enabled = guide_enabled
+	recorder.setup(sim)
+	tuning = TuningPanel.new()
+	$Overlay/UI.add_child(tuning)
+	tuning.setup(self, guide_enabled)
+	tuning_button = Button.new()
+	tuning_button.name = "Tuning"
+	tuning_button.text = "调参"
+	tuning_button.custom_minimum_size = Vector2(72, 0)
+	tuning_button.add_theme_font_override("font", _font)
+	tuning_button.add_theme_font_size_override("font_size", 22)
+	tuning_button.pressed.connect(tuning.toggle)
+	var row: Node = _speed_button.get_parent()
+	row.add_child(tuning_button)
+	row.move_child(tuning_button, _speed_button.get_index())
+
+
+## The open 调参 panel sits over the kitchen; taps and drags on it never reach the floor.
+func tuning_covers(screen: Vector2) -> bool:
+	return tuning != null and tuning.visible and tuning.get_global_rect().has_point(screen)
+
+
+func _bought(what: String, gold_before: int) -> void:
+	if recorder != null: recorder.log_buy(what, gold_before)
+
+
 func _build_press_table() -> void:
 	var table := Node2D.new()
 	table.name = "PressTable"
@@ -467,10 +511,17 @@ func _label(parent: Node, point: Vector2, size: int) -> Label:
 	return label
 
 
+## A hire goes straight to work (kitchen first, then the counter); drag them onto a post later to change jobs.
 func hire_worker() -> void:
+	if sim.has_method("staff_slots") and not ui.has_staff_room():
+		_show_toast("店里没有空位了，解锁新设备后可以多派伙伴。")
+		return
+	var gold_before: int = sim.gold
 	if sim.hire():
+		_bought("hire", gold_before)
 		selected_worker = int(all_staff().back().id)
-		_show_toast("新伙伴已加入名册，可在员工界面派遣。" if sim.has_method("all_workers") else "新伙伴加入，会自动领取适合的任务。")
+		var deployed: bool = not sim.has_method("deploy_worker") or sim.deploy_worker(selected_worker).is_empty()
+		_show_toast("新伙伴上岗了！拖动伙伴可以换岗位。" if deployed else "新伙伴已加入名册，可在员工界面派遣。")
 		save_now(false)
 	_refresh(0.0)
 
@@ -484,7 +535,9 @@ func _train_selected() -> void:
 
 func buy_staff_upgrade(side: String) -> void:
 	var info: Dictionary = sim.staff_upgrade_info(side)
+	var gold_before: int = sim.gold
 	var error: String = sim.buy_staff_upgrade(side)
+	if error.is_empty(): _bought("staff_%s/%s" % [side, info.name], gold_before)
 	_show_toast(error if not error.is_empty() else "%s升级：%s" % ["前台" if side == "front" else "后厨", info.name])
 	if error.is_empty():
 		save_now(false)
@@ -566,6 +619,7 @@ func toggle_deployment() -> void:
 
 func station_action(action: String, station: String, material := "") -> void:
 	var error := ""
+	var gold_before: int = sim.gold
 	match action:
 		"unlock": error = sim.unlock_station(station)
 		"upgrade": error = sim.upgrade_station(station)
@@ -576,6 +630,8 @@ func station_action(action: String, station: String, material := "") -> void:
 	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了一张座位。", "flyers": "传单发出去了，客人来得更勤了。"}.get(action, "升级完成。")
 	_show_toast(error if not error.is_empty() else done)
 	if error.is_empty():
+		var level: int = sim.station_levels.get(station, 0) if action != "material" else sim.material_levels.get(station, {}).get(material, 0)
+		_bought("%s %s%s Lv%d" % [action, station, ("/" + material) if material != "" else "", level], gold_before)
 		save_now(false)
 	_refresh(0)
 
@@ -600,6 +656,19 @@ func _build_station_signs() -> void:
 		frame.pressed.connect(ui.open_station.bind(FRAME_OPENS.get(id, id)))
 		$Canvas/WorldLabels.add_child(frame)
 		_station_buttons[id] = frame
+	for id in STATION_REGIONS:
+		# The cabinet and the lemonade stand are not processing stations but still level up; only a missing press is skipped.
+		if id == "press" and not sim.stations.has(id):
+			continue
+		var mark := UpgradeBadge.new()
+		var region: Rect2 = STATION_REGIONS[id]
+		mark.center_on(Vector2(region.end.x - 14, region.position.y + 14))
+		$Canvas/WorldLabels.add_child(mark)
+		_upgrade_marks[id] = mark
+	_upgrade_marks.counter = UpgradeBadge.new()
+	_seats.add_child(_upgrade_marks.counter)
+	_staff_mark = UpgradeBadge.new()
+	ui.staff_button.add_child(_staff_mark)
 	# The glass is opaque art, so the cups are children of the case and stand on its upper shelf.
 	_lemonade_cup = Node2D.new()
 	art.get_node("Sortables/DisplayCase").add_child(_lemonade_cup)
@@ -636,14 +705,36 @@ func _refresh_station_signs() -> void:
 		frame.tooltip_text = info.description + "\n" + info.get("unlock_error", "")
 		if id != sign:
 			continue
-		# Before the revenue gate the frame says when it opens; after it, what it costs.
-		var gated: bool = String(info.unlock_error).begins_with("营业额")
 		var title: String = info.get("line_name", info.name) if id == "boil" else info.name
-		frame.text = "%s\n%s" % [title, "营业额 %d 开放" % info.get("unlock_revenue", 0) if gated else "%d 金币" % info.unlock_cost]
+		frame.text = "%s\n%d 金币" % [title, info.unlock_cost]
 	for path in LOCKED_ART:
 		var node: Node2D = art.get_node_or_null(path)
 		if node != null:
 			node.visible = sim.station_unlocked(LOCKED_ART[path])
+	for id in _upgrade_marks:
+		var frame: Button = _station_buttons.get(id)
+		_upgrade_marks[id].visible = can_buy_at(id) and not (frame != null and frame.visible)
+	# Beside the seats chip rather than on it, so the seat count stays readable.
+	_upgrade_marks.counter.center_on(Vector2(_seats.size.x + 16, _seats.size.y / 2.0))
+	_staff_mark.visible = ui.staff_affordable()
+	_staff_mark.center_on(Vector2(ui.staff_button.size.x - 14, 12))
+
+
+## Anything in this machine's panel the player can pay for right now: its next level, an ingredient
+## level, or for the counter a seat or a flyer round. Locked machines use their dashed frame instead.
+func can_buy_at(id: String) -> bool:
+	if not sim.station_unlocked(id):
+		return false
+	if sim._upgrade_error(id).is_empty():
+		return true
+	if id == "counter":
+		return sim.seat_error().is_empty() or sim.flyer_error().is_empty()
+	var definition = sim._definition(id)
+	if definition != null:
+		for material in definition.materials:
+			if sim._material_error(id, material.id).is_empty():
+				return true
+	return false
 
 
 func _belts_offered() -> bool:
@@ -749,7 +840,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	var pressed: bool = event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed
 	pressed = pressed or (event is InputEventScreenTouch and event.pressed)
-	if not pressed or ui.blocks_world(event.position) or _drag.worker_id != -1:
+	if not pressed or ui.blocks_world(event.position) or tuning_covers(event.position) or _drag.worker_id != -1:
 		return
 	var point: Vector2 = $Canvas.get_global_transform_with_canvas().affine_inverse() * event.position
 	for id in STATION_REGIONS:

@@ -35,7 +35,7 @@ func test_opening_and_unlock_validation() -> void:
 	sim.advance(20)
 	check_eq(sim.sold, 0, "locked shop cannot conjure income")
 	var before: Dictionary = sim.to_dict()
-	check(not sim.unlock_station("boil").is_empty(), "milk requires revenue")
+	check(not sim.unlock_station("boil").is_empty(), "the brewer needs the lemonade stand and its price")
 	check_eq(sim.to_dict(), before, "rejected unlock is atomic")
 	check_eq(sim.unlock_station("lemonade"), "", "lemonade unlocks")
 	check_eq(sim.gold, 40, "configured opening cost charged")
@@ -43,8 +43,7 @@ func test_opening_and_unlock_validation() -> void:
 	check(sim.revenue > 0 and sim.gold > 40, "real employee serves lemonade")
 	check(sim.audit().valid, "lemonade is conserved")
 	check(not sim.unlock_station("mix").is_empty(), "milk waits for the black tea line")
-	sim.revenue = 100
-	sim.gold = 100
+	sim.gold = sim.PROGRESSION.stages[1].line_cost
 	check(sim.station_unlocked("supply"), "the cabinet is furniture from the start")
 	check_eq(sim.unlock_station("boil"), "", "brewer unlocks first")
 	check(sim.station_unlocked("boil") and not sim.station_unlocked("seal"), "the brewer opens on its own")
@@ -55,7 +54,8 @@ func test_opening_and_unlock_validation() -> void:
 	check(not sim.unlock_box("tea_leaf").is_empty(), "the box still costs money")
 	sim.gold = 20
 	check_eq(sim.unlock_box("tea_leaf"), "", "tea leaf box unlocks")
-	check(sim._dish_unlocked("black_tea") and sim.pending_box().is_empty(), "black tea goes on sale")
+	check(sim._dish_unlocked("black_tea", false) and sim.pending_box().is_empty(), "black tea can be made once the box is in")
+	check(sim.kitchen_staff() > 0 or not sim._dish_unlocked("black_tea"), "black tea is not ordered while nobody works the kitchen")
 	check(not sim.unlock_box("milk").is_empty(), "the milk box waits for the milk machine")
 	sim.revenue = 10000
 	sim.gold = 10000
@@ -65,7 +65,7 @@ func test_opening_and_unlock_validation() -> void:
 	check_eq(sim.stage_index, 3, "milk tea stage reached")
 	check(not sim._dish_unlocked("plain_milk_tea") and sim.pending_box() == "milk", "milk tea waits for the milk box")
 	check_eq(sim.unlock_box("milk"), "", "milk box unlocks")
-	check(sim._dish_unlocked("plain_milk_tea"), "milk tea goes on sale")
+	check(sim._dish_unlocked("plain_milk_tea", false), "milk tea goes on sale")
 
 func test_black_tea_sells_before_the_milk_machine() -> void:
 	var sim = make_shop()
@@ -420,7 +420,7 @@ func test_sealer_levels_speed_up_and_stars_add_slots() -> void:
 	check_eq(sim.stars("seal"), 2, "the sealer shows two stars at Lv10")
 	check(not sim.upgrade_station("seal").is_empty(), "the sealer stops at Lv10")
 
-func test_price_machines_multiply_and_stars_jump() -> void:
+func test_price_bonuses_add_up_and_stars_jump() -> void:
 	var sim = opened()
 	if sim == null: return
 	sim.gold = 100000
@@ -434,14 +434,17 @@ func test_price_machines_multiply_and_stars_jump() -> void:
 	check(sim.station_info("mix").next_star, "Lv4 → Lv5 is a star upgrade")
 	sim.upgrade_station("mix")
 	check_eq(sim.stars("mix"), 1, "Lv5 earns the first star")
-	check_eq(sim._dish_price("plain_milk_tea"), roundi(base * pow(step, 4) * star), "four price levels and one star")
+	# Bonuses add up instead of multiplying: each level adds one step, each star adds (star - 1).
+	check_eq(sim._dish_price("plain_milk_tea"), roundi(base * (1.0 + 4 * (step - 1.0) + star - 1.0)), "four price levels and one star")
 	for level in range(5, 10): sim.upgrade_station("mix")
 	check_eq(sim.stars("mix"), 2, "Lv10 earns the second star")
-	check_eq(sim._dish_price("plain_milk_tea"), roundi(base * pow(step, 9) * star * star), "nine levels and two stars")
+	check_eq(sim._dish_price("plain_milk_tea"), roundi(base * (1.0 + 9 * (step - 1.0) + 2 * (star - 1.0))), "nine levels and two stars")
 	var lemonade: int = sim._dish_price("lemonade")
-	for level in range(1, 5): check_eq(sim.upgrade_station("lemonade"), "", "lemonade stand upgrades")
-	check(not sim.upgrade_station("lemonade").is_empty(), "the lemonade stand stops at Lv5")
-	check_eq(sim._dish_price("lemonade"), roundi(lemonade * pow(lemon_step, 4) * lemon_star), "the lemonade stand gets its one star at Lv5")
+	var pour: float = sim._speed("lemonade")
+	for level in range(1, 10): check_eq(sim.upgrade_station("lemonade"), "", "lemonade stand upgrades")
+	check(not sim.upgrade_station("lemonade").is_empty(), "the lemonade stand stops at Lv10")
+	check_eq(sim._dish_price("lemonade"), roundi(lemonade * (1.0 + 9 * (lemon_step - 1.0) + 2 * (lemon_star - 1.0))), "lemonade stays worth upgrading: ten levels and two stars")
+	check(sim._speed("lemonade") > pour, "lemonade stand levels also pour faster")
 
 func test_v4_save_refunds_lemonade_levels_above_the_new_cap() -> void:
 	var sim = opened()
@@ -452,8 +455,9 @@ func test_v4_save_refunds_lemonade_levels_above_the_new_cap() -> void:
 	old.stations.boil.capacity = 6
 	var copy = make_shop()
 	check_eq(copy.load_dict(old), "", "a v4 save loads")
-	check_eq(copy.station_levels.lemonade, 5, "the lemonade stand is capped at Lv5")
-	check_eq(copy.gold, old.gold + 75 + 110 + 150, "levels 6 to 8 are refunded at their old prices")
+	# The stand now goes to Lv10, so a v4 Lv8 stand is kept as it is.
+	check_eq(copy.station_levels.lemonade, 8, "lemonade levels within the cap are kept")
+	check_eq(copy.gold, old.gold, "nothing to refund")
 	check_eq(copy.stations.boil.capacity, 12, "the brewer gets room for a six-cup pot")
 
 func test_recalling_every_observed_job_phase_preserves_goods_and_reservations() -> void:
@@ -543,7 +547,8 @@ func test_full_other_flavors_do_not_block_the_requested_flavor() -> void:
 			sim.workers[0].pos = Vector2(530, 430)
 			sim.orders.clear()
 			for id in 3: sim.orders.append({"id": id + 1, "dish": requested, "wait": 0.0, "reserved": false, "takeaway": false})
-			for tick in 300:
+			# The kitchen brews a fresh pot for the order and the front may serve walk-ins too, so allow two minutes.
+			for tick in 1200:
 				sim.advance(0.1)
 				if not sim.audit().valid:
 					check(false, "full other flavors conserve while requested flavor moves: %s" % sim.audit())
@@ -624,9 +629,9 @@ func test_customer_queue_uses_configured_capacity() -> void:
 		for order in sim.orders: order.wait = 0.0
 		sim.advance(0.1)
 	check_eq(sim.orders.size(), capacity, "queue fills to the stage's capacity")
-	check_eq(capacity, 4, "the lemonade stage holds four in line")
+	check_eq(capacity, 3, "the lemonade stage holds three in line (one row, no crowd at the door)")
 	var caps: Array = sim.PROGRESSION.stages.map(func(stage) -> int: return stage.queue_capacity)
-	check_eq(caps, [4, 5, 6, 7, 8, 9], "each stage lets the line grow by one")
+	check_eq(caps, [3, 4, 5, 7, 8, 9], "the line grows with each stage")
 
 func _base_price(sim, dish: String) -> int:
 	for definition in sim.CONFIG.dishes:
@@ -841,12 +846,12 @@ func test_flyers_and_flavors_bring_customers_faster() -> void:
 	for material in sim._definition("topping").materials:
 		if sim._dish_unlocked(material.item_id): flavors += 1
 	check(flavors > 0, "the opened shop sells topped flavors")
-	check(is_equal_approx(sim._order_interval(), base / (1.0 + 0.05 * flavors)), "each flavor on the menu brings customers 5% faster")
+	check(is_equal_approx(sim._order_interval(), base), "flavors make cups dearer; they no longer bring customers faster")
 	var info: Dictionary = sim.station_info("counter")
 	check_eq(info.flyers, 1, "flyers start at Lv1")
 	for level in range(2, 11): check_eq(sim.buy_flyers(), "", "flyers to Lv%d" % level)
 	check(not sim.buy_flyers().is_empty(), "flyers stop at Lv10")
-	check(is_equal_approx(sim._order_interval(), base / (1.0 + 0.05 * flavors) / 1.9), "nine flyer levels bring customers 90% faster")
+	check(is_equal_approx(sim._order_interval(), base / 1.9), "nine flyer levels bring customers 90% faster")
 	var copy = make_shop()
 	check_eq(copy.load_dict(sim.to_dict()), "", "flyer level saves")
 	check_eq(copy.flyers, 10, "flyer level loads")
@@ -1172,3 +1177,57 @@ func test_v8_save_loads_with_the_press_table_still_locked() -> void:
 	check_eq(copy.station_levels.press, 1, "at Lv1")
 	for tick in 600: copy.advance(0.1)
 	check(copy.audit().valid and copy.sold > old.sold, "the loaded shop keeps selling")
+
+func test_new_dishes_and_takeaway_ease_in_over_a_dozen_customers() -> void:
+	var sim = opened()
+	if sim == null: return
+	var full: Dictionary = sim.PROGRESSION.stages[sim.stage_index].order_weights
+	var weights: Dictionary = sim.order_weights()
+	check(is_equal_approx(weights.pearl_milk_tea, full.pearl_milk_tea * sim.RAMP_START), "a dish that just opened starts at a quarter of its weight")
+	check(is_equal_approx(sim.takeaway_share(), sim.PROGRESSION.stages[sim.stage_index].takeaway_share * sim.RAMP_START), "takeaway starts low when the sealer opens")
+	for i in sim.RAMP_ORDERS: sim._add_order()
+	weights = sim.order_weights()
+	check(is_equal_approx(weights.pearl_milk_tea, full.pearl_milk_tea), "after a dozen customers the dish has its full weight")
+	check(is_equal_approx(sim.takeaway_share(), sim.PROGRESSION.stages[sim.stage_index].takeaway_share), "takeaway reaches its full share too")
+	check(not weights.has("banana_tea"), "dishes not on the menu get no weight")
+	check_eq(sim.order_ramp.banana_tea, 0, "a closed dish does not count customers yet")
+	var copy = make_shop()
+	check_eq(copy.load_dict(sim.to_dict()), "", "the ease-in counters save")
+	check_eq(copy.order_ramp, sim.order_ramp, "the ease-in counters load")
+
+func test_v9_save_counts_open_dishes_as_eased_in() -> void:
+	var sim = opened()
+	if sim == null: return
+	var state: Dictionary = sim.to_dict()
+	state.version = 9
+	state.erase("order_ramp")
+	var copy = make_shop()
+	check_eq(copy.load_dict(state), "", "a v9 save loads")
+	check_eq(copy.order_ramp.pearl_milk_tea, copy.RAMP_ORDERS, "dishes already sold keep their full weight")
+	check_eq(copy.order_ramp.takeaway, copy.RAMP_ORDERS, "takeaway keeps its full share")
+	check_eq(copy.order_ramp.lemon_tea, 0, "a dish that opens later still eases in")
+
+func test_dine_in_customers_sit_shorter_early_and_longer_later() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	check(sim.seat_seconds(0) < sim.seat_seconds(sim.PROGRESSION.stages.size() - 1), "early customers leave their seat sooner than late ones")
+	check(is_equal_approx(sim.seat_seconds(), sim.seat_seconds(0)), "the current stage sets how long a customer sits")
+
+
+## 2026-11-02 playtest: brewer bought with the last coins, no kitchen hand, and black tea orders filled
+## the queue for good (customers never leave), so lemonade stopped selling and hiring was out of reach.
+func test_kitchen_drinks_wait_for_a_kitchen_hand_so_lemonade_keeps_selling() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.unlock_station("lemonade")
+	sim.gold = sim.PROGRESSION.stages[1].line_cost + 20
+	check_eq(sim.unlock_station("boil"), "", "brewer bought")
+	check_eq(sim.unlock_box("tea_leaf"), "", "tea leaf box bought")
+	check_eq(sim.kitchen_staff(), 0, "only the counter worker so far")
+	sim.advance(600.0)
+	check(sim.orders.all(func(order: Dictionary) -> bool: return order.dish == "lemonade"), "only lemonade is ordered without a kitchen hand")
+	check(sim.gold >= sim.hire_cost(), "lemonade earns enough to hire the first kitchen hand")
+	check(sim.hire(), "the kitchen hand can be hired")
+	for worker in sim.all_workers():
+		if not worker.deployed: sim.deploy_worker(worker.id)
+	check(sim._dish_unlocked("black_tea"), "black tea goes on sale once someone works the kitchen")
