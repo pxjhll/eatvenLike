@@ -1096,7 +1096,8 @@ func test_a_follower_presses_the_fruit_tea_it_was_ordered_by_hand() -> void:
 func test_the_press_table_sells_fruit_teas_in_a_busy_shop() -> void:
 	var sim = _press_line(4)
 	if sim == null: return
-	for tick in 4000:
+	# Ten minutes: since sealed cups also make a trip to the shelf, the brewer-bound line needs a little longer.
+	for tick in 6000:
 		sim.advance(0.1)
 		if tick % 50 == 0 and not sim.audit().valid:
 			check(false, "busy shop conserves: %s" % [sim.audit().errors])
@@ -1231,3 +1232,44 @@ func test_kitchen_drinks_wait_for_a_kitchen_hand_so_lemonade_keeps_selling() -> 
 	for worker in sim.all_workers():
 		if not worker.deployed: sim.deploy_worker(worker.id)
 	check(sim._dish_unlocked("black_tea"), "black tea goes on sale once someone works the kitchen")
+
+
+## Item 16 (option B): the kitchen seals takeaway cups and puts them on the shelf's takeaway rack;
+## the front picks up only at the shelf and the lemonade stand, never in the kitchen.
+func test_sealed_takeaway_cups_go_to_the_shelf_rack_and_the_front_never_enters_the_kitchen() -> void:
+	var sim = opened()
+	if sim == null: return
+	var wanted: int = sim._next_order
+	sim.orders = [{"id": wanted, "dish": "plain_milk_tea", "wait": 0.0, "reserved": false, "takeaway": true}]
+	sim._next_order += 1
+	var racked := false
+	var front_sources := {}
+	for tick in 1500:
+		sim.advance(0.1)
+		for worker in sim.workers:
+			if worker.job.is_empty(): continue
+			if worker.post == "counter": front_sources[worker.job.src] = true
+			if worker.job.kind == "carry_to_pickup":
+				check(worker.post != "counter", "kitchen staff carry sealed cups to the rack")
+				racked = true
+		if not sim.orders.any(func(order: Dictionary) -> bool: return order.id == wanted): break
+	check(racked, "the sealed cup was carried to the shelf's takeaway rack")
+	check(not sim.orders.any(func(order: Dictionary) -> bool: return order.id == wanted), "the takeaway customer got their cup")
+	check(not front_sources.has("seal"), "the front never fetches from the sealer")
+	check(front_sources.has("pickup"), "the front picks the sealed cup up at the shelf")
+	check_eq(sim._source_point({"kind": "serve", "src": "pickup", "dst": "counter", "item": "plain_milk_tea", "count": 1}), sim.Layout.POINTS.shelf, "the rack is where the shelf is")
+	check(sim.audit().valid, "goods are conserved: %s" % [sim.audit().errors])
+	var copy = make_shop()
+	check_eq(copy.load_dict(sim.to_dict()), "", "the rack saves and loads")
+
+func test_v10_save_gets_an_empty_takeaway_rack() -> void:
+	var sim = opened()
+	if sim == null: return
+	sim.advance(30.0)
+	var state: Dictionary = sim.to_dict()
+	state.version = 10
+	state.stations.erase("pickup")
+	var copy = make_shop()
+	check_eq(copy.load_dict(state), "", "a v10 save loads")
+	check(copy.stations.has("pickup"), "the takeaway rack is added")
+	check_eq(copy.stations.pickup.capacity, copy.PICKUP_CAPACITY, "with its normal size")
