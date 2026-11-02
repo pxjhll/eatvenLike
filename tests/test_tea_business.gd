@@ -1101,6 +1101,13 @@ func test_the_sealer_conveyor_carries_takeaway_cups_to_the_rack() -> void:
 			check(false, "belted takeaway conserves: %s" % [sim.audit().errors])
 			return
 	check(shipped > 0, "sealed cups ride the conveyor")
+	# A cup on the conveyor still covers its order: nobody packs or makes a second one meanwhile.
+	var need: int = sim._pack_need("black_tea")
+	var supply: int = sim._kitchen_supply().black_tea
+	sim.belt_items.append({"route": "seal_to_shelf", "item": "black_tea", "count": 1, "progress": 0.0, "duration": 3.0, "dst": "pickup"})
+	check_eq(sim._pack_need("black_tea"), need - 1, "a cup on the conveyor counts as packed")
+	check_eq(sim._kitchen_supply().black_tea, supply + 1, "a cup on the conveyor counts as made")
+	sim.belt_items.pop_back()
 	check_eq(hand_carried, 0, "nobody carries sealed cups to the rack by hand")
 	check(sim.sold > 0 and sim.audit().valid, "the shop keeps selling")
 	var copy = make_shop()

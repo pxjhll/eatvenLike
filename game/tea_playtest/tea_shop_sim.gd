@@ -1078,9 +1078,17 @@ func _sealed_supply(dish: String) -> int:
 	var count: int = int(seal.input[dish]) + int(seal.output[dish]) - int(seal.reserved_out.get(dish, 0))
 	count += int(pickup.output[dish]) - int(pickup.reserved_out.get(dish, 0))
 	if seal.processing_item == dish: count += seal.processing
+	count += _riding_to_pickup(dish)
 	for other in workers:
 		if other.job.is_empty() or _shelf_item(other.job.item) != dish: continue
 		if other.job.kind in ["carry_to_seal", "carry_to_pickup"]: count += other.job.count
+	return count
+
+## Sealed cups of a drink on the conveyor to the takeaway rack: already packed, just not there yet.
+func _riding_to_pickup(dish: String) -> int:
+	var count := 0
+	for shipment in belt_items:
+		if shipment.dst == "pickup" and shipment.item == dish: count += shipment.count
 	return count
 
 ## A takeaway cup is fetched from the shelf and carried to the sealer; sealed cups go on to the
@@ -1188,6 +1196,7 @@ func _kitchen_supply() -> Dictionary:
 		supply[dish] += maxi(0, _available("shelf", dish)) + int(seal.input[dish]) + int(seal.output[dish]) - int(seal.reserved_out.get(dish, 0))
 		supply[dish] += int(pickup.output[dish]) - int(pickup.reserved_out.get(dish, 0))
 		if seal.processing_item == dish: supply[dish] += seal.processing
+		supply[dish] += _riding_to_pickup(dish)
 	for worker in workers:
 		if not worker.ticket.is_empty(): supply[worker.ticket.dish] += worker.ticket.count
 		elif not worker.job.is_empty() and worker.job.kind == "carry_to_seal" and worker.job.src == "shelf": supply[worker.job.item] += worker.job.count
