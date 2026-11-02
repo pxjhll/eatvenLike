@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://btpdqsmcljshn" path="res://art/reference/machine_table.png" id="6_800ag"]
 [ext_resource type="Texture2D" uid="uid://yn43tj283pib" path="res://art/reference/pearl_pot.png" id="7_vlf75"]
 [ext_resource type="Texture2D" uid="uid://dmq8oyxxkopw" path="res://art/reference/brewer.png" id="8_j0eya"]
+[ext_resource type="Texture2D" path="res://art/reference/brewing_pipe.png" id="34_brewing_pipe"]
 [ext_resource type="Texture2D" uid="uid://ccemu78roxfpj" path="res://art/reference/belt_horizontal.png" id="9_trs6r"]
 [ext_resource type="Texture2D" uid="uid://cxccjllxebcm7" path="res://art/reference/belt_vertical.png" id="10_tx7yf"]
 [ext_resource type="Texture2D" uid="uid://qu76nck2himv" path="res://art/reference/belt_corner.png" id="11_ynukg"]
@@ -96,18 +97,29 @@ texture = ExtResource("5_ba0ta")
 centered = false
 
 [node name="MachineTable" type="Node2D" parent="Sortables" unique_id=1165223491]
-position = Vector2(381, 298)
+position = Vector2(381, 320)
 metadata/art_layer = "furniture"
 metadata/asset_id = "machine_table"
 
 [node name="Sprite" type="Sprite2D" parent="Sortables/MachineTable" unique_id=1433537560]
-position = Vector2(-140, -80.89)
-scale = Vector2(0.39, 0.39)
+position = Vector2(-224, -133)
+scale = Vector2(0.64, 0.64)
 texture = ExtResource("6_800ag")
 centered = false
 
+[node name="ConnectorPipe" type="Node2D" parent="Sortables/MachineTable"]
+visible = false
+metadata/art_layer = "equipment"
+metadata/asset_id = "brewing_pipe"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/MachineTable/ConnectorPipe"]
+position = Vector2(-57, -221)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("34_brewing_pipe")
+centered = false
+
 [node name="Brewer" type="Node2D" parent="Sortables/MachineTable" unique_id=1217752630]
-position = Vector2(86.5, -30)
+position = Vector2(86.5, -72)
 metadata/art_layer = "equipment"
 metadata/asset_id = "brewer"
 
@@ -118,7 +130,7 @@ texture = ExtResource("8_j0eya")
 centered = false
 
 [node name="PearlPot" type="Node2D" parent="Sortables/MachineTable" unique_id=1069753232]
-position = Vector2(-49, -36)
+position = Vector2(-49, -52)
 metadata/art_layer = "equipment"
 metadata/asset_id = "pearl_pot"
 

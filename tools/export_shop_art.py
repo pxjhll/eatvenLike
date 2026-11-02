@@ -18,7 +18,7 @@ def export(row, baseline):
     source = source.crop(bbox)
     original = baseline.get(destination.name)
     width, height = original["size"] if original else row["size"]
-    bounds = original["alpha_bbox"] if original else [int(width * .03), int(height * .03), int(width * .97), int(height * .97)]
+    bounds = row.get("fit_bounds", original["alpha_bbox"] if original else [int(width * .03), int(height * .03), int(width * .97), int(height * .97)])
     left, top, right, bottom = bounds
     factor = min((right - left) / source.width, (bottom - top) / source.height)
     size = (max(1, round(source.width * factor)), max(1, round(source.height * factor)))
@@ -38,4 +38,8 @@ if __name__ == "__main__":
     data = json.loads(args.manifest.read_text(encoding="utf-8"))
     baseline = json.loads(Path("art_src/shop_layout_2026_11/baseline-sizes.json").read_text(encoding="utf-8"))
     results = [export(row, baseline) for row in data["assets"]]
+    if data.get("apply_reference_palette", False):
+        from recolor_shop_art import WOOD, recolor
+        for asset in ["back_wall", "floor", *WOOD]:
+            recolor(asset)
     print(json.dumps(results, ensure_ascii=False, indent=2))

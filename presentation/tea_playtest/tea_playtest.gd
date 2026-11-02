@@ -94,6 +94,7 @@ const FRAME_OPENS := {"shelf": "boil"}
 const LOCKED_ART := {
 	"Sortables/IngredientTable": "supply", "Sortables/MachineTable": "boil",
 	"Sortables/MachineTable/PearlPot": "boil", "Sortables/MachineTable/Brewer": "mix",
+	"Sortables/MachineTable/ConnectorPipe": "mix",
 	"Sortables/PrepBench": "topping", "Sortables/Sealer": "seal", "Sortables/Rack": "boil",
 	"Sortables/DisplayCase": "lemonade", "Sortables/PressTable": "press",
 	"Sortables/LemonadeTable": "lemonade", "Sortables/Checkout/FrontLemon": "lemon_front",

@@ -29,6 +29,10 @@ func _run() -> void:
 	view._process(0)
 	_check(not view._toast.visible, "front lemonade and hand muddling need no kitchen employee")
 	_check(view.sim.unlock_station("boil").is_empty(), "unlock first kitchen line")
+	var pipe: Node2D = view.art.get_node_or_null("Sortables/MachineTable/ConnectorPipe")
+	_check(pipe != null, "brewing and milk mixing have an independent rear connector pipe")
+	view._refresh(0)
+	if pipe != null: _check(not pipe.visible, "connector pipe waits for the milk machine to open")
 	view._process(0)
 	_check(view._toast.visible, "unattended unlocked kitchen still shows staffing warning")
 	view.sim.hire()
@@ -48,6 +52,7 @@ func _run() -> void:
 	view.sim.diners = [{"seat": 0, "dish": "lemonade", "left": 20.0}, {"seat": 3, "dish": "black_tea", "left": 20.0}, {"seat": 5, "dish": "lemon_tea", "left": 20.0}, {"seat": 6, "dish": "banana_tea", "left": 20.0}]
 	view._refresh(10.0)
 	_check_props_on_supports()
+	_check_brewing_assembly()
 	_check(view.art.get_node("Sortables/DiningArea").occupied_seats() == [0, 3, 5, 6], "four real diner records occupy their assigned chairs")
 	await _world_click(Vector2(335, 774))
 	_check(view.ui.page == "station" and view.ui.station_panel.station_id == "lemon_front", "clicking the independent front workstation opens its own panel")
@@ -105,6 +110,24 @@ func _check_props_on_supports() -> void:
 	_check(dispenser.end.y >= support.position.y and dispenser.end.y < support.end.y, "lemonade machine rests on its independent table")
 	_check(dispenser.size.x > 90 * view.get_node("Canvas").scale.x, "lemonade machine remains readable despite transparent canvas padding")
 	_check(not _opaque_rect(sorted.get_node("PrepBench/Tongs/Sprite")).intersects(_opaque_rect(sorted.get_node("PrepBench/Tray/Sprite"))), "tongs remain visible beside the topping containers")
+
+func _check_brewing_assembly() -> void:
+	var assembly: Node2D = view.art.get_node("Sortables/MachineTable")
+	var pipe := assembly.get_node_or_null("ConnectorPipe")
+	_check(pipe != null, "the brewing assembly includes its separate connector")
+	if pipe == null: return
+	_check(pipe.visible and pipe.get_index() < assembly.get_node("Brewer").get_index() and pipe.get_index() < assembly.get_node("PearlPot").get_index(), "pipe opens with the mixer and draws behind both machines")
+	var factor: float = view.get_node("Canvas").scale.x
+	var cabinet := _opaque_rect(assembly.get_node("Sprite"))
+	_check(cabinet.size.y > 60 * factor, "powered cabinet has a substantial body, not a thin bench")
+	for child in ["PearlPot", "Brewer"]:
+		var machine := _opaque_rect(assembly.get_node(child + "/Sprite"))
+		_check(machine.position.x >= cabinet.position.x and machine.end.x <= cabinet.end.x, "cabinet supports the full width of " + child)
+		_check(machine.end.y >= cabinet.position.y and machine.end.y <= cabinet.position.y + cabinet.size.y * 0.65, "machine rests on the cabinet top: " + child)
+	var connector := _opaque_rect(pipe.get_node("Sprite"))
+	var pot := _opaque_rect(assembly.get_node("PearlPot/Sprite"))
+	var mixer := _opaque_rect(assembly.get_node("Brewer/Sprite"))
+	_check(connector.intersects(pot) and connector.intersects(mixer), "both pipe ends overlap the appliance silhouettes rather than floating")
 
 func _opaque_rect(sprite: Sprite2D) -> Rect2:
 	var used := Rect2(sprite.texture.get_image().get_used_rect())
