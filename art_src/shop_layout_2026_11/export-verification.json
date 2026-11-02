@@ -1,0 +1,184 @@
+{
+  "original_pngs_checked": 31,
+  "replaced_pngs": 16,
+  "independent_generated_assets": 32,
+  "failures": [],
+  "replacements": [
+    {
+      "file": "art/reference/ingredient_table.png",
+      "original": [
+        480,
+        225
+      ],
+      "final": [
+        480,
+        225
+      ]
+    },
+    {
+      "file": "art/reference/pearl_jar.png",
+      "original": [
+        224,
+        208
+      ],
+      "final": [
+        224,
+        208
+      ]
+    },
+    {
+      "file": "art/reference/tea_tin.png",
+      "original": [
+        179,
+        244
+      ],
+      "final": [
+        179,
+        244
+      ]
+    },
+    {
+      "file": "art/reference/checkout.png",
+      "original": [
+        1400,
+        280
+      ],
+      "final": [
+        1400,
+        280
+      ]
+    },
+    {
+      "file": "art/reference/register.png",
+      "original": [
+        335,
+        245
+      ],
+      "final": [
+        335,
+        245
+      ]
+    },
+    {
+      "file": "art/reference/display_case.png",
+      "original": [
+        520,
+        380
+      ],
+      "final": [
+        520,
+        380
+      ]
+    },
+    {
+      "file": "art/reference/milk_bottle.png",
+      "original": [
+        135,
+        221
+      ],
+      "final": [
+        135,
+        221
+      ]
+    },
+    {
+      "file": "art/reference/prep_bench.png",
+      "original": [
+        313,
+        892
+      ],
+      "final": [
+        313,
+        892
+      ]
+    },
+    {
+      "file": "art/reference/machine_table.png",
+      "original": [
+        717,
+        208
+      ],
+      "final": [
+        717,
+        208
+      ]
+    },
+    {
+      "file": "art/reference/pearl_pot.png",
+      "original": [
+        451,
+        342
+      ],
+      "final": [
+        451,
+        342
+      ]
+    },
+    {
+      "file": "art/reference/brewer.png",
+      "original": [
+        314,
+        369
+      ],
+      "final": [
+        314,
+        369
+      ]
+    },
+    {
+      "file": "art/reference/belt_horizontal.png",
+      "original": [
+        748,
+        369
+      ],
+      "final": [
+        748,
+        369
+      ]
+    },
+    {
+      "file": "art/reference/belt_vertical.png",
+      "original": [
+        385,
+        695
+      ],
+      "final": [
+        385,
+        695
+      ]
+    },
+    {
+      "file": "art/reference/belt_corner.png",
+      "original": [
+        318,
+        282
+      ],
+      "final": [
+        318,
+        282
+      ]
+    },
+    {
+      "file": "art/reference/sealer.png",
+      "original": [
+        417,
+        495
+      ],
+      "final": [
+        417,
+        495
+      ]
+    },
+    {
+      "file": "art/reference/rack.png",
+      "original": [
+        390,
+        380
+      ],
+      "final": [
+        390,
+        380
+      ]
+    }
+  ]
+}

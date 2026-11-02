@@ -1,0 +1,541 @@
+{
+  "method": "Grouped built-in image_gen sheets, then separate RGBA export onto exact original canvases",
+  "assets": [
+    {
+      "id": "ingredient_table",
+      "source": "art_src/shop_layout_2026_11/sources/exec-79eae50d-cd3f-4bbb-9bc3-de6cf3448137.png",
+      "destination": "art/reference/ingredient_table.png",
+      "size": [
+        480,
+        225
+      ],
+      "prompt": "Create ONE independent isolated transparent RGBA sprite for a 2D cozy cartoon tea shop game. Use attached image ONLY as design and art style reference. Refined clean hand-painted illustration, rounded friendly shapes, dark warm brown contour of consistent thickness, warm wood and cream colors, gentle upper-left light, simple readable material highlights. Orthographic projection with fixed slightly elevated front viewing angle matching reference: horizontal edges parallel, verticals parallel, no perspective convergence, no isometric diamond view. Complete object fully visible, modest transparent padding, background truly alpha transparent, not checkerboard or black fill. No text, annotation, characters, environment or additional objects. No outer glow, no vignette or cast shadows extending far beyond object. Specific asset: A small EMPTY horizontal wooden ingredient table, bare clean rectangular top and short sturdy legs. No jars or objects. Wide low front view, ratio 2.1:1.",
+      "crop": [
+        330,
+        710,
+        1210,
+        1010
+      ]
+    },
+    {
+      "id": "pearl_jar",
+      "source": "art_src/shop_layout_2026_11/sources/exec-2f48e65c-f07c-451e-b9f3-de2fd1c66716.png",
+      "destination": "art/reference/pearl_jar.png",
+      "size": [
+        224,
+        208
+      ],
+      "prompt": "Create ONE independent isolated transparent RGBA sprite for a 2D cozy cartoon tea shop game. Use attached image ONLY as design and art style reference. Refined clean hand-painted illustration, rounded friendly shapes, dark warm brown contour of consistent thickness, warm wood and cream colors, gentle upper-left light, simple readable material highlights. Orthographic projection with fixed slightly elevated front viewing angle matching reference: horizontal edges parallel, verticals parallel, no perspective convergence, no isometric diamond view. Complete object fully visible, modest transparent padding, background truly alpha transparent, not checkerboard or black fill. No text, annotation, characters, environment or additional objects. No outer glow, no vignette or cast shadows extending far beyond object. Specific asset: One clear short wide open glass jar filled with dark brown tapioca pearls. No table. Ratio width to height about 1.08."
+    },
+    {
+      "id": "tea_tin",
+      "source": "art_src/shop_layout_2026_11/sources/exec-7506d1f9-c9a7-4830-90c2-063fba8ed481.png",
+      "destination": "art/reference/tea_tin.png",
+      "size": [
+        179,
+        244
+      ],
+      "prompt": "Create ONE independent isolated transparent RGBA sprite for a 2D cozy cartoon tea shop game. Use attached image ONLY as design and art style reference. Refined clean hand-painted illustration, rounded friendly shapes, dark warm brown contour of consistent thickness, warm wood and cream colors, gentle upper-left light, simple readable material highlights. Orthographic projection with fixed slightly elevated front viewing angle matching reference: horizontal edges parallel, verticals parallel, no perspective convergence, no isometric diamond view. Complete object fully visible, modest transparent padding, background truly alpha transparent, not checkerboard or black fill. No text, annotation, characters, environment or additional objects. No outer glow, no vignette or cast shadows extending far beyond object. Specific asset: One cylindrical green tea-leaf tin with warm wooden brown lid, simple single leaf emblem, no lettering. Ratio .73:1."
+    },
+    {
+      "id": "checkout",
+      "destination": "art/reference/checkout.png",
+      "size": [
+        1400,
+        280
+      ],
+      "row": 0,
+      "col": 0,
+      "source": "art_src/shop_layout_2026_11/sources/exec-79eae50d-cd3f-4bbb-9bc3-de6cf3448137.png",
+      "crop": [
+        0,
+        80,
+        1536,
+        310
+      ]
+    },
+    {
+      "id": "register",
+      "destination": "art/reference/register.png",
+      "size": [
+        335,
+        245
+      ],
+      "row": 0,
+      "col": 1,
+      "source": "art_src/shop_layout_2026_11/sources/exec-f36558a8-d4dc-4e16-826a-644a945f64e3.png",
+      "crop": [
+        418,
+        0,
+        836,
+        418
+      ]
+    },
+    {
+      "id": "display_case",
+      "destination": "art/reference/display_case.png",
+      "size": [
+        520,
+        380
+      ],
+      "row": 0,
+      "col": 2,
+      "source": "art_src/shop_layout_2026_11/sources/exec-f36558a8-d4dc-4e16-826a-644a945f64e3.png",
+      "crop": [
+        836,
+        0,
+        1254,
+        418
+      ]
+    },
+    {
+      "id": "dining_table",
+      "destination": "art/reference/dining_table.png",
+      "size": [
+        400,
+        310
+      ],
+      "row": 1,
+      "col": 0,
+      "source": "art_src/shop_layout_2026_11/sources/exec-f36558a8-d4dc-4e16-826a-644a945f64e3.png",
+      "crop": [
+        0,
+        418,
+        418,
+        836
+      ]
+    },
+    {
+      "id": "dining_chair_left",
+      "destination": "art/reference/dining_chair_left.png",
+      "size": [
+        240,
+        350
+      ],
+      "row": 1,
+      "col": 1,
+      "source": "art_src/shop_layout_2026_11/sources/exec-f36558a8-d4dc-4e16-826a-644a945f64e3.png",
+      "crop": [
+        418,
+        418,
+        836,
+        836
+      ]
+    },
+    {
+      "id": "dining_chair_right",
+      "destination": "art/reference/dining_chair_right.png",
+      "size": [
+        240,
+        350
+      ],
+      "row": 1,
+      "col": 2,
+      "source": "art_src/shop_layout_2026_11/sources/exec-f36558a8-d4dc-4e16-826a-644a945f64e3.png",
+      "crop": [
+        836,
+        418,
+        1254,
+        836
+      ]
+    },
+    {
+      "id": "lemonade_display_table",
+      "destination": "art/reference/lemonade_display_table.png",
+      "size": [
+        600,
+        220
+      ],
+      "row": 2,
+      "col": 0,
+      "source": "art_src/shop_layout_2026_11/sources/exec-f36558a8-d4dc-4e16-826a-644a945f64e3.png",
+      "crop": [
+        0,
+        836,
+        418,
+        1254
+      ]
+    },
+    {
+      "id": "milk_bottle",
+      "destination": "art/reference/milk_bottle.png",
+      "size": [
+        135,
+        221
+      ],
+      "row": 2,
+      "col": 1,
+      "source": "art_src/shop_layout_2026_11/sources/exec-f36558a8-d4dc-4e16-826a-644a945f64e3.png",
+      "crop": [
+        418,
+        836,
+        836,
+        1254
+      ]
+    },
+    {
+      "id": "prep_bench",
+      "destination": "art/reference/prep_bench.png",
+      "size": [
+        313,
+        892
+      ],
+      "row": 0,
+      "col": 0,
+      "source": "art_src/shop_layout_2026_11/sources/exec-60214bcc-fe20-449e-9585-62e5a74a55f1.png",
+      "crop": [
+        0,
+        0,
+        418,
+        418
+      ]
+    },
+    {
+      "id": "machine_table",
+      "destination": "art/reference/machine_table.png",
+      "size": [
+        717,
+        208
+      ],
+      "row": 0,
+      "col": 1,
+      "source": "art_src/shop_layout_2026_11/sources/exec-79eae50d-cd3f-4bbb-9bc3-de6cf3448137.png",
+      "crop": [
+        0,
+        390,
+        1536,
+        670
+      ]
+    },
+    {
+      "id": "pearl_pot",
+      "destination": "art/reference/pearl_pot.png",
+      "size": [
+        451,
+        342
+      ],
+      "row": 0,
+      "col": 2,
+      "source": "art_src/shop_layout_2026_11/sources/exec-60214bcc-fe20-449e-9585-62e5a74a55f1.png",
+      "crop": [
+        836,
+        0,
+        1254,
+        418
+      ]
+    },
+    {
+      "id": "brewer",
+      "destination": "art/reference/brewer.png",
+      "size": [
+        314,
+        369
+      ],
+      "row": 1,
+      "col": 0,
+      "source": "art_src/shop_layout_2026_11/sources/exec-60214bcc-fe20-449e-9585-62e5a74a55f1.png",
+      "crop": [
+        0,
+        418,
+        418,
+        836
+      ]
+    },
+    {
+      "id": "belt_horizontal",
+      "destination": "art/reference/belt_horizontal.png",
+      "size": [
+        748,
+        369
+      ],
+      "row": 1,
+      "col": 1,
+      "source": "art_src/shop_layout_2026_11/sources/exec-60214bcc-fe20-449e-9585-62e5a74a55f1.png",
+      "crop": [
+        418,
+        418,
+        836,
+        836
+      ]
+    },
+    {
+      "id": "belt_vertical",
+      "destination": "art/reference/belt_vertical.png",
+      "size": [
+        385,
+        695
+      ],
+      "row": 1,
+      "col": 2,
+      "source": "art_src/shop_layout_2026_11/sources/exec-60214bcc-fe20-449e-9585-62e5a74a55f1.png",
+      "crop": [
+        836,
+        418,
+        1254,
+        836
+      ]
+    },
+    {
+      "id": "belt_corner",
+      "destination": "art/reference/belt_corner.png",
+      "size": [
+        318,
+        282
+      ],
+      "row": 2,
+      "col": 0,
+      "source": "art_src/shop_layout_2026_11/sources/exec-60214bcc-fe20-449e-9585-62e5a74a55f1.png",
+      "crop": [
+        0,
+        836,
+        418,
+        1254
+      ]
+    },
+    {
+      "id": "sealer",
+      "destination": "art/reference/sealer.png",
+      "size": [
+        417,
+        495
+      ],
+      "row": 2,
+      "col": 1,
+      "source": "art_src/shop_layout_2026_11/sources/exec-60214bcc-fe20-449e-9585-62e5a74a55f1.png",
+      "crop": [
+        418,
+        836,
+        836,
+        1254
+      ]
+    },
+    {
+      "id": "rack",
+      "destination": "art/reference/rack.png",
+      "size": [
+        390,
+        380
+      ],
+      "row": 2,
+      "col": 2,
+      "source": "art_src/shop_layout_2026_11/sources/exec-60214bcc-fe20-449e-9585-62e5a74a55f1.png",
+      "crop": [
+        836,
+        836,
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "lemon_muddler",
+      "destination": "art/reference/lemon_muddler.png",
+      "size": [
+        90,
+        280
+      ],
+      "row": 0,
+      "col": 0,
+      "source": "art_src/shop_layout_2026_11/sources/exec-e3dc4285-aa73-4201-abb1-2f3a71e2c154.png",
+      "crop": [
+        0,
+        0,
+        418,
+        627
+      ]
+    },
+    {
+      "id": "lemon_ice_bin",
+      "destination": "art/reference/lemon_ice_bin.png",
+      "size": [
+        200,
+        180
+      ],
+      "row": 0,
+      "col": 1,
+      "source": "art_src/shop_layout_2026_11/sources/exec-e3dc4285-aa73-4201-abb1-2f3a71e2c154.png",
+      "crop": [
+        418,
+        0,
+        836,
+        627
+      ]
+    },
+    {
+      "id": "lemon_steel_cup",
+      "destination": "art/reference/lemon_steel_cup.png",
+      "size": [
+        170,
+        240
+      ],
+      "row": 0,
+      "col": 2,
+      "source": "art_src/shop_layout_2026_11/sources/exec-e3dc4285-aa73-4201-abb1-2f3a71e2c154.png",
+      "crop": [
+        836,
+        0,
+        1254,
+        627
+      ]
+    },
+    {
+      "id": "lemon_small_cup",
+      "destination": "art/reference/lemon_small_cup.png",
+      "size": [
+        120,
+        150
+      ],
+      "row": 1,
+      "col": 0,
+      "source": "art_src/shop_layout_2026_11/sources/exec-e3dc4285-aa73-4201-abb1-2f3a71e2c154.png",
+      "crop": [
+        0,
+        627,
+        418,
+        1254
+      ]
+    },
+    {
+      "id": "counter_red_device",
+      "destination": "art/reference/counter_red_device.png",
+      "size": [
+        200,
+        200
+      ],
+      "row": 1,
+      "col": 1,
+      "source": "art_src/shop_layout_2026_11/sources/exec-e3dc4285-aa73-4201-abb1-2f3a71e2c154.png",
+      "crop": [
+        418,
+        627,
+        836,
+        1254
+      ]
+    },
+    {
+      "id": "topping_green_box",
+      "destination": "art/reference/topping_green_box.png",
+      "size": [
+        180,
+        180
+      ],
+      "row": 0,
+      "col": 0,
+      "source": "art_src/shop_layout_2026_11/sources/exec-d79a048d-494e-4147-ace0-8ab35bb969b1.png",
+      "crop": [
+        0,
+        0,
+        418,
+        418
+      ]
+    },
+    {
+      "id": "topping_coconut_jar",
+      "destination": "art/reference/topping_coconut_jar.png",
+      "size": [
+        150,
+        210
+      ],
+      "row": 0,
+      "col": 1,
+      "source": "art_src/shop_layout_2026_11/sources/exec-d79a048d-494e-4147-ace0-8ab35bb969b1.png",
+      "crop": [
+        418,
+        0,
+        836,
+        418
+      ]
+    },
+    {
+      "id": "topping_powder_jar",
+      "destination": "art/reference/topping_powder_jar.png",
+      "size": [
+        110,
+        160
+      ],
+      "row": 0,
+      "col": 2,
+      "source": "art_src/shop_layout_2026_11/sources/exec-d79a048d-494e-4147-ace0-8ab35bb969b1.png",
+      "crop": [
+        836,
+        0,
+        1254,
+        418
+      ]
+    },
+    {
+      "id": "topping_tongs",
+      "destination": "art/reference/topping_tongs.png",
+      "size": [
+        200,
+        120
+      ],
+      "row": 1,
+      "col": 0,
+      "source": "art_src/shop_layout_2026_11/sources/exec-d79a048d-494e-4147-ace0-8ab35bb969b1.png",
+      "crop": [
+        0,
+        418,
+        418,
+        836
+      ]
+    },
+    {
+      "id": "topping_tray",
+      "destination": "art/reference/topping_tray.png",
+      "size": [
+        180,
+        180
+      ],
+      "row": 1,
+      "col": 1,
+      "source": "art_src/shop_layout_2026_11/sources/exec-d79a048d-494e-4147-ace0-8ab35bb969b1.png",
+      "crop": [
+        418,
+        418,
+        836,
+        836
+      ]
+    },
+    {
+      "id": "topping_brown_box",
+      "destination": "art/reference/topping_brown_box.png",
+      "size": [
+        180,
+        180
+      ],
+      "row": 1,
+      "col": 2,
+      "source": "art_src/shop_layout_2026_11/sources/exec-d79a048d-494e-4147-ace0-8ab35bb969b1.png",
+      "crop": [
+        836,
+        418,
+        1254,
+        836
+      ]
+    },
+    {
+      "id": "topping_white_box",
+      "destination": "art/reference/topping_white_box.png",
+      "size": [
+        180,
+        180
+      ],
+      "row": 2,
+      "col": 0,
+      "source": "art_src/shop_layout_2026_11/sources/exec-d79a048d-494e-4147-ace0-8ab35bb969b1.png",
+      "crop": [
+        0,
+        836,
+        418,
+        1254
+      ]
+    }
+  ],
+  "sheets": [
+    "sheet-front_furniture.json",
+    "sheet-kitchen.json",
+    "sheet-lemon_tools.json",
+    "sheet-toppings.json",
+    "sheet-table-correction.json"
+  ]
+}

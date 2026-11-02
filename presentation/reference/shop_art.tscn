@@ -32,6 +32,9 @@
 [ext_resource type="Texture2D" uid="uid://mwt5es4n2y3p" path="res://art/reference/outer_left.png" id="30_cft0w"]
 [ext_resource type="Texture2D" uid="uid://2m2in2h2maso" path="res://art/reference/outer_right.png" id="31_i5bfi"]
 
+[ext_resource type="Script" path="res://presentation/tea_playtest/fitted_prop.gd" id="32_prop"]
+[ext_resource type="Script" path="res://presentation/tea_playtest/dining_area.gd" id="33_dining"]
+
 [node name="ShopArt" type="Node2D" unique_id=1057463458]
 
 [node name="Sortables" type="Node2D" parent="." unique_id=1541857696]
@@ -44,7 +47,7 @@ metadata/asset_id = "ingredient_table"
 
 [node name="Sprite" type="Sprite2D" parent="Sortables/IngredientTable" unique_id=908037586]
 position = Vector2(-112.5, -99)
-scale = Vector2(0.46875, 0.44)
+scale = Vector2(0.44, 0.44)
 texture = ExtResource("1_36bis")
 centered = false
 
@@ -88,23 +91,23 @@ metadata/asset_id = "prep_bench"
 
 [node name="Sprite" type="Sprite2D" parent="Sortables/PrepBench" unique_id=616602746]
 position = Vector2(-61, -348.37)
-scale = Vector2(0.3897763387, 0.3905493259)
+scale = Vector2(0.39, 0.39)
 texture = ExtResource("5_ba0ta")
 centered = false
 
 [node name="MachineTable" type="Node2D" parent="Sortables" unique_id=1165223491]
-position = Vector2(381, 280)
+position = Vector2(381, 298)
 metadata/art_layer = "furniture"
 metadata/asset_id = "machine_table"
 
 [node name="Sprite" type="Sprite2D" parent="Sortables/MachineTable" unique_id=1433537560]
 position = Vector2(-140, -80.89)
-scale = Vector2(0.3905160586, 0.3888889083)
+scale = Vector2(0.39, 0.39)
 texture = ExtResource("6_800ag")
 centered = false
 
 [node name="Brewer" type="Node2D" parent="Sortables/MachineTable" unique_id=1217752630]
-position = Vector2(86.5, -44)
+position = Vector2(86.5, -30)
 metadata/art_layer = "equipment"
 metadata/asset_id = "brewer"
 
@@ -132,7 +135,7 @@ metadata/asset_id = "belt_horizontal"
 
 [node name="Sprite" type="Sprite2D" parent="Sortables/BeltHorizontal" unique_id=1184852971]
 position = Vector2(-146, -92)
-scale = Vector2(0.3903743382, 0.2737127341)
+scale = Vector2(0.34, 0.34)
 texture = ExtResource("9_trs6r")
 centered = false
 
@@ -143,7 +146,7 @@ metadata/asset_id = "belt_vertical"
 
 [node name="Sprite" type="Sprite2D" parent="Sortables/BeltVertical" unique_id=2034212406]
 position = Vector2(-45, -40)
-scale = Vector2(0.23376623, 0.4028777)
+scale = Vector2(0.39, 0.39)
 texture = ExtResource("10_tx7yf")
 centered = false
 
@@ -154,7 +157,7 @@ metadata/asset_id = "belt_corner"
 
 [node name="Sprite" type="Sprite2D" parent="Sortables/BeltCorner" unique_id=225533212]
 position = Vector2(-56, -93)
-scale = Vector2(0.3522012579, 0.3900709113)
+scale = Vector2(0.39, 0.39)
 texture = ExtResource("11_ynukg")
 centered = false
 
@@ -192,13 +195,13 @@ texture = ExtResource("14_cs3k0")
 centered = false
 
 [node name="Rack" type="Node2D" parent="Sortables" unique_id=681801286]
-position = Vector2(602, 707)
+position = Vector2(602, 719)
 metadata/art_layer = "furniture"
 metadata/asset_id = "rack"
 
 [node name="Sprite" type="Sprite2D" parent="Sortables/Rack" unique_id=1352239532]
-position = Vector2(-95, -185)
-scale = Vector2(0.4871795, 0.4868421)
+position = Vector2(-95, -197)
+scale = Vector2(0.487, 0.487)
 texture = ExtResource("15_sme3r")
 centered = false
 
@@ -335,7 +338,7 @@ texture = ExtResource("16_oewea")
 centered = false
 
 [node name="PartitionLeft" type="Node2D" parent="Sortables" unique_id=1962661351]
-position = Vector2(121.8, 857)
+position = Vector2(121.8, 717)
 metadata/art_layer = "walls"
 metadata/asset_id = "partition_left"
 
@@ -346,7 +349,7 @@ texture = ExtResource("18_h41f2")
 centered = false
 
 [node name="PartitionRight" type="Node2D" parent="Sortables" unique_id=1943958563]
-position = Vector2(589.75, 857)
+position = Vector2(589.75, 717)
 metadata/art_layer = "walls"
 metadata/asset_id = "partition_right"
 
@@ -357,7 +360,7 @@ texture = ExtResource("19_3qchh")
 centered = false
 
 [node name="DoorLintel" type="Node2D" parent="Sortables" unique_id=1703709462]
-position = Vector2(351.55, 857)
+position = Vector2(351.55, 717)
 metadata/art_layer = "walls"
 metadata/asset_id = "door_lintel"
 
@@ -368,7 +371,7 @@ texture = ExtResource("20_rajy7")
 centered = false
 
 [node name="Fox" type="Node2D" parent="Sortables" unique_id=999073584]
-position = Vector2(408.5, 978)
+position = Vector2(408.5, 798)
 metadata/art_layer = "actors"
 metadata/asset_id = "fox"
 
@@ -379,7 +382,7 @@ texture = ExtResource("21_ku1wv")
 centered = false
 
 [node name="Checkout" type="Node2D" parent="Sortables" unique_id=2070721871]
-position = Vector2(346.5, 1015)
+position = Vector2(346.5, 835)
 metadata/art_layer = "furniture"
 metadata/asset_id = "checkout"
 
@@ -390,91 +393,25 @@ texture = ExtResource("22_28ce3")
 centered = false
 
 [node name="Register" type="Node2D" parent="Sortables/Checkout" unique_id=306095844]
-position = Vector2(229.5, 4)
+position = Vector2(229.5, 14)
 metadata/art_layer = "furniture"
 metadata/asset_id = "register"
 
 [node name="Sprite" type="Sprite2D" parent="Sortables/Checkout/Register" unique_id=1952482288]
 position = Vector2(-77, -112)
-scale = Vector2(0.45970148, 0.45714286)
+scale = Vector2(0.458, 0.458)
 texture = ExtResource("23_ruqqi")
 centered = false
 
 [node name="DisplayCase" type="Node2D" parent="Sortables" unique_id=1002318541]
-position = Vector2(167.5, 1040)
+position = Vector2(139, 867)
 metadata/art_layer = "furniture"
 metadata/asset_id = "display_case"
 
 [node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase" unique_id=570257040]
-position = Vector2(-137.5, -219)
-scale = Vector2(0.52884614, 0.5736842)
+position = Vector2(-124.8, -217.16)
+scale = Vector2(0.48, 0.48)
 texture = ExtResource("24_466mj")
-centered = false
-
-[node name="DisplayPearlA" type="Node2D" parent="Sortables/DisplayCase" unique_id=214675857]
-position = Vector2(-79, -102)
-metadata/art_layer = "drinks"
-metadata/asset_id = "pearl_tea"
-
-[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase/DisplayPearlA" unique_id=1391197790]
-position = Vector2(-27.2, -75)
-scale = Vector2(0.388601, 0.388601)
-texture = ExtResource("16_oewea")
-centered = false
-
-[node name="DisplayFruitA" type="Node2D" parent="Sortables/DisplayCase" unique_id=1026423569]
-position = Vector2(3, -102)
-metadata/art_layer = "drinks"
-metadata/asset_id = "fruit_tea"
-
-[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase/DisplayFruitA" unique_id=444575836]
-position = Vector2(-27.78, -75)
-scale = Vector2(0.388601, 0.388601)
-texture = ExtResource("25_kjlhf")
-centered = false
-
-[node name="DisplayCreamA" type="Node2D" parent="Sortables/DisplayCase" unique_id=294423527]
-position = Vector2(83, -104)
-metadata/art_layer = "drinks"
-metadata/asset_id = "cream_tea"
-
-[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase/DisplayCreamA" unique_id=591487246]
-position = Vector2(-24.87, -61)
-scale = Vector2(0.388535, 0.388535)
-texture = ExtResource("17_cggs3")
-centered = false
-
-[node name="DisplayPearlB" type="Node2D" parent="Sortables/DisplayCase" unique_id=487208372]
-position = Vector2(-79, -21)
-metadata/art_layer = "drinks"
-metadata/asset_id = "pearl_tea"
-
-[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase/DisplayPearlB" unique_id=511097406]
-position = Vector2(-27.2, -75)
-scale = Vector2(0.388601, 0.388601)
-texture = ExtResource("16_oewea")
-centered = false
-
-[node name="DisplayFruitB" type="Node2D" parent="Sortables/DisplayCase" unique_id=1613774567]
-position = Vector2(3, -21)
-metadata/art_layer = "drinks"
-metadata/asset_id = "fruit_tea"
-
-[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase/DisplayFruitB" unique_id=202470841]
-position = Vector2(-27.78, -75)
-scale = Vector2(0.388601, 0.388601)
-texture = ExtResource("25_kjlhf")
-centered = false
-
-[node name="DisplayCreamB" type="Node2D" parent="Sortables/DisplayCase" unique_id=510561384]
-position = Vector2(83, -23)
-metadata/art_layer = "drinks"
-metadata/asset_id = "cream_tea"
-
-[node name="Sprite" type="Sprite2D" parent="Sortables/DisplayCase/DisplayCreamB" unique_id=273398916]
-position = Vector2(-24.87, -61)
-scale = Vector2(0.388535, 0.388535)
-texture = ExtResource("17_cggs3")
 centered = false
 
 [node name="Squirrel" type="Node2D" parent="Sortables" unique_id=577703516]
@@ -501,13 +438,13 @@ centered = false
 
 [node name="Floor" type="Node2D" parent="." unique_id=1318203089]
 z_index = -20
-position = Vector2(360, 1280)
+position = Vector2(360, 1500)
 metadata/art_layer = "floor"
 metadata/asset_id = "floor"
 
 [node name="Sprite" type="Sprite2D" parent="Floor" unique_id=1543786478]
-position = Vector2(-360, -1280)
-scale = Vector2(0.76840985, 0.76281285)
+position = Vector2(-360, -1500)
+scale = Vector2(0.76840985, 0.89392134)
 texture = ExtResource("28_fqxi1")
 centered = false
 
@@ -525,24 +462,183 @@ centered = false
 
 [node name="OuterLeft" type="Node2D" parent="." unique_id=1779068200]
 z_index = 10
-position = Vector2(12.3, 1280)
+position = Vector2(12.3, 1500)
 metadata/art_layer = "walls"
 metadata/asset_id = "outer_left"
 
 [node name="Sprite" type="Sprite2D" parent="OuterLeft" unique_id=1139042561]
-position = Vector2(-12.3, -1047)
-scale = Vector2(0.76875, 0.7625637)
+position = Vector2(-12.3, -1267)
+scale = Vector2(0.76875, 0.9227964)
 texture = ExtResource("30_cft0w")
 centered = false
 
 [node name="OuterRight" type="Node2D" parent="." unique_id=2031558558]
 z_index = 10
-position = Vector2(707.7, 1280)
+position = Vector2(707.7, 1500)
 metadata/art_layer = "walls"
 metadata/asset_id = "outer_right"
 
 [node name="Sprite" type="Sprite2D" parent="OuterRight" unique_id=1122013745]
-position = Vector2(-12.299988, -1047)
-scale = Vector2(0.76875, 0.7625637)
+position = Vector2(-12.299988, -1267)
+scale = Vector2(0.76875, 0.9227964)
 texture = ExtResource("31_i5bfi")
 centered = false
+
+[node name="GreenBox" type="Node2D" parent="Sortables/PrepBench"]
+position = Vector2(-26, -268)
+metadata/art_layer = "equipment"
+metadata/asset_id = "topping_green_box"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/PrepBench/GreenBox"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/topping_green_box.png"
+display_width = 56.0
+
+[node name="CoconutJar" type="Node2D" parent="Sortables/PrepBench"]
+position = Vector2(28, -268)
+metadata/art_layer = "equipment"
+metadata/asset_id = "topping_coconut_jar"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/PrepBench/CoconutJar"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/topping_coconut_jar.png"
+display_width = 44.0
+
+[node name="PowderJar" type="Node2D" parent="Sortables/PrepBench"]
+position = Vector2(-25, -197)
+metadata/art_layer = "equipment"
+metadata/asset_id = "topping_powder_jar"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/PrepBench/PowderJar"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/topping_powder_jar.png"
+display_width = 45.0
+
+[node name="Tongs" type="Node2D" parent="Sortables/PrepBench"]
+position = Vector2(24, -208)
+metadata/art_layer = "equipment"
+metadata/asset_id = "topping_tongs"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/PrepBench/Tongs"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/topping_tongs.png"
+display_width = 58.0
+
+[node name="Tray" type="Node2D" parent="Sortables/PrepBench"]
+position = Vector2(0, -120)
+metadata/art_layer = "equipment"
+metadata/asset_id = "topping_tray"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/PrepBench/Tray"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/topping_tray.png"
+display_width = 78.0
+
+[node name="BrownBox" type="Node2D" parent="Sortables/PrepBench"]
+position = Vector2(-27, -46)
+metadata/art_layer = "equipment"
+metadata/asset_id = "topping_brown_box"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/PrepBench/BrownBox"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/topping_brown_box.png"
+display_width = 54.0
+
+[node name="WhiteBox" type="Node2D" parent="Sortables/PrepBench"]
+position = Vector2(27, -46)
+metadata/art_layer = "equipment"
+metadata/asset_id = "topping_white_box"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/PrepBench/WhiteBox"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/topping_white_box.png"
+display_width = 54.0
+
+[node name="FrontLemon" type="Node2D" parent="Sortables/Checkout"]
+position = Vector2(-10, 7)
+metadata/art_layer = "workstation"
+metadata/asset_id = "lemon_front"
+
+[node name="Muddler" type="Node2D" parent="Sortables/Checkout/FrontLemon"]
+position = Vector2(-57, -9)
+metadata/art_layer = "equipment"
+metadata/asset_id = "lemon_muddler"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Checkout/FrontLemon/Muddler"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/lemon_muddler.png"
+display_width = 38.0
+
+[node name="IceBin" type="Node2D" parent="Sortables/Checkout/FrontLemon"]
+position = Vector2(-7, -5)
+metadata/art_layer = "equipment"
+metadata/asset_id = "lemon_ice_bin"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Checkout/FrontLemon/IceBin"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/lemon_ice_bin.png"
+display_width = 68.0
+
+[node name="SteelCup" type="Node2D" parent="Sortables/Checkout/FrontLemon"]
+position = Vector2(44, -6)
+metadata/art_layer = "equipment"
+metadata/asset_id = "lemon_steel_cup"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Checkout/FrontLemon/SteelCup"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/lemon_steel_cup.png"
+display_width = 42.0
+
+[node name="SmallCup" type="Node2D" parent="Sortables/Checkout/FrontLemon"]
+position = Vector2(84, -3)
+metadata/art_layer = "equipment"
+metadata/asset_id = "lemon_small_cup"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Checkout/FrontLemon/SmallCup"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/lemon_small_cup.png"
+display_width = 34.0
+
+[node name="RedDevice" type="Node2D" parent="Sortables/Checkout"]
+position = Vector2(148, 8)
+metadata/art_layer = "equipment"
+metadata/asset_id = "counter_red_device"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Checkout/RedDevice"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/counter_red_device.png"
+display_width = 48.0
+
+[node name="LemonadeTable" type="Node2D" parent="Sortables"]
+position = Vector2(139, 866)
+metadata/art_layer = "furniture"
+metadata/asset_id = "lemonade_display_table"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/LemonadeTable"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/lemonade_display_table.png"
+display_width = 190.0
+
+[node name="GlassPartition" type="Node2D" parent="Sortables/Checkout"]
+visible = false
+position = Vector2(-155, -90)
+metadata/art_layer = "glass"
+
+[node name="Sprite" type="Sprite2D" parent="Sortables/Checkout/GlassPartition"]
+script = ExtResource("32_prop")
+asset_path = "res://art/reference/glass_partition-v1.png"
+display_width = 500.0
+
+[node name="DiningArea" type="Node2D" parent="Sortables"]
+y_sort_enabled = true
+script = ExtResource("33_dining")
+
+[node name="FrontWoodFloor" type="Sprite2D" parent="."]
+z_index = -19
+position = Vector2(0, 790)
+scale = Vector2(0.76840985, 1.25)
+texture = ExtResource("28_fqxi1")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 1110, 937, 568)
+metadata/art_layer = "floor"

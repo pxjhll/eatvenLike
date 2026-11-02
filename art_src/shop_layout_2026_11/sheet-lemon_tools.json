@@ -1,0 +1,66 @@
+{
+  "key": "lemon_tools",
+  "cols": 3,
+  "rows": 2,
+  "ids": [
+    "lemon_muddler",
+    "lemon_ice_bin",
+    "lemon_steel_cup",
+    "lemon_small_cup",
+    "counter_red_device"
+  ],
+  "source": "art_src/shop_layout_2026_11/sources/exec-e3dc4285-aa73-4201-abb1-2f3a71e2c154.png",
+  "prompt": "Create a HIGH RESOLUTION 3072 pixel square production sprite sheet for a 2D cozy cartoon tea shop game. One sheet with an EXACT uniform 3 columns x 2 rows GRID of equal-sized INVISIBLE rectangular cells, row-major ordering left to right then top to bottom. One completely separate object per cell. All objects separated by very generous fully transparent gutters (at least 10% cell size), absolutely no touching/overlap, NO drawn grid lines, NO labels or numbers. Blank cells fully empty. Objects are centered WITHIN their own cells with complete unobstructed silhouettes, furniture EMPTY and all tabletop objects separate. Exact layout:\nRow 1, column 1: One wooden lemon muddler pestle, warm reddish brown rounded handle and wider rounded pounding end, laid straight vertically, no cup or other objects.\nRow 1, column 2: One small open square ice bin, pale blue gray frame, visible chunky translucent light blue ice cubes, elevated frontal orthographic view. No tongs, no surface.\nRow 1, column 3: One tall open stainless steel muddling tumbler containing a few lemon slices and ice cubes, silver light blue metal rim and side highlights, rounded cylindrical body, no pestle, no writing, no surface.\nRow 2, column 1: One small warm brown ceramic measuring jug with single dark loop handle, empty, no drink, tools or table.\nRow 2, column 2: One small standalone counter device from reference front-right: burgundy red square plinth with dark inset top, upright warm brown tan U shaped holder centered on it. Simple sturdy cute silhouette. No letters, cup, register or counter.\nStyle: follow provided tea shop reference faithfully but more refined, precise and clean. Soft warm hand-painted cartoon game illustration with rounded shapes, confident dark brown contour, warm honey medium wood, cream appliances, gentle upper-left highlights; consistent line thickness, lighting and same elevated frontal camera across EVERY object. Strict orthographic projection: parallel edges stay parallel, NO vanishing point, no perspective convergence, no isometric diamond orientation. Wooden tables have EMPTY plain tops, no baked on props; no characters, lettering, bubbles, other scene furniture, floor, tile patterns, checkerboard, vignette, glow or backgrounds. Real transparent RGBA background everywhere outside silhouettes and all gutters. Keep shading simple and edges crisp, not photorealistic. Use entire high resolution canvas efficiently while preserving transparent gutters. Only listed objects, complete independent sprites.",
+  "assets": [
+    {
+      "id": "lemon_muddler",
+      "destination": "art/reference/lemon_muddler.png",
+      "size": [
+        90,
+        280
+      ],
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "lemon_ice_bin",
+      "destination": "art/reference/lemon_ice_bin.png",
+      "size": [
+        200,
+        180
+      ],
+      "row": 0,
+      "col": 1
+    },
+    {
+      "id": "lemon_steel_cup",
+      "destination": "art/reference/lemon_steel_cup.png",
+      "size": [
+        170,
+        240
+      ],
+      "row": 0,
+      "col": 2
+    },
+    {
+      "id": "lemon_small_cup",
+      "destination": "art/reference/lemon_small_cup.png",
+      "size": [
+        120,
+        150
+      ],
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "counter_red_device",
+      "destination": "art/reference/counter_red_device.png",
+      "size": [
+        200,
+        200
+      ],
+      "row": 1,
+      "col": 1
+    }
+  ]
+}

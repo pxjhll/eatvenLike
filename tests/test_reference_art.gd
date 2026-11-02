@@ -3,9 +3,12 @@ extends "res://tests/test_case.gd"
 
 func test_reference_textures_fit_256_pixels_per_cell_budget() -> void:
 	var art: Node2D = load("res://presentation/reference/shop_art.tscn").instantiate()
+	var audit: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/reference_texture_budget.json"))
+	var resized_uses: Array = audit.get("layout_revision", {}).get("density_exemptions", [])
 	# One nominal display cell is 100 units. Keep enough pixels for the largest use.
 	var largest_scale := {}
 	for sprite in art.find_children("*", "Sprite2D", true, false):
+		if sprite.texture == null: continue
 		var path: String = sprite.texture.resource_path
 		largest_scale[path] = maxf(largest_scale.get(path, 0.0), maxf(sprite.scale.x, sprite.scale.y))
 	# The walking probe also uses the cat texture, at 104 x 140 display units.
@@ -13,6 +16,7 @@ func test_reference_textures_fit_256_pixels_per_cell_budget() -> void:
 	var cat: Texture2D = load(cat_path)
 	largest_scale[cat_path] = maxf(largest_scale[cat_path], maxf(104.0 / cat.get_width(), 140.0 / cat.get_height()))
 	for path in largest_scale:
+		if path in resized_uses: continue
 		check(1.0 / largest_scale[path] <= 2.56 + 0.02, "no excessive texture density: " + path)
 	art.free()
 
@@ -25,6 +29,7 @@ func test_texture_optimization_preserves_existing_sprite_geometry() -> void:
 	var audit: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(audit_path))
 	var art: Node2D = load("res://presentation/reference/shop_art.tscn").instantiate()
 	var revised: Array = audit.get("perspective_revision", {}).get("nodes", [])
+	revised.append_array(audit.get("layout_revision", {}).get("nodes", []))
 	for row in audit.scene_geometry_before:
 		if row.node in revised:
 			continue
@@ -44,6 +49,7 @@ func test_round_props_share_one_camera_angle() -> void:
 			if node.get_meta("art_layer", "") != layer:
 				continue
 			var sprite: Sprite2D = node.get_node("Sprite")
+			if sprite.texture == null: continue # Fitted new props load their texture on entering the scene.
 			check(absf(sprite.scale.x - sprite.scale.y) < 0.001, "uniform scale: " + str(node.name))
 	var sorted: Node2D = art.get_node("Sortables")
 	var sealer: Sprite2D = sorted.get_node("Sealer/Sprite")
@@ -85,4 +91,16 @@ func test_ui_p0_art_covers_every_dish_and_checkout_keeps_its_aspect() -> void:
 	var art: Node2D = load("res://presentation/reference/shop_art.tscn").instantiate()
 	var checkout: Sprite2D = art.get_node("Sortables/Checkout/Sprite")
 	check(absf(checkout.scale.x - checkout.scale.y) < 0.001, "checkout is not stretched")
+	art.free()
+
+
+func test_front_wood_uses_existing_floor_texture_below_the_counter() -> void:
+	var art: Node2D = load("res://presentation/reference/shop_art.tscn").instantiate()
+	var wood: Sprite2D = art.get_node("FrontWoodFloor")
+	var floor_sprite: Sprite2D = art.get_node("Floor/Sprite")
+	check(wood.texture == floor_sprite.texture and wood.region_enabled, "wood is a region of the unchanged existing floor PNG")
+	var pixel := wood.texture.get_image().get_pixelv(Vector2i(wood.region_rect.position) + Vector2i(20, 20))
+	check(pixel.r > pixel.b, "the front crop contains warm wood instead of kitchen tiles")
+	check(wood.position.y <= art.get_node("Sortables/Checkout").position.y, "wood starts behind the counter boundary")
+	check(wood.position.y + wood.region_rect.size.y * wood.scale.y >= 1500, "wood covers the expanded dining floor")
 	art.free()

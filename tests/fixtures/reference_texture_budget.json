@@ -1013,5 +1013,36 @@
       "Sortables/SealingCup/Sprite",
       "Sortables/Squirrel/Sprite"
     ]
+  },
+  "layout_revision": {
+    "date": "2026-11-02",
+    "reason": "Upper front service counter, independent lemonade dispenser and work props, uniform furniture proportions, four dining tables, extended floor. Legacy display cups removed because the dispenser is no longer a glass cabinet.",
+    "nodes": [
+      "Sortables/IngredientTable/Sprite",
+      "Sortables/PrepBench/Sprite",
+      "Sortables/MachineTable/Sprite",
+      "Sortables/BeltHorizontal/Sprite",
+      "Sortables/BeltVertical/Sprite",
+      "Sortables/BeltCorner/Sprite",
+      "Sortables/Rack/Sprite",
+      "Sortables/Checkout/Register/Sprite",
+      "Sortables/DisplayCase/Sprite",
+      "Floor/Sprite",
+      "OuterLeft/Sprite",
+      "OuterRight/Sprite",
+      "Sortables/DisplayCase/DisplayPearlA/Sprite",
+      "Sortables/DisplayCase/DisplayFruitA/Sprite",
+      "Sortables/DisplayCase/DisplayCreamA/Sprite",
+      "Sortables/DisplayCase/DisplayPearlB/Sprite",
+      "Sortables/DisplayCase/DisplayFruitB/Sprite",
+      "Sortables/DisplayCase/DisplayCreamB/Sprite"
+    ],
+    "density_exemptions": [
+      "res://art/reference/belt_horizontal.png",
+      "res://art/reference/display_case.png",
+      "res://art/reference/pearl_tea.png",
+      "res://art/reference/cream_tea.png"
+    ],
+    "density_reason": "The user requires exact existing PNG dimensions; the shorter front dispenser and removal of old display-cup previews intentionally reduce their maximum display size. The independent horizontal belt preserves its native aspect ratio."
   }
 }

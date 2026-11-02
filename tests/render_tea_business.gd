@@ -219,7 +219,7 @@ func _test_touch_station_panels() -> void:
 	view.sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
 	view.sim.gold = 1000000
 	view.sim.revenue = 1000000
-	for id in ["lemonade", "boil", "seal", "mix", "topping", "press"]:
+	for id in ["lemonade", "lemon_front", "boil", "seal", "mix", "topping", "press"]:
 		_check(view.sim.unlock_station(id).is_empty(), "touch fixture unlocks " + id)
 	for material in view.sim.boxes:
 		_check(view.sim.unlock_box(material).is_empty(), "touch fixture buys " + material)
@@ -230,7 +230,7 @@ func _test_touch_station_panels() -> void:
 	hud = view.ui
 	var points := {"supply": Vector2(120, 210), "boil": Vector2(390, 150),
 		"mix": Vector2(465, 200), "topping": Vector2(85, 420), "seal": Vector2(600, 280),
-		"lemonade": Vector2(160, 920), "press": Vector2(622, 475)}
+		"lemonade": Vector2(140, 750), "lemon_front": Vector2(338, 824), "press": Vector2(622, 475)}
 	for viewport_size in [Vector2i(720, 1280), Vector2i(360, 640)]:
 		root.size = viewport_size
 		await _layout()

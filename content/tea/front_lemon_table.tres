@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="StationDef" format=3]
+
+[ext_resource type="Script" path="res://content/defs/station_def.gd" id="station_def"]
+
+[resource]
+script = ExtResource("station_def")
+id = "front_lemon_table"
+display_name = "前台柠檬手打台"
+owner = 1
+mode = 2
+zone = "front_hall"
+unlock_cost = 25
+cycle_seconds = 3.0
+art_seconds = 3.0
+art_speeds = Array[float]([1.0, 1.2, 1.45, 1.7, 2.0])
+art_costs = Array[int]([35, 55, 85, 125])
+art_price_step = 0.12
+art_price_dishes = Array[String](["lemon_tea"])
+art_star_levels = Array[int]([5])
+art_star_mult = 1.5

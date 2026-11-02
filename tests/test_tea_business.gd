@@ -1,5 +1,66 @@
 extends "res://tests/test_case.gd"
 
+## Catches accidentally keeping lemon tea behind a black-tea/kitchen prerequisite.
+func test_front_lemon_tea_uses_lemonade_without_any_kitchen() -> void:
+	var sim = make_shop()
+	check(not sim.unlock_station("lemon_front").is_empty(), "front muddling needs the lemonade stand")
+	check_eq(sim.unlock_station("lemonade"), "", "open lemonade")
+	check_eq(sim.unlock_station("lemon_front"), "", "starting budget also opens hand muddling")
+	if not sim.station_unlocked("lemon_front"): return
+	check_eq(sim.stage_index, 0, "front machine does not advance the kitchen")
+	check(sim._dish_unlocked("lemon_tea"), "front lemon tea needs no kitchen hand")
+	check(sim.order_weights().has("lemon_tea"), "front lemon tea joins the opening menu")
+	sim.orders = [{"id": 100, "dish": "lemon_tea", "wait": 0.0, "reserved": false, "takeaway": true}]
+	sim._next_order = 101
+	var tasks := {}
+	for tick in 1200:
+		sim.advance(0.1)
+		for worker in sim.workers:
+			if worker.job.is_empty(): continue
+			tasks[worker.job.kind] = true
+			check_eq(worker.post, "counter", "front staff make the front drink")
+		check(sim.audit().valid, "front cups and reservations remain conserved")
+		if sim.sold_by_dish.lemon_tea > 0: break
+	check(tasks.has("load_lemon_front") and tasks.has("muddle_lemon"), "lemonade is carried and manually muddled")
+	check_eq(sim.sold_by_dish.lemon_tea, 1, "front worker delivered lemon tea")
+	check_eq(sim.stations.boil.input.raw + sim.stations.boil.output.tea, 0, "no black tea was used")
+	check_eq(sim.diners.size(), 0, "front takeaway does not occupy a seat")
+	var info: Dictionary = sim.station_info("lemon_front")
+	check(info.seconds > info.next_seconds and info.next_seconds > 0, "front upgrade improves hand muddling")
+	sim.gold = 1000
+	var price: int = sim._dish_price("lemon_tea")
+	check_eq(sim.upgrade_station("lemon_front"), "", "front machine upgrades independently")
+	check(sim._dish_price("lemon_tea") > price, "front upgrade raises its drink price")
+	check_eq(sim.station_levels.press, 1, "kitchen press is independent")
+
+## Catches leaked reservations or destroyed cups when a front hand is recalled at any phase.
+func test_front_lemon_recall_releases_every_phase_without_losing_goods() -> void:
+	for target in ["load_lemon_front:walk_pickup", "load_lemon_front:walk_dropoff", "muddle_lemon:work", "serve:walk_pickup", "serve:walk_dropoff"]:
+		var sim = make_shop()
+		sim.unlock_station("lemonade")
+		if not sim.unlock_station("lemon_front").is_empty():
+			check(false, "front station must open for recall regression")
+			return
+		sim.orders = [{"id": 100, "dish": "lemon_tea", "wait": 0.0, "reserved": false, "takeaway": true}]
+		sim._next_order = 101
+		var reached := false
+		for tick in 900:
+			sim.advance(0.1)
+			var worker: Dictionary = sim.workers[0]
+			if worker.job.is_empty() or worker.job.kind + ":" + worker.phase != target: continue
+			reached = true
+			check_eq(sim.recall_worker(worker.id), "", "recall " + target)
+			check(sim.audit().valid, "recall refunds inventory and reservations: " + target)
+			check_eq(sim.stations.lemon_front.reserved_in, 0, "incoming reservation cleared")
+			check(not sim.stations.lemon_front.work_reserved, "manual reservation cleared")
+			check(not sim.orders[0].reserved, "customer order released")
+			check_eq(make_shop().load_dict(sim.to_dict()), "", "recalled state can be saved")
+			check_eq(sim.deploy_worker(worker.id, "counter"), "", "front worker can return")
+			sim.advance(120)
+			check(sim.sold_by_dish.lemon_tea > 0 and sim.audit().valid, "service resumes after recall")
+			break
+		check(reached, "reached " + target)
+
 func make_shop():
 	var path := "res://game/tea_playtest/tea_shop_sim.gd"
 	if not ResourceLoader.exists(path):
@@ -330,8 +391,8 @@ func test_reserved_employee_drop_validates_before_deploying() -> void:
 	check_eq(sim.to_dict(), before, "locked drop does not deploy or mutate roster")
 	check(not sim.deploy_at(2, "", Vector2(-50, -50)).is_empty(), "blocked drop rejects deployment")
 	check_eq(sim.to_dict(), before, "blocked drop preserves all state")
-	check_eq(sim.deploy_at(2, "", Vector2(410, 930)), "", "valid mobile drop deploys and places")
-	check_eq(sim.worker_by_id(2).pos, Vector2(410, 930), "physical actor starts at valid drop")
+	check_eq(sim.deploy_at(2, "", sim.Layout.POINTS.counter), "", "valid mobile drop deploys and places")
+	check_eq(sim.worker_by_id(2).pos, sim.Layout.POINTS.counter, "physical actor starts at valid drop")
 
 func test_exact_flavor_dispatch_and_upgraded_sale_price() -> void:
 	var sim = opened()
@@ -501,7 +562,7 @@ func test_opening_income_funds_the_real_production_progression() -> void:
 	if sim == null: return
 	sim.unlock_station("lemonade")
 	for tick in 60000:
-		for id in ["boil", "seal", "mix", "topping", "press"]:
+		for id in ["lemon_front", "boil", "seal", "mix", "topping", "press"]:
 			if sim.station_info(id).unlock_error.is_empty(): sim.unlock_station(id)
 		for material in ["tea_leaf", "milk"]:
 			if sim.box_error(material).is_empty(): sim.unlock_box(material)
@@ -751,9 +812,9 @@ func test_kitchen_packer_saves_and_takeaway_lemonade_is_fetched_at_the_sealer() 
 		if packing_saved: break
 	check(packing_saved, "the kitchen packs takeaway cups")
 	var job := {"kind": "serve", "src": "seal", "dst": "counter", "item": "lemonade", "count": 1}
-	check(sim._source_point(job) != Vector2(330, 910), "takeaway lemonade is picked up at the sealer, not the stand")
+	check(sim._source_point(job) != sim.Layout.POINTS.lemonade, "takeaway lemonade is picked up at the sealer, not the stand")
 	job.src = "supply"
-	check_eq(sim._source_point(job), Vector2(330, 910), "dine-in lemonade is still poured at the stand")
+	check_eq(sim._source_point(job), sim.Layout.POINTS.lemonade, "dine-in lemonade is still poured at the stand")
 
 func test_brewer_pauses_for_stirring_and_seated_brewer_runs_its_segment() -> void:
 	var sim = make_shop()
@@ -1058,6 +1119,7 @@ func _press_line(kitchen: int):
 	var sim = _full_line(kitchen)
 	if sim == null: return null
 	check_eq(sim.unlock_station("press"), "", "the press table unlocks after the topping machine")
+	check_eq(sim.unlock_station("lemon_front"), "", "open the independent front fruit-tea route")
 	return sim
 
 func test_a_follower_presses_the_fruit_tea_it_was_ordered_by_hand() -> void:
@@ -1081,6 +1143,7 @@ func test_a_follower_presses_the_fruit_tea_it_was_ordered_by_hand() -> void:
 				pressers[worker.id] = true
 				check(not worker.ticket.is_empty() and worker.ticket.stage == "press", "whoever presses is following that order")
 				check_eq(sim.stations.press.processing_item, worker.ticket.dish, "the press makes the fruit that was ordered")
+				check_eq(worker.ticket.dish, "banana_tea", "new lemon orders never use the kitchen press")
 		for dish in made:
 			var now: int = sim.stations.press.output[dish]
 			if now > made[dish] and not sim.orders.any(func(order): return order.dish == dish): wrong += 1
@@ -1108,7 +1171,16 @@ func test_the_press_table_sells_fruit_teas_in_a_busy_shop() -> void:
 	var info: Dictionary = sim.station_info("press")
 	check_eq(info.name, "手打台", "the machine card names the press table")
 	check(info.seconds > 0 and info.next_seconds > 0 and info.next_seconds < info.seconds, "upgrading presses faster")
-	check_eq(info.materials.map(func(row): return row.id), ["lemon", "banana"], "fruit slots: lemon, then banana")
+	check_eq(info.materials.map(func(row): return row.id), ["banana"], "kitchen card upgrades the fruit made in the kitchen")
+	check_eq(info.dish_name, "香蕉果茶", "kitchen unlock card names its own recipe")
+	check_eq(info.price.now, sim._dish_price("banana_tea"), "kitchen card previews the actual banana drink")
+	var lemon_price: int = sim._dish_price("lemon_tea")
+	check_eq(sim.upgrade_station("press"), "", "kitchen press upgrade bought")
+	check_eq(info.price.next, sim._dish_price("banana_tea"), "kitchen preview matches upgraded banana sale")
+	check_eq(sim._dish_price("lemon_tea"), lemon_price, "kitchen upgrades do not change front lemon tea")
+	var gold: int = sim.gold
+	check(not sim.upgrade_material("press", "lemon").is_empty(), "obsolete kitchen lemon upgrade cannot be bought")
+	check_eq(sim.gold, gold, "rejected obsolete upgrade charges nothing")
 
 func test_lemonade_to_go_is_handed_over_without_the_sealer() -> void:
 	var sim = make_shop()

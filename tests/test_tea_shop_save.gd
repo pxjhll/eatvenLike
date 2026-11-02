@@ -24,6 +24,185 @@ func _sim():
 	return load(SIM_SCRIPT).new()
 
 
+func test_front_lemon_active_jobs_roundtrip_and_continue() -> void:
+	var store = _store()
+	for target in ["load_lemon_front:walk_dropoff", "muddle_lemon:work", "serve:walk_dropoff"]:
+		var sim = _sim()
+		sim.unlock_station("lemonade")
+		check_eq(sim.unlock_station("lemon_front"), "", "open independent front station")
+		if not sim.station_unlocked("lemon_front"): return
+		sim.orders = [{"id": 100, "dish": "lemon_tea", "wait": 0.0, "reserved": false, "takeaway": true}]
+		sim._next_order = 101
+		var reached := false
+		for tick in 900:
+			sim.advance(0.1)
+			var worker: Dictionary = sim.workers[0]
+			if worker.job.is_empty() or worker.job.kind + ":" + worker.phase != target: continue
+			reached = true
+			check_eq(store.save_game(sim), OK, "active front job saves: " + target)
+			var copy = store.load_game()
+			check_eq(store.last_error, "", "active front job loads")
+			check_eq(var_to_bytes(copy.to_dict()), var_to_bytes(sim.to_dict()), "front state restores exactly")
+			for step in 900:
+				sim.advance(0.1)
+				copy.advance(0.1)
+			check_eq(var_to_bytes(copy.to_dict()), var_to_bytes(sim.to_dict()), "front job continuation matches")
+			check(copy.sold_by_dish.lemon_tea > 0 and copy.audit().valid, "loaded front job delivers conserved cup")
+			break
+		check(reached, "saved during " + target)
+
+
+func test_v11_save_adds_front_machine_without_charging_existing_progress() -> void:
+	var sim = _sim()
+	sim.unlock_station("lemonade")
+	sim.gold = 10000
+	for station in ["boil", "seal", "mix", "topping", "press"]: sim.unlock_station(station)
+	var old: Dictionary = sim.to_dict()
+	old.version = 11
+	old.material_levels.press.lemon = 3
+	old.stations.erase("lemon_front")
+	old.station_levels.erase("lemon_front")
+	old.unlocked_stations.erase("lemon_front")
+	var copy = _sim()
+	check_eq(copy.load_dict(old), "", "v11 progress loads")
+	check(copy.station_unlocked("lemon_front"), "old fruit-tea owner keeps access to lemon tea")
+	check_eq(copy.gold, old.gold + 260, "migration refunds the two obsolete lemon ingredient purchases")
+	check_eq(copy.material_levels.press.lemon, 1, "refunded legacy ingredient resets once")
+	check_eq(copy.stage_index, old.stage_index, "migration keeps kitchen progress")
+	check(copy.audit().valid, "migrated floor preserves accounting")
+
+
+func test_v11_active_lemon_kitchen_jobs_refund_goods_and_resume_at_the_front() -> void:
+	for carried in [false, true]:
+		var sim = _sim()
+		sim.gold = 10000
+		sim.unlock_station("lemonade")
+		for station in ["boil", "seal", "mix", "topping", "press"]: sim.unlock_station(station)
+		sim.hire()
+		sim.deploy_worker(2)
+		sim.orders = [{"id": 100, "dish": "lemon_tea", "wait": 0.0, "reserved": false, "takeaway": true}]
+		sim._next_order = 101
+		sim._generated = 1
+		var hand: Dictionary = sim.worker_by_id(2)
+		if carried:
+			sim.stations.press.output.lemon_tea = 1
+			sim._reserve(hand, {"kind": "carry_to_shelf", "src": "press", "dst": "shelf", "item": "lemon_tea", "count": 1, "priority": 95.0, "belt": "", "order_id": -1})
+			for tick in 600:
+				sim._update_worker(hand)
+				if hand.carry_count > 0: break
+			check_eq(hand.carry_count, 1, "legacy fixture carries a real pressed cup")
+		else:
+			sim.stations.press.input.tea = 1
+			sim._reserve(hand, {"kind": "press", "src": "press", "dst": "press", "item": "tea", "count": 1, "priority": 95.0, "belt": "", "order_id": -1,
+				"ticket": {"dish": "lemon_tea", "count": 1, "stage": "press", "wait": 0.0}})
+			for tick in 600:
+				sim._update_worker(hand)
+				if hand.phase == "work": break
+			check_eq(hand.phase, "work", "legacy fixture is manually pressing lemon tea")
+		var old: Dictionary = sim.to_dict()
+		old.version = 11
+		for key in ["stations", "station_levels", "unlocked_stations"]: old[key].erase("lemon_front")
+		var copy = _sim()
+		var error: String = copy.load_dict(old)
+		check_eq(error, "", "active v11 lemon job migrates")
+		if not error.is_empty(): continue
+		check(copy.audit().valid, "legacy active job keeps all cups and reservations")
+		check_eq(copy._generated, 1, "migration neither creates nor deletes a cup")
+		check(copy.worker_by_id(2).ticket.is_empty(), "old kitchen lemon ticket is released")
+		if carried: check_eq(copy.stations.lemon_front.output.lemon_tea, 1, "carried legacy cup returned to front stock")
+		else: check_eq(copy.stations.press.input.tea, 1, "unfinished pressing leaves its tea intact")
+		copy.advance(180)
+		check(copy.sold_by_dish.lemon_tea > 0 and copy.audit().valid, "old order can be served by the new front workflow")
+
+
+func test_v11_front_worker_relocates_from_the_old_counter_and_keeps_serving() -> void:
+	var sim = _sim()
+	sim.unlock_station("lemonade")
+	var old: Dictionary = sim.to_dict()
+	old.version = 11
+	for key in ["stations", "station_levels", "unlocked_stations"]: old[key].erase("lemon_front")
+	old.roster[0].pos = Vector2(410, 930)
+	old.roster[0].assignment_point = Vector2(410, 930)
+	var copy = _sim()
+	check_eq(copy.load_dict(old), "", "old layout save loads")
+	copy.advance(120)
+	check(copy.sold > 0, "front worker can still reach the shifted counter and dispenser")
+	check(copy.audit().valid, "relocation preserves all goods")
+
+
+func _legacy_black_tea_state(deployed: bool, carrying: bool = false) -> Dictionary:
+	var sim = _sim()
+	sim.gold = 1000
+	sim.unlock_station("lemonade")
+	sim.unlock_station("boil")
+	sim.unlock_box("tea_leaf")
+	sim.hire()
+	if deployed: sim.deploy_worker(2)
+	if carrying:
+		var hand: Dictionary = sim.worker_by_id(2)
+		sim._reserve(hand, {"kind": "load_boil", "src": "supply", "dst": "boil", "item": "raw", "count": 1, "priority": 55.0, "belt": "", "order_id": -1})
+		for tick in 600:
+			sim._update_worker(hand)
+			if hand.carry_count > 0: break
+		check_eq(hand.carry_count, 1, "fixture carries a real ingredient cup")
+	sim.orders = [{"id": 100, "dish": "black_tea", "wait": 0.0, "reserved": false, "takeaway": false}]
+	sim._next_order = 101
+	sim.diners = [{"seat": 0, "dish": "lemonade", "left": 4.0}]
+	var old: Dictionary = sim.to_dict()
+	old.version = 11
+	for key in ["stations", "station_levels", "unlocked_stations"]: old[key].erase("lemon_front")
+	return old
+
+
+func test_v11_reserve_and_deployed_kitchen_workers_escape_obsolete_floor_positions() -> void:
+	for deployed in [false, true]:
+		# Old counter, shifted checkout footprint, and the new first dining-table footprint.
+		for old_position in [Vector2(410, 930), Vector2(410, 850), Vector2(145, 1060)]:
+			var old := _legacy_black_tea_state(deployed, deployed)
+			old.roster[1].pos = old_position
+			old.roster[1].assignment_point = old_position
+			var sim = _sim()
+			var error: String = sim.load_dict(old)
+			check_eq(error, "", "old blocked/disconnected kitchen record loads")
+			if not error.is_empty(): continue
+			check_eq(sim.diners, old.diners, "world migration preserves occupied dining-seat fixtures")
+			check(not sim.Layout.path(sim.worker_by_id(2).pos, sim.Layout.POINTS.supply).is_empty(), "legacy kitchen worker can reach ingredients")
+			check(sim.audit().valid, "relocation refunds active ingredients and reservations")
+			if not deployed: check_eq(sim.deploy_worker(2), "", "legacy reserve can deploy normally")
+			sim.advance(300)
+			check(sim.sold_by_dish.black_tea > 0 and sim.worker_by_id(2).completed > 0, "legacy kitchen worker resumes real black-tea production")
+			check(sim.audit().valid, "resumed old shop keeps every cup")
+
+
+func test_v11_valid_kitchen_jobs_stay_intact_and_obstructed_saved_paths_are_rebuilt() -> void:
+	for obsolete_route in [false, true]:
+		var old := _legacy_black_tea_state(true, true)
+		if obsolete_route: old.roster[1].path = PackedVector2Array([old.roster[1].pos, Vector2(410, 850), Vector2(350, 330)])
+		var sim = _sim()
+		check_eq(sim.load_dict(old), "", "active legacy kitchen job loads")
+		var hand: Dictionary = sim.worker_by_id(2)
+		check_eq(hand.pos, old.roster[1].pos, "reachable kitchen worker is never relocated")
+		check_eq(hand.job, old.roster[1].job, "existing kitchen task is preserved")
+		check_eq(hand.carry_count, 1, "existing carried ingredient stays in hand")
+		if not obsolete_route: check_eq(var_to_bytes(hand), var_to_bytes(old.roster[1]), "valid kitchen state stays byte-for-byte")
+		for point in hand.path:
+			var cell: Vector2i = sim.Layout.grid().world_to_cell(point, sim.Layout.CELL)
+			check(sim.Layout.grid().contains_cell(cell) and not cell in sim.Layout.grid().blocked_cells, "remaining legacy route avoids the new furniture")
+		check(sim.audit().valid, "replanning preserves reservations")
+		sim.advance(300)
+		check(sim.sold_by_dish.black_tea > 0 and sim.audit().valid, "preserved kitchen job completes and sells")
+
+
+func test_v11_malformed_worker_posts_reject_without_runtime_errors_or_mutation() -> void:
+	for invalid_post in [[], {}, false, -1, INF]:
+		var old := _legacy_black_tea_state(false)
+		old.roster[0].post = invalid_post
+		var sim = _sim()
+		var before: Dictionary = sim.to_dict()
+		check(not sim.load_dict(old).is_empty(), "malformed legacy post is rejected")
+		check_eq(sim.to_dict(), before, "malformed legacy record leaves live shop unchanged")
+
+
 func _write(path: String, text: String) -> void:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	file.store_string(text)
@@ -179,7 +358,7 @@ func test_pre_rabbit_current_schema_roster_loads_and_can_recruit_rabbit() -> voi
 	legacy.gold = 180
 	check(legacy.hire() and legacy.hire(), "prepare the pre-rabbit three-owned roster")
 	var state: Dictionary = legacy.to_dict()
-	check_eq(state.version, 11, "current simulation schema")
+	check_eq(state.version, 12, "current simulation schema")
 	var envelope := _envelope(state, 2)
 	_write(_path(), JSON.stringify(envelope))
 	var resumed = store.load_game()

@@ -1,6 +1,29 @@
 extends "res://tests/test_case.gd"
 ## These tests exercise actual stock, routes and employee actions, without old saves.
 
+func test_front_work_points_are_reachable_after_counter_moves_up() -> void:
+	var layout = preload("res://content/tea/art_playtest_layout.gd")
+	check(layout.POINTS.has("lemon_front") and layout.POINTS.has("lemonade"), "separate front preparation and dispenser points exist")
+	check(layout.POINTS.counter.y < 800, "service moves above the dining area")
+	for station in layout.POINTS:
+		check(not layout.path(layout.POINTS[station], layout.POINTS.counter).is_empty(), "front service is reachable from " + station)
+	check_eq(layout.drop_target(layout.POST_POINTS.counter).get("post"), "counter", "front employee drop still assigns service role")
+	check_eq(layout.drop_target(Vector2(350, 610)).get("kind"), "mobile", "central kitchen aisle remains available to kitchen staff")
+
+
+func test_dining_chairs_follow_available_seats_and_diner_identity() -> void:
+	var path := "res://presentation/tea_playtest/dining_area.gd"
+	check(ResourceLoader.exists(path), "dining presenter exists")
+	if not ResourceLoader.exists(path): return
+	var dining: Node2D = load(path).new()
+	dining.refresh(3, [{"seat": 1, "dish": "lemonade", "left": 20.0}], null, 0.0)
+	check_eq(dining.available_seats(), [0, 1, 2], "only purchased chairs are available")
+	check_eq(dining.occupied_seats(), [1], "diner is drawn at their assigned chair")
+	dining.refresh(5, [{"seat": 4, "dish": "black_tea", "left": 5.0}], null, 1.0)
+	check_eq(dining.available_seats(), [0, 1, 2, 3, 4], "buying a seat activates the next independent chair")
+	check_eq(dining.occupied_seats(), [4], "departed diner disappears and the new diner retains their own seat")
+	dining.free()
+
 func new_session():
 	if not ResourceLoader.exists("res://game/tea_playtest/tea_playtest_sim.gd"):
 		check(false, "playtest session simulation exists")

@@ -1,0 +1,8 @@
+{
+  "tool": "built-in image_gen",
+  "reference": "C:\\Users\\pangxiaojin\\AppData\\Local\\Temp\\codex-clipboard-2aaec371-2cb1-4a4f-b7bc-9bf339bb00aa.png",
+  "generated_source": "C:\\Users\\pangxiaojin\\.codex\\generated_images\\01a19a8d-44f0-7883-8a38-8433038f9a21\\exec-09e8e387-3b22-47bf-be42-cca54443479e.png",
+  "output": "art/reference/glass_partition-v1.png",
+  "prompt": "Draw one standalone glass divider FRAME game sprite matching the rectangular divider outlined red at middle-left in reference. Match cute soft hand-painted cartoon tea shop style, warm dark gray brown clean outline, light blue gray metal frame, crisp polished clean finish. Wide rectangular frame, width:height=1.5:1, exactly horizontal top/bottom, exactly vertical sides, orthographic projection, slight bevel highlights only. Four thin connected metal rails around a completely EMPTY transparent rectangular opening; draw NO filled glass surface. The opening is fully transparent alpha, same as exterior. Indicate glass ONLY with two very small narrow clean pale blue diagonal glints in one upper corner, not large bands. Frame thickness about 2.5 percent of width. No backing, no blue solid rectangle, no checkered pattern, no background, no floor, no scenery, no shadows outside, no other objects, no characters, no text or labels or red box. Center complete frame with modest empty transparent padding, one isolated sprite, hand-drawn attractive 2D cartoon game asset.",
+  "note": "Independent optional glass partition sprite. Scene integration pending layout implementation."
+}

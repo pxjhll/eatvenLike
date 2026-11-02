@@ -13,6 +13,7 @@ const TASKS := {
 	"supply": "补原料", "load_boil": "投料煮茶", "unload_boil": "取茶汤",
 	"transfer_to_topping": "送去加料", "topping": "手工加料",
 	"transfer_to_press": "送去手打", "press": "手打果茶",
+	"load_lemon_front": "取柠檬水", "muddle_lemon": "手打柠檬茶",
 	"load_seal_belt": "放上传送带", "carry_to_seal": "送去封口", "carry_to_pickup": "送上外带格",
 	"load_shelf_belt": "放上传送带", "carry_to_shelf": "成品上架", "serve": "取杯送餐",
 }
