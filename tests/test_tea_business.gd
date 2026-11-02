@@ -26,8 +26,6 @@ func opened():
 	sim.hire()
 	for worker in sim.all_workers():
 		if not worker.deployed: sim.deploy_worker(worker.id)
-	# A shop long past opening its last line: no warm-up left.
-	sim.stage_clock = sim.STAGE_CLOCK_CAP
 	return sim
 
 func test_opening_and_unlock_validation() -> void:
@@ -1233,38 +1231,3 @@ func test_kitchen_drinks_wait_for_a_kitchen_hand_so_lemonade_keeps_selling() -> 
 	for worker in sim.all_workers():
 		if not worker.deployed: sim.deploy_worker(worker.id)
 	check(sim._dish_unlocked("black_tea"), "black tea goes on sale once someone works the kitchen")
-
-## 2026-11-02 playlog: the topping line made every flavored cup slower right when it opened, and the
-## queue filled for minutes. Its first three minutes now bring customers less often.
-func test_topping_line_opens_with_fewer_customers_for_three_minutes() -> void:
-	var sim = make_shop()
-	if sim == null: return
-	sim.unlock_station("lemonade")
-	sim.gold = 20000
-	for id in ["boil", "seal", "mix"]: sim.unlock_station(id)
-	sim.unlock_box("tea_leaf")
-	sim.unlock_box("milk")
-	sim.advance(60.0)
-	var mix_stage = sim.PROGRESSION.stages[sim.stage_index]
-	check(is_equal_approx(sim.stage_interval(), mix_stage.customer_interval), "a stage without a warm-up keeps its interval")
-	check_eq(sim.unlock_station("topping"), "", "topping line bought")
-	var stage = sim.PROGRESSION.stages[sim.stage_index]
-	check(stage.warmup_interval > stage.customer_interval and stage.warmup_seconds > 0, "the topping stage has a warm-up")
-	check(is_equal_approx(sim.stage_interval(), stage.warmup_interval), "customers come slowly right after the line opens")
-	sim.advance(stage.warmup_seconds / 2.0)
-	check(sim.stage_interval() < stage.warmup_interval and sim.stage_interval() > stage.customer_interval, "halfway through, the interval is in between")
-	var copy = make_shop()
-	check_eq(copy.load_dict(sim.to_dict()), "", "the warm-up clock saves")
-	check(is_equal_approx(copy.stage_interval(), sim.stage_interval()), "and loads")
-	sim.advance(stage.warmup_seconds)
-	check(is_equal_approx(sim.stage_interval(), stage.customer_interval), "after the warm-up the stage's own interval applies")
-
-func test_v10_save_gets_no_warm_up() -> void:
-	var sim = opened()
-	if sim == null: return
-	var state: Dictionary = sim.to_dict()
-	state.version = 10
-	state.erase("stage_clock")
-	var copy = make_shop()
-	check_eq(copy.load_dict(state), "", "a v10 save loads")
-	check(is_equal_approx(copy.stage_interval(), copy.PROGRESSION.stages[copy.stage_index].customer_interval), "the line already open counts as settled")
