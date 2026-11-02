@@ -168,7 +168,7 @@ func _run() -> void:
 	_check(view.store.load_game().to_dict() == view.sim.to_dict(), "autosave writes running production state")
 	# With no revenue gate the saved coins already afford the next line; that hint (and the angry-customer
 	# hints for this busy restored shop) would take this tap, so mark them seen.
-	for key in ["line_1", "line_2", "line_3", "line_4", "line_5", "lost_seats", "lost_staff", "lost_machine"]: view.guide.seen[key] = true
+	for key in ["line_1", "line_2", "line_3", "line_4", "line_5", "lost_seats", "lost_staff", "lost_machine", "more_staff"]: view.guide.seen[key] = true
 	view.guide.active = ""
 	view.guide.refresh(0)
 	await _click(hud.goal_button)

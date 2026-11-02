@@ -7,6 +7,8 @@ extends Control
 ## be bought, and a hint the first time a customer leaves. Dimmed steps freeze the shop.
 
 const STAGE_SIGNS := ["", "boil", "seal", "mix", "topping", "press"]
+## From the topping line on, each cup has one more stop: the hint to fill the new staff spots starts here.
+const TOPPING_STAGE := 4
 const COUNTER_AREA := Rect2(410, 850, 120, 110)
 const DIM := Color(0.16, 0.1, 0.06, 0.62)
 const GLOW := Color("ffd98a")
@@ -26,6 +28,8 @@ var _time := 0.0
 var _seen_event: Variant = null
 ## A walk-out waits here until its hint can show (shop page, no other guide up).
 var _lost_pending := false
+## Staff on the floor when the "more staff" hint opened; one hire past this ends it.
+var _more_staff_from := 0
 var _bubble: PanelContainer
 var _bubble_text: Label
 var _bubble_skip: Button
@@ -117,6 +121,7 @@ func refresh(delta: float) -> void:
 			"opening": _opening_step()
 			"lost_seats", "lost_staff", "lost_machine": _lost_step()
 			"kitchen": _kitchen_step()
+			"more_staff": _more_staff_step()
 			"box_tea_leaf", "box_milk": _box_step(active.trim_prefix("box_"))
 			"": pass
 			_: _line_step(int(active.trim_prefix("line_")))
@@ -155,6 +160,10 @@ func _pick_guide() -> void:
 		return
 	if sim.has_method("kitchen_staff") and sim.stage_index > 0 and sim.kitchen_staff() == 0 and box.is_empty() and not seen.has("kitchen") and _can_staff_kitchen():
 		active = "kitchen"
+		return
+	if sim.has_method("kitchen_staff") and sim.stage_index >= TOPPING_STAGE and sim.workers.size() < sim.staff_slots() and not seen.has("more_staff") and _can_staff_kitchen():
+		active = "more_staff"
+		_more_staff_from = sim.workers.size()
 		return
 	if _lost_pending:
 		var cause := _lost_cause()
@@ -249,6 +258,31 @@ func _kitchen_step() -> void:
 		_focus(_hud.staff_button, "前台只管接待客人，煮茶要后厨员工：点「员工」")
 	else:
 		_focus(_hud.hire_button, "招一位伙伴，招来直接去后厨")
+
+
+## The topping line makes every flavored cup take one more stop, so two staff fall behind:
+## once a hire is possible, point at the open spots (first at the roster, then at 「招一位」).
+func _more_staff_step() -> void:
+	var sim = _view.sim
+	if sim.workers.size() > _more_staff_from or sim.workers.size() >= sim.staff_slots():
+		_finish()
+		return
+	_bubble_skip.text = "以后再说"
+	var page: String = _hud.page
+	var waiting: Array = sim.all_workers().filter(func(worker: Dictionary) -> bool: return not _view.staff_is_deployed(int(worker.id)))
+	if not waiting.is_empty():
+		if page != "staff":
+			_focus(_hud.staff_button, "加料机开通了，每杯要多走一段路。\n还有空岗位，点「员工」派伙伴上岗")
+		else:
+			if _view.staff_is_deployed(_view.selected_worker):
+				_view.select_worker(int(waiting[0].id), true)
+			_focus(_hud.deploy_button, "点「派到店内」，让伙伴一起干活")
+	elif sim.gold < sim.hire_cost():
+		active = ""
+	elif page != "staff":
+		_focus(_hud.staff_button, "加料机开通了，每杯要多走一段路。\n还有空岗位，点「员工」再招一位，\n煮茶机也要升级跟上")
+	else:
+		_focus(_hud.hire_button, "招一位新伙伴，招来直接上岗")
 
 
 func _line_step(stage: int) -> void:

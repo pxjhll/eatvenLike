@@ -17,7 +17,10 @@ const STIR_SECONDS := 1.0
 ## v8: kitchen staff follow orders (worker.ticket); the topping machine tops the flavor that was ordered.
 ## v9: the press table (fruit teas on a black tea base) and its stage; lemonade to go skips the sealer.
 ## v10: order_ramp (orders seen since each dish / takeaway opened) so new things ease in.
-const SAVE_VERSION := 10
+## v11: stage_clock (seconds since the current line opened) so a new line's first minutes bring fewer customers.
+const SAVE_VERSION := 11
+## stage_clock stops counting here; any stage warm-up is far shorter.
+const STAGE_CLOCK_CAP := 3600.0
 ## A newly opened dish (and takeaway once the sealer opens) starts at RAMP_START of its order weight
 ## and reaches full weight after RAMP_ORDERS customers.
 const RAMP_START := 0.25
@@ -62,6 +65,8 @@ var kitchen_upgrades := 0
 var diners: Array = []
 ## Customers who arrived since each dish (and "takeaway") opened, capped at RAMP_ORDERS.
 var order_ramp: Dictionary = {}
+## Seconds since the current stage's line was unlocked (capped at STAGE_CLOCK_CAP).
+var stage_clock := 0.0
 var _flavor_cursor := 0
 ## Bought conveyor segments (BeltSlotDef ids) and each one's countdown to its next cup.
 var belts: Dictionary = {}
@@ -137,6 +142,7 @@ func _initialize_shop() -> void:
 	order_ramp.clear()
 	for dish in DISHES: order_ramp[dish] = 0
 	order_ramp.takeaway = 0
+	stage_clock = 0.0
 	for id in ["boil", "mix", "topping", "press", "seal"]:
 		stations[id] = {"input": {}, "output": {}, "phase": "idle", "progress": 0.0,
 			"label": id, "capacity": 6, "processing": 0, "remaining": 0.0,
@@ -456,6 +462,7 @@ func unlock_station(requested: String) -> String:
 	gold -= _unlock_cost(id)
 	var stage := _unlock_stage(id)
 	for key in STAGE_MACHINES[stage] if stage > 0 else [id]: unlocked_stations[key] = true
+	if stage > stage_index: stage_clock = 0.0
 	stage_index = maxi(stage_index, stage)
 	if orders.is_empty():
 		for unused in 3: _add_order()
@@ -828,7 +835,13 @@ func _topping_seconds() -> float:
 
 ## Customers come faster with each stage, each flavor on the menu (+5% each) and each flyer level (+10% each).
 func _order_interval() -> float:
-	return PROGRESSION.stages[stage_index].customer_interval / flow_multiplier() * tuned("customer")
+	return stage_interval() / flow_multiplier() * tuned("customer")
+
+## The stage's customer interval; a stage with a warm-up starts at warmup_interval and eases to it.
+func stage_interval() -> float:
+	var stage = PROGRESSION.stages[stage_index]
+	if stage.warmup_seconds <= 0 or stage.warmup_interval <= 0 or stage_clock >= stage.warmup_seconds: return stage.customer_interval
+	return lerpf(stage.warmup_interval, stage.customer_interval, stage_clock / stage.warmup_seconds)
 
 func flow_multiplier(flyer_level: int = -1) -> float:
 	var flavors := 0
@@ -859,6 +872,7 @@ func _queue_capacity() -> int:
 
 func _tick() -> void:
 	if follow_orders: _drop_stuck_tickets()
+	stage_clock = minf(stage_clock + STEP, STAGE_CLOCK_CAP)
 	super._tick()
 	_run_belts()
 	for index in range(diners.size() - 1, -1, -1):
@@ -1675,7 +1689,8 @@ func to_dict() -> Dictionary:
 		"sold_by_dish": sold_by_dish.duplicate(true), "flavor_cursor": _flavor_cursor, "rng_state": _rng.state,
 		"belts": belts.duplicate(true), "belt_clock": belt_clock.duplicate(true),
 		"boxes": boxes.duplicate(true), "seats": seats, "diners": diners.duplicate(true), "flyers": flyers,
-		"front_upgrades": front_upgrades, "kitchen_upgrades": kitchen_upgrades, "order_ramp": order_ramp.duplicate(true)}
+		"front_upgrades": front_upgrades, "kitchen_upgrades": kitchen_upgrades, "order_ramp": order_ramp.duplicate(true),
+		"stage_clock": stage_clock}
 
 func _apply_state(state: Dictionary) -> void:
 	roster = state.roster.duplicate(true)
@@ -1714,6 +1729,7 @@ func _apply_state(state: Dictionary) -> void:
 	kitchen_upgrades = state.kitchen_upgrades
 	diners = state.diners.duplicate(true)
 	order_ramp = state.order_ramp.duplicate(true)
+	stage_clock = state.stage_clock
 	_rng.state = state.rng_state
 
 func load_dict(state: Dictionary) -> String:
@@ -1732,6 +1748,7 @@ func load_dict(state: Dictionary) -> String:
 	# need the press table's keys filled in.
 	if from_version is int and from_version <= 8 and state.get("version") in [8, SAVE_VERSION]: state = _migrate_v8(state)
 	if state.get("version") is int and state.version == 9: state = _migrate_v9(state)
+	if state.get("version") is int and state.version == 10: state = _migrate_v10(state)
 	var error := _validate_state(state)
 	if not error.is_empty(): return error
 	var candidate = get_script().new()
@@ -1747,6 +1764,7 @@ func load_dict(state: Dictionary) -> String:
 func _migrate_v6(old: Dictionary) -> Dictionary:
 	var fresh = get_script().new()
 	var state: Dictionary = fresh.to_dict()
+	state.stage_clock = STAGE_CLOCK_CAP
 	for key in ["gold", "sold", "revenue", "elapsed", "paused", "sold_by_dish", "station_levels", "material_levels", "flavor_cursor", "rng_state", "next_order",
 			"stage_index", "unlocked_stations", "boxes", "seats", "flyers"]:
 		if old.has(key) and typeof(old[key]) == typeof(state[key]): state[key] = old[key].duplicate(true) if old[key] is Dictionary else old[key]
@@ -1814,7 +1832,7 @@ func _migrate_v8(old: Dictionary) -> Dictionary:
 ## v9 → v10: dishes already on the menu count as fully eased in; ones not yet open start from zero.
 func _migrate_v9(old: Dictionary) -> Dictionary:
 	var state: Dictionary = old.duplicate(true)
-	state.version = SAVE_VERSION
+	state.version = 10
 	if state.get("order_ramp") is Dictionary: return state
 	var probe = get_script().new()
 	if state.get("station_levels") is Dictionary and state.get("unlocked_stations") is Dictionary and state.get("boxes") is Dictionary:
@@ -1825,6 +1843,13 @@ func _migrate_v9(old: Dictionary) -> Dictionary:
 	for dish in DISHES: ramp_state[dish] = RAMP_ORDERS if probe._dish_unlocked(dish, false) else 0
 	ramp_state.takeaway = RAMP_ORDERS if probe.station_unlocked("seal") else 0
 	state.order_ramp = ramp_state
+	return state
+
+## v10 → v11: the line already open counts as long settled, so an old save gets no warm-up.
+func _migrate_v10(old: Dictionary) -> Dictionary:
+	var state: Dictionary = old.duplicate(true)
+	state.version = SAVE_VERSION
+	if not state.has("stage_clock"): state.stage_clock = STAGE_CLOCK_CAP
 	return state
 
 ## Adds the keys `sample` has and `target` lacks (recursing into nested dictionaries); existing values stay.
@@ -1850,6 +1875,7 @@ func _migrate_v4(old: Dictionary) -> Dictionary:
 func _migrate_v3(old: Dictionary) -> Dictionary:
 	var fresh = get_script().new()
 	var state: Dictionary = fresh.to_dict()
+	state.stage_clock = STAGE_CLOCK_CAP
 	for key in ["gold", "sold", "revenue", "elapsed", "paused", "sold_by_dish", "station_levels", "material_levels", "flavor_cursor", "rng_state", "next_order"]:
 		if old.has(key) and typeof(old[key]) == typeof(state[key]): state[key] = old[key].duplicate(true) if old[key] is Dictionary else old[key]
 	# The floor starts empty, so every cup ever made has been sold.
@@ -1919,8 +1945,9 @@ func _validate_state(state: Dictionary) -> String:
 	for key in ["version", "gold", "sold", "revenue", "shelf_count", "generated", "shelf_reserved_in", "shelf_reserved_out", "next_order", "stage_index", "flavor_cursor"]:
 		if state[key] < 0: return "存档数值无效：" + key
 	if state.version != SAVE_VERSION or state.stage_index >= PROGRESSION.stages.size() or state.next_order < 1: return "不支持的存档版本或阶段"
-	for key in ["elapsed", "accumulator", "order_clock"]:
+	for key in ["elapsed", "accumulator", "order_clock", "stage_clock"]:
 		if not is_finite(state[key]) or state[key] < -0.000001: return "存档时间无效"
+	if state.stage_clock > STAGE_CLOCK_CAP + 0.000001: return "存档时间无效"
 	if state.accumulator >= STEP + 0.000001: return "存档时间余量无效"
 	if not _same_shape(state.station_levels, template.station_levels) or not _same_shape(state.unlocked_stations, template.unlocked_stations): return "设备字段无效"
 	if not _same_shape(state.material_levels, template.material_levels): return "配料字段无效"

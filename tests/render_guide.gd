@@ -117,6 +117,23 @@ func _run() -> void:
 	_check(guide.active == "lost_seats" and guide._hole.intersects(_local(view._seats)), "full seats point at the seat chip")
 	await _capture("lost-seats")
 	await _click(guide._bubble_skip)
+	# The topping line: every flavored cup has one more stop, so the open staff spots get one hint.
+	view.sim.diners.clear()
+	for order in view.sim.orders: order.wait = 0.0
+	guide._lost_pending = false
+	view.sim.gold = 20000
+	for id in ["seal", "mix", "topping"]: view.sim.unlock_station(id)
+	view.sim.unlock_box("milk")
+	for stage in range(1, 6): guide.seen["line_%d" % stage] = true
+	guide.seen["box_milk"] = true
+	guide.refresh(0)
+	_check(view.sim.stage_index == guide.TOPPING_STAGE and guide.active == "more_staff" and guide._hole.intersects(_local(hud.staff_button)), "after the topping line opens, open staff spots point at the staff tab")
+	await _capture("more-staff")
+	await _click(hud.staff_button)
+	_check(guide._hole.intersects(_local(hud.hire_button)), "on the staff page the hand points at hiring again")
+	await _click(hud.hire_button)
+	_check(guide.active.is_empty() and guide.seen.has("more_staff"), "one more hire closes the hint for good")
+	await _click(hud.home_button)
 	view.free()
 	var reopened = load("res://presentation/tea_playtest/tea_playtest.tscn").instantiate()
 	reopened.store = Store.new(save_path)

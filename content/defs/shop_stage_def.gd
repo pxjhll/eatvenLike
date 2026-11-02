@@ -15,6 +15,9 @@ extends Resource
 @export var staff_slots: int = 3
 ## 本阶段的平均来客间隔（秒）
 @export var customer_interval: float = 0.0
+## 本阶段刚开时的来客间隔（秒）：开通后 warmup_seconds 秒内从它慢慢过渡到 customer_interval；0 = 不过渡
+@export var warmup_interval: float = 0.0
+@export var warmup_seconds: float = 0.0
 ## 本阶段起的点单权重：dish_id -> 权重
 @export var order_weights: Dictionary[String, float] = {}
 ## 美术店：本阶段排队上限（排满后新客人不进店）
