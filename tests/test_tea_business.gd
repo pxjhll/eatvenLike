@@ -18,6 +18,7 @@ func opened():
 	sim.unlock_station("seal")
 	sim.unlock_station("mix")
 	sim.unlock_box("milk")
+	sim.unlock_station("press")
 	sim.unlock_station("topping")
 	sim.upgrade_station("topping")
 	sim.upgrade_station("topping")
@@ -176,21 +177,20 @@ func test_shop_slots_grow_with_each_production_line() -> void:
 	check_eq(sim.to_dict(), before, "blocked deployment is atomic")
 	check_eq(sim.unlock_station("lemonade"), "", "open lemonade")
 	var next_id := 2
-	for line in ["boil", "seal", "mix", "topping", "press"]:
+	for line in ["boil", "seal", "mix", "press", "topping"]:
 		var before_slots: int = sim.kitchen_slots()
 		check_eq(sim.unlock_station(line), "", "open " + line)
-		# The topping line opens two: following orders, a late kitchen needs a fifth hand.
-		var added: int = 2 if line == "topping" else 1
+		var added := 1
 		check_eq(sim.kitchen_slots(), before_slots + added, "%s line adds %d kitchen slot(s)" % [line, added])
 		for unused in added:
 			check_eq(sim.deploy_worker(next_id), "", "the new slot takes one more employee")
 			next_id += 1
 		check(not sim.deploy_worker(next_id).is_empty(), "but no more than the slots")
-	check_eq(sim.kitchen_staff(), 6, "a full kitchen runs six staff")
-	check_eq(sim.deployment_error(next_id), "后厨最多 6 位员工", "the last line names no further unlock")
+	check_eq(sim.kitchen_staff(), 5, "a full kitchen runs five staff")
+	check_eq(sim.deployment_error(next_id), "后厨最多 5 位员工", "the last line names no further unlock")
 	check_eq(sim.front_staff(), 1, "the front still has one worker")
 	for tick in 600: sim.advance(0.1)
-	check(sim.audit().valid, "six deployed staff preserve simulation invariants")
+	check(sim.audit().valid, "five deployed staff preserve simulation invariants")
 	sim.reset_shop()
 	check_eq(sim.workers.size(), 1, "reset deploys only the starter")
 	check_eq(sim.staff_slots(), 1, "reset returns to the opening slots")
@@ -501,7 +501,7 @@ func test_opening_income_funds_the_real_production_progression() -> void:
 	if sim == null: return
 	sim.unlock_station("lemonade")
 	for tick in 60000:
-		for id in ["boil", "seal", "mix", "topping", "press"]:
+		for id in ["boil", "seal", "mix", "press", "topping"]:
 			if sim.station_info(id).unlock_error.is_empty(): sim.unlock_station(id)
 		for material in ["tea_leaf", "milk"]:
 			if sim.box_error(material).is_empty(): sim.unlock_box(material)
@@ -509,7 +509,7 @@ func test_opening_income_funds_the_real_production_progression() -> void:
 			sim.hire()
 			for worker in sim.roster:
 				if not worker.deployed: sim.deploy_worker(worker.id)
-		if sim.stage_index == 4 and sim.station_levels.topping < 4 and sim.station_info("topping").upgrade_error.is_empty(): sim.upgrade_station("topping")
+		if sim.stage_index == 5 and sim.station_levels.topping < 4 and sim.station_info("topping").upgrade_error.is_empty(): sim.upgrade_station("topping")
 		for goal in [["lemonade", 5], ["boil", 5], ["seal", 5], ["mix", 10], ["press", 5]]:
 			if sim.station_levels[goal[0]] < goal[1] and sim.station_info(goal[0]).upgrade_error.is_empty(): sim.upgrade_station(goal[0])
 		sim.advance(0.1)
@@ -631,7 +631,7 @@ func test_customer_queue_uses_configured_capacity() -> void:
 	check_eq(sim.orders.size(), capacity, "queue fills to the stage's capacity")
 	check_eq(capacity, 3, "the lemonade stage holds three in line (one row, no crowd at the door)")
 	var caps: Array = sim.PROGRESSION.stages.map(func(stage) -> int: return stage.queue_capacity)
-	check_eq(caps, [3, 4, 5, 7, 8, 9], "the line grows with each stage")
+	check_eq(caps, [3, 4, 5, 7, 8, 8], "the line grows with each stage")
 
 func _base_price(sim, dish: String) -> int:
 	for definition in sim.CONFIG.dishes:
@@ -658,7 +658,7 @@ func test_belt_segments_are_bought_and_move_goods_without_staff() -> void:
 	var sim = opened()
 	var gold: int = sim.gold
 	check_eq(sim.buy_belt("seal_to_shelf"), "", "belt segment bought")
-	check_eq(sim.gold, gold - 40, "segment charges its price")
+	check_eq(sim.gold, gold - 250, "segment charges its price")
 	check(not sim.buy_belt("seal_to_shelf").is_empty(), "segment cannot be bought twice")
 	for row in sim.belt_rows():
 		if row.id != "seal_to_shelf": check_eq(sim.buy_belt(row.id), "", "buy " + row.id)
@@ -678,26 +678,26 @@ func test_belt_segments_are_bought_and_move_goods_without_staff() -> void:
 	check(sim.sold_by_dish.pearl_milk_tea > 0, "belted line still sells topped tea")
 	gold = sim.gold
 	check_eq(sim.remove_belt("seal_to_shelf"), "", "segment can be taken back")
-	check_eq(sim.gold, gold + 40, "taking a segment back refunds it")
+	check_eq(sim.gold, gold + 250, "taking a segment back refunds it")
 	check(sim.audit().valid, "removing a segment keeps cargo conserved")
 
 func test_old_saves_get_their_belts_refunded() -> void:
 	var sim = opened()
 	if sim == null: return
 	check(not sim.BELTS_IN_GAME, "the game no longer sells belts")
-	check_eq(sim.buy_belt("seal_to_shelf"), "", "an old save could own a segment")
-	check_eq(sim.buy_belt("supply_to_boil"), "", "and another")
+	check_eq(sim.buy_belt("seal_to_shelf"), "", "the sealer conveyor is still for sale")
+	check_eq(sim.buy_belt("supply_to_boil"), "", "an old save could own another segment")
 	for tick in 300: sim.advance(0.1)
 	var gold: int = sim.gold
-	check_eq(sim.retire_belts(), 90, "retiring refunds what the segments cost")
-	check_eq(sim.gold, gold + 90, "refund reaches the purse")
-	check(sim.belts.is_empty() and sim.belt_clock.is_empty(), "no segment remains")
+	check_eq(sim.retire_belts(), 50, "retiring refunds what the old segments cost")
+	check_eq(sim.gold, gold + 50, "refund reaches the purse")
+	check_eq(sim.belts.keys(), ["seal_to_shelf"], "only the conveyor the game sells remains")
 	for tick in 300:
 		sim.advance(0.1)
 		if not sim.audit().valid:
 			check(false, "cups in flight still arrive after retiring: %s" % sim.audit())
 			return
-	check(sim.belt_items.is_empty(), "cargo already on a segment finishes its trip")
+	check(sim.belt_items.all(func(shipment): return shipment.route == "seal_to_shelf"), "cargo already on a retired segment finishes its trip")
 
 func test_counter_post_holds_only_the_front_slots() -> void:
 	var sim = opened()
@@ -713,7 +713,7 @@ func test_seated_topping_worker_runs_its_whole_segment() -> void:
 	sim.gold = 100000
 	sim.revenue = 100000
 	for unused in 4: sim.hire()
-	for line in ["lemonade", "boil", "seal", "mix", "topping"]: sim.unlock_station(line)
+	for line in ["lemonade", "boil", "seal", "mix", "press", "topping"]: sim.unlock_station(line)
 	for material in ["tea_leaf", "milk"]: sim.unlock_box(material)
 	# The task-pool rules (kept as a fallback) give the seat a whole segment.
 	sim.follow_orders = false
@@ -793,7 +793,7 @@ func test_v3_save_keeps_progress_on_the_new_unlock_order() -> void:
 	old.belts = {"supply_to_boil": true}
 	var copy = make_shop()
 	check_eq(copy.load_dict(old), "", "a save from before the split loads")
-	check_eq(copy.stage_index, 4, "the old topping stage maps to the new last stage")
+	check_eq(copy.stage_index, 5, "the old topping stage maps to the new last stage")
 	check(copy.boxes.tea_leaf and copy.boxes.milk, "boxes of lines already open are owned")
 	check(copy.station_unlocked("seal") and copy.station_unlocked("topping"), "every machine the player had stays open")
 	check_eq(copy.gold, old.gold + 50, "money is kept and the old belt is refunded")
@@ -865,7 +865,6 @@ func test_star_tasks_finish_the_first_shop() -> void:
 		check(name in names, "star task listed: " + name)
 	sim.gold = 100000
 	sim.revenue = 100000
-	check_eq(sim.unlock_station("press"), "", "the press table opens the last stage")
 	check(not sim.shop_complete(), "the press table's tasks are still open")
 	for goal in [["lemonade", 5], ["boil", 5], ["seal", 5], ["mix", 10], ["topping", 4], ["press", 5]]:
 		while sim.station_levels[goal[0]] < goal[1]: sim.upgrade_station(goal[0])
@@ -935,7 +934,7 @@ func _full_line(kitchen: int):
 	sim.gold = 100000
 	sim.revenue = 100000
 	for unused in kitchen: sim.hire()
-	for line in ["lemonade", "boil", "seal", "mix", "topping"]: sim.unlock_station(line)
+	for line in ["lemonade", "boil", "seal", "mix", "press", "topping"]: sim.unlock_station(line)
 	for material in ["tea_leaf", "milk"]: sim.unlock_box(material)
 	for unused in 3: sim.upgrade_station("topping")
 	for index in kitchen: check_eq(sim.deploy_worker(index + 2), "", "kitchen hand %d deployed" % (index + 2))
@@ -1054,61 +1053,59 @@ func test_cups_left_at_the_topping_machine_are_picked_up_by_the_next_follower() 
 
 # ---- Press table (fruit teas) and lemonade to go ----
 
-func _press_line(kitchen: int):
-	var sim = _full_line(kitchen)
-	if sim == null: return null
-	check_eq(sim.unlock_station("press"), "", "the press table unlocks after the topping machine")
-	return sim
-
-func test_a_follower_presses_the_fruit_tea_it_was_ordered_by_hand() -> void:
-	var sim = _press_line(2)
+func test_lemon_tea_is_pressed_at_the_front_from_a_lemonade() -> void:
+	var sim = _full_line(2)
 	if sim == null: return
-	for unused in 2: sim.upgrade_station("press")
-	check(sim._dish_unlocked("banana_tea"), "banana opens at press table Lv3")
+	check(sim.station_unlocked("press"), "the front press opens before the topping machine")
+	check(sim._dish_unlocked("lemon_tea", false), "lemon tea is on the menu once the press is open")
 	sim.orders.clear()
-	sim.orders.append({"id": 900, "dish": "banana_tea", "wait": 0.0, "reserved": false, "takeaway": false})
+	sim.orders.append({"id": 900, "dish": "lemon_tea", "wait": 0.0, "reserved": false, "takeaway": true})
 	sim.orders.append({"id": 901, "dish": "lemon_tea", "wait": 0.0, "reserved": false, "takeaway": false})
 	sim._next_order = 902
-	var stages := {}
-	var pressers := {}
-	var made := {"lemon_tea": 0, "banana_tea": 0}
-	var wrong := 0
+	var makers := {}
+	for tick in 600:
+		sim.advance(0.1)
+		for worker in sim.workers:
+			if not worker.job.is_empty() and worker.job.item == "lemon_tea":
+				makers[worker.post] = true
+				check_eq(worker.job.src, "supply", "lemon tea is made at the stand, never fetched from the kitchen")
+		check_eq(sim.stations.seal.input.lemon_tea + sim.stations.seal.output.lemon_tea, 0, "lemon tea to go is not sealed")
+		if sim.sold_by_dish.lemon_tea >= 2: break
+	check_eq(sim.sold_by_dish.lemon_tea, 2, "both lemon teas reach their customers")
+	check_eq(makers.keys(), ["counter"], "only the front makes lemon tea")
+	var lemonade_seconds: float = sim._action_duration({"kind": "serve", "src": "supply", "item": "lemonade", "count": 1}, sim.workers[0])
+	var tea_seconds: float = sim._action_duration({"kind": "serve", "src": "supply", "item": "lemon_tea", "count": 1}, sim.workers[0])
+	check(tea_seconds > lemonade_seconds, "pressing lemon takes longer than pouring a lemonade")
+	var price: int = sim._dish_price("lemon_tea")
+	sim.upgrade_station("lemonade")
+	check(sim._dish_price("lemon_tea") > price, "the lemonade stand's levels also raise the lemon tea price")
+	check(sim.audit().valid, "lemon tea keeps every cup accounted for: %s" % [sim.audit().errors])
+	check_eq(make_shop().load_dict(sim.to_dict()), "", "a shop with lemon tea saves and loads")
+	var info: Dictionary = sim.station_info("press")
+	check_eq(info.name, "手打台", "the machine card names the press")
+	check(info.seconds > 0 and info.next_seconds > 0 and info.next_seconds < info.seconds, "upgrading presses faster")
+	check_eq(info.materials.map(func(row): return row.id), ["lemon"], "one fruit: lemon")
+
+func test_the_sealer_conveyor_carries_takeaway_cups_to_the_rack() -> void:
+	var sim = _full_line(2)
+	if sim == null: return
+	check_eq(sim.buy_belt("seal_to_shelf"), "", "the conveyor is for sale once the milk station is open")
+	var hand_carried := 0
+	var shipped := 0
 	for tick in 3000:
 		sim.advance(0.1)
 		for worker in sim.workers:
-			if not worker.ticket.is_empty(): stages[worker.ticket.stage] = true
-			if not worker.job.is_empty() and worker.job.kind == "press" and worker.phase == "work":
-				pressers[worker.id] = true
-				check(not worker.ticket.is_empty() and worker.ticket.stage == "press", "whoever presses is following that order")
-				check_eq(sim.stations.press.processing_item, worker.ticket.dish, "the press makes the fruit that was ordered")
-		for dish in made:
-			var now: int = sim.stations.press.output[dish]
-			if now > made[dish] and not sim.orders.any(func(order): return order.dish == dish): wrong += 1
-			made[dish] = now
-		if sim.sold_by_dish.banana_tea > 0 and sim.sold_by_dish.lemon_tea > 0: break
-	check(sim.sold_by_dish.banana_tea > 0 and sim.sold_by_dish.lemon_tea > 0, "both fruit teas reach their customers")
-	check(stages.has("press") and stages.has("pressed"), "followers carry tea to the press table and on: %s" % [stages.keys()])
-	check(not pressers.is_empty(), "a follower stands at the press table the whole time it presses")
-	check_eq(wrong, 0, "no fruit nobody ordered is pressed")
-	check(sim.audit().valid, "fruit teas keep every cup accounted for: %s" % [sim.audit().errors])
-	check_eq(make_shop().load_dict(sim.to_dict()), "", "a shop with fruit teas saves and loads")
-
-func test_the_press_table_sells_fruit_teas_in_a_busy_shop() -> void:
-	var sim = _press_line(4)
-	if sim == null: return
-	# Ten minutes: since sealed cups also make a trip to the shelf, the brewer-bound line needs a little longer.
-	for tick in 6000:
-		sim.advance(0.1)
+			if not worker.job.is_empty() and worker.job.kind == "carry_to_pickup": hand_carried += 1
+		for shipment in sim.belt_items: if shipment.route == "seal_to_shelf": shipped += 1
 		if tick % 50 == 0 and not sim.audit().valid:
-			check(false, "busy shop conserves: %s" % [sim.audit().errors])
+			check(false, "belted takeaway conserves: %s" % [sim.audit().errors])
 			return
-	check(sim.audit().valid, "busy shop conserves: %s" % [sim.audit().errors])
-	check(sim.sold_by_dish.lemon_tea > 1, "lemon tea sells next to the other drinks (%d)" % sim.sold_by_dish.lemon_tea)
-	check(sim.sold_by_dish.pearl_milk_tea > 3, "milk teas keep selling")
-	var info: Dictionary = sim.station_info("press")
-	check_eq(info.name, "手打台", "the machine card names the press table")
-	check(info.seconds > 0 and info.next_seconds > 0 and info.next_seconds < info.seconds, "upgrading presses faster")
-	check_eq(info.materials.map(func(row): return row.id), ["lemon", "banana"], "fruit slots: lemon, then banana")
+	check(shipped > 0, "sealed cups ride the conveyor")
+	check_eq(hand_carried, 0, "nobody carries sealed cups to the rack by hand")
+	check(sim.sold > 0 and sim.audit().valid, "the shop keeps selling")
+	var copy = make_shop()
+	check_eq(copy.load_dict(sim.to_dict()), "", "the conveyor saves and loads")
+	check(copy.belts.has("seal_to_shelf"), "the conveyor is kept on load")
 
 func test_lemonade_to_go_is_handed_over_without_the_sealer() -> void:
 	var sim = make_shop()
@@ -1129,10 +1126,12 @@ func test_lemonade_to_go_is_handed_over_without_the_sealer() -> void:
 	check(sim.sold_by_dish.lemonade > 0, "the takeaway lemonade is sold")
 	check_eq(sim.diners.size(), seated, "a lemonade to go takes no seat")
 	check_eq(sim.dish_name("lemonade"), "柠檬水", "the front drink is called lemonade (柠檬水)")
-	check_eq(sim.dish_name("lemon_tea"), "柠檬茶", "lemon tea is the new kitchen drink")
+	check_eq(sim.dish_name("lemon_tea"), "柠檬茶", "lemon tea is the front's second drink")
 
 ## Takes the press table and fruit teas out of a save, as saves from before v9 had them.
 func _strip_press(old: Dictionary) -> void:
+	# Saves from then had sold no lemon tea.
+	old.sold -= int(old.sold_by_dish.get("lemon_tea", 0))
 	old.stations.erase("press")
 	for key in ["shelf_stock", "sold_by_dish"]:
 		for dish in ["lemon_tea", "banana_tea"]: old[key].erase(dish)
@@ -1153,9 +1152,10 @@ func test_v6_save_without_the_press_table_still_loads() -> void:
 	old.erase("kitchen_upgrades")
 	for worker in old.roster: worker.erase("ticket")
 	_strip_press(old)
+	old.stage_index = 4
 	var copy = make_shop()
 	check_eq(copy.load_dict(old), "", "a v6 save from before the press table loads")
-	check(not copy.station_unlocked("press") and copy.station_levels.press == 1, "with the press table locked at Lv1")
+	check(copy.station_unlocked("press") and copy.station_levels.press == 1, "past the topping machine it gets the front press at Lv1")
 
 func test_v8_save_loads_with_the_press_table_still_locked() -> void:
 	var sim = _full_line(2)
@@ -1163,18 +1163,11 @@ func test_v8_save_loads_with_the_press_table_still_locked() -> void:
 	for tick in 300: sim.advance(0.1)
 	var old: Dictionary = sim.to_dict()
 	old.version = 8
-	old.stations.erase("press")
-	for key in ["shelf_stock", "sold_by_dish"]:
-		for dish in ["lemon_tea", "banana_tea"]: old[key].erase(dish)
-	for dish in ["lemon_tea", "banana_tea"]:
-		old.stations.seal.input.erase(dish)
-		old.stations.seal.output.erase(dish)
-	old.station_levels.erase("press")
-	old.unlocked_stations.erase("press")
-	old.material_levels.erase("press")
+	_strip_press(old)
+	old.stage_index = 4
 	var copy = make_shop()
 	check_eq(copy.load_dict(old), "", "a v8 save loads")
-	check(not copy.station_unlocked("press"), "the press table starts locked")
+	check(copy.station_unlocked("press") and copy.stage_index == 5, "past the topping machine it gets the front press")
 	check_eq(copy.station_levels.press, 1, "at Lv1")
 	for tick in 600: copy.advance(0.1)
 	check(copy.audit().valid and copy.sold > old.sold, "the loaded shop keeps selling")
@@ -1190,8 +1183,6 @@ func test_new_dishes_and_takeaway_ease_in_over_a_dozen_customers() -> void:
 	weights = sim.order_weights()
 	check(is_equal_approx(weights.pearl_milk_tea, full.pearl_milk_tea), "after a dozen customers the dish has its full weight")
 	check(is_equal_approx(sim.takeaway_share(), sim.PROGRESSION.stages[sim.stage_index].takeaway_share), "takeaway reaches its full share too")
-	check(not weights.has("banana_tea"), "dishes not on the menu get no weight")
-	check_eq(sim.order_ramp.banana_tea, 0, "a closed dish does not count customers yet")
 	var copy = make_shop()
 	check_eq(copy.load_dict(sim.to_dict()), "", "the ease-in counters save")
 	check_eq(copy.order_ramp, sim.order_ramp, "the ease-in counters load")
@@ -1202,11 +1193,14 @@ func test_v9_save_counts_open_dishes_as_eased_in() -> void:
 	var state: Dictionary = sim.to_dict()
 	state.version = 9
 	state.erase("order_ramp")
+	# A v9 save in the milk stage: the topping machine not yet open.
+	state.stage_index = 3
+	for id in ["press", "topping"]: state.unlocked_stations[id] = false
 	var copy = make_shop()
 	check_eq(copy.load_dict(state), "", "a v9 save loads")
-	check_eq(copy.order_ramp.pearl_milk_tea, copy.RAMP_ORDERS, "dishes already sold keep their full weight")
+	check_eq(copy.order_ramp.plain_milk_tea, copy.RAMP_ORDERS, "dishes already sold keep their full weight")
 	check_eq(copy.order_ramp.takeaway, copy.RAMP_ORDERS, "takeaway keeps its full share")
-	check_eq(copy.order_ramp.lemon_tea, 0, "a dish that opens later still eases in")
+	check_eq(copy.order_ramp.pearl_milk_tea, 0, "a dish that opens later still eases in")
 
 func test_dine_in_customers_sit_shorter_early_and_longer_later() -> void:
 	var sim = make_shop()
@@ -1273,3 +1267,34 @@ func test_v10_save_gets_an_empty_takeaway_rack() -> void:
 	check_eq(copy.load_dict(state), "", "a v10 save loads")
 	check(copy.stations.has("pickup"), "the takeaway rack is added")
 	check_eq(copy.stations.pickup.capacity, copy.PICKUP_CAPACITY, "with its normal size")
+
+func test_v11_save_drops_the_kitchen_press_and_banana_tea() -> void:
+	var sim = opened()
+	if sim == null: return
+	sim.advance(30.0)
+	var state: Dictionary = sim.to_dict()
+	# Shape of a v11 save at the old topping stage: kitchen press table locked, banana tea on the books.
+	state.version = 11
+	state.stage_index = 4
+	state.unlocked_stations.press = false
+	state.stations.press = {"input": {"tea": 1}, "output": {"lemon_tea": 0, "banana_tea": 1}, "phase": "idle", "progress": 0.0,
+		"label": "press", "capacity": 6, "processing": 0, "remaining": 0.0, "duration": 0.0, "reserved_in": 0, "reserved_out": {},
+		"work_reserved": false, "processing_item": ""}
+	for key in ["shelf_stock", "order_ramp"]: state[key].banana_tea = 0
+	state.sold_by_dish.banana_tea = 3
+	state.sold += 3
+	state.material_levels.press.banana = 2
+	for key in ["input", "output"]:
+		state.stations.seal[key].banana_tea = 0
+	state.stations.pickup.output.banana_tea = 0
+	var lemon_sold: int = state.sold_by_dish.lemon_tea
+	var copy = make_shop()
+	check_eq(copy.load_dict(state), "", "a v11 save loads")
+	check_eq(copy.stage_index, 5, "the old topping stage is the new last stage")
+	check(copy.station_unlocked("press") and copy.station_unlocked("topping"), "the front press comes with it")
+	check(not copy.stations.has("press") and not copy.sold_by_dish.has("banana_tea"), "the kitchen press and banana tea are gone")
+	check_eq(copy.sold_by_dish.lemon_tea, lemon_sold + 3, "banana teas sold count as lemon teas")
+	check_eq(copy.sold, state.sold, "the sales total is kept")
+	check(copy.audit().valid, "the migrated floor is consistent")
+	for tick in 600: copy.advance(0.1)
+	check(copy.audit().valid and copy.sold > state.sold, "the migrated shop keeps selling")

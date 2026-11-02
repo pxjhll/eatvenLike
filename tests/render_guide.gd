@@ -122,7 +122,7 @@ func _run() -> void:
 	for order in view.sim.orders: order.wait = 0.0
 	guide._lost_pending = false
 	view.sim.gold = 20000
-	for id in ["seal", "mix", "topping"]: view.sim.unlock_station(id)
+	for id in ["seal", "mix", "press", "topping"]: view.sim.unlock_station(id)
 	view.sim.unlock_box("milk")
 	for stage in range(1, 6): guide.seen["line_%d" % stage] = true
 	guide.seen["box_milk"] = true

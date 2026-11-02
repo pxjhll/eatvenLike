@@ -117,11 +117,26 @@ func _run() -> void:
 	_check(view.sim.material_levels.supply.tea_leaf == 2 and view.sim.gold == gold - 50, "raw material panel upgrades the price of tea drinks")
 	await _capture("materials")
 	view.sim.revenue = maxi(view.sim.revenue, 1200)
-	view.sim.gold = maxi(view.sim.gold, 1000)
+	view.sim.gold = maxi(view.sim.gold, 1300)
 	await _click(hud.home_button)
+	await _layout()
+	_check(view._station_buttons.belt.visible and view._station_buttons.belt.can_unlock, "after the milk station the sealer conveyor shows its dashed frame")
+	await _capture("belt-frame")
+	gold = view.sim.gold
+	await _click(view._station_buttons.belt)
+	_check(view.sim.belts.has("seal_to_shelf") and view.sim.gold == gold - 250, "the dashed frame buys the sealer conveyor")
+	_check(not view._station_buttons.belt.visible and view.art.get_node("Sortables/BeltVertical").visible, "the conveyor art replaces its frame")
+	_check(view._station_buttons.press.visible and not view._station_buttons.topping.visible, "the front press is the next unlock, before the topping machine")
+	await _click(view._station_buttons.press)
+	await _click(hud.station_panel.unlock_button)
+	_check(view.sim.stage_index == 4 and view.sim.station_unlocked("press"), "the front press opens lemon tea")
+	_check(view.art.get_node("Sortables/PressTable").visible, "the mortar stands on the front counter")
+	_advance(300)
+	await _click(hud.home_button)
+	await _capture("lemon-tea")
 	await _click(view._station_buttons.topping)
 	await _click(hud.station_panel.unlock_button)
-	_check(view.sim.stage_index == 4, "topping unlock advances real operating stage")
+	_check(view.sim.stage_index == 5, "topping unlock advances real operating stage")
 	await _click(hud.station_panel.upgrade_button)
 	await _click(hud.station_panel.material_buttons.coconut)
 	_check(view.sim.station_info("topping").level == 2 and view.sim.material_levels.topping.coconut == 2, "machine level opens actual coconut flavor upgrade")
@@ -219,7 +234,7 @@ func _test_touch_station_panels() -> void:
 	view.sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
 	view.sim.gold = 1000000
 	view.sim.revenue = 1000000
-	for id in ["lemonade", "boil", "seal", "mix", "topping", "press"]:
+	for id in ["lemonade", "boil", "seal", "mix", "press", "topping"]:
 		_check(view.sim.unlock_station(id).is_empty(), "touch fixture unlocks " + id)
 	for material in view.sim.boxes:
 		_check(view.sim.unlock_box(material).is_empty(), "touch fixture buys " + material)
@@ -230,7 +245,7 @@ func _test_touch_station_panels() -> void:
 	hud = view.ui
 	var points := {"supply": Vector2(120, 210), "boil": Vector2(390, 150),
 		"mix": Vector2(465, 200), "topping": Vector2(85, 420), "seal": Vector2(600, 280),
-		"lemonade": Vector2(160, 920), "press": Vector2(622, 475)}
+		"lemonade": Vector2(160, 920), "press": Vector2(318, 880)}
 	for viewport_size in [Vector2i(720, 1280), Vector2i(360, 640)]:
 		root.size = viewport_size
 		await _layout()

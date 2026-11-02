@@ -6,9 +6,9 @@ extends Control
 ## second partner → deploy them → done card. Later, once each: a hint when the next line can
 ## be bought, and a hint the first time a customer leaves. Dimmed steps freeze the shop.
 
-const STAGE_SIGNS := ["", "boil", "seal", "mix", "topping", "press"]
+const STAGE_SIGNS := ["", "boil", "seal", "mix", "press", "topping"]
 ## From the topping line on, each cup has one more stop: the hint to fill the new staff spots starts here.
-const TOPPING_STAGE := 4
+const TOPPING_STAGE := 5
 const COUNTER_AREA := Rect2(410, 850, 120, 110)
 const DIM := Color(0.16, 0.1, 0.06, 0.62)
 const GLOW := Color("ffd98a")
