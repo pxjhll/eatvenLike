@@ -191,11 +191,43 @@
       ]
     },
     {
-      "file": "art/reference/checkout.png",
+      "file": "art/reference/floor.png",
       "alpha_preserved": true,
       "size": [
-        1400,
-        280
+        937,
+        1678
+      ]
+    },
+    {
+      "file": "art/reference/prep_bench.png",
+      "alpha_preserved": true,
+      "size": [
+        313,
+        892
+      ]
+    },
+    {
+      "file": "art/reference/lemonade_display_table.png",
+      "alpha_preserved": true,
+      "size": [
+        600,
+        220
+      ]
+    },
+    {
+      "file": "art/reference/rack.png",
+      "alpha_preserved": true,
+      "size": [
+        390,
+        380
+      ]
+    },
+    {
+      "file": "art/reference/dining_table.png",
+      "alpha_preserved": true,
+      "size": [
+        400,
+        310
       ]
     },
     {
@@ -212,54 +244,6 @@
       "size": [
         240,
         350
-      ]
-    },
-    {
-      "file": "art/reference/dining_table.png",
-      "alpha_preserved": true,
-      "size": [
-        400,
-        310
-      ]
-    },
-    {
-      "file": "art/reference/floor.png",
-      "alpha_preserved": true,
-      "size": [
-        937,
-        1678
-      ]
-    },
-    {
-      "file": "art/reference/ingredient_table.png",
-      "alpha_preserved": true,
-      "size": [
-        480,
-        225
-      ]
-    },
-    {
-      "file": "art/reference/lemonade_display_table.png",
-      "alpha_preserved": true,
-      "size": [
-        600,
-        220
-      ]
-    },
-    {
-      "file": "art/reference/prep_bench.png",
-      "alpha_preserved": true,
-      "size": [
-        313,
-        892
-      ]
-    },
-    {
-      "file": "art/reference/rack.png",
-      "alpha_preserved": true,
-      "size": [
-        390,
-        380
       ]
     }
   ]

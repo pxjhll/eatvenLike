@@ -203,6 +203,27 @@ func test_v11_malformed_worker_posts_reject_without_runtime_errors_or_mutation()
 		check_eq(sim.to_dict(), before, "malformed legacy record leaves live shop unchanged")
 
 
+func test_current_save_recovers_staff_covered_by_the_new_left_counter() -> void:
+	for deployed in [false, true]:
+		var old = _sim()
+		old.gold = 1000
+		old.unlock_station("lemonade")
+		old.unlock_station("boil")
+		old.unlock_box("tea_leaf")
+		old.hire()
+		if deployed: old.deploy_worker(2)
+		var state: Dictionary = old.to_dict()
+		# This was free floor beside the straight bar, and is now the deep left work block.
+		state.roster[1].pos = Vector2(250, 770)
+		state.roster[1].assignment_point = Vector2(250, 770)
+		var resumed = _sim()
+		check_eq(resumed.load_dict(state), "", "existing current-version layout save loads")
+		check(not resumed.Layout.path(resumed.worker_by_id(2).pos, resumed.Layout.POINTS.supply).is_empty(), "reserve and deployed staff recover to reachable floor")
+		if not deployed: check_eq(resumed.deploy_worker(2), "", "recovered reserve can deploy")
+		resumed.advance(300)
+		check(resumed.sold_by_dish.black_tea > 0 and resumed.worker_by_id(2).completed > 0, "recovered kitchen staff resume real production")
+		check(resumed.audit().valid, "layout recovery preserves every cup and reservation")
+
 func _write(path: String, text: String) -> void:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	file.store_string(text)

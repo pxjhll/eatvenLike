@@ -3,6 +3,7 @@ extends Node2D
 
 const Sim := preload("res://game/tea_playtest/tea_playtest_sim.gd")
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
+const ArtGroups := preload("res://presentation/tea_playtest/shop_art_groups.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const DragController := preload("res://presentation/tea_playtest/staff_drag_controller.gd")
 const Guide := preload("res://presentation/tea_playtest/guide_overlay.gd")
@@ -13,8 +14,8 @@ const Recorder := preload("res://presentation/tea_playtest/play_recorder.gd")
 const ART_NAMES := preload("res://presentation/characters/character_library.gd").NAMES
 const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "press": "手打果茶", "lemon_front": "前台手打柠檬茶", "seal": "自动封口"}
 ## Machines show no standing text: a bar while working and a bubble only when they need a hand.
-const BADGES := {"boil": Vector2(265, 132), "mix": Vector2(420, 132), "topping": Vector2(36, 612), "press": Vector2(566, 400), "lemon_front": Vector2(284, 674), "seal": Vector2(556, 178)}
-const SALE_POINT := Vector2(470, 745)
+const BADGES := {"boil": Vector2(300, 114), "mix": Vector2(452, 79), "topping": Vector2(36, 616), "press": Vector2(420, 420), "lemon_front": Vector2(260, 649), "seal": Vector2(564, 178)}
+const SALE_POINT := Vector2(490, 740)
 var sim: RefCounted
 var store: RefCounted
 var save_status := "自动存档已开启"
@@ -70,39 +71,29 @@ var _chip_home := Vector2(296, 560)
 var _chip_dragging := false
 ## These two hops already have conveyor art in the scene; the rest are drawn as lines.
 ## The shelf's lower tier, where sealed takeaway cups wait.
-const PICKUP_ROW_Y := 662.0
+const PICKUP_ROW_Y := 634.0
 const ART_BELTS := {"BeltHorizontal": "topping_to_seal", "BeltVertical": "seal_to_shelf"}
 const STATION_REGIONS := {
-	"supply": Rect2(20, 155, 221, 120), "boil": Rect2(245, 122, 167, 158),
-	"mix": Rect2(415, 121, 106, 160), "topping": Rect2(22, 254, 121, 339),
-	"seal": Rect2(548, 207, 120, 184), "lemonade": Rect2(40, 636, 190, 220),
-	"lemon_front": Rect2(260, 720, 210, 140),
-	"press": Rect2(555, 412, 135, 125),
+	"supply": Rect2(69, 141, 134, 95), "boil": Rect2(291, 117, 143, 110),
+	"mix": Rect2(440, 79, 110, 155), "topping": Rect2(23, 269, 122, 348),
+	"seal": Rect2(558, 205, 134, 185), "lemonade": Rect2(31, 595, 123, 184),
+	"lemon_front": Rect2(189, 656, 113, 141),
+	"press": Rect2(412, 430, 100, 100), # Retain the legacy stage's control without restoring its furniture.
 }
 ## A locked machine is not drawn; its floor spot shows a dashed frame instead.
 ## The cabinet is furniture; its spot shows a frame only while an ingredient box waits to be bought.
-## The shelf opens with the brewer. Only the very next unlock shows: lemonade first, then one machine at a time.
+## Only the next machine unlock shows; base furniture and the rack are present at opening.
 const FRAME_RECTS := {
-	"supply": Rect2(30, 228, 204, 46), "boil": Rect2(250, 228, 158, 76),
-	"mix": Rect2(420, 160, 98, 82), "topping": Rect2(30, 284, 112, 300),
-	"seal": Rect2(556, 228, 108, 154), "shelf": Rect2(520, 548, 162, 144),
-	"lemonade": Rect2(48, 750, 180, 112), "press": Rect2(562, 420, 122, 112),
-	"lemon_front": Rect2(264, 726, 200, 100),
+	"supply": Rect2(69, 155, 134, 78), "boil": Rect2(291, 136, 143, 90),
+	"mix": Rect2(446, 112, 106, 116), "topping": Rect2(30, 290, 108, 285),
+	"seal": Rect2(564, 228, 123, 154),
+	"lemonade": Rect2(35, 625, 119, 145),
+	"lemon_front": Rect2(195, 675, 108, 110),
+	"press": Rect2(412, 430, 100, 100),
 }
 const FRAME_OPENS := {"shelf": "boil"}
-## Machine art that appears only once its station is unlocked (the table carries the pot and the milk machine).
-const LOCKED_ART := {
-	"Sortables/IngredientTable": "supply", "Sortables/MachineTable": "boil",
-	"Sortables/MachineTable/PearlPot": "boil", "Sortables/MachineTable/Brewer": "mix",
-	"Sortables/MachineTable/ConnectorPipe": "mix",
-	"Sortables/PrepBench": "topping", "Sortables/Sealer": "seal", "Sortables/Rack": "boil",
-	"Sortables/DisplayCase": "lemonade", "Sortables/PressTable": "press",
-	"Sortables/LemonadeTable": "lemonade", "Sortables/Checkout/FrontLemon": "lemon_front",
-}
-## The press table is new art the reference scene doesn't have; it is added beside the sealer at runtime.
-const PRESS_TABLE := preload("res://art/machine/press_table.png")
+## Retain the kitchen press anchor for existing station references, without furniture art.
 const PRESS_ANCHOR := Vector2(622, 530)
-const PRESS_WIDTH := 140.0
 
 
 func _ready() -> void:
@@ -249,7 +240,7 @@ func _refresh(delta: float) -> void:
 		_badges[id].tooltip_text = "%s · 输入 %d · 加工 %d · 输出 %d" % [STATION_NAMES[id], _total(station.input), station.get("processing", 0), output_count]
 	var limit: int = sim.shelf_limit() if sim.has_method("shelf_limit") else 3
 	_shelf.text = "货架 %d/%d" % [sim.shelf_count, limit]
-	_shelf.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("boil")
+	_shelf.visible = true
 	if sim.has_method("free_seats"):
 		_seats.text = "堂食 %d/%d" % [sim.diners.size(), sim.seats]
 		_seats.visible = sim.station_unlocked("lemonade")
@@ -295,7 +286,7 @@ func _update_cups() -> void:
 		for unused in mini(sim.shelf_count, 3):
 			shelf_items.append("sealed")
 	for i in shelf_items.size():
-		draws.append({"pos": Vector2(546 + i * 51, 601), "item": shelf_items[i], "host": "Rack"})
+			draws.append({"pos": Vector2(557 + i * 51, 574), "item": shelf_items[i], "host": "Rack"})
 	# Sealed takeaway cups wait on the shelf's lower tier, where the front picks them up.
 	if sim.stations.has("pickup"):
 		var sealed: Array = []
@@ -303,7 +294,7 @@ func _update_cups() -> void:
 			for unused in mini(int(sim.stations.pickup.output[dish]), 3 - sealed.size()):
 				sealed.append(dish)
 		for i in sealed.size():
-			draws.append({"pos": Vector2(546 + i * 51, PICKUP_ROW_Y), "item": sealed[i], "host": "Rack"})
+			draws.append({"pos": Vector2(557 + i * 51, PICKUP_ROW_Y), "item": sealed[i], "host": "Rack"})
 	for belt in sim.belt_items:
 		var route: PackedVector2Array = _belt_points.get(belt.route, Layout.belt_path(belt.route))
 		var point := _along(route, float(belt.progress))
@@ -311,7 +302,7 @@ func _update_cups() -> void:
 		for i in int(belt.count):
 			var offset := Vector2((i - (int(belt.count) - 1) / 2.0) * 14, -i * 2)
 			draws.append({"pos": point + offset, "item": belt.item, "host": host})
-	var buffer_points := {"mix": Vector2(505, 265), "topping": Vector2(78, 445), "seal": Vector2(613, 405), "press": Vector2(660, 470), "lemon_front": Vector2(435, 839)}
+	var buffer_points := {"mix": Vector2(493, 218), "topping": Vector2(78, 465), "seal": Vector2(626, 405), "press": Vector2(540, 490), "lemon_front": Vector2(280, 748)}
 	var buffer_hosts := {"mix": "MachineTable", "topping": "PrepBench", "seal": "Sealer", "press": "PressTable", "lemon_front": "Checkout"}
 	# One full-size cup marks a waiting output; the station sign already shows how many.
 	for id in buffer_points:
@@ -433,12 +424,7 @@ func _build_press_table() -> void:
 	table.position = PRESS_ANCHOR
 	table.set_meta("art_layer", "equipment")
 	table.set_meta("asset_id", "press_table")
-	var sprite := Sprite2D.new()
-	sprite.texture = PRESS_TABLE
-	sprite.centered = false
-	sprite.scale = Vector2.ONE * PRESS_WIDTH / PRESS_TABLE.get_width()
-	sprite.position = Vector2(-PRESS_WIDTH / 2.0, -PRESS_TABLE.get_height() * sprite.scale.y)
-	table.add_child(sprite)
+	# Keep the existing station anchor; its kitchen furniture art has been removed.
 	art.get_node("Sortables").add_child(table)
 	table.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("press")
 
@@ -460,7 +446,7 @@ func _build_badges() -> void:
 		var label := _chip(parent, BADGES[id] + Vector2(10, -6))
 		label.mouse_filter = Control.MOUSE_FILTER_PASS
 		_badges[id] = label
-	_shelf = _chip(parent, Vector2(560, 706))
+	_shelf = _chip(parent, Vector2(560, 684))
 	# The chip sits above the dining furniture and opens the seat purchase panel.
 	_seats = _chip(parent, Vector2(42, 918))
 	_seats.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -595,8 +581,10 @@ func _show_toast(text: String) -> void:
 
 func _fit() -> void:
 	var size := get_viewport_rect().size
-	var world_factor := minf(size.x / Layout.WORLD_SIZE.x, size.y / Layout.WORLD_SIZE.y)
-	$Canvas.position = (size - Layout.WORLD_SIZE * world_factor) / 2.0
+	# Keep the user's higher mixer clear of the HUD without changing scene coordinates.
+	var fitted_size := Layout.WORLD_SIZE + Vector2(0, 50)
+	var world_factor := minf(size.x / fitted_size.x, size.y / fitted_size.y)
+	$Canvas.position = (size - fitted_size * world_factor) / 2.0 + Vector2(0, 50 * world_factor)
 	$Canvas.scale = Vector2.ONE * world_factor
 	# Keep HUD panels inside the shop width; vertical anchors still follow the visible window.
 	$Overlay/UI.position = Vector2($Canvas.position.x, 0)
@@ -743,10 +731,7 @@ func _refresh_station_signs() -> void:
 			continue
 		var title: String = info.get("line_name", info.name) if id == "boil" else info.name
 		frame.text = "%s\n%d 金币" % [title, info.unlock_cost]
-	for path in LOCKED_ART:
-		var node: Node2D = art.get_node_or_null(path)
-		if node != null:
-			node.visible = sim.station_unlocked(LOCKED_ART[path])
+	ArtGroups.refresh(art, sim)
 	for id in _upgrade_marks:
 		var frame: Button = _station_buttons.get(id)
 		_upgrade_marks[id].visible = can_buy_at(id) and not (frame != null and frame.visible)

@@ -13,3 +13,6 @@ docs/qa/*.txt
 *.psd
 *.psb
 *.pcraft
+
+# Temporary FigCraft exports; the approved source lives under art_src/.
+/output/figcraft/

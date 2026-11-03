@@ -3,18 +3,24 @@
   "assets": [
     {
       "id": "ingredient_table",
-      "source": "art_src/shop_layout_2026_11/sources/exec-79eae50d-cd3f-4bbb-9bc3-de6cf3448137.png",
+      "source": "art_src/shop_layout_2026_11/sources/exec-e051c9b1-2d01-41cc-8828-86ba90392d9e.png",
       "destination": "art/reference/ingredient_table.png",
       "size": [
         480,
         225
       ],
-      "prompt": "Create ONE independent isolated transparent RGBA sprite for a 2D cozy cartoon tea shop game. Use attached image ONLY as design and art style reference. Refined clean hand-painted illustration, rounded friendly shapes, dark warm brown contour of consistent thickness, warm wood and cream colors, gentle upper-left light, simple readable material highlights. Orthographic projection with fixed slightly elevated front viewing angle matching reference: horizontal edges parallel, verticals parallel, no perspective convergence, no isometric diamond view. Complete object fully visible, modest transparent padding, background truly alpha transparent, not checkerboard or black fill. No text, annotation, characters, environment or additional objects. No outer glow, no vignette or cast shadows extending far beyond object. Specific asset: A small EMPTY horizontal wooden ingredient table, bare clean rectangular top and short sturdy legs. No jars or objects. Wide low front view, ratio 2.1:1.",
+      "prompt": "Create ONE transparent 2D game furniture sprite sheet with EXACTLY TWO isolated EMPTY furniture assets, arranged in TWO ROWS (one asset each), no text or labels. Reference1 is the approved front-counter layout (ignore all red annotation strokes and all characters/objects). Reference2 is the original ingredient-table design and warm wood color (ignore red annotation and items on it). Keep soft cute hand-painted orthographic cartoon style, thick warm dark brown contours and warm medium walnut/chestnut wood, NOT pink or gray wood, not bright orange. Same fixed elevated frontal camera; parallel horizontal and vertical edges, NO isometric rotation, NO perspective convergence. Genuine transparent alpha exterior, generous clear separation. Complete silhouettes, no shadows/glows outside furniture.\nTOP ROW asset: a substantial EMPTY ingredient preparation table matching reference2. Width to total height ratio about 2.2:1 (NOT a thin long bench). Broad deep rectangular warm medium-brown wood tabletop with round corners, thick front apron and short sturdy legs visible under the front edge. Tabletop plain and clear, no pearl jar, no tea can, no milk bottle, no tools. Show meaningful tabletop depth and robust front body. Warm neutral brown matching reference2 rather than desaturated red/pink.\nBOTTOM ROW asset: ONE connected STEPPED L-SHAPED tea shop service counter matching the RED OUTLINED furniture silhouette in reference1. This is NOT a straight narrow bar and NOT a U with two side wings. Its LEFT 43% is a DEEP rectangular work block for a lemonade machine and muddling tools; its RIGHT 57% is a SHALLOW horizontal checkout bar extending to the right. The entire CUSTOMER-FACING FRONT EDGE is one continuous horizontal line. The REAR EDGE steps inward/downward by about half the left-block depth at x=43%, leaving a clear recessed staff space BEHIND the right bar. Think union of two rectangles in the TOP SURFACE: left rectangle [0,0] to[43%,70%height], right rectangle[43%,35%height] to[100%,70%height]. Below this top surface, a thick rounded brown front apron and dark blue gray recessed plinth run across the FULL front width. The left return/back section is visibly twice as deep as the right bar. All plan edges perfectly horizontal/vertical in orthographic projection, no angled wing or receding diagonal. Overall complete counter visible width:height about3.6:1 (not5:1). Draw it wide enough to fill most of sheet width. EMPTY tabletop everywhere: no machine, cash register, cup, ice bin, spoon, pestle, shelf, person, food, glass divider, separate small table or lettering. A single integrated wooden L/stepped counter with a continuous front and rear inner step.\nHigh-resolution refined crisp isolated game sprites. Both assets independent on one sheet; no scene, no backgrounds, no numbers, no red marks.",
       "crop": [
-        330,
-        710,
-        1210,
-        1010
+        410,
+        0,
+        1365,
+        440
+      ],
+      "fit_bounds": [
+        5,
+        5,
+        475,
+        220
       ]
     },
     {
@@ -46,12 +52,19 @@
       ],
       "row": 0,
       "col": 0,
-      "source": "art_src/shop_layout_2026_11/sources/exec-79eae50d-cd3f-4bbb-9bc3-de6cf3448137.png",
+      "source": "art_src/shop_layout_2026_11/sources/exec-e051c9b1-2d01-41cc-8828-86ba90392d9e.png",
       "crop": [
         0,
-        80,
-        1536,
-        310
+        440,
+        1774,
+        887
+      ],
+      "prompt": "Create ONE transparent 2D game furniture sprite sheet with EXACTLY TWO isolated EMPTY furniture assets, arranged in TWO ROWS (one asset each), no text or labels. Reference1 is the approved front-counter layout (ignore all red annotation strokes and all characters/objects). Reference2 is the original ingredient-table design and warm wood color (ignore red annotation and items on it). Keep soft cute hand-painted orthographic cartoon style, thick warm dark brown contours and warm medium walnut/chestnut wood, NOT pink or gray wood, not bright orange. Same fixed elevated frontal camera; parallel horizontal and vertical edges, NO isometric rotation, NO perspective convergence. Genuine transparent alpha exterior, generous clear separation. Complete silhouettes, no shadows/glows outside furniture.\nTOP ROW asset: a substantial EMPTY ingredient preparation table matching reference2. Width to total height ratio about 2.2:1 (NOT a thin long bench). Broad deep rectangular warm medium-brown wood tabletop with round corners, thick front apron and short sturdy legs visible under the front edge. Tabletop plain and clear, no pearl jar, no tea can, no milk bottle, no tools. Show meaningful tabletop depth and robust front body. Warm neutral brown matching reference2 rather than desaturated red/pink.\nBOTTOM ROW asset: ONE connected STEPPED L-SHAPED tea shop service counter matching the RED OUTLINED furniture silhouette in reference1. This is NOT a straight narrow bar and NOT a U with two side wings. Its LEFT 43% is a DEEP rectangular work block for a lemonade machine and muddling tools; its RIGHT 57% is a SHALLOW horizontal checkout bar extending to the right. The entire CUSTOMER-FACING FRONT EDGE is one continuous horizontal line. The REAR EDGE steps inward/downward by about half the left-block depth at x=43%, leaving a clear recessed staff space BEHIND the right bar. Think union of two rectangles in the TOP SURFACE: left rectangle [0,0] to[43%,70%height], right rectangle[43%,35%height] to[100%,70%height]. Below this top surface, a thick rounded brown front apron and dark blue gray recessed plinth run across the FULL front width. The left return/back section is visibly twice as deep as the right bar. All plan edges perfectly horizontal/vertical in orthographic projection, no angled wing or receding diagonal. Overall complete counter visible width:height about3.6:1 (not5:1). Draw it wide enough to fill most of sheet width. EMPTY tabletop everywhere: no machine, cash register, cup, ice bin, spoon, pestle, shelf, person, food, glass divider, separate small table or lettering. A single integrated wooden L/stepped counter with a continuous front and rear inner step.\nHigh-resolution refined crisp isolated game sprites. Both assets independent on one sheet; no scene, no backgrounds, no numbers, no red marks.",
+      "fit_bounds": [
+        0,
+        0,
+        1400,
+        280
       ]
     },
     {
@@ -63,13 +76,20 @@
       ],
       "row": 0,
       "col": 1,
-      "source": "art_src/shop_layout_2026_11/sources/exec-f36558a8-d4dc-4e16-826a-644a945f64e3.png",
+      "source": "art_src/front_facilities_review_2026_11_03/front-facilities-sheet.png",
       "crop": [
-        418,
+        724,
         0,
-        836,
-        418
-      ]
+        1448,
+        724
+      ],
+      "fit_bounds": [
+        6,
+        6,
+        329,
+        239
+      ],
+      "prompt": "Create ONE transparent game sprite sheet containing exactly THREE separate complete props in one horizontal row, three evenly spaced cells, no drawn grid or labels. Reference attached is authoritative for exact prop design and the cozy tea shop cartoon style. The red boxes mark requested subjects, NOT lines to copy. Only redraw the three props below, NOT the whole scene.\nLEFT cell: ONE reusable takeaway PAPER BAG copied from the bags in both red-boxed locations: a small upright warm tan/ochre kraft paper bag with a broad rounded rectangular front, subtle folded side panel and flat closed bottom. Two thick dark burgundy loop handles, the forward handle forming the distinctive large U visible down the upper front face as in reference. A small folded/open top rim, compact friendly shape, width:height roughly .8. It must clearly read as a kraft takeaway carrier, NOT a ceramic mug/jug, NOT wooden furniture, NO spout. No logos, lettering, food, cup, label or hands. One bag only, drawn in the SAME frontal elevated orthographic orientation reusable in both scene locations.\nMIDDLE cell: ONE very small LOW cream checkout/receipt terminal matching the object to the LEFT of the right-hand paper bag in the marked reference box. Compact off-white rounded rectangular box base, a LOW inset charcoal/navy rounded upper/front block with two simple pale gray horizontal inset readout/slot bands. Width:height roughly1.25. The dark upper piece sits directly on the cream base: NO tall screen, NO monitor on a stem, NO pedestal, NO big keyboard, NO bulky PC cash register. Soft rounded edges and simple cute proportions, exact reference appearance, no text or numbers.\nRIGHT cell: ONE EMPTY dark burgundy/red PACKING BASE from underneath the right-hand bag. Low wide square/rectangular plinth with softly rounded corners, muted wine-red sides and a dark charcoal inset top tray, raised burgundy rim. Complete EMPTY top with NO paper bag on it, no handle, no cup, no machine or controls. Width:height about2.2:1. Bag and red base must remain independent sprites so one same bag can be placed on the bare counter or on this base.\nStyle all props consistently: refined crisp hand-painted cozy cartoon, warm dark brown/maroon outlines, muted tan paper, off-white cream and charcoal-gray terminal, dark burgundy plinth, soft upper-left lighting, restrained highlights. Strict ORTHOGRAPHIC front elevated view as reference, all parallel edges parallel, no perspective convergence, no isometric rotation. Genuinely transparent alpha background and cell gutters, full silhouettes with clean edges, no background/glow/shadow panels, no checkerboard, no red annotation boxes, no characters, speech bubbles, scenery, table or text. Exactly one paper bag, one compact low terminal, and one empty red base, completely separated on one sheet."
     },
     {
       "id": "display_case",
@@ -424,13 +444,20 @@
       ],
       "row": 1,
       "col": 1,
-      "source": "art_src/shop_layout_2026_11/sources/exec-e3dc4285-aa73-4201-abb1-2f3a71e2c154.png",
+      "source": "art_src/front_facilities_review_2026_11_03/front-facilities-sheet.png",
       "crop": [
-        418,
-        627,
-        836,
-        1254
-      ]
+        1448,
+        0,
+        2172,
+        724
+      ],
+      "fit_bounds": [
+        6,
+        6,
+        194,
+        194
+      ],
+      "prompt": "Create ONE transparent game sprite sheet containing exactly THREE separate complete props in one horizontal row, three evenly spaced cells, no drawn grid or labels. Reference attached is authoritative for exact prop design and the cozy tea shop cartoon style. The red boxes mark requested subjects, NOT lines to copy. Only redraw the three props below, NOT the whole scene.\nLEFT cell: ONE reusable takeaway PAPER BAG copied from the bags in both red-boxed locations: a small upright warm tan/ochre kraft paper bag with a broad rounded rectangular front, subtle folded side panel and flat closed bottom. Two thick dark burgundy loop handles, the forward handle forming the distinctive large U visible down the upper front face as in reference. A small folded/open top rim, compact friendly shape, width:height roughly .8. It must clearly read as a kraft takeaway carrier, NOT a ceramic mug/jug, NOT wooden furniture, NO spout. No logos, lettering, food, cup, label or hands. One bag only, drawn in the SAME frontal elevated orthographic orientation reusable in both scene locations.\nMIDDLE cell: ONE very small LOW cream checkout/receipt terminal matching the object to the LEFT of the right-hand paper bag in the marked reference box. Compact off-white rounded rectangular box base, a LOW inset charcoal/navy rounded upper/front block with two simple pale gray horizontal inset readout/slot bands. Width:height roughly1.25. The dark upper piece sits directly on the cream base: NO tall screen, NO monitor on a stem, NO pedestal, NO big keyboard, NO bulky PC cash register. Soft rounded edges and simple cute proportions, exact reference appearance, no text or numbers.\nRIGHT cell: ONE EMPTY dark burgundy/red PACKING BASE from underneath the right-hand bag. Low wide square/rectangular plinth with softly rounded corners, muted wine-red sides and a dark charcoal inset top tray, raised burgundy rim. Complete EMPTY top with NO paper bag on it, no handle, no cup, no machine or controls. Width:height about2.2:1. Bag and red base must remain independent sprites so one same bag can be placed on the bare counter or on this base.\nStyle all props consistently: refined crisp hand-painted cozy cartoon, warm dark brown/maroon outlines, muted tan paper, off-white cream and charcoal-gray terminal, dark burgundy plinth, soft upper-left lighting, restrained highlights. Strict ORTHOGRAPHIC front elevated view as reference, all parallel edges parallel, no perspective convergence, no isometric rotation. Genuinely transparent alpha background and cell gutters, full silhouettes with clean edges, no background/glow/shadow panels, no checkerboard, no red annotation boxes, no characters, speech bubbles, scenery, table or text. Exactly one paper bag, one compact low terminal, and one empty red base, completely separated on one sheet."
     },
     {
       "id": "topping_green_box",
@@ -566,6 +593,28 @@
         1024
       ],
       "prompt": "Create ONE production-ready TRANSPARENT game sprite sheet with exactly FOUR separated sprites in a strict 2 columns by 2 rows layout. Equal cells, generous clear transparent gutters, no text, no dividers or labels. Reference image1 (full tea shop) is the authoritative SHAPE, PALETTE and arrangement reference. Images2 and3 show existing pot and milk mixer appearance to preserve/refine. User says the support under the brewing pot is an INTEGRATED POWERED INDUCTION WORK CABINET, NOT a generic wooden table, and a pipe connects the rear of the pot and the mixer. Correct these specific structures.\nTOP LEFT cell: ONE complete wide powered induction brewing work cabinet, empty top surface, NO pot or mixer on it. Chunky rounded warm cream/beige top platform with substantial visible depth, solid cream/taupe cabinet or heating plinth body beneath rather than a thin shelf, short low dark feet. A narrow integrated dark charcoal electrical control column on its LEFT side with two small red/green round power lights, darker power housing and a little visible power cable tucked against the cabinet. Match the compact workstation proportions in image1: overall visible width to height around 2.5:1. NO four long wooden table legs, NO thin narrow bench, NO orange timber top, NO stainless laboratory cart. It supports TWO appliances side by side.\nTOP RIGHT cell: ONE round open cream tea BREWING POT matching image1: thick soft silver rim, amber tea with a few brown tea pieces, dark warm brown handles at sides. It sits directly flat on the heating cabinet. Complete pot silhouette, NO tall appliance body, NO separate pedestal, NO electrical control block stuck to the side (that belongs to the cabinet), NO attached pipe, NO furniture. Front slightly lower than mixer in scene.\nBOTTOM LEFT cell: ONE tall rounded cream automatic MILK MIXER matching image1 and image3: charcoal panel with three amber vertical indicator bars, dark round button to right, small nozzle below, dark low drip tray/foot. No cup, no table, no attached pipe. Compact cute dimensions and soft highlights, not shiny realistic plastic.\nBOTTOM RIGHT cell: ONE independent rigid dark gray-purple CONNECTOR PIPE matching image1: left end is a short vertical downward open stub, upper-left rounded ninety-degree elbow bends into a LONG straight horizontal upper run that continues RIGHT to a short horizontal open stub. Thus an inverted L shape with a rounded top-left elbow (not a U and not an arch). Pipe cross-section thick enough to see in game, dark brown outlines, gray plum body, soft narrow pale highlight, no hose coils, no valves, no machines attached. This sprite will draw behind both machines connecting pot rear-left up then across toward milk mixer rear.\nAll four sprites share identical orthographic elevated front camera, parallel rectangular sides with no perspective convergence or isometric diamond, soft cute hand-painted tea shop cartoon style, dark warm brown crisp rounded outlines, MUTED soft palette faithful to image1 with cream, taupe and charcoal-plum (avoid overly bright orange or saturated glossy colors). Clean refined details. Whole complete objects, never crop. Exterior/gutters genuinely transparent alpha, no floor, wall, glow, vignette, checkerboard, words, characters, cups, shadows extending outside. Four independent complete objects only. Landscape or square high-resolution sheet; no composited example scene."
+    },
+    {
+      "id": "takeaway_bag",
+      "destination": "art/reference/takeaway_bag.png",
+      "size": [
+        200,
+        240
+      ],
+      "source": "art_src/front_facilities_review_2026_11_03/front-facilities-sheet.png",
+      "crop": [
+        0,
+        0,
+        724,
+        724
+      ],
+      "fit_bounds": [
+        6,
+        6,
+        194,
+        234
+      ],
+      "prompt": "Create ONE transparent game sprite sheet containing exactly THREE separate complete props in one horizontal row, three evenly spaced cells, no drawn grid or labels. Reference attached is authoritative for exact prop design and the cozy tea shop cartoon style. The red boxes mark requested subjects, NOT lines to copy. Only redraw the three props below, NOT the whole scene.\nLEFT cell: ONE reusable takeaway PAPER BAG copied from the bags in both red-boxed locations: a small upright warm tan/ochre kraft paper bag with a broad rounded rectangular front, subtle folded side panel and flat closed bottom. Two thick dark burgundy loop handles, the forward handle forming the distinctive large U visible down the upper front face as in reference. A small folded/open top rim, compact friendly shape, width:height roughly .8. It must clearly read as a kraft takeaway carrier, NOT a ceramic mug/jug, NOT wooden furniture, NO spout. No logos, lettering, food, cup, label or hands. One bag only, drawn in the SAME frontal elevated orthographic orientation reusable in both scene locations.\nMIDDLE cell: ONE very small LOW cream checkout/receipt terminal matching the object to the LEFT of the right-hand paper bag in the marked reference box. Compact off-white rounded rectangular box base, a LOW inset charcoal/navy rounded upper/front block with two simple pale gray horizontal inset readout/slot bands. Width:height roughly1.25. The dark upper piece sits directly on the cream base: NO tall screen, NO monitor on a stem, NO pedestal, NO big keyboard, NO bulky PC cash register. Soft rounded edges and simple cute proportions, exact reference appearance, no text or numbers.\nRIGHT cell: ONE EMPTY dark burgundy/red PACKING BASE from underneath the right-hand bag. Low wide square/rectangular plinth with softly rounded corners, muted wine-red sides and a dark charcoal inset top tray, raised burgundy rim. Complete EMPTY top with NO paper bag on it, no handle, no cup, no machine or controls. Width:height about2.2:1. Bag and red base must remain independent sprites so one same bag can be placed on the bare counter or on this base.\nStyle all props consistently: refined crisp hand-painted cozy cartoon, warm dark brown/maroon outlines, muted tan paper, off-white cream and charcoal-gray terminal, dark burgundy plinth, soft upper-left lighting, restrained highlights. Strict ORTHOGRAPHIC front elevated view as reference, all parallel edges parallel, no perspective convergence, no isometric rotation. Genuinely transparent alpha background and cell gutters, full silhouettes with clean edges, no background/glow/shadow panels, no checkerboard, no red annotation boxes, no characters, speech bubbles, scenery, table or text. Exactly one paper bag, one compact low terminal, and one empty red base, completely separated on one sheet."
     }
   ],
   "sheets": [
@@ -574,7 +623,8 @@
     "sheet-lemon_tools.json",
     "sheet-toppings.json",
     "sheet-table-correction.json",
-    "sheet-powered-brewing.json"
+    "sheet-powered-brewing.json",
+    "sheet-stepped-counter.json"
   ],
   "apply_reference_palette": true
 }

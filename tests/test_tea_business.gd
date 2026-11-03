@@ -799,7 +799,8 @@ func test_seated_topping_worker_runs_its_whole_segment() -> void:
 func test_kitchen_packer_saves_and_takeaway_lemonade_is_fetched_at_the_sealer() -> void:
 	var sim = opened()
 	if sim == null: return
-	sim.orders = [{"id": sim._next_order, "dish": "lemonade", "wait": 0.0, "reserved": false, "takeaway": true}]
+	# Kitchen drinks require packing; lemonade now bypasses the sealer. Do not rely on a later random order.
+	sim.orders = [{"id": sim._next_order, "dish": "plain_milk_tea", "wait": 0.0, "reserved": false, "takeaway": true}]
 	sim._next_order += 1
 	var packing_saved := false
 	for tick in 600:

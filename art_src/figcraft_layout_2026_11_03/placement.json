@@ -1,0 +1,818 @@
+{
+  "canvas": [
+    720,
+    1500
+  ],
+  "source": "tea-shop-layout2.figcraft",
+  "sprites": [
+    {
+      "id": 8,
+      "group": "基础构建",
+      "texture": "res://art/reference/floor.png",
+      "width": 720.0000277757645,
+      "height": 1499.9999676942825,
+      "transform": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "order": 0,
+      "node": "Floor/Sprite"
+    },
+    {
+      "id": 14,
+      "group": "基础构建",
+      "texture": "res://art/reference/back_wall.png",
+      "width": 720.0000277757645,
+      "height": 233.00000220537186,
+      "transform": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "order": 1,
+      "node": "BackWall/Sprite"
+    },
+    {
+      "id": 11,
+      "group": "基础构建",
+      "texture": "res://art/reference/floor.png",
+      "width": 720.0000277757645,
+      "height": 710.0,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        790.0
+      ],
+      "order": 2,
+      "region": [
+        0,
+        1110,
+        937,
+        568
+      ],
+      "node": "FrontWoodFloor"
+    },
+    {
+      "id": 143,
+      "group": "基础构建",
+      "texture": "res://art/reference/outer_left.png",
+      "width": 24.600000381469727,
+      "height": 1266.9994959235191,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        233.0
+      ],
+      "order": 3,
+      "node": "OuterLeft/Sprite"
+    },
+    {
+      "id": 146,
+      "group": "基础构建",
+      "texture": "res://art/reference/outer_right.png",
+      "width": 24.600000381469727,
+      "height": 1266.9994959235191,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        695.4000244140625,
+        233.0
+      ],
+      "order": 4,
+      "node": "OuterRight/Sprite"
+    },
+    {
+      "id": 53,
+      "group": "基础物品",
+      "texture": "res://art/reference/ingredient_table.png",
+      "width": 240.0,
+      "height": 112.5,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        20.0,
+        182.0
+      ],
+      "order": 5,
+      "node": "Sortables/IngredientTable/Sprite"
+    },
+    {
+      "id": 116,
+      "group": "基础物品",
+      "texture": "res://art/reference/checkout.png",
+      "width": 741.9999599456787,
+      "height": 148.39999198913574,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        -11.0,
+        708.760009765625
+      ],
+      "order": 6,
+      "node": "Sortables/Checkout/Sprite"
+    },
+    {
+      "id": 62,
+      "group": "基础物品",
+      "texture": "res://art/reference/machine_table.png",
+      "width": 458.8799897432327,
+      "height": 133.11999702453613,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        183.0,
+        172.0
+      ],
+      "order": 7,
+      "node": "Sortables/MachineTable/Sprite"
+    },
+    {
+      "id": 23,
+      "group": "基础物品",
+      "texture": "res://art/reference/dining_chair_left.png",
+      "width": 69.99999761581421,
+      "height": 102.08332985639572,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        50.0,
+        951.0
+      ],
+      "order": 8,
+      "node": "Sortables/DiningArea/Chair1"
+    },
+    {
+      "id": 26,
+      "group": "基础物品",
+      "texture": "res://art/reference/dining_chair_right.png",
+      "width": 69.99999761581421,
+      "height": 102.08332985639572,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        261.0,
+        951.0
+      ],
+      "order": 9,
+      "node": "Sortables/DiningArea/Chair2"
+    },
+    {
+      "id": 17,
+      "group": "基础物品",
+      "texture": "res://art/reference/dining_table.png",
+      "width": 179.99999523162842,
+      "height": 139.49999630451202,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        101.0,
+        922.0
+      ],
+      "order": 10,
+      "node": "Sortables/DiningArea/Table1"
+    },
+    {
+      "id": 151,
+      "group": "基础物品",
+      "texture": "res://art/reference/dining_chair_left.png",
+      "width": 69.99999761581421,
+      "height": 102.08332985639572,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        389.0,
+        951.0
+      ],
+      "order": 11,
+      "node": "Sortables/DiningArea/Chair3"
+    },
+    {
+      "id": 153,
+      "group": "基础物品",
+      "texture": "res://art/reference/dining_chair_right.png",
+      "width": 69.99999761581421,
+      "height": 102.08332985639572,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        600.0,
+        951.0
+      ],
+      "order": 12,
+      "node": "Sortables/DiningArea/Chair4"
+    },
+    {
+      "id": 155,
+      "group": "基础物品",
+      "texture": "res://art/reference/dining_table.png",
+      "width": 179.99999523162842,
+      "height": 139.49999630451202,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        440.0,
+        922.0
+      ],
+      "order": 13,
+      "node": "Sortables/DiningArea/Table2"
+    },
+    {
+      "id": 158,
+      "group": "基础物品",
+      "texture": "res://art/reference/dining_chair_left.png",
+      "width": 69.99999761581421,
+      "height": 102.08332985639572,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        387.0,
+        1148.0
+      ],
+      "order": 14,
+      "node": "Sortables/DiningArea/Chair7"
+    },
+    {
+      "id": 160,
+      "group": "基础物品",
+      "texture": "res://art/reference/dining_chair_right.png",
+      "width": 69.99999761581421,
+      "height": 102.08332985639572,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        598.0,
+        1148.0
+      ],
+      "order": 15,
+      "node": "Sortables/DiningArea/Chair8"
+    },
+    {
+      "id": 162,
+      "group": "基础物品",
+      "texture": "res://art/reference/dining_table.png",
+      "width": 179.99999523162842,
+      "height": 139.49999630451202,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        438.0,
+        1119.0
+      ],
+      "order": 16,
+      "node": "Sortables/DiningArea/Table4"
+    },
+    {
+      "id": 165,
+      "group": "基础物品",
+      "texture": "res://art/reference/dining_chair_left.png",
+      "width": 69.99999761581421,
+      "height": 102.08332985639572,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        51.0,
+        1148.0
+      ],
+      "order": 17,
+      "node": "Sortables/DiningArea/Chair5"
+    },
+    {
+      "id": 167,
+      "group": "基础物品",
+      "texture": "res://art/reference/dining_chair_right.png",
+      "width": 69.99999761581421,
+      "height": 102.08332985639572,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        262.0,
+        1148.0
+      ],
+      "order": 18,
+      "node": "Sortables/DiningArea/Chair6"
+    },
+    {
+      "id": 169,
+      "group": "基础物品",
+      "texture": "res://art/reference/dining_table.png",
+      "width": 179.99999523162842,
+      "height": 139.49999630451202,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        102.0,
+        1119.0
+      ],
+      "order": 19,
+      "node": "Sortables/DiningArea/Table3"
+    },
+    {
+      "id": 119,
+      "group": "基础物品",
+      "texture": "res://art/reference/register.png",
+      "width": 91.60000179708004,
+      "height": 66.99104609040181,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        492.0,
+        733.0
+      ],
+      "order": 20,
+      "node": "Sortables/Checkout/Register/Sprite"
+    },
+    {
+      "id": 131,
+      "group": "基础物品",
+      "texture": "res://art/reference/takeaway_bag.png",
+      "width": 60.333331425984696,
+      "height": 72.39999771118164,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        330.0,
+        728.0
+      ],
+      "order": 21,
+      "node": "Sortables/Checkout/FrontLemon/SmallCup/Sprite"
+    },
+    {
+      "id": 56,
+      "group": "原料箱",
+      "texture": "res://art/reference/tea_tin.png",
+      "width": 69.69257721304893,
+      "height": 94.99993765354156,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        69.1500015258789,
+        141.0
+      ],
+      "order": 22,
+      "node": "Sortables/IngredientTable/TeaTin/Sprite"
+    },
+    {
+      "id": 59,
+      "group": "原料箱",
+      "texture": "res://art/reference/milk_bottle.png",
+      "width": 52.5339013338089,
+      "height": 85.99994218349457,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        149.72999572753906,
+        150.0
+      ],
+      "order": 23,
+      "node": "Sortables/IngredientTable/MilkBottle/Sprite"
+    },
+    {
+      "id": 65,
+      "group": "调奶机",
+      "texture": "res://art/reference/brewing_pipe.png",
+      "width": 168.00000250339508,
+      "height": 72.0000010728836,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        345.0,
+        79.0
+      ],
+      "order": 24,
+      "node": "Sortables/MachineTable/ConnectorPipe/Sprite"
+    },
+    {
+      "id": 68,
+      "group": "调奶机",
+      "texture": "res://art/reference/brewer.png",
+      "width": 131.046103327578,
+      "height": 154.00003862380981,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        429.0,
+        79.0
+      ],
+      "order": 25,
+      "node": "Sortables/MachineTable/Brewer/Sprite"
+    },
+    {
+      "id": 71,
+      "group": "煮茶机",
+      "texture": "res://art/reference/pearl_pot.png",
+      "width": 143.0,
+      "height": 109.26607268631079,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        291.0,
+        117.0
+      ],
+      "order": 26,
+      "node": "Sortables/MachineTable/PearlPot/Sprite"
+    },
+    {
+      "id": 86,
+      "group": "封口机",
+      "texture": "res://art/reference/sealer.png",
+      "width": 162.58787700533867,
+      "height": 192.9999978840351,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        540.7100219726562,
+        198.0
+      ],
+      "order": 27,
+      "node": "Sortables/Sealer/Sprite"
+    },
+    {
+      "id": 74,
+      "group": "传送带",
+      "texture": "res://art/reference/belt_vertical.png",
+      "width": 110.49999541044235,
+      "height": 223.49999171495438,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        571.0,
+        363.0
+      ],
+      "order": 28,
+      "node": "Sortables/BeltVertical/Sprite"
+    },
+    {
+      "id": 113,
+      "group": "货架",
+      "texture": "res://art/reference/rack.png",
+      "width": 189.9299955368042,
+      "height": 185.05999565124512,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        518.0,
+        502.0
+      ],
+      "order": 29,
+      "node": "Sortables/Rack/Sprite"
+    },
+    {
+      "id": 89,
+      "group": "加料台",
+      "texture": "res://art/reference/prep_bench.png",
+      "width": 122.06999552249908,
+      "height": 347.87998723983765,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        23.0,
+        269.0
+      ],
+      "order": 30,
+      "node": "Sortables/PrepBench/Sprite"
+    },
+    {
+      "id": 92,
+      "group": "加料台",
+      "texture": "res://art/reference/topping_green_box.png",
+      "width": 56.00000202655792,
+      "height": 56.00000202655792,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        29.999998092651367,
+        293.3699951171875
+      ],
+      "order": 31,
+      "node": "Sortables/PrepBench/GreenBox/Sprite"
+    },
+    {
+      "id": 95,
+      "group": "加料台",
+      "texture": "res://art/reference/topping_coconut_jar.png",
+      "width": 43.9999982714653,
+      "height": 61.59999758005142,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        90.0,
+        287.7699890136719
+      ],
+      "order": 32,
+      "node": "Sortables/PrepBench/CoconutJar/Sprite"
+    },
+    {
+      "id": 98,
+      "group": "加料台",
+      "texture": "res://art/reference/topping_powder_jar.png",
+      "width": 44.999999701976776,
+      "height": 65.45454502105713,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        36.5,
+        354.91546630859375
+      ],
+      "order": 33,
+      "node": "Sortables/PrepBench/PowderJar/Sprite"
+    },
+    {
+      "id": 101,
+      "group": "加料台",
+      "texture": "res://art/reference/topping_tongs.png",
+      "width": 57.999998331069946,
+      "height": 34.79999899864197,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        79.0,
+        374.57000732421875
+      ],
+      "order": 34,
+      "node": "Sortables/PrepBench/Tongs/Sprite"
+    },
+    {
+      "id": 104,
+      "group": "加料台",
+      "texture": "res://art/reference/topping_tray.png",
+      "width": 78.00000071525574,
+      "height": 78.00000071525574,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        45.0,
+        419.3699951171875
+      ],
+      "order": 35,
+      "node": "Sortables/PrepBench/Tray/Sprite"
+    },
+    {
+      "id": 107,
+      "group": "加料台",
+      "texture": "res://art/reference/topping_brown_box.png",
+      "width": 54.00000214576721,
+      "height": 54.00000214576721,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        30.0,
+        505.0
+      ],
+      "order": 36,
+      "node": "Sortables/PrepBench/BrownBox/Sprite"
+    },
+    {
+      "id": 110,
+      "group": "加料台",
+      "texture": "res://art/reference/topping_white_box.png",
+      "width": 54.00000214576721,
+      "height": 54.00000214576721,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        80.0,
+        505.0
+      ],
+      "order": 37,
+      "node": "Sortables/PrepBench/WhiteBox/Sprite"
+    },
+    {
+      "id": 122,
+      "group": "柠檬茶手打台",
+      "texture": "res://art/reference/lemon_muddler.png",
+      "width": 27.435324136503805,
+      "height": 85.83926368079419,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        189.0,
+        665.154339608163
+      ],
+      "order": 38,
+      "node": "Sortables/Checkout/FrontLemon/Muddler/Sprite"
+    },
+    {
+      "id": 128,
+      "group": "柠檬茶手打台",
+      "texture": "res://art/reference/lemon_steel_cup.png",
+      "width": 58.12935023495587,
+      "height": 82.53119908988306,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        226.32076268731294,
+        656.0
+      ],
+      "order": 39,
+      "node": "Sortables/Checkout/FrontLemon/SteelCup/Sprite"
+    },
+    {
+      "id": 125,
+      "group": "柠檬茶手打台",
+      "texture": "res://art/reference/lemon_ice_bin.png",
+      "width": 85.69212486294174,
+      "height": 77.56106924353884,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        216.30787513705826,
+        719.1649432963247
+      ],
+      "order": 40,
+      "node": "Sortables/Checkout/FrontLemon/IceBin/Sprite"
+    },
+    {
+      "id": 140,
+      "group": "柠檬水机",
+      "texture": "res://art/reference/display_case.png",
+      "width": 272.1400263309479,
+      "height": 198.87155770338498,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        -43.0,
+        587.0
+      ],
+      "order": 41,
+      "node": "Sortables/DisplayCase/Sprite"
+    },
+    {
+      "id": 134,
+      "group": "打包袋",
+      "texture": "res://art/reference/counter_red_device.png",
+      "width": 76.00000143051147,
+      "height": 76.00000143051147,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        600.0,
+        721.2250299891468
+      ],
+      "order": 42,
+      "node": "Sortables/Checkout/RedDevice/Sprite"
+    },
+    {
+      "id": 137,
+      "group": "打包袋",
+      "texture": "res://art/reference/takeaway_bag.png",
+      "width": 61.75000027753409,
+      "height": 74.10000033304091,
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        607.1250002933666,
+        697.0
+      ],
+      "order": 43,
+      "node": "Sortables/Checkout/RedDevice/TakeawayBag/Sprite"
+    }
+  ],
+  "polygons": [
+    {
+      "id": 79,
+      "node": "Sortables/BeltVertical/Direction",
+      "group": "箭头",
+      "points": [
+        [
+          635,
+          512
+        ],
+        [
+          635,
+          516
+        ],
+        [
+          627,
+          523
+        ],
+        [
+          619,
+          516
+        ],
+        [
+          619,
+          512
+        ],
+        [
+          627,
+          519
+        ]
+      ],
+      "color": "#d9d4c9"
+    }
+  ],
+  "rules": {
+    "基础构建": "always",
+    "基础物品": "always",
+    "货架": "always",
+    "原料箱": "ingredient_box",
+    "煮茶机": "boil",
+    "调奶机": "mix",
+    "封口机": "seal",
+    "传送带": "seal",
+    "箭头": "seal",
+    "加料台": "topping",
+    "柠檬茶手打台": "lemon_front",
+    "柠檬水机": "lemonade",
+    "打包袋": "seal"
+  },
+  "draw_before": [
+    [
+      "Sortables/Checkout/FrontLemon/SteelCup",
+      "Sortables/Checkout/FrontLemon/IceBin"
+    ]
+  ]
+}

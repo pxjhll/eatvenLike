@@ -1828,8 +1828,33 @@ func load_dict(state: Dictionary) -> String:
 	candidate._apply_state(state)
 	var report: Dictionary = candidate.audit()
 	if not report.valid: return "存档库存或预留不一致：%s" % report.errors
+	if candidate._recover_layout_positions():
+		report = candidate.audit()
+		if not report.valid: return "存档库存或预留不一致：%s" % report.errors
+		state = candidate.to_dict()
 	_apply_state(state)
 	return ""
+
+## A revised counter can cover floor used by an otherwise valid current-version save.
+## Repair only affected positions/routes after the original inventory audit has passed.
+func _recover_layout_positions() -> bool:
+	var changed := false
+	for worker in roster:
+		if Layout.path(worker.pos, Layout.POINTS.counter).is_empty():
+			_cancel_job(worker)
+			worker.pos = Layout.POST_POINTS.get(worker.post, Layout.POINTS.counter)
+			worker.assignment_point = worker.pos
+			worker.assignment_pending = false
+			changed = true
+		elif worker.walking and not worker.job.is_empty():
+			var destination: Vector2 = _source_point(worker.job) if worker.phase == "walk_pickup" else _destination_point(worker.job)
+			var stale: bool = worker.path.is_empty() or worker.path[worker.path.size() - 1] != destination
+			for index in range(worker.path_index, worker.path.size()):
+				if Layout.path(worker.path[index], Layout.POINTS.counter).is_empty(): stale = true
+			if stale:
+				_walk(worker, destination, worker.phase)
+				changed = true
+	return changed
 
 ## v6 → v7: training is refunded and undone (the upgrade lists replace it), and someone takes the counter,
 ## because kitchen staff no longer serve. Jobs from the old rules can't be kept, so like v3 the floor

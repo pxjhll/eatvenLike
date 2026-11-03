@@ -32,7 +32,7 @@ func _run() -> void:
 	var pipe: Node2D = view.art.get_node_or_null("Sortables/MachineTable/ConnectorPipe")
 	_check(pipe != null, "brewing and milk mixing have an independent rear connector pipe")
 	view._refresh(0)
-	if pipe != null: _check(not pipe.visible, "connector pipe waits for the milk machine to open")
+	if pipe != null: _check(not pipe.get_node("Sprite").is_visible_in_tree(), "connector pipe waits for the milk machine to open")
 	view._process(0)
 	_check(view._toast.visible, "unattended unlocked kitchen still shows staffing warning")
 	view.sim.hire()
@@ -52,9 +52,10 @@ func _run() -> void:
 	view.sim.diners = [{"seat": 0, "dish": "lemonade", "left": 20.0}, {"seat": 3, "dish": "black_tea", "left": 20.0}, {"seat": 5, "dish": "lemon_tea", "left": 20.0}, {"seat": 6, "dish": "banana_tea", "left": 20.0}]
 	view._refresh(10.0)
 	_check_props_on_supports()
+	_check_front_counter_revision()
 	_check_brewing_assembly()
 	_check(view.art.get_node("Sortables/DiningArea").occupied_seats() == [0, 3, 5, 6], "four real diner records occupy their assigned chairs")
-	await _world_click(Vector2(335, 774))
+	await _world_click(Vector2(255, 685))
 	_check(view.ui.page == "station" and view.ui.station_panel.station_id == "lemon_front", "clicking the independent front workstation opens its own panel")
 	view.ui.open_page("shop")
 	view._refresh(0)
@@ -105,18 +106,48 @@ func _check_props_on_supports() -> void:
 	for path in ["Checkout/FrontLemon/Muddler/Sprite", "Checkout/FrontLemon/IceBin/Sprite", "Checkout/FrontLemon/SteelCup/Sprite", "Checkout/FrontLemon/SmallCup/Sprite", "Checkout/RedDevice/Sprite", "Checkout/Register/Sprite"]:
 		var base := _opaque_rect(sorted.get_node(path)).end.y
 		_check(base >= counter.position.y and base < counter.end.y, "prop base rests on the opaque counter surface: " + path)
-	var support := _opaque_rect(sorted.get_node("LemonadeTable/Sprite"))
 	var dispenser := _opaque_rect(sorted.get_node("DisplayCase/Sprite"))
-	_check(dispenser.end.y >= support.position.y and dispenser.end.y < support.end.y, "lemonade machine rests on its independent table")
+	_check(not sorted.has_node("LemonadeTable"), "lemonade dispenser has no extra support table")
+	_check(dispenser.end.y >= counter.position.y and dispenser.end.y < counter.end.y, "lemonade machine rests on the connected front counter")
 	_check(dispenser.size.x > 90 * view.get_node("Canvas").scale.x, "lemonade machine remains readable despite transparent canvas padding")
 	_check(not _opaque_rect(sorted.get_node("PrepBench/Tongs/Sprite")).intersects(_opaque_rect(sorted.get_node("PrepBench/Tray/Sprite"))), "tongs remain visible beside the topping containers")
+
+func _check_front_counter_revision() -> void:
+	var sorted: Node2D = view.art.get_node("Sortables")
+	for removed in ["PartitionLeft", "PartitionRight", "DoorLintel"]:
+		_check(not sorted.has_node(removed), "middle partition is removed: " + removed)
+	var ingredients: Node2D = sorted.get_node("IngredientTable")
+	_check(not ingredients.has_node("PearlJar"), "only tea and milk remain on the ingredient table")
+	var table := _opaque_rect(ingredients.get_node("Sprite"))
+	var factor: float = view.get_node("Canvas").scale.x
+	_check(table.size.y > 80 * factor, "ingredient table has substantial depth and apron")
+	var tea := _opaque_rect(ingredients.get_node("TeaTin/Sprite"))
+	var milk := _opaque_rect(ingredients.get_node("MilkBottle/Sprite"))
+	_check(absf((tea.get_center().x + milk.get_center().x) / 2 - table.get_center().x) < 12 * factor, "tea and milk are centered together on the table")
+	var ice := _opaque_rect(sorted.get_node("Checkout/FrontLemon/IceBin/Sprite"))
+	var steel := _opaque_rect(sorted.get_node("Checkout/FrontLemon/SteelCup/Sprite"))
+	_check(absf(ice.get_center().x - steel.get_center().x) < 8 * factor and ice.end.y > steel.end.y, "FigCraft places the ice bin in front of the muddling cup")
+	var register := _opaque_rect(sorted.get_node("Checkout/Register/Sprite"))
+	var holder := _opaque_rect(sorted.get_node("Checkout/RedDevice/Sprite"))
+	_check(register.get_center().x < holder.get_center().x, "cash register is left of the red holder, matching the reference")
+	var counter: Sprite2D = sorted.get_node("Checkout/Sprite")
+	var picture := counter.texture.get_image()
+	var bounds := picture.get_used_rect()
+	var left_top := _first_solid_row(picture, bounds.position.x + bounds.size.x / 4)
+	var right_top := _first_solid_row(picture, bounds.position.x + bounds.size.x * 3 / 4)
+	_check(right_top - left_top > bounds.size.y * 0.18, "counter has a deep left worktop and recessed right bar")
+
+func _first_solid_row(picture: Image, column: int) -> int:
+	for y in picture.get_height():
+		if picture.get_pixel(column, y).a > 0.5: return y
+	return picture.get_height()
 
 func _check_brewing_assembly() -> void:
 	var assembly: Node2D = view.art.get_node("Sortables/MachineTable")
 	var pipe := assembly.get_node_or_null("ConnectorPipe")
 	_check(pipe != null, "the brewing assembly includes its separate connector")
 	if pipe == null: return
-	_check(pipe.visible and pipe.get_index() < assembly.get_node("Brewer").get_index() and pipe.get_index() < assembly.get_node("PearlPot").get_index(), "pipe opens with the mixer and draws behind both machines")
+	_check(pipe.get_node("Sprite").is_visible_in_tree() and pipe.get_index() < assembly.get_node("Brewer").get_index() and pipe.get_index() < assembly.get_node("PearlPot").get_index(), "pipe opens with the mixer and draws behind both machines")
 	var factor: float = view.get_node("Canvas").scale.x
 	var cabinet := _opaque_rect(assembly.get_node("Sprite"))
 	_check(cabinet.size.y > 60 * factor, "powered cabinet has a substantial body, not a thin bench")

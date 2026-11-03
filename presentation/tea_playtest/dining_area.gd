@@ -29,6 +29,8 @@ func _prop(id: String, width: float, point: Vector2) -> Sprite2D:
 	sprite.position = point
 	sprite.set_meta("asset_id", id)
 	sprite.set_meta("art_layer", "dining")
+	sprite.set_meta("layout_group", "基础物品")
+	sprite.set_meta("unlock_rule", "always")
 	add_child(sprite)
 	return sprite
 
@@ -42,8 +44,8 @@ func refresh(seats: int, diners: Array, font: Font, clock: float) -> void:
 	if not is_inside_tree(): return
 	_build_furniture()
 	for i in _chairs.size():
-		# All eight physical chairs stay visible; subdued upholstery marks seats still for sale.
-		_chairs[i].modulate = Color.WHITE if i in _available else Color(0.65, 0.65, 0.65, 0.42)
+		# Furniture is present at opening; seat purchases still control actual diner capacity.
+		_chairs[i].modulate = Color.WHITE
 	for seat in _diners.keys():
 		if not seat in _occupied:
 			_diners[seat].free()

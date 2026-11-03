@@ -5,7 +5,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = ROOT / "art_src/shop_layout_2026_11/palette_sources"
-WOOD = ["ingredient_table", "prep_bench", "checkout", "lemonade_display_table", "rack", "dining_table", "dining_chair_left", "dining_chair_right"]
+WOOD = ["prep_bench", "lemonade_display_table", "rack", "dining_table", "dining_chair_left", "dining_chair_right"]
 
 
 def recolor(name: str) -> None:

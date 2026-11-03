@@ -58,8 +58,10 @@ func _run() -> void:
 	_check(JSON.stringify(view.sim.workers) == before, "occupied drop leaves current work and assignment untouched")
 	await _drag_card(1, _screen(Vector2(460, 180)))
 	_check(second.post.is_empty(), "automatic mixing machine does not seat employees")
-	await _drag_card(1, _screen(Vector2(100, 760)))
-	_check(second.post.is_empty(), "partition wall is not blank walkable floor")
+	await _drag_card(1, _screen(Vector2(620, 500)))
+	_check(second.post.is_empty(), "solid conveyor base is not blank walkable floor")
+	await _drag_card(1, _screen(Vector2(190, 630)))
+	_check(second.post.is_empty() and second.pos == Vector2(190, 630), "the former partition is usable floor above the repositioned front tools")
 	await _begin_card_drag(1, _screen(Vector2(190, 460)))
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE
