@@ -355,7 +355,7 @@ func test_exact_flavor_dispatch_and_upgraded_sale_price() -> void:
 		if sim.sold > 0: break
 	check_eq(sim.sold_by_dish.pearl_milk_tea, 1, "exact physical flavor sold")
 	check_eq(sim.shelf_stock.coconut_milk_tea, 1, "unrelated flavor stays on shelf")
-	check_eq(sim.revenue - before, roundi(_base_price(sim, "pearl_milk_tea") * 1.08), "configured pearl bonus changes actual completed-sale income")
+	check_eq(sim.revenue - before, roundi(_base_price(sim, "pearl_milk_tea") * sim._definition("topping").material("pearl").bonus(2)), "configured pearl bonus changes actual completed-sale income")
 	check(sim.audit().valid, "exact-flavor dispatch conserves inventory")
 
 func test_brewer_upgrades_speed_and_ingredient_upgrades_price() -> void:
@@ -854,20 +854,34 @@ func test_flyers_and_flavors_bring_customers_faster() -> void:
 	var sim = opened()
 	if sim == null: return
 	sim.gold = 100000
-	var base: float = sim.PROGRESSION.stages[sim.stage_index].customer_interval
+	var prog = sim.PROGRESSION
+	var base: float = prog.stages[sim.stage_index].customer_interval
 	var flavors := 0
 	for material in sim._definition("topping").materials:
 		if sim._dish_unlocked(material.item_id): flavors += 1
 	check(flavors > 0, "the opened shop sells topped flavors")
-	check(is_equal_approx(sim._order_interval(), base), "flavors make cups dearer; they no longer bring customers faster")
-	var info: Dictionary = sim.station_info("counter")
-	check_eq(info.flyers, 1, "flyers start at Lv1")
-	for level in range(2, 11): check_eq(sim.buy_flyers(), "", "flyers to Lv%d" % level)
-	check(not sim.buy_flyers().is_empty(), "flyers stop at Lv10")
-	check(is_equal_approx(sim._order_interval(), base / 1.9), "nine flyer levels bring customers 90% faster")
+	var flow: float = (1.0 + prog.flavor_flow * flavors) * (1.0 + prog.level_flow * sim.machine_levels())
+	check(is_equal_approx(sim._order_interval(), base / flow), "flavors and machine levels bring customers faster")
+	var before: float = sim._order_interval()
+	check_eq(sim.upgrade_station("boil"), "", "the brewer levels up")
+	check(sim._order_interval() < before, "each machine level brings customers a little faster")
+	before = sim._order_interval()
+	var cost: int = sim.flyer_cost()
+	check(cost >= prog.flyer_min_cost, "a flyer costs at least the floor price")
+	var gold: int = sim.gold
+	check_eq(sim.buy_flyers(), "", "a flyer goes out")
+	check_eq(sim.gold, gold - cost, "the flyer is paid once")
+	check(is_equal_approx(sim._order_interval(), before / prog.flyer_mult), "during the wave customers come flyer_mult times as often")
+	check(not sim.buy_flyers().is_empty(), "no second flyer during the wave")
+	sim.advance(prog.flyer_seconds + 0.5)
+	check(is_equal_approx(sim._order_interval(), before), "the wave ends after flyer_seconds")
+	check(not sim.flyer_error().is_empty(), "the flyer is still cooling down")
+	sim.advance(prog.flyer_cooldown - prog.flyer_seconds)
+	check_eq(sim.flyer_error(), "", "after the cooldown another flyer can go out")
 	var copy = make_shop()
-	check_eq(copy.load_dict(sim.to_dict()), "", "flyer level saves")
-	check_eq(copy.flyers, 10, "flyer level loads")
+	sim.buy_flyers()
+	check_eq(copy.load_dict(sim.to_dict()), "", "a shop mid-wave saves and loads")
+	check_eq(copy.flyer_wave, 0.0, "a reload ends the wave")
 
 func test_star_tasks_finish_the_first_shop() -> void:
 	var sim = opened()

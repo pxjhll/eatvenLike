@@ -111,7 +111,7 @@ func refresh() -> void:
 	_seat_row.visible = unlocked and info.has("seats")
 	if _seat_row.visible:
 		_refresh_seats(info)
-	_flyer_row.visible = unlocked and info.has("flyers")
+	_flyer_row.visible = unlocked and info.has("flyer_cost")
 	if _flyer_row.visible:
 		_refresh_flyers(info)
 	_locked.visible = not unlocked
@@ -247,17 +247,20 @@ func _refresh_seats(info: Dictionary) -> void:
 	seat_button.disabled = not String(info.seat_error).is_empty()
 
 func _refresh_flyers(info: Dictionary) -> void:
-	var cost := int(info.flyer_cost)
-	_flyer_title.text = "发传单 Lv%d" % info.flyers if cost < 0 else "发传单 Lv%d → Lv%d" % [info.flyers, int(info.flyers) + 1]
-	# When the line is already full, more customers only wait outside: point at the kitchen instead.
+	# A flyer is a one-off wave: customers come faster for a while, then it has to cool down.
+	var wave := float(info.flyer_wave)
+	var wait := float(info.flyer_wait)
+	_flyer_title.text = "发传单"
 	var hint := " · 队伍已满，先升产能" if info.queue_full else ""
-	if cost < 0:
-		_flyer_effect.text = "客流 ×%.2f%s" % [info.flow, hint]
-		flyer_button.text = "满级"
-		flyer_button.disabled = true
-		return
-	_flyer_effect.text = "客流 ×%.2f → ×%.2f%s" % [info.flow, info.next_flow, hint]
-	flyer_button.text = "%d 金币" % cost
+	if wave > 0.0:
+		_flyer_effect.text = "正在起效：客人 ×%.1f，还有 %d 秒" % [float(info.flyer_mult), ceili(wave)]
+		flyer_button.text = "起效中"
+	elif wait > 0.0:
+		_flyer_effect.text = "%d 秒后可以再发%s" % [ceili(wait), hint]
+		flyer_button.text = "%d 秒" % ceili(wait)
+	else:
+		_flyer_effect.text = "接下来 %d 秒客人 ×%.1f · 现在客流 ×%.2f%s" % [int(info.flyer_seconds), float(info.flyer_mult), float(info.flow), hint]
+		flyer_button.text = "%d 金币" % int(info.flyer_cost)
 	flyer_button.disabled = not String(info.flyer_error).is_empty()
 
 func _refresh_locked(info: Dictionary) -> void:
