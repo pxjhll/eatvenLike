@@ -92,7 +92,10 @@ func refresh(seats: int, diners: Array, font: Font, clock: float, delta := 0.0) 
 		_diners[seat].z_index = 1
 		_diners[seat].position.y -= 14
 		# Face the table: left-hand chairs (even seats) look right, right-hand chairs look left.
-		if _diners[seat].frame_actor == null: _diners[seat].body.flip_h = seat % 2 == 1
+		if _diners[seat].frame_actor == null: _diners[seat].face(seat % 2 == 0)
+		# The cup goes in the hand nearest the table.
+		var cup: Sprite2D = _diners[seat].carried
+		if seat % 2 == 1 and cup.texture != null: cup.position.x = -22.0 - cup.texture.get_width() * cup.scale.x
 
 func _actor(art: String, font: Font) -> Node2D:
 	var actor := Actor.new()
