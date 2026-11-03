@@ -37,13 +37,9 @@ var _takeaway := false
 var _order_cup := Sprite2D.new()
 
 
-## Single-image animals drawn looking left (the rest look right): flipping is relative to this.
-const FACES_LEFT := ["hamster"]
-
-
-## Turns a single-image animal to look right (true) or left (false), whichever way its art was drawn.
+## Turns a single-image animal to look right (true) or left (false). Every animal image is drawn facing right.
 func face(right: bool) -> void:
-	body.flip_h = right == (_art in FACES_LEFT)
+	body.flip_h = not right
 
 
 func setup(art_id: String, font: Font, height := 128.0) -> void:
