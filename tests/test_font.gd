@@ -34,7 +34,8 @@ func test_script_strings_have_glyphs() -> void:
 			var font: FontFile = default_font
 			var source := FileAccess.get_file_as_string(path)
 			for line in source.split("\n"):
-				if line.strip_edges().begins_with("#"):
+				# Editor-only group names/descriptions do not use the game's subset UI font.
+				if line.strip_edges().begins_with("#") or line.strip_edges().begins_with("metadata/") or ".set_meta(" in line:
 					continue
 				for m in literal.search_all(line):
 					var missing := _missing(font, m.get_string(1))

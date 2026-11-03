@@ -84,7 +84,9 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	var before_header_drop: Dictionary = view.sim.workers[0].duplicate(true)
-	var header_target := _world(Vector2(325, 130))
+	# Use a point safely inside the header; the new camera inset put the old fixed
+	# world coordinate exactly on its bottom edge, where pixel rounding could miss it.
+	var header_target := Vector2(header.get_global_rect().get_center().x, header.get_global_rect().end.y - 12)
 	_check(hud.blocks_world(header_target), "expanded header fixture overlaps the upper workstation art")
 	await _gesture(view._staff_cards[0].get_global_rect().get_center(), header_target)
 	_check(view.sim.workers[0] == before_header_drop and not view._drag.dragging, "dropping over header preserves employee assignment and work")

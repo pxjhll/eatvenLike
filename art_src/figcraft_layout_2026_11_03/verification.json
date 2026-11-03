@@ -1,0 +1,31 @@
+{
+  "source_sha256": "80287e4f017a87148a75db56b9636959750aacf663994f1fa66a1592f275aff5",
+  "source_copy_identical": true,
+  "canvas": [
+    720,
+    1500
+  ],
+  "image_placements_checked": 44,
+  "group_count": 13,
+  "coordinate_tolerance_world_units": 0.02,
+  "original_png_dimensions_checked": 31,
+  "png_dimension_failures": [],
+  "figcraft_vs_godot_rgb_mean_absolute_error_0_to_255": [
+    0.6948203703703704,
+    0.702849074074074,
+    0.7084527777777778
+  ],
+  "checks": {
+    "figcraft_geometry_opening_stage_reset_and_stage5_ui_guide": "passed",
+    "regression_suite": "112 cases, 0 failures",
+    "native_layout": "0 failures",
+    "native_staff_drag": "0 failures",
+    "new_drop_regions": "0 failures",
+    "generator_idempotent": true,
+    "independent_review": "press UI finding fixed; no remaining important findings",
+    "cup_ice_bin_draw_order": "passed"
+  },
+  "later_user_approved_corrections": [
+    "SteelCup draws behind IceBin, preserving transforms and grouped unlocks"
+  ]
+}

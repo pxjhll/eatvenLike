@@ -1,6 +1,45 @@
 extends "res://tests/test_case.gd"
 ## These tests exercise actual stock, routes and employee actions, without old saves.
 
+func test_removed_middle_partition_opens_the_old_left_passage() -> void:
+	var layout = preload("res://content/tea/art_playtest_layout.gd")
+	var opening := Vector2(190, 690)
+	var cell: Vector2i = layout.grid().world_to_cell(opening, layout.CELL)
+	check(not cell in layout.grid().blocked_cells, "the removed left partition leaves walkable floor")
+	check(not layout.path(Vector2(190, 610), Vector2(190, 690)).is_empty(), "staff can cross the old partition footprint up to the repositioned counter")
+
+func test_left_front_work_surfaces_assign_front_staff_on_drop() -> void:
+	var layout = preload("res://content/tea/art_playtest_layout.gd")
+	for point in [Vector2(245, 810), Vector2(115, 750)]:
+		var target: Dictionary = layout.drop_target(point)
+		check_eq(target.get("kind"), "post", "dropping onto a front machine assigns a post")
+		check_eq(target.get("post"), "counter", "the left worktop assigns front service rather than kitchen work")
+		check_eq(target.get("point"), layout.POST_POINTS.counter, "front drops place staff at reachable counter floor")
+
+func test_front_work_points_are_reachable_after_counter_moves_up() -> void:
+	var layout = preload("res://content/tea/art_playtest_layout.gd")
+	check(layout.POINTS.has("press") and layout.POINTS.has("lemonade"), "separate front preparation and dispenser points exist")
+	check(layout.POINTS.counter.y < 800, "service moves above the dining area")
+	for station in layout.POINTS:
+		check(not layout.path(layout.POINTS[station], layout.POINTS.counter).is_empty(), "front service is reachable from " + station)
+	check_eq(layout.drop_target(layout.POST_POINTS.counter).get("post"), "counter", "front employee drop still assigns service role")
+	check_eq(layout.drop_target(Vector2(350, 610)).get("kind"), "mobile", "central kitchen aisle remains available to kitchen staff")
+	check_eq(layout.drop_target(Vector2(190, 630)).get("kind"), "mobile", "floor above the new front workstation is not captured by the counter drop region")
+
+
+func test_dining_chairs_follow_available_seats_and_diner_identity() -> void:
+	var path := "res://presentation/tea_playtest/dining_area.gd"
+	check(ResourceLoader.exists(path), "dining presenter exists")
+	if not ResourceLoader.exists(path): return
+	var dining: Node2D = load(path).new()
+	dining.refresh(3, [{"seat": 1, "dish": "lemonade", "left": 20.0}], null, 0.0)
+	check_eq(dining.available_seats(), [0, 1, 2], "only purchased chairs are available")
+	check_eq(dining.occupied_seats(), [1], "diner is drawn at their assigned chair")
+	dining.refresh(5, [{"seat": 4, "dish": "black_tea", "left": 5.0}], null, 1.0)
+	check_eq(dining.available_seats(), [0, 1, 2, 3, 4], "buying a seat activates the next independent chair")
+	check_eq(dining.occupied_seats(), [4], "departed diner disappears and the new diner retains their own seat")
+	dining.free()
+
 func new_session():
 	if not ResourceLoader.exists("res://game/tea_playtest/tea_playtest_sim.gd"):
 		check(false, "playtest session simulation exists")

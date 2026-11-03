@@ -9,7 +9,7 @@ extends Control
 const STAGE_SIGNS := ["", "boil", "seal", "mix", "press", "topping"]
 ## From the topping line on, each cup has one more stop: the hint to fill the new staff spots starts here.
 const TOPPING_STAGE := 5
-const COUNTER_AREA := Rect2(410, 850, 120, 110)
+const COUNTER_AREA := Rect2(370, 720, 130, 120)
 const DIM := Color(0.16, 0.1, 0.06, 0.62)
 const GLOW := Color("ffd98a")
 const HAND := Color("8b6446")

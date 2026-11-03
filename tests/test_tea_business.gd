@@ -222,7 +222,7 @@ func test_front_and_kitchen_staff_have_their_own_duties_and_upgrade_lists() -> v
 	sim.gold = 1000
 	sim.hire()
 	var extra: Dictionary = sim.all_workers().back()
-	check_eq(sim.deploy_at(extra.id, "counter", Vector2(410, 930)), "", "a second front worker takes the counter")
+	check_eq(sim.deploy_at(extra.id, "counter", sim.Layout.POINTS.counter), "", "a second front worker takes the counter")
 	check_eq(sim.front_staff(), 2, "two front staff serve")
 	var copy = make_shop()
 	check_eq(copy.load_dict(sim.to_dict()), "", "front and kitchen upgrades save")
@@ -330,8 +330,8 @@ func test_reserved_employee_drop_validates_before_deploying() -> void:
 	check_eq(sim.to_dict(), before, "locked drop does not deploy or mutate roster")
 	check(not sim.deploy_at(2, "", Vector2(-50, -50)).is_empty(), "blocked drop rejects deployment")
 	check_eq(sim.to_dict(), before, "blocked drop preserves all state")
-	check_eq(sim.deploy_at(2, "", Vector2(410, 930)), "", "valid mobile drop deploys and places")
-	check_eq(sim.worker_by_id(2).pos, Vector2(410, 930), "physical actor starts at valid drop")
+	check_eq(sim.deploy_at(2, "", sim.Layout.POINTS.counter), "", "valid mobile drop deploys and places")
+	check_eq(sim.worker_by_id(2).pos, sim.Layout.POINTS.counter, "physical actor starts at valid drop")
 
 func test_exact_flavor_dispatch_and_upgraded_sale_price() -> void:
 	var sim = opened()
@@ -751,9 +751,9 @@ func test_kitchen_packer_saves_and_takeaway_lemonade_is_fetched_at_the_sealer() 
 		if packing_saved: break
 	check(packing_saved, "the kitchen packs takeaway cups")
 	var job := {"kind": "serve", "src": "seal", "dst": "counter", "item": "lemonade", "count": 1}
-	check(sim._source_point(job) != Vector2(330, 910), "takeaway lemonade is picked up at the sealer, not the stand")
+	check(sim._source_point(job) != sim.Layout.POINTS.lemonade, "takeaway lemonade is picked up at the sealer, not the stand")
 	job.src = "supply"
-	check_eq(sim._source_point(job), Vector2(330, 910), "dine-in lemonade is still poured at the stand")
+	check_eq(sim._source_point(job), sim.Layout.POINTS.lemonade, "dine-in lemonade is still poured at the stand")
 
 func test_brewer_pauses_for_stirring_and_seated_brewer_runs_its_segment() -> void:
 	var sim = make_shop()
