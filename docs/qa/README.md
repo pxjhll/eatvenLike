@@ -9,6 +9,7 @@ godot --headless --path . -s tests/test_rabbit_frame_atlas.gd
 godot --headless --path . -s tests/test_rabbit_game_visuals.gd
 godot --headless --path . -s tests/render_shop_ui.gd
 godot --headless --path . -s tests/render_tea_business.gd
+godot --headless --path . -s tests/render_counter_tap.gd
 godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_staff_posts.gd
 godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_rabbit_game_integration.gd
 ```

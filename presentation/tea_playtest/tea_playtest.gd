@@ -96,6 +96,8 @@ const FRAME_RECTS := {
 	"press": Rect2(195, 675, 108, 110),
 }
 const FRAME_OPENS := {"shelf": "boil"}
+## Tapping the dining room (tables and chairs below the queue) opens the counter panel too.
+const COUNTER_DINING_RECT := Rect2(20, 1060, 680, 380)
 ## The sealer → takeaway rack conveyor is bought from a dashed frame where its art goes.
 const BELT_ID := "seal_to_shelf"
 const BELT_FRAME := Rect2(590, 385, 72, 150)
@@ -942,6 +944,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			ui.open_station(id)
 			get_viewport().set_input_as_handled()
 			return
+	if _opens_counter(point):
+		ui.open_station("counter")
+		get_viewport().set_input_as_handled()
+
+
+## The counter panel (seats, flyers) opens from the small 堂食 chip, its red ↑ beside it,
+## the counter itself or the dining room. Machines on the counter are checked first.
+func _opens_counter(point: Vector2) -> bool:
+	if not _seats.visible:
+		return false
+	var chip := Rect2(_seats.position, _seats.size).grow_individual(12, 14, 52, 14)
+	return chip.has_point(point) or Layout.POST_RECTS.counter.has_point(point) or COUNTER_DINING_RECT.has_point(point)
 
 
 func _notification(what: int) -> void:
