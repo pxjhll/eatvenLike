@@ -27,18 +27,16 @@ func _run() -> void:
 		quit(1)
 		return
 	_check(view.sim.gold == 50 and view.sim.stage_index == 0, "fresh shop begins at configured opening stage")
-	_check(_art_hidden(["MachineTable", "PrepBench", "Sealer", "Rack", "DisplayCase"]), "locked machines draw no art before unlock")
-	_check(not _art_hidden(["IngredientTable"]), "the ingredient cabinet is furniture from the start")
-	_check(_frames_shown(["lemonade"]) and _frames_hidden(["boil", "supply", "seal", "shelf", "mix", "topping"]), "fresh shop shows only the lemonade stand's dashed frame")
+	_check(_art_hidden(["MachineTable/PearlPot", "MachineTable/Brewer", "PrepBench", "Sealer", "DisplayCase", "Checkout/FrontLemon/Muddler"]), "locked machine parts draw no art before unlock")
+	_check(not _art_hidden(["IngredientTable", "MachineTable", "Rack"]), "base furniture and rack are present from the start")
+	_check(_frames_shown(["lemonade"]) and _frames_hidden(["boil", "supply", "seal", "mix", "topping"]), "fresh shop shows only the lemonade stand's dashed frame")
 	_check(view._station_buttons.lemonade.can_unlock, "red arrow marks what can be bought now")
 	await _capture("opening")
 	await _click(view._station_buttons.lemonade)
 	_check(hud.page == "station", "clicking the in-world spot opens real unlock panel")
 	await _click(hud.station_panel.unlock_button)
-	_check(_frames_shown(["boil", "shelf"]) and _frames_hidden(["lemonade", "supply", "seal", "mix", "topping"]), "after opening only the brewer's frames show")
+	_check(_frames_shown(["boil"]) and _frames_hidden(["lemonade", "supply", "seal", "mix", "topping"]), "after opening only the brewer's frame shows")
 	await _click(hud.home_button)
-	await _click(view._station_buttons.shelf)
-	_check(hud.page == "station" and hud.station_panel.station_id == "boil", "the shelf spot opens the brewer's unlock panel")
 	_check(view.sim.station_unlocked("lemonade") and view.sim.gold == 40, "lemonade unlock spends configured ten coins")
 	_check(view._seats.visible and view._seats.text.begins_with("堂食"), "the seat chip shows who is sitting")
 	_advance(500)
@@ -79,7 +77,7 @@ func _run() -> void:
 	gold = view.sim.gold
 	var seat_cost: int = view.sim.seat_cost()
 	await _click(hud.station_panel.seat_button)
-	_check(view.sim.seats == 4 and view.sim.gold == gold - seat_cost and seat_cost <= 15, "the counter sells one more seat, the first one cheap")
+	_check(view.sim.seats == 4 and view.sim.gold == gold - seat_cost and seat_cost == view.sim.PROGRESSION.seat_costs[0], "the counter sells one more table, two seats")
 	view.sim.revenue = maxi(view.sim.revenue, 600)
 	await _click(hud.home_button)
 	await _click(view._station_buttons.seal)
@@ -130,7 +128,7 @@ func _run() -> void:
 	await _click(view._station_buttons.press)
 	await _click(hud.station_panel.unlock_button)
 	_check(view.sim.stage_index == 4 and view.sim.station_unlocked("press"), "the front press opens lemon tea")
-	_check(view.art.get_node("Sortables/PressTable").visible, "the mortar stands on the front counter")
+	_check(not _art_hidden(["Checkout/FrontLemon/Muddler", "Checkout/FrontLemon/IceBin"]), "the lemon press tools stand on the front counter")
 	_advance(300)
 	await _click(hud.home_button)
 	await _capture("lemon-tea")
@@ -245,7 +243,7 @@ func _test_touch_station_panels() -> void:
 	hud = view.ui
 	var points := {"supply": Vector2(120, 210), "boil": Vector2(390, 150),
 		"mix": Vector2(465, 200), "topping": Vector2(85, 420), "seal": Vector2(600, 280),
-		"lemonade": Vector2(160, 920), "press": Vector2(318, 880)}
+		"lemonade": Vector2(140, 750), "press": Vector2(255, 685)}
 	for viewport_size in [Vector2i(720, 1280), Vector2i(360, 640)]:
 		root.size = viewport_size
 		await _layout()
@@ -283,7 +281,7 @@ func _touch(point: Vector2) -> void:
 
 func _art_hidden(paths: Array) -> bool:
 	for path in paths:
-		if view.art.get_node("Sortables/" + path).is_visible_in_tree():
+		if view.art.get_node("Sortables/" + path + "/Sprite").is_visible_in_tree():
 			return false
 	return true
 

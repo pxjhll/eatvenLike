@@ -512,7 +512,7 @@ func _brew_ready() -> bool:
 	return station_unlocked("boil") and boxes.tea_leaf
 
 func seat_cost() -> int:
-	var index := seats - PROGRESSION.seat_start
+	var index := (seats - PROGRESSION.seat_start) / maxi(1, PROGRESSION.seat_step)
 	return PROGRESSION.seat_costs[index] if index >= 0 and index < PROGRESSION.seat_costs.size() else -1
 
 ## How long a dine-in customer sits at this stage: short early so seats turn over, longer as the menu grows.
@@ -527,7 +527,7 @@ func _longest_seat_seconds() -> float:
 	return longest / tuned("seat") * TUNE_MAX
 
 func seat_max() -> int:
-	return PROGRESSION.seat_start + PROGRESSION.seat_costs.size()
+	return PROGRESSION.seat_start + PROGRESSION.seat_step * PROGRESSION.seat_costs.size()
 
 func seat_error() -> String:
 	if not station_unlocked("lemonade"): return "请先解锁柠檬水台"
@@ -539,9 +539,16 @@ func buy_seat() -> String:
 	var error := seat_error()
 	if not error.is_empty(): return error
 	gold -= seat_cost()
-	seats += 1
-	_event("seat_added", "加了一张座位")
+	seats = mini(seats + PROGRESSION.seat_step, seat_max())
+	_event("seat_added", "加了 %d 个座位" % PROGRESSION.seat_step)
 	return ""
+
+## Seats nobody is sitting in, being served to, or queueing for.
+func _spare_seats() -> int:
+	var waiting := 0
+	for order in orders:
+		if not order.get("takeaway", false) and not order.reserved: waiting += 1
+	return free_seats() - waiting
 
 ## Seats neither occupied nor promised to a dine-in cup on its way.
 func free_seats() -> int:
@@ -958,7 +965,8 @@ func _add_order() -> void:
 		if sample <= 0:
 			selected = dish
 			break
-	var takeaway := station_unlocked("seal") and _rng.randf() < takeaway_share()
+	# Customers would rather sit down: they take their drink to go only when every seat is taken or spoken for.
+	var takeaway := station_unlocked("seal") and _spare_seats() <= 0
 	for dish in weights: order_ramp[dish] = mini(int(order_ramp.get(dish, 0)) + 1, RAMP_ORDERS)
 	if station_unlocked("seal"): order_ramp.takeaway = mini(int(order_ramp.get("takeaway", 0)) + 1, RAMP_ORDERS)
 	orders.append({"id": _next_order, "wait": 0.0, "reserved": false, "dish": selected, "takeaway": takeaway})
@@ -966,7 +974,7 @@ func _add_order() -> void:
 
 func _source_point(job: Dictionary) -> Vector2:
 	# Lemonade and lemon tea are poured (and pressed) at the stand.
-	if job.item in FRONT_DISHES and job.src == "supply": return Vector2(330, 910)
+	if job.item in FRONT_DISHES and job.src == "supply": return Layout.POINTS.lemonade
 	# The takeaway rack is the shelf's lower tier: picked up where the shelf is.
 	if job.src == "pickup": return Layout.POINTS.shelf
 	return super._source_point(job)
@@ -1713,14 +1721,47 @@ func load_dict(state: Dictionary) -> String:
 	if state.get("version") is int and state.version == 9: state = _migrate_v9(state)
 	if state.get("version") is int and state.version == 10: state = _migrate_v10(state)
 	if state.get("version") is int and state.version == 11: state = _migrate_v11(state)
+	_round_seats(state)
 	var error := _validate_state(state)
 	if not error.is_empty(): return error
 	var candidate = get_script().new()
 	candidate._apply_state(state)
 	var report: Dictionary = candidate.audit()
 	if not report.valid: return "存档库存或预留不一致：%s" % report.errors
+	if candidate._recover_layout_positions():
+		report = candidate.audit()
+		if not report.valid: return "存档库存或预留不一致：%s" % report.errors
+		state = candidate.to_dict()
 	_apply_state(state)
 	return ""
+
+## Seats are sold a table at a time: an older save's count is rounded up to whole tables (never fewer seats).
+func _round_seats(state: Dictionary) -> void:
+	if not state.get("seats") is int: return
+	var step := maxi(1, PROGRESSION.seat_step)
+	var extra := maxi(0, state.seats - PROGRESSION.seat_start)
+	state.seats = mini(PROGRESSION.seat_start + ceili(float(extra) / step) * step, seat_max())
+
+## A redrawn shop can put furniture on floor an older save had staff standing or walking on.
+## Repair only affected positions/routes after the inventory audit has passed.
+func _recover_layout_positions() -> bool:
+	var changed := false
+	for worker in roster:
+		if Layout.path(worker.pos, Layout.POINTS.counter).is_empty():
+			_cancel_job(worker)
+			worker.pos = Layout.POST_POINTS.get(worker.post, Layout.POINTS.counter)
+			worker.assignment_point = worker.pos
+			worker.assignment_pending = false
+			changed = true
+		elif worker.walking and not worker.job.is_empty():
+			var destination: Vector2 = _source_point(worker.job) if worker.phase == "walk_pickup" else _destination_point(worker.job)
+			var stale: bool = worker.path.is_empty() or worker.path[worker.path.size() - 1] != destination
+			for index in range(worker.path_index, worker.path.size()):
+				if Layout.path(worker.path[index], Layout.POINTS.counter).is_empty(): stale = true
+			if stale:
+				_walk(worker, destination, worker.phase)
+				changed = true
+	return changed
 
 ## v6 → v7: training is refunded and undone (the upgrade lists replace it), and someone takes the counter,
 ## because kitchen staff no longer serve. Jobs from the old rules can't be kept, so like v3 the floor

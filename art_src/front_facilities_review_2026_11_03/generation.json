@@ -1,0 +1,73 @@
+{
+  "source": "art_src/front_facilities_review_2026_11_03/front-facilities-sheet.png",
+  "prompt": "Create ONE transparent game sprite sheet containing exactly THREE separate complete props in one horizontal row, three evenly spaced cells, no drawn grid or labels. Reference attached is authoritative for exact prop design and the cozy tea shop cartoon style. The red boxes mark requested subjects, NOT lines to copy. Only redraw the three props below, NOT the whole scene.\nLEFT cell: ONE reusable takeaway PAPER BAG copied from the bags in both red-boxed locations: a small upright warm tan/ochre kraft paper bag with a broad rounded rectangular front, subtle folded side panel and flat closed bottom. Two thick dark burgundy loop handles, the forward handle forming the distinctive large U visible down the upper front face as in reference. A small folded/open top rim, compact friendly shape, width:height roughly .8. It must clearly read as a kraft takeaway carrier, NOT a ceramic mug/jug, NOT wooden furniture, NO spout. No logos, lettering, food, cup, label or hands. One bag only, drawn in the SAME frontal elevated orthographic orientation reusable in both scene locations.\nMIDDLE cell: ONE very small LOW cream checkout/receipt terminal matching the object to the LEFT of the right-hand paper bag in the marked reference box. Compact off-white rounded rectangular box base, a LOW inset charcoal/navy rounded upper/front block with two simple pale gray horizontal inset readout/slot bands. Width:height roughly1.25. The dark upper piece sits directly on the cream base: NO tall screen, NO monitor on a stem, NO pedestal, NO big keyboard, NO bulky PC cash register. Soft rounded edges and simple cute proportions, exact reference appearance, no text or numbers.\nRIGHT cell: ONE EMPTY dark burgundy/red PACKING BASE from underneath the right-hand bag. Low wide square/rectangular plinth with softly rounded corners, muted wine-red sides and a dark charcoal inset top tray, raised burgundy rim. Complete EMPTY top with NO paper bag on it, no handle, no cup, no machine or controls. Width:height about2.2:1. Bag and red base must remain independent sprites so one same bag can be placed on the bare counter or on this base.\nStyle all props consistently: refined crisp hand-painted cozy cartoon, warm dark brown/maroon outlines, muted tan paper, off-white cream and charcoal-gray terminal, dark burgundy plinth, soft upper-left lighting, restrained highlights. Strict ORTHOGRAPHIC front elevated view as reference, all parallel edges parallel, no perspective convergence, no isometric rotation. Genuinely transparent alpha background and cell gutters, full silhouettes with clean edges, no background/glow/shadow panels, no checkerboard, no red annotation boxes, no characters, speech bubbles, scenery, table or text. Exactly one paper bag, one compact low terminal, and one empty red base, completely separated on one sheet.",
+  "reference": "C:\\Users\\pangxiaojin\\AppData\\Local\\Temp\\codex-clipboard-5b80e2f2-64e2-45c3-b1de-9500eb7f4336.png",
+  "status": "installed into scene as art; no additional runtime logic changes",
+  "tool": "built-in image_gen",
+  "assets": [
+    {
+      "asset": "art_src/front_facilities_review_2026_11_03/takeaway_bag.png",
+      "size": [
+        200,
+        240
+      ],
+      "source_cell": [
+        0,
+        0,
+        724,
+        724
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "asset": "art_src/front_facilities_review_2026_11_03/checkout_terminal.png",
+      "size": [
+        335,
+        245
+      ],
+      "source_cell": [
+        724,
+        0,
+        1448,
+        724
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "asset": "art_src/front_facilities_review_2026_11_03/packing_base.png",
+      "size": [
+        200,
+        200
+      ],
+      "source_cell": [
+        1448,
+        0,
+        2172,
+        724
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    }
+  ],
+  "reuse": "Use the same takeaway_bag sprite twice: directly on the counter at left; on the separate red packing_base at right. The low checkout_terminal sits to the left of the right packing base.",
+  "integration": {
+    "scene": "presentation/reference/shop_art.tscn",
+    "screenshot": "docs/qa/shop-layout-overview.png",
+    "installed_assets": [
+      "art/reference/takeaway_bag.png",
+      "art/reference/register.png",
+      "art/reference/counter_red_device.png"
+    ],
+    "preview_failures": 0,
+    "baseline_scripts_checked": 66,
+    "baseline_scripts_changed": 0
+  }
+}

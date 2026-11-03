@@ -7,6 +7,8 @@ extends Resource
 @export var belts: Array[BeltSlotDef] = []
 ## 美术店：堂食座位。开局几张、最多几张，第 n 张加座的价格，每位客人坐多久
 @export var seat_start: int = 3
+## 每买一次加几个座位（一张桌子两把椅子 = 2）
+@export var seat_step: int = 1
 @export var seat_costs: Array[int] = []
 @export var seat_seconds: float = 40.0
 ## 美术店：封口机 Lv1 封一杯外带要几秒

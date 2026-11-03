@@ -1,0 +1,250 @@
+{
+  "original_pngs_checked": 31,
+  "replaced_pngs": 16,
+  "independent_generated_assets": 33,
+  "failures": [],
+  "replacements": [
+    {
+      "file": "art/reference/ingredient_table.png",
+      "original": [
+        480,
+        225
+      ],
+      "final": [
+        480,
+        225
+      ]
+    },
+    {
+      "file": "art/reference/pearl_jar.png",
+      "original": [
+        224,
+        208
+      ],
+      "final": [
+        224,
+        208
+      ]
+    },
+    {
+      "file": "art/reference/tea_tin.png",
+      "original": [
+        179,
+        244
+      ],
+      "final": [
+        179,
+        244
+      ]
+    },
+    {
+      "file": "art/reference/checkout.png",
+      "original": [
+        1400,
+        280
+      ],
+      "final": [
+        1400,
+        280
+      ]
+    },
+    {
+      "file": "art/reference/register.png",
+      "original": [
+        335,
+        245
+      ],
+      "final": [
+        335,
+        245
+      ]
+    },
+    {
+      "file": "art/reference/display_case.png",
+      "original": [
+        520,
+        380
+      ],
+      "final": [
+        520,
+        380
+      ]
+    },
+    {
+      "file": "art/reference/milk_bottle.png",
+      "original": [
+        135,
+        221
+      ],
+      "final": [
+        135,
+        221
+      ]
+    },
+    {
+      "file": "art/reference/prep_bench.png",
+      "original": [
+        313,
+        892
+      ],
+      "final": [
+        313,
+        892
+      ]
+    },
+    {
+      "file": "art/reference/machine_table.png",
+      "original": [
+        717,
+        208
+      ],
+      "final": [
+        717,
+        208
+      ]
+    },
+    {
+      "file": "art/reference/pearl_pot.png",
+      "original": [
+        451,
+        342
+      ],
+      "final": [
+        451,
+        342
+      ]
+    },
+    {
+      "file": "art/reference/brewer.png",
+      "original": [
+        314,
+        369
+      ],
+      "final": [
+        314,
+        369
+      ]
+    },
+    {
+      "file": "art/reference/belt_horizontal.png",
+      "original": [
+        748,
+        369
+      ],
+      "final": [
+        748,
+        369
+      ]
+    },
+    {
+      "file": "art/reference/belt_vertical.png",
+      "original": [
+        385,
+        695
+      ],
+      "final": [
+        385,
+        695
+      ]
+    },
+    {
+      "file": "art/reference/belt_corner.png",
+      "original": [
+        318,
+        282
+      ],
+      "final": [
+        318,
+        282
+      ]
+    },
+    {
+      "file": "art/reference/sealer.png",
+      "original": [
+        417,
+        495
+      ],
+      "final": [
+        417,
+        495
+      ]
+    },
+    {
+      "file": "art/reference/rack.png",
+      "original": [
+        390,
+        380
+      ],
+      "final": [
+        390,
+        380
+      ]
+    }
+  ],
+  "palette_only": [
+    {
+      "file": "art/reference/back_wall.png",
+      "alpha_preserved": true,
+      "size": [
+        937,
+        305
+      ]
+    },
+    {
+      "file": "art/reference/floor.png",
+      "alpha_preserved": true,
+      "size": [
+        937,
+        1678
+      ]
+    },
+    {
+      "file": "art/reference/prep_bench.png",
+      "alpha_preserved": true,
+      "size": [
+        313,
+        892
+      ]
+    },
+    {
+      "file": "art/reference/lemonade_display_table.png",
+      "alpha_preserved": true,
+      "size": [
+        600,
+        220
+      ]
+    },
+    {
+      "file": "art/reference/rack.png",
+      "alpha_preserved": true,
+      "size": [
+        390,
+        380
+      ]
+    },
+    {
+      "file": "art/reference/dining_table.png",
+      "alpha_preserved": true,
+      "size": [
+        400,
+        310
+      ]
+    },
+    {
+      "file": "art/reference/dining_chair_left.png",
+      "alpha_preserved": true,
+      "size": [
+        240,
+        350
+      ]
+    },
+    {
+      "file": "art/reference/dining_chair_right.png",
+      "alpha_preserved": true,
+      "size": [
+        240,
+        350
+      ]
+    }
+  ]
+}

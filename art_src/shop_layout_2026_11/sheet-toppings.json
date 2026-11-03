@@ -1,0 +1,88 @@
+{
+  "key": "toppings",
+  "cols": 3,
+  "rows": 3,
+  "ids": [
+    "topping_green_box",
+    "topping_coconut_jar",
+    "topping_powder_jar",
+    "topping_tongs",
+    "topping_tray",
+    "topping_brown_box",
+    "topping_white_box"
+  ],
+  "source": "art_src/shop_layout_2026_11/sources/exec-d79a048d-494e-4147-ace0-8ab35bb969b1.png",
+  "prompt": "Create a HIGH RESOLUTION 3072 pixel square production sprite sheet for a 2D cozy cartoon tea shop game. One sheet with an EXACT uniform 3 columns x 3 rows GRID of equal-sized INVISIBLE rectangular cells, row-major ordering left to right then top to bottom. One completely separate object per cell. All objects separated by very generous fully transparent gutters (at least 10% cell size), absolutely no touching/overlap, NO drawn grid lines, NO labels or numbers. Blank cells fully empty. Objects are centered WITHIN their own cells with complete unobstructed silhouettes, furniture EMPTY and all tabletop objects separate. Exact layout:\nRow 1, column 1: One square beige open ingredient bin filled with green small soft topping pieces, matching additional topping reference. Clear readable complete bin, no surroundings.\nRow 1, column 2: One clear glass jar with pale gray screw lid holding cream white coconut cubes, a simple coconut-shaped small emblem, no letters. No surroundings.\nRow 1, column 3: One small clear jar with gray screw lid holding warm caramel-orange powder. No label or letters, no surroundings.\nRow 2, column 1: One pair of small silver serving tongs, slightly open, laid diagonally, dark brown outline, no other objects or backdrop.\nRow 2, column 2: One shallow square silver ingredient tray holding soft pale cream topping, round lobed surface, no surroundings.\nRow 2, column 3: One square beige open ingredient bin filled with chunky reddish brown sweet topping, no surroundings.\nRow 3, column 1: One square beige open ingredient bin filled with small ivory white cubes, no surroundings.\nStyle: follow provided tea shop reference faithfully but more refined, precise and clean. Soft warm hand-painted cartoon game illustration with rounded shapes, confident dark brown contour, warm honey medium wood, cream appliances, gentle upper-left highlights; consistent line thickness, lighting and same elevated frontal camera across EVERY object. Strict orthographic projection: parallel edges stay parallel, NO vanishing point, no perspective convergence, no isometric diamond orientation. Wooden tables have EMPTY plain tops, no baked on props; no characters, lettering, bubbles, other scene furniture, floor, tile patterns, checkerboard, vignette, glow or backgrounds. Real transparent RGBA background everywhere outside silhouettes and all gutters. Keep shading simple and edges crisp, not photorealistic. Use entire high resolution canvas efficiently while preserving transparent gutters. Only listed objects, complete independent sprites.",
+  "assets": [
+    {
+      "id": "topping_green_box",
+      "destination": "art/reference/topping_green_box.png",
+      "size": [
+        180,
+        180
+      ],
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "topping_coconut_jar",
+      "destination": "art/reference/topping_coconut_jar.png",
+      "size": [
+        150,
+        210
+      ],
+      "row": 0,
+      "col": 1
+    },
+    {
+      "id": "topping_powder_jar",
+      "destination": "art/reference/topping_powder_jar.png",
+      "size": [
+        110,
+        160
+      ],
+      "row": 0,
+      "col": 2
+    },
+    {
+      "id": "topping_tongs",
+      "destination": "art/reference/topping_tongs.png",
+      "size": [
+        200,
+        120
+      ],
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "topping_tray",
+      "destination": "art/reference/topping_tray.png",
+      "size": [
+        180,
+        180
+      ],
+      "row": 1,
+      "col": 1
+    },
+    {
+      "id": "topping_brown_box",
+      "destination": "art/reference/topping_brown_box.png",
+      "size": [
+        180,
+        180
+      ],
+      "row": 1,
+      "col": 2
+    },
+    {
+      "id": "topping_white_box",
+      "destination": "art/reference/topping_white_box.png",
+      "size": [
+        180,
+        180
+      ],
+      "row": 2,
+      "col": 0
+    }
+  ]
+}

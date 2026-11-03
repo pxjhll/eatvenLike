@@ -37,6 +37,11 @@ var _takeaway := false
 var _order_cup := Sprite2D.new()
 
 
+## Turns a single-image animal to look right (true) or left (false). Every animal image is drawn facing right.
+func face(right: bool) -> void:
+	body.flip_h = not right
+
+
 func setup(art_id: String, font: Font, height := 128.0) -> void:
 	_font = font
 	_art = art_id
@@ -99,7 +104,7 @@ func display(worker: Dictionary, clock: float) -> void:
 		movement = Vector2.ZERO
 	_pose_initialized = true
 	if absf(movement.x) > 0.1:
-		body.flip_h = movement.x < 0
+		face(movement.x > 0)
 	var walking: bool = worker.get("walking", false)
 	var bob := sin(clock * 15.0) * 2.5 if walking and frame_actor == null else 0.0
 	if frame_actor != null:

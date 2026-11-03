@@ -3,6 +3,7 @@ extends Node2D
 
 const Sim := preload("res://game/tea_playtest/tea_playtest_sim.gd")
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
+const ArtGroups := preload("res://presentation/tea_playtest/shop_art_groups.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const DragController := preload("res://presentation/tea_playtest/staff_drag_controller.gd")
 const Guide := preload("res://presentation/tea_playtest/guide_overlay.gd")
@@ -13,8 +14,9 @@ const Recorder := preload("res://presentation/tea_playtest/play_recorder.gd")
 const ART_NAMES := preload("res://presentation/characters/character_library.gd").NAMES
 const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "seal": "自动封口"}
 ## Machines show no standing text: a bar while working and a bubble only when they need a hand.
-const BADGES := {"boil": Vector2(265, 112), "mix": Vector2(420, 112), "topping": Vector2(36, 612), "seal": Vector2(556, 178)}
-const SALE_POINT := Vector2(470, 905)
+const BADGES := {"boil": Vector2(300, 114), "mix": Vector2(452, 79), "topping": Vector2(36, 616), "seal": Vector2(564, 178)}
+const SALE_POINT := Vector2(490, 740)
+const CUSTOMER_HEIGHT := Layout.CUSTOMER_HEIGHT
 var sim: RefCounted
 var store: RefCounted
 var save_status := "自动存档已开启"
@@ -24,6 +26,10 @@ var selected_worker := 1
 var _actors := {}
 var _customers := {}
 var _customer_positions := {}
+var _customer_orders := {}
+var _customer_entering := {}
+## Dine-in seats already taken last frame, to tell which customer just sat down.
+var _known_seats := {}
 var _cups: Array[Sprite2D] = []
 var _badges := {}
 var _bars := {}
@@ -58,7 +64,7 @@ var _station_buttons := {}
 ## shown whenever something there can be bought with the coins on hand.
 var _upgrade_marks := {}
 var _staff_mark: Control
-var _lemonade_cup: Node2D
+var _glass_button: Button
 ## Belt mode shows a plate on every hop that can take a conveyor; drag the chip onto one (or tap it).
 var belt_mode := false
 var _belt_toggle: Button
@@ -70,40 +76,29 @@ var _chip_home := Vector2(296, 560)
 var _chip_dragging := false
 ## These two hops already have conveyor art in the scene; the rest are drawn as lines.
 ## The shelf's lower tier, where sealed takeaway cups wait.
-const PICKUP_ROW_Y := 662.0
+const PICKUP_ROW_Y := 634.0
 const ART_BELTS := {"BeltHorizontal": "topping_to_seal", "BeltVertical": "seal_to_shelf"}
 const STATION_REGIONS := {
-	"supply": Rect2(20, 155, 221, 120), "boil": Rect2(245, 122, 167, 158),
-	"mix": Rect2(415, 121, 106, 160), "topping": Rect2(22, 254, 121, 339),
-	"seal": Rect2(548, 207, 120, 184), "lemonade": Rect2(40, 838, 250, 200),
-	"press": Rect2(280, 836, 84, 80),
+	"supply": Rect2(69, 141, 134, 95), "boil": Rect2(291, 117, 143, 110),
+	"mix": Rect2(440, 79, 110, 155), "topping": Rect2(23, 269, 122, 348),
+	"seal": Rect2(558, 205, 134, 185), "lemonade": Rect2(31, 595, 123, 184),
+	# The front lemon press (muddler, steel cup, ice box) on the counter beside the lemonade dispenser.
+	"press": Rect2(189, 656, 113, 141),
 }
 ## A locked machine is not drawn; its floor spot shows a dashed frame instead.
 ## The cabinet is furniture; its spot shows a frame only while an ingredient box waits to be bought.
-## The shelf opens with the brewer. Only the very next unlock shows: lemonade first, then one machine at a time.
+## Only the next machine unlock shows; base furniture and the rack are present at opening.
 const FRAME_RECTS := {
-	"supply": Rect2(30, 228, 204, 46), "boil": Rect2(250, 228, 158, 76),
-	"mix": Rect2(420, 160, 98, 82), "topping": Rect2(30, 284, 112, 300),
-	"seal": Rect2(556, 228, 108, 154), "shelf": Rect2(520, 548, 162, 144),
-	"lemonade": Rect2(48, 872, 236, 112), "press": Rect2(280, 836, 84, 80),
+	"supply": Rect2(69, 155, 134, 78), "boil": Rect2(291, 136, 143, 90),
+	"mix": Rect2(446, 112, 106, 116), "topping": Rect2(30, 290, 108, 285),
+	"seal": Rect2(564, 228, 123, 154),
+	"lemonade": Rect2(35, 625, 119, 145),
+	"press": Rect2(195, 675, 108, 110),
 }
 const FRAME_OPENS := {"shelf": "boil"}
-## Machine art that appears only once its station is unlocked (the table carries the pot and the milk machine).
-const LOCKED_ART := {
-	"Sortables/IngredientTable": "supply", "Sortables/MachineTable": "boil",
-	"Sortables/MachineTable/PearlPot": "boil", "Sortables/MachineTable/Brewer": "mix",
-	"Sortables/PrepBench": "topping", "Sortables/Sealer": "seal", "Sortables/Rack": "boil",
-	"Sortables/DisplayCase": "lemonade", "Sortables/PressTable": "press",
-}
-## The press (手打台) is new art the reference scene doesn't have: only its mortar and pestle are drawn,
-## standing on the front counter beside the lemonade case, where the front hand presses lemon tea.
-const PRESS_TABLE := preload("res://art/machine/press_table.png")
-const PRESS_REGION := Rect2(58, 0, 170, 132)
-const PRESS_ANCHOR := Vector2(318, 906)
-const PRESS_WIDTH := 72.0
 ## The sealer → takeaway rack conveyor is bought from a dashed frame where its art goes.
 const BELT_ID := "seal_to_shelf"
-const BELT_FRAME := Rect2(566, 392, 108, 150)
+const BELT_FRAME := Rect2(590, 385, 72, 150)
 
 
 func _ready() -> void:
@@ -124,13 +119,12 @@ func _ready() -> void:
 		if node.get_meta("art_layer", "") in ["actors", "drinks"]:
 			node.visible = false
 	_build_ui()
+	_build_glass_toggle()
 	_build_tuning()
 	guide = Guide.new()
 	$Overlay/UI.add_child(guide)
 	guide.setup(self, guides_seen)
 	guide.enabled = guide_enabled
-	if sim.has_method("station_info"):
-		_build_press_table()
 	_build_badges()
 	_drag = DragController.new()
 	$Canvas.add_child(_drag)
@@ -172,6 +166,9 @@ func _reset_visuals() -> void:
 		customer.free()
 	_customers.clear()
 	_customer_positions.clear()
+	_customer_orders.clear()
+	_customer_entering.clear()
+	_known_seats.clear()
 	_last_sold = sim.sold
 	_last_revenue = _revenue()
 	for pop in _pops:
@@ -195,7 +192,7 @@ func _process(delta: float) -> void:
 	guide.refresh(delta)
 	_fit()
 	_toast_left = maxf(0, _toast_left - delta)
-	_toast.visible = _toast_left > 0 or _mobile_count() == 0
+	_toast.visible = _toast_left > 0 or not _staffing_warning().is_empty()
 	_update_pops(delta)
 	if store != null:
 		_autosave_elapsed += delta
@@ -239,7 +236,7 @@ func _refresh(delta: float) -> void:
 			need = "待操作"
 		elif output_count > 0:
 			need = "待取 %d" % output_count
-		elif _total(station.input) > 0 and id in ["boil", "topping", "press"]:
+		elif _total(station.input) > 0 and id in ["boil", "topping"]:
 			need = "待操作"
 		var open: bool = not sim.has_method("station_unlocked") or sim.station_unlocked(id)
 		_bars[id].visible = open and working
@@ -249,7 +246,7 @@ func _refresh(delta: float) -> void:
 		_badges[id].tooltip_text = "%s · 输入 %d · 加工 %d · 输出 %d" % [STATION_NAMES[id], _total(station.input), station.get("processing", 0), output_count]
 	var limit: int = sim.shelf_limit() if sim.has_method("shelf_limit") else 3
 	_shelf.text = "货架 %d/%d" % [sim.shelf_count, limit]
-	_shelf.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("boil")
+	_shelf.visible = true
 	if sim.has_method("free_seats"):
 		_seats.text = "堂食 %d/%d" % [sim.diners.size(), sim.seats]
 		_seats.visible = sim.station_unlocked("lemonade")
@@ -264,10 +261,13 @@ func _refresh(delta: float) -> void:
 				owner = int(worker.id)
 				_post_labels[post].text = "前台" if post == "counter" else "坐班"
 		_post_labels[post].visible = owner != -1
-	if _mobile_count() == 0 and _toast_left <= 0:
-		_toast.text = "店内暂无员工，请从员工名册派遣伙伴。" if sim.workers.is_empty() else "缺少流动员工，搬运将等待；拖到空地可恢复流动。"
+	var staffing_warning := _staffing_warning()
+	if not staffing_warning.is_empty() and _toast_left <= 0:
+		_toast.text = staffing_warning
 	_update_cups()
 	_update_customers(delta if not sim.paused and ui.page != "characters" and not (guide != null and guide.freezes()) else 0.0)
+	if "diners" in sim:
+		art.get_node("Sortables/DiningArea").refresh(sim.seats, sim.diners, _font, sim.elapsed, delta if not sim.paused and ui.page != "characters" and not (guide != null and guide.freezes()) else 0.0)
 	if sim.sold > _last_sold:
 		_pop_income(_revenue() - _last_revenue)
 	_last_sold = sim.sold
@@ -292,7 +292,7 @@ func _update_cups() -> void:
 		for unused in mini(sim.shelf_count, 3):
 			shelf_items.append("sealed")
 	for i in shelf_items.size():
-		draws.append({"pos": Vector2(546 + i * 51, 601), "item": shelf_items[i], "host": "Rack"})
+			draws.append({"pos": Vector2(557 + i * 51, 574), "item": shelf_items[i], "host": "Rack"})
 	# Sealed takeaway cups wait on the shelf's lower tier, where the front picks them up.
 	if sim.stations.has("pickup"):
 		var sealed: Array = []
@@ -300,7 +300,7 @@ func _update_cups() -> void:
 			for unused in mini(int(sim.stations.pickup.output[dish]), 3 - sealed.size()):
 				sealed.append(dish)
 		for i in sealed.size():
-			draws.append({"pos": Vector2(546 + i * 51, PICKUP_ROW_Y), "item": sealed[i], "host": "Rack"})
+			draws.append({"pos": Vector2(557 + i * 51, PICKUP_ROW_Y), "item": sealed[i], "host": "Rack"})
 	for belt in sim.belt_items:
 		var route: PackedVector2Array = _belt_points.get(belt.route, Layout.belt_path(belt.route))
 		var point := _along(route, float(belt.progress))
@@ -308,7 +308,7 @@ func _update_cups() -> void:
 		for i in int(belt.count):
 			var offset := Vector2((i - (int(belt.count) - 1) / 2.0) * 14, -i * 2)
 			draws.append({"pos": point + offset, "item": belt.item, "host": host})
-	var buffer_points := {"mix": Vector2(505, 247), "topping": Vector2(78, 445), "seal": Vector2(613, 405)}
+	var buffer_points := {"mix": Vector2(493, 218), "topping": Vector2(78, 465), "seal": Vector2(626, 405)}
 	var buffer_hosts := {"mix": "MachineTable", "topping": "PrepBench", "seal": "Sealer"}
 	# One full-size cup marks a waiting output; the station sign already shows how many.
 	for id in buffer_points:
@@ -342,19 +342,27 @@ func _update_cups() -> void:
 
 func _update_customers(delta: float) -> void:
 	var active := {}
-	# Three customers stand at the counter; up to five more wait in a second row behind them.
+	# Customers come in through the door at the bottom, up the aisle, and queue in two rows at the counter.
 	for i in mini(sim.orders.size(), 8):
 		var order: Dictionary = sim.orders[i]
 		active[order.id] = true
 		if not _customers.has(order.id):
 			var actor := Actor.new()
-			actor.setup("squirrel" if int(order.id) % 2 else "hamster", _font, 110.0)
+			actor.setup("squirrel" if int(order.id) % 2 else "hamster", _font, CUSTOMER_HEIGHT)
 			art.get_node("Sortables").add_child(actor)
 			_customers[order.id] = actor
-			_customer_positions[order.id] = Vector2(740, 1163)
-		var goal := Vector2(350 + i * 126, 1163) if i < 3 else Vector2(250 + (i - 3) * 100, 1108)
+			_customer_positions[order.id] = Layout.ENTRANCE
+			_customer_entering[order.id] = true
+		_customer_orders[order.id] = order
+		var goal := Layout.queue_point(i)
+		# A newcomer walks up the aisle first, so they don't cut across the tables.
+		var waypoint := Vector2(Layout.AISLE_X, Layout.DINING_LANES[0])
 		var point: Vector2 = _customer_positions[order.id]
-		point = point.move_toward(goal, delta * 170.0)
+		if _customer_entering.get(order.id, false):
+			point = point.move_toward(waypoint, delta * 170.0)
+			if point.distance_to(waypoint) < 1.0: _customer_entering.erase(order.id)
+		else:
+			point = point.move_toward(goal, delta * 170.0)
 		_customer_positions[order.id] = point
 		if sim.has_method("order_mood"):
 			_customers[order.id].show_order(String(order.dish), -1.0, sim.order_mood(order), order.get("takeaway", false))
@@ -362,11 +370,29 @@ func _update_customers(delta: float) -> void:
 			var patience: float = sim.CONFIG.customer_patience if "CONFIG" in sim else 0.0
 			_customers[order.id].show_order(String(order.get("dish", "sealed")), 1.0 - float(order.wait) / patience if patience > 0 else -1.0)
 		_customers[order.id].display({"pos": point, "walking": point.distance_to(goal) > 1, "phase": "idle", "task_label": ""}, sim.elapsed)
-	for id in _customers.keys():
-		if not active.has(id):
-			_customers[id].free()
-			_customers.erase(id)
-			_customer_positions.erase(id)
+	# Served customers leave the queue: dine-in ones walk to the chair the sale gave them, the rest go out the door.
+	var seats_now := {}
+	if "diners" in sim:
+		for diner in sim.diners: seats_now[int(diner.seat)] = true
+	var new_seats: Array = seats_now.keys().filter(func(seat: int) -> bool: return not _known_seats.has(seat))
+	new_seats.sort()
+	_known_seats = seats_now
+	var leaving: Array = _customers.keys().filter(func(id) -> bool: return not active.has(id))
+	leaving.sort()
+	var dining: Node = art.get_node_or_null("Sortables/DiningArea")
+	for id in leaving:
+		var order: Dictionary = _customer_orders.get(id, {})
+		var art_id := "squirrel" if int(id) % 2 else "hamster"
+		if dining != null:
+			if not order.get("takeaway", false) and not new_seats.is_empty():
+				dining.queue_arrival(new_seats.pop_front(), _customer_positions[id], art_id)
+			else:
+				dining.queue_exit(_customer_positions[id], art_id, String(order.get("dish", "")))
+		_customers[id].free()
+		_customers.erase(id)
+		_customer_positions.erase(id)
+		_customer_orders.erase(id)
+		_customer_entering.erase(id)
 
 
 func _along(points: PackedVector2Array, progress: float) -> Vector2:
@@ -424,24 +450,6 @@ func _bought(what: String, gold_before: int) -> void:
 	if recorder != null: recorder.log_buy(what, gold_before)
 
 
-func _build_press_table() -> void:
-	var table := Node2D.new()
-	table.name = "PressTable"
-	table.position = PRESS_ANCHOR
-	table.set_meta("art_layer", "equipment")
-	table.set_meta("asset_id", "press_table")
-	var sprite := Sprite2D.new()
-	sprite.texture = PRESS_TABLE
-	sprite.centered = false
-	sprite.region_enabled = true
-	sprite.region_rect = PRESS_REGION
-	sprite.scale = Vector2.ONE * PRESS_WIDTH / PRESS_REGION.size.x
-	sprite.position = Vector2(-PRESS_WIDTH / 2.0, -PRESS_REGION.size.y * sprite.scale.y)
-	table.add_child(sprite)
-	art.get_node("Sortables").add_child(table)
-	table.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("press")
-
-
 func _build_badges() -> void:
 	var parent: Node = $Canvas/WorldLabels
 	for id in BADGES:
@@ -459,9 +467,9 @@ func _build_badges() -> void:
 		var label := _chip(parent, BADGES[id] + Vector2(10, -6))
 		label.mouse_filter = Control.MOUSE_FILTER_PASS
 		_badges[id] = label
-	_shelf = _chip(parent, Vector2(560, 706))
-	# Seats have no art yet: a chip by the queue shows who is sitting, and opens the counter to buy more.
-	_seats = _chip(parent, Vector2(48, 1050))
+	_shelf = _chip(parent, Vector2(560, 684))
+	# The chip sits above the dining furniture and opens the seat purchase panel.
+	_seats = _chip(parent, Vector2(42, 918))
 	_seats.mouse_filter = Control.MOUSE_FILTER_STOP
 	_seats.gui_input.connect(func(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT: ui.open_station("counter"))
@@ -594,14 +602,31 @@ func _show_toast(text: String) -> void:
 
 func _fit() -> void:
 	var size := get_viewport_rect().size
-	var factor := minf(size.x / 720.0, size.y / 1280.0)
-	var offset := (size - Vector2(720, 1280) * factor) / 2.0
-	$Canvas.position = offset
-	$Canvas.scale = Vector2.ONE * factor
-	$Overlay/UI.position = offset
-	$Overlay/UI.scale = Vector2.ONE * factor
-	$Overlay/UI.size = Vector2(720, 1280)
+	# Keep the user's higher mixer clear of the HUD without changing scene coordinates.
+	var fitted_size := Layout.WORLD_SIZE + Vector2(0, 50)
+	var world_factor := minf(size.x / fitted_size.x, size.y / fitted_size.y)
+	$Canvas.position = (size - fitted_size * world_factor) / 2.0 + Vector2(0, 50 * world_factor)
+	$Canvas.scale = Vector2.ONE * world_factor
+	# Keep HUD panels inside the shop width; vertical anchors still follow the visible window.
+	$Overlay/UI.position = Vector2($Canvas.position.x, 0)
+	$Overlay/UI.scale = Vector2.ONE * world_factor
+	$Overlay/UI.size = Vector2(720, size.y / world_factor)
 	ui.fit_to_size($Overlay/UI.size)
+
+
+func _build_glass_toggle() -> void:
+	_glass_button = Button.new()
+	_glass_button.text = "玻璃隔板"
+	_glass_button.toggle_mode = true
+	_glass_button.custom_minimum_size.y = 78
+	_glass_button.theme = ui.theme
+	_glass_button.toggled.connect(set_glass_visible)
+	ui._page_nodes.menu.add_child(_glass_button)
+
+
+func set_glass_visible(show_glass: bool) -> void:
+	art.get_node("Sortables/Checkout/GlassPartition").visible = show_glass
+	_glass_button.set_pressed_no_signal(show_glass)
 
 
 func _mobile_count() -> int:
@@ -610,6 +635,20 @@ func _mobile_count() -> int:
 		if worker.get("post", "").is_empty():
 			count += 1
 	return count
+
+
+func _staffing_warning() -> String:
+	if sim.workers.is_empty():
+		return "店内暂无员工，请从员工名册派遣伙伴。"
+	if _mobile_count() > 0:
+		return ""
+	if sim.has_method("station_unlocked"):
+		var kitchen_open := false
+		for id in ["boil", "mix", "topping", "press", "seal"]:
+			kitchen_open = kitchen_open or sim.station_unlocked(id)
+		if not kitchen_open:
+			return ""
+	return "缺少流动员工，搬运将等待；拖到空地可恢复流动。"
 
 
 func all_staff() -> Array:
@@ -644,7 +683,7 @@ func station_action(action: String, station: String, material := "") -> void:
 		"box": error = sim.unlock_box(material)
 		"seat": error = sim.buy_seat()
 		"flyers": error = sim.buy_flyers()
-	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了一张座位。", "flyers": "传单发出去了，客人来得更勤了。"}.get(action, "升级完成。")
+	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了两个座位。", "flyers": "传单发出去了，客人来得更勤了。"}.get(action, "升级完成。")
 	_show_toast(error if not error.is_empty() else done)
 	if error.is_empty():
 		var level: int = sim.station_levels.get(station, 0) if action != "material" else sim.material_levels.get(station, {}).get(material, 0)
@@ -688,21 +727,17 @@ func _build_station_signs() -> void:
 		belt_frame.pressed.connect(buy_belt)
 		$Canvas/WorldLabels.add_child(belt_frame)
 		_station_buttons["belt"] = belt_frame
+	if sim.has_method("buy_seat"):
+		var seat_frame := UnlockFrame.new()
+		seat_frame.theme = ui.theme
+		seat_frame.add_theme_font_size_override("font_size", 17)
+		seat_frame.pressed.connect(station_action.bind("seat", "counter"))
+		$Canvas/WorldLabels.add_child(seat_frame)
+		_station_buttons["seat"] = seat_frame
 	_upgrade_marks.counter = UpgradeBadge.new()
 	_seats.add_child(_upgrade_marks.counter)
 	_staff_mark = UpgradeBadge.new()
 	ui.staff_button.add_child(_staff_mark)
-	# The glass is opaque art, so the cups are children of the case and stand on its upper shelf.
-	_lemonade_cup = Node2D.new()
-	art.get_node("Sortables/DisplayCase").add_child(_lemonade_cup)
-	for x in [-80, 0, 80]:
-		var cup := Sprite2D.new()
-		cup.texture = load("res://art/reference/fruit_tea.png")
-		cup.scale = Vector2.ONE * Actor.CUP_HEIGHT / cup.texture.get_height()
-		cup.centered = false
-		cup.offset = Vector2(-cup.texture.get_width() / 2.0, -cup.texture.get_height())
-		cup.position = Vector2(x, -126)
-		_lemonade_cup.add_child(cup)
 
 
 func _refresh_station_signs() -> void:
@@ -720,6 +755,20 @@ func _refresh_station_signs() -> void:
 			belt_frame.can_unlock = String(row.error).is_empty()
 			belt_frame.text = "传送带\n%d 金币" % row.cost
 			belt_frame.tooltip_text = "封好口的外带杯自动送上货架外带格，后厨不用再搬\n" + String(row.error)
+			continue
+		if id == "seat":
+			# The next table to buy: a dashed frame over its faint chairs, once the lemonade stand is open.
+			var seat_frame: Button = _station_buttons[id]
+			var table_index: int = int(sim.seats) / 2
+			seat_frame.visible = sim.station_unlocked("lemonade") and sim.seat_cost() >= 0 and table_index < Layout.DINING_TABLES.size()
+			if not seat_frame.visible:
+				continue
+			var table: Vector2 = Layout.DINING_TABLES[table_index]
+			seat_frame.position = table + Vector2(-60, -78)
+			seat_frame.size = Vector2(120, 72)
+			seat_frame.can_unlock = sim.seat_error().is_empty()
+			seat_frame.text = "加 %d 个座位\n%d 金币" % [sim.PROGRESSION.seat_step, sim.seat_cost()]
+			seat_frame.tooltip_text = "堂食客人要有空座位才会点单坐下\n" + sim.seat_error()
 			continue
 		if id == "supply":
 			# The cabinet frame asks for the ingredient box the newest machine needs.
@@ -742,10 +791,7 @@ func _refresh_station_signs() -> void:
 			continue
 		var title: String = info.get("line_name", info.name) if id == "boil" else info.name
 		frame.text = "%s\n%d 金币" % [title, info.unlock_cost]
-	for path in LOCKED_ART:
-		var node: Node2D = art.get_node_or_null(path)
-		if node != null:
-			node.visible = sim.station_unlocked(LOCKED_ART[path])
+	ArtGroups.refresh(art, sim)
 	for id in _upgrade_marks:
 		var frame: Button = _station_buttons.get(id)
 		_upgrade_marks[id].visible = can_buy_at(id) and not (frame != null and frame.visible)
