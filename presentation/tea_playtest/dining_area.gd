@@ -8,9 +8,9 @@ var _tables: Array[Sprite2D] = []
 ## The drink each seated customer put down on the table: seat -> Sprite2D.
 var _cups := {}
 ## Where a cup stands on the table top: beside the diner, above the table's floor anchor.
-const CUP_SIDE := 40.0
-const CUP_LIFT := 100.0
-const TABLE_CUP_HEIGHT := 44.0
+const CUP_SIDE := 34.0
+const CUP_LIFT := 92.0
+const TABLE_CUP_HEIGHT := 36.0
 var _diners := {}
 var _available: Array[int] = []
 var _occupied: Array[int] = []
@@ -110,7 +110,7 @@ func _table_cup(seat: int, item: String) -> void:
 	if not _cups.has(seat):
 		var sprite := Sprite2D.new()
 		sprite.texture = load("res://art/reference/" + Actor.item_asset(item) + ".png")
-		sprite.modulate = Actor.item_color(item)
+		sprite.self_modulate = Actor.item_color(item)
 		sprite.scale = Vector2.ONE * TABLE_CUP_HEIGHT / sprite.texture.get_height()
 		sprite.centered = false
 		var table: Vector2 = Layout.DINING_TABLES[seat / 2]
@@ -120,6 +120,26 @@ func _table_cup(seat: int, item: String) -> void:
 		sprite.z_index = 1
 		sprite.set_meta("art_layer", "drinks")
 		add_child(sprite)
+		# A small saucer under the cup, like the reference art.
+		var saucer := Polygon2D.new()
+		var rim := Line2D.new()
+		var points := PackedVector2Array()
+		for i in 24:
+			var angle := TAU * i / 24.0
+			points.append(Vector2(cos(angle) * 21.0, sin(angle) * 7.0))
+		saucer.polygon = points
+		saucer.color = Color("fbf3e6")
+		rim.points = points
+		rim.closed = true
+		rim.width = 2.5
+		rim.default_color = Color("5a3a26")
+		var base := Node2D.new()
+		base.show_behind_parent = true
+		base.position = Vector2(0, -(CUP_LIFT + 1.0) / sprite.scale.y)
+		base.scale = Vector2.ONE / sprite.scale.x
+		base.add_child(saucer)
+		base.add_child(rim)
+		sprite.add_child(base)
 		_cups[seat] = sprite
 
 func _actor(art: String, font: Font) -> Node2D:
