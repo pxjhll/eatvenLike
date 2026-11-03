@@ -8,11 +8,11 @@
 [sub_resource type="Resource" id="belt_seal_to_shelf"]
 script = ExtResource("belt_slot_def")
 id = "seal_to_shelf"
-display_name = "封口机 → 货架"
+display_name = "封口机 → 外带格"
 from = "seal"
-to = "shelf"
-cost = 40
-stage = 2
+to = "pickup"
+cost = 250
+stage = 3
 view_points = PackedVector2Array(620, 400, 620, 550, 556, 580)
 
 [sub_resource type="Resource" id="belt_supply_to_boil"]
@@ -207,7 +207,7 @@ line_cost = 400
 line_name = "加料机"
 staff_slots = 5
 customer_interval = 7.0
-order_weights = Dictionary[String, float]({"lemonade": 0.15, "black_tea": 0.12, "plain_milk_tea": 0.13, "pearl_milk_tea": 0.15, "coconut_milk_tea": 0.15, "redbean_milk_tea": 0.15, "taro_milk_tea": 0.15})
+order_weights = Dictionary[String, float]({"lemonade": 0.12, "black_tea": 0.1, "plain_milk_tea": 0.1, "pearl_milk_tea": 0.14, "coconut_milk_tea": 0.14, "redbean_milk_tea": 0.14, "taro_milk_tea": 0.14, "lemon_tea": 0.12})
 queue_capacity = 8
 seat_seconds = 35.0
 takeaway_share = 0.55
@@ -232,22 +232,22 @@ amount = 5.0
 [sub_resource type="Resource" id="stage_press"]
 script = ExtResource("shop_stage_def")
 dish_id = "lemon_tea"
-revenue_threshold = 3000
+revenue_threshold = 900
 unlock_slots = Array[String](["press_table"])
-line_cost = 700
+line_cost = 300
 line_name = "手打台"
-staff_slots = 6
-customer_interval = 6.0
-order_weights = Dictionary[String, float]({"lemonade": 0.12, "black_tea": 0.08, "plain_milk_tea": 0.08, "pearl_milk_tea": 0.12, "coconut_milk_tea": 0.12, "redbean_milk_tea": 0.12, "taro_milk_tea": 0.12, "lemon_tea": 0.14, "banana_tea": 0.1})
-queue_capacity = 9
-seat_seconds = 40.0
-takeaway_share = 0.55
-unlock_note = "开始卖柠檬茶：员工拿红茶到手打台亲手捣柠檬。升级手打台开放香蕉"
+staff_slots = 4
+customer_interval = 7.0
+order_weights = Dictionary[String, float]({"lemonade": 0.3, "black_tea": 0.2, "plain_milk_tea": 0.3, "lemon_tea": 0.2})
+queue_capacity = 8
+seat_seconds = 32.0
+takeaway_share = 0.5
+unlock_note = "开始卖柠檬茶：前台员工接一杯柠檬水，再亲手捣柠檬，外带不用封口"
 tasks = Array[ExtResource("task_def")]([SubResource("task_lemontea20"), SubResource("task_press5")])
 
 [resource]
 script = ExtResource("shop_progression_def")
-stages = Array[ExtResource("shop_stage_def")]([SubResource("stage_lemon"), SubResource("stage_black_tea"), SubResource("stage_seal"), SubResource("stage_milk_tea"), SubResource("stage_topping"), SubResource("stage_press")])
+stages = Array[ExtResource("shop_stage_def")]([SubResource("stage_lemon"), SubResource("stage_black_tea"), SubResource("stage_seal"), SubResource("stage_milk_tea"), SubResource("stage_press"), SubResource("stage_topping")])
 belts = Array[ExtResource("belt_slot_def")]([SubResource("belt_seal_to_shelf"), SubResource("belt_supply_to_boil"), SubResource("belt_boil_to_seal"), SubResource("belt_boil_to_mix"), SubResource("belt_mix_to_seal"), SubResource("belt_mix_to_topping"), SubResource("belt_topping_to_seal")])
 seat_costs = Array[int]([12, 45, 65, 95, 135])
 seal_seconds = 9.0

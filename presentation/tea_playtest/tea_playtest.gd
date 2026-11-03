@@ -11,9 +11,9 @@ const UpgradeBadge := preload("res://presentation/tea_playtest/upgrade_badge.gd"
 const TuningPanel := preload("res://presentation/tea_playtest/tuning_panel.gd")
 const Recorder := preload("res://presentation/tea_playtest/play_recorder.gd")
 const ART_NAMES := preload("res://presentation/characters/character_library.gd").NAMES
-const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "press": "手打果茶", "seal": "自动封口"}
+const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping": "手工加料", "seal": "自动封口"}
 ## Machines show no standing text: a bar while working and a bubble only when they need a hand.
-const BADGES := {"boil": Vector2(265, 112), "mix": Vector2(420, 112), "topping": Vector2(36, 612), "press": Vector2(566, 400), "seal": Vector2(556, 178)}
+const BADGES := {"boil": Vector2(265, 112), "mix": Vector2(420, 112), "topping": Vector2(36, 612), "seal": Vector2(556, 178)}
 const SALE_POINT := Vector2(470, 905)
 var sim: RefCounted
 var store: RefCounted
@@ -76,7 +76,7 @@ const STATION_REGIONS := {
 	"supply": Rect2(20, 155, 221, 120), "boil": Rect2(245, 122, 167, 158),
 	"mix": Rect2(415, 121, 106, 160), "topping": Rect2(22, 254, 121, 339),
 	"seal": Rect2(548, 207, 120, 184), "lemonade": Rect2(40, 838, 250, 200),
-	"press": Rect2(555, 412, 135, 125),
+	"press": Rect2(280, 836, 84, 80),
 }
 ## A locked machine is not drawn; its floor spot shows a dashed frame instead.
 ## The cabinet is furniture; its spot shows a frame only while an ingredient box waits to be bought.
@@ -85,7 +85,7 @@ const FRAME_RECTS := {
 	"supply": Rect2(30, 228, 204, 46), "boil": Rect2(250, 228, 158, 76),
 	"mix": Rect2(420, 160, 98, 82), "topping": Rect2(30, 284, 112, 300),
 	"seal": Rect2(556, 228, 108, 154), "shelf": Rect2(520, 548, 162, 144),
-	"lemonade": Rect2(48, 872, 236, 112), "press": Rect2(562, 420, 122, 112),
+	"lemonade": Rect2(48, 872, 236, 112), "press": Rect2(280, 836, 84, 80),
 }
 const FRAME_OPENS := {"shelf": "boil"}
 ## Machine art that appears only once its station is unlocked (the table carries the pot and the milk machine).
@@ -95,10 +95,15 @@ const LOCKED_ART := {
 	"Sortables/PrepBench": "topping", "Sortables/Sealer": "seal", "Sortables/Rack": "boil",
 	"Sortables/DisplayCase": "lemonade", "Sortables/PressTable": "press",
 }
-## The press table is new art the reference scene doesn't have; it is added beside the sealer at runtime.
+## The press (手打台) is new art the reference scene doesn't have: only its mortar and pestle are drawn,
+## standing on the front counter beside the lemonade case, where the front hand presses lemon tea.
 const PRESS_TABLE := preload("res://art/machine/press_table.png")
-const PRESS_ANCHOR := Vector2(622, 530)
-const PRESS_WIDTH := 140.0
+const PRESS_REGION := Rect2(58, 0, 170, 132)
+const PRESS_ANCHOR := Vector2(318, 906)
+const PRESS_WIDTH := 72.0
+## The sealer → takeaway rack conveyor is bought from a dashed frame where its art goes.
+const BELT_ID := "seal_to_shelf"
+const BELT_FRAME := Rect2(566, 392, 108, 150)
 
 
 func _ready() -> void:
@@ -124,7 +129,7 @@ func _ready() -> void:
 	$Overlay/UI.add_child(guide)
 	guide.setup(self, guides_seen)
 	guide.enabled = guide_enabled
-	if sim.stations.has("press"):
+	if sim.has_method("station_info"):
 		_build_press_table()
 	_build_badges()
 	_drag = DragController.new()
@@ -303,8 +308,8 @@ func _update_cups() -> void:
 		for i in int(belt.count):
 			var offset := Vector2((i - (int(belt.count) - 1) / 2.0) * 14, -i * 2)
 			draws.append({"pos": point + offset, "item": belt.item, "host": host})
-	var buffer_points := {"mix": Vector2(505, 247), "topping": Vector2(78, 445), "seal": Vector2(613, 405), "press": Vector2(660, 470)}
-	var buffer_hosts := {"mix": "MachineTable", "topping": "PrepBench", "seal": "Sealer", "press": "PressTable"}
+	var buffer_points := {"mix": Vector2(505, 247), "topping": Vector2(78, 445), "seal": Vector2(613, 405)}
+	var buffer_hosts := {"mix": "MachineTable", "topping": "PrepBench", "seal": "Sealer"}
 	# One full-size cup marks a waiting output; the station sign already shows how many.
 	for id in buffer_points:
 		if not sim.stations.has(id):
@@ -428,8 +433,10 @@ func _build_press_table() -> void:
 	var sprite := Sprite2D.new()
 	sprite.texture = PRESS_TABLE
 	sprite.centered = false
-	sprite.scale = Vector2.ONE * PRESS_WIDTH / PRESS_TABLE.get_width()
-	sprite.position = Vector2(-PRESS_WIDTH / 2.0, -PRESS_TABLE.get_height() * sprite.scale.y)
+	sprite.region_enabled = true
+	sprite.region_rect = PRESS_REGION
+	sprite.scale = Vector2.ONE * PRESS_WIDTH / PRESS_REGION.size.x
+	sprite.position = Vector2(-PRESS_WIDTH / 2.0, -PRESS_REGION.size.y * sprite.scale.y)
 	table.add_child(sprite)
 	art.get_node("Sortables").add_child(table)
 	table.visible = not sim.has_method("station_unlocked") or sim.station_unlocked("press")
@@ -667,14 +674,20 @@ func _build_station_signs() -> void:
 		$Canvas/WorldLabels.add_child(frame)
 		_station_buttons[id] = frame
 	for id in STATION_REGIONS:
-		# The cabinet and the lemonade stand are not processing stations but still level up; only a missing press is skipped.
-		if id == "press" and not sim.stations.has(id):
-			continue
 		var mark := UpgradeBadge.new()
 		var region: Rect2 = STATION_REGIONS[id]
 		mark.center_on(Vector2(region.end.x - 14, region.position.y + 14))
 		$Canvas/WorldLabels.add_child(mark)
 		_upgrade_marks[id] = mark
+	if sim.has_method("buy_belt"):
+		var belt_frame := UnlockFrame.new()
+		belt_frame.position = BELT_FRAME.position
+		belt_frame.size = BELT_FRAME.size
+		belt_frame.theme = ui.theme
+		belt_frame.add_theme_font_size_override("font_size", 17)
+		belt_frame.pressed.connect(buy_belt)
+		$Canvas/WorldLabels.add_child(belt_frame)
+		_station_buttons["belt"] = belt_frame
 	_upgrade_marks.counter = UpgradeBadge.new()
 	_seats.add_child(_upgrade_marks.counter)
 	_staff_mark = UpgradeBadge.new()
@@ -696,6 +709,18 @@ func _refresh_station_signs() -> void:
 	var next_stage: int = int(sim.stage_index) + 1 if sim.station_unlocked("lemonade") else 0
 	var box: String = sim.pending_box()
 	for id in _station_buttons:
+		if id == "belt":
+			var row: Dictionary = {}
+			for candidate in sim.belt_rows():
+				if candidate.id == BELT_ID: row = candidate
+			var belt_frame: Button = _station_buttons[id]
+			belt_frame.visible = not row.is_empty() and row.available and not row.owned
+			if not belt_frame.visible:
+				continue
+			belt_frame.can_unlock = String(row.error).is_empty()
+			belt_frame.text = "传送带\n%d 金币" % row.cost
+			belt_frame.tooltip_text = "封好口的外带杯自动送上货架外带格，后厨不用再搬\n" + String(row.error)
+			continue
 		if id == "supply":
 			# The cabinet frame asks for the ingredient box the newest machine needs.
 			var box_frame: Button = _station_buttons[id]
@@ -728,6 +753,19 @@ func _refresh_station_signs() -> void:
 	_upgrade_marks.counter.center_on(Vector2(_seats.size.x + 16, _seats.size.y / 2.0))
 	_staff_mark.visible = ui.staff_affordable()
 	_staff_mark.center_on(Vector2(ui.staff_button.size.x - 14, 12))
+
+
+## Buys the sealer → takeaway rack conveyor from its dashed frame.
+func buy_belt() -> void:
+	var before: int = sim.gold
+	var error: String = sim.buy_belt(BELT_ID)
+	if not error.is_empty():
+		_show_toast(error)
+		return
+	_bought("belt", before)
+	_show_toast("传送带装好了：封好口的杯子自动上货架")
+	save_now(false)
+	_refresh(0.0)
 
 
 ## Anything in this machine's panel the player can pay for right now: its next level, an ingredient
