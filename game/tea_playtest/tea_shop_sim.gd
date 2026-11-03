@@ -21,7 +21,8 @@ const STIR_SECONDS := 1.0
 ## the front serves only from the shelf and the lemonade stand.
 ## v12: the kitchen press table and banana tea are gone; lemon tea is pressed at the front from a lemonade
 ## and opens between the milk station and the topping machine. One conveyor (sealer → takeaway rack) is for sale.
-const SAVE_VERSION := 12
+## v13: the front packing station (pack level) and takeaway orders that want a bag.
+const SAVE_VERSION := 13
 ## Sealed takeaway cups the rack on the shelf's lower tier holds.
 const PICKUP_CAPACITY := 6
 ## A newly opened dish (and takeaway once the sealer opens) starts at RAMP_START of its order weight
@@ -64,6 +65,8 @@ var boxes: Dictionary = {}
 var seats := 0
 ## 发传单 level: each level brings customers 10% more often.
 var flyers := 1
+## Packing station level: 0 = not built yet.
+var pack := 0
 ## How many items of the front / kitchen upgrade lists are bought (bought in order).
 var front_upgrades := 0
 var kitchen_upgrades := 0
@@ -141,6 +144,7 @@ func _initialize_shop() -> void:
 	boxes = {"tea_leaf": false, "milk": false}
 	seats = PROGRESSION.seat_start
 	flyers = 1
+	pack = 0
 	front_upgrades = 0
 	kitchen_upgrades = 0
 	diners.clear()
@@ -674,6 +678,9 @@ func station_info(requested: String) -> Dictionary:
 		seating = {"seats": seats, "seat_max": seat_max(), "diners": diners.size(), "seat_cost": seat_cost(), "seat_error": seat_error(),
 			"flyers": flyers, "flyer_max": PROGRESSION.flyer_costs.size() + 1, "flyer_cost": flyer_cost(), "flyer_error": flyer_error(),
 			"flow": flow_multiplier(), "next_flow": flow_multiplier(flyers + 1) if flyer_cost() >= 0 else -1.0,
+			"pack": pack, "pack_available": pack_available(), "pack_cost": pack_cost(), "pack_error": pack_error(),
+			"pack_bonus": pack_bonus(), "next_pack_bonus": pack_bonus(pack + 1) if pack_cost() >= 0 else -1.0,
+			"pack_seconds": pack_seconds(), "next_pack_seconds": pack_seconds(pack + 1) if pack_cost() >= 0 else -1.0,
 			# A full line means more customers would only wait outside: the kitchen is the limit.
 			"queue_full": orders.size() >= _queue_capacity()}
 	# Capacity machines (brewer, sealer, topping) speed up the line; price machines raise what each cup earns.
@@ -866,6 +873,50 @@ func flyer_error() -> String:
 	if gold < flyer_cost(): return "金币不足，需要 %d" % flyer_cost()
 	return ""
 
+## ---- Packing station (打包台) ----
+
+func pack_available() -> bool:
+	return station_unlocked("lemonade") and stage_index >= PROGRESSION.pack_stage
+
+## Next purchase: building the station (pack 0 → 1), then each level up. -1 when maxed.
+func pack_cost() -> int:
+	return PROGRESSION.pack_costs[pack] if pack < PROGRESSION.pack_costs.size() else -1
+
+func pack_error() -> String:
+	if not pack_available(): return "请先解锁" + PROGRESSION.stages[mini(PROGRESSION.pack_stage, PROGRESSION.stages.size() - 1)].line_name
+	if pack_cost() < 0: return "打包台已满级"
+	if gold < pack_cost(): return "金币不足，需要 %d" % pack_cost()
+	return ""
+
+func buy_pack() -> String:
+	var error := pack_error()
+	if not error.is_empty(): return error
+	gold -= pack_cost()
+	pack += 1
+	_event("pack", "打包台开通了，有的外带客人会要打包" if pack == 1 else "打包台升级了")
+	return ""
+
+## Extra share of the cup price a bagged takeaway pays at this level (0 before the station is built).
+func pack_bonus(level: int = -1) -> float:
+	var at: int = pack if level < 0 else level
+	return 0.0 if at <= 0 else PROGRESSION.pack_bonus + PROGRESSION.pack_bonus_step * (at - 1)
+
+func pack_seconds(level: int = -1) -> float:
+	var at: int = maxi(1, pack if level < 0 else level)
+	var speeds: Array = PROGRESSION.pack_speeds
+	return PROGRESSION.pack_seconds / float(speeds[mini(at - 1, speeds.size() - 1)])
+
+func _bagged(job: Dictionary) -> bool:
+	for order in orders:
+		if order.id == job.get("order_id", -1): return order.get("bag", false)
+	return false
+
+## The front hand bags the cup at the packing station before handing it over.
+func _dropoff_duration(job: Dictionary, worker: Dictionary) -> float:
+	var seconds := super._dropoff_duration(job, worker)
+	if job.kind == "serve" and _bagged(job): seconds += pack_seconds() / _skill(worker)
+	return seconds
+
 func buy_flyers() -> String:
 	var error := flyer_error()
 	if not error.is_empty(): return error
@@ -967,9 +1018,11 @@ func _add_order() -> void:
 			break
 	# Customers would rather sit down: they take their drink to go only when every seat is taken or spoken for.
 	var takeaway := station_unlocked("seal") and _spare_seats() <= 0
+	# Once the packing station is built, some takeaway customers want their cup bagged (and pay more).
+	var bag := takeaway and pack > 0 and _rng.randf() < PROGRESSION.pack_share
 	for dish in weights: order_ramp[dish] = mini(int(order_ramp.get(dish, 0)) + 1, RAMP_ORDERS)
 	if station_unlocked("seal"): order_ramp.takeaway = mini(int(order_ramp.get("takeaway", 0)) + 1, RAMP_ORDERS)
-	orders.append({"id": _next_order, "wait": 0.0, "reserved": false, "dish": selected, "takeaway": takeaway})
+	orders.append({"id": _next_order, "wait": 0.0, "reserved": false, "dish": selected, "takeaway": takeaway, "bag": bag})
 	_next_order += 1
 
 func _source_point(job: Dictionary) -> Vector2:
@@ -981,6 +1034,7 @@ func _source_point(job: Dictionary) -> Vector2:
 
 func _destination_point(job: Dictionary) -> Vector2:
 	if job.dst == "pickup": return Layout.POINTS.shelf
+	if job.kind == "serve" and _bagged(job): return Layout.POINTS.pack
 	return super._destination_point(job)
 
 func _available(source: String, item: String) -> int:
@@ -1630,6 +1684,7 @@ func _record_sale(job: Dictionary) -> void:
 	sold += job.count
 	sold_by_dish[job.item] += job.count
 	var income: int = _dish_price(job.item) * job.count
+	if _bagged(job): income = roundi(income * (1.0 + pack_bonus()))
 	gold += income
 	revenue += income
 	_event("sale", "%s +%d" % [dish_name(job.item), income])
@@ -1661,7 +1716,7 @@ func to_dict() -> Dictionary:
 		"material_levels": material_levels.duplicate(true), "unlocked_stations": unlocked_stations.duplicate(true),
 		"sold_by_dish": sold_by_dish.duplicate(true), "flavor_cursor": _flavor_cursor, "rng_state": _rng.state,
 		"belts": belts.duplicate(true), "belt_clock": belt_clock.duplicate(true),
-		"boxes": boxes.duplicate(true), "seats": seats, "diners": diners.duplicate(true), "flyers": flyers,
+		"boxes": boxes.duplicate(true), "seats": seats, "diners": diners.duplicate(true), "flyers": flyers, "pack": pack,
 		"front_upgrades": front_upgrades, "kitchen_upgrades": kitchen_upgrades, "order_ramp": order_ramp.duplicate(true)}
 
 func _apply_state(state: Dictionary) -> void:
@@ -1697,6 +1752,7 @@ func _apply_state(state: Dictionary) -> void:
 	boxes = state.boxes.duplicate(true)
 	seats = state.seats
 	flyers = state.flyers
+	pack = state.pack
 	front_upgrades = state.front_upgrades
 	kitchen_upgrades = state.kitchen_upgrades
 	diners = state.diners.duplicate(true)
@@ -1721,6 +1777,7 @@ func load_dict(state: Dictionary) -> String:
 	if state.get("version") is int and state.version == 9: state = _migrate_v9(state)
 	if state.get("version") is int and state.version == 10: state = _migrate_v10(state)
 	if state.get("version") is int and state.version == 11: state = _migrate_v11(state)
+	if state.get("version") is int and state.version == 12: state = _migrate_v12(state)
 	_round_seats(state)
 	var error := _validate_state(state)
 	if not error.is_empty(): return error
@@ -1858,13 +1915,23 @@ func _migrate_v10(old: Dictionary) -> Dictionary:
 		state.stations.pickup = get_script().new().stations.pickup.duplicate(true)
 	return state
 
+## v12 → v13: the packing station starts unbuilt and no queued customer wants a bag.
+func _migrate_v12(old: Dictionary) -> Dictionary:
+	var state: Dictionary = old.duplicate(true)
+	state.version = SAVE_VERSION
+	if not state.has("pack"): state.pack = 0
+	if state.get("orders") is Array:
+		for order in state.orders:
+			if order is Dictionary and not order.has("bag"): order.bag = false
+	return state
+
 ## v11 → v12: the kitchen press table and banana tea are gone, lemon tea moved to the front and its unlock
 ## moved ahead of the topping machine. Cups in flight can't follow the old routes, so like v6 the floor
 ## starts fresh (queue, jobs, tickets and stock dropped); progress, money, levels, seats and staff stay.
 ## A shop already past the topping machine gets the front press for free (unlocks follow stage order).
 func _migrate_v11(old: Dictionary) -> Dictionary:
 	var state: Dictionary = old.duplicate(true)
-	state.version = SAVE_VERSION
+	state.version = 12
 	var fresh: Dictionary = get_script().new().to_dict()
 	for key in ["stations", "shelf_stock", "shelf_count", "orders", "belt_items", "generated", "shelf_reserved_in", "shelf_reserved_out", "order_clock", "accumulator"]:
 		state[key] = fresh[key].duplicate(true) if fresh[key] is Dictionary or fresh[key] is Array else fresh[key]
@@ -2115,7 +2182,7 @@ func _validate_state(state: Dictionary) -> String:
 		active_ids.append(id)
 	var order_ids: Array = []
 	for order in state.orders:
-		if not order is Dictionary or not _same_shape(order, {"id": 1, "wait": 0.0, "reserved": false, "dish": "", "takeaway": false}): return "订单字段无效"
+		if not order is Dictionary or not _same_shape(order, {"id": 1, "wait": 0.0, "reserved": false, "dish": "", "takeaway": false, "bag": false}) or (order.bag and not order.takeaway): return "订单字段无效"
 		if order.id < 1 or order.id >= state.next_order or order.id in order_ids or order.wait < 0 or not order.dish in DISHES: return "订单内容无效"
 		order_ids.append(order.id)
 	var served_orders: Array = []
@@ -2150,6 +2217,7 @@ func _validate_state(state: Dictionary) -> String:
 		if state.boxes[material] and not state.unlocked_stations[machine]: return "原料箱解锁状态无效"
 	if state.seats < PROGRESSION.seat_start or state.seats > seat_max() or state.diners.size() > state.seats: return "座位无效"
 	if state.flyers < 1 or state.flyers > PROGRESSION.flyer_costs.size() + 1: return "传单等级无效"
+	if not state.pack is int or state.pack < 0 or state.pack > PROGRESSION.pack_costs.size(): return "打包台等级无效"
 	if state.front_upgrades < 0 or state.front_upgrades > PROGRESSION.front_upgrade_kinds.size() or state.kitchen_upgrades < 0 or state.kitchen_upgrades > PROGRESSION.kitchen_upgrade_kinds.size(): return "员工升级无效"
 	var seat_ids: Array = []
 	for diner in state.diners:

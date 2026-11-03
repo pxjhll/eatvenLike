@@ -339,7 +339,7 @@ func test_exact_flavor_dispatch_and_upgraded_sale_price() -> void:
 	# Isolate a real shelf dispatch; a coconut cup cannot serve a pearl order.
 	for worker in sim.workers.duplicate():
 		if worker.id != 1: sim.recall_worker(worker.id)
-	sim.orders = [{"id": 1, "dish": "pearl_milk_tea", "wait": 0.0, "reserved": false, "takeaway": false}]
+	sim.orders = [{"id": 1, "dish": "pearl_milk_tea", "wait": 0.0, "reserved": false, "takeaway": false, "bag": false}]
 	sim.shelf_stock.coconut_milk_tea = 1
 	sim.shelf_count = 1
 	sim._generated = 1
@@ -546,7 +546,7 @@ func test_full_other_flavors_do_not_block_the_requested_flavor() -> void:
 			sim._generated = 13
 			sim.workers[0].pos = Vector2(530, 430)
 			sim.orders.clear()
-			for id in 3: sim.orders.append({"id": id + 1, "dish": requested, "wait": 0.0, "reserved": false, "takeaway": false})
+			for id in 3: sim.orders.append({"id": id + 1, "dish": requested, "wait": 0.0, "reserved": false, "takeaway": false, "bag": false})
 			# The kitchen brews a fresh pot for the order and the front may serve walk-ins too, so allow two minutes.
 			for tick in 1200:
 				sim.advance(0.1)
@@ -574,7 +574,7 @@ func test_customers_never_leave_they_get_impatient_then_angry() -> void:
 	var sim = opened()
 	if sim == null: return
 	for worker in sim.workers.duplicate(): sim.recall_worker(worker.id)
-	sim.orders = [{"id": 1, "dish": "plain_milk_tea", "wait": 14.9, "reserved": false, "takeaway": false}]
+	sim.orders = [{"id": 1, "dish": "plain_milk_tea", "wait": 14.9, "reserved": false, "takeaway": false, "bag": false}]
 	check_eq(sim.order_mood(sim.orders[0]), 0, "a fresh customer is calm")
 	sim.advance(0.2)
 	check_eq(sim.orders[0].id, 1, "the customer is still in the queue")
@@ -583,7 +583,7 @@ func test_customers_never_leave_they_get_impatient_then_angry() -> void:
 	check_eq(sim.orders[0].id, 1, "nobody walks out")
 	check_eq(sim.order_mood(sim.orders[0]), 2, "after 30 s the customer is angry")
 	var active = opened()
-	active.orders = [{"id": 1, "dish": "lemonade", "wait": 40.0, "reserved": false, "takeaway": false}]
+	active.orders = [{"id": 1, "dish": "lemonade", "wait": 40.0, "reserved": false, "takeaway": false, "bag": false}]
 	active.advance(0.1)
 	check(active.orders[0].reserved, "an angry customer is still served")
 	var restored = make_shop()
@@ -603,7 +603,7 @@ func test_carried_service_retains_its_flavor_slot_until_delivery_or_recall() -> 
 	sim.shelf_count = 12
 	sim.stations.seal.output.plain_milk_tea = 1
 	sim._generated = 13
-	sim.orders = [{"id": 1, "dish": "plain_milk_tea", "wait": 0.0, "reserved": false, "takeaway": false}]
+	sim.orders = [{"id": 1, "dish": "plain_milk_tea", "wait": 0.0, "reserved": false, "takeaway": false, "bag": false}]
 	sim.workers[0].pos = Vector2(470, 670)
 	for tick in 100:
 		sim.advance(0.1)
@@ -739,7 +739,7 @@ func test_kitchen_packer_saves_and_takeaway_lemonade_is_fetched_at_the_sealer() 
 	var sim = opened()
 	if sim == null: return
 	# Lemonade to go skips the sealer: ask for a kitchen drink to go instead of waiting on a random order.
-	sim.orders = [{"id": sim._next_order, "dish": "plain_milk_tea", "wait": 0.0, "reserved": false, "takeaway": true}]
+	sim.orders = [{"id": sim._next_order, "dish": "plain_milk_tea", "wait": 0.0, "reserved": false, "takeaway": true, "bag": false}]
 	sim._next_order += 1
 	var packing_saved := false
 	for tick in 600:
@@ -994,7 +994,7 @@ func test_orders_next_to_each_other_for_the_same_drink_share_one_follower() -> v
 	if sim == null: return
 	sim.orders.clear()
 	for unused in 3:
-		sim.orders.append({"id": sim._next_order, "wait": 0.0, "reserved": false, "dish": "pearl_milk_tea", "takeaway": false})
+		sim.orders.append({"id": sim._next_order, "wait": 0.0, "reserved": false, "dish": "pearl_milk_tea", "takeaway": false, "bag": false})
 		sim._next_order += 1
 	sim.advance(0.1)
 	var follower: Dictionary = sim.workers.filter(func(worker): return worker.post != "counter")[0]
@@ -1072,8 +1072,8 @@ func test_lemon_tea_is_pressed_at_the_front_from_a_lemonade() -> void:
 	check(sim.station_unlocked("press"), "the front press opens before the topping machine")
 	check(sim._dish_unlocked("lemon_tea", false), "lemon tea is on the menu once the press is open")
 	sim.orders.clear()
-	sim.orders.append({"id": 900, "dish": "lemon_tea", "wait": 0.0, "reserved": false, "takeaway": true})
-	sim.orders.append({"id": 901, "dish": "lemon_tea", "wait": 0.0, "reserved": false, "takeaway": false})
+	sim.orders.append({"id": 900, "dish": "lemon_tea", "wait": 0.0, "reserved": false, "takeaway": true, "bag": false})
+	sim.orders.append({"id": 901, "dish": "lemon_tea", "wait": 0.0, "reserved": false, "takeaway": false, "bag": false})
 	sim._next_order = 902
 	var makers := {}
 	for tick in 600:
@@ -1136,7 +1136,7 @@ func test_lemonade_to_go_is_handed_over_without_the_sealer() -> void:
 	sim.unlock_station("boil")
 	sim.unlock_station("seal")
 	sim.orders.clear()
-	sim.orders.append({"id": 950, "dish": "lemonade", "wait": 0.0, "reserved": false, "takeaway": true})
+	sim.orders.append({"id": 950, "dish": "lemonade", "wait": 0.0, "reserved": false, "takeaway": true, "bag": false})
 	sim._next_order = 951
 	var seated: int = sim.diners.size()
 	for tick in 400:
@@ -1254,7 +1254,7 @@ func test_sealed_takeaway_cups_go_to_the_shelf_rack_and_the_front_never_enters_t
 	var sim = opened()
 	if sim == null: return
 	var wanted: int = sim._next_order
-	sim.orders = [{"id": wanted, "dish": "plain_milk_tea", "wait": 0.0, "reserved": false, "takeaway": true}]
+	sim.orders = [{"id": wanted, "dish": "plain_milk_tea", "wait": 0.0, "reserved": false, "takeaway": true, "bag": false}]
 	sim._next_order += 1
 	var racked := false
 	var front_sources := {}
@@ -1318,3 +1318,63 @@ func test_v11_save_drops_the_kitchen_press_and_banana_tea() -> void:
 	check(copy.audit().valid, "the migrated floor is consistent")
 	for tick in 600: copy.advance(0.1)
 	check(copy.audit().valid and copy.sold > state.sold, "the migrated shop keeps selling")
+
+func test_packing_station_bags_some_takeaways_for_more_money() -> void:
+	var sim = opened()
+	if sim == null: return
+	check_eq(sim.stage_index, sim.PROGRESSION.pack_stage, "the opened shop has reached the packing stage")
+	var fresh = make_shop()
+	check(not fresh.pack_available() and not fresh.buy_pack().is_empty(), "the packing station waits for the last machine")
+	check_eq(sim.pack, 0, "the packing station starts unbuilt")
+	var gold: int = sim.gold
+	check_eq(sim.buy_pack(), "", "the packing station can be built")
+	check_eq(sim.gold, gold - sim.PROGRESSION.pack_costs[0], "for its opening price")
+	check_eq(sim.pack, 1, "built at Lv1")
+	check(is_equal_approx(sim.pack_bonus(), 0.25), "bagged cups pay 25% more")
+	check_eq(sim.buy_pack(), "", "the packing station levels up")
+	check(is_equal_approx(sim.pack_bonus(), 0.30) and sim.pack_seconds(2) < sim.pack_seconds(1), "each level pays more and bags faster")
+	sim.gold = 100000
+	while sim.pack_cost() >= 0: check_eq(sim.buy_pack(), "", "level up to Lv%d" % (sim.pack + 1))
+	check(not sim.buy_pack().is_empty(), "the packing station has a top level")
+	sim.seats = 2
+	var bag_seen := false
+	var bag_sold := false
+	var sold_before := {}
+	for tick in 4000:
+		for order in sim.orders:
+			check(not order.bag or order.takeaway, "only takeaway orders are bagged")
+			bag_seen = bag_seen or order.bag
+		for worker in sim.all_workers():
+			var job: Dictionary = worker.job
+			if not job.is_empty() and job.kind == "serve" and sim._bagged(job) and worker.phase == "dropoff":
+				check(worker.pos.distance_to(sim.Layout.POINTS.pack) < 1.0, "bagged cups are handed over at the packing station")
+				if not sold_before.has(job.order_id): sold_before[job.order_id] = [sim.gold, sim._dish_price(job.item) * job.count]
+		var gold_before: int = sim.gold
+		sim.advance(0.1)
+		for id in sold_before.keys():
+			var still := false
+			for order in sim.orders: still = still or order.id == id
+			if not still and not bag_sold:
+				bag_sold = sim.gold - gold_before >= roundi(sold_before[id][1] * (1.0 + sim.pack_bonus()))
+		if not sim.audit().valid:
+			check(false, "packing keeps goods conserved: %s" % sim.audit())
+			return
+	check(bag_seen, "some takeaway customers want a bag")
+	check(bag_sold, "a bagged cup sells for the packing bonus")
+	var copy = make_shop()
+	check_eq(copy.load_dict(sim.to_dict()), "", "the packing level saves")
+	check_eq(copy.pack, sim.pack, "and loads")
+
+func test_v12_save_gets_an_unbuilt_packing_station() -> void:
+	var sim = opened()
+	if sim == null: return
+	sim.advance(60.0)
+	var state: Dictionary = sim.to_dict()
+	state.version = 12
+	state.erase("pack")
+	for order in state.orders: order.erase("bag")
+	var copy = make_shop()
+	check_eq(copy.load_dict(state), "", "a v12 save loads")
+	check_eq(copy.pack, 0, "with the packing station unbuilt")
+	for order in copy.orders: check(not order.bag, "and no queued customer wants a bag")
+	check(copy.audit().valid, "the migrated floor is consistent")

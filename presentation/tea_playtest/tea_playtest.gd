@@ -99,6 +99,8 @@ const FRAME_OPENS := {"shelf": "boil"}
 ## The sealer → takeaway rack conveyor is bought from a dashed frame where its art goes.
 const BELT_ID := "seal_to_shelf"
 const BELT_FRAME := Rect2(590, 385, 72, 150)
+## The packing counter at the right end of the front counter is bought from a dashed frame over its art.
+const PACK_FRAME := Rect2(586, 690, 108, 112)
 
 
 func _ready() -> void:
@@ -365,7 +367,7 @@ func _update_customers(delta: float) -> void:
 			point = point.move_toward(goal, delta * 170.0)
 		_customer_positions[order.id] = point
 		if sim.has_method("order_mood"):
-			_customers[order.id].show_order(String(order.dish), -1.0, sim.order_mood(order), order.get("takeaway", false))
+			_customers[order.id].show_order(String(order.dish), -1.0, sim.order_mood(order), order.get("takeaway", false), order.get("bag", false))
 		else:
 			var patience: float = sim.CONFIG.customer_patience if "CONFIG" in sim else 0.0
 			_customers[order.id].show_order(String(order.get("dish", "sealed")), 1.0 - float(order.wait) / patience if patience > 0 else -1.0)
@@ -683,7 +685,11 @@ func station_action(action: String, station: String, material := "") -> void:
 		"box": error = sim.unlock_box(material)
 		"seat": error = sim.buy_seat()
 		"flyers": error = sim.buy_flyers()
-	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了两个座位。", "flyers": "传单发出去了，客人来得更勤了。"}.get(action, "升级完成。")
+		"pack":
+			var opening: bool = sim.pack == 0
+			error = sim.buy_pack()
+			if error.is_empty() and opening: action = "pack_open"
+	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了两个座位。", "flyers": "传单发出去了，客人来得更勤了。", "pack_open": "打包台开通了，打包的外带多收钱。"}.get(action, "升级完成。")
 	_show_toast(error if not error.is_empty() else done)
 	if error.is_empty():
 		var level: int = sim.station_levels.get(station, 0) if action != "material" else sim.material_levels.get(station, {}).get(material, 0)
@@ -734,6 +740,15 @@ func _build_station_signs() -> void:
 		seat_frame.pressed.connect(station_action.bind("seat", "counter"))
 		$Canvas/WorldLabels.add_child(seat_frame)
 		_station_buttons["seat"] = seat_frame
+	if sim.has_method("buy_pack"):
+		var pack_frame := UnlockFrame.new()
+		pack_frame.position = PACK_FRAME.position
+		pack_frame.size = PACK_FRAME.size
+		pack_frame.theme = ui.theme
+		pack_frame.add_theme_font_size_override("font_size", 17)
+		pack_frame.pressed.connect(station_action.bind("pack", "counter"))
+		$Canvas/WorldLabels.add_child(pack_frame)
+		_station_buttons["pack"] = pack_frame
 	_upgrade_marks.counter = UpgradeBadge.new()
 	_seats.add_child(_upgrade_marks.counter)
 	_staff_mark = UpgradeBadge.new()
@@ -769,6 +784,16 @@ func _refresh_station_signs() -> void:
 			seat_frame.can_unlock = sim.seat_error().is_empty()
 			seat_frame.text = "加 %d 个座位\n%d 金币" % [sim.PROGRESSION.seat_step, sim.seat_cost()]
 			seat_frame.tooltip_text = "堂食客人要有空座位才会点单坐下\n" + sim.seat_error()
+			continue
+		if id == "pack":
+			# Offered once the last machine is in; after that it levels up from the counter panel.
+			var pack_frame: Button = _station_buttons[id]
+			pack_frame.visible = sim.pack == 0 and sim.pack_available()
+			if not pack_frame.visible:
+				continue
+			pack_frame.can_unlock = sim.pack_error().is_empty()
+			pack_frame.text = "打包台\n%d 金币" % sim.pack_cost()
+			pack_frame.tooltip_text = "开通后部分外带客人要打包，打包的杯子多收钱\n" + sim.pack_error()
 			continue
 		if id == "supply":
 			# The cabinet frame asks for the ingredient box the newest machine needs.
@@ -822,7 +847,7 @@ func can_buy_at(id: String) -> bool:
 	if sim._upgrade_error(id).is_empty():
 		return true
 	if id == "counter":
-		return sim.seat_error().is_empty() or sim.flyer_error().is_empty()
+		return sim.seat_error().is_empty() or sim.flyer_error().is_empty() or (sim.pack > 0 and sim.pack_error().is_empty())
 	var definition = sim._definition(id)
 	if definition != null:
 		for material in definition.materials:

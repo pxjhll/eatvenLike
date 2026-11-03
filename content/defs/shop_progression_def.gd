@@ -22,6 +22,15 @@ extends Resource
 @export var flavor_flow: float = 0.05
 @export var flyer_flow: float = 0.10
 @export var flyer_costs: Array[int] = []
+## 前台打包台：开通后一部分外带客人要打包（打包贵一些）。pack_stage = 第几阶段开通后可买；
+## pack_costs[0] = 开通价，之后是 Lv1→Lv2…；每级打包更快（pack_speeds），打包加价 pack_bonus + 每级 pack_bonus_step
+@export var pack_stage: int = 5
+@export var pack_costs: Array[int] = []
+@export var pack_seconds: float = 2.0
+@export var pack_speeds: Array[float] = [1.0]
+@export var pack_bonus: float = 0.25
+@export var pack_bonus_step: float = 0.05
+@export var pack_share: float = 0.4
 ## 员工培养（产能类）：每级走路、干活 ×(1 + train_step)，到 train_star_levels 时一次多搬 1 杯
 @export var train_costs: Array[int] = []
 @export var train_step: float = 0.05

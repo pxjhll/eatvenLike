@@ -34,6 +34,7 @@ var _patience := -1.0
 ## 0 calm, 1 impatient, 2 angry; customers never leave, they show it on their face instead.
 var _mood := 0
 var _takeaway := false
+var _bag := false
 var _order_cup := Sprite2D.new()
 
 
@@ -81,9 +82,10 @@ func setup(art_id: String, font: Font, height := 128.0) -> void:
 	add_child(_order_cup)
 
 
-func show_order(item: String, patience: float, mood := 0, takeaway := false) -> void:
-	if item != _order_item or mood != _mood or takeaway != _takeaway or patience != _patience:
+func show_order(item: String, patience: float, mood := 0, takeaway := false, bag := false) -> void:
+	if item != _order_item or mood != _mood or takeaway != _takeaway or bag != _bag or patience != _patience:
 		queue_redraw()
+	_bag = bag
 	_order_item = item
 	_patience = patience
 	_mood = mood
@@ -194,7 +196,7 @@ func _draw() -> void:
 		draw_rect(Rect2(-4, top + 19, 42, 10), Color("efe3cc"))
 		draw_rect(Rect2(-4, top + 19, 42 * fill, 10), color)
 	if _takeaway and _font != null:
-		draw_string(_font, Vector2(-2, top + 30), "外带", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("8a5a35"))
+		draw_string(_font, Vector2(-2, top + 30), "打包" if _bag else "外带", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("8a5a35"))
 	if _mood > 0:
 		_draw_mood(Vector2(40, top + 8))
 

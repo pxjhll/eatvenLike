@@ -23,6 +23,8 @@ const POINTS := {
 	"lemonade": Vector2(190, 650),
 	# Lemon tea is hand-pressed at the front, beside the ice box on the counter.
 	"press": Vector2(315, 690),
+	# The packing station at the right end of the counter, behind the bag.
+	"pack": Vector2(620, 730),
 	"seal_belt": Vector2(530, 430),
 }
 const STATION_ART := {

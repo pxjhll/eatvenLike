@@ -47,7 +47,7 @@ func _run() -> void:
 	for unused in 3: view.sim.hire()
 	view.sim.orders.clear()
 	for i in 8:
-		view.sim.orders.append({"id": 100 + i, "dish": "lemon_tea" if i % 2 else "plain_milk_tea", "wait": 0.0, "reserved": false, "takeaway": i % 2 == 0})
+		view.sim.orders.append({"id": 100 + i, "dish": "lemon_tea" if i % 2 else "plain_milk_tea", "wait": 0.0, "reserved": false, "takeaway": i % 2 == 0, "bag": false})
 	view.sim.diners = [{"seat": 0, "dish": "lemonade", "left": 20.0}, {"seat": 3, "dish": "black_tea", "left": 20.0}, {"seat": 5, "dish": "lemon_tea", "left": 20.0}, {"seat": 6, "dish": "taro_milk_tea", "left": 20.0}]
 	view._refresh(10.0)
 	_check_props_on_supports()

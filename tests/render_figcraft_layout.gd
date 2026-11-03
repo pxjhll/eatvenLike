@@ -48,6 +48,15 @@ func _run() -> void:
 		await _click(view.ui.station_panel.unlock_button)
 		_check(view.sim.station_unlocked("topping") and view.sim.stage_index == 5, "final stage unlocks through the actual UI")
 		view.guide.enabled = false
+		view.ui.open_page("shop")
+		view._refresh(0)
+		_check(view._station_buttons.has("pack") and view._station_buttons.pack.is_visible_in_tree(), "the packing station frame shows after the last machine")
+		_check_groups("before pack")
+		await _click(view._station_buttons.pack)
+		_check(view.sim.pack == 1, "the packing station is built from its frame")
+		view._refresh(0)
+		_check(not view._station_buttons.pack.is_visible_in_tree(), "the frame goes once built")
+		_check_groups("pack")
 	view.ui.open_page("shop")
 	view._refresh(0)
 	view._toast.visible = false
@@ -107,6 +116,7 @@ func _check_groups(phase: String) -> void:
 		var rule: String = fixture.rules[row.group]
 		var expected := rule == "always"
 		if rule == "ingredient_box": expected = view.sim.boxes.values().has(true)
+		elif rule == "pack": expected = view.sim.pack > 0
 		elif rule.begins_with("belt:"): expected = view.sim.belts.has(rule.trim_prefix("belt:"))
 		elif rule != "always": expected = view.sim.station_unlocked(rule)
 		_check(sprite.is_visible_in_tree() == expected, phase + ": grouped visibility " + row.group + "/" + row.node)

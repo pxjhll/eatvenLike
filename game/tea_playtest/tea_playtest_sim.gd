@@ -389,7 +389,7 @@ func _update_worker(worker: Dictionary) -> void:
 				stations[job.src].duration = worker.action_left
 		else:
 			worker.phase = "dropoff"
-			worker.action_left = 0.6 / _skill(worker)
+			worker.action_left = _dropoff_duration(job, worker)
 		return
 	worker.action_left = maxf(0, worker.action_left - STEP)
 	if worker.phase == "work" and job.kind in ["topping", "press"]:
@@ -553,6 +553,10 @@ func _brew_batch() -> int:
 
 func _machine_duration(key: String) -> float:
 	return {"boil": 7.0, "mix": 4.0, "seal": 3.0}[key]
+
+## Seconds to put down what was carried (the shop adds bagging at the packing station).
+func _dropoff_duration(_job: Dictionary, worker: Dictionary) -> float:
+	return 0.6 / _skill(worker)
 
 func _action_duration(job: Dictionary, worker: Dictionary) -> float:
 	return (2.0 * job.count if job.kind == "topping" else 0.6) / _skill(worker)

@@ -670,7 +670,7 @@ scale = Vector2(0.380000007, 0.380000007)
 texture = ExtResource("figcraft_texture_39")
 centered = false
 metadata/layout_group = "打包袋"
-metadata/unlock_rule = "seal"
+metadata/unlock_rule = "pack"
 
 [node name="TakeawayBag" type="Node2D" parent="Sortables/Checkout/RedDevice"]
 position = Vector2(0, -22)
@@ -683,7 +683,7 @@ scale = Vector2(0.308750001, 0.308750001)
 texture = ExtResource("figcraft_texture_28")
 centered = false
 metadata/layout_group = "打包袋"
-metadata/unlock_rule = "seal"
+metadata/unlock_rule = "pack"
 
 [node name="GlassPartition" type="Node2D" parent="Sortables/Checkout"]
 visible = false

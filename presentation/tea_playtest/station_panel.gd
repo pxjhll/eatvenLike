@@ -27,6 +27,10 @@ var flyer_button: Button
 var _flyer_row: Control
 var _flyer_title: Label
 var _flyer_effect: Label
+var pack_button: Button
+var _pack_row: Control
+var _pack_title: Label
+var _pack_effect: Label
 var _seat_row: Control
 var _seat_title: Label
 var _seat_effect: Label
@@ -67,6 +71,16 @@ func setup(view: Node2D, hud: Control) -> void:
 	_flyer_title = _hud._text(flyer_copy, "", 23)
 	_flyer_effect = _hud._text(flyer_copy, "", 19, true)
 	flyer_button = _buy_button(flyer_line, func() -> void: _view.station_action("flyers", station_id))
+	var pack_card: VBoxContainer = _hud._card(self, "f6ead3", "d7bd97")
+	_pack_row = pack_card.get_parent()
+	var pack_line: HBoxContainer = _hud._row(pack_card, 12)
+	var pack_copy := VBoxContainer.new()
+	pack_copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pack_copy.add_theme_constant_override("separation", 4)
+	pack_line.add_child(pack_copy)
+	_pack_title = _hud._text(pack_copy, "", 23)
+	_pack_effect = _hud._text(pack_copy, "", 19, true)
+	pack_button = _buy_button(pack_line, func() -> void: _view.station_action("pack", station_id))
 	_material_title = _hud._text(self, "", 21)
 	_materials = VBoxContainer.new()
 	_materials.add_theme_constant_override("separation", 10)
@@ -114,6 +128,10 @@ func refresh() -> void:
 	_flyer_row.visible = unlocked and info.has("flyers")
 	if _flyer_row.visible:
 		_refresh_flyers(info)
+	# The packing counter is built from its dashed frame; once open it levels up here.
+	_pack_row.visible = unlocked and int(info.get("pack", 0)) > 0
+	if _pack_row.visible:
+		_refresh_pack(info)
 	_locked.visible = not unlocked
 	if unlocked:
 		_refresh_upgrade(info)
@@ -259,6 +277,18 @@ func _refresh_flyers(info: Dictionary) -> void:
 	_flyer_effect.text = "客流 ×%.2f → ×%.2f%s" % [info.flow, info.next_flow, hint]
 	flyer_button.text = "%d 金币" % cost
 	flyer_button.disabled = not String(info.flyer_error).is_empty()
+
+func _refresh_pack(info: Dictionary) -> void:
+	var cost := int(info.pack_cost)
+	_pack_title.text = "打包台 Lv%d" % info.pack if cost < 0 else "打包台 Lv%d → Lv%d" % [info.pack, int(info.pack) + 1]
+	if cost < 0:
+		_pack_effect.text = "打包加价 +%d%% · 每杯 %.1f 秒" % [roundi(info.pack_bonus * 100), info.pack_seconds]
+		pack_button.text = "满级"
+		pack_button.disabled = true
+		return
+	_pack_effect.text = "打包加价 +%d%% → +%d%% · %.1f → %.1f 秒" % [roundi(info.pack_bonus * 100), roundi(info.next_pack_bonus * 100), info.pack_seconds, info.next_pack_seconds]
+	pack_button.text = "%d 金币" % cost
+	pack_button.disabled = not String(info.pack_error).is_empty()
 
 func _refresh_locked(info: Dictionary) -> void:
 	var members: Array = info.get("line_members", [])

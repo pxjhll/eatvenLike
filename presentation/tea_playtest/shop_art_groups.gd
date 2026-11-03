@@ -13,6 +13,9 @@ static func refresh(art: Node2D, sim: RefCounted) -> void:
 			elif rule.begins_with("belt:"):
 				# A conveyor shows once bought (old sims without belts never show it).
 				visibility[group] = "belts" in sim and sim.belts.has(rule.trim_prefix("belt:"))
+			elif rule == "pack":
+				# The packing counter shows once bought (old sims without packing never show it).
+				visibility[group] = "pack" in sim and sim.pack > 0
 			elif rule == "ingredient_box":
 				visibility[group] = sim.boxes.values().has(true)
 			else:
