@@ -25,6 +25,10 @@ var selected_worker := 1
 var _actors := {}
 var _customers := {}
 var _customer_positions := {}
+var _customer_orders := {}
+var _customer_entering := {}
+## Dine-in seats already taken last frame, to tell which customer just sat down.
+var _known_seats := {}
 var _cups: Array[Sprite2D] = []
 var _badges := {}
 var _bars := {}
@@ -161,6 +165,9 @@ func _reset_visuals() -> void:
 		customer.free()
 	_customers.clear()
 	_customer_positions.clear()
+	_customer_orders.clear()
+	_customer_entering.clear()
+	_known_seats.clear()
 	_last_sold = sim.sold
 	_last_revenue = _revenue()
 	for pop in _pops:
@@ -259,7 +266,7 @@ func _refresh(delta: float) -> void:
 	_update_cups()
 	_update_customers(delta if not sim.paused and ui.page != "characters" and not (guide != null and guide.freezes()) else 0.0)
 	if "diners" in sim:
-		art.get_node("Sortables/DiningArea").refresh(sim.seats, sim.diners, _font, sim.elapsed)
+		art.get_node("Sortables/DiningArea").refresh(sim.seats, sim.diners, _font, sim.elapsed, delta if not sim.paused and ui.page != "characters" and not (guide != null and guide.freezes()) else 0.0)
 	if sim.sold > _last_sold:
 		_pop_income(_revenue() - _last_revenue)
 	_last_sold = sim.sold
@@ -334,7 +341,7 @@ func _update_cups() -> void:
 
 func _update_customers(delta: float) -> void:
 	var active := {}
-	# The queue uses the central aisle between the four two-seat dining tables.
+	# Customers come in through the door at the bottom, up the aisle, and queue in two rows at the counter.
 	for i in mini(sim.orders.size(), 8):
 		var order: Dictionary = sim.orders[i]
 		active[order.id] = true
@@ -343,10 +350,18 @@ func _update_customers(delta: float) -> void:
 			actor.setup("squirrel" if int(order.id) % 2 else "hamster", _font, 80.0)
 			art.get_node("Sortables").add_child(actor)
 			_customers[order.id] = actor
-			_customer_positions[order.id] = Vector2(360, 1430)
+			_customer_positions[order.id] = Layout.ENTRANCE
+			_customer_entering[order.id] = true
+		_customer_orders[order.id] = order
 		var goal := Layout.queue_point(i)
+		# A newcomer walks up the aisle first, so they don't cut across the tables.
+		var waypoint := Vector2(Layout.AISLE_X, Layout.DINING_LANES[0])
 		var point: Vector2 = _customer_positions[order.id]
-		point = point.move_toward(goal, delta * 170.0)
+		if _customer_entering.get(order.id, false):
+			point = point.move_toward(waypoint, delta * 170.0)
+			if point.distance_to(waypoint) < 1.0: _customer_entering.erase(order.id)
+		else:
+			point = point.move_toward(goal, delta * 170.0)
 		_customer_positions[order.id] = point
 		if sim.has_method("order_mood"):
 			_customers[order.id].show_order(String(order.dish), -1.0, sim.order_mood(order), order.get("takeaway", false))
@@ -354,11 +369,29 @@ func _update_customers(delta: float) -> void:
 			var patience: float = sim.CONFIG.customer_patience if "CONFIG" in sim else 0.0
 			_customers[order.id].show_order(String(order.get("dish", "sealed")), 1.0 - float(order.wait) / patience if patience > 0 else -1.0)
 		_customers[order.id].display({"pos": point, "walking": point.distance_to(goal) > 1, "phase": "idle", "task_label": ""}, sim.elapsed)
-	for id in _customers.keys():
-		if not active.has(id):
-			_customers[id].free()
-			_customers.erase(id)
-			_customer_positions.erase(id)
+	# Served customers leave the queue: dine-in ones walk to the chair the sale gave them, the rest go out the door.
+	var seats_now := {}
+	if "diners" in sim:
+		for diner in sim.diners: seats_now[int(diner.seat)] = true
+	var new_seats: Array = seats_now.keys().filter(func(seat: int) -> bool: return not _known_seats.has(seat))
+	new_seats.sort()
+	_known_seats = seats_now
+	var leaving: Array = _customers.keys().filter(func(id) -> bool: return not active.has(id))
+	leaving.sort()
+	var dining: Node = art.get_node_or_null("Sortables/DiningArea")
+	for id in leaving:
+		var order: Dictionary = _customer_orders.get(id, {})
+		var art_id := "squirrel" if int(id) % 2 else "hamster"
+		if dining != null:
+			if not order.get("takeaway", false) and not new_seats.is_empty():
+				dining.queue_arrival(new_seats.pop_front(), _customer_positions[id], art_id)
+			else:
+				dining.queue_exit(_customer_positions[id], art_id, String(order.get("dish", "")))
+		_customers[id].free()
+		_customers.erase(id)
+		_customer_positions.erase(id)
+		_customer_orders.erase(id)
+		_customer_entering.erase(id)
 
 
 func _along(points: PackedVector2Array, progress: float) -> Vector2:
@@ -649,7 +682,7 @@ func station_action(action: String, station: String, material := "") -> void:
 		"box": error = sim.unlock_box(material)
 		"seat": error = sim.buy_seat()
 		"flyers": error = sim.buy_flyers()
-	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了一张座位。", "flyers": "传单发出去了，客人来得更勤了。"}.get(action, "升级完成。")
+	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了两个座位。", "flyers": "传单发出去了，客人来得更勤了。"}.get(action, "升级完成。")
 	_show_toast(error if not error.is_empty() else done)
 	if error.is_empty():
 		var level: int = sim.station_levels.get(station, 0) if action != "material" else sim.material_levels.get(station, {}).get(material, 0)
@@ -693,6 +726,13 @@ func _build_station_signs() -> void:
 		belt_frame.pressed.connect(buy_belt)
 		$Canvas/WorldLabels.add_child(belt_frame)
 		_station_buttons["belt"] = belt_frame
+	if sim.has_method("buy_seat"):
+		var seat_frame := UnlockFrame.new()
+		seat_frame.theme = ui.theme
+		seat_frame.add_theme_font_size_override("font_size", 17)
+		seat_frame.pressed.connect(station_action.bind("seat", "counter"))
+		$Canvas/WorldLabels.add_child(seat_frame)
+		_station_buttons["seat"] = seat_frame
 	_upgrade_marks.counter = UpgradeBadge.new()
 	_seats.add_child(_upgrade_marks.counter)
 	_staff_mark = UpgradeBadge.new()
@@ -714,6 +754,20 @@ func _refresh_station_signs() -> void:
 			belt_frame.can_unlock = String(row.error).is_empty()
 			belt_frame.text = "传送带\n%d 金币" % row.cost
 			belt_frame.tooltip_text = "封好口的外带杯自动送上货架外带格，后厨不用再搬\n" + String(row.error)
+			continue
+		if id == "seat":
+			# The next table to buy: a dashed frame over its faint chairs, once the lemonade stand is open.
+			var seat_frame: Button = _station_buttons[id]
+			var table_index: int = int(sim.seats) / 2
+			seat_frame.visible = sim.station_unlocked("lemonade") and sim.seat_cost() >= 0 and table_index < Layout.DINING_TABLES.size()
+			if not seat_frame.visible:
+				continue
+			var table: Vector2 = Layout.DINING_TABLES[table_index]
+			seat_frame.position = table + Vector2(-150, -112)
+			seat_frame.size = Vector2(300, 124)
+			seat_frame.can_unlock = sim.seat_error().is_empty()
+			seat_frame.text = "加 %d 个座位\n%d 金币" % [sim.PROGRESSION.seat_step, sim.seat_cost()]
+			seat_frame.tooltip_text = "堂食客人要有空座位才会点单坐下\n" + sim.seat_error()
 			continue
 		if id == "supply":
 			# The cabinet frame asks for the ingredient box the newest machine needs.

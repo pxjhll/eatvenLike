@@ -80,6 +80,8 @@ func _check_geometry() -> void:
 		var basis: Transform2D = view.art.global_transform.affine_inverse() * sprite.global_transform
 		var actual := basis * sprite.get_rect().position
 		var expected := Vector2(row.transform[4], row.transform[5])
+		# The dining room was moved down to make room for the queue in front of the counter.
+		if String(row.node).contains("DiningArea"): expected.y += view.Layout.DINING_SHIFT
 		_check(actual.distance_to(expected) < 0.02, "FigCraft origin " + row.node + ": " + str(actual) + " expected " + str(expected))
 		var across := basis.basis_xform(Vector2(sprite.get_rect().size.x, 0))
 		var down := basis.basis_xform(Vector2(0, sprite.get_rect().size.y))

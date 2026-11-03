@@ -3,8 +3,16 @@ extends RefCounted
 
 const CELL := 20.0
 const WORLD_SIZE := Vector2(720, 1500)
-const DINING_TABLES := [Vector2(191, 1061.5), Vector2(530, 1061.5), Vector2(192, 1258.5), Vector2(528, 1258.5)]
-const DINING_SEATS := [Vector2(85, 1053.083333), Vector2(296, 1053.083333), Vector2(424, 1053.083333), Vector2(635, 1053.083333), Vector2(86, 1250.083333), Vector2(297, 1250.083333), Vector2(422, 1250.083333), Vector2(633, 1250.083333)]
+## The dining room sits DINING_SHIFT lower than the FigCraft source so two queue rows fit in front of the counter.
+const DINING_SHIFT := 90.0
+const DINING_TABLES := [Vector2(191, 1151.5), Vector2(530, 1151.5), Vector2(192, 1348.5), Vector2(528, 1348.5)]
+const DINING_SEATS := [Vector2(85, 1143.083333), Vector2(296, 1143.083333), Vector2(424, 1143.083333), Vector2(635, 1143.083333), Vector2(86, 1340.083333), Vector2(297, 1340.083333), Vector2(422, 1340.083333), Vector2(633, 1340.083333)]
+## Customers come in at the bottom, walk up the aisle between the tables and queue in front of the counter.
+const ENTRANCE := Vector2(360, 1540)
+const AISLE_X := 360.0
+## Walkways just above each row of chairs: in front of the counter queue, and between the two rows.
+const DINING_LANES := [1045.0, 1226.0]
+const QUEUE_ROWS := [925.0, 1012.0]
 const POINTS := {
 	"supply": Vector2(210, 310), "boil": Vector2(350, 330),
 	"mix": Vector2(480, 330), "topping": Vector2(190, 490),
@@ -80,8 +88,33 @@ static func grid() -> ShopGridDef:
 	return _grid
 
 
+## Two rows of four in front of the counter, the first customer at the register.
 static func queue_point(index: int) -> Vector2:
-	return Vector2(310 + (index % 2) * 100, 945 + (index / 2) * 100)
+	return Vector2(520 - (index % 4) * 90, QUEUE_ROWS[mini(index / 4, QUEUE_ROWS.size() - 1)])
+
+
+## Where a seated customer sits (the chair's seat, a little above its floor anchor).
+static func seat_point(seat: int) -> Vector2:
+	return DINING_SEATS[seat] + Vector2(0, -12)
+
+
+## From the queue to a chair: along the lane above the chair's row, via the aisle for the back row.
+static func seat_path(from: Vector2, seat: int) -> PackedVector2Array:
+	var lane: float = DINING_LANES[0 if seat < 4 else 1]
+	var target := seat_point(seat)
+	var points := PackedVector2Array([Vector2(from.x, DINING_LANES[0])])
+	if seat >= 4:
+		points.append(Vector2(AISLE_X, DINING_LANES[0]))
+		points.append(Vector2(AISLE_X, lane))
+	points.append(Vector2(target.x, lane))
+	points.append(target)
+	return points
+
+
+## From a chair (or the queue) out through the aisle and the door at the bottom.
+static func exit_path(from: Vector2, seat := -1) -> PackedVector2Array:
+	var lane: float = DINING_LANES[0] if seat < 4 else DINING_LANES[1]
+	return PackedVector2Array([Vector2(from.x, lane), Vector2(AISLE_X, lane), ENTRANCE])
 
 
 static func path(from: Vector2, to: Vector2) -> PackedVector2Array:

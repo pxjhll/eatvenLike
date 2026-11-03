@@ -77,7 +77,7 @@ func _run() -> void:
 	gold = view.sim.gold
 	var seat_cost: int = view.sim.seat_cost()
 	await _click(hud.station_panel.seat_button)
-	_check(view.sim.seats == 4 and view.sim.gold == gold - seat_cost and seat_cost <= 15, "the counter sells one more seat, the first one cheap")
+	_check(view.sim.seats == 4 and view.sim.gold == gold - seat_cost and seat_cost == view.sim.PROGRESSION.seat_costs[0], "the counter sells one more table, two seats")
 	view.sim.revenue = maxi(view.sim.revenue, 600)
 	await _click(hud.home_button)
 	await _click(view._station_buttons.seal)

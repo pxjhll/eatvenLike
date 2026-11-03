@@ -738,7 +738,8 @@ func test_seated_topping_worker_runs_its_whole_segment() -> void:
 func test_kitchen_packer_saves_and_takeaway_lemonade_is_fetched_at_the_sealer() -> void:
 	var sim = opened()
 	if sim == null: return
-	sim.orders = [{"id": sim._next_order, "dish": "lemonade", "wait": 0.0, "reserved": false, "takeaway": true}]
+	# Lemonade to go skips the sealer: ask for a kitchen drink to go instead of waiting on a random order.
+	sim.orders = [{"id": sim._next_order, "dish": "plain_milk_tea", "wait": 0.0, "reserved": false, "takeaway": true}]
 	sim._next_order += 1
 	var packing_saved := false
 	for tick in 600:
@@ -809,9 +810,21 @@ func test_dine_in_needs_a_seat_and_takeaway_goes_through_the_sealer() -> void:
 	if sim == null: return
 	sim.unlock_station("lemonade")
 	sim.gold = 10000
-	check_eq(sim.seats, 3, "the shop opens with three seats")
-	check_eq(sim.buy_seat(), "", "a seat can be bought")
-	check_eq(sim.seats, 4, "the seat is added")
+	check_eq(sim.seats, 2, "the shop opens with one table, two seats")
+	check_eq(sim.buy_seat(), "", "a table can be bought")
+	check_eq(sim.seats, 4, "a table adds two seats")
+	check_eq(sim.buy_seat(), "", "the third table can be bought")
+	check_eq(sim.seats, 6, "three tables")
+	check_eq(sim.buy_seat(), "", "the last table can be bought")
+	check_eq(sim.seats, 8, "all four tables seat eight")
+	check(sim.seat_cost() < 0 and not sim.buy_seat().is_empty(), "no fifth table")
+	var old: Dictionary = sim.to_dict()
+	old.seats = 3
+	old.diners = []
+	var loaded = make_shop()
+	check_eq(loaded.load_dict(old), "", "an odd seat count from an older save loads")
+	check_eq(loaded.seats, 4, "and is rounded up to whole tables")
+	sim.seats = 4
 	sim.revenue = 10000
 	for tick in 600: sim.advance(0.1)
 	check(sim.sold_by_dish.lemonade > 0, "lemonade is served to seated customers")
@@ -894,7 +907,7 @@ func test_v6_save_refunds_training_and_puts_someone_at_the_counter() -> void:
 	check_eq(copy.front_staff(), 1, "someone takes the counter")
 	check_eq(copy.stage_index, old.stage_index, "progress is kept")
 	check(copy.audit().valid, "the migrated floor is consistent")
-	for tick in 600: copy.advance(0.1)
+	for tick in 1800: copy.advance(0.1)
 	check(copy.audit().valid and copy.sold > old.sold, "the migrated shop keeps selling")
 
 func test_v6_save_over_the_new_role_limits_recalls_extras_and_refunds_belts() -> void:
@@ -1044,7 +1057,7 @@ func test_cups_left_at_the_topping_machine_are_picked_up_by_the_next_follower() 
 	check_eq(sim.stations.topping.input.plain_milk_tea, left, "the cups stay at the machine")
 	check_eq(sim.deploy_worker(follower.id), "", "someone comes back")
 	var resumed := false
-	for tick in 50:
+	for tick in 150:
 		sim.advance(0.1)
 		if follower.ticket.get("stage", "") in ["topping", "topped"] and sim.stations.topping.input.plain_milk_tea < left: resumed = true
 		if resumed: break
