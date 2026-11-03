@@ -31,13 +31,11 @@ func _prop(id: String, width: float, point: Vector2) -> Sprite2D:
 	sprite.position = point
 	sprite.set_meta("asset_id", id)
 	sprite.set_meta("art_layer", "dining")
-	sprite.set_meta("layout_group", "基础物品")
-	sprite.set_meta("unlock_rule", "always")
+	# Shown by seat purchases here, not by the shop's unlock groups.
 	add_child(sprite)
 	return sprite
 
 const WALK_SPEED := 170.0
-const EMPTY_CHAIR := Color(1, 1, 1, 0.35)
 ## Customers on their way: {actor, path, step, item, seat}. A seat walker sits down at the end of its path.
 var _walkers: Array = []
 ## Served dine-in customers handed over by the queue this frame: seat -> {from, art}.
@@ -65,10 +63,10 @@ func refresh(seats: int, diners: Array, font: Font, clock: float, delta := 0.0) 
 	if not is_inside_tree(): return
 	_build_furniture()
 	for i in _chairs.size():
-		# All chairs are drawn; the ones not bought yet are faint.
-		_chairs[i].modulate = Color.WHITE if i in _available else EMPTY_CHAIR
+		# Tables and chairs appear once bought; the next table shows only as a dashed frame.
+		_chairs[i].visible = i in _available
 	for i in _tables.size():
-		_tables[i].modulate = Color.WHITE if i * 2 in _available else EMPTY_CHAIR
+		_tables[i].visible = i * 2 in _available
 	for seat in _diners.keys():
 		if not seat in _occupied:
 			# Time's up: the customer stands up and leaves through the aisle.
@@ -93,6 +91,8 @@ func refresh(seats: int, diners: Array, font: Font, clock: float, delta := 0.0) 
 		# Sitting on the chair: drawn over it, slightly raised onto the seat.
 		_diners[seat].z_index = 1
 		_diners[seat].position.y -= 14
+		# Face the table: left-hand chairs (even seats) look right, right-hand chairs look left.
+		if _diners[seat].frame_actor == null: _diners[seat].body.flip_h = seat % 2 == 1
 
 func _actor(art: String, font: Font) -> Node2D:
 	var actor := Actor.new()

@@ -764,8 +764,8 @@ func _refresh_station_signs() -> void:
 			if not seat_frame.visible:
 				continue
 			var table: Vector2 = Layout.DINING_TABLES[table_index]
-			seat_frame.position = table + Vector2(-150, -112)
-			seat_frame.size = Vector2(300, 124)
+			seat_frame.position = table + Vector2(-60, -78)
+			seat_frame.size = Vector2(120, 72)
 			seat_frame.can_unlock = sim.seat_error().is_empty()
 			seat_frame.text = "加 %d 个座位\n%d 金币" % [sim.PROGRESSION.seat_step, sim.seat_cost()]
 			seat_frame.tooltip_text = "堂食客人要有空座位才会点单坐下\n" + sim.seat_error()

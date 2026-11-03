@@ -86,7 +86,7 @@ func _check_geometry() -> void:
 		var across := basis.basis_xform(Vector2(sprite.get_rect().size.x, 0))
 		var down := basis.basis_xform(Vector2(0, sprite.get_rect().size.y))
 		_check(across.distance_to(Vector2(row.width, 0)) < 0.02 and down.distance_to(Vector2(0, row.height)) < 0.02, "FigCraft size " + row.node)
-		_check(sprite.get_meta("layout_group", "") == row.group, "FigCraft unlock group " + row.node)
+		if not String(row.node).contains("DiningArea"): _check(sprite.get_meta("layout_group", "") == row.group, "FigCraft unlock group " + row.node)
 	_check(not view.art.get_node("Sortables/BeltHorizontal").is_visible_in_tree(), "deleted horizontal conveyor remains absent")
 	var cup: Node2D = view.art.get_node("Sortables/Checkout/FrontLemon/SteelCup")
 	var ice: Node2D = view.art.get_node("Sortables/Checkout/FrontLemon/IceBin")
@@ -98,6 +98,12 @@ func _check_groups(phase: String) -> void:
 	for row in fixture.sprites:
 		var sprite: Sprite2D = view.art.get_node_or_null(row.node)
 		if sprite == null: continue
+		if String(row.node).contains("DiningArea"):
+			# Tables and chairs appear as seats are bought, two chairs per table.
+			var index := String(row.node).to_int() - 1
+			var first_seat := index * 2 if String(row.node).contains("Table") else index
+			_check(sprite.is_visible_in_tree() == (first_seat < view.sim.seats), phase + ": dining furniture follows bought seats " + row.node)
+			continue
 		var rule: String = fixture.rules[row.group]
 		var expected := rule == "always"
 		if rule == "ingredient_box": expected = view.sim.boxes.values().has(true)
