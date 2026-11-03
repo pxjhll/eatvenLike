@@ -120,26 +120,6 @@ func _table_cup(seat: int, item: String) -> void:
 		sprite.z_index = 1
 		sprite.set_meta("art_layer", "drinks")
 		add_child(sprite)
-		# A small saucer under the cup, like the reference art.
-		var saucer := Polygon2D.new()
-		var rim := Line2D.new()
-		var points := PackedVector2Array()
-		for i in 24:
-			var angle := TAU * i / 24.0
-			points.append(Vector2(cos(angle) * 21.0, sin(angle) * 7.0))
-		saucer.polygon = points
-		saucer.color = Color("fbf3e6")
-		rim.points = points
-		rim.closed = true
-		rim.width = 2.5
-		rim.default_color = Color("5a3a26")
-		var base := Node2D.new()
-		base.show_behind_parent = true
-		base.position = Vector2(0, -(CUP_LIFT + 1.0) / sprite.scale.y)
-		base.scale = Vector2.ONE / sprite.scale.x
-		base.add_child(saucer)
-		base.add_child(rim)
-		sprite.add_child(base)
 		_cups[seat] = sprite
 
 func _actor(art: String, font: Font) -> Node2D:
