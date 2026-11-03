@@ -9,6 +9,8 @@ const DINING_TABLES := [Vector2(191, 1151.5), Vector2(530, 1151.5), Vector2(192,
 const DINING_SEATS := [Vector2(85, 1143.083333), Vector2(296, 1143.083333), Vector2(424, 1143.083333), Vector2(635, 1143.083333), Vector2(86, 1340.083333), Vector2(297, 1340.083333), Vector2(422, 1340.083333), Vector2(633, 1340.083333)]
 ## Customers come in at the bottom, walk up the aisle between the tables and queue in front of the counter.
 const ENTRANCE := Vector2(360, 1540)
+## Customers are drawn at the size they had before the FigCraft layout.
+const CUSTOMER_HEIGHT := 110.0
 const AISLE_X := 360.0
 ## Walkways just above each row of chairs: in front of the counter queue, and between the two rows.
 const DINING_LANES := [1045.0, 1226.0]
@@ -90,7 +92,7 @@ static func grid() -> ShopGridDef:
 
 ## Two rows of four in front of the counter, the first customer at the register.
 static func queue_point(index: int) -> Vector2:
-	return Vector2(520 - (index % 4) * 90, QUEUE_ROWS[mini(index / 4, QUEUE_ROWS.size() - 1)])
+	return Vector2(530 - (index % 4) * 105, QUEUE_ROWS[mini(index / 4, QUEUE_ROWS.size() - 1)])
 
 
 ## Where a seated customer sits (the chair's seat, a little above its floor anchor).

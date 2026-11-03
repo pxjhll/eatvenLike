@@ -96,7 +96,7 @@ func refresh(seats: int, diners: Array, font: Font, clock: float, delta := 0.0) 
 
 func _actor(art: String, font: Font) -> Node2D:
 	var actor := Actor.new()
-	actor.setup(art, font, 80)
+	actor.setup(art, font, Layout.CUSTOMER_HEIGHT)
 	add_child(actor)
 	return actor
 

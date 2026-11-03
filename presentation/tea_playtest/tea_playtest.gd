@@ -16,6 +16,7 @@ const STATION_NAMES := {"boil": "手作煮茶", "mix": "自动调奶", "topping"
 ## Machines show no standing text: a bar while working and a bubble only when they need a hand.
 const BADGES := {"boil": Vector2(300, 114), "mix": Vector2(452, 79), "topping": Vector2(36, 616), "seal": Vector2(564, 178)}
 const SALE_POINT := Vector2(490, 740)
+const CUSTOMER_HEIGHT := Layout.CUSTOMER_HEIGHT
 var sim: RefCounted
 var store: RefCounted
 var save_status := "自动存档已开启"
@@ -347,7 +348,7 @@ func _update_customers(delta: float) -> void:
 		active[order.id] = true
 		if not _customers.has(order.id):
 			var actor := Actor.new()
-			actor.setup("squirrel" if int(order.id) % 2 else "hamster", _font, 80.0)
+			actor.setup("squirrel" if int(order.id) % 2 else "hamster", _font, CUSTOMER_HEIGHT)
 			art.get_node("Sortables").add_child(actor)
 			_customers[order.id] = actor
 			_customer_positions[order.id] = Layout.ENTRANCE
