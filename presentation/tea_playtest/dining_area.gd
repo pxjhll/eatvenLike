@@ -5,6 +5,12 @@ const Prop := preload("res://presentation/tea_playtest/fitted_prop.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 var _chairs: Array[Sprite2D] = []
 var _tables: Array[Sprite2D] = []
+## The drink each seated customer put down on the table: seat -> Sprite2D.
+var _cups := {}
+## Where a cup stands on the table top: beside the diner, above the table's floor anchor.
+const CUP_SIDE := 40.0
+const CUP_LIFT := 100.0
+const TABLE_CUP_HEIGHT := 44.0
 var _diners := {}
 var _available: Array[int] = []
 var _occupied: Array[int] = []
@@ -84,18 +90,37 @@ func refresh(seats: int, diners: Array, font: Font, clock: float, delta := 0.0) 
 			_diners[seat] = _actor("squirrel" if seat % 2 else "hamster", font)
 	_arrivals.clear()
 	_advance(delta, clock)
+	for seat in _cups.keys():
+		if not _diners.has(seat):
+			_cups[seat].queue_free()
+			_cups.erase(seat)
 	for seat in _diners:
-		_diners[seat].display({"pos": Layout.seat_point(seat), "walking": false, "phase": "idle", "task_label": "",
-			"carry_item": items.get(seat, ""), "carry_count": 1}, clock)
+		_table_cup(seat, items.get(seat, ""))
+		_diners[seat].display({"pos": Layout.seat_point(seat), "walking": false, "phase": "idle", "task_label": ""}, clock)
 		_diners[seat].task.visible = false
 		# Sitting on the chair: drawn over it, slightly raised onto the seat.
 		_diners[seat].z_index = 1
 		_diners[seat].position.y -= 14
 		# Face the table: left-hand chairs (even seats) look right, right-hand chairs look left.
 		if _diners[seat].frame_actor == null: _diners[seat].face(seat % 2 == 0)
-		# The cup goes in the hand nearest the table.
-		var cup: Sprite2D = _diners[seat].carried
-		if seat % 2 == 1 and cup.texture != null: cup.position.x = -22.0 - cup.texture.get_width() * cup.scale.x
+
+## A seated customer's drink stands on the table in front of them.
+func _table_cup(seat: int, item: String) -> void:
+	if item.is_empty(): return
+	if not _cups.has(seat):
+		var sprite := Sprite2D.new()
+		sprite.texture = load("res://art/reference/" + Actor.item_asset(item) + ".png")
+		sprite.modulate = Actor.item_color(item)
+		sprite.scale = Vector2.ONE * TABLE_CUP_HEIGHT / sprite.texture.get_height()
+		sprite.centered = false
+		var table: Vector2 = Layout.DINING_TABLES[seat / 2]
+		# Sorted just in front of the table's floor anchor, drawn up on its top.
+		sprite.position = Vector2(table.x + (-CUP_SIDE if seat % 2 == 0 else CUP_SIDE), table.y + 2.0)
+		sprite.offset = Vector2(-sprite.texture.get_width() / 2.0, -sprite.texture.get_height() - (CUP_LIFT + 2.0) / sprite.scale.y)
+		sprite.z_index = 1
+		sprite.set_meta("art_layer", "drinks")
+		add_child(sprite)
+		_cups[seat] = sprite
 
 func _actor(art: String, font: Font) -> Node2D:
 	var actor := Actor.new()
