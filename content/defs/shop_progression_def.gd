@@ -21,12 +21,13 @@ extends Resource
 ## 客流：每开一种口味客人来得快 flavor_flow；机器（柠檬水台、煮茶机、调奶台、加料机、手打台、封口机）每升 1 级再快 level_flow
 @export var flavor_flow: float = 0.05
 @export var level_flow: float = 0.0
-## 发传单（一次性）：接下来 flyer_seconds 秒客人来得快 flyer_mult 倍；从发出起 flyer_cooldown 秒后才能再发。
+## 发传单（一次性）：接下来 flyer_seconds 秒，额外来一波只点前台饮品（柠檬水、柠檬茶）的客人，
+## 来得是普通客人的 (flyer_mult - 1) 倍频率；从发出起 flyer_cooldown 秒后才能再发。
 ## 价格 = 按当前客流和菜单均价估算的 flyer_cost_seconds 秒营业额，不低于 flyer_min_cost
 @export var flyer_seconds: float = 40.0
 @export var flyer_mult: float = 2.0
 @export var flyer_cooldown: float = 120.0
-@export var flyer_cost_seconds: float = 30.0
+@export var flyer_cost_seconds: float = 10.0
 @export var flyer_min_cost: int = 50
 ## 员工培养（产能类）：每级走路、干活 ×(1 + train_step)，到 train_star_levels 时一次多搬 1 杯
 @export var train_costs: Array[int] = []

@@ -70,6 +70,8 @@ var flyers := 1
 ## Not saved: a reload ends the wave and the wait.
 var flyer_wave := 0.0
 var flyer_wait := 0.0
+## Time since the last flyer customer walked in (they come on their own clock while the wave lasts).
+var flyer_clock := 0.0
 ## How many items of the front / kitchen upgrade lists are bought (bought in order).
 var front_upgrades := 0
 var kitchen_upgrades := 0
@@ -149,6 +151,7 @@ func _initialize_shop() -> void:
 	flyers = 1
 	flyer_wave = 0.0
 	flyer_wait = 0.0
+	flyer_clock = 0.0
 	front_upgrades = 0
 	kitchen_upgrades = 0
 	diners.clear()
@@ -858,13 +861,12 @@ func _order_interval() -> float:
 	return PROGRESSION.stages[stage_index].customer_interval / flow_multiplier() * tuned("customer")
 
 ## Customers come faster with each stage, each flavor on the menu (flavor_flow each), each machine level
-## above 1 (level_flow each) and, for a while after a flyer, flyer_mult times as often.
-func flow_multiplier(with_wave: bool = true) -> float:
+## above 1 (level_flow each). A flyer adds its own stream on top (see _flyer_customers).
+func flow_multiplier() -> float:
 	var flavors := 0
 	for material in _definition("topping").materials:
 		if _dish_unlocked(material.item_id): flavors += 1
-	var flow := (1.0 + PROGRESSION.flavor_flow * flavors) * (1.0 + PROGRESSION.level_flow * machine_levels())
-	return flow * (PROGRESSION.flyer_mult if with_wave and flyer_wave > 0.0 else 1.0)
+	return (1.0 + PROGRESSION.flavor_flow * flavors) * (1.0 + PROGRESSION.level_flow * machine_levels())
 
 ## Levels bought on the machines that draw customers (each counts once above Lv1).
 func machine_levels() -> int:
@@ -883,7 +885,7 @@ func flyer_cost() -> int:
 		price += _dish_price(dish) * weights[dish]
 		total += weights[dish]
 	var average := price / total if total > 0.0 else float(_base_price("lemonade"))
-	var customers := PROGRESSION.flyer_cost_seconds / (PROGRESSION.stages[stage_index].customer_interval / flow_multiplier(false) * tuned("customer"))
+	var customers := PROGRESSION.flyer_cost_seconds / _order_interval()
 	return maxi(PROGRESSION.flyer_min_cost, roundi(average * customers / 10.0) * 10)
 
 func flyer_error() -> String:
@@ -899,7 +901,8 @@ func buy_flyers() -> String:
 	gold -= flyer_cost()
 	flyer_wave = PROGRESSION.flyer_seconds
 	flyer_wait = PROGRESSION.flyer_cooldown
-	_event("flyers", "传单发出去了，接下来 %d 秒客人来得更勤" % int(PROGRESSION.flyer_seconds))
+	flyer_clock = 0.0
+	_event("flyers", "传单发出去了，接下来 %d 秒多来几位点柠檬水的客人" % int(PROGRESSION.flyer_seconds))
 	return ""
 
 func _queue_capacity() -> int:
@@ -907,8 +910,8 @@ func _queue_capacity() -> int:
 
 func _tick() -> void:
 	if follow_orders: _drop_stuck_tickets()
-	flyer_wave = maxf(0.0, flyer_wave - STEP)
 	flyer_wait = maxf(0.0, flyer_wait - STEP)
+	_flyer_customers()
 	super._tick()
 	_run_belts()
 	for index in range(diners.size() - 1, -1, -1):
@@ -1000,6 +1003,23 @@ func _add_order() -> void:
 	for dish in weights: order_ramp[dish] = mini(int(order_ramp.get(dish, 0)) + 1, RAMP_ORDERS)
 	if station_unlocked("seal"): order_ramp.takeaway = mini(int(order_ramp.get("takeaway", 0)) + 1, RAMP_ORDERS)
 	orders.append({"id": _next_order, "wait": 0.0, "reserved": false, "dish": selected, "takeaway": takeaway})
+	_next_order += 1
+
+## While a flyer works, extra customers come for the front's own drinks (lemonade, lemon tea): the front
+## pours them itself, so the wave uses idle front hands instead of piling more on the kitchen.
+## They come (flyer_mult - 1) times as often as regular customers and queue like everyone else.
+func _flyer_customers() -> void:
+	if flyer_wave <= 0.0: return
+	flyer_wave = maxf(0.0, flyer_wave - STEP)
+	flyer_clock += STEP
+	if flyer_clock < _order_interval() / maxf(0.01, PROGRESSION.flyer_mult - 1.0): return
+	flyer_clock = 0.0
+	if orders.size() >= _queue_capacity(): return
+	var choices: Array = FRONT_DISHES.filter(func(dish: String) -> bool: return _dish_unlocked(dish))
+	if choices.is_empty(): return
+	var dish: String = choices[_rng.randi() % choices.size()]
+	var takeaway := station_unlocked("seal") and _spare_seats() <= 0
+	orders.append({"id": _next_order, "wait": 0.0, "reserved": false, "dish": dish, "takeaway": takeaway})
 	_next_order += 1
 
 func _source_point(job: Dictionary) -> Vector2:
@@ -1730,6 +1750,7 @@ func _apply_state(state: Dictionary) -> void:
 	flyers = 1
 	flyer_wave = 0.0
 	flyer_wait = 0.0
+	flyer_clock = 0.0
 	front_upgrades = state.front_upgrades
 	kitchen_upgrades = state.kitchen_upgrades
 	diners = state.diners.duplicate(true)

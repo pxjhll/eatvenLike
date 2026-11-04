@@ -685,7 +685,7 @@ func station_action(action: String, station: String, material := "") -> void:
 		"box": error = sim.unlock_box(material)
 		"seat": error = sim.buy_seat()
 		"flyers": error = sim.buy_flyers()
-	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了两个座位。", "flyers": "传单发出去了，接下来客人来得更勤。"}.get(action, "升级完成。")
+	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了两个座位。", "flyers": "传单发出去了，接下来多来几位点柠檬水的客人。"}.get(action, "升级完成。")
 	_show_toast(error if not error.is_empty() else done)
 	if error.is_empty():
 		var level: int = sim.station_levels.get(station, 0) if action != "material" else sim.material_levels.get(station, {}).get(material, 0)

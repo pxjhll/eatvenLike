@@ -253,13 +253,13 @@ func _refresh_flyers(info: Dictionary) -> void:
 	_flyer_title.text = "发传单"
 	var hint := " · 队伍已满，先升产能" if info.queue_full else ""
 	if wave > 0.0:
-		_flyer_effect.text = "正在起效：客人 ×%.1f，还有 %d 秒" % [float(info.flyer_mult), ceili(wave)]
+		_flyer_effect.text = "正在起效：多来点柠檬水的客人，还有 %d 秒" % ceili(wave)
 		flyer_button.text = "起效中"
 	elif wait > 0.0:
 		_flyer_effect.text = "%d 秒后可以再发%s" % [ceili(wait), hint]
 		flyer_button.text = "%d 秒" % ceili(wait)
 	else:
-		_flyer_effect.text = "接下来 %d 秒客人 ×%.1f · 现在客流 ×%.2f%s" % [int(info.flyer_seconds), float(info.flyer_mult), float(info.flow), hint]
+		_flyer_effect.text = "接下来 %d 秒多来几位点柠檬水、柠檬茶的客人，前台来做%s" % [int(info.flyer_seconds), hint]
 		flyer_button.text = "%d 金币" % int(info.flyer_cost)
 	flyer_button.disabled = not String(info.flyer_error).is_empty()
 

@@ -871,12 +871,26 @@ func test_flyers_and_flavors_bring_customers_faster() -> void:
 	var gold: int = sim.gold
 	check_eq(sim.buy_flyers(), "", "a flyer goes out")
 	check_eq(sim.gold, gold - cost, "the flyer is paid once")
-	check(is_equal_approx(sim._order_interval(), before / prog.flyer_mult), "during the wave customers come flyer_mult times as often")
+	check(is_equal_approx(sim._order_interval(), before), "a flyer does not speed up regular customers")
 	check(not sim.buy_flyers().is_empty(), "no second flyer during the wave")
-	sim.advance(prog.flyer_seconds + 0.5)
-	check(is_equal_approx(sim._order_interval(), before), "the wave ends after flyer_seconds")
+	sim.orders.clear()
+	var front := 0
+	var kitchen := 0
+	for i in int(prog.flyer_seconds * 10) + 5:
+		sim._flyer_customers()
+		# Serve them at once so the queue cap never hides a flyer customer.
+		for order in sim.orders:
+			if order.dish in sim.FRONT_DISHES: front += 1
+			else: kitchen += 1
+		sim.orders.clear()
+	var expected := int(prog.flyer_seconds / (before / (prog.flyer_mult - 1.0)))
+	check(front >= expected - 1 and front <= expected + 1, "the wave brings about one extra front customer per regular interval (got %d, want ~%d)" % [front, expected])
+	check_eq(kitchen, 0, "flyer customers only order the front's drinks")
+	check_eq(sim.flyer_wave, 0.0, "the wave ends after flyer_seconds")
+	sim.orders.clear()
+	sim.flyer_wait = prog.flyer_cooldown - prog.flyer_seconds
 	check(not sim.flyer_error().is_empty(), "the flyer is still cooling down")
-	sim.advance(prog.flyer_cooldown - prog.flyer_seconds)
+	sim.advance(prog.flyer_cooldown - prog.flyer_seconds + 0.5)
 	check_eq(sim.flyer_error(), "", "after the cooldown another flyer can go out")
 	var copy = make_shop()
 	sim.buy_flyers()
