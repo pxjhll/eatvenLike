@@ -213,8 +213,8 @@ func _release(screen: Vector2) -> void:
 		if target.get("post", "") == "counter":
 			message = "已安排到前台：只负责接待客人、取杯上菜。"
 		# The player's call stands; just warn when nobody is left to carry between machines.
-		if _view.sim.has_method("no_kitchen_carrier") and _view.sim.no_kitchen_carrier():
-			message = "当前没有流动员工搬运，饮品可能无法送到下一站或货架。"
+		if _view.carrier_warning():
+			message = _view.NO_CARRIER_TEXT
 		_view._show_toast(message)
 		_view.save_now(false)
 	else:

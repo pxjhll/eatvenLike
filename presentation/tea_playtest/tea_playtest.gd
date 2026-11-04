@@ -101,6 +101,7 @@ const COUNTER_DINING_RECT := Rect2(20, 1060, 680, 380)
 ## The sealer → takeaway rack conveyor is bought from a dashed frame where its art goes.
 ## Where a seated customer stands to pick up their cup: the counter's free right end.
 const PICKUP_POINT := Vector2(635, 925)
+const NO_CARRIER_TEXT := "当前没有流动员工搬运，饮品可能无法送到下一站或货架。"
 const BELT_ID := "seal_to_shelf"
 const BELT_FRAME := Rect2(590, 385, 72, 150)
 ## What each kitchen belt saves, shown on its dashed frame's tooltip.
@@ -150,6 +151,9 @@ func _ready() -> void:
 	_refresh(0.0)
 	_fit()
 	_show_toast(sim.current_goal() if sim.has_method("current_goal") else "欢迎开店，伙伴正在准备第一杯奶茶。")
+	# A loaded shop where every kitchen hand is seated gets the same warning as the drag that seated them.
+	if carrier_warning():
+		_show_toast(NO_CARRIER_TEXT)
 
 
 func restart() -> void:
@@ -689,10 +693,18 @@ func toggle_deployment() -> void:
 		return
 	var returning := staff_is_deployed(selected_worker)
 	var error: String = sim.recall_worker(selected_worker) if returning else sim.deploy_worker(selected_worker)
-	_show_toast(error if not error.is_empty() else "伙伴已回到名册。" if returning else "伙伴已派到店内。")
+	var message: String = error if not error.is_empty() else "伙伴已回到名册。" if returning else "伙伴已派到店内。"
+	if error.is_empty() and returning and carrier_warning():
+		message = NO_CARRIER_TEXT
+	_show_toast(message)
 	if error.is_empty():
 		save_now(false)
 	_refresh(0)
+
+
+## True when someone works the kitchen but every kitchen hand is seated: nobody carries between machines.
+func carrier_warning() -> bool:
+	return sim.has_method("no_kitchen_carrier") and sim.no_kitchen_carrier()
 
 
 func station_action(action: String, station: String, material := "") -> void:
