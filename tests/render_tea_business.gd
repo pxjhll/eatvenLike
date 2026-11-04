@@ -78,12 +78,19 @@ func _run() -> void:
 	var seat_cost: int = view.sim.seat_cost()
 	await _click(hud.station_panel.seat_button)
 	_check(view.sim.seats == 4 and view.sim.gold == gold - seat_cost and seat_cost == view.sim.PROGRESSION.seat_costs[0], "the counter sells one more table, two seats")
+	gold = view.sim.gold
+	await _click(hud.station_panel.flyer_upgrade_button)
+	_check(view.sim.flyers == 2 and view.sim.gold == gold - view.sim.PROGRESSION.flyer_upgrade_costs[0], "the counter upgrades the flyer")
+	await _click(hud.station_panel.flyer_button)
+	_check(view.sim.flyer_pending > 0 and view.sim.gold == gold - view.sim.PROGRESSION.flyer_upgrade_costs[0], "a free flyer goes out from the counter")
+	await _capture("counter")
 	view.sim.revenue = maxi(view.sim.revenue, 600)
 	await _click(hud.home_button)
 	await _click(view._station_buttons.seal)
 	gold = view.sim.gold
+	var seal_cost: int = view.sim.PROGRESSION.stages[2].line_cost
 	await _click(hud.station_panel.unlock_button)
-	_check(view.sim.stage_index == 2 and view.sim.gold == gold - 150 and not _art_hidden(["Sealer"]), "the sealer has its own frame, price and art")
+	_check(view.sim.stage_index == 2 and view.sim.gold == gold - seal_cost and not _art_hidden(["Sealer"]), "the sealer has its own frame, price and art")
 	await _click(hud.home_button)
 	_check(_frames_shown(["mix"]) and _frames_hidden(["seal", "supply"]), "the milk machine frame appears next")
 	await _click(view._station_buttons.mix)
@@ -111,8 +118,9 @@ func _run() -> void:
 	await _world_click(Vector2(120, 210))
 	_check(hud.station_panel.station_id == "supply", "unlocked device artwork opens its own material panel")
 	gold = view.sim.gold
+	var leaf_cost: int = view.sim._material_costs("supply", "tea_leaf")[0]
 	await _click(hud.station_panel.material_buttons.tea_leaf)
-	_check(view.sim.material_levels.supply.tea_leaf == 2 and view.sim.gold == gold - 50, "raw material panel upgrades the price of tea drinks")
+	_check(view.sim.material_levels.supply.tea_leaf == 2 and view.sim.gold == gold - leaf_cost, "raw material panel upgrades the price of tea drinks")
 	await _capture("materials")
 	view.sim.revenue = maxi(view.sim.revenue, 1200)
 	view.sim.gold = maxi(view.sim.gold, 1300)

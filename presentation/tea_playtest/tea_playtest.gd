@@ -685,7 +685,8 @@ func station_action(action: String, station: String, material := "") -> void:
 		"box": error = sim.unlock_box(material)
 		"seat": error = sim.buy_seat()
 		"flyers": error = sim.buy_flyers()
-	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了两个座位。", "flyers": "传单发出去了，接下来多来几位点柠檬水的客人。"}.get(action, "升级完成。")
+		"flyer_upgrade": error = sim.upgrade_flyers()
+	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了两个座位。", "flyers": "传单发出去了。", "flyer_upgrade": "传单升级了。"}.get(action, "升级完成。")
 	_show_toast(error if not error.is_empty() else done)
 	if error.is_empty():
 		var level: int = sim.station_levels.get(station, 0) if action != "material" else sim.material_levels.get(station, {}).get(material, 0)
@@ -825,7 +826,7 @@ func can_buy_at(id: String) -> bool:
 		return true
 	if id == "counter":
 		# A flyer is worth a nudge only while the line has room for the extra customers.
-		return sim.seat_error().is_empty() or (sim.flyer_error().is_empty() and sim.orders.size() * 2 < sim._queue_capacity())
+		return sim.seat_error().is_empty() or sim.flyer_upgrade_error().is_empty() or (sim.flyer_error().is_empty() and sim.orders.size() * 2 < sim._queue_capacity())
 	var definition = sim._definition(id)
 	if definition != null:
 		for material in definition.materials:

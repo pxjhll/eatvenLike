@@ -135,12 +135,12 @@ zone = "front"
 level_speed = Array[float]([1.0, 1.15, 1.32, 1.52, 1.75])
 upgrade_costs = Array[int]([20, 30, 45, 68])
 dishes = Array[String](["lemonade"])
-art_costs = Array[int]([20, 30, 40, 55, 85, 130, 200, 300, 450])
-art_speeds = Array[float]([1.0, 1.16, 1.32, 1.48, 1.64, 1.8, 2.0, 2.2, 2.4, 2.6])
-art_price_step = 0.07
+art_costs = Array[int]([10, 15, 20, 35, 60, 105, 185, 320, 550])
+art_speeds = Array[float]([1.0, 1.24, 1.48, 1.72, 1.96, 2.2, 2.5, 2.8, 3.1, 3.4])
+art_price_step = 0.0
 art_price_dishes = Array[String](["lemonade", "lemon_tea"])
 art_star_levels = Array[int]([5, 10])
-art_star_mult = 1.3
+art_star_mult = 1.0
 
 [sub_resource type="Resource" id="spot_lemonade_stand"]
 script = ExtResource("front_spot_def")
@@ -289,8 +289,8 @@ item_id = "tea_leaf"
 box_cost = 20
 box_machine = "boil"
 upgrade_costs = Array[int]([40, 80, 160])
-art_costs = Array[int]([50, 75, 110, 170])
-art_price_step = 0.04
+art_costs = Array[int]([20, 35, 60, 105])
+art_price_step = 0.02
 art_price_dishes = Array[String](["black_tea", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
 level_bonus = Array[float]([1.0, 1.3, 1.6, 2.0])
 
@@ -302,8 +302,8 @@ item_id = "milk"
 box_cost = 40
 box_machine = "mix"
 upgrade_costs = Array[int]([40, 80, 160])
-art_costs = Array[int]([60, 90, 135, 200])
-art_price_step = 0.04
+art_costs = Array[int]([25, 40, 70, 120])
+art_price_step = 0.02
 art_price_dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
 level_bonus = Array[float]([1.0, 1.3, 1.6, 2.0])
 
@@ -321,7 +321,7 @@ recipe = SubResource("recipe_cabinet_supply")
 output_capacity = 3
 zone = "kitchen"
 level_speed = Array[float]([1.0, 1.25, 1.5])
-upgrade_costs = Array[int]([80, 160])
+upgrade_costs = Array[int]([30, 75])
 supply_interval = 2.0
 materials = Array[ExtResource("material_slot_def")]([SubResource("mat_tea_leaf"), SubResource("mat_milk")])
 
@@ -350,9 +350,9 @@ output_capacity = 4
 zone = "kitchen"
 level_speed = Array[float]([1.0, 1.25, 1.5, 1.8, 2.2])
 upgrade_costs = Array[int]([60, 120, 200, 320])
-art_costs = Array[int]([50, 65, 90, 135, 200, 300, 455, 685, 1045])
+art_costs = Array[int]([20, 30, 50, 80, 140, 240, 420, 730, 1280])
 art_seconds = 30.0
-art_speeds = Array[float]([1.0, 1.3, 1.3, 1.64, 1.64, 2.04, 2.04, 2.5, 2.5, 3.0])
+art_speeds = Array[float]([1.0, 1.45, 1.45, 1.96, 1.96, 2.56, 2.56, 3.25, 3.25, 4.0])
 art_batch = Array[int]([2, 2, 3, 3, 4, 4, 5, 5, 6, 6])
 art_star_levels = Array[int]([5, 10])
 
@@ -382,11 +382,11 @@ output_capacity = 3
 zone = "kitchen"
 level_speed = Array[float]([1.0, 1.25, 1.5, 1.8, 2.2])
 upgrade_costs = Array[int]([60, 120, 200, 320])
-art_costs = Array[int]([60, 80, 105, 155, 240, 360, 545, 820, 1245])
-art_price_step = 0.04
+art_costs = Array[int]([25, 35, 55, 95, 170, 290, 505, 870, 1525])
+art_price_step = 0.02
 art_price_dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
 art_star_levels = Array[int]([5, 10])
-art_star_mult = 1.3
+art_star_mult = 1.15
 
 [sub_resource type="Resource" id="slot_milk_station"]
 script = ExtResource("slot_def")
@@ -401,8 +401,8 @@ script = ExtResource("material_slot_def")
 id = "pearl"
 display_name = "珍珠"
 item_id = "pearl_milk_tea"
-upgrade_costs = Array[int]([55, 100, 155, 250])
-level_bonus = Array[float]([1.0, 1.05, 1.1, 1.16, 1.22])
+upgrade_costs = Array[int]([20, 45, 80, 150])
+level_bonus = Array[float]([1.0, 1.025, 1.05, 1.08, 1.11])
 
 [sub_resource type="Resource" id="mat_coconut"]
 script = ExtResource("material_slot_def")
@@ -410,8 +410,8 @@ id = "coconut"
 display_name = "椰果"
 item_id = "coconut_milk_tea"
 unlock_level = 2
-upgrade_costs = Array[int]([70, 120, 180, 300])
-level_bonus = Array[float]([1.0, 1.05, 1.1, 1.16, 1.22])
+upgrade_costs = Array[int]([30, 55, 95, 185])
+level_bonus = Array[float]([1.0, 1.025, 1.05, 1.08, 1.11])
 
 [sub_resource type="Resource" id="mat_redbean"]
 script = ExtResource("material_slot_def")
@@ -419,8 +419,8 @@ id = "redbean"
 display_name = "红豆"
 item_id = "redbean_milk_tea"
 unlock_level = 3
-upgrade_costs = Array[int]([85, 140, 210, 345])
-level_bonus = Array[float]([1.0, 1.05, 1.1, 1.16, 1.22])
+upgrade_costs = Array[int]([35, 65, 110, 210])
+level_bonus = Array[float]([1.0, 1.025, 1.05, 1.08, 1.11])
 
 [sub_resource type="Resource" id="mat_taro"]
 script = ExtResource("material_slot_def")
@@ -428,8 +428,8 @@ id = "taro"
 display_name = "芋泥"
 item_id = "taro_milk_tea"
 unlock_level = 4
-upgrade_costs = Array[int]([100, 160, 245, 390])
-level_bonus = Array[float]([1.0, 1.05, 1.1, 1.16, 1.22])
+upgrade_costs = Array[int]([40, 75, 130, 235])
+level_bonus = Array[float]([1.0, 1.025, 1.05, 1.08, 1.11])
 
 [sub_resource type="Resource" id="recipe_add_topping"]
 script = ExtResource("recipe_def")
@@ -446,8 +446,8 @@ cycle_seconds = 2.5
 input_capacity = Dictionary[String, int]({"plain_milk_tea": 3})
 output_capacity = 2
 zone = "kitchen"
-level_speed = Array[float]([1.0, 1.3, 1.6, 1.9, 2.2])
-upgrade_costs = Array[int]([140, 250, 390, 660])
+level_speed = Array[float]([1.0, 1.0, 1.0, 1.0])
+upgrade_costs = Array[int]([55, 115, 205])
 materials = Array[ExtResource("material_slot_def")]([SubResource("mat_pearl"), SubResource("mat_coconut"), SubResource("mat_redbean"), SubResource("mat_taro")])
 flavor_cap = 3
 
