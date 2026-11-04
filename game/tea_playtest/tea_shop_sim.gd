@@ -87,8 +87,8 @@ var belt_clock: Dictionary = {}
 ## The free belt mode is gone (2026-10-30); the segment rules stay so they can come back.
 const BELTS_IN_GAME := false
 ## The one segment the game sells (as a dashed frame, like a machine): sealed cups ride to the takeaway rack.
-## Segments the game sells, each from its own dashed frame (2026-11-04 kitchen belts).
-const GAME_BELTS := ["seal_to_shelf", "boil_to_mix", "mix_to_topping", "topping_to_seal"]
+## The one segment the tea shop sells (user 2026-11-04: this shop needs only one belt).
+const GAME_BELTS := ["seal_to_shelf"]
 var _belt_courier := false
 var _rng: RandomNumberGenerator
 var follow_orders := FOLLOW_ORDERS
