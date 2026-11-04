@@ -150,6 +150,7 @@ func _refresh_upgrade(info: Dictionary) -> void:
 		elif info.has("slots"): _upgrade_effect.text = "封口位 %d · 每杯 %.1f 秒" % [info.slots, info.seconds]
 		elif info.has("batch"): _upgrade_effect.text = "一锅 %d 杯 · 每锅 %.1f 秒" % [info.batch, info.seconds]
 		elif float(info.get("seconds", -1.0)) > 0: _upgrade_effect.text = "%s %.1f 秒" % [_per(), info.seconds]
+		elif info.get("kind", "") == "menu": _upgrade_effect.text = "口味全开"
 		else: _upgrade_effect.text = "%s ×%.2f" % [effect, info.speed]
 		upgrade_button.text = "满级"
 		upgrade_button.disabled = true
@@ -169,10 +170,12 @@ func _refresh_upgrade(info: Dictionary) -> void:
 		_upgrade_effect.text = "一锅 %d → %d 杯" % [info.batch, info.next_batch]
 	elif float(info.get("seconds", -1.0)) > 0:
 		_upgrade_effect.text = "%s · %s %.1f → %.1f 秒" % [effect, _per(), info.seconds, info.next_seconds]
+	elif info.get("kind", "") == "menu":
+		_upgrade_effect.text = ""
 	else:
 		_upgrade_effect.text = "%s ×%.2f → ×%.2f" % [effect, info.speed, info.next_speed]
 	if not String(info.get("next_unlock", "")).is_empty():
-		_upgrade_effect.text += " · 开放" + info.next_unlock
+		_upgrade_effect.text += (" · " if not _upgrade_effect.text.is_empty() else "") + "开放" + info.next_unlock + ("，客人更多" if info.get("kind", "") == "menu" else "")
 	upgrade_button.text = "%d 金币" % cost
 	upgrade_button.disabled = not String(info.get("upgrade_error", "")).is_empty()
 

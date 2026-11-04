@@ -77,7 +77,7 @@ var _chip_dragging := false
 ## These two hops already have conveyor art in the scene; the rest are drawn as lines.
 ## The shelf's lower tier, where sealed takeaway cups wait.
 const PICKUP_ROW_Y := 634.0
-const ART_BELTS := {"BeltHorizontal": "topping_to_seal", "BeltVertical": "seal_to_shelf"}
+const ART_BELTS := {"BeltVertical": "seal_to_shelf"}
 const STATION_REGIONS := {
 	"supply": Rect2(69, 141, 134, 95), "boil": Rect2(291, 117, 143, 110),
 	"mix": Rect2(440, 79, 110, 155), "topping": Rect2(23, 269, 122, 348),
@@ -101,6 +101,13 @@ const COUNTER_DINING_RECT := Rect2(20, 1060, 680, 380)
 ## The sealer → takeaway rack conveyor is bought from a dashed frame where its art goes.
 const BELT_ID := "seal_to_shelf"
 const BELT_FRAME := Rect2(590, 385, 72, 150)
+## What each kitchen belt saves, shown on its dashed frame's tooltip.
+const BELT_NOTES := {
+	"seal_to_shelf": "封好口的外带杯自动送上货架外带格，后厨不用再搬",
+	"boil_to_mix": "煮好的茶自动送到调奶台，后厨不用再搬",
+	"mix_to_topping": "调好的奶茶自动送到加料机，后厨不用再搬",
+	"topping_to_seal": "加好料的奶茶自动送到封口机，后厨不用再搬",
+}
 
 
 func _ready() -> void:
@@ -730,6 +737,7 @@ func _build_station_signs() -> void:
 		belt_frame.pressed.connect(buy_belt)
 		$Canvas/WorldLabels.add_child(belt_frame)
 		_station_buttons["belt"] = belt_frame
+		_build_kitchen_belts()
 	if sim.has_method("buy_seat"):
 		var seat_frame := UnlockFrame.new()
 		seat_frame.theme = ui.theme
@@ -757,7 +765,22 @@ func _refresh_station_signs() -> void:
 				continue
 			belt_frame.can_unlock = String(row.error).is_empty()
 			belt_frame.text = "传送带\n%d 金币" % row.cost
-			belt_frame.tooltip_text = "封好口的外带杯自动送上货架外带格，后厨不用再搬\n" + String(row.error)
+			belt_frame.tooltip_text = BELT_NOTES[BELT_ID] + "\n" + String(row.error)
+			continue
+		if id.begins_with("belt:"):
+			var belt_id: String = String(id).trim_prefix("belt:")
+			var belt_row: Dictionary = {}
+			for candidate in sim.belt_rows():
+				if candidate.id == belt_id: belt_row = candidate
+			var segment_frame: Button = _station_buttons[id]
+			var owned: bool = not belt_row.is_empty() and belt_row.owned
+			if _belt_lines.has(belt_id): _belt_lines[belt_id].visible = owned
+			segment_frame.visible = not belt_row.is_empty() and belt_row.available and not owned
+			if not segment_frame.visible:
+				continue
+			segment_frame.can_unlock = String(belt_row.error).is_empty()
+			segment_frame.text = "传送带\n%d 金币" % belt_row.cost
+			segment_frame.tooltip_text = BELT_NOTES.get(belt_id, belt_row.name) + "\n" + String(belt_row.error)
 			continue
 		if id == "seat":
 			# The next table to buy: a dashed frame over its faint chairs, once the lemonade stand is open.
@@ -804,15 +827,52 @@ func _refresh_station_signs() -> void:
 	_staff_mark.center_on(Vector2(ui.staff_button.size.x - 14, 12))
 
 
-## Buys the sealer → takeaway rack conveyor from its dashed frame.
-func buy_belt() -> void:
+## The kitchen belts without their own art: drawn as a strip along the segment's points, each
+## bought from a dashed frame at its middle. The sealer → rack belt keeps its art and frame.
+func _build_kitchen_belts() -> void:
+	var lines := Node2D.new()
+	lines.name = "KitchenBelts"
+	art.add_child(lines)
+	art.move_child(lines, art.get_node("Sortables").get_index())
+	for row in sim.belt_rows():
+		if not row.id in sim.GAME_BELTS or row.id in ART_BELTS.values():
+			continue
+		_belt_points[row.id] = row.points
+		var line := Line2D.new()
+		line.points = row.points
+		line.width = 24
+		line.default_color = Color("6b5444")
+		line.joint_mode = Line2D.LINE_JOINT_ROUND
+		line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		line.end_cap_mode = Line2D.LINE_CAP_ROUND
+		var inner := Line2D.new()
+		inner.points = row.points
+		inner.width = 14
+		inner.default_color = Color("a68b70")
+		inner.joint_mode = Line2D.LINE_JOINT_ROUND
+		line.add_child(inner)
+		line.visible = false
+		lines.add_child(line)
+		_belt_lines[row.id] = line
+		var frame := UnlockFrame.new()
+		frame.size = Vector2(118, 64)
+		frame.position = _along(row.points, 0.5) - frame.size / 2.0
+		frame.theme = ui.theme
+		frame.add_theme_font_size_override("font_size", 17)
+		frame.pressed.connect(buy_belt.bind(row.id))
+		$Canvas/WorldLabels.add_child(frame)
+		_station_buttons["belt:" + row.id] = frame
+
+
+## Buys a kitchen belt from its dashed frame (the sealer → takeaway rack one by default).
+func buy_belt(id := BELT_ID) -> void:
 	var before: int = sim.gold
-	var error: String = sim.buy_belt(BELT_ID)
+	var error: String = sim.buy_belt(id)
 	if not error.is_empty():
 		_show_toast(error)
 		return
-	_bought("belt", before)
-	_show_toast("传送带装好了：封好口的杯子自动上货架")
+	_bought("belt " + id, before)
+	_show_toast("传送带装好了：" + String(BELT_NOTES.get(id, "")).get_slice("，", 0))
 	save_now(false)
 	_refresh(0.0)
 

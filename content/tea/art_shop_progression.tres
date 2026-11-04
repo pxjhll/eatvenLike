@@ -42,7 +42,7 @@ from = "boil"
 to = "mix"
 cost = 150
 stage = 3
-view_points = PackedVector2Array(360, 376, 470, 376, 470, 398)
+view_points = PackedVector2Array(330, 318, 445, 318)
 
 [sub_resource type="Resource" id="belt_mix_to_seal"]
 script = ExtResource("belt_slot_def")
@@ -62,7 +62,7 @@ from = "mix"
 to = "topping"
 cost = 300
 stage = 5
-view_points = PackedVector2Array(460, 425, 460, 470, 205, 470, 205, 495)
+view_points = PackedVector2Array(475, 318, 475, 368, 180, 368)
 
 [sub_resource type="Resource" id="belt_topping_to_seal"]
 script = ExtResource("belt_slot_def")
@@ -72,7 +72,7 @@ from = "topping"
 to = "seal"
 cost = 300
 stage = 5
-view_points = PackedVector2Array(400, 320, 610, 320)
+view_points = PackedVector2Array(180, 452, 520, 452, 520, 330, 545, 330)
 
 [sub_resource type="Resource" id="task_lemon30"]
 script = ExtResource("task_def")

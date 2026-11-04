@@ -147,6 +147,19 @@ func _run() -> void:
 	await _click(hud.station_panel.material_buttons.coconut)
 	_check(view.sim.station_info("topping").level == 2 and view.sim.material_levels.topping.coconut == 2, "machine level opens actual coconut flavor upgrade")
 	await _capture("flavors")
+	await _click(hud.home_button)
+	view.sim.gold = maxi(view.sim.gold, 2000)
+	await _layout()
+	for belt in ["boil_to_mix", "mix_to_topping", "topping_to_seal"]:
+		_check(view._station_buttons["belt:" + belt].visible, "the %s belt shows its dashed frame" % belt)
+	for belt in ["boil_to_mix", "mix_to_topping", "topping_to_seal"]:
+		gold = view.sim.gold
+		await _click(view._station_buttons["belt:" + belt])
+		_check(view.sim.belts.has(belt) and view.sim.gold == gold - view.sim._belt_def(belt).cost, "the dashed frame buys the %s belt" % belt)
+		_check(not view._station_buttons["belt:" + belt].visible and view._belt_lines[belt].visible, "the %s belt is drawn where its frame was" % belt)
+	_advance(60)
+	_check(view.sim.audit().valid, "kitchen belts keep stock conserved")
+	await _capture("kitchen-belts")
 	await _click(hud.staff_button)
 	await _click(hud.hire_button)
 	_check(view.sim.roster.size() == 3 and view.sim.workers.size() == 3, "a hire with an open spot starts work at once")
