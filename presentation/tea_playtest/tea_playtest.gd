@@ -99,6 +99,8 @@ const FRAME_OPENS := {"shelf": "boil"}
 ## Tapping the dining room (tables and chairs below the queue) opens the counter panel too.
 const COUNTER_DINING_RECT := Rect2(20, 1060, 680, 380)
 ## The sealer → takeaway rack conveyor is bought from a dashed frame where its art goes.
+## Where a seated customer stands to pick up their cup: the counter's free right end.
+const PICKUP_POINT := Vector2(635, 925)
 const BELT_ID := "seal_to_shelf"
 const BELT_FRAME := Rect2(590, 385, 72, 150)
 ## What each kitchen belt saves, shown on its dashed frame's tooltip.
@@ -257,7 +259,7 @@ func _refresh(delta: float) -> void:
 	_shelf.text = "货架 %d/%d" % [sim.shelf_count, limit]
 	_shelf.visible = true
 	if sim.has_method("free_seats"):
-		_seats.text = "堂食 %d/%d" % [sim.diners.size(), sim.seats]
+		_seats.text = "堂食 %d/%d" % [sim.diners.size() + sim.seated_orders(), sim.seats]
 		_seats.visible = sim.station_unlocked("lemonade")
 	if sim.has_method("station_info"):
 		_refresh_station_signs()
@@ -352,8 +354,14 @@ func _update_cups() -> void:
 func _update_customers(delta: float) -> void:
 	var active := {}
 	# Customers come in through the door at the bottom, up the aisle, and queue in two rows at the counter.
-	for i in mini(sim.orders.size(), 8):
-		var order: Dictionary = sim.orders[i]
+	# One who found a seat waits in it, and walks up to the counter's end when their cup is handed over.
+	var standing := 0
+	for order: Dictionary in sim.orders:
+		var seat := int(order.get("seat", -1))
+		var i := standing
+		if seat < 0:
+			standing += 1
+			if i >= 8: continue
 		active[order.id] = true
 		if not _customers.has(order.id):
 			var actor := Actor.new()
@@ -364,6 +372,7 @@ func _update_customers(delta: float) -> void:
 			_customer_entering[order.id] = true
 		_customer_orders[order.id] = order
 		var goal := Layout.queue_point(i)
+		if seat >= 0: goal = PICKUP_POINT if order.reserved else Layout.seat_point(seat)
 		# A newcomer walks up the aisle first, so they don't cut across the tables.
 		var waypoint := Vector2(Layout.AISLE_X, Layout.DINING_LANES[0])
 		var point: Vector2 = _customer_positions[order.id]
@@ -393,7 +402,11 @@ func _update_customers(delta: float) -> void:
 		var order: Dictionary = _customer_orders.get(id, {})
 		var art_id := "squirrel" if int(id) % 2 else "hamster"
 		if dining != null:
-			if not order.get("takeaway", false) and not new_seats.is_empty():
+			var kept := int(order.get("seat", -1))
+			if kept >= 0 and kept in new_seats:
+				new_seats.erase(kept)
+				dining.queue_arrival(kept, _customer_positions[id], art_id)
+			elif not order.get("takeaway", false) and not new_seats.is_empty():
 				dining.queue_arrival(new_seats.pop_front(), _customer_positions[id], art_id)
 			else:
 				dining.queue_exit(_customer_positions[id], art_id, String(order.get("dish", "")))
@@ -794,7 +807,7 @@ func _refresh_station_signs() -> void:
 			seat_frame.size = Vector2(120, 72)
 			seat_frame.can_unlock = sim.seat_error().is_empty()
 			seat_frame.text = "加 %d 个座位\n%d 金币" % [sim.PROGRESSION.seat_step, sim.seat_cost()]
-			seat_frame.tooltip_text = "堂食客人要有空座位才会点单坐下\n" + sim.seat_error()
+			seat_frame.tooltip_text = "有空座位的堂食客人先坐下再点单，坐着等更有耐心\n" + sim.seat_error()
 			continue
 		if id == "supply":
 			# The cabinet frame asks for the ingredient box the newest machine needs.

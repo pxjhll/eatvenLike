@@ -42,6 +42,8 @@ const LEMONADE_V4_COSTS := [20, 30, 40, 55, 75, 110, 150, 210, 295]
 const BOIL_CAPACITY := 12
 const MOOD_IMPATIENT := 15.0
 const MOOD_ANGRY := 30.0
+## A customer waiting in a seat minds the wait half as much as one standing in line.
+const SEATED_PATIENCE := 0.5
 const ARTS := ["cat", "raccoon", "fox", "rabbit", "gray_cat"]
 const ALIASES := {"cabinet": "supply", "brewer": "boil", "milk_station": "mix", "lemonade_stand": "lemonade", "press_table": "press"}
 const RESOURCE_IDS := {"supply": "cabinet", "boil": "brewer", "mix": "milk_station", "topping": "topping", "press": "press_table", "lemonade": "lemonade_stand", "counter": "counter"}
@@ -563,15 +565,38 @@ func buy_seat() -> String:
 func _spare_seats() -> int:
 	var waiting := 0
 	for order in orders:
-		if not order.get("takeaway", false) and not order.reserved: waiting += 1
+		if int(order.get("seat", -1)) < 0 and not order.get("takeaway", false) and not order.reserved: waiting += 1
 	return free_seats() - waiting
 
-## Seats neither occupied nor promised to a dine-in cup on its way.
+## Seats neither occupied (eating, or seated and waiting for their order) nor promised to a
+## standing dine-in customer whose cup is on its way.
 func free_seats() -> int:
 	var promised := 0
 	for worker in workers:
-		if not worker.job.is_empty() and worker.job.kind == "serve" and not _to_go(worker.job): promised += 1
-	return seats - diners.size() - promised
+		if worker.job.is_empty() or worker.job.kind != "serve" or _to_go(worker.job): continue
+		if int(_order_by_id(worker.job.order_id).get("seat", -1)) < 0: promised += 1
+	return seats - diners.size() - promised - seated_orders()
+
+## Dine-in customers who found a seat on the way in and wait there for their order.
+func seated_orders() -> int:
+	var count := 0
+	for order in orders:
+		if int(order.get("seat", -1)) >= 0: count += 1
+	return count
+
+func _order_by_id(id: int) -> Dictionary:
+	for order in orders:
+		if order.id == id: return order
+	return {}
+
+## The lowest seat nobody eats at or waits in.
+func _first_open_seat() -> int:
+	var taken: Array = diners.map(func(diner: Dictionary) -> int: return diner.seat)
+	for order in orders:
+		if int(order.get("seat", -1)) >= 0: taken.append(int(order.seat))
+	var seat := 0
+	while seat in taken: seat += 1
+	return seat
 
 ## A served cup leaves with the customer: sealed takeaway, or a lemonade poured to go.
 func _to_go(job: Dictionary) -> bool:
@@ -582,7 +607,8 @@ func _to_go(job: Dictionary) -> bool:
 
 ## 0 calm, 1 impatient, 2 angry.
 func order_mood(order: Dictionary) -> int:
-	return 2 if order.wait >= MOOD_ANGRY else (1 if order.wait >= MOOD_IMPATIENT else 0)
+	var wait: float = order.wait * (SEATED_PATIENCE if int(order.get("seat", -1)) >= 0 else 1.0)
+	return 2 if wait >= MOOD_ANGRY else (1 if wait >= MOOD_IMPATIENT else 0)
 
 ## Timed machines (brewer) upgrade speed; the rest raise the price of the cups they touch.
 ## The cabinet body has no upgrade (its ingredient slots carry the price). Topping keeps speed + flavors.
@@ -687,7 +713,7 @@ func station_info(requested: String) -> Dictionary:
 	var seating := {}
 	# Dine-in seats are bought at the counter.
 	if id == "counter":
-		seating = {"seats": seats, "seat_max": seat_max(), "diners": diners.size(), "seat_cost": seat_cost(), "seat_error": seat_error(),
+		seating = {"seats": seats, "seat_max": seat_max(), "diners": diners.size() + seated_orders(), "seat_cost": seat_cost(), "seat_error": seat_error(),
 			"flyer_cost": flyer_cost(), "flyer_error": flyer_error(), "flyer_wave": flyer_wave, "flyer_wait": flyer_wait,
 			"flyer_seconds": PROGRESSION.flyer_seconds, "flyer_customers": flyer_customers(), "flyer_cooldown": flyer_cooldown(),
 			"flyer_level": flyers, "flyer_max": flyer_max_level(), "flyer_upgrade_cost": flyer_upgrade_cost(),
@@ -937,8 +963,9 @@ func upgrade_flyers() -> String:
 	_event("flyer_upgrade", "传单升级：一次招来 %d 位客人，间隔 %d 秒" % [flyer_customers(), int(flyer_cooldown())])
 	return ""
 
+## Room in the standing line. Customers waiting in a seat do not stand in it.
 func _queue_capacity() -> int:
-	return PROGRESSION.stages[stage_index].queue_capacity
+	return PROGRESSION.stages[stage_index].queue_capacity + seated_orders()
 
 func _tick() -> void:
 	if follow_orders: _drop_stuck_tickets()
@@ -953,7 +980,7 @@ func _tick() -> void:
 	if station_unlocked("seal"):
 		var free := free_seats()
 		for order in orders:
-			if order.reserved or order.get("takeaway", false): continue
+			if order.reserved or order.get("takeaway", false) or int(order.get("seat", -1)) >= 0: continue
 			if free > 0: free -= 1
 			else: order["takeaway"] = true
 
@@ -1030,11 +1057,14 @@ func _add_order() -> void:
 		if sample <= 0:
 			selected = dish
 			break
-	# Customers would rather sit down: they take their drink to go only when every seat is taken or spoken for.
-	var takeaway := station_unlocked("seal") and _spare_seats() <= 0
+	# Customers would rather sit down: one who finds a free seat sits and orders from there. With every
+	# seat taken they stand in line, and once the sealer is open they take the drink to go instead.
+	var spare := _spare_seats()
+	var seat := _first_open_seat() if spare > 0 else -1
+	var takeaway := station_unlocked("seal") and spare <= 0
 	for dish in weights: order_ramp[dish] = mini(int(order_ramp.get(dish, 0)) + 1, RAMP_ORDERS)
 	if station_unlocked("seal"): order_ramp.takeaway = mini(int(order_ramp.get("takeaway", 0)) + 1, RAMP_ORDERS)
-	orders.append({"id": _next_order, "wait": 0.0, "reserved": false, "dish": selected, "takeaway": takeaway})
+	orders.append({"id": _next_order, "wait": 0.0, "reserved": false, "dish": selected, "takeaway": takeaway, "seat": seat})
 	_next_order += 1
 
 ## While a flyer works, its customers walk in one by one, spread over flyer_seconds, and order from the
@@ -1116,11 +1146,11 @@ func _jobs(worker: Dictionary) -> Array:
 		# (a lemonade an old save left sealed goes first).
 		var source: String = "pickup" if order.get("takeaway", false) else "shelf"
 		if order.dish in FRONT_DISHES: source = "pickup" if order.get("takeaway", false) and _available("pickup", order.dish) > 0 else "supply"
-		if not order.get("takeaway", false):
-			if seats_left <= 0: continue
+		var standing_dine_in: bool = not order.get("takeaway", false) and int(order.get("seat", -1)) < 0
+		if standing_dine_in and seats_left <= 0: continue
 		var serve := _candidate("serve", source, "counter", order.dish, worker, 110)
 		if serve.is_empty(): continue
-		if not order.get("takeaway", false): seats_left -= 1
+		if standing_dine_in: seats_left -= 1
 		serve.count = 1
 		serve.order_id = order.id
 		serve.priority += minf(20, order.wait * 0.1)
@@ -1700,9 +1730,9 @@ func _dish_price(dish: String) -> int:
 func _record_sale(job: Dictionary) -> void:
 	# A cup handed over from the shelf or the stand is drunk here: the customer takes a seat for a while.
 	if not _to_go(job):
-		var taken: Array = diners.map(func(diner: Dictionary) -> int: return diner.seat)
-		var seat := 0
-		while seat in taken: seat += 1
+		# A seated customer comes back to the chair they kept; a standing one takes the first open seat.
+		var seat := int(_order_by_id(job.order_id).get("seat", -1))
+		if seat < 0: seat = _first_open_seat()
 		diners.append({"seat": seat, "dish": job.item, "left": seat_seconds()})
 	sold += job.count
 	sold_by_dish[job.item] += job.count
@@ -1950,6 +1980,9 @@ func _migrate_v12(old: Dictionary) -> Dictionary:
 	var state: Dictionary = old.duplicate(true)
 	state.version = SAVE_VERSION
 	state.flyers = 1
+	if state.get("orders") is Array:
+		for order in state.orders:
+			if order is Dictionary: order["seat"] = -1
 	if state.get("station_levels") is Dictionary and state.station_levels.get("topping") is int:
 		state.station_levels.topping = mini(state.station_levels.topping, _max_level("topping"))
 	return state
@@ -2207,8 +2240,9 @@ func _validate_state(state: Dictionary) -> String:
 		active_ids.append(id)
 	var order_ids: Array = []
 	for order in state.orders:
-		if not order is Dictionary or not _same_shape(order, {"id": 1, "wait": 0.0, "reserved": false, "dish": "", "takeaway": false}): return "订单字段无效"
+		if not order is Dictionary or not _same_shape(order, {"id": 1, "wait": 0.0, "reserved": false, "dish": "", "takeaway": false, "seat": 0}): return "订单字段无效"
 		if order.id < 1 or order.id >= state.next_order or order.id in order_ids or order.wait < 0 or not order.dish in DISHES: return "订单内容无效"
+		if order.seat < -1 or order.seat >= state.seats or (order.seat >= 0 and order.takeaway): return "订单座位无效"
 		order_ids.append(order.id)
 	var served_orders: Array = []
 	var operations := {"boil": 0, "topping": 0}
@@ -2244,6 +2278,10 @@ func _validate_state(state: Dictionary) -> String:
 	if state.flyers < 1 or state.flyers > flyer_max_level(): return "传单字段无效"
 	if state.front_upgrades < 0 or state.front_upgrades > PROGRESSION.front_upgrade_kinds.size() or state.kitchen_upgrades < 0 or state.kitchen_upgrades > PROGRESSION.kitchen_upgrade_kinds.size(): return "员工升级无效"
 	var seat_ids: Array = []
+	for order in state.orders:
+		if order.seat < 0: continue
+		if order.seat in seat_ids: return "订单座位重复"
+		seat_ids.append(order.seat)
 	for diner in state.diners:
 		if not diner is Dictionary or not _same_shape(diner, {"seat": 0, "dish": "", "left": 0.0}): return "堂食客人字段无效"
 		if diner.seat < 0 or diner.seat >= state.seats or diner.seat in seat_ids or not diner.dish in DISHES or diner.left < 0 or diner.left > _longest_seat_seconds() + 0.000001: return "堂食客人无效"
