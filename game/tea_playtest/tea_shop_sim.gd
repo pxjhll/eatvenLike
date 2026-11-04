@@ -157,6 +157,7 @@ func _initialize_shop() -> void:
 	flyer_wait = 0.0
 	flyer_clock = 0.0
 	flyer_pending = 0
+	_full_seconds = 0.0
 	front_upgrades = 0
 	kitchen_upgrades = 0
 	diners.clear()
@@ -978,6 +979,55 @@ func upgrade_flyers() -> String:
 	_event("flyer_upgrade", "传单升级：一次招来 %d 位客人，间隔 %d 秒" % [flyer_customers(), int(flyer_cooldown())])
 	return ""
 
+## How long the standing line has been full without a break, and smoothed shares (about the last
+## 20 seconds) of the brewer brewing and of kitchen / front staff standing idle. Not saved.
+var _full_seconds := 0.0
+var _boil_busy := 0.0
+var _kitchen_idle := 1.0
+var _front_idle := 1.0
+const HINT_AFTER := 20.0
+const HINT_SMOOTH := 0.1 / 20.0
+
+func _track_bottleneck() -> void:
+	var full: bool = orders.size() - seated_orders() >= PROGRESSION.stages[stage_index].queue_capacity
+	_full_seconds = _full_seconds + STEP if full else 0.0
+	var boil: Dictionary = stations.get("boil", {})
+	var brewing := 1.0 if not boil.is_empty() and int(boil.processing) > 0 and boil.phase != "awaiting_take" else 0.0
+	_boil_busy = lerpf(_boil_busy, brewing, HINT_SMOOTH)
+	var idle := {"front": [0, 0], "kitchen": [0, 0]}
+	for worker in workers:
+		var side := "front" if worker.post == "counter" else "kitchen"
+		idle[side][1] += 1
+		if worker.job.is_empty(): idle[side][0] += 1
+	if idle.kitchen[1] > 0: _kitchen_idle = lerpf(_kitchen_idle, float(idle.kitchen[0]) / idle.kitchen[1], HINT_SMOOTH)
+	if idle.front[1] > 0: _front_idle = lerpf(_front_idle, float(idle.front[0]) / idle.front[1], HINT_SMOOTH)
+
+## When the line has stayed full for a while: which drink piles up, what holds it back, and where to
+## fix it ("target": a station id, or "staff_front" / "staff_kitchen"). Empty while the line keeps moving.
+func bottleneck_hint() -> Dictionary:
+	var hint := _bottleneck()
+	if not hint.is_empty(): hint.short = "%s排长队 · %s" % [hint.drink, hint.fix]
+	return hint
+
+func _bottleneck() -> Dictionary:
+	if _full_seconds < HINT_AFTER: return {}
+	var waiting := {}
+	for order in orders:
+		if not order.reserved: waiting[order.dish] = int(waiting.get(order.dish, 0)) + 1
+	var top := ""
+	for dish in waiting:
+		if top.is_empty() or waiting[dish] > waiting[top]: top = dish
+	if top.is_empty(): return {}
+	var drink := dish_name(top)
+	if top in FRONT_DISHES:
+		if _front_idle < 0.15: return {"drink": drink, "fix": "升级前台员工", "text": "前台跟不上，%s排起了长队：升级前台员工" % drink, "target": "staff_front"}
+		var stand := "press" if top == "lemon_tea" else "lemonade"
+		return {"drink": drink, "fix": "升级" + station_info_name(stand), "text": "%s出得不够快：升级%s" % [drink, station_info_name(stand)], "target": stand}
+	if kitchen_staff() <= 0: return {"drink": drink, "fix": "派员工去后厨", "text": "没有后厨员工，%s做不出来：派一位员工去后厨" % drink, "target": "staff_kitchen"}
+	if _boil_busy > 0.85: return {"drink": drink, "fix": "升级煮茶机", "text": "%s做不过来，煮茶机一直在煮：升级煮茶机" % drink, "target": "boil"}
+	if _kitchen_idle < 0.15: return {"drink": drink, "fix": "升级后厨员工", "text": "后厨跑不过来，%s排起了长队：升级后厨员工或多招一位" % drink, "target": "staff_kitchen"}
+	return {"drink": drink, "fix": "升级煮茶机", "text": "%s做不过来：升级煮茶机" % drink, "target": "boil"}
+
 ## Room in the standing line. Customers waiting in a seat do not stand in it.
 func _queue_capacity() -> int:
 	return PROGRESSION.stages[stage_index].queue_capacity + seated_orders()
@@ -987,6 +1037,7 @@ func _tick() -> void:
 	flyer_wait = maxf(0.0, flyer_wait - STEP)
 	_flyer_customers()
 	super._tick()
+	_track_bottleneck()
 	_run_belts()
 	for index in range(diners.size() - 1, -1, -1):
 		diners[index].left -= STEP

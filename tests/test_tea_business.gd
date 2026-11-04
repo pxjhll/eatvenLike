@@ -1367,6 +1367,28 @@ func test_seating_every_kitchen_hand_warns_nobody_carries() -> void:
 	check_eq(sim.assign_post(2, "boil"), "", "the only kitchen hand sits at the brewer")
 	check(sim.no_kitchen_carrier(), "then nobody is left to carry")
 
+func test_a_jammed_line_names_its_bottleneck() -> void:
+	var sim = make_shop()
+	if sim == null: return
+	sim.gold = 100000
+	sim.revenue = 100000
+	sim.hire()
+	for line in ["lemonade", "boil", "seal", "mix"]: sim.unlock_station(line)
+	for material in ["tea_leaf", "milk"]: sim.unlock_box(material)
+	sim.deploy_worker(2)
+	check(sim.bottleneck_hint().is_empty(), "no hint while the line is moving")
+	var hint: Dictionary = {}
+	for tick in 3000:
+		sim.advance(0.1)
+		hint = sim.bottleneck_hint()
+		if not hint.is_empty(): break
+	check(not hint.is_empty(), "a line full for a while gets a bottleneck hint")
+	check(String(hint.get("target", "")) in ["boil", "staff_kitchen", "staff_front", "lemonade"], "the hint points at something to buy (got %s)" % hint.get("target", ""))
+	check(String(hint.get("text", "")).contains("升级") or String(hint.get("text", "")).contains("派"), "the hint says what to do")
+	sim.orders.clear()
+	sim.advance(0.2)
+	check(sim.bottleneck_hint().is_empty(), "the hint clears once the line has room")
+
 func test_new_dishes_and_takeaway_ease_in_over_a_dozen_customers() -> void:
 	var sim = opened()
 	if sim == null: return

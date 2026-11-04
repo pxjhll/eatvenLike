@@ -70,6 +70,18 @@ func _run() -> void:
 	_advance(300)
 	_check(int(view.sim.sold_by_dish.get("black_tea", 0)) > 0, "brewed tea is shelved and served to seated customers")
 	await _capture("black-tea")
+	if not view.sim.orders.is_empty():
+		view.sim._full_seconds = 30.0
+		view.sim._boil_busy = 1.0
+		view.sim.orders[0].dish = "black_tea"
+		view.sim.orders[0].reserved = false
+		view._refresh(0.0)
+		await process_frame
+		_check(hud.get_node("%GoalText").text.contains("排长队"), "a jammed line names its bottleneck in the goal bar")
+		_check(view._hint_ring.visible, "the fix gets a pulsing outline")
+		await _capture("hint")
+		view.sim._full_seconds = 0.0
+		view._refresh(0.0)
 	_check(view._belt_toggle == null and view._belt_slots.is_empty(), "the game offers no conveyor belts")
 	await _world_click(view._seats.position + view._seats.size / 2)
 	_check(hud.page == "station" and hud.station_panel.station_id == "counter", "the seat chip opens the counter")

@@ -64,6 +64,10 @@ var _station_buttons := {}
 ## shown whenever something there can be bought with the coins on hand.
 var _upgrade_marks := {}
 var _staff_mark: Control
+## A pulsing outline on whatever fixes the current bottleneck (a machine, or the staff button).
+var _hint_ring: Control
+var _staff_ring: Control
+var _hint_text := ""
 var _glass_button: Button
 ## Belt mode shows a plate on every hop that can take a conveyor; drag the chip onto one (or tap it).
 var belt_mode := false
@@ -774,6 +778,10 @@ func _build_station_signs() -> void:
 	_seats.add_child(_upgrade_marks.counter)
 	_staff_mark = UpgradeBadge.new()
 	ui.staff_button.add_child(_staff_mark)
+	_hint_ring = HintRing.new()
+	$Canvas/WorldLabels.add_child(_hint_ring)
+	_staff_ring = HintRing.new()
+	ui.staff_button.add_child(_staff_ring)
 
 
 func _refresh_station_signs() -> void:
@@ -849,6 +857,19 @@ func _refresh_station_signs() -> void:
 	# Beside the seats chip rather than on it, so the seat count stays readable.
 	_upgrade_marks.counter.center_on(Vector2(_seats.size.x + 16, _seats.size.y / 2.0))
 	_staff_mark.visible = ui.staff_affordable()
+	var hint: Dictionary = sim.bottleneck_hint() if sim.has_method("bottleneck_hint") else {}
+	var target := String(hint.get("target", ""))
+	# The full reason shows once, when the line first jams; the goal bar keeps the short form.
+	if not hint.is_empty() and _hint_text != String(hint.text): _show_toast(String(hint.text))
+	_hint_text = String(hint.get("text", ""))
+	_hint_ring.visible = STATION_REGIONS.has(target)
+	if _hint_ring.visible:
+		_hint_ring.position = STATION_REGIONS[target].position - Vector2(6, 6)
+		_hint_ring.size = STATION_REGIONS[target].size + Vector2(12, 12)
+	_staff_ring.visible = target.begins_with("staff_")
+	if _staff_ring.visible:
+		_staff_ring.position = Vector2(-4, -4)
+		_staff_ring.size = ui.staff_button.size + Vector2(8, 8)
 	_staff_mark.center_on(Vector2(ui.staff_button.size.x - 14, 12))
 
 
@@ -1053,3 +1074,26 @@ func _notification(what: int) -> void:
 func _exit_tree() -> void:
 	if sim != null:
 		save_now(false)
+
+
+## Pulsing yellow outline drawn around the fix for the current bottleneck; it never takes taps.
+class HintRing extends Control:
+	var _clock := 0.0
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		visible = false
+
+	func _process(delta: float) -> void:
+		if not visible: return
+		_clock += delta
+		modulate.a = 0.55 + 0.45 * sin(_clock * 5.0)
+		queue_redraw()
+
+	func _draw() -> void:
+		var box := StyleBoxFlat.new()
+		box.draw_center = false
+		box.border_color = Color("ffc928")
+		box.set_border_width_all(5)
+		box.set_corner_radius_all(14)
+		draw_style_box(box, Rect2(Vector2.ZERO, size))
