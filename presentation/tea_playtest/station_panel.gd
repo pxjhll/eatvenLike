@@ -236,6 +236,11 @@ func _refresh_materials(info: Dictionary) -> void:
 			button.text = "满级" if cost < 0 else "%d 金币" % cost
 			button.disabled = cost < 0 or not String(row.get("upgrade_error", "")).is_empty()
 			continue
+		if row.has("price_now"):
+			nodes.effect.text = "售价 %d 金" % row.price_now if cost < 0 or int(row.price_next) < 0 else "售价 %d → %d 金" % [row.price_now, row.price_next]
+			button.text = "满级" if cost < 0 or int(row.price_next) < 0 else "%d 金币" % cost
+			button.disabled = cost < 0 or int(row.price_next) < 0 or not String(row.get("upgrade_error", "")).is_empty()
+			continue
 		if cost < 0 or float(row.get("next_bonus", -1.0)) < 0:
 			nodes.effect.text = label + describe.call(float(row.bonus))
 			button.text = "满级"
@@ -266,14 +271,16 @@ func _refresh_flyers(info: Dictionary) -> void:
 	var wait := float(info.flyer_wait)
 	_flyer_title.text = "发传单 Lv%d" % int(info.flyer_level)
 	var hint := " · 队伍已满，先升产能" if info.queue_full else ""
-	if wave > 0.0 and int(info.flyer_pending) > 0:
-		_flyer_effect.text = "客人正在来，还有 %d 位" % int(info.flyer_pending)
+	var coming := int(info.flyer_pending)
+	if coming > 0 and wait > 0.0:
+		_flyer_effect.text = "客人正在来，还有 %d 位%s" % [coming, " · 队伍满了，等有空位再来" if info.queue_full else ""]
 		flyer_button.text = "%d 秒" % ceili(wait)
 	elif wait > 0.0:
 		_flyer_effect.text = "%d 秒后可以再发%s" % [ceili(wait), hint]
 		flyer_button.text = "%d 秒" % ceili(wait)
 	else:
 		_flyer_effect.text = "不花钱 · %d 秒内招来 %d 位客人，间隔 %d 秒%s" % [int(info.flyer_seconds), int(info.flyer_customers), int(info.flyer_cooldown), hint]
+		if coming > 0: _flyer_effect.text += " · 上一批还有 %d 位没到" % coming
 		flyer_button.text = "发传单"
 	flyer_button.disabled = not String(info.flyer_error).is_empty()
 	var cost := int(info.flyer_upgrade_cost)
