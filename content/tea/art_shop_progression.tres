@@ -191,12 +191,12 @@ display_name = "珍珠奶茶卖出 20 杯"
 target_id = "pearl_milk_tea"
 amount = 20.0
 
-[sub_resource type="Resource" id="task_taro20"]
+[sub_resource type="Resource" id="task_taro10"]
 script = ExtResource("task_def")
-id = "taro20"
-display_name = "芋泥奶茶卖出 20 杯"
+id = "taro10"
+display_name = "芋泥奶茶卖出 10 杯"
 target_id = "taro_milk_tea"
-amount = 20.0
+amount = 10.0
 
 [sub_resource type="Resource" id="stage_topping"]
 script = ExtResource("shop_stage_def")
@@ -212,7 +212,7 @@ queue_capacity = 8
 seat_seconds = 35.0
 takeaway_share = 0.55
 unlock_note = "开始卖珍珠奶茶，升级加料机开放更多口味"
-tasks = Array[ExtResource("task_def")]([SubResource("task_topping4"), SubResource("task_pearl20"), SubResource("task_taro20")])
+tasks = Array[ExtResource("task_def")]([SubResource("task_topping4"), SubResource("task_pearl20"), SubResource("task_taro10")])
 
 [sub_resource type="Resource" id="task_lemontea20"]
 script = ExtResource("task_def")
@@ -261,5 +261,5 @@ level_flow = 0.0
 train_costs = Array[int]([15, 20, 30, 40, 55, 75, 100, 135, 180])
 front_upgrade_kinds = Array[String](["walk", "slot", "work", "walk", "slot", "work"])
 front_upgrade_costs = Array[int]([10, 40, 85, 175, 365, 735])
-kitchen_upgrade_kinds = Array[String](["walk", "work", "carry", "walk", "work", "carry", "walk", "work"])
-kitchen_upgrade_costs = Array[int]([20, 40, 80, 160, 295, 545, 990, 1780])
+kitchen_upgrade_kinds = Array[String](["walk", "work", "carry", "walk", "work", "carry", "walk", "work", "walk", "walk"])
+kitchen_upgrade_costs = Array[int]([20, 40, 80, 160, 295, 545, 990, 1780, 2000, 2800])

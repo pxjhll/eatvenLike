@@ -935,7 +935,7 @@ func test_star_tasks_finish_the_first_shop() -> void:
 	if sim == null: return
 	check(not sim.shop_complete(), "an opened shop is not finished yet")
 	var names: Array = sim.task_rows().map(func(row: Dictionary) -> String: return row.name)
-	for name in ["柠檬水台升 1 星（Lv5）", "煮茶机升 1 星（Lv5）", "封口机升 1 星（Lv5）", "芋泥奶茶卖出 20 杯"]:
+	for name in ["柠檬水台升 1 星（Lv5）", "煮茶机升 1 星（Lv5）", "封口机升 1 星（Lv5）", "芋泥奶茶卖出 10 杯"]:
 		check(name in names, "star task listed: " + name)
 	sim.gold = 100000
 	sim.revenue = 100000
