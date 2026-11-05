@@ -497,6 +497,12 @@ func _goal(sim) -> Dictionary:
 
 func _refresh_goal_bar(sim) -> void:
 	var goal := _goal(sim)
+	# While the line stays full, the bar names what holds it back instead of the next goal.
+	var hint: Dictionary = sim.bottleneck_hint() if sim.has_method("bottleneck_hint") else {}
+	if not hint.is_empty():
+		%GoalText.text = String(hint.short)
+		%GoalBar.visible = false
+		return
 	%GoalText.text = goal.text if int(goal.target) <= 0 else "%s · %d / %d" % [goal.text, goal.current, goal.target]
 	%GoalBar.visible = int(goal.target) > 0
 	%GoalBar.value = clampf(float(goal.current) / maxf(1.0, float(goal.target)), 0, 1)

@@ -27,6 +27,9 @@ var flyer_button: Button
 var _flyer_row: Control
 var _flyer_title: Label
 var _flyer_effect: Label
+var flyer_upgrade_button: Button
+var _flyer_upgrade_title: Label
+var _flyer_upgrade_effect: Label
 var _seat_row: Control
 var _seat_title: Label
 var _seat_effect: Label
@@ -67,6 +70,14 @@ func setup(view: Node2D, hud: Control) -> void:
 	_flyer_title = _hud._text(flyer_copy, "", 23)
 	_flyer_effect = _hud._text(flyer_copy, "", 19, true)
 	flyer_button = _buy_button(flyer_line, func() -> void: _view.station_action("flyers", station_id))
+	var flyer_up_line: HBoxContainer = _hud._row(flyer, 12)
+	var flyer_up_copy := VBoxContainer.new()
+	flyer_up_copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	flyer_up_copy.add_theme_constant_override("separation", 4)
+	flyer_up_line.add_child(flyer_up_copy)
+	_flyer_upgrade_title = _hud._text(flyer_up_copy, "", 21)
+	_flyer_upgrade_effect = _hud._text(flyer_up_copy, "", 19, true)
+	flyer_upgrade_button = _buy_button(flyer_up_line, func() -> void: _view.station_action("flyer_upgrade", station_id))
 	_material_title = _hud._text(self, "", 21)
 	_materials = VBoxContainer.new()
 	_materials.add_theme_constant_override("separation", 10)
@@ -111,7 +122,7 @@ func refresh() -> void:
 	_seat_row.visible = unlocked and info.has("seats")
 	if _seat_row.visible:
 		_refresh_seats(info)
-	_flyer_row.visible = unlocked and info.has("flyers")
+	_flyer_row.visible = unlocked and info.has("flyer_cost")
 	if _flyer_row.visible:
 		_refresh_flyers(info)
 	_locked.visible = not unlocked
@@ -139,12 +150,13 @@ func _refresh_upgrade(info: Dictionary) -> void:
 		elif info.has("slots"): _upgrade_effect.text = "封口位 %d · 每杯 %.1f 秒" % [info.slots, info.seconds]
 		elif info.has("batch"): _upgrade_effect.text = "一锅 %d 杯 · 每锅 %.1f 秒" % [info.batch, info.seconds]
 		elif float(info.get("seconds", -1.0)) > 0: _upgrade_effect.text = "%s %.1f 秒" % [_per(), info.seconds]
+		elif info.get("kind", "") == "menu": _upgrade_effect.text = "口味全开"
 		else: _upgrade_effect.text = "%s ×%.2f" % [effect, info.speed]
 		upgrade_button.text = "满级"
 		upgrade_button.disabled = true
 		return
 	var star: bool = info.get("next_star", false)
-	var kind: String = {"capacity": "产能升级", "price": "售价升级", "both": "产能售价升级"}.get(String(info.get("kind", "")), "设备升级")
+	var kind: String = {"capacity": "产能升级", "price": "售价升级", "both": "产能售价升级", "menu": "开新口味"}.get(String(info.get("kind", "")), "设备升级")
 	_upgrade_title.text = ("升星！" if star else kind) + " Lv%d → Lv%d" % [level, level + 1]
 	if not price.is_empty() and star:
 		_upgrade_effect.text = "%s每杯 ×%.1f · %s %d → %d 金" % [price.scope, info.star_mult, price.sample, price.now, price.next]
@@ -158,10 +170,12 @@ func _refresh_upgrade(info: Dictionary) -> void:
 		_upgrade_effect.text = "一锅 %d → %d 杯" % [info.batch, info.next_batch]
 	elif float(info.get("seconds", -1.0)) > 0:
 		_upgrade_effect.text = "%s · %s %.1f → %.1f 秒" % [effect, _per(), info.seconds, info.next_seconds]
+	elif info.get("kind", "") == "menu":
+		_upgrade_effect.text = ""
 	else:
 		_upgrade_effect.text = "%s ×%.2f → ×%.2f" % [effect, info.speed, info.next_speed]
 	if not String(info.get("next_unlock", "")).is_empty():
-		_upgrade_effect.text += " · 开放" + info.next_unlock
+		_upgrade_effect.text += (" · " if not _upgrade_effect.text.is_empty() else "") + "开放" + info.next_unlock + ("，客人更多" if info.get("kind", "") == "menu" else "")
 	upgrade_button.text = "%d 金币" % cost
 	upgrade_button.disabled = not String(info.get("upgrade_error", "")).is_empty()
 
@@ -222,6 +236,11 @@ func _refresh_materials(info: Dictionary) -> void:
 			button.text = "满级" if cost < 0 else "%d 金币" % cost
 			button.disabled = cost < 0 or not String(row.get("upgrade_error", "")).is_empty()
 			continue
+		if row.has("price_now"):
+			nodes.effect.text = "售价 %d 金" % row.price_now if cost < 0 or int(row.price_next) < 0 else "售价 %d → %d 金" % [row.price_now, row.price_next]
+			button.text = "满级" if cost < 0 or int(row.price_next) < 0 else "%d 金币" % cost
+			button.disabled = cost < 0 or int(row.price_next) < 0 or not String(row.get("upgrade_error", "")).is_empty()
+			continue
 		if cost < 0 or float(row.get("next_bonus", -1.0)) < 0:
 			nodes.effect.text = label + describe.call(float(row.bonus))
 			button.text = "满级"
@@ -247,18 +266,33 @@ func _refresh_seats(info: Dictionary) -> void:
 	seat_button.disabled = not String(info.seat_error).is_empty()
 
 func _refresh_flyers(info: Dictionary) -> void:
-	var cost := int(info.flyer_cost)
-	_flyer_title.text = "发传单 Lv%d" % info.flyers if cost < 0 else "发传单 Lv%d → Lv%d" % [info.flyers, int(info.flyers) + 1]
-	# When the line is already full, more customers only wait outside: point at the kitchen instead.
+	# A flyer is free: it brings a fixed number of customers over a short wave, then cools down.
+	var wave := float(info.flyer_wave)
+	var wait := float(info.flyer_wait)
+	_flyer_title.text = "发传单 Lv%d" % int(info.flyer_level)
 	var hint := " · 队伍已满，先升产能" if info.queue_full else ""
-	if cost < 0:
-		_flyer_effect.text = "客流 ×%.2f%s" % [info.flow, hint]
-		flyer_button.text = "满级"
-		flyer_button.disabled = true
-		return
-	_flyer_effect.text = "客流 ×%.2f → ×%.2f%s" % [info.flow, info.next_flow, hint]
-	flyer_button.text = "%d 金币" % cost
+	var coming := int(info.flyer_pending)
+	if coming > 0 and wait > 0.0:
+		_flyer_effect.text = "客人正在来，还有 %d 位%s" % [coming, " · 队伍满了，等有空位再来" if info.queue_full else ""]
+		flyer_button.text = "%d 秒" % ceili(wait)
+	elif wait > 0.0:
+		_flyer_effect.text = "%d 秒后可以再发%s" % [ceili(wait), hint]
+		flyer_button.text = "%d 秒" % ceili(wait)
+	else:
+		_flyer_effect.text = "不花钱 · %d 秒内招来 %d 位客人，间隔 %d 秒%s" % [int(info.flyer_seconds), int(info.flyer_customers), int(info.flyer_cooldown), hint]
+		if coming > 0: _flyer_effect.text += " · 上一批还有 %d 位没到" % coming
+		flyer_button.text = "发传单"
 	flyer_button.disabled = not String(info.flyer_error).is_empty()
+	var cost := int(info.flyer_upgrade_cost)
+	_flyer_upgrade_title.text = "传单升级"
+	if cost < 0:
+		_flyer_upgrade_effect.text = "已升满 · 一次 %d 位客人，间隔 %d 秒" % [int(info.flyer_customers), int(info.flyer_cooldown)]
+		flyer_upgrade_button.text = "满级"
+		flyer_upgrade_button.disabled = true
+		return
+	_flyer_upgrade_effect.text = "一次 %d → %d 位客人，间隔 %d → %d 秒" % [int(info.flyer_customers), int(info.next_flyer_customers), int(info.flyer_cooldown), int(info.next_flyer_cooldown)]
+	flyer_upgrade_button.text = "%d 金币" % cost
+	flyer_upgrade_button.disabled = not String(info.flyer_upgrade_error).is_empty()
 
 func _refresh_locked(info: Dictionary) -> void:
 	var members: Array = info.get("line_members", [])

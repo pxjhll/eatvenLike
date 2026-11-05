@@ -64,6 +64,10 @@ var _station_buttons := {}
 ## shown whenever something there can be bought with the coins on hand.
 var _upgrade_marks := {}
 var _staff_mark: Control
+## A pulsing outline on whatever fixes the current bottleneck (a machine, or the staff button).
+var _hint_ring: Control
+var _staff_ring: Control
+var _hint_text := ""
 var _glass_button: Button
 ## Belt mode shows a plate on every hop that can take a conveyor; drag the chip onto one (or tap it).
 var belt_mode := false
@@ -77,7 +81,7 @@ var _chip_dragging := false
 ## These two hops already have conveyor art in the scene; the rest are drawn as lines.
 ## The shelf's lower tier, where sealed takeaway cups wait.
 const PICKUP_ROW_Y := 634.0
-const ART_BELTS := {"BeltHorizontal": "topping_to_seal", "BeltVertical": "seal_to_shelf"}
+const ART_BELTS := {"BeltVertical": "seal_to_shelf"}
 const STATION_REGIONS := {
 	"supply": Rect2(69, 141, 134, 95), "boil": Rect2(291, 117, 143, 110),
 	"mix": Rect2(440, 79, 110, 155), "topping": Rect2(23, 269, 122, 348),
@@ -96,9 +100,21 @@ const FRAME_RECTS := {
 	"press": Rect2(195, 675, 108, 110),
 }
 const FRAME_OPENS := {"shelf": "boil"}
+## Tapping the dining room (tables and chairs below the queue) opens the counter panel too.
+const COUNTER_DINING_RECT := Rect2(20, 1060, 680, 380)
 ## The sealer → takeaway rack conveyor is bought from a dashed frame where its art goes.
+## Where a seated customer stands to pick up their cup: the counter's free right end.
+const PICKUP_POINT := Vector2(635, 925)
+const NO_CARRIER_TEXT := "当前没有流动员工搬运，饮品可能无法送到下一站或货架。"
 const BELT_ID := "seal_to_shelf"
 const BELT_FRAME := Rect2(590, 385, 72, 150)
+## What each kitchen belt saves, shown on its dashed frame's tooltip.
+const BELT_NOTES := {
+	"seal_to_shelf": "封好口的外带杯自动送上货架外带格，后厨不用再搬",
+	"boil_to_mix": "煮好的茶自动送到调奶台，后厨不用再搬",
+	"mix_to_topping": "调好的奶茶自动送到加料机，后厨不用再搬",
+	"topping_to_seal": "加好料的奶茶自动送到封口机，后厨不用再搬",
+}
 
 
 func _ready() -> void:
@@ -139,6 +155,9 @@ func _ready() -> void:
 	_refresh(0.0)
 	_fit()
 	_show_toast(sim.current_goal() if sim.has_method("current_goal") else "欢迎开店，伙伴正在准备第一杯奶茶。")
+	# A loaded shop where every kitchen hand is seated gets the same warning as the drag that seated them.
+	if carrier_warning():
+		_show_toast(NO_CARRIER_TEXT)
 
 
 func restart() -> void:
@@ -248,7 +267,7 @@ func _refresh(delta: float) -> void:
 	_shelf.text = "货架 %d/%d" % [sim.shelf_count, limit]
 	_shelf.visible = true
 	if sim.has_method("free_seats"):
-		_seats.text = "堂食 %d/%d" % [sim.diners.size(), sim.seats]
+		_seats.text = "堂食 %d/%d" % [sim.diners.size() + sim.seated_orders(), sim.seats]
 		_seats.visible = sim.station_unlocked("lemonade")
 	if sim.has_method("station_info"):
 		_refresh_station_signs()
@@ -343,8 +362,14 @@ func _update_cups() -> void:
 func _update_customers(delta: float) -> void:
 	var active := {}
 	# Customers come in through the door at the bottom, up the aisle, and queue in two rows at the counter.
-	for i in mini(sim.orders.size(), 8):
-		var order: Dictionary = sim.orders[i]
+	# One who found a seat waits in it, and walks up to the counter's end when their cup is handed over.
+	var standing := 0
+	for order: Dictionary in sim.orders:
+		var seat := int(order.get("seat", -1))
+		var i := standing
+		if seat < 0:
+			standing += 1
+			if i >= 8: continue
 		active[order.id] = true
 		if not _customers.has(order.id):
 			var actor := Actor.new()
@@ -355,6 +380,7 @@ func _update_customers(delta: float) -> void:
 			_customer_entering[order.id] = true
 		_customer_orders[order.id] = order
 		var goal := Layout.queue_point(i)
+		if seat >= 0: goal = PICKUP_POINT if order.reserved else Layout.seat_point(seat)
 		# A newcomer walks up the aisle first, so they don't cut across the tables.
 		var waypoint := Vector2(Layout.AISLE_X, Layout.DINING_LANES[0])
 		var point: Vector2 = _customer_positions[order.id]
@@ -384,7 +410,11 @@ func _update_customers(delta: float) -> void:
 		var order: Dictionary = _customer_orders.get(id, {})
 		var art_id := "squirrel" if int(id) % 2 else "hamster"
 		if dining != null:
-			if not order.get("takeaway", false) and not new_seats.is_empty():
+			var kept := int(order.get("seat", -1))
+			if kept >= 0 and kept in new_seats:
+				new_seats.erase(kept)
+				dining.queue_arrival(kept, _customer_positions[id], art_id)
+			elif not order.get("takeaway", false) and not new_seats.is_empty():
 				dining.queue_arrival(new_seats.pop_front(), _customer_positions[id], art_id)
 			else:
 				dining.queue_exit(_customer_positions[id], art_id, String(order.get("dish", "")))
@@ -667,10 +697,18 @@ func toggle_deployment() -> void:
 		return
 	var returning := staff_is_deployed(selected_worker)
 	var error: String = sim.recall_worker(selected_worker) if returning else sim.deploy_worker(selected_worker)
-	_show_toast(error if not error.is_empty() else "伙伴已回到名册。" if returning else "伙伴已派到店内。")
+	var message: String = error if not error.is_empty() else "伙伴已回到名册。" if returning else "伙伴已派到店内。"
+	if error.is_empty() and returning and carrier_warning():
+		message = NO_CARRIER_TEXT
+	_show_toast(message)
 	if error.is_empty():
 		save_now(false)
 	_refresh(0)
+
+
+## True when someone works the kitchen but every kitchen hand is seated: nobody carries between machines.
+func carrier_warning() -> bool:
+	return sim.has_method("no_kitchen_carrier") and sim.no_kitchen_carrier()
 
 
 func station_action(action: String, station: String, material := "") -> void:
@@ -683,7 +721,8 @@ func station_action(action: String, station: String, material := "") -> void:
 		"box": error = sim.unlock_box(material)
 		"seat": error = sim.buy_seat()
 		"flyers": error = sim.buy_flyers()
-	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了两个座位。", "flyers": "传单发出去了，客人来得更勤了。"}.get(action, "升级完成。")
+		"flyer_upgrade": error = sim.upgrade_flyers()
+	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了两个座位。", "flyers": "传单发出去了。", "flyer_upgrade": "传单升级了。"}.get(action, "升级完成。")
 	_show_toast(error if not error.is_empty() else done)
 	if error.is_empty():
 		var level: int = sim.station_levels.get(station, 0) if action != "material" else sim.material_levels.get(station, {}).get(material, 0)
@@ -727,6 +766,7 @@ func _build_station_signs() -> void:
 		belt_frame.pressed.connect(buy_belt)
 		$Canvas/WorldLabels.add_child(belt_frame)
 		_station_buttons["belt"] = belt_frame
+		_build_kitchen_belts()
 	if sim.has_method("buy_seat"):
 		var seat_frame := UnlockFrame.new()
 		seat_frame.theme = ui.theme
@@ -738,6 +778,10 @@ func _build_station_signs() -> void:
 	_seats.add_child(_upgrade_marks.counter)
 	_staff_mark = UpgradeBadge.new()
 	ui.staff_button.add_child(_staff_mark)
+	_hint_ring = HintRing.new()
+	$Canvas/WorldLabels.add_child(_hint_ring)
+	_staff_ring = HintRing.new()
+	ui.staff_button.add_child(_staff_ring)
 
 
 func _refresh_station_signs() -> void:
@@ -754,7 +798,22 @@ func _refresh_station_signs() -> void:
 				continue
 			belt_frame.can_unlock = String(row.error).is_empty()
 			belt_frame.text = "传送带\n%d 金币" % row.cost
-			belt_frame.tooltip_text = "封好口的外带杯自动送上货架外带格，后厨不用再搬\n" + String(row.error)
+			belt_frame.tooltip_text = BELT_NOTES[BELT_ID] + "\n" + String(row.error)
+			continue
+		if id.begins_with("belt:"):
+			var belt_id: String = String(id).trim_prefix("belt:")
+			var belt_row: Dictionary = {}
+			for candidate in sim.belt_rows():
+				if candidate.id == belt_id: belt_row = candidate
+			var segment_frame: Button = _station_buttons[id]
+			var owned: bool = not belt_row.is_empty() and belt_row.owned
+			if _belt_lines.has(belt_id): _belt_lines[belt_id].visible = owned
+			segment_frame.visible = not belt_row.is_empty() and belt_row.available and not owned
+			if not segment_frame.visible:
+				continue
+			segment_frame.can_unlock = String(belt_row.error).is_empty()
+			segment_frame.text = "传送带\n%d 金币" % belt_row.cost
+			segment_frame.tooltip_text = BELT_NOTES.get(belt_id, belt_row.name) + "\n" + String(belt_row.error)
 			continue
 		if id == "seat":
 			# The next table to buy: a dashed frame over its faint chairs, once the lemonade stand is open.
@@ -768,7 +827,7 @@ func _refresh_station_signs() -> void:
 			seat_frame.size = Vector2(120, 72)
 			seat_frame.can_unlock = sim.seat_error().is_empty()
 			seat_frame.text = "加 %d 个座位\n%d 金币" % [sim.PROGRESSION.seat_step, sim.seat_cost()]
-			seat_frame.tooltip_text = "堂食客人要有空座位才会点单坐下\n" + sim.seat_error()
+			seat_frame.tooltip_text = "有空座位的堂食客人先坐下再点单，坐着等更有耐心\n" + sim.seat_error()
 			continue
 		if id == "supply":
 			# The cabinet frame asks for the ingredient box the newest machine needs.
@@ -798,18 +857,68 @@ func _refresh_station_signs() -> void:
 	# Beside the seats chip rather than on it, so the seat count stays readable.
 	_upgrade_marks.counter.center_on(Vector2(_seats.size.x + 16, _seats.size.y / 2.0))
 	_staff_mark.visible = ui.staff_affordable()
+	var hint: Dictionary = sim.bottleneck_hint() if sim.has_method("bottleneck_hint") else {}
+	var target := String(hint.get("target", ""))
+	# The full reason shows once, when the line first jams; the goal bar keeps the short form.
+	if not hint.is_empty() and _hint_text != String(hint.text): _show_toast(String(hint.text))
+	_hint_text = String(hint.get("text", ""))
+	_hint_ring.visible = STATION_REGIONS.has(target)
+	if _hint_ring.visible:
+		_hint_ring.position = STATION_REGIONS[target].position - Vector2(6, 6)
+		_hint_ring.size = STATION_REGIONS[target].size + Vector2(12, 12)
+	_staff_ring.visible = target.begins_with("staff_")
+	if _staff_ring.visible:
+		_staff_ring.position = Vector2(-4, -4)
+		_staff_ring.size = ui.staff_button.size + Vector2(8, 8)
 	_staff_mark.center_on(Vector2(ui.staff_button.size.x - 14, 12))
 
 
-## Buys the sealer → takeaway rack conveyor from its dashed frame.
-func buy_belt() -> void:
+## The kitchen belts without their own art: drawn as a strip along the segment's points, each
+## bought from a dashed frame at its middle. The sealer → rack belt keeps its art and frame.
+func _build_kitchen_belts() -> void:
+	var lines := Node2D.new()
+	lines.name = "KitchenBelts"
+	art.add_child(lines)
+	art.move_child(lines, art.get_node("Sortables").get_index())
+	for row in sim.belt_rows():
+		if not row.id in sim.GAME_BELTS or row.id in ART_BELTS.values():
+			continue
+		_belt_points[row.id] = row.points
+		var line := Line2D.new()
+		line.points = row.points
+		line.width = 24
+		line.default_color = Color("6b5444")
+		line.joint_mode = Line2D.LINE_JOINT_ROUND
+		line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		line.end_cap_mode = Line2D.LINE_CAP_ROUND
+		var inner := Line2D.new()
+		inner.points = row.points
+		inner.width = 14
+		inner.default_color = Color("a68b70")
+		inner.joint_mode = Line2D.LINE_JOINT_ROUND
+		line.add_child(inner)
+		line.visible = false
+		lines.add_child(line)
+		_belt_lines[row.id] = line
+		var frame := UnlockFrame.new()
+		frame.size = Vector2(118, 64)
+		frame.position = _along(row.points, 0.5) - frame.size / 2.0
+		frame.theme = ui.theme
+		frame.add_theme_font_size_override("font_size", 17)
+		frame.pressed.connect(buy_belt.bind(row.id))
+		$Canvas/WorldLabels.add_child(frame)
+		_station_buttons["belt:" + row.id] = frame
+
+
+## Buys a kitchen belt from its dashed frame (the sealer → takeaway rack one by default).
+func buy_belt(id := BELT_ID) -> void:
 	var before: int = sim.gold
-	var error: String = sim.buy_belt(BELT_ID)
+	var error: String = sim.buy_belt(id)
 	if not error.is_empty():
 		_show_toast(error)
 		return
-	_bought("belt", before)
-	_show_toast("传送带装好了：封好口的杯子自动上货架")
+	_bought("belt " + id, before)
+	_show_toast("传送带装好了：" + String(BELT_NOTES.get(id, "")).get_slice("，", 0))
 	save_now(false)
 	_refresh(0.0)
 
@@ -822,7 +931,8 @@ func can_buy_at(id: String) -> bool:
 	if sim._upgrade_error(id).is_empty():
 		return true
 	if id == "counter":
-		return sim.seat_error().is_empty() or sim.flyer_error().is_empty()
+		# A flyer is worth a nudge only while the line has room for the extra customers.
+		return sim.seat_error().is_empty() or sim.flyer_upgrade_error().is_empty() or (sim.flyer_error().is_empty() and sim.orders.size() * 2 < sim._queue_capacity())
 	var definition = sim._definition(id)
 	if definition != null:
 		for material in definition.materials:
@@ -942,6 +1052,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			ui.open_station(id)
 			get_viewport().set_input_as_handled()
 			return
+	if _opens_counter(point):
+		ui.open_station("counter")
+		get_viewport().set_input_as_handled()
+
+
+## The counter panel (seats, flyers) opens from the small 堂食 chip, its red ↑ beside it,
+## the counter itself or the dining room. Machines on the counter are checked first.
+func _opens_counter(point: Vector2) -> bool:
+	if not _seats.visible:
+		return false
+	var chip := Rect2(_seats.position, _seats.size).grow_individual(12, 14, 52, 14)
+	return chip.has_point(point) or Layout.POST_RECTS.counter.has_point(point) or COUNTER_DINING_RECT.has_point(point)
 
 
 func _notification(what: int) -> void:
@@ -952,3 +1074,26 @@ func _notification(what: int) -> void:
 func _exit_tree() -> void:
 	if sim != null:
 		save_now(false)
+
+
+## Pulsing yellow outline drawn around the fix for the current bottleneck; it never takes taps.
+class HintRing extends Control:
+	var _clock := 0.0
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		visible = false
+
+	func _process(delta: float) -> void:
+		if not visible: return
+		_clock += delta
+		modulate.a = 0.55 + 0.45 * sin(_clock * 5.0)
+		queue_redraw()
+
+	func _draw() -> void:
+		var box := StyleBoxFlat.new()
+		box.draw_center = false
+		box.border_color = Color("ffc928")
+		box.set_border_width_all(5)
+		box.set_corner_radius_all(14)
+		draw_style_box(box, Rect2(Vector2.ZERO, size))

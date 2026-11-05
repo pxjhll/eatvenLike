@@ -137,13 +137,14 @@ func test_four_owned_staff_with_active_rabbit_roundtrip_and_continue() -> void:
 	var store = _store()
 	if store == null: return
 	var sim = _sim()
-	sim.gold = 500
+	sim.gold = 2000
 	check(sim.hire() and sim.hire() and sim.hire(), "recruit all three reserve employees")
 	if sim.worker_by_id(4).is_empty(): return
 	check_eq(sim.unlock_station("lemonade"), "", "open service")
 	sim.revenue = 10000
 	check_eq(sim.unlock_station("boil"), "", "black tea line opens the kitchen")
-	check_eq(sim.unlock_station("seal"), "", "the sealer makes room for a second kitchen hand")
+	check_eq(sim.unlock_station("seal"), "", "open the sealer")
+	check_eq(sim.unlock_station("mix"), "", "the milk line makes room for a second kitchen hand")
 	check_eq(sim.deploy_worker(2), "", "deploy second employee")
 	check_eq(sim.deploy_worker(4), "", "deploy rabbit while fox stays in reserve")
 	sim.advance(2.037)
@@ -180,7 +181,7 @@ func test_pre_rabbit_current_schema_roster_loads_and_can_recruit_rabbit() -> voi
 	legacy.gold = 180
 	check(legacy.hire() and legacy.hire(), "prepare the pre-rabbit three-owned roster")
 	var state: Dictionary = legacy.to_dict()
-	check_eq(state.version, 12, "current simulation schema")
+	check_eq(state.version, 14, "current simulation schema")
 	var envelope := _envelope(state, 2)
 	_write(_path(), JSON.stringify(envelope))
 	var resumed = store.load_game()

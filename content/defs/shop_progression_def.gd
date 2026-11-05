@@ -18,10 +18,15 @@ extends Resource
 @export var seal_costs: Array[int] = []
 @export var seal_speeds: Array[float] = [1.0]
 @export var seal_slots: Array[int] = [1]
-## 客流（产能类）：每开一种口味客人来得快 flavor_flow；发传单每级再快 flyer_flow；flyer_costs 下标 i = Lv(i+1)→Lv(i+2)
-@export var flavor_flow: float = 0.05
-@export var flyer_flow: float = 0.10
-@export var flyer_costs: Array[int] = []
+## 客流：菜单上每多一种口味（第一种之外）客人来得快 flavor_flow；level_flow 留作开关，默认 0（客流不随升级涨）
+@export var flavor_flow: float = 0.12
+@export var level_flow: float = 0.0
+## 发传单（免费，一次性）：flyer_seconds 秒内陆续来 flyer_customers[等级-1] 位客人，点什么按当时菜单比例；
+## 从发出起 flyer_cooldowns[等级-1] 秒后才能再发。传单升级（flyer_upgrade_costs）加人数、缩冷却
+@export var flyer_seconds: float = 30.0
+@export var flyer_customers: Array[int] = [4, 6, 8, 10, 12]
+@export var flyer_cooldowns: Array[float] = [120.0, 105.0, 90.0, 75.0, 60.0]
+@export var flyer_upgrade_costs: Array[int] = [60, 150, 350, 700]
 ## 员工培养（产能类）：每级走路、干活 ×(1 + train_step)，到 train_star_levels 时一次多搬 1 杯
 @export var train_costs: Array[int] = []
 @export var train_step: float = 0.05

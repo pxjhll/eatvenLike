@@ -70,7 +70,7 @@ func _run() -> void:
 		_check(actor.frame_actor.sprite.frame == 0, "stopping holds the facing's first pose")
 	actor.free()
 	sim.reset_shop()
-	_check(sim.worker_by_id(5).art == "gray_cat" and not sim.worker_by_id(5).deployed, "reset retains ownership of gray cat")
+	_check(sim.worker_by_id(5).is_empty() and sim.all_workers().size() == 1, "reset keeps only the starter (staff do not carry over)")
 	_finish()
 
 func _finish() -> void:

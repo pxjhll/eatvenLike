@@ -70,6 +70,18 @@ func _run() -> void:
 	_advance(300)
 	_check(int(view.sim.sold_by_dish.get("black_tea", 0)) > 0, "brewed tea is shelved and served to seated customers")
 	await _capture("black-tea")
+	if not view.sim.orders.is_empty():
+		view.sim._full_seconds = 30.0
+		view.sim._boil_busy = 1.0
+		view.sim.orders[0].dish = "black_tea"
+		view.sim.orders[0].reserved = false
+		view._refresh(0.0)
+		await process_frame
+		_check(hud.get_node("%GoalText").text.contains("排长队"), "a jammed line names its bottleneck in the goal bar")
+		_check(view._hint_ring.visible, "the fix gets a pulsing outline")
+		await _capture("hint")
+		view.sim._full_seconds = 0.0
+		view._refresh(0.0)
 	_check(view._belt_toggle == null and view._belt_slots.is_empty(), "the game offers no conveyor belts")
 	await _world_click(view._seats.position + view._seats.size / 2)
 	_check(hud.page == "station" and hud.station_panel.station_id == "counter", "the seat chip opens the counter")
@@ -78,12 +90,19 @@ func _run() -> void:
 	var seat_cost: int = view.sim.seat_cost()
 	await _click(hud.station_panel.seat_button)
 	_check(view.sim.seats == 4 and view.sim.gold == gold - seat_cost and seat_cost == view.sim.PROGRESSION.seat_costs[0], "the counter sells one more table, two seats")
+	gold = view.sim.gold
+	await _click(hud.station_panel.flyer_upgrade_button)
+	_check(view.sim.flyers == 2 and view.sim.gold == gold - view.sim.PROGRESSION.flyer_upgrade_costs[0], "the counter upgrades the flyer")
+	await _click(hud.station_panel.flyer_button)
+	_check(view.sim.flyer_pending > 0 and view.sim.gold == gold - view.sim.PROGRESSION.flyer_upgrade_costs[0], "a free flyer goes out from the counter")
+	await _capture("counter")
 	view.sim.revenue = maxi(view.sim.revenue, 600)
 	await _click(hud.home_button)
 	await _click(view._station_buttons.seal)
 	gold = view.sim.gold
+	var seal_cost: int = view.sim.PROGRESSION.stages[2].line_cost
 	await _click(hud.station_panel.unlock_button)
-	_check(view.sim.stage_index == 2 and view.sim.gold == gold - 150 and not _art_hidden(["Sealer"]), "the sealer has its own frame, price and art")
+	_check(view.sim.stage_index == 2 and view.sim.gold == gold - seal_cost and not _art_hidden(["Sealer"]), "the sealer has its own frame, price and art")
 	await _click(hud.home_button)
 	_check(_frames_shown(["mix"]) and _frames_hidden(["seal", "supply"]), "the milk machine frame appears next")
 	await _click(view._station_buttons.mix)
@@ -111,8 +130,9 @@ func _run() -> void:
 	await _world_click(Vector2(120, 210))
 	_check(hud.station_panel.station_id == "supply", "unlocked device artwork opens its own material panel")
 	gold = view.sim.gold
+	var leaf_cost: int = view.sim._material_costs("supply", "tea_leaf")[0]
 	await _click(hud.station_panel.material_buttons.tea_leaf)
-	_check(view.sim.material_levels.supply.tea_leaf == 2 and view.sim.gold == gold - 50, "raw material panel upgrades the price of tea drinks")
+	_check(view.sim.material_levels.supply.tea_leaf == 2 and view.sim.gold == gold - leaf_cost, "raw material panel upgrades the price of tea drinks")
 	await _capture("materials")
 	view.sim.revenue = maxi(view.sim.revenue, 1200)
 	view.sim.gold = maxi(view.sim.gold, 1300)
@@ -139,6 +159,10 @@ func _run() -> void:
 	await _click(hud.station_panel.material_buttons.coconut)
 	_check(view.sim.station_info("topping").level == 2 and view.sim.material_levels.topping.coconut == 2, "machine level opens actual coconut flavor upgrade")
 	await _capture("flavors")
+	await _click(hud.home_button)
+	await _layout()
+	for belt in ["boil_to_mix", "mix_to_topping", "topping_to_seal"]:
+		_check(not view._station_buttons.has("belt:" + belt), "the tea shop sells only the sealer belt, not %s" % belt)
 	await _click(hud.staff_button)
 	await _click(hud.hire_button)
 	_check(view.sim.roster.size() == 3 and view.sim.workers.size() == 3, "a hire with an open spot starts work at once")

@@ -13,6 +13,7 @@ const STIR_SECONDS := 1.0
 ## v4: one machine per stage, ingredient boxes, dine-in seats, takeaway sealed at the sealer, customers never leave.
 ## v5: multiplicative prices with stars, brewer pot sizes and sealer levels; the lemonade stand stops at Lv5.
 ## v6: flyer level (customer flow upgrade).
+## v14: orders keep the seat a customer waits in; the flyer wave, cooldown and customers still to come are saved.
 ## v7: front and kitchen staff are separate; per-worker training became the front / kitchen upgrade lists.
 ## v8: kitchen staff follow orders (worker.ticket); the topping machine tops the flavor that was ordered.
 ## v9: the press table (fruit teas on a black tea base) and its stage; lemonade to go skips the sealer.
@@ -21,7 +22,7 @@ const STIR_SECONDS := 1.0
 ## the front serves only from the shelf and the lemonade stand.
 ## v12: the kitchen press table and banana tea are gone; lemon tea is pressed at the front from a lemonade
 ## and opens between the milk station and the topping machine. One conveyor (sealer → takeaway rack) is for sale.
-const SAVE_VERSION := 12
+const SAVE_VERSION := 14
 ## Sealed takeaway cups the rack on the shelf's lower tier holds.
 const PICKUP_CAPACITY := 6
 ## A newly opened dish (and takeaway once the sealer opens) starts at RAMP_START of its order weight
@@ -42,6 +43,8 @@ const LEMONADE_V4_COSTS := [20, 30, 40, 55, 75, 110, 150, 210, 295]
 const BOIL_CAPACITY := 12
 const MOOD_IMPATIENT := 15.0
 const MOOD_ANGRY := 30.0
+## A customer waiting in a seat minds the wait half as much as one standing in line.
+const SEATED_PATIENCE := 0.5
 const ARTS := ["cat", "raccoon", "fox", "rabbit", "gray_cat"]
 const ALIASES := {"cabinet": "supply", "brewer": "boil", "milk_station": "mix", "lemonade_stand": "lemonade", "press_table": "press"}
 const RESOURCE_IDS := {"supply": "cabinet", "boil": "brewer", "mix": "milk_station", "topping": "topping", "press": "press_table", "lemonade": "lemonade_stand", "counter": "counter"}
@@ -49,6 +52,8 @@ const DISHES := ["lemonade", "black_tea", "plain_milk_tea", "pearl_milk_tea", "c
 ## Drinks the front makes itself at the lemonade stand: never on the shelf, never sealed.
 const FRONT_DISHES := ["lemonade", "lemon_tea"]
 const MACHINE_IDS := ["supply", "boil", "mix", "topping", "press", "seal", "lemonade", "counter"]
+## Machines whose levels bring more customers (the cabinet and counter do not).
+const FLOW_MACHINES := ["lemonade", "boil", "mix", "topping", "press", "seal"]
 
 var roster: Array = []
 var revenue := 0
@@ -62,8 +67,14 @@ var unlocked_stations: Dictionary = {}
 var boxes: Dictionary = {}
 ## Dine-in seats owned, and the customers sitting in them: {"seat", "dish", "left"}.
 var seats := 0
-## 发传单 level: each level brings customers 10% more often.
+## Flyer level (1 to flyer_customers.size()): a free flyer brings that many customers; upgrades add more and cool down faster.
 var flyers := 1
+## Seconds left of the current flyer wave, and until the next flyer (saved, so a reload never skips the cooldown).
+var flyer_wave := 0.0
+var flyer_wait := 0.0
+## Time since the last flyer customer walked in, and how many of this wave are still on their way.
+var flyer_clock := 0.0
+var flyer_pending := 0
 ## How many items of the front / kitchen upgrade lists are bought (bought in order).
 var front_upgrades := 0
 var kitchen_upgrades := 0
@@ -77,6 +88,7 @@ var belt_clock: Dictionary = {}
 ## The free belt mode is gone (2026-10-30); the segment rules stay so they can come back.
 const BELTS_IN_GAME := false
 ## The one segment the game sells (as a dashed frame, like a machine): sealed cups ride to the takeaway rack.
+## The one segment the tea shop sells (user 2026-11-04: this shop needs only one belt).
 const GAME_BELTS := ["seal_to_shelf"]
 var _belt_courier := false
 var _rng: RandomNumberGenerator
@@ -141,6 +153,11 @@ func _initialize_shop() -> void:
 	boxes = {"tea_leaf": false, "milk": false}
 	seats = PROGRESSION.seat_start
 	flyers = 1
+	flyer_wave = 0.0
+	flyer_wait = 0.0
+	flyer_clock = 0.0
+	flyer_pending = 0
+	_full_seconds = 0.0
 	front_upgrades = 0
 	kitchen_upgrades = 0
 	diners.clear()
@@ -188,9 +205,12 @@ func _rabbit() -> Dictionary:
 		"speed": 104.0, "capacity": 2, "skill": 1.0}, true)
 	return worker
 
+## A fresh shop starts with only the starting worker: staff don't carry over (the next shop gives
+## permanent bonuses instead), so everyone else has to be hired again.
 func reset_shop() -> void:
 	workers.clear()
 	var starter: int = roster[0].id
+	roster = [roster[0]]
 	for worker in roster:
 		var fresh := _new_staff(worker.art, worker.id)
 		for key in ["name", "level", "speed", "capacity", "skill", "source"]: fresh[key] = worker[key]
@@ -258,6 +278,11 @@ func _role_room(post: String, exclude_id: int = -1) -> String:
 	return ""
 
 ## Kitchen staff: each production line opens more room.
+## Someone works the kitchen, but every kitchen hand is seated at a machine: nobody carries between stations.
+func no_kitchen_carrier() -> bool:
+	var kitchen: Array = workers.filter(func(w: Dictionary) -> bool: return w.post != "counter")
+	return not kitchen.is_empty() and kitchen.all(func(w: Dictionary) -> bool: return not w.post.is_empty())
+
 func kitchen_slots() -> int:
 	return PROGRESSION.stages[stage_index].staff_slots
 
@@ -547,15 +572,38 @@ func buy_seat() -> String:
 func _spare_seats() -> int:
 	var waiting := 0
 	for order in orders:
-		if not order.get("takeaway", false) and not order.reserved: waiting += 1
+		if int(order.get("seat", -1)) < 0 and not order.get("takeaway", false) and not order.reserved: waiting += 1
 	return free_seats() - waiting
 
-## Seats neither occupied nor promised to a dine-in cup on its way.
+## Seats neither occupied (eating, or seated and waiting for their order) nor promised to a
+## standing dine-in customer whose cup is on its way.
 func free_seats() -> int:
 	var promised := 0
 	for worker in workers:
-		if not worker.job.is_empty() and worker.job.kind == "serve" and not _to_go(worker.job): promised += 1
-	return seats - diners.size() - promised
+		if worker.job.is_empty() or worker.job.kind != "serve" or _to_go(worker.job): continue
+		if int(_order_by_id(worker.job.order_id).get("seat", -1)) < 0: promised += 1
+	return seats - diners.size() - promised - seated_orders()
+
+## Dine-in customers who found a seat on the way in and wait there for their order.
+func seated_orders() -> int:
+	var count := 0
+	for order in orders:
+		if int(order.get("seat", -1)) >= 0: count += 1
+	return count
+
+func _order_by_id(id: int) -> Dictionary:
+	for order in orders:
+		if order.id == id: return order
+	return {}
+
+## The lowest seat nobody eats at or waits in.
+func _first_open_seat() -> int:
+	var taken: Array = diners.map(func(diner: Dictionary) -> int: return diner.seat)
+	for order in orders:
+		if int(order.get("seat", -1)) >= 0: taken.append(int(order.seat))
+	var seat := 0
+	while seat in taken: seat += 1
+	return seat
 
 ## A served cup leaves with the customer: sealed takeaway, or a lemonade poured to go.
 func _to_go(job: Dictionary) -> bool:
@@ -566,7 +614,8 @@ func _to_go(job: Dictionary) -> bool:
 
 ## 0 calm, 1 impatient, 2 angry.
 func order_mood(order: Dictionary) -> int:
-	return 2 if order.wait >= MOOD_ANGRY else (1 if order.wait >= MOOD_IMPATIENT else 0)
+	var wait: float = order.wait * (SEATED_PATIENCE if int(order.get("seat", -1)) >= 0 else 1.0)
+	return 2 if wait >= MOOD_ANGRY else (1 if wait >= MOOD_IMPATIENT else 0)
 
 ## Timed machines (brewer) upgrade speed; the rest raise the price of the cups they touch.
 ## The cabinet body has no upgrade (its ingredient slots carry the price). Topping keeps speed + flavors.
@@ -658,9 +707,17 @@ func station_info(requested: String) -> Dictionary:
 				row.merge({"box": true, "box_unlocked": boxes[material.id], "box_cost": material.box_cost,
 					"box_error": box_error(material.id), "box_machine": station_info_name(machine)})
 			if _art_mode(material): row.merge(_price_preview(id, material.id, mat_level < mat_max))
+			elif row.base_price > 0:
+				# Flavor rows preview the real cup price, every other bonus on that cup included.
+				row.price_now = _dish_price(material.item_id)
+				row.price_next = -1
+				if mat_level < mat_max:
+					material_levels[id][material.id] += 1
+					row.price_next = _dish_price(material.item_id)
+					material_levels[id][material.id] -= 1
 			materials.append(row)
-	var descriptions := {"supply": "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价", "boil": "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料，口味随设备等级开放", "press": "前台员工接一杯柠檬水，再亲手捣柠檬，做成柠檬茶；外带不用封口", "seal": "外带的杯子都要来这里封口；升级封得更快，5 级、10 级各加一个封口位", "lemonade": "服务员到展示柜现取柠檬水，外带不用封口；升级提高售价，出杯也更快", "counter": "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"}
-	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "加料速度", "press": "手打速度", "lemonade": "售价", "seal": "封口速度"}
+	var descriptions := {"supply": "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价", "boil": "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料；升级开放新口味（椰果、红豆、芋泥），每开一种来的客人更多", "press": "前台员工接一杯柠檬水，再亲手捣柠檬，做成柠檬茶；外带不用封口", "seal": "外带的杯子都要来这里封口；升级封得更快，5 级、10 级各加一个封口位", "lemonade": "服务员到展示柜现取柠檬水，外带不用封口；升级提高售价，出杯也更快", "counter": "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"}
+	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "新口味", "press": "手打速度", "lemonade": "出杯速度", "seal": "封口速度"}
 	var speeds: Array = [1.0]
 	if definition != null: speeds = definition.art_speeds if _art_mode(definition) and not definition.art_speeds.is_empty() else definition.level_speed
 	var next_flavor := ""
@@ -671,14 +728,19 @@ func station_info(requested: String) -> Dictionary:
 	var seating := {}
 	# Dine-in seats are bought at the counter.
 	if id == "counter":
-		seating = {"seats": seats, "seat_max": seat_max(), "diners": diners.size(), "seat_cost": seat_cost(), "seat_error": seat_error(),
-			"flyers": flyers, "flyer_max": PROGRESSION.flyer_costs.size() + 1, "flyer_cost": flyer_cost(), "flyer_error": flyer_error(),
-			"flow": flow_multiplier(), "next_flow": flow_multiplier(flyers + 1) if flyer_cost() >= 0 else -1.0,
+		seating = {"seats": seats, "seat_max": seat_max(), "diners": diners.size() + seated_orders(), "seat_cost": seat_cost(), "seat_error": seat_error(),
+			"flyer_cost": flyer_cost(), "flyer_error": flyer_error(), "flyer_wave": flyer_wave, "flyer_wait": flyer_wait,
+			"flyer_seconds": PROGRESSION.flyer_seconds, "flyer_customers": flyer_customers(), "flyer_cooldown": flyer_cooldown(),
+			"flyer_level": flyers, "flyer_max": flyer_max_level(), "flyer_upgrade_cost": flyer_upgrade_cost(),
+			"flyer_upgrade_error": flyer_upgrade_error(), "flyer_pending": flyer_pending,
+			"next_flyer_customers": flyer_customers(flyers + 1), "next_flyer_cooldown": flyer_cooldown(flyers + 1), "flow": flow_multiplier(),
 			# A full line means more customers would only wait outside: the kitchen is the limit.
 			"queue_full": orders.size() >= _queue_capacity()}
 	# Capacity machines (brewer, sealer, topping) speed up the line; price machines raise what each cup earns.
 	# The press is both: a faster hand and a dearer cup each level.
-	seating.kind = "capacity" if id in ["boil", "seal", "topping"] else "both" if id == "press" else ("price" if id in ["lemonade", "mix", "supply"] else "")
+	# Each upgrade does one thing: capacity machines get faster, price machines make each cup dearer,
+	# and the topping machine opens the next flavor (a new dish on the menu).
+	seating.kind = "capacity" if id in ["boil", "seal", "press", "lemonade"] else "menu" if id == "topping" else ("price" if id in ["mix", "supply"] else "")
 	seating.stars = stars(id)
 	seating.max_stars = 2 if id == "seal" else (definition.art_star_levels.size() if definition != null else 0)
 	seating.next_star = upgrade_cost >= 0 and stars(id, level + 1) > stars(id)
@@ -846,40 +908,136 @@ func _topping_seconds() -> float:
 	var seconds: float = _definition("topping").art_seconds
 	return seconds if seconds > 0 else 2.0
 
-## Customers come faster with each stage, each flavor on the menu (+5% each) and each flyer level (+10% each).
 func _order_interval() -> float:
 	return PROGRESSION.stages[stage_index].customer_interval / flow_multiplier() * tuned("customer")
 
-func flow_multiplier(flyer_level: int = -1) -> float:
+## Customers come faster with each stage and with each flavor on the menu beyond the first (flavor_flow each).
+## level_flow (machine levels) is kept as a switch and is 0: upgrades raise output, not traffic.
+## A flyer adds its own customers on top (see _flyer_customers).
+func flow_multiplier() -> float:
 	var flavors := 0
 	for material in _definition("topping").materials:
 		if _dish_unlocked(material.item_id): flavors += 1
-	var level: int = flyers if flyer_level < 0 else flyer_level
-	return (1.0 + PROGRESSION.flavor_flow * flavors) * (1.0 + PROGRESSION.flyer_flow * (level - 1))
+	return (1.0 + PROGRESSION.flavor_flow * maxi(0, flavors - 1)) * (1.0 + PROGRESSION.level_flow * machine_levels())
 
+## Levels bought on the machines that draw customers (each counts once above Lv1).
+func machine_levels() -> int:
+	var total := 0
+	for id in FLOW_MACHINES:
+		if station_unlocked(id): total += station_levels.get(id, 1) - 1
+	return total
+
+## Flyers are free: only the cooldown limits them.
 func flyer_cost() -> int:
-	return PROGRESSION.flyer_costs[flyers - 1] if flyers - 1 < PROGRESSION.flyer_costs.size() else -1
+	return 0
+
+func flyer_max_level() -> int:
+	return PROGRESSION.flyer_customers.size()
+
+## Customers one flyer brings, and the cooldown, at a flyer level (default: the current one).
+func flyer_customers(level: int = -1) -> int:
+	var lv := flyers if level < 0 else level
+	return PROGRESSION.flyer_customers[clampi(lv, 1, flyer_max_level()) - 1]
+
+func flyer_cooldown(level: int = -1) -> float:
+	var lv := flyers if level < 0 else level
+	return PROGRESSION.flyer_cooldowns[clampi(lv, 1, PROGRESSION.flyer_cooldowns.size()) - 1]
 
 func flyer_error() -> String:
 	if not station_unlocked("lemonade"): return "请先解锁柠檬水台"
-	if flyer_cost() < 0: return "传单已满级"
-	if gold < flyer_cost(): return "金币不足，需要 %d" % flyer_cost()
+	if flyer_wave > 0.0: return "传单正在起效，还有 %d 秒" % ceili(flyer_wave)
+	if flyer_wait > 0.0: return "传单还要等 %d 秒才能再发" % ceili(flyer_wait)
 	return ""
 
 func buy_flyers() -> String:
 	var error := flyer_error()
 	if not error.is_empty(): return error
-	gold -= flyer_cost()
-	flyers += 1
-	_event("flyers", "发了更多传单，客人来得更勤了")
+	flyer_wave = PROGRESSION.flyer_seconds
+	flyer_wait = flyer_cooldown()
+	# Customers of an earlier flyer still waiting outside (the line was full) keep their place.
+	flyer_pending += flyer_customers()
+	flyer_clock = 0.0
+	_event("flyers", "传单发出去了，接下来 %d 秒内来 %d 位客人" % [int(PROGRESSION.flyer_seconds), flyer_pending])
 	return ""
 
+func flyer_upgrade_cost() -> int:
+	if flyers >= flyer_max_level(): return -1
+	return PROGRESSION.flyer_upgrade_costs[flyers - 1]
+
+func flyer_upgrade_error() -> String:
+	if not station_unlocked("lemonade"): return "请先解锁柠檬水台"
+	var cost := flyer_upgrade_cost()
+	if cost < 0: return "传单已升满"
+	if gold < cost: return "金币不足，需要 %d" % cost
+	return ""
+
+func upgrade_flyers() -> String:
+	var error := flyer_upgrade_error()
+	if not error.is_empty(): return error
+	gold -= flyer_upgrade_cost()
+	flyers += 1
+	_event("flyer_upgrade", "传单升级：一次招来 %d 位客人，间隔 %d 秒" % [flyer_customers(), int(flyer_cooldown())])
+	return ""
+
+## How long the standing line has been full without a break, and smoothed shares (about the last
+## 20 seconds) of the brewer brewing and of kitchen / front staff standing idle. Not saved.
+var _full_seconds := 0.0
+var _boil_busy := 0.0
+var _kitchen_idle := 1.0
+var _front_idle := 1.0
+const HINT_AFTER := 20.0
+const HINT_SMOOTH := 0.1 / 20.0
+
+func _track_bottleneck() -> void:
+	var full: bool = orders.size() - seated_orders() >= PROGRESSION.stages[stage_index].queue_capacity
+	_full_seconds = _full_seconds + STEP if full else 0.0
+	var boil: Dictionary = stations.get("boil", {})
+	var brewing := 1.0 if not boil.is_empty() and int(boil.processing) > 0 and boil.phase != "awaiting_take" else 0.0
+	_boil_busy = lerpf(_boil_busy, brewing, HINT_SMOOTH)
+	var idle := {"front": [0, 0], "kitchen": [0, 0]}
+	for worker in workers:
+		var side := "front" if worker.post == "counter" else "kitchen"
+		idle[side][1] += 1
+		if worker.job.is_empty(): idle[side][0] += 1
+	if idle.kitchen[1] > 0: _kitchen_idle = lerpf(_kitchen_idle, float(idle.kitchen[0]) / idle.kitchen[1], HINT_SMOOTH)
+	if idle.front[1] > 0: _front_idle = lerpf(_front_idle, float(idle.front[0]) / idle.front[1], HINT_SMOOTH)
+
+## When the line has stayed full for a while: which drink piles up, what holds it back, and where to
+## fix it ("target": a station id, or "staff_front" / "staff_kitchen"). Empty while the line keeps moving.
+func bottleneck_hint() -> Dictionary:
+	var hint := _bottleneck()
+	if not hint.is_empty(): hint.short = "%s排长队 · %s" % [hint.drink, hint.fix]
+	return hint
+
+func _bottleneck() -> Dictionary:
+	if _full_seconds < HINT_AFTER: return {}
+	var waiting := {}
+	for order in orders:
+		if not order.reserved: waiting[order.dish] = int(waiting.get(order.dish, 0)) + 1
+	var top := ""
+	for dish in waiting:
+		if top.is_empty() or waiting[dish] > waiting[top]: top = dish
+	if top.is_empty(): return {}
+	var drink := dish_name(top)
+	if top in FRONT_DISHES:
+		if _front_idle < 0.15: return {"drink": drink, "fix": "升级前台员工", "text": "前台跟不上，%s排起了长队：升级前台员工" % drink, "target": "staff_front"}
+		var stand := "press" if top == "lemon_tea" else "lemonade"
+		return {"drink": drink, "fix": "升级" + station_info_name(stand), "text": "%s出得不够快：升级%s" % [drink, station_info_name(stand)], "target": stand}
+	if kitchen_staff() <= 0: return {"drink": drink, "fix": "派员工去后厨", "text": "没有后厨员工，%s做不出来：派一位员工去后厨" % drink, "target": "staff_kitchen"}
+	if _boil_busy > 0.85: return {"drink": drink, "fix": "升级煮茶机", "text": "%s做不过来，煮茶机一直在煮：升级煮茶机" % drink, "target": "boil"}
+	if _kitchen_idle < 0.15: return {"drink": drink, "fix": "升级后厨员工", "text": "后厨跑不过来，%s排起了长队：升级后厨员工或多招一位" % drink, "target": "staff_kitchen"}
+	return {"drink": drink, "fix": "升级煮茶机", "text": "%s做不过来：升级煮茶机" % drink, "target": "boil"}
+
+## Room in the standing line. Customers waiting in a seat do not stand in it.
 func _queue_capacity() -> int:
-	return PROGRESSION.stages[stage_index].queue_capacity
+	return PROGRESSION.stages[stage_index].queue_capacity + seated_orders()
 
 func _tick() -> void:
 	if follow_orders: _drop_stuck_tickets()
+	flyer_wait = maxf(0.0, flyer_wait - STEP)
+	_flyer_customers()
 	super._tick()
+	_track_bottleneck()
 	_run_belts()
 	for index in range(diners.size() - 1, -1, -1):
 		diners[index].left -= STEP
@@ -888,7 +1046,7 @@ func _tick() -> void:
 	if station_unlocked("seal"):
 		var free := free_seats()
 		for order in orders:
-			if order.reserved or order.get("takeaway", false): continue
+			if order.reserved or order.get("takeaway", false) or int(order.get("seat", -1)) >= 0: continue
 			if free > 0: free -= 1
 			else: order["takeaway"] = true
 
@@ -932,9 +1090,10 @@ func _dish_unlocked(dish: String, needs_kitchen_hand := true) -> bool:
 	# orders nobody can make would fill the queue, stop lemonade sales and leave no money to hire.
 	if needs_kitchen_hand and kitchen_staff() <= 0: return false
 	if dish == "black_tea": return _brew_ready()
-	if dish == "plain_milk_tea": return _mix_ready()
+	# Every milk tea needs the whole chain: brewed tea (brewer + tea leaf box) and milk (mixer + milk box).
+	if dish == "plain_milk_tea": return _brew_ready() and _mix_ready()
 	for material in _definition("topping").materials:
-		if material.item_id == dish: return station_unlocked("topping") and station_levels.topping >= material.unlock_level
+		if material.item_id == dish: return _brew_ready() and _mix_ready() and station_unlocked("topping") and station_levels.topping >= material.unlock_level
 	return false
 
 ## How far a new dish (or takeaway) has eased in: RAMP_START right after it opens, 1.0 after RAMP_ORDERS customers.
@@ -965,12 +1124,27 @@ func _add_order() -> void:
 		if sample <= 0:
 			selected = dish
 			break
-	# Customers would rather sit down: they take their drink to go only when every seat is taken or spoken for.
-	var takeaway := station_unlocked("seal") and _spare_seats() <= 0
+	# Customers would rather sit down: one who finds a free seat sits and orders from there. With every
+	# seat taken they stand in line, and once the sealer is open they take the drink to go instead.
+	var spare := _spare_seats()
+	var seat := _first_open_seat() if spare > 0 else -1
+	var takeaway := station_unlocked("seal") and spare <= 0
 	for dish in weights: order_ramp[dish] = mini(int(order_ramp.get(dish, 0)) + 1, RAMP_ORDERS)
 	if station_unlocked("seal"): order_ramp.takeaway = mini(int(order_ramp.get("takeaway", 0)) + 1, RAMP_ORDERS)
-	orders.append({"id": _next_order, "wait": 0.0, "reserved": false, "dish": selected, "takeaway": takeaway})
+	orders.append({"id": _next_order, "wait": 0.0, "reserved": false, "dish": selected, "takeaway": takeaway, "seat": seat})
 	_next_order += 1
+
+## While a flyer works, its customers walk in one by one, spread over flyer_seconds, and order from the
+## whole menu like anyone else. One who finds the line full waits outside and comes in when there is room.
+func _flyer_customers() -> void:
+	if flyer_wave > 0.0: flyer_wave = maxf(0.0, flyer_wave - STEP)
+	if flyer_pending <= 0: return
+	flyer_clock += STEP
+	if flyer_clock < PROGRESSION.flyer_seconds / maxf(1.0, float(flyer_customers())): return
+	if orders.size() >= _queue_capacity(): return
+	flyer_clock = 0.0
+	flyer_pending -= 1
+	_add_order()
 
 func _source_point(job: Dictionary) -> Vector2:
 	# Lemonade and lemon tea are poured (and pressed) at the stand.
@@ -1039,11 +1213,11 @@ func _jobs(worker: Dictionary) -> Array:
 		# (a lemonade an old save left sealed goes first).
 		var source: String = "pickup" if order.get("takeaway", false) else "shelf"
 		if order.dish in FRONT_DISHES: source = "pickup" if order.get("takeaway", false) and _available("pickup", order.dish) > 0 else "supply"
-		if not order.get("takeaway", false):
-			if seats_left <= 0: continue
+		var standing_dine_in: bool = not order.get("takeaway", false) and int(order.get("seat", -1)) < 0
+		if standing_dine_in and seats_left <= 0: continue
 		var serve := _candidate("serve", source, "counter", order.dish, worker, 110)
 		if serve.is_empty(): continue
-		if not order.get("takeaway", false): seats_left -= 1
+		if standing_dine_in: seats_left -= 1
 		serve.count = 1
 		serve.order_id = order.id
 		serve.priority += minf(20, order.wait * 0.1)
@@ -1608,24 +1782,34 @@ func _dish_price(dish: String) -> int:
 	# Price upgrades multiply: each level ×(1 + step), each star ×star_mult, across machines and ingredients.
 	# Every bonus on a cup adds to one sum (levels, stars, ingredients, flavour), so a maxed milk tea ends
 	# near ×3.5 rather than the ×10 that stacked multipliers reached.
-	var bonus := 1.0
+	# Each source adds whole gold, at least 1 per level bought, so no price level is lost to rounding.
+	var extra := 0
 	for id in ["lemonade", "boil", "mix", "supply", "press"]:
 		var definition = _definition(id)
 		if _art_mode(definition) and dish in definition.art_price_dishes:
-			bonus += definition.art_price_step * (station_levels[id] - 1) + (definition.art_star_mult - 1.0) * stars(id)
+			extra += _gold_steps(price, definition.art_price_step, station_levels[id] - 1)
+			extra += _gold_steps(price, definition.art_star_mult - 1.0, stars(id))
 		for material in definition.materials:
-			if _art_mode(material) and dish in material.art_price_dishes: bonus += material.art_price_step * (material_levels[id][material.id] - 1)
+			if _art_mode(material) and dish in material.art_price_dishes: extra += _gold_steps(price, material.art_price_step, material_levels[id][material.id] - 1)
 	for id in ["topping", "press"]:
 		for material in _definition(id).materials:
-			if material.item_id == dish: bonus += _material_bonus(id, material.id) - 1.0
-	return roundi(price * bonus * tuned("price"))
+			if material.item_id == dish:
+				var levels: int = material_levels[id][material.id] - 1
+				var gain := _material_bonus(id, material.id) - 1.0
+				if levels > 0 and gain > 0.0: extra += maxi(levels, roundi(price * gain))
+	return roundi((price + extra) * tuned("price"))
+
+## Gold a price source adds for `count` levels of `step` on a cup of `base` gold: at least 1 per level.
+func _gold_steps(base: int, step: float, count: int) -> int:
+	if count <= 0 or step <= 0.0: return 0
+	return maxi(count, roundi(base * step * count))
 
 func _record_sale(job: Dictionary) -> void:
 	# A cup handed over from the shelf or the stand is drunk here: the customer takes a seat for a while.
 	if not _to_go(job):
-		var taken: Array = diners.map(func(diner: Dictionary) -> int: return diner.seat)
-		var seat := 0
-		while seat in taken: seat += 1
+		# A seated customer comes back to the chair they kept; a standing one takes the first open seat.
+		var seat := int(_order_by_id(job.order_id).get("seat", -1))
+		if seat < 0: seat = _first_open_seat()
 		diners.append({"seat": seat, "dish": job.item, "left": seat_seconds()})
 	sold += job.count
 	sold_by_dish[job.item] += job.count
@@ -1662,6 +1846,7 @@ func to_dict() -> Dictionary:
 		"sold_by_dish": sold_by_dish.duplicate(true), "flavor_cursor": _flavor_cursor, "rng_state": _rng.state,
 		"belts": belts.duplicate(true), "belt_clock": belt_clock.duplicate(true),
 		"boxes": boxes.duplicate(true), "seats": seats, "diners": diners.duplicate(true), "flyers": flyers,
+		"flyer_wave": flyer_wave, "flyer_wait": flyer_wait, "flyer_clock": flyer_clock, "flyer_pending": flyer_pending,
 		"front_upgrades": front_upgrades, "kitchen_upgrades": kitchen_upgrades, "order_ramp": order_ramp.duplicate(true)}
 
 func _apply_state(state: Dictionary) -> void:
@@ -1697,6 +1882,10 @@ func _apply_state(state: Dictionary) -> void:
 	boxes = state.boxes.duplicate(true)
 	seats = state.seats
 	flyers = state.flyers
+	flyer_wave = state.flyer_wave
+	flyer_wait = state.flyer_wait
+	flyer_clock = state.flyer_clock
+	flyer_pending = state.flyer_pending
 	front_upgrades = state.front_upgrades
 	kitchen_upgrades = state.kitchen_upgrades
 	diners = state.diners.duplicate(true)
@@ -1721,13 +1910,22 @@ func load_dict(state: Dictionary) -> String:
 	if state.get("version") is int and state.version == 9: state = _migrate_v9(state)
 	if state.get("version") is int and state.version == 10: state = _migrate_v10(state)
 	if state.get("version") is int and state.version == 11: state = _migrate_v11(state)
+	if from_version is int and from_version < 13 and state.get("version") in [12, SAVE_VERSION]: state = _migrate_v12(state)
+	if state.get("version") is int and state.version == 13: state = _migrate_v13(state)
 	_round_seats(state)
-	var error := _validate_state(state)
+	var migrated: bool = from_version is int and from_version < SAVE_VERSION
+	var error := _validate_state(state, migrated)
 	if not error.is_empty(): return error
 	var candidate = get_script().new()
 	candidate._apply_state(state)
 	var report: Dictionary = candidate.audit()
 	if not report.valid: return "存档库存或预留不一致：%s" % report.errors
+	# An older save can have more staff out than this version's slots allow: the extras go back to
+	# the roster the normal way (cargo and reservations returned), newest deployment first.
+	if migrated and candidate._recall_over_limit():
+		report = candidate.audit()
+		if not report.valid: return "存档库存或预留不一致：%s" % report.errors
+		state = candidate.to_dict()
 	if candidate._recover_layout_positions():
 		report = candidate.audit()
 		if not report.valid: return "存档库存或预留不一致：%s" % report.errors
@@ -1862,9 +2060,43 @@ func _migrate_v10(old: Dictionary) -> Dictionary:
 ## moved ahead of the topping machine. Cups in flight can't follow the old routes, so like v6 the floor
 ## starts fresh (queue, jobs, tickets and stock dropped); progress, money, levels, seats and staff stay.
 ## A shop already past the topping machine gets the front press for free (unlocks follow stage order).
-func _migrate_v11(old: Dictionary) -> Dictionary:
+## v12 → v13 (second-shop economy): the flyer is free with its own upgrade levels, so an old flyer level
+## (it meant something else) starts over at 1; the topping machine only opens flavors now and tops out at Lv4.
+func _migrate_v12(old: Dictionary) -> Dictionary:
+	var state: Dictionary = old.duplicate(true)
+	if state.version == 12: state.version = 13
+	state.flyers = 1
+	if state.get("station_levels") is Dictionary and state.station_levels.get("topping") is int:
+		state.station_levels.topping = mini(state.station_levels.topping, _max_level("topping"))
+	return state
+
+## v13 → v14: orders without a seat stand in line; flyer state saved (a missing one means no flyer running).
+## Early v13 saves of this version's test builds lack the seat field too, so it is filled in only where missing.
+func _migrate_v13(old: Dictionary) -> Dictionary:
 	var state: Dictionary = old.duplicate(true)
 	state.version = SAVE_VERSION
+	if state.get("orders") is Array:
+		for order in state.orders:
+			if order is Dictionary and not order.has("seat"): order["seat"] = -1
+	for key in ["flyer_wave", "flyer_wait", "flyer_clock"]:
+		if not state.has(key): state[key] = 0.0
+	if not state.has("flyer_pending"): state.flyer_pending = 0
+	return state
+
+## Sends staff over this stage's front or kitchen slots back to the roster. True if anyone was recalled.
+func _recall_over_limit() -> bool:
+	var recalled := false
+	for side in ["front", "kitchen"]:
+		var room: int = front_slots() if side == "front" else kitchen_slots()
+		var out: Array = workers.filter(func(w: Dictionary) -> bool: return (w.post == "counter") == (side == "front"))
+		while out.size() > room:
+			recall_worker(out.pop_back().id)
+			recalled = true
+	return recalled
+
+func _migrate_v11(old: Dictionary) -> Dictionary:
+	var state: Dictionary = old.duplicate(true)
+	state.version = 12
 	var fresh: Dictionary = get_script().new().to_dict()
 	for key in ["stations", "shelf_stock", "shelf_count", "orders", "belt_items", "generated", "shelf_reserved_in", "shelf_reserved_out", "order_clock", "accumulator"]:
 		state[key] = fresh[key].duplicate(true) if fresh[key] is Dictionary or fresh[key] is Array else fresh[key]
@@ -1986,7 +2218,7 @@ func _valid_job_route(job: Dictionary) -> bool:
 			return job.dst == "shelf" and job.belt == "" and ((job.src == "boil" and job.item == "tea") or (job.src == "mix" and job.item == "plain_milk_tea") or (job.src == "topping" and _is_topped(job.item)))
 	return false
 
-func _validate_state(state: Dictionary) -> String:
+func _validate_state(state: Dictionary, allow_extra_staff := false) -> String:
 	var template := to_dict()
 	if state.size() != template.size(): return "存档字段不完整"
 	for key in template:
@@ -2055,7 +2287,7 @@ func _validate_state(state: Dictionary) -> String:
 		if worker is Dictionary and worker.get("id") in state.deployed:
 			if worker.get("post") == "counter": front_count += 1
 			else: kitchen_count += 1
-	if front_count > front_room or kitchen_count > PROGRESSION.stages[state.stage_index].staff_slots: return "派出员工超过岗位数"
+	if not allow_extra_staff and (front_count > front_room or kitchen_count > PROGRESSION.stages[state.stage_index].staff_slots): return "派出员工超过岗位数"
 	var ids: Array = []
 	for worker in state.roster:
 		if not worker is Dictionary: return "员工字段无效"
@@ -2115,8 +2347,9 @@ func _validate_state(state: Dictionary) -> String:
 		active_ids.append(id)
 	var order_ids: Array = []
 	for order in state.orders:
-		if not order is Dictionary or not _same_shape(order, {"id": 1, "wait": 0.0, "reserved": false, "dish": "", "takeaway": false}): return "订单字段无效"
+		if not order is Dictionary or not _same_shape(order, {"id": 1, "wait": 0.0, "reserved": false, "dish": "", "takeaway": false, "seat": 0}): return "订单字段无效"
 		if order.id < 1 or order.id >= state.next_order or order.id in order_ids or order.wait < 0 or not order.dish in DISHES: return "订单内容无效"
+		if order.seat < -1 or order.seat >= state.seats or (order.seat >= 0 and order.takeaway): return "订单座位无效"
 		order_ids.append(order.id)
 	var served_orders: Array = []
 	var operations := {"boil": 0, "topping": 0}
@@ -2149,9 +2382,14 @@ func _validate_state(state: Dictionary) -> String:
 		var machine := _canonical(_box_def(material).box_machine)
 		if state.boxes[material] and not state.unlocked_stations[machine]: return "原料箱解锁状态无效"
 	if state.seats < PROGRESSION.seat_start or state.seats > seat_max() or state.diners.size() > state.seats: return "座位无效"
-	if state.flyers < 1 or state.flyers > PROGRESSION.flyer_costs.size() + 1: return "传单等级无效"
+	if state.flyers < 1 or state.flyers > flyer_max_level(): return "传单字段无效"
+	if state.flyer_wave < 0 or state.flyer_wait < 0 or state.flyer_clock < 0 or state.flyer_pending < 0: return "传单状态无效"
 	if state.front_upgrades < 0 or state.front_upgrades > PROGRESSION.front_upgrade_kinds.size() or state.kitchen_upgrades < 0 or state.kitchen_upgrades > PROGRESSION.kitchen_upgrade_kinds.size(): return "员工升级无效"
 	var seat_ids: Array = []
+	for order in state.orders:
+		if order.seat < 0: continue
+		if order.seat in seat_ids: return "订单座位重复"
+		seat_ids.append(order.seat)
 	for diner in state.diners:
 		if not diner is Dictionary or not _same_shape(diner, {"seat": 0, "dish": "", "left": 0.0}): return "堂食客人字段无效"
 		if diner.seat < 0 or diner.seat >= state.seats or diner.seat in seat_ids or not diner.dish in DISHES or diner.left < 0 or diner.left > _longest_seat_seconds() + 0.000001: return "堂食客人无效"
