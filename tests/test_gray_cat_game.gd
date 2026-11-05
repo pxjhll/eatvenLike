@@ -15,7 +15,7 @@ func _run() -> void:
 		_finish()
 		return
 	_check(library.portrait("gray_cat") is AtlasTexture, "portrait uses the real gray-cat atlas")
-	_check(library.actions("gray_cat").size() == 1 and library.actions("gray_cat")[0].id == "walk", "only authored gray-cat walk is advertised")
+	_check(library.actions("gray_cat").size() == 2 and library.actions("gray_cat")[0].id == "walk", "authored gray-cat walk and idle are advertised")
 	sim.gold = 1000
 	for art in ["raccoon", "fox", "rabbit", "gray_cat"]:
 		_check(sim.next_hire_art() == art, "existing recruitment order followed by gray cat")
@@ -24,7 +24,7 @@ func _run() -> void:
 		_check(sim.hire() and sim.gold == gold - cost, "each recruit is paid")
 	var worker: Dictionary = sim.worker_by_id(5)
 	_check(worker.art == "gray_cat" and worker.name == "小灰猫", "new gray cat has its own roster identity")
-	_check(sim.next_hire_art() == "cat", "repeat recruitment follows all five animals")
+	_check(sim.next_hire_art() == "bear", "bear follows the original five animals")
 	var legacy: Dictionary = sim.to_dict()
 	legacy.roster[4].art = "cat"
 	legacy.roster[4].name = "Cat"
@@ -67,7 +67,7 @@ func _run() -> void:
 		_check(is_equal_approx(phase, actor.frame_actor.get_phase()), "paused simulation freezes gray-cat frames")
 		moving.walking = false
 		actor.display(moving, sim.elapsed + 0.3)
-		_check(actor.frame_actor.sprite.frame == 0, "stopping holds the facing's first pose")
+		_check(actor.frame_actor.action == "idle", "stopping plays the facing's idle action")
 	actor.free()
 	sim.reset_shop()
 	_check(sim.worker_by_id(5).is_empty() and sim.all_workers().size() == 1, "reset keeps only the starter (staff do not carry over)")

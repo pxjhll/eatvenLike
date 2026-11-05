@@ -373,7 +373,7 @@ func _update_customers(delta: float) -> void:
 		active[order.id] = true
 		if not _customers.has(order.id):
 			var actor := Actor.new()
-			actor.setup("squirrel" if int(order.id) % 2 else "hamster", _font, CUSTOMER_HEIGHT)
+			actor.setup(Actor.Characters.customer_art(int(order.id)), _font, CUSTOMER_HEIGHT)
 			art.get_node("Sortables").add_child(actor)
 			_customers[order.id] = actor
 			_customer_positions[order.id] = Layout.ENTRANCE
@@ -395,7 +395,14 @@ func _update_customers(delta: float) -> void:
 		else:
 			var patience: float = sim.CONFIG.customer_patience if "CONFIG" in sim else 0.0
 			_customers[order.id].show_order(String(order.get("dish", "sealed")), 1.0 - float(order.wait) / patience if patience > 0 else -1.0)
-		_customers[order.id].display({"pos": point, "walking": point.distance_to(goal) > 1, "phase": "idle", "task_label": ""}, sim.elapsed)
+		var pose := {"pos": point, "walking": point.distance_to(goal) > 1, "phase": "idle", "task_label": ""}
+		if seat >= 0 and not order.reserved and point.distance_to(goal) <= 1:
+			pose.seated = true
+			pose.facing = 2 if seat % 2 == 0 else 6
+		_customers[order.id].display(pose, sim.elapsed)
+		# Match the dining layer while waiting in a chair; restore floor sorting on pickup.
+		_customers[order.id].z_index = 1 if pose.get("seated", false) else 0
+		if pose.get("seated", false): _customers[order.id].position.y -= 14.0
 	# Served customers leave the queue: dine-in ones walk to the chair the sale gave them, the rest go out the door.
 	var seats_now := {}
 	if "diners" in sim:
@@ -408,7 +415,7 @@ func _update_customers(delta: float) -> void:
 	var dining: Node = art.get_node_or_null("Sortables/DiningArea")
 	for id in leaving:
 		var order: Dictionary = _customer_orders.get(id, {})
-		var art_id := "squirrel" if int(id) % 2 else "hamster"
+		var art_id: String = Actor.Characters.customer_art(int(id))
 		if dining != null:
 			var kept := int(order.get("seat", -1))
 			if kept >= 0 and kept in new_seats:

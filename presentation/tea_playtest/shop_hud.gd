@@ -451,7 +451,7 @@ func refresh() -> void:
 				next_art = art
 				break
 	_recruit_portrait.texture = _portraits[next_art]
-	var descriptions := {"cat": "小猫 · 速度型\n跑得快的多面手", "raccoon": "浣熊 · 力量型\n擅长批量搬运", "fox": "狐狸 · 操作型\n擅长手工制作", "rabbit": "小兔子 · 速度型\n擅长快速搬运", "gray_cat": "小灰猫 · 速度型\n跑得快的多面手"}
+	var descriptions := {"cat": "小猫 · 速度型\n跑得快的多面手", "raccoon": "浣熊 · 力量型\n擅长批量搬运", "fox": "狐狸 · 操作型\n擅长手工制作", "rabbit": "小兔子 · 速度型\n擅长快速搬运", "gray_cat": "小灰猫 · 速度型\n跑得快的多面手", "bear": "小熊 · 力量型\n擅长批量搬运"}
 	_recruit_label.text = descriptions.get(next_art, NAMES[next_art]) + ("\n招来直接上岗" if room else "\n解锁新设备后有更多空位")
 	pause_button.text = "继续营业" if sim.paused else "暂停营业"
 	belt_button.text = "运输方式  ·  传送带" if sim.use_belts else "运输方式  ·  人工搬运"

@@ -19,7 +19,7 @@ func _run() -> void:
 		_check(not library.actions(art).is_empty(), "each character exposes its actual available actions")
 	_check(library.portrait("rabbit") is AtlasTexture, "rabbit portrait comes from its actual frame atlas")
 	var actions: Array = library.actions("rabbit")
-	_check(actions.size() == 1 and actions[0].id == "walk", "rabbit exposes the authored walk action")
+	_check(actions.size() == 2 and actions[0].id == "walk" and actions[1].id == "idle", "rabbit exposes the authored walk and idle actions")
 	var actor: Node2D = load("res://presentation/tea_playtest/staff_actor.gd").new()
 	actor.setup("rabbit", load("res://art/ui/graybox_font.ttf"))
 	root.add_child(actor)
@@ -52,7 +52,7 @@ func _run() -> void:
 	worker.carry_item = "black_tea"
 	worker.carry_count = 2
 	actor.display(worker, clock + 0.2)
-	_check(actor.frame_actor.sprite.frame == 0 and actor.frame_actor.direction == 7, "stopping keeps facing and uses a still pose")
+	_check(actor.frame_actor.action == "idle" and actor.frame_actor.direction == 7, "stopping keeps facing and plays authored idle")
 	_check(actor.carried.visible and actor.amount.visible, "frame rabbit retains cup and quantity overlays")
 	_check(absf(actor.carried.texture.get_height() * actor.carried.scale.y - 52.0) < 0.001, "rabbit keeps existing orthographic cup size")
 	for facing in [4, 0, 3, 7, 5, 2]:

@@ -87,7 +87,7 @@ func refresh(seats: int, diners: Array, font: Font, clock: float, delta := 0.0) 
 			_walk(_actor(_arrivals[seat].art, font), Layout.seat_path(_arrivals[seat].from, seat), items[seat], seat, _arrivals[seat].from)
 		else:
 			# A loaded save (or a seat filled without a visible queue) starts seated.
-			_diners[seat] = _actor("squirrel" if seat % 2 else "hamster", font)
+			_diners[seat] = _actor(Actor.Characters.customer_art(seat + 1), font)
 	_arrivals.clear()
 	_advance(delta, clock)
 	for seat in _cups.keys():
@@ -96,7 +96,8 @@ func refresh(seats: int, diners: Array, font: Font, clock: float, delta := 0.0) 
 			_cups.erase(seat)
 	for seat in _diners:
 		_table_cup(seat, items.get(seat, ""))
-		_diners[seat].display({"pos": Layout.seat_point(seat), "walking": false, "phase": "idle", "task_label": ""}, clock)
+		_diners[seat].display({"pos": Layout.seat_point(seat), "walking": false, "seated": true,
+			"facing": 2 if seat % 2 == 0 else 6, "phase": "idle", "task_label": ""}, clock)
 		_diners[seat].task.visible = false
 		# Sitting on the chair: drawn over it, slightly raised onto the seat.
 		_diners[seat].z_index = 1

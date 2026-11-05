@@ -152,12 +152,15 @@ func test_rabbit_is_fourth_paid_recruit_and_roster_keeps_growing() -> void:
 	sim.gold = 110
 	check(sim.hire(), "a fifth employee can be recruited")
 	check_eq(sim.worker_by_id(5).art, "gray_cat", "fifth first-time recruit is the new gray cat")
-	check_eq(sim.next_hire_art(), "cat", "after one of each, the cycle starts again")
+	check_eq(sim.next_hire_art(), "bear", "new bear follows the original five animals")
 	sim.gold = 135
-	check(sim.hire(), "a sixth employee repeats the first animal")
-	var second_cat: Dictionary = sim.worker_by_id(6)
+	check(sim.hire(), "the sixth employee is the new bear")
+	check_eq(sim.worker_by_id(6).art, "bear", "bear receives a fresh id")
+	sim.gold = 160
+	check(sim.hire(), "after all six animals, recruitment repeats")
+	var second_cat: Dictionary = sim.worker_by_id(7)
 	check(not second_cat.is_empty() and second_cat.art == "cat", "a repeat animal takes a fresh id")
-	check_eq(sim.all_workers().size(), 6, "six employees can be owned")
+	check_eq(sim.all_workers().size(), 7, "repeat animals receive fresh ids")
 	check_eq(sim.next_hire_art(), "raccoon", "repeats follow the animal order")
 	check(sim.audit().valid, "five owned staff preserve simulation invariants")
 	var copy = make_shop()

@@ -45,7 +45,7 @@ const MOOD_IMPATIENT := 15.0
 const MOOD_ANGRY := 30.0
 ## A customer waiting in a seat minds the wait half as much as one standing in line.
 const SEATED_PATIENCE := 0.5
-const ARTS := ["cat", "raccoon", "fox", "rabbit", "gray_cat"]
+const ARTS := ["cat", "raccoon", "fox", "rabbit", "gray_cat", "bear"]
 const ALIASES := {"cabinet": "supply", "brewer": "boil", "milk_station": "mix", "lemonade_stand": "lemonade", "press_table": "press"}
 const RESOURCE_IDS := {"supply": "cabinet", "boil": "brewer", "mix": "milk_station", "topping": "topping", "press": "press_table", "lemonade": "lemonade_stand", "counter": "counter"}
 const DISHES := ["lemonade", "black_tea", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea", "lemon_tea"]
@@ -186,6 +186,11 @@ func _initialize_shop() -> void:
 		if _is_topped(dish): stations.topping.output[dish] = 0
 
 func _make_worker(index: int) -> Dictionary:
+	if ARTS[index] == "bear":
+		# Reuse the existing carry worker's balance; only the character identity differs.
+		var worker := super._make_worker(1)
+		worker.merge({"id": 6, "name": "小熊", "art": "bear"}, true)
+		return worker
 	if ARTS[index] == "gray_cat":
 		var worker := super._make_worker(0)
 		worker.merge({"id": 5, "name": "小灰猫", "art": "gray_cat"}, true)
@@ -240,7 +245,8 @@ func acquire_staff(art: String, source: String) -> String:
 	if source.strip_edges().is_empty(): return "员工来源不能为空"
 	# Preferred ids follow animal order; existing duplicate staff may already occupy one.
 	var id := ARTS.find(art) + 1
-	var next_id := ARTS.size() + 1
+	# Keep the historical duplicate-id floor stable when more animal types are added.
+	var next_id := 6
 	for owned in roster:
 		next_id = maxi(next_id, owned.id + 1)
 		if owned.id == id: id = -1
