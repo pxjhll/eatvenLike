@@ -716,7 +716,7 @@ func station_info(requested: String) -> Dictionary:
 			elif row.base_price > 0:
 				# Flavor rows preview the real cup price, every other bonus on that cup included.
 				row.price_now = _dish_price(material.item_id)
-				row.price_next = -1
+				row.price_next = -1.0
 				if mat_level < mat_max:
 					material_levels[id][material.id] += 1
 					row.price_next = _dish_price(material.item_id)
@@ -794,7 +794,7 @@ func _price_preview(id: String, material: String, has_next: bool) -> Dictionary:
 	if "lemon_tea" in dishes: names.append("柠檬茶")
 	# Price the next level with the same combined bonus and single rounding as real sales.
 	var now := _dish_price(sample)
-	var next := -1
+	var next := -1.0
 	if has_next:
 		var levels: Dictionary = station_levels if material.is_empty() else material_levels[id]
 		var key := id if material.is_empty() else material
@@ -802,6 +802,10 @@ func _price_preview(id: String, material: String, has_next: bool) -> Dictionary:
 		next = _dish_price(sample)
 		levels[key] -= 1
 	return {"scope": "、".join(names), "step": roundi(step * 100), "sample": dish_name(sample), "now": now, "next": next}
+
+## "13" for a whole price, "13.2" otherwise.
+static func price_text(value: float) -> String:
+	return "%d" % roundi(value) if is_equal_approx(value, roundf(value)) else "%.1f" % value
 
 func _base_price(dish: String) -> int:
 	for definition in CONFIG.dishes:
@@ -993,6 +997,7 @@ var _full_seconds := 0.0
 var _boil_busy := 0.0
 var _kitchen_idle := 1.0
 var _front_idle := 1.0
+var _sale_carry := 0.0
 const HINT_AFTER := 20.0
 const HINT_SMOOTH := 0.1 / 20.0
 
@@ -1784,7 +1789,9 @@ func _cancel_job(worker: Dictionary) -> void:
 	# Whatever this hand was following is left where it stands; the next follower picks it up from there.
 	worker.ticket = {}
 
-func _dish_price(dish: String) -> int:
+## Prices keep one decimal: on a 12-gold lemonade a ×1.05 step is only 0.6 gold, and whole-gold rounding
+## would swallow some levels entirely (12.6 and 13.2 both show 13). Sales carry the fraction, see _record_sale.
+func _dish_price(dish: String) -> float:
 	var price := float(_base_price(dish))
 	# Price upgrades multiply: each level ×(1 + step), each star ×star_mult, and the sources on one cup
 	# (machine, ingredients, flavor) multiply together, so a level is worth more the dearer the cup already is.
@@ -1799,7 +1806,7 @@ func _dish_price(dish: String) -> int:
 	for id in ["topping", "press"]:
 		for material in _definition(id).materials:
 			if material.item_id == dish: mult *= material.bonus(material_levels[id][material.id])
-	return roundi(price * mult * tuned("price"))
+	return snappedf(price * mult * tuned("price"), 0.1)
 
 func _record_sale(job: Dictionary) -> void:
 	# A cup handed over from the shelf or the stand is drunk here: the customer takes a seat for a while.
@@ -1810,7 +1817,10 @@ func _record_sale(job: Dictionary) -> void:
 		diners.append({"seat": seat, "dish": job.item, "left": seat_seconds()})
 	sold += job.count
 	sold_by_dish[job.item] += job.count
-	var income: int = _dish_price(job.item) * job.count
+	# Gold stays whole: the tenths are carried to the next sale (a reload drops under one gold of carry).
+	var earned: float = _dish_price(job.item) * job.count + _sale_carry
+	var income: int = floori(earned + 0.0001)
+	_sale_carry = maxf(0.0, earned - income)
 	gold += income
 	revenue += income
 	_event("sale", "%s +%d" % [dish_name(job.item), income])

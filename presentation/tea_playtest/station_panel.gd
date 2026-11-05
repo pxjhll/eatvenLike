@@ -146,7 +146,7 @@ func _refresh_upgrade(info: Dictionary) -> void:
 		return
 	if cost < 0:
 		_upgrade_title.text = "已满级 Lv%d" % level
-		if not price.is_empty(): _upgrade_effect.text = "%s %d 金" % [price.sample, price.now]
+		if not price.is_empty(): _upgrade_effect.text = "%s %s 金" % [price.sample, _p(price.now)]
 		elif info.has("slots"): _upgrade_effect.text = "封口位 %d · 每杯 %.1f 秒" % [info.slots, info.seconds]
 		elif info.has("batch"): _upgrade_effect.text = "一锅 %d 杯 · 每锅 %.1f 秒" % [info.batch, info.seconds]
 		elif float(info.get("seconds", -1.0)) > 0: _upgrade_effect.text = "%s %.1f 秒" % [_per(), info.seconds]
@@ -159,11 +159,11 @@ func _refresh_upgrade(info: Dictionary) -> void:
 	var kind: String = {"capacity": "产能升级", "price": "售价升级", "both": "产能售价升级", "menu": "开新口味"}.get(String(info.get("kind", "")), "设备升级")
 	_upgrade_title.text = ("升星！" if star else kind) + " Lv%d → Lv%d" % [level, level + 1]
 	if not price.is_empty() and star:
-		_upgrade_effect.text = "%s每杯 ×%.2f · %s %d → %d 金" % [price.scope, (1.0 + price.step / 100.0) * info.star_mult, price.sample, price.now, price.next]
+		_upgrade_effect.text = "%s每杯 ×%.2f · %s %s → %s 金" % [price.scope, (1.0 + price.step / 100.0) * info.star_mult, price.sample, _p(price.now), _p(price.next)]
 		if info.get("kind", "") == "both": _upgrade_effect.text += " · 更快"
 	elif not price.is_empty():
-		_upgrade_effect.text = "%s每杯 ×%.2f · %s %d → %d 金" % [price.scope, 1.0 + price.step / 100.0, price.sample, price.now, price.next]
-		if info.get("kind", "") == "both": _upgrade_effect.text = "%s %d → %d 金 · %s %.1f → %.1f 秒" % [price.sample, price.now, price.next, _per(), info.seconds, info.next_seconds]
+		_upgrade_effect.text = "%s每杯 ×%.2f · %s %s → %s 金" % [price.scope, 1.0 + price.step / 100.0, price.sample, _p(price.now), _p(price.next)]
+		if info.get("kind", "") == "both": _upgrade_effect.text = "%s %s → %s 金 · %s %.1f → %.1f 秒" % [price.sample, _p(price.now), _p(price.next), _per(), info.seconds, info.next_seconds]
 	elif info.has("slots"):
 		_upgrade_effect.text = "封口位 %d → %d" % [info.slots, info.next_slots] if info.next_slots > info.slots else "每杯 %.1f → %.1f 秒" % [info.seconds, info.next_seconds]
 	elif info.has("batch") and int(info.next_batch) > int(info.batch):
@@ -237,9 +237,9 @@ func _refresh_materials(info: Dictionary) -> void:
 			button.disabled = cost < 0 or not String(row.get("upgrade_error", "")).is_empty()
 			continue
 		if row.has("price_now"):
-			nodes.effect.text = "售价 %d 金" % row.price_now if cost < 0 or int(row.price_next) < 0 else "售价 %d → %d 金" % [row.price_now, row.price_next]
-			button.text = "满级" if cost < 0 or int(row.price_next) < 0 else "%d 金币" % cost
-			button.disabled = cost < 0 or int(row.price_next) < 0 or not String(row.get("upgrade_error", "")).is_empty()
+			nodes.effect.text = "售价 %s 金" % _p(row.price_now) if cost < 0 or float(row.price_next) < 0 else "售价 %s → %s 金" % [_p(row.price_now), _p(row.price_next)]
+			button.text = "满级" if cost < 0 or float(row.price_next) < 0 else "%d 金币" % cost
+			button.disabled = cost < 0 or float(row.price_next) < 0 or not String(row.get("upgrade_error", "")).is_empty()
 			continue
 		if cost < 0 or float(row.get("next_bonus", -1.0)) < 0:
 			nodes.effect.text = label + describe.call(float(row.bonus))
@@ -336,3 +336,8 @@ func _refresh_locked(info: Dictionary) -> void:
 ## The brewer works a pot at a time; the press table one cup at a time.
 func _per() -> String:
 	return "每杯" if station_id == "press" else "每批"
+
+func _p(value) -> String:
+	# Whole prices read "13", others keep their tenth ("13.2"), as the sim prices them.
+	var price := float(value)
+	return "%d" % roundi(price) if is_equal_approx(price, roundf(price)) else "%.1f" % price
