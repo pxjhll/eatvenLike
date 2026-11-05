@@ -153,9 +153,17 @@ func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -
 		var direction := posmod(roundi(atan2(vector.x, vector.y) / (PI / 4.0)), 8)
 		if direction != frame_actor.direction:
 			frame_actor.set_direction(direction)
+	if worker.has("facing") and frame_actor.direction != int(worker.facing):
+		frame_actor.set_direction(int(worker.facing))
+	var walking: bool = worker.get("walking", false)
+	var desired := "walk" if walking else "sit" if worker.get("seated", false) else "idle"
+	if not frame_actor.has_action(desired): desired = "walk"
+	if frame_actor.action != desired:
+		frame_actor.set_action(desired)
+		frame_actor.seek_phase(0.0)
 	frame_actor.pause()
-	if worker.get("walking", false):
-		var factor := float(worker.get("speed", Characters.walk_speed(_art))) / Characters.walk_speed(_art)
+	if walking or desired != "walk":
+		var factor := float(worker.get("speed", Characters.walk_speed(_art))) / Characters.walk_speed(_art) if walking else 1.0
 		frame_actor.seek_phase(fposmod(frame_actor.get_phase() + clock_step * factor / frame_actor.get_cycle_seconds(), 1.0))
 	else:
 		frame_actor.seek_phase(0.0)

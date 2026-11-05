@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://presentation/rabbit_walk_frames/rabbit_walk.gd" id="1"]
-[ext_resource type="SpriteFrames" path="res://art/gray_cat_walk_frames/gray_cat_walk_frames.tres" id="2"]
+[ext_resource type="SpriteFrames" path="res://art/gray_cat_actions/gray_cat_actions_frames.tres" id="2"]
 
 [node name="GrayCatWalk" type="Node2D"]
 script = ExtResource("1")

@@ -44,7 +44,7 @@ func _run() -> void:
 			_check(preview.frame_actor.sprite.sprite_frames == library.FRAME_ASSETS[id], "preview uses that character's atlas, not the previous character")
 		else:
 			_check(not preview.frame_actor.visible, "static portrait still works")
-	_check(preview.available_actions.size() == 1 and preview.available_actions[0].id == "walk", "gray cat lists authored walk")
+	_check(preview.available_actions.size() == 2 and preview.available_actions[0].id == "walk", "gray cat lists authored walk and idle")
 	await _click(preview.play_button)
 	preview.frame_actor.seek_phase(0.37)
 	for direction in 8:
@@ -58,7 +58,7 @@ func _run() -> void:
 	await _click(preview.previous_button)
 	_check(preview.frame_actor.sprite.frame == frame, "previous keyframe")
 	await _click(preview.timeline, 0.8)
-	_check(absf(preview.frame_actor.get_phase() - 0.8) < 0.03, "seek actual gray-cat frames")
+	_check(absf(preview.frame_actor.get_phase() - preview.timeline.value) < 0.001 and preview.frame_actor.get_phase() > 0.6, "seek actual gray-cat frames to the slider's value")
 	await _click(preview.speed_slider, 0.8)
 	_check(preview.frame_actor.sprite.speed_scale > 1.0, "native speed control")
 	var clock: float = sim.elapsed
@@ -66,6 +66,9 @@ func _run() -> void:
 	_check(sim.elapsed == clock, "preview freezes business")
 	await _capture("gray-cat-game-preview.png")
 	await _click(view.ui.close_button)
+	# Hiring now deploys immediately: five staff need the final stage's slots.
+	for station in ["seal", "mix", "press", "topping"]: sim.unlock_station(station)
+	sim.unlock_box("milk")
 	view.ui.open_page("staff")
 	for cost in [35, 60, 85, 110]:
 		var gold: int = sim.gold
@@ -78,7 +81,7 @@ func _run() -> void:
 	await _click(view.ui.staff_preview_button)
 	_check(view.ui.page == "characters" and preview.art_id == "gray_cat", "staff entry previews the selected gray cat")
 	view.ui.open_page("staff")
-	await _click(view.ui.deploy_button)
+	if not view.staff_is_deployed(5): await _click(view.ui.deploy_button)
 	_check(view.staff_is_deployed(5), "HUD deploys gray cat into the kitchen")
 	view.ui.open_page("shop")
 	view.set_process(false)

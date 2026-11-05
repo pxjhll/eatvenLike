@@ -5,6 +5,7 @@ var failures := 0
 var view: Node2D
 
 func _initialize() -> void:
+	Input.use_accumulated_input = false
 	call_deferred("_run")
 
 func _run() -> void:
@@ -20,7 +21,7 @@ func _run() -> void:
 	await _click(view.ui.character_preview_button)
 	_check(view.ui.page == "characters", "menu opens embedded character preview")
 	var preview = view.ui.character_preview
-	_check(preview.art_id == "rabbit" and preview.available_actions.size() == 1, "rabbit lists its actual walk action")
+	_check(preview.art_id == "rabbit" and preview.available_actions.size() == 2, "rabbit lists its actual walk and idle actions")
 	_check(preview.frame_actor.visible, "native frame actor is displayed")
 	var clock: float = sim.elapsed
 	await create_timer(0.25).timeout
@@ -38,7 +39,7 @@ func _run() -> void:
 	await _click(preview.previous_button)
 	_check(preview.frame_actor.sprite.frame == 2, "previous keyframe button")
 	await _click(preview.timeline, 0.8)
-	_check(absf(preview.frame_actor.get_phase() - 0.8) < 0.03, "timeline seeks actual frames")
+	_check(absf(preview.frame_actor.get_phase() - preview.timeline.value) < 0.001 and preview.frame_actor.get_phase() > 0.6, "timeline seeks actual frames to the slider's value")
 	await _click(preview.speed_slider, 0.8)
 	_check(preview.frame_actor.sprite.speed_scale > 1.0, "preview speed slider")
 	await _capture("res://docs/qa/rabbit-game-preview.png")
@@ -58,8 +59,12 @@ func _run() -> void:
 	await process_frame
 	view.ui.open_page("shop")
 	_check(sim.paused, "already paused business remains paused")
-	sim.gold = 1000
-	view.ui.open_page("recruit")
+	sim.gold = 100000
+	# Recruitment now deploys immediately and requires available shop slots.
+	for station in ["lemonade", "boil", "seal", "mix", "press", "topping"]: sim.unlock_station(station)
+	sim.unlock_box("tea_leaf")
+	sim.unlock_box("milk")
+	view.ui.open_page("staff")
 	for cost in [35, 60, 85]:
 		var before: int = sim.gold
 		await _click(view.ui.hire_button)

@@ -158,6 +158,8 @@ func _select_action(index: int) -> void:
 		button.disabled = not action.directional
 	set_direction(direction)
 	_details.text = "切换方向查看动作，可暂停、逐帧查看或拖动进度条。" if animated else "当前可查看站姿，其他动作待补充。"
+	if animated and int(action.get("view_count", 5)) < 5:
+		_details.text += " 此动作仅有 %d 个原始视角，其余方向使用最近视角，左侧镜像。" % int(action.view_count)
 
 
 func set_direction(value: int) -> void:
