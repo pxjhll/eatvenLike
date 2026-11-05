@@ -159,7 +159,7 @@ func _refresh_upgrade(info: Dictionary) -> void:
 	var kind: String = {"capacity": "产能升级", "price": "售价升级", "both": "产能售价升级", "menu": "开新口味"}.get(String(info.get("kind", "")), "设备升级")
 	_upgrade_title.text = ("升星！" if star else kind) + " Lv%d → Lv%d" % [level, level + 1]
 	if not price.is_empty() and star:
-		_upgrade_effect.text = "%s每杯 ×%.1f · %s %d → %d 金" % [price.scope, info.star_mult, price.sample, price.now, price.next]
+		_upgrade_effect.text = "%s每杯 ×%.2f · %s %d → %d 金" % [price.scope, (1.0 + price.step / 100.0) * info.star_mult, price.sample, price.now, price.next]
 		if info.get("kind", "") == "both": _upgrade_effect.text += " · 更快"
 	elif not price.is_empty():
 		_upgrade_effect.text = "%s每杯 ×%.2f · %s %d → %d 金" % [price.scope, 1.0 + price.step / 100.0, price.sample, price.now, price.next]

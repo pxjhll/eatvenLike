@@ -382,24 +382,22 @@ func test_brewer_upgrades_speed_and_ingredient_upgrades_price() -> void:
 	if probe == null: return
 	var leaf: float = 1.0 + probe._definition("supply").materials.filter(func(m): return m.id == "tea_leaf")[0].art_price_step
 	var milk: float = 1.0 + probe._definition("supply").materials.filter(func(m): return m.id == "milk")[0].art_price_step
-	check_eq(durations[1][2], 30 + maxi(1, roundi(30 * (leaf - 1.0))) + maxi(1, roundi(30 * (milk - 1.0))), "tea leaf and milk each add at least 1 gold to the milk tea price")
+	check_eq(durations[1][2], roundi(30 * leaf * milk), "tea leaf and milk multiply the milk tea price")
 	check_eq(durations[1][3], roundi(28 * leaf), "tea leaf multiplies the black tea price")
 
-func test_brewer_pot_grows_on_odd_levels_and_speeds_up_on_even_levels() -> void:
+func test_brewer_levels_each_brew_more_tea_per_minute() -> void:
 	var sim = opened()
 	if sim == null: return
 	sim.gold = 100000
 	var batches: Array = []
-	var seconds: Array = []
-	for level in range(1, 11):
+	var rates: Array = []
+	for level in range(1, 9):
 		batches.append(sim.brew_batch())
-		seconds.append(snappedf(sim._machine_duration("boil"), 0.01))
-		if level < 10: check_eq(sim.upgrade_station("boil"), "", "brewer upgrades to Lv%d" % (level + 1))
-	check_eq(batches, [2, 2, 3, 3, 4, 4, 5, 5, 6, 6], "the pot starts at two cups and odd levels add one")
-	for level in range(1, 10):
-		if level % 2 == 1: check(seconds[level] < seconds[level - 1], "even level Lv%d brews faster" % (level + 1))
-		else: check_eq(seconds[level], seconds[level - 1], "odd level Lv%d adds a cup, not speed" % (level + 1))
-	check(not sim.upgrade_station("boil").is_empty(), "the brewer stops at Lv10")
+		rates.append(sim.brew_batch() / sim._machine_duration("boil"))
+		if level < 8: check_eq(sim.upgrade_station("boil"), "", "brewer upgrades to Lv%d" % (level + 1))
+	check_eq(batches, [2, 3, 3, 4, 4, 5, 6, 6], "the pot starts at two cups and grows to six")
+	for level in range(1, 8): check(rates[level] > rates[level - 1], "Lv%d brews more tea per minute" % (level + 1))
+	check(not sim.upgrade_station("boil").is_empty(), "the brewer stops at Lv8")
 	check_eq(sim.station_info("boil").kind, "capacity", "the brewer is a capacity machine")
 
 func test_sealer_levels_speed_up_and_stars_add_slots() -> void:
@@ -411,42 +409,39 @@ func test_sealer_levels_speed_up_and_stars_add_slots() -> void:
 	check_eq(info.slots, 1, "the sealer starts with one slot")
 	check(is_equal_approx(info.seconds, sim.PROGRESSION.seal_seconds), "Lv1 seals at the base time")
 	var before: float = sim.seal_seconds()
-	for level in range(1, 10):
+	for level in range(1, 6):
 		check_eq(sim.upgrade_station("seal"), "", "sealer upgrades to Lv%d" % (level + 1))
 		check(sim.seal_seconds() < before, "each sealer level cuts the time per cup")
 		before = sim.seal_seconds()
 		if level + 1 == 5: check_eq(sim.seal_slots(), 2, "Lv5 star adds a second slot")
-	check_eq(sim.seal_slots(), 3, "Lv10 star adds a third slot")
-	check_eq(sim.stars("seal"), 2, "the sealer shows two stars at Lv10")
-	check(not sim.upgrade_station("seal").is_empty(), "the sealer stops at Lv10")
+	check_eq(sim.stars("seal"), 1, "the sealer shows one star at Lv6")
+	check(not sim.upgrade_station("seal").is_empty(), "the sealer stops at Lv6")
 
-func test_price_bonuses_add_up_and_stars_jump() -> void:
+func test_price_levels_multiply_and_stars_jump() -> void:
 	var sim = opened()
 	if sim == null: return
 	sim.gold = 100000
 	check_eq(sim.station_info("mix").kind, "price", "the milk machine is a price machine")
-	var base: int = sim._dish_price("plain_milk_tea")
 	var step: float = 1.0 + sim._definition("mix").art_price_step
 	var star: float = sim._definition("mix").art_star_mult
 	var lemon_step: float = 1.0 + sim._definition("lemonade").art_price_step
 	var lemon_star: float = sim._definition("lemonade").art_star_mult
-	for level in range(1, 4): sim.upgrade_station("mix")
-	check(sim.station_info("mix").next_star, "Lv4 → Lv5 is a star upgrade")
+	for level in range(1, 3): sim.upgrade_station("mix")
+	check(sim.station_info("mix").next_star, "Lv3 → Lv4 is a star upgrade")
 	sim.upgrade_station("mix")
-	check_eq(sim.stars("mix"), 1, "Lv5 earns the first star")
-	# Bonuses add up instead of multiplying: each level adds one step, each star adds (star - 1).
-	# Bonuses add up as whole gold instead of multiplying: at least 1 gold per level or star.
-	var gold := func(n: int, frac: float) -> int: return maxi(n, roundi(base * frac * n)) if n > 0 and frac > 0.0 else 0
-	check_eq(sim._dish_price("plain_milk_tea"), base + gold.call(4, step - 1.0) + gold.call(1, star - 1.0), "four price levels and one star")
-	for level in range(5, 10): sim.upgrade_station("mix")
-	check_eq(sim.stars("mix"), 2, "Lv10 earns the second star")
-	check_eq(sim._dish_price("plain_milk_tea"), base + gold.call(9, step - 1.0) + gold.call(2, star - 1.0), "nine levels and two stars")
-	var lemonade: int = sim._dish_price("lemonade")
+	check_eq(sim.stars("mix"), 1, "Lv4 earns the first star")
+	# Every level multiplies the cup by the step and every star by the star bonus.
+	check_eq(sim._dish_price("plain_milk_tea"), roundi(30 * pow(step, 3) * star), "three price levels and one star")
+	for level in range(4, 7): sim.upgrade_station("mix")
+	check_eq(sim.stars("mix"), 2, "Lv7 earns the second star")
+	check_eq(sim._dish_price("plain_milk_tea"), roundi(30 * pow(step, 6) * star * star), "six levels and two stars")
+	check(not sim.upgrade_station("mix").is_empty(), "the milk machine stops at Lv7")
 	var pour: float = sim._speed("lemonade")
-	for level in range(1, 10): check_eq(sim.upgrade_station("lemonade"), "", "lemonade stand upgrades")
-	check(not sim.upgrade_station("lemonade").is_empty(), "the lemonade stand stops at Lv10")
-	check_eq(sim._dish_price("lemonade"), roundi(lemonade * (1.0 + 9 * (lemon_step - 1.0) + 2 * (lemon_star - 1.0))), "lemonade stays worth upgrading: ten levels and two stars")
-	check(sim._speed("lemonade") > pour, "lemonade stand levels also pour faster")
+	for level in range(1, 7): check_eq(sim.upgrade_station("lemonade"), "", "lemonade stand upgrades")
+	check(not sim.upgrade_station("lemonade").is_empty(), "the lemonade stand stops at Lv7")
+	check_eq(sim._dish_price("lemonade"), roundi(12 * pow(lemon_step, 6) * lemon_star * lemon_star), "lemonade: six levels and two stars")
+	check_eq(sim._speed("lemonade"), pour, "lemonade stand levels raise the price, not the pour")
+	check_eq(sim.station_info("lemonade").kind, "price", "the lemonade stand is a price machine")
 
 func test_v4_save_refunds_lemonade_levels_above_the_new_cap() -> void:
 	var sim = opened()
@@ -457,10 +452,33 @@ func test_v4_save_refunds_lemonade_levels_above_the_new_cap() -> void:
 	old.stations.boil.capacity = 6
 	var copy = make_shop()
 	check_eq(copy.load_dict(old), "", "a v4 save loads")
-	# The stand now goes to Lv10, so a v4 Lv8 stand is kept as it is.
-	check_eq(copy.station_levels.lemonade, 8, "lemonade levels within the cap are kept")
-	check_eq(copy.gold, old.gold, "nothing to refund")
+	# The stand now stops at Lv7: the eighth level is refunded at its v4 price.
+	check_eq(copy.station_levels.lemonade, 7, "lemonade levels above the cap are taken back")
+	check_eq(copy.gold, old.gold + copy.LEMONADE_V4_COSTS[6], "the level above the cap is refunded")
 	check_eq(copy.stations.boil.capacity, 12, "the brewer gets room for a six-cup pot")
+
+func test_v14_save_folds_levels_onto_the_shorter_v15_lists() -> void:
+	var sim = opened()
+	if sim == null: return
+	var old: Dictionary = sim.to_dict()
+	old.version = 14
+	old.station_levels.boil = 10
+	old.station_levels.seal = 10
+	old.station_levels.mix = 10
+	old.station_levels.lemonade = 10
+	old.station_levels.press = 8
+	old.material_levels.supply.tea_leaf = 5
+	old.material_levels.topping.pearl = 5
+	old.kitchen_upgrades = 10
+	old.front_upgrades = 6
+	old.flyers = 5
+	var copy = make_shop()
+	check_eq(copy.load_dict(old), "", "a v14 save loads")
+	check_eq(copy.station_levels.boil, 8, "a Lv10 brewer becomes the new top level")
+	check_eq([copy.station_levels.seal, copy.station_levels.mix, copy.station_levels.lemonade, copy.station_levels.press], [6, 7, 7, 6], "other machines stop at their new caps")
+	check_eq([copy.material_levels.supply.tea_leaf, copy.material_levels.topping.pearl], [3, 3], "ingredients stop at Lv3")
+	check_eq([copy.kitchen_upgrades, copy.front_upgrades, copy.flyers], [7, 4, 4], "staff and flyer lists stop at their new ends")
+	check(copy.audit().valid, "the folded save stays consistent")
 
 func test_recalling_every_observed_job_phase_preserves_goods_and_reservations() -> void:
 	var sim = opened()
@@ -947,13 +965,14 @@ func test_star_tasks_finish_the_first_shop() -> void:
 	if sim == null: return
 	check(not sim.shop_complete(), "an opened shop is not finished yet")
 	var names: Array = sim.task_rows().map(func(row: Dictionary) -> String: return row.name)
-	for name in ["柠檬水台升 1 星（Lv5）", "煮茶机升 1 星（Lv5）", "封口机升 1 星（Lv5）", "芋泥奶茶卖出 10 杯"]:
+	for name in ["柠檬水台升 1 星（Lv4）", "煮茶机升 1 星（Lv4）", "封口机升 1 星（Lv5）", "芋泥奶茶卖出 10 杯"]:
 		check(name in names, "star task listed: " + name)
 	sim.gold = 100000
 	sim.revenue = 100000
 	check(not sim.shop_complete(), "the press table's tasks are still open")
-	for goal in [["lemonade", 5], ["boil", 5], ["seal", 5], ["mix", 10], ["topping", 4], ["press", 5]]:
-		while sim.station_levels[goal[0]] < goal[1]: sim.upgrade_station(goal[0])
+	for goal in [["lemonade", 4], ["boil", 4], ["seal", 5], ["topping", 4], ["press", 5]]:
+		while sim.station_levels[goal[0]] < goal[1]:
+			if not sim.upgrade_station(goal[0]).is_empty(): break
 	for dish in sim.sold_by_dish: sim.sold_by_dish[dish] = 100
 	check(sim.shop_complete(), "with every task done the first shop is complete")
 	check_eq(sim.stars("boil"), 1, "the brewer shows its star")
@@ -1164,13 +1183,14 @@ func test_lemon_tea_is_pressed_at_the_front_from_a_lemonade() -> void:
 	check(tea_seconds > lemonade_seconds, "pressing lemon takes longer than pouring a lemonade")
 	var price: int = sim._dish_price("lemon_tea")
 	sim.upgrade_station("lemonade")
-	check_eq(sim._dish_price("lemon_tea"), price, "lemonade stand levels add speed, not price")
-	check(sim._action_duration({"kind": "serve", "src": "supply", "item": "lemonade", "count": 1}, sim.workers[0]) < lemonade_seconds, "lemonade stand levels pour faster")
+	check_eq(sim._dish_price("lemon_tea"), price, "lemonade stand levels price the lemonade, not the lemon tea")
+	check_eq(sim._action_duration({"kind": "serve", "src": "supply", "item": "lemonade", "count": 1}, sim.workers[0]), lemonade_seconds, "lemonade stand levels do not change the pour")
 	check(sim.audit().valid, "lemon tea keeps every cup accounted for: %s" % [sim.audit().errors])
 	check_eq(make_shop().load_dict(sim.to_dict()), "", "a shop with lemon tea saves and loads")
 	var info: Dictionary = sim.station_info("press")
 	check_eq(info.name, "手打台", "the machine card names the press")
-	check(info.seconds > 0 and info.next_seconds > 0 and info.next_seconds < info.seconds, "upgrading presses faster")
+	check_eq(info.kind, "price", "the press is a price machine")
+	check(info.price.next > info.price.now, "upgrading the press makes lemon tea dearer")
 	check_eq(info.materials.map(func(row): return row.id), ["lemon"], "one fruit: lemon")
 
 func test_the_sealer_conveyor_carries_takeaway_cups_to_the_rack() -> void:
