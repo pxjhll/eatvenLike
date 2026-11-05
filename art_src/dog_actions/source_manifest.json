@@ -1,0 +1,728 @@
+{
+  "asset_prefix": "dog_actions",
+  "output": "res://art/dog_actions/",
+  "external_source": "E:\\Work",
+  "frame_size": [
+    256,
+    256
+  ],
+  "columns": 14,
+  "rows": 4,
+  "anchor": [
+    128,
+    247
+  ],
+  "visible_height": 240,
+  "source_preservation": "Byte-identical PNG copies. No redraw, recolor, resize, crop or per-frame recenter.",
+  "directions": [
+    {
+      "key": "walk_right",
+      "animation": "walk_right",
+      "row": 0,
+      "source_mirrored": true,
+      "source_folder": "顾客备份/小狗/小狗走路/小狗正侧走路",
+      "source_preview": "小狗正侧走路_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        140,
+        150,
+        140,
+        140,
+        140,
+        150,
+        140
+      ],
+      "cycle_ms": 1000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小狗正侧走路_01.png",
+          "sha256": "58d5dc987beedb0a566ff40fc3fbe239796b37f03cb5a9c3507f4f2b8da3df39",
+          "alpha_bbox_32": [
+            56,
+            22,
+            202,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小狗正侧走路_02.png",
+          "sha256": "157759436a01d15fa8cc5eab069d56d607f2d00a7004b21be863f6d4d08e741c",
+          "alpha_bbox_32": [
+            56,
+            21,
+            200,
+            238
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小狗正侧走路_03.png",
+          "sha256": "f5b07cb1196ccea39fcb6c007028778eadfc0fb92ce57b09fc146ee0c44e5ad2",
+          "alpha_bbox_32": [
+            56,
+            24,
+            201,
+            241
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小狗正侧走路_04.png",
+          "sha256": "10949b4e784430a0f12d64c0ad19d03d5aecc91e3a49184f2a711e32c922df08",
+          "alpha_bbox_32": [
+            56,
+            24,
+            203,
+            241
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小狗正侧走路_05.png",
+          "sha256": "ea497ea42c3db7c03c7321ec840825a8f924f228d32c612d3dea86a3ab65e54c",
+          "alpha_bbox_32": [
+            56,
+            21,
+            202,
+            241
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小狗正侧走路_06.png",
+          "sha256": "a022e012cd3881a4f956370e8949f558252b04f33303715e1d9afe7cc2f699fa",
+          "alpha_bbox_32": [
+            56,
+            22,
+            200,
+            241
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小狗正侧走路_07.png",
+          "sha256": "8c1dd9dfdcac4ca62097665d9f02f38468f291c785480e9d066d5184d9fa276c",
+          "alpha_bbox_32": [
+            55,
+            24,
+            202,
+            240
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_back_right",
+      "animation": "idle_back_right",
+      "row": 1,
+      "source_mirrored": false,
+      "source_folder": "顾客备份/小狗/小狗站立待机/小狗背侧45站立待机",
+      "source_preview": "小狗背侧45站立待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小狗背侧45站立待机_01.png",
+          "sha256": "c9cc62ed1616481f90a86afa5ff3b2ec9729d284464d7ed8f699657ddc1e2aa3",
+          "alpha_bbox_32": [
+            44,
+            15,
+            211,
+            241
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小狗背侧45站立待机_02.png",
+          "sha256": "5bb94b762c9a6ce876ccc761d95dedbedcc56716f309c2d0bab155fcf135183d",
+          "alpha_bbox_32": [
+            45,
+            16,
+            212,
+            244
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小狗背侧45站立待机_03.png",
+          "sha256": "bd85660edabac355f306a65ede53c3deb680822cf2fdedfb4425f79aa4caf74d",
+          "alpha_bbox_32": [
+            38,
+            14,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小狗背侧45站立待机_04.png",
+          "sha256": "a419da9256e7b177e3f4c10eb302aae4ae7b6dfca07d4f86a9d4c12a46458b0a",
+          "alpha_bbox_32": [
+            38,
+            13,
+            211,
+            241
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小狗背侧45站立待机_05.png",
+          "sha256": "471b6343ea6abb0a19885d41bfc1fcc0f72b471010ccaac5250b91c40e0125f0",
+          "alpha_bbox_32": [
+            44,
+            13,
+            211,
+            241
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小狗背侧45站立待机_06.png",
+          "sha256": "c55310830878e1470c803a38921c47ad893b789b62764a5fa62e60c388f966ab",
+          "alpha_bbox_32": [
+            44,
+            15,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小狗背侧45站立待机_07.png",
+          "sha256": "f85745c1d610b15916b84e5ea6c7be1c871dbceb3caa04d92f790e8b87d4d331",
+          "alpha_bbox_32": [
+            40,
+            17,
+            212,
+            245
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小狗背侧45站立待机_08.png",
+          "sha256": "b175754bec8d3625ae7a561a748038c8afb1498fc20c3ae2dcbf0f7a550c4ac4",
+          "alpha_bbox_32": [
+            36,
+            15,
+            211,
+            241
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小狗背侧45站立待机_09.png",
+          "sha256": "b4e4a9673b5597ef238c7e9915522ac2227fd1d9d3991124fbdbe35a0d23b17d",
+          "alpha_bbox_32": [
+            44,
+            13,
+            211,
+            241
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小狗背侧45站立待机_10.png",
+          "sha256": "9ee3cc36acdc1c7e6632fb883fd31cc216464721bf2db8072bb89bc40a076c8d",
+          "alpha_bbox_32": [
+            44,
+            13,
+            211,
+            241
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小狗背侧45站立待机_11.png",
+          "sha256": "1013f4cca4ccc9ac6b15c138ddffb604562a3bff3ec4773afcad6250d1c16ded",
+          "alpha_bbox_32": [
+            44,
+            14,
+            211,
+            244
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小狗背侧45站立待机_12.png",
+          "sha256": "a6566fde587a6ffb931270d12d6560692dff3c31f5422a30cfa1ab473f225a78",
+          "alpha_bbox_32": [
+            38,
+            16,
+            212,
+            244
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小狗背侧45站立待机_13.png",
+          "sha256": "ad75770405931a387ccd61668c9155ad34d03572774c74e4ad67ff7971f1bede",
+          "alpha_bbox_32": [
+            40,
+            16,
+            212,
+            241
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小狗背侧45站立待机_14.png",
+          "sha256": "de45d8a340cbc4359f9fbf1f548f337b3c5dddc0578de724f4beae7f69e5db16",
+          "alpha_bbox_32": [
+            44,
+            14,
+            211,
+            241
+          ]
+        }
+      ]
+    },
+    {
+      "key": "sit_right",
+      "animation": "sit_right",
+      "row": 2,
+      "source_mirrored": true,
+      "source_folder": "顾客备份/小狗/小狗坐姿/小狗正侧坐姿",
+      "source_preview": "小狗正侧坐姿_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小狗正侧坐姿_01.png",
+          "sha256": "7c9210a9d41fa83722ac85af97a48c1ed84ac4c6e7b486bd6ea74b97b03550a8",
+          "alpha_bbox_32": [
+            56,
+            24,
+            200,
+            239
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小狗正侧坐姿_02.png",
+          "sha256": "fd0f03e78b2e5e9727afbe5c07dc4029e56ffe1eb243602e214a0fb1fade84a4",
+          "alpha_bbox_32": [
+            55,
+            24,
+            206,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小狗正侧坐姿_03.png",
+          "sha256": "42cb5863ac4c5793ca13ec7dd8e5c8a9cc0270f909e8fd1e6a235931b0367553",
+          "alpha_bbox_32": [
+            55,
+            25,
+            202,
+            239
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小狗正侧坐姿_04.png",
+          "sha256": "52f0c1e7b503d789071a18e99352bbe291170bff37b5228ffca607141f643626",
+          "alpha_bbox_32": [
+            56,
+            24,
+            204,
+            239
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小狗正侧坐姿_05.png",
+          "sha256": "d514cb006d7d055fdc9c59be112c2e82aedfe236e20e8dd7ab20aebe58326cad",
+          "alpha_bbox_32": [
+            56,
+            24,
+            203,
+            239
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小狗正侧坐姿_06.png",
+          "sha256": "c2cb22ec8cc2ea24672ee0a1dfcab87cd638dcb039ad405c01e801b422127829",
+          "alpha_bbox_32": [
+            55,
+            26,
+            202,
+            240
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小狗正侧坐姿_07.png",
+          "sha256": "489256cbc6b7132e21926c8bd16791c32690ce50a94c37e3dcb2983f87f9c663",
+          "alpha_bbox_32": [
+            55,
+            24,
+            206,
+            239
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小狗正侧坐姿_08.png",
+          "sha256": "8712e9384a06e13c49515ba3636b47d895f194919563478225cb29932b4ebd67",
+          "alpha_bbox_32": [
+            56,
+            24,
+            201,
+            239
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小狗正侧坐姿_09.png",
+          "sha256": "70b085fe467e116079b7f39620807eb2de019388ddd4685fc38e8900b8e26fc2",
+          "alpha_bbox_32": [
+            55,
+            25,
+            207,
+            240
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小狗正侧坐姿_10.png",
+          "sha256": "630c2eed6229b6722e093d11405699017ad13e09623a63b41ce1e1cffce1db7f",
+          "alpha_bbox_32": [
+            55,
+            25,
+            200,
+            239
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小狗正侧坐姿_11.png",
+          "sha256": "244de73921d9aed5ad9fad060380e5caa3eca6d3f8eba93474bbf84ce071bcdf",
+          "alpha_bbox_32": [
+            56,
+            24,
+            207,
+            239
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小狗正侧坐姿_12.png",
+          "sha256": "f46bd024a88d0658f67a6585297d6b3a7476950bcd012aa8ed63920ed04c2a58",
+          "alpha_bbox_32": [
+            55,
+            26,
+            200,
+            240
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小狗正侧坐姿_13.png",
+          "sha256": "e642b19bf1fe582d98a27f4cf7c3cc747428a608752e8fe91ed76982b01aeafc",
+          "alpha_bbox_32": [
+            56,
+            23,
+            207,
+            240
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小狗正侧坐姿_14.png",
+          "sha256": "77943caa1dbd4f39533da5ed0998831e88149a582381d8a4b5f24ac1d8a4c0dc",
+          "alpha_bbox_32": [
+            56,
+            24,
+            200,
+            239
+          ]
+        }
+      ]
+    },
+    {
+      "key": "sit_front_right",
+      "animation": "sit_front_right",
+      "row": 3,
+      "source_mirrored": true,
+      "source_folder": "顾客备份/小狗/小狗坐姿/小狗正侧45度坐姿",
+      "source_preview": "小狗正侧45度坐姿_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小狗正侧45度坐姿_01.png",
+          "sha256": "dcc871a9a5b8c680f98d408279494b78816d4d879769e527fb654b4d21883099",
+          "alpha_bbox_32": [
+            42,
+            20,
+            216,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小狗正侧45度坐姿_02.png",
+          "sha256": "9150f3260a03252e5f609b2871ecaadf8c466cbe8ea0fcf9f1565e54b1a070d4",
+          "alpha_bbox_32": [
+            43,
+            19,
+            221,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小狗正侧45度坐姿_03.png",
+          "sha256": "e3a5cc3f6e102f9615a6361d47607bba7e79cf5cbebb16b5b451b299e3de549d",
+          "alpha_bbox_32": [
+            42,
+            20,
+            220,
+            240
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小狗正侧45度坐姿_04.png",
+          "sha256": "7e844e490088de34eafa9520af539a6d91b7c462075aaf939111acc2a7a9a8a6",
+          "alpha_bbox_32": [
+            41,
+            22,
+            218,
+            240
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小狗正侧45度坐姿_05.png",
+          "sha256": "94b837c2825112e4ae06edfcff24cc80e26cdaa2dfa46a31c27426592adb4adb",
+          "alpha_bbox_32": [
+            40,
+            24,
+            223,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小狗正侧45度坐姿_06.png",
+          "sha256": "007fc94049cd26b679199e27536f38e41fd6b030f94df78d6a238f661a1165d7",
+          "alpha_bbox_32": [
+            41,
+            22,
+            217,
+            240
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小狗正侧45度坐姿_07.png",
+          "sha256": "965a4920d15b97b64bf3e7d442790da46b09903fc5b5ca722ecf68b954517789",
+          "alpha_bbox_32": [
+            43,
+            19,
+            221,
+            240
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小狗正侧45度坐姿_08.png",
+          "sha256": "2b32619908a88512f2ea2aa16970cbf4ab5b6d296873a26b9271d17eb638e090",
+          "alpha_bbox_32": [
+            42,
+            19,
+            219,
+            240
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小狗正侧45度坐姿_09.png",
+          "sha256": "90c91245efdc6f9b3413604a60adf8dd9048274024deb4c6ab37c732a87e0715",
+          "alpha_bbox_32": [
+            40,
+            23,
+            220,
+            240
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小狗正侧45度坐姿_10.png",
+          "sha256": "3950b0113f080aabb30d9884d22444f22fa0c9eb17f980114cb89e8ee1259eac",
+          "alpha_bbox_32": [
+            40,
+            23,
+            222,
+            240
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小狗正侧45度坐姿_11.png",
+          "sha256": "03b9fbcd56a3e3541eb04df99045ae46d90dda9c1c327b9b315d8f15525fcfbc",
+          "alpha_bbox_32": [
+            42,
+            20,
+            215,
+            240
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小狗正侧45度坐姿_12.png",
+          "sha256": "94c53d4e016d35be54f936e958ccb159512b2f208e5b94691b6bd5b8bf38f602",
+          "alpha_bbox_32": [
+            43,
+            19,
+            221,
+            240
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小狗正侧45度坐姿_13.png",
+          "sha256": "601b0ecb03b005933e4ec061279bb54d341465d0685d33068c9397162fa9435b",
+          "alpha_bbox_32": [
+            41,
+            22,
+            221,
+            240
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小狗正侧45度坐姿_14.png",
+          "sha256": "ad063e984b977daaf9ee33251ebbc0c2c5f8c85f6dfaa9fa4fdc31005b659b29",
+          "alpha_bbox_32": [
+            40,
+            24,
+            215,
+            240
+          ]
+        }
+      ]
+    }
+  ]
+}

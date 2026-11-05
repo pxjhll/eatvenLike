@@ -1,0 +1,21 @@
+{
+  "external_source": "E:\\Work",
+  "imported": [
+    {
+      "source": "res://art_src/hamster_actions/",
+      "clips": 3,
+      "frames": 35
+    },
+    {
+      "source": "res://art_src/gray_cat_work_actions/",
+      "clips": 2,
+      "frames": 28
+    }
+  ],
+  "skipped": [
+    "已经配置进游戏的",
+    "小仓鼠.7z",
+    "小灰猫操作.7z"
+  ],
+  "excluded": "Videos, GIF previews, JPG overviews and 1024px concept PNGs are not runtime frames. Existing assets are reused unchanged."
+}

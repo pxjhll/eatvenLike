@@ -54,7 +54,7 @@ func _run() -> void:
 	_check(view._customers[101].z_index == 0, "walking customer returns to normal floor sorting")
 	view.ui.open_character_preview("rabbit")
 	var preview = view.ui.character_preview
-	for id in ["rabbit", "gray_cat", "bear", "squirrel", "dog", "sheep"]:
+	for id in ["rabbit", "gray_cat", "bear", "squirrel", "dog", "sheep", "hamster"]:
 		preview.select_character(id)
 		_check(preview.frame_actor.sprite.sprite_frames == Library.FRAME_ASSETS[id], "preview uses selected character")
 		for i in preview.available_actions.size():
@@ -66,6 +66,37 @@ func _run() -> void:
 			preview.set_direction(2)
 			preview.frame_actor.seek_phase(0.45)
 			await _capture(id + "-" + str(preview.available_actions[i].id) + ".png")
+			if id == "gray_cat" and preview.available_actions[i].id == "work":
+				preview.set_direction(3)
+				_check(preview.frame_actor.sprite.animation == "work_back_right", "back operation resolves to its separate source clip")
+				await _capture("gray_cat-work-back.png")
+	# The fourth customer is a hamster: walk in, wait seated, stand to collect, then leave.
+	view.ui.open_page("shop")
+	sim.orders = [{"id": 104, "dish": "lemonade", "seat": 0, "wait": 0.0, "reserved": false, "takeaway": false}]
+	view._update_customers(0.1)
+	_check(view._customers[104].frame_actor.action == "walk", "hamster enters using its walk clip")
+	for unused in 100: view._update_customers(0.1)
+	_check(view._customers[104].frame_actor.action == "sit", "hamster sits to wait for its real order")
+	await _capture("hamster-seated-shop.png")
+	sim.orders[0].reserved = true
+	view._update_customers(0.1)
+	_check(view._customers[104].frame_actor.action == "walk", "hamster stands to collect its drink")
+	sim.orders.clear()
+	view._update_customers(0.1)
+	view._refresh(0)
+	_check(dining._walkers.any(func(w): return w.actor._art == "hamster" and w.actor.frame_actor.action == "walk"), "served hamster leaves with animated walking")
+	# Capture a naturally assigned gray-cat operation in the actual shop.
+	_check(sim.assign_post(5, "boil").is_empty(), "gray cat can be assigned to the manual brewer post")
+	sim.paused = false
+	var operated := false
+	for unused in 3000:
+		sim.advance(0.1)
+		if sim.worker_by_id(5).phase == "work":
+			view._refresh(0)
+			operated = view._actors[5].frame_actor.action == "work"
+			break
+	_check(operated and sim.audit().valid, "actual shop shows gray-cat operation during production")
+	await _capture("gray_cat-operation-shop.png")
 	view.free()
 	var runtime_errors: Array = Array(errors.take())
 	OS.remove_logger(errors)

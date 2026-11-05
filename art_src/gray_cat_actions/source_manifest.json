@@ -1,0 +1,1020 @@
+{
+  "asset_prefix": "gray_cat_actions",
+  "output": "res://art/gray_cat_actions/",
+  "external_source": "E:\\Work",
+  "frame_size": [
+    256,
+    256
+  ],
+  "columns": 14,
+  "rows": 5,
+  "anchor": [
+    128,
+    247
+  ],
+  "visible_height": 240,
+  "source_preservation": "Byte-identical PNG copies. No redraw, recolor, resize, crop or per-frame recenter.",
+  "directions": [
+    {
+      "key": "idle_front",
+      "animation": "idle_front",
+      "row": 0,
+      "source_mirrored": false,
+      "source_folder": "小灰猫待机/小灰猫正面待机",
+      "source_preview": "小灰猫正面待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小灰猫正面待机_01.png",
+          "sha256": "127a79fc63a2368e7fd42b38723689bc3836d5ff16aea6f6f696c76316be799c",
+          "alpha_bbox_32": [
+            38,
+            29,
+            223,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小灰猫正面待机_02.png",
+          "sha256": "3468bb6be40751cbff74d0086f608247e40839c4894c227e30d5543a4c9f5a5c",
+          "alpha_bbox_32": [
+            38,
+            30,
+            229,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小灰猫正面待机_03.png",
+          "sha256": "cc23bb74318eb862928a633130a3ec150749090bca7b2402f7adcf2ae6ccd175",
+          "alpha_bbox_32": [
+            39,
+            29,
+            231,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小灰猫正面待机_04.png",
+          "sha256": "3637df3d9b98919a061a83380953aa6036eafdc5fb3ca5a6e2b8bfa5b7a9cd98",
+          "alpha_bbox_32": [
+            39,
+            27,
+            222,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小灰猫正面待机_05.png",
+          "sha256": "a1a9e89ea4eb7fedf5f874a014b4e22ad98097f58b83aba0e59dcc201514df72",
+          "alpha_bbox_32": [
+            39,
+            27,
+            220,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小灰猫正面待机_06.png",
+          "sha256": "1ca0840a579847ee74eedb967a31de02cb34a677669f5d3c23c47368a13d4d18",
+          "alpha_bbox_32": [
+            38,
+            30,
+            229,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小灰猫正面待机_07.png",
+          "sha256": "1ae851e906e2f7f9733cffd722b14e4794c810902ef507d9675046e21de776f0",
+          "alpha_bbox_32": [
+            38,
+            28,
+            230,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小灰猫正面待机_08.png",
+          "sha256": "18d2f20ff5e244802cb1e85b90a9b78476680bcd2aaad151045e760a75f0f4a0",
+          "alpha_bbox_32": [
+            38,
+            27,
+            221,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小灰猫正面待机_09.png",
+          "sha256": "dbde866ae5e1c140c8b9c08502629a7f90a8145e0c0e3cb0456714c60bd4e28e",
+          "alpha_bbox_32": [
+            38,
+            27,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小灰猫正面待机_10.png",
+          "sha256": "592d7b786099218bf8399b6ea6d02d668d17026c7e8ec1dc88c0e3087a5d0efe",
+          "alpha_bbox_32": [
+            38,
+            30,
+            227,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小灰猫正面待机_11.png",
+          "sha256": "3eb7d6bd59e3dda7e55dd97725b03148bcbefc94dd3322baa97b165a6ec2286e",
+          "alpha_bbox_32": [
+            38,
+            30,
+            231,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小灰猫正面待机_12.png",
+          "sha256": "1c7ade034d2d3d517be720c23319ab8007ff417d89a9c311888970318803f383",
+          "alpha_bbox_32": [
+            39,
+            28,
+            227,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小灰猫正面待机_13.png",
+          "sha256": "740a74a2cb5a9a16b4cd63550618329fa6b007e4133ca09998fec6bf8570cbd0",
+          "alpha_bbox_32": [
+            39,
+            27,
+            219,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小灰猫正面待机_14.png",
+          "sha256": "9c8b1b7a1706e73e72492ac5d5039e6dedcc20306977789b8b013c0b6b477e9b",
+          "alpha_bbox_32": [
+            39,
+            27,
+            221,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_front_right",
+      "animation": "idle_front_right",
+      "row": 1,
+      "source_mirrored": false,
+      "source_folder": "小灰猫待机/小灰猫正侧45度待机",
+      "source_preview": "小灰猫正侧45度待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小灰猫正侧45度待机_01.png",
+          "sha256": "01fb8848513efae4dae4ff4b02423497e9f62b51e213036a14811c5e89e6b871",
+          "alpha_bbox_32": [
+            39,
+            18,
+            217,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小灰猫正侧45度待机_02.png",
+          "sha256": "0e471e2b9d82292b7edba314c7bb3ab9b36c9813036dd078a7ed6859787877ec",
+          "alpha_bbox_32": [
+            33,
+            19,
+            217,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小灰猫正侧45度待机_03.png",
+          "sha256": "b942949d34eaaeb0286371f48f0eb2da1f85e5301bcd2dfcf589fffbc7a9064f",
+          "alpha_bbox_32": [
+            28,
+            18,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小灰猫正侧45度待机_04.png",
+          "sha256": "723f2cb6c78a66e09e915d00b7ae35e76be101d55e284d4f7fd30b1a8ea1f2d9",
+          "alpha_bbox_32": [
+            27,
+            17,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小灰猫正侧45度待机_05.png",
+          "sha256": "3629787f0b4e5c727e86f51d83079e4caeff9052db12308a4edf9410dc227bdb",
+          "alpha_bbox_32": [
+            33,
+            18,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小灰猫正侧45度待机_06.png",
+          "sha256": "f91b06e58b6cd9c720cdc223d95e702da82e917647b22cd87e373b4fdbefe869",
+          "alpha_bbox_32": [
+            44,
+            19,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小灰猫正侧45度待机_07.png",
+          "sha256": "6b7a1fc68c16e1868af6e1012e2aa1c2914d72a41c2f8575f4226e66e8606cc1",
+          "alpha_bbox_32": [
+            43,
+            18,
+            217,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小灰猫正侧45度待机_08.png",
+          "sha256": "ce7ed6bf94691932f568dae414af0bfadf693ddabf8ab02426665794b512c9cb",
+          "alpha_bbox_32": [
+            35,
+            18,
+            217,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小灰猫正侧45度待机_09.png",
+          "sha256": "e9db7859c73f9a3ad47cf2cfd57f31e986287e83a2675500a83350e4f07d1dcf",
+          "alpha_bbox_32": [
+            28,
+            19,
+            217,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小灰猫正侧45度待机_10.png",
+          "sha256": "62a8c655fdfa9ddeb86b30383fcf1d0538450697ff1c8dbb2016e05b157c59e3",
+          "alpha_bbox_32": [
+            26,
+            18,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小灰猫正侧45度待机_11.png",
+          "sha256": "38e2ff3d3750f8633a64d9a90491f2d78d8837549ec2cc03e590123589c1e431",
+          "alpha_bbox_32": [
+            33,
+            18,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小灰猫正侧45度待机_12.png",
+          "sha256": "67ece5c28e9872c365776d3e08e42f25fc8298114f51f1c01a23e3c04e1e8643",
+          "alpha_bbox_32": [
+            44,
+            19,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小灰猫正侧45度待机_13.png",
+          "sha256": "879d69fb7b8aa691130af4b62e939f4059678f7385a8d02d8d42eb8e98868ada",
+          "alpha_bbox_32": [
+            43,
+            18,
+            217,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小灰猫正侧45度待机_14.png",
+          "sha256": "8783940d1808f84f513f6ceebabc439cba3600a19010d6a5a46f254ff4be522c",
+          "alpha_bbox_32": [
+            33,
+            18,
+            217,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_right",
+      "animation": "idle_right",
+      "row": 2,
+      "source_mirrored": false,
+      "source_folder": "小灰猫待机/小灰猫侧面待机",
+      "source_preview": "小灰猫侧面待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小灰猫侧面待机_01.png",
+          "sha256": "9d5f98a2939645b0fdfb13043dd257ecac0a0ca3931828279973c68db78874e5",
+          "alpha_bbox_32": [
+            47,
+            20,
+            209,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小灰猫侧面待机_02.png",
+          "sha256": "c6ff08c5f39ff9062393a163923bf5bec27c569c49a08fc5dfb4a298e9c35f90",
+          "alpha_bbox_32": [
+            52,
+            19,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小灰猫侧面待机_03.png",
+          "sha256": "34414093f58606e6d2551ecfee80cc6620582acbdab387bee1f51facf36004ba",
+          "alpha_bbox_32": [
+            53,
+            21,
+            212,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小灰猫侧面待机_04.png",
+          "sha256": "bf1cdee387eed7f91c276bc250dfcd2184eef2d509dc5dc36d493365a63bc546",
+          "alpha_bbox_32": [
+            30,
+            21,
+            212,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小灰猫侧面待机_05.png",
+          "sha256": "fe540fa3ffc0edad1ab72500c4b92df75c01fc2c44996160d8b78e89394c3627",
+          "alpha_bbox_32": [
+            48,
+            21,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小灰猫侧面待机_06.png",
+          "sha256": "017207804c7ecd03dd2025357b7a2c2b0cd2e856381535d57d267580ad78c187",
+          "alpha_bbox_32": [
+            39,
+            21,
+            209,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小灰猫侧面待机_07.png",
+          "sha256": "8688f106b705b8ff266626c791cb88953d8e29f977014dbb19335db28cf9be7f",
+          "alpha_bbox_32": [
+            30,
+            19,
+            209,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小灰猫侧面待机_08.png",
+          "sha256": "8318d354b35e4af148bf71aed42ee55858425df56487c8e4ff7acb47b202a32e",
+          "alpha_bbox_32": [
+            46,
+            20,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小灰猫侧面待机_09.png",
+          "sha256": "33db77790d916c8c00db10916c808d606a9358176a2f27449cdeea7ca72c4665",
+          "alpha_bbox_32": [
+            56,
+            21,
+            213,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小灰猫侧面待机_10.png",
+          "sha256": "83366a252daad19c3e42e250df2ca6a87a6c574012deeed9f2dfe13fbf819390",
+          "alpha_bbox_32": [
+            38,
+            21,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小灰猫侧面待机_11.png",
+          "sha256": "f3dd9d95834ff70736aec06f3d6ed7e1339a40e501dc283c3f37e2f3fabcde7c",
+          "alpha_bbox_32": [
+            30,
+            19,
+            209,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小灰猫侧面待机_12.png",
+          "sha256": "8c847251655dcd313c84f969842fad028f43858bc1c65e1b31123c6bc2bb83cd",
+          "alpha_bbox_32": [
+            53,
+            19,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小灰猫侧面待机_13.png",
+          "sha256": "c9302a631046ec850d7dbde88f593379b9112e5cccad5e4edc7ba2870c20d772",
+          "alpha_bbox_32": [
+            31,
+            21,
+            213,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小灰猫侧面待机_14.png",
+          "sha256": "55a686ca75d21ae583c3eaf211d677e9eeb9c5bd1e16cb3c031eb880f4a62f7c",
+          "alpha_bbox_32": [
+            36,
+            20,
+            211,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_back_right",
+      "animation": "idle_back_right",
+      "row": 3,
+      "source_mirrored": false,
+      "source_folder": "小灰猫待机/小灰猫背侧45度待机",
+      "source_preview": "小灰猫背侧45度待机_14张_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小灰猫背侧45度待机_01.png",
+          "sha256": "f63f5e5fc1cabfcf70fa9a3db80867e2712f40af66acfff440f75fdbcd8d239e",
+          "alpha_bbox_32": [
+            40,
+            14,
+            216,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小灰猫背侧45度待机_02.png",
+          "sha256": "d08325181a3e2fccae2c4eeded22714ffc6809bc497781b15805aad99b8a2994",
+          "alpha_bbox_32": [
+            39,
+            15,
+            216,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小灰猫背侧45度待机_03.png",
+          "sha256": "1449e7efd8f14308311835c5f400e6060f2c370a95976927974a1419d4cd81c3",
+          "alpha_bbox_32": [
+            35,
+            14,
+            216,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小灰猫背侧45度待机_04.png",
+          "sha256": "df4b18f1085b6eea724dc248aef13a2436ea32180cfc323241974a0918ebefac",
+          "alpha_bbox_32": [
+            39,
+            13,
+            214,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小灰猫背侧45度待机_05.png",
+          "sha256": "cd81c58f678ea3a78e2c95f3a5ea972e7b5b7be1745216bcf734abc570a1ac96",
+          "alpha_bbox_32": [
+            62,
+            16,
+            214,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小灰猫背侧45度待机_06.png",
+          "sha256": "9510b8f1467eae697ee00687816699dc823eb840407e42f6fa9818f7f15b04f8",
+          "alpha_bbox_32": [
+            73,
+            18,
+            216,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小灰猫背侧45度待机_07.png",
+          "sha256": "c9066b780ef77dc55008be89f69536010e832fe504344dd42cb861628d7a07e1",
+          "alpha_bbox_32": [
+            51,
+            14,
+            217,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小灰猫背侧45度待机_08.png",
+          "sha256": "874b4fa9701dec357c25ae68bd2dc6b0c8b96dd8ceee1187935c2cd3ce1940d2",
+          "alpha_bbox_32": [
+            40,
+            14,
+            216,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小灰猫背侧45度待机_09.png",
+          "sha256": "5dd31952c89b1aac5005b5af5e196e87edcfaa696e01ca1ca14175178f705512",
+          "alpha_bbox_32": [
+            38,
+            15,
+            216,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小灰猫背侧45度待机_10.png",
+          "sha256": "94b8811c08fde103611fb8d1f30449a25af396a268fcff035443b836a093c5de",
+          "alpha_bbox_32": [
+            38,
+            13,
+            215,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小灰猫背侧45度待机_11.png",
+          "sha256": "34421a42fe5adef495c357ef09a10afa39eee49442e4c6b72bca6c4a65ad184e",
+          "alpha_bbox_32": [
+            56,
+            15,
+            215,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小灰猫背侧45度待机_12.png",
+          "sha256": "6c28a34f7cf1d1c31528d46839fc0e25bd40c96ca19322858eae6f8ce02c6dac",
+          "alpha_bbox_32": [
+            77,
+            15,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小灰猫背侧45度待机_13.png",
+          "sha256": "60df7e566088455ef738e7181f1078063da15f0b5b9d49f045db0bc46ba984d7",
+          "alpha_bbox_32": [
+            55,
+            16,
+            217,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小灰猫背侧45度待机_14.png",
+          "sha256": "d3a41873b91a6e8f02b869356537488a090c094ca156910d444efadaf7fa9df1",
+          "alpha_bbox_32": [
+            42,
+            14,
+            216,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_back",
+      "animation": "idle_back",
+      "row": 4,
+      "source_mirrored": false,
+      "source_folder": "小灰猫待机/小灰猫背面待机",
+      "source_preview": "小灰猫背面待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小灰猫背面待机_01.png",
+          "sha256": "42d4309e9e1f883d4da8325658afcbb9aac19a5cfc4b43110d8bc6c50e0e6b9c",
+          "alpha_bbox_32": [
+            46,
+            27,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小灰猫背面待机_02.png",
+          "sha256": "a2138e567cded2c0cf5d171490ad7d3790eba76f878bf48751df96f52541cb76",
+          "alpha_bbox_32": [
+            46,
+            27,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小灰猫背面待机_03.png",
+          "sha256": "97f5ea690ca7ce70cae646eff7930944b36609457d22bce05fed9d8b0a8c0954",
+          "alpha_bbox_32": [
+            45,
+            28,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小灰猫背面待机_04.png",
+          "sha256": "ba66508169fa06c619fd9a849bdb19a320d42d8e7b99f0b83bf2307901f618a5",
+          "alpha_bbox_32": [
+            46,
+            28,
+            210,
+            254
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小灰猫背面待机_05.png",
+          "sha256": "f052db4db53a366977b918f21139dcac2e7c819aac09538fb25ae60349e9de39",
+          "alpha_bbox_32": [
+            46,
+            27,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小灰猫背面待机_06.png",
+          "sha256": "b94423e6e88f1489971c169f5c9fc6dabd7919eb2d5bdaa23aec680b9dcc3d44",
+          "alpha_bbox_32": [
+            45,
+            31,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小灰猫背面待机_07.png",
+          "sha256": "058d76f27941fcf44c028b16948b890b8185b375f5429ea824129f833ac98458",
+          "alpha_bbox_32": [
+            46,
+            27,
+            210,
+            249
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小灰猫背面待机_08.png",
+          "sha256": "18251e275d48d9b25c85176b3626ac8a3b5ef64360f726d3c624f4717cfb4a2c",
+          "alpha_bbox_32": [
+            45,
+            28,
+            210,
+            253
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小灰猫背面待机_09.png",
+          "sha256": "22af5af377ec2a47aa9ad95bf9fa31277fbe53f24dfa889cc54c509d09190b28",
+          "alpha_bbox_32": [
+            46,
+            27,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小灰猫背面待机_10.png",
+          "sha256": "c320af463025fee099478a63a3c8c4e8868245acd3e65595c63081c3907221ca",
+          "alpha_bbox_32": [
+            45,
+            32,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小灰猫背面待机_11.png",
+          "sha256": "3e1eb2596e8b4236f88b2022852ea5d314b3dc3eb5b63da0c0cf69b2d1641df3",
+          "alpha_bbox_32": [
+            46,
+            27,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小灰猫背面待机_12.png",
+          "sha256": "56441baaea23c1c2d321f43ad67e21d8a35931cedcb6cdccad938fd4fbd87dd9",
+          "alpha_bbox_32": [
+            45,
+            29,
+            210,
+            253
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小灰猫背面待机_13.png",
+          "sha256": "658935216167e8f04fb302a896a5fdfcdc40f11fa6a8091940d9599e4fcdc0c7",
+          "alpha_bbox_32": [
+            46,
+            27,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小灰猫背面待机_14.png",
+          "sha256": "12bd773a965699c929bcbf91d33ebd7145b8adeb68af7db1f1c50d6f01db4908",
+          "alpha_bbox_32": [
+            45,
+            28,
+            210,
+            242
+          ]
+        }
+      ]
+    }
+  ],
+  "base_frames": "res://art/gray_cat_walk_frames/gray_cat_walk_frames.tres"
+}

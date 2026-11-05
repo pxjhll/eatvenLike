@@ -44,7 +44,7 @@ func _run() -> void:
 			_check(preview.frame_actor.sprite.sprite_frames == library.FRAME_ASSETS[id], "preview uses that character's atlas, not the previous character")
 		else:
 			_check(not preview.frame_actor.visible, "static portrait still works")
-	_check(preview.available_actions.size() == 2 and preview.available_actions[0].id == "walk", "gray cat lists authored walk and idle")
+	_check(preview.available_actions.map(func(a): return a.id) == ["walk", "idle", "work"], "gray cat lists authored walk, idle and operation")
 	await _click(preview.play_button)
 	preview.frame_actor.seek_phase(0.37)
 	for direction in 8:
@@ -159,14 +159,16 @@ func _click(control: Control, fraction := 0.5) -> void:
 	if scroll != null and scroll.is_ancestor_of(control):
 		scroll.ensure_control_visible(control)
 		await create_timer(0.03).timeout
-	var at := control.get_global_rect().position + control.size * Vector2(fraction, 0.5)
+	var rect := control.get_global_rect()
+	var at := (rect.position + rect.size * Vector2(fraction, 0.5)) * Vector2(root.size) / root.get_visible_rect().size
 	for down in [true, false]:
 		var event := InputEventMouseButton.new()
 		event.position = at
 		event.global_position = at
 		event.button_index = MOUSE_BUTTON_LEFT
 		event.pressed = down
-		root.push_input(event, true)
+		Input.parse_input_event(event)
+		Input.flush_buffered_events()
 		await create_timer(0.03).timeout
 
 func _check(ok: bool, message: String) -> void:

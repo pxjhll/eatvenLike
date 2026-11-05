@@ -5,6 +5,8 @@ extends Node2D
 const CUP_HEIGHT := 52.0
 const Characters := preload("res://presentation/characters/character_library.gd")
 const BUBBLE := preload("res://art/ui/bubble.png")
+## Face the visible machine from its interaction point; partial work sets mirror to the left.
+const WORK_DIRECTIONS := {"boil": 3, "mix": 3, "topping": 5, "press": 6, "lemonade": 6}
 
 const TASKS := {
 	"idle": "待命",
@@ -157,6 +159,13 @@ func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -
 		frame_actor.set_direction(int(worker.facing))
 	var walking: bool = worker.get("walking", false)
 	var desired := "walk" if walking else "sit" if worker.get("seated", false) else "idle"
+	var job: Dictionary = worker.get("job", {})
+	var pouring: bool = worker.get("phase", "idle") == "pickup" and job.get("src", "") == "supply" and job.get("item", "") in ["lemonade", "lemon_tea"]
+	if not walking and not worker.get("seated", false) and frame_actor.has_action("work") and (worker.get("phase", "idle") == "work" or pouring):
+		desired = "work"
+		var station: String = "lemonade" if pouring else job.get("src", "")
+		if not worker.has("facing") and WORK_DIRECTIONS.has(station):
+			frame_actor.set_direction(WORK_DIRECTIONS[station])
 	if not frame_actor.has_action(desired): desired = "walk"
 	if frame_actor.action != desired:
 		frame_actor.set_action(desired)

@@ -7,16 +7,17 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var library: Script = load("res://presentation/characters/character_library.gd")
-	for id in ["rabbit", "gray_cat", "bear", "squirrel", "dog", "sheep"]:
+	for id in ["rabbit", "gray_cat", "bear", "squirrel", "dog", "sheep", "hamster"]:
 		var ids: Array = library.actions(id).map(func(a): return a.id)
 		_check("walk" in ids and "idle" in ids, id + " exposes walk and idle")
-		if id in ["squirrel", "dog", "sheep"]:
+		if id in ["squirrel", "dog", "sheep", "hamster"]:
 			_check("sit" in ids, id + " exposes authored sitting")
+	_check("work" in library.actions("gray_cat").map(func(a): return a.id), "gray cat exposes authored operation")
 	if failures:
 		_finish()
 		return
 	var font := load("res://art/ui/graybox_font.ttf")
-	for id in ["rabbit", "gray_cat", "bear", "squirrel", "dog", "sheep"]:
+	for id in ["rabbit", "gray_cat", "bear", "squirrel", "dog", "sheep", "hamster"]:
 		var actor = load("res://presentation/tea_playtest/staff_actor.gd").new()
 		actor.setup(id, font)
 		root.add_child(actor)
@@ -33,7 +34,31 @@ func _run() -> void:
 		actor.display(worker, 0.9)
 		_check(actor.frame_actor.action == "walk" and actor.frame_actor.direction == 2, "movement resumes walk facing right")
 		_check(actor.frame_actor.sprite.flip_h == (id == "dog"), "dog's left-facing source walk is corrected without changing PNGs")
-		if id in ["squirrel", "dog", "sheep"]:
+		if id == "gray_cat":
+			worker.walking = false
+			worker.phase = "work"
+			worker.job = {"src": "boil"}
+			worker.pos = Vector2(350, 330)
+			actor.display(worker, 1.2)
+			_check(actor.frame_actor.action == "work" and actor.frame_actor.sprite.animation == "work_back_right" and not actor.frame_actor.sprite.flip_h, "gray cat operates toward the pot")
+			var work_phase: float = actor.frame_actor.get_phase()
+			actor.display(worker, 1.2)
+			_check(is_equal_approx(work_phase, actor.frame_actor.get_phase()), "paused clock freezes operation")
+			worker.phase = "pickup"
+			worker.job = {"src": "supply", "item": "lemonade"}
+			worker.pos = Vector2(190, 650)
+			actor.display(worker, 1.4)
+			_check(actor.frame_actor.sprite.animation == "work_right" and actor.frame_actor.sprite.flip_h, "gray cat uses mirrored side operation at the left dispenser")
+			worker.job = {"src": "boil", "item": "tea"}
+			for phase_name in ["idle", "pickup", "dropoff"]:
+				worker.phase = phase_name
+				actor.display(worker, 1.6)
+				_check(actor.frame_actor.action == "idle", "waiting and transport holds do not play machine operation")
+			worker.phase = "work"
+			worker.walking = true
+			actor.display(worker, 1.8)
+			_check(actor.frame_actor.action == "walk", "walking takes priority over operation")
+		if id in ["squirrel", "dog", "sheep", "hamster"]:
 			worker.walking = false
 			worker.seated = true
 			for direction in [2, 6]:
@@ -41,6 +66,29 @@ func _run() -> void:
 				actor.display(worker, 1.2 + direction)
 				_check(actor.frame_actor.action == "sit" and actor.frame_actor.sprite.flip_h == ((direction == 6) != (id == "dog")), "sitting faces the table on either side")
 		actor.free()
+	# Exercise a real production job, so the operation is reachable from simulation state.
+	var operation_sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
+	operation_sim.gold = 1000000
+	operation_sim.revenue = 1000
+	operation_sim.unlock_station("lemonade")
+	operation_sim.unlock_station("boil")
+	operation_sim.unlock_box("tea_leaf")
+	operation_sim.acquire_staff("gray_cat", "test")
+	operation_sim.deploy_worker(5)
+	var operator = load("res://presentation/tea_playtest/staff_actor.gd").new()
+	operator.setup("gray_cat", font)
+	root.add_child(operator)
+	await process_frame
+	var operated := false
+	for unused in 1800:
+		operation_sim.advance(0.1)
+		var worker: Dictionary = operation_sim.worker_by_id(5)
+		operator.display(worker, operation_sim.elapsed)
+		if worker.phase == "work":
+			operated = operator.frame_actor.action == "work"
+			break
+	_check(operated and operation_sim.audit().valid, "real kitchen production reaches operation without changing inventory accounting")
+	operator.free()
 	var sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
 	sim.gold = 10000
 	for id in ["raccoon", "fox", "rabbit", "gray_cat", "bear"]:

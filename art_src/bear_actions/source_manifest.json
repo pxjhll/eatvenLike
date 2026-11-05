@@ -1,0 +1,1564 @@
+{
+  "asset_prefix": "bear_actions",
+  "output": "res://art/bear_actions/",
+  "external_source": "E:\\Work",
+  "frame_size": [
+    256,
+    256
+  ],
+  "columns": 14,
+  "rows": 10,
+  "anchor": [
+    128,
+    247
+  ],
+  "visible_height": 240,
+  "source_preservation": "Byte-identical PNG copies. No redraw, recolor, resize, crop or per-frame recenter.",
+  "directions": [
+    {
+      "key": "walk_front",
+      "animation": "walk_front",
+      "row": 0,
+      "source_mirrored": false,
+      "source_folder": "小熊走路/小熊正面走路",
+      "source_preview": "小熊正面走路_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        110,
+        120,
+        110,
+        120,
+        110,
+        120,
+        110
+      ],
+      "cycle_ms": 800,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小熊正面走路_01.png",
+          "sha256": "fb2f655661e6115f088043b812b213f02ac758a4bd7c1c406857551275852cee",
+          "alpha_bbox_32": [
+            34,
+            26,
+            231,
+            243
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小熊正面走路_02.png",
+          "sha256": "b333b0fe58ebc3350b143cc72edf9485ee71b42390899ffa07199ef7e36e1850",
+          "alpha_bbox_32": [
+            33,
+            24,
+            232,
+            241
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小熊正面走路_03.png",
+          "sha256": "06656d474f69cf6cd6bfd984d8c4289b4a25d1a21e9ab8fb6564ea93ebfcd270",
+          "alpha_bbox_32": [
+            31,
+            26,
+            228,
+            243
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小熊正面走路_04.png",
+          "sha256": "ec02f60a4a66cd9b9bd6b8f93e57443d2398756724116bd0f2360d7964205d29",
+          "alpha_bbox_32": [
+            30,
+            28,
+            225,
+            244
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小熊正面走路_05.png",
+          "sha256": "1e1a403a178cd8170c3f1edefc80584d89e46710782968cf41255d61055c06f9",
+          "alpha_bbox_32": [
+            28,
+            26,
+            223,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小熊正面走路_06.png",
+          "sha256": "fee435717f5ad83ed0c6be31efbfb19887d900ddd82186e95170ac43bcd0194e",
+          "alpha_bbox_32": [
+            30,
+            25,
+            225,
+            241
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小熊正面走路_07.png",
+          "sha256": "9ccae3e9cd2d8c1fa6366d3d06cd0327898bf8cd3f98bd859c3cd3c00217968d",
+          "alpha_bbox_32": [
+            32,
+            28,
+            227,
+            243
+          ]
+        }
+      ]
+    },
+    {
+      "key": "walk_front_right",
+      "animation": "walk_front_right",
+      "row": 1,
+      "source_mirrored": false,
+      "source_folder": "小熊走路/小熊正侧45走路",
+      "source_preview": "小熊正侧45走路_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        110,
+        120,
+        110,
+        120,
+        110,
+        120,
+        110
+      ],
+      "cycle_ms": 800,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小熊正侧45走路_01.png",
+          "sha256": "cd4d4a884709a61c4f1d442ded3396ee30448c33f3b85d5d7b9d222b306420fa",
+          "alpha_bbox_32": [
+            34,
+            22,
+            222,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小熊正侧45走路_02.png",
+          "sha256": "5710fafc10c8119a4c074ff72fcd496c38669fdc3261532d3cfab937d6cb75a1",
+          "alpha_bbox_32": [
+            38,
+            23,
+            222,
+            239
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小熊正侧45走路_03.png",
+          "sha256": "e0f9310eb320c3d77ee4278465268255e4aaec86d0020f22893cdb30914fcb25",
+          "alpha_bbox_32": [
+            37,
+            27,
+            226,
+            238
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小熊正侧45走路_04.png",
+          "sha256": "8e26ff945c6e7e792ea2ad7b86f379476302ecc7df285f6e2f21aaab0b886bb7",
+          "alpha_bbox_32": [
+            30,
+            26,
+            228,
+            238
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小熊正侧45走路_05.png",
+          "sha256": "166d3c6f1e22ae0c29fbd93cfeb7eabc3279b102e427281ca3fa4732a8a7b8a9",
+          "alpha_bbox_32": [
+            29,
+            24,
+            228,
+            236
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小熊正侧45走路_06.png",
+          "sha256": "1868d3b25ae88e69fc94b6891b3fc618ead471e816e3b0fbcbae2aac9dda0346",
+          "alpha_bbox_32": [
+            34,
+            26,
+            225,
+            240
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小熊正侧45走路_07.png",
+          "sha256": "1d74fd6e6694ad040ed7907d7ca7f33fc40b3c1bca273e6217278d2b26968fa3",
+          "alpha_bbox_32": [
+            38,
+            26,
+            223,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "walk_right",
+      "animation": "walk_right",
+      "row": 2,
+      "source_mirrored": false,
+      "source_folder": "小熊走路/小熊侧面走路",
+      "source_preview": "小熊侧面走路_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        110,
+        120,
+        110,
+        120,
+        110,
+        120,
+        110
+      ],
+      "cycle_ms": 800,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小熊侧面走路_01.png",
+          "sha256": "d9270149580c4cc902073bc251cd9e8c82d53d439d98dcefb28834ca887f6bb9",
+          "alpha_bbox_32": [
+            34,
+            22,
+            227,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小熊侧面走路_02.png",
+          "sha256": "a0a78f10d5210612a9698deea840816e34ad71320222c76e4185162a567a494b",
+          "alpha_bbox_32": [
+            29,
+            23,
+            228,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小熊侧面走路_03.png",
+          "sha256": "351bdab5bbdcfd2a904af9c00fc242da0125b8ddfa146cd5e9a8c0daf256784b",
+          "alpha_bbox_32": [
+            25,
+            19,
+            228,
+            239
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小熊侧面走路_04.png",
+          "sha256": "0a7462484b8dae3d8279394a26b9d03ea45faec8a0f9e272250c6355359edf76",
+          "alpha_bbox_32": [
+            29,
+            18,
+            228,
+            239
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小熊侧面走路_05.png",
+          "sha256": "8f75b501a78059964c1d225a8dbea613ebdad30ef797904c8f8a7dd9fd57d72e",
+          "alpha_bbox_32": [
+            32,
+            24,
+            228,
+            241
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小熊侧面走路_06.png",
+          "sha256": "90202a65f5e70b3a6c2ee997e0ab130c5ad1b0470c3597c913d2144976696421",
+          "alpha_bbox_32": [
+            26,
+            22,
+            228,
+            240
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小熊侧面走路_07.png",
+          "sha256": "0c812a093b89e09c95ec1833005193199f02807e8f92c0633141e35aca66731b",
+          "alpha_bbox_32": [
+            27,
+            18,
+            227,
+            240
+          ]
+        }
+      ]
+    },
+    {
+      "key": "walk_back_right",
+      "animation": "walk_back_right",
+      "row": 3,
+      "source_mirrored": false,
+      "source_folder": "小熊走路/小熊背侧45走路",
+      "source_preview": "小熊背侧45走路_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        110,
+        120,
+        110,
+        120,
+        110,
+        120,
+        110
+      ],
+      "cycle_ms": 800,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小熊背侧45走路_01.png",
+          "sha256": "fb796097cb0f53ec953c9553fd3474b5bf81a938d7c491d94d9b34b9774ca37b",
+          "alpha_bbox_32": [
+            31,
+            14,
+            226,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小熊背侧45走路_02.png",
+          "sha256": "c6f93fe6f9ac4a2faec3b278e408e33c98c5771988d9cc575e1a1ece8fd74a56",
+          "alpha_bbox_32": [
+            29,
+            13,
+            227,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小熊背侧45走路_03.png",
+          "sha256": "12710c86ceeb087746d83d676dacc680c4e8c501507b878f0feb6179c54f6f8b",
+          "alpha_bbox_32": [
+            25,
+            16,
+            224,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小熊背侧45走路_04.png",
+          "sha256": "db7ae915ed26cc97fddeba053ee4e0dc98af5a291eb637ea3db5004b0d6ab6cf",
+          "alpha_bbox_32": [
+            24,
+            16,
+            222,
+            246
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小熊背侧45走路_05.png",
+          "sha256": "9d23f8c6b7811006e22e713412f476c2102d0489e2490c0c0191275281dcc0dd",
+          "alpha_bbox_32": [
+            22,
+            15,
+            221,
+            236
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小熊背侧45走路_06.png",
+          "sha256": "0af67683c14082c0cd088d102655df80872b8cec0c95ea6c98ff31c6f9ec8f5b",
+          "alpha_bbox_32": [
+            22,
+            16,
+            222,
+            238
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小熊背侧45走路_07.png",
+          "sha256": "b241529435224d0ec42ed6a6843acb5d435633c59aab2eaf0dd7f9e75d37ed12",
+          "alpha_bbox_32": [
+            30,
+            16,
+            225,
+            240
+          ]
+        }
+      ]
+    },
+    {
+      "key": "walk_back",
+      "animation": "walk_back",
+      "row": 4,
+      "source_mirrored": false,
+      "source_folder": "小熊走路/小熊背面走路",
+      "source_preview": "小熊背面走路_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        110,
+        120,
+        110,
+        120,
+        110,
+        120,
+        110
+      ],
+      "cycle_ms": 800,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小熊背面走路_01.png",
+          "sha256": "385adebc78f110aeb19e5ad9349bc44a150dbae2d82024874cc608a4503b4bd6",
+          "alpha_bbox_32": [
+            50,
+            27,
+            212,
+            238
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小熊背面走路_02.png",
+          "sha256": "0002ee25aa228f278500fb3c1e1b60d680075fe738020e00f8f2a9c008e647f8",
+          "alpha_bbox_32": [
+            50,
+            31,
+            212,
+            238
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小熊背面走路_03.png",
+          "sha256": "13674bc2e9dd27ffa35e4a4d75d48e5165958deb7de16d47a063666a3cae65fe",
+          "alpha_bbox_32": [
+            48,
+            34,
+            210,
+            238
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小熊背面走路_04.png",
+          "sha256": "43de69f77f0447938edc813087d34341663e91de05b55b8e55bbcd95874133f6",
+          "alpha_bbox_32": [
+            44,
+            30,
+            206,
+            237
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小熊背面走路_05.png",
+          "sha256": "1c7d62ec5c0fff9720e51df39522064006f61be0692efb8e96911a3245dd80df",
+          "alpha_bbox_32": [
+            43,
+            28,
+            204,
+            238
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小熊背面走路_06.png",
+          "sha256": "93d0af4bde59c21a40c35e1ea751e80609389d933b93cf2809893ec180764635",
+          "alpha_bbox_32": [
+            44,
+            33,
+            206,
+            238
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小熊背面走路_07.png",
+          "sha256": "cf610a381804b94f1c2e0aac7c02c751547a61d4b7bc2519f0feabdabeff58e3",
+          "alpha_bbox_32": [
+            48,
+            34,
+            209,
+            237
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_front",
+      "animation": "idle_front",
+      "row": 5,
+      "source_mirrored": false,
+      "source_folder": "小熊待机/小熊猫正面待机",
+      "source_preview": "小熊猫正面待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小熊猫正面待机_01.png",
+          "sha256": "518fb2a18ec9a384d0106acb73353212148142d10df5d96427ac1819e8e2ec07",
+          "alpha_bbox_32": [
+            31,
+            28,
+            225,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小熊猫正面待机_02.png",
+          "sha256": "f954c731a9149d64a29791d09b876287cc9562dc0e86dd4a49cbc9bb8d45142c",
+          "alpha_bbox_32": [
+            31,
+            29,
+            228,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小熊猫正面待机_03.png",
+          "sha256": "bed5497edd420435b8c2500b3bc09d392e2a862fd1c6bbd89d6cd63fd2c1de7b",
+          "alpha_bbox_32": [
+            31,
+            31,
+            237,
+            240
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小熊猫正面待机_04.png",
+          "sha256": "b9ccfa661f6869e7400282a1b395090494e1d4a629640b4e9a8d1a16e83272e6",
+          "alpha_bbox_32": [
+            31,
+            27,
+            237,
+            240
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小熊猫正面待机_05.png",
+          "sha256": "2a9722185c6f1685fccb8defd01c375c1e6f4974b5978971e71f5d6e2c08c033",
+          "alpha_bbox_32": [
+            31,
+            27,
+            230,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小熊猫正面待机_06.png",
+          "sha256": "b0d216109b2dfff56c9e2d11f5570a02ede0a9f3fb7d12b707d5f86a73a0f43f",
+          "alpha_bbox_32": [
+            31,
+            28,
+            222,
+            240
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小熊猫正面待机_07.png",
+          "sha256": "2898c49605e6db6ef0ca713dae2557d4b3ca623a161e1789153f2c8c8c3694ec",
+          "alpha_bbox_32": [
+            31,
+            27,
+            231,
+            240
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小熊猫正面待机_08.png",
+          "sha256": "49848aaf40ca4d8dec607fa178ee7951c22ec4aac4e3df84639ac79e1632c4df",
+          "alpha_bbox_32": [
+            31,
+            28,
+            238,
+            240
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小熊猫正面待机_09.png",
+          "sha256": "9051ec695a42c6ea1011cbcf0323c1c197bf7367df81c7d3c9bf3ad1c9157659",
+          "alpha_bbox_32": [
+            31,
+            29,
+            229,
+            240
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小熊猫正面待机_10.png",
+          "sha256": "5ba051644aa0709c7bb2ec6801c136b0db9b98f50e88f7bfaba9b2252db6867f",
+          "alpha_bbox_32": [
+            31,
+            27,
+            228,
+            240
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小熊猫正面待机_11.png",
+          "sha256": "5cc2948cd8c394d54a27250767e74e2001d2226647ab31003e06d212250a94bc",
+          "alpha_bbox_32": [
+            31,
+            28,
+            238,
+            240
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小熊猫正面待机_12.png",
+          "sha256": "dc0128f0f35ff57a993170b2ea952f2a5b25609f287e70505cdede0d8b20d016",
+          "alpha_bbox_32": [
+            31,
+            28,
+            230,
+            240
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小熊猫正面待机_13.png",
+          "sha256": "3b5ba926daeaef2a8a0739e83aed6a8d4305eb327fcb1b3c5f32271ec3525bd7",
+          "alpha_bbox_32": [
+            31,
+            29,
+            225,
+            240
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小熊猫正面待机_14.png",
+          "sha256": "5da78661198b274c763b2f9d689a94ec126ddb66c7f16fd3dd25d1d93cf8da23",
+          "alpha_bbox_32": [
+            31,
+            27,
+            237,
+            240
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_front_right",
+      "animation": "idle_front_right",
+      "row": 6,
+      "source_mirrored": false,
+      "source_folder": "小熊待机/小熊猫正侧45待机",
+      "source_preview": "小熊猫正侧45待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小熊猫正侧45待机_01.png",
+          "sha256": "0c2ad80a28f573c6b0707a75d6f5301e3aa1454467f32ba63026472a77486f89",
+          "alpha_bbox_32": [
+            35,
+            21,
+            222,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小熊猫正侧45待机_02.png",
+          "sha256": "03242a347a574672b65512319d9d6538b7effcc82e17ff73c0d0ef8e40068129",
+          "alpha_bbox_32": [
+            31,
+            22,
+            222,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小熊猫正侧45待机_03.png",
+          "sha256": "1f6ddf17af8ae66c6b23c51449107e9034dcb3e2f775d1f33bf82cacb5e805ba",
+          "alpha_bbox_32": [
+            26,
+            25,
+            225,
+            240
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小熊猫正侧45待机_04.png",
+          "sha256": "39313220f9530ebe4e25d57525409f34e56008e4622e922790c823d54058dd30",
+          "alpha_bbox_32": [
+            24,
+            24,
+            226,
+            240
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小熊猫正侧45待机_05.png",
+          "sha256": "c99c0b6e9e6c7a1829a2bce6153d1199461b0a8f577776af7275597c594d7e82",
+          "alpha_bbox_32": [
+            24,
+            23,
+            227,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小熊猫正侧45待机_06.png",
+          "sha256": "beab4dfb16caacf1d252c3a1c751ecde5eba5d10434e55ff5b7704dc463823e3",
+          "alpha_bbox_32": [
+            28,
+            24,
+            227,
+            240
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小熊猫正侧45待机_07.png",
+          "sha256": "734b0e24edb2cc0bf4e1adf804ce29f6796addefc300a330bc04333799b9be82",
+          "alpha_bbox_32": [
+            34,
+            26,
+            225,
+            240
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小熊猫正侧45待机_08.png",
+          "sha256": "0877fe5db85db744de913d4cda609e4b656f318e39be748ed71ffe888fff5c4f",
+          "alpha_bbox_32": [
+            36,
+            21,
+            221,
+            240
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小熊猫正侧45待机_09.png",
+          "sha256": "662aa5d861f52d5b69ab05bb1da11be2769344e572c0b2bf4cafd32b05003608",
+          "alpha_bbox_32": [
+            28,
+            19,
+            220,
+            240
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小熊猫正侧45待机_10.png",
+          "sha256": "7aae0dd77715f5cf7b65ae901bb0d7f195ddd822b2afd9dabb97b380d87abcbc",
+          "alpha_bbox_32": [
+            24,
+            22,
+            222,
+            240
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小熊猫正侧45待机_11.png",
+          "sha256": "cd67060e789e88bb3df8416fafdefb01efdc183346797a44bb795dddb5aade6b",
+          "alpha_bbox_32": [
+            23,
+            23,
+            226,
+            240
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小熊猫正侧45待机_12.png",
+          "sha256": "03d60ac9e57be22281a5600ff9f56dce185fae89a0e2caaa030f1781a6c964f2",
+          "alpha_bbox_32": [
+            25,
+            23,
+            226,
+            240
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小熊猫正侧45待机_13.png",
+          "sha256": "ded1ee684902acb25b9cd214f534247f6dc2861d5483cfc3ae5c14b23bf4f317",
+          "alpha_bbox_32": [
+            34,
+            24,
+            226,
+            240
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小熊猫正侧45待机_14.png",
+          "sha256": "e0b70d45a8cb16da6091c634d1f82bd8912fa9a43bafceb4887df2f9acb7b086",
+          "alpha_bbox_32": [
+            30,
+            23,
+            223,
+            240
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_right",
+      "animation": "idle_right",
+      "row": 7,
+      "source_mirrored": false,
+      "source_folder": "小熊待机/小熊猫侧面待机",
+      "source_preview": "小熊猫侧面待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小熊猫侧面待机_01.png",
+          "sha256": "a340f6454ab935e8d7227c6cdf3bf51ea60efd514d24c25a473d93c2831f62f0",
+          "alpha_bbox_32": [
+            29,
+            22,
+            228,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小熊猫侧面待机_02.png",
+          "sha256": "20507a05c58812b1b4a44a743829f8ee4289b438d64e21f0bc21bf742ae7dcf0",
+          "alpha_bbox_32": [
+            25,
+            21,
+            227,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小熊猫侧面待机_03.png",
+          "sha256": "80aa6d624875b0bf45afe9d76db5316cc679410ca3545db9ab9df7ff7fa6aa50",
+          "alpha_bbox_32": [
+            24,
+            22,
+            228,
+            240
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小熊猫侧面待机_04.png",
+          "sha256": "9a4b16f02eb4c765b3f3617ada108f70cba6f9aca6b846f2ea4f2bf4fc869061",
+          "alpha_bbox_32": [
+            26,
+            22,
+            229,
+            240
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小熊猫侧面待机_05.png",
+          "sha256": "b9612dd5943ca595d1dde2fabb08e1a69087b7805f0dd310e00c18684421a67d",
+          "alpha_bbox_32": [
+            32,
+            21,
+            228,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小熊猫侧面待机_06.png",
+          "sha256": "d3a44301613651d56c2992ec7311670d7ad1236bfb33bb85f8bf81610f85be1a",
+          "alpha_bbox_32": [
+            37,
+            21,
+            227,
+            240
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小熊猫侧面待机_07.png",
+          "sha256": "b147a17b15ebd2ae57911cad0fea77cd5fae0e99e0d2326d7741c8bd48bed22a",
+          "alpha_bbox_32": [
+            34,
+            22,
+            228,
+            240
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小熊猫侧面待机_08.png",
+          "sha256": "ae16afd9fa566c55b3d7eb8ad9159f07535c6e9ffea19bc8ea46a9668143a832",
+          "alpha_bbox_32": [
+            28,
+            21,
+            227,
+            240
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小熊猫侧面待机_09.png",
+          "sha256": "b6d4b851157fe34b085b8be65f584cfef8c6ad1db94a1230d7ef41d267d278fb",
+          "alpha_bbox_32": [
+            25,
+            21,
+            227,
+            240
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小熊猫侧面待机_10.png",
+          "sha256": "cd2ae056095ebd446600253a29562e7e5521834d500fc2e4a7b6c0d2da05cbaf",
+          "alpha_bbox_32": [
+            24,
+            22,
+            227,
+            240
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小熊猫侧面待机_11.png",
+          "sha256": "3b78ed7bf5599e7bc8a57acf60aae700e89bb46e1a125fe086639098f9dfd516",
+          "alpha_bbox_32": [
+            24,
+            22,
+            229,
+            240
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小熊猫侧面待机_12.png",
+          "sha256": "c994b29bbaeb40d556075ed32dd6fbf4a0b2b846be822a5f9cfb698111b15a82",
+          "alpha_bbox_32": [
+            28,
+            22,
+            229,
+            240
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小熊猫侧面待机_13.png",
+          "sha256": "0346e6732cf46a30718bd236e97ab0bef8b602abd1cf926a923d91fdaf7c2a79",
+          "alpha_bbox_32": [
+            36,
+            21,
+            227,
+            240
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小熊猫侧面待机_14.png",
+          "sha256": "0ebe0fb3e9a130b0f4d3b39eff046203846c5682679e1139abcfdf91c37f6db6",
+          "alpha_bbox_32": [
+            37,
+            21,
+            227,
+            240
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_back_right",
+      "animation": "idle_back_right",
+      "row": 8,
+      "source_mirrored": false,
+      "source_folder": "小熊待机/小熊猫背侧45待机",
+      "source_preview": "小熊猫背侧45待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小熊猫背侧45待机_01.png",
+          "sha256": "e31ebfb64ebecd5cb27d5bbde070f370dcddacb2bb13ba0efa1b6885858f53ff",
+          "alpha_bbox_32": [
+            31,
+            16,
+            225,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小熊猫背侧45待机_02.png",
+          "sha256": "8f1b50361e64d043552ae6c12277cf6da91c554ef438f0c31f269769cbacb62d",
+          "alpha_bbox_32": [
+            25,
+            17,
+            228,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小熊猫背侧45待机_03.png",
+          "sha256": "89c3f93110e52be29d9bdd4ebf3cbc6fe05be8a90876ebb15a147bd9da85bc25",
+          "alpha_bbox_32": [
+            24,
+            16,
+            228,
+            240
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小熊猫背侧45待机_04.png",
+          "sha256": "77dadb2c04009f46c08ebd7bf064c0e2219240f6c693f909b280b44556584d11",
+          "alpha_bbox_32": [
+            32,
+            14,
+            226,
+            240
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小熊猫背侧45待机_05.png",
+          "sha256": "bb7edef36226dc098cf6b97edeaa56fb2074fdc15ea851818251600191d7f00f",
+          "alpha_bbox_32": [
+            30,
+            19,
+            224,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小熊猫背侧45待机_06.png",
+          "sha256": "6b213a9a0035df36ab64145ffd4361acdc26af12cd38d83c1f22c60c69d77e10",
+          "alpha_bbox_32": [
+            24,
+            18,
+            222,
+            240
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小熊猫背侧45待机_07.png",
+          "sha256": "e07fed81f57d310d7bb694847c6af7fa469e9ba0f7060c33534ee42683d37570",
+          "alpha_bbox_32": [
+            25,
+            19,
+            222,
+            240
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小熊猫背侧45待机_08.png",
+          "sha256": "017af0825189a6b2763064eed68ac47be9e4ff5e58b7c831b70ebc5bfc524129",
+          "alpha_bbox_32": [
+            24,
+            19,
+            222,
+            240
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小熊猫背侧45待机_09.png",
+          "sha256": "5a9dac00c5875a9cf761b6de2482aecd3c54ba562605e4a561dab60d0502464a",
+          "alpha_bbox_32": [
+            36,
+            16,
+            225,
+            240
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小熊猫背侧45待机_10.png",
+          "sha256": "cfccbb24b85ae4f554de5e56e0a04a5b7cf7024c6506d55ee3667cebb84a6fe1",
+          "alpha_bbox_32": [
+            31,
+            16,
+            226,
+            240
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小熊猫背侧45待机_11.png",
+          "sha256": "1e7e85ede242686d472632142b4c96a95c313631d15744998ab911069d22359a",
+          "alpha_bbox_32": [
+            25,
+            16,
+            223,
+            240
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小熊猫背侧45待机_12.png",
+          "sha256": "8a1da358fa36b44186f408625276bc9653516b5d6e14d678bef92f8be2e44e35",
+          "alpha_bbox_32": [
+            24,
+            20,
+            222,
+            240
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小熊猫背侧45待机_13.png",
+          "sha256": "5f8cdd9a78dbd4eccef8d9a9df1fcd9874e047096055830b06f6cf6a58ae73c2",
+          "alpha_bbox_32": [
+            24,
+            18,
+            222,
+            240
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小熊猫背侧45待机_14.png",
+          "sha256": "cd12715e09b5a70ff7017b35d4ad48d17a004bf67be694aad18ec6a561a9a5c0",
+          "alpha_bbox_32": [
+            38,
+            16,
+            226,
+            240
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_back",
+      "animation": "idle_back",
+      "row": 9,
+      "source_mirrored": false,
+      "source_folder": "小熊待机/小熊猫背面待机",
+      "source_preview": "小熊猫背面待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小熊猫背面待机_01.png",
+          "sha256": "175a705c99676c7b18d8e24c924a3a7d1b56f6d8f1caed0ad1f86df84119d9bb",
+          "alpha_bbox_32": [
+            45,
+            29,
+            211,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小熊猫背面待机_02.png",
+          "sha256": "640d7a09eb98fee7dbcad786a57477efa78935c1458230ac9bc1d8234ce77e85",
+          "alpha_bbox_32": [
+            44,
+            30,
+            211,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小熊猫背面待机_03.png",
+          "sha256": "5e820fe172c15152af1c588233e77f24c4360a35090dc795d75598be17a1c1e6",
+          "alpha_bbox_32": [
+            43,
+            28,
+            210,
+            252
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小熊猫背面待机_04.png",
+          "sha256": "b50e1dbdc93688c81f863b3acaf3f10385e768cef7761fd0ec1cec804f9283e0",
+          "alpha_bbox_32": [
+            43,
+            27,
+            209,
+            254
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小熊猫背面待机_05.png",
+          "sha256": "4562d23b4167e3820d7735da92ff2098204e07943f4db049594fd7cc73a39a9e",
+          "alpha_bbox_32": [
+            43,
+            27,
+            209,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小熊猫背面待机_06.png",
+          "sha256": "4053492f6a1fafca3521d75811027455182df2805783d26732e3e9f486bac3c1",
+          "alpha_bbox_32": [
+            44,
+            30,
+            210,
+            240
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小熊猫背面待机_07.png",
+          "sha256": "3b947a95c802a19a388d41776e4a0a09335020b7296d4d0a98f4c424a220a676",
+          "alpha_bbox_32": [
+            45,
+            29,
+            211,
+            248
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小熊猫背面待机_08.png",
+          "sha256": "19167bc44a243e295166b2dafe3dee65ce1d7867504ccc0ad1a348a84bdf1a43",
+          "alpha_bbox_32": [
+            45,
+            28,
+            212,
+            253
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小熊猫背面待机_09.png",
+          "sha256": "3decac8192ec31d94298cd0f1bd6694c79e324b02e935dd92febb355c92465b5",
+          "alpha_bbox_32": [
+            45,
+            29,
+            212,
+            240
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小熊猫背面待机_10.png",
+          "sha256": "08f445c3cc2344b6777fd6692600e85306ee976e53d8b8190b8b3b0199cac197",
+          "alpha_bbox_32": [
+            44,
+            30,
+            210,
+            240
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小熊猫背面待机_11.png",
+          "sha256": "8f0273e473b39546d52a03a21d9a713da94c0fcb991a08ce108d7cc92e37ded7",
+          "alpha_bbox_32": [
+            43,
+            28,
+            210,
+            253
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小熊猫背面待机_12.png",
+          "sha256": "5f99787b5643a6898edbe8b7b4fe79070d0dc041fd9087003c736f95ba6ac1eb",
+          "alpha_bbox_32": [
+            42,
+            27,
+            209,
+            248
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小熊猫背面待机_13.png",
+          "sha256": "44b180d8560d9eb7ab7a831fdc1dbda179c1fa9c6cf0a4f26dbdcc049af8f8f5",
+          "alpha_bbox_32": [
+            43,
+            28,
+            209,
+            240
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小熊猫背面待机_14.png",
+          "sha256": "c791c2c5f478b221d8a090573096173b34d258c0efbb15cb8e38b93423817961",
+          "alpha_bbox_32": [
+            44,
+            30,
+            210,
+            240
+          ]
+        }
+      ]
+    }
+  ]
+}

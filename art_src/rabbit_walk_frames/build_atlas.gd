@@ -45,9 +45,15 @@ func _build() -> void:
 	var texture: Texture2D = load(output + prefix + "_atlas.png")
 	assert(texture != null, "Import the atlas before exporting SpriteFrames")
 	var animations := SpriteFrames.new()
-	animations.remove_animation("default")
+	if manifest.has("base_frames"):
+		# Reuse the shipped walk atlas and its tuned timing; archive only new poses.
+		animations = load(str(manifest.base_frames)).duplicate(true)
+	else:
+		animations.remove_animation("default")
+	var source_mirrored: Dictionary = {}
 	for row: Dictionary in manifest.directions:
 		var name: String = row.animation
+		if row.get("source_mirrored", false): source_mirrored[name] = true
 		animations.add_animation(name)
 		animations.set_animation_loop(name, true)
 		var keep: Array = selections[row.key]
@@ -67,6 +73,7 @@ func _build() -> void:
 			region.region = Rect2(index * 256, int(row.row) * 256, 256, 256)
 			region.filter_clip = true
 			animations.add_frame(name, region, float(row.durations_ms[keep[index]]) / 100.0)
+	if not source_mirrored.is_empty(): animations.set_meta("source_mirrored", source_mirrored)
 	assert(ResourceSaver.save(animations, output + prefix + "_frames.tres") == OK)
 	print(prefix + ": saved native looping SpriteFrames clips with source-relative timing")
 	quit()
