@@ -15,7 +15,7 @@ func _run() -> void:
 		_finish()
 		return
 	_check(library.portrait("gray_cat") is AtlasTexture, "portrait uses the real gray-cat atlas")
-	_check(library.actions("gray_cat").size() == 2 and library.actions("gray_cat")[0].id == "walk", "authored gray-cat walk and idle are advertised")
+	_check(library.actions("gray_cat").map(func(a): return a.id) == ["walk", "idle", "work"], "authored gray-cat walk, idle and operation are advertised")
 	sim.gold = 1000
 	for art in ["raccoon", "fox", "rabbit", "gray_cat"]:
 		_check(sim.next_hire_art() == art, "existing recruitment order followed by gray cat")

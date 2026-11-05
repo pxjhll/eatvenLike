@@ -1,0 +1,1020 @@
+{
+  "asset_prefix": "rabbit_actions",
+  "output": "res://art/rabbit_actions/",
+  "external_source": "E:\\Work",
+  "frame_size": [
+    256,
+    256
+  ],
+  "columns": 14,
+  "rows": 5,
+  "anchor": [
+    128,
+    244
+  ],
+  "visible_height": 228,
+  "source_preservation": "Byte-identical PNG copies. No redraw, recolor, resize, crop or per-frame recenter.",
+  "directions": [
+    {
+      "key": "idle_front",
+      "animation": "idle_front",
+      "row": 0,
+      "source_mirrored": false,
+      "source_folder": "小兔子待机/小兔子正面待机",
+      "source_preview": "小兔子正面待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小兔子正面待机_01.png",
+          "sha256": "99d24fefad3627ecdb34fcb999abbb979b659ad3b54ed04cd14a2557782aaa55",
+          "alpha_bbox_32": [
+            56,
+            18,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小兔子正面待机_02.png",
+          "sha256": "d4abf21d854749dac9b4d4565ae4723311b943ec4b295cc59ee0eec2828533cd",
+          "alpha_bbox_32": [
+            55,
+            24,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小兔子正面待机_03.png",
+          "sha256": "b7dce7c0a3153be6b9aea71010fde79e0000716807e823cf6b4f05283b69daa5",
+          "alpha_bbox_32": [
+            55,
+            21,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小兔子正面待机_04.png",
+          "sha256": "4970f5e3057538f25f17885549917e49ae761fd94a5e14f5f79833d0a27cdfb8",
+          "alpha_bbox_32": [
+            56,
+            18,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小兔子正面待机_05.png",
+          "sha256": "8dbc298ad424eceeb27e5c4cd48b4cb516127b8330f8499d52d0ccfc1dbd12e3",
+          "alpha_bbox_32": [
+            55,
+            20,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小兔子正面待机_06.png",
+          "sha256": "df22d7d0fe77ea63f4e2887c348323d745f49ac63165aede791e06c82978a592",
+          "alpha_bbox_32": [
+            55,
+            25,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小兔子正面待机_07.png",
+          "sha256": "f5e5b997a17568ac67afcc1eca1bd485e24480e673dc132f3a5ed19d393a0f1f",
+          "alpha_bbox_32": [
+            56,
+            18,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小兔子正面待机_08.png",
+          "sha256": "ec19d9ea38fbef0c77bfdc09d584003bdde02ed7cab00c79943b6565b77f806c",
+          "alpha_bbox_32": [
+            56,
+            18,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小兔子正面待机_09.png",
+          "sha256": "7271dd5947748efce5b7ec60527e377e833cd5eae4da8cf11255e0365b335f6f",
+          "alpha_bbox_32": [
+            55,
+            24,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小兔子正面待机_10.png",
+          "sha256": "be6c706ef83a63c81664edc44fae0bf1510c6e31780571b8bde4f4b315e29b58",
+          "alpha_bbox_32": [
+            55,
+            20,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小兔子正面待机_11.png",
+          "sha256": "9d0cd205edf006545c5af16d83f4e2d413f2212d5e438955cfc19747bd805ef5",
+          "alpha_bbox_32": [
+            55,
+            19,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小兔子正面待机_12.png",
+          "sha256": "a708fda4168d279830f5072a95ed2872b0c3436fb7906d019ee0ee75b8a46f62",
+          "alpha_bbox_32": [
+            55,
+            22,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小兔子正面待机_13.png",
+          "sha256": "7b76a1ddfedaa94bbda15c63a4ddb578e2293d9b44b217532c3097837f4858e5",
+          "alpha_bbox_32": [
+            55,
+            22,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小兔子正面待机_14.png",
+          "sha256": "c2085244c7ba4ac03cf94c5045f52ea0f05f1eeb00669bbc2b9d0b00d20d3bb2",
+          "alpha_bbox_32": [
+            56,
+            18,
+            200,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_front_right",
+      "animation": "idle_front_right",
+      "row": 1,
+      "source_mirrored": false,
+      "source_folder": "小兔子待机/小兔子正侧45度待机",
+      "source_preview": "小兔子正侧45度待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小兔子正侧45度待机_01.png",
+          "sha256": "4e467079ffbad7468f2f5a5fd0d41a51f54cbc0ca492598749f865e54dd75d55",
+          "alpha_bbox_32": [
+            61,
+            24,
+            195,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小兔子正侧45度待机_02.png",
+          "sha256": "0cde6ad8d34cd3eb43a74a3a3ca3e8f1edce23958777a76ca75fbffc4739ff8a",
+          "alpha_bbox_32": [
+            60,
+            22,
+            194,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小兔子正侧45度待机_03.png",
+          "sha256": "13f761f2cca55a9984cd0f0d30a079ef41a48ff7be3a4359986201aebdf7eef6",
+          "alpha_bbox_32": [
+            61,
+            24,
+            195,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小兔子正侧45度待机_04.png",
+          "sha256": "4f23bc06893fe332bd3d8dc18e1970174b3fb2b0234dd1087b33ddad98fd4de3",
+          "alpha_bbox_32": [
+            63,
+            23,
+            197,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小兔子正侧45度待机_05.png",
+          "sha256": "970751a8706eacd3a2cd52258ea8e45d673d3d38f8302374432942f36863c936",
+          "alpha_bbox_32": [
+            65,
+            28,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小兔子正侧45度待机_06.png",
+          "sha256": "46dd598260b466388c3ac149c27b3b269de07ea9fb5746cb16bb5f9d536fd84e",
+          "alpha_bbox_32": [
+            64,
+            26,
+            198,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小兔子正侧45度待机_07.png",
+          "sha256": "63c1b265fdba966b4b923ab7032c9f8009763640d6cc98d8163f824fdf776dfb",
+          "alpha_bbox_32": [
+            65,
+            28,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小兔子正侧45度待机_08.png",
+          "sha256": "14454ec5f8c90eaf04299e46f0b010b4a85e1dd93741529d98a6bd14d93902e1",
+          "alpha_bbox_32": [
+            64,
+            26,
+            198,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小兔子正侧45度待机_09.png",
+          "sha256": "a82e1be7d82bf0adb8fad3cd65b989f80a421b2a42dcf36520e94af7e13a3fe1",
+          "alpha_bbox_32": [
+            64,
+            27,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小兔子正侧45度待机_10.png",
+          "sha256": "9a7c7170c2394d84847208a972f8c55e09f268397be89033156e3b8a774a84ce",
+          "alpha_bbox_32": [
+            64,
+            27,
+            199,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小兔子正侧45度待机_11.png",
+          "sha256": "afa85ece90e0af99468756a8396355f1655783de02cd69e53fc03f0b5013353b",
+          "alpha_bbox_32": [
+            64,
+            27,
+            199,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小兔子正侧45度待机_12.png",
+          "sha256": "7c3bf44f4642f6c943c0c4d999f319bc8fb0626eac145fd084d7318968b370a7",
+          "alpha_bbox_32": [
+            64,
+            26,
+            199,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小兔子正侧45度待机_13.png",
+          "sha256": "326428da54d0fa2b7ee63df153a75b36942fbc0083f1207220a497a1611a684c",
+          "alpha_bbox_32": [
+            62,
+            25,
+            197,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小兔子正侧45度待机_14.png",
+          "sha256": "d2e829c76826ed7e509a504a3a522eafc45683d78444c34b5f1e8893541b7434",
+          "alpha_bbox_32": [
+            60,
+            22,
+            195,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_right",
+      "animation": "idle_right",
+      "row": 2,
+      "source_mirrored": false,
+      "source_folder": "小兔子待机/小兔子正侧待机",
+      "source_preview": "小兔子正侧待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小兔子正侧待机_01.png",
+          "sha256": "e808d936ca16f7dee60820276a9ebe7f4fd0c7b35e63b97f1f68393851c87c17",
+          "alpha_bbox_32": [
+            69,
+            17,
+            187,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小兔子正侧待机_02.png",
+          "sha256": "5f6ef0dac54f0dd10a791b98814975c2661e57728de4b4fe0e744e0a57f5590e",
+          "alpha_bbox_32": [
+            68,
+            17,
+            187,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小兔子正侧待机_03.png",
+          "sha256": "54f2d94676a1be4120ef9fd1271bacc667c28c5de2f7995c653a59c232414280",
+          "alpha_bbox_32": [
+            68,
+            17,
+            187,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小兔子正侧待机_04.png",
+          "sha256": "d790457c28e47b13aa1ff788bba6c23ddc9eb8105af16e8090753fd74ad674f6",
+          "alpha_bbox_32": [
+            69,
+            17,
+            187,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小兔子正侧待机_05.png",
+          "sha256": "b0c3e6fb7388e676b71cb02957bab4a509e903983fc4075853d1965a1d71549c",
+          "alpha_bbox_32": [
+            68,
+            17,
+            187,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小兔子正侧待机_06.png",
+          "sha256": "466d907ccb93d96eca6f56f7049812a7ef9484656d9137098649a097150d68c8",
+          "alpha_bbox_32": [
+            68,
+            17,
+            187,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小兔子正侧待机_07.png",
+          "sha256": "81065800f8289753aa36d18ef00240cc6e793c119b5c6e69f792fde660cd828a",
+          "alpha_bbox_32": [
+            70,
+            16,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小兔子正侧待机_08.png",
+          "sha256": "2944abdb0545303bfc2ab6bc452b1de85e306aa2782791481a29a93e97571af4",
+          "alpha_bbox_32": [
+            70,
+            16,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小兔子正侧待机_09.png",
+          "sha256": "9bb083e515a3631cc5a29dc28e9f78e86bb8afa6c5fe4904853ea1c8cd2b095b",
+          "alpha_bbox_32": [
+            70,
+            16,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小兔子正侧待机_10.png",
+          "sha256": "6e74afde26703dcd05fb3f3ec4a5e658a5c2c6e6d6b5a3debb2a8946e4b848c5",
+          "alpha_bbox_32": [
+            70,
+            16,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小兔子正侧待机_11.png",
+          "sha256": "6c7a329e042789ffbe8b2b41b089a5ca70550c6d884047b849a085437e9b19fd",
+          "alpha_bbox_32": [
+            70,
+            16,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小兔子正侧待机_12.png",
+          "sha256": "f6ea9e927f6c33adf15537cbe7e6ea943208366af6943d1cd80646a51fbee0b7",
+          "alpha_bbox_32": [
+            71,
+            16,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小兔子正侧待机_13.png",
+          "sha256": "ff3b13195a69057395c1698b5814c28e6ecd8e53b21508dccda6e9a38784e3ea",
+          "alpha_bbox_32": [
+            69,
+            16,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小兔子正侧待机_14.png",
+          "sha256": "666969b49cbaa15ed7d7449c57fa48d12ffa0652d882d162f9acfc710b4044b3",
+          "alpha_bbox_32": [
+            69,
+            17,
+            187,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_back_right",
+      "animation": "idle_back_right",
+      "row": 3,
+      "source_mirrored": false,
+      "source_folder": "小兔子待机/小兔子背侧45度待机",
+      "source_preview": "小兔子背侧45度待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小兔子背侧45度待机_01.png",
+          "sha256": "3e82d0786acfecf006e591034d1fb8ab052789479072c0e263d5fbab2c4ef012",
+          "alpha_bbox_32": [
+            66,
+            14,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小兔子背侧45度待机_02.png",
+          "sha256": "b7b181f4aff27c896d767982cb5959787e92bb6a150439db05c1578462c4240b",
+          "alpha_bbox_32": [
+            66,
+            12,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小兔子背侧45度待机_03.png",
+          "sha256": "c0e24d7aff96162db889518937984237b2d430c5d0234d5705c3f030ae2cb55b",
+          "alpha_bbox_32": [
+            66,
+            14,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小兔子背侧45度待机_04.png",
+          "sha256": "7ef567408ab64bf2061fbc2075d85e4ccfb920e58554e700b0b1f72b929d8719",
+          "alpha_bbox_32": [
+            66,
+            14,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小兔子背侧45度待机_05.png",
+          "sha256": "08e806522b9a4641433f54f7944661fe68ffb03bbfd4d2eab7e6aee64061c0f4",
+          "alpha_bbox_32": [
+            66,
+            14,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小兔子背侧45度待机_06.png",
+          "sha256": "038e2a7041305b6fa8cff3c64a23984e002e4ae4817d7f21dd95bc1730814fa4",
+          "alpha_bbox_32": [
+            66,
+            12,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小兔子背侧45度待机_07.png",
+          "sha256": "e95dcc0fea9055e9009a7d0ec2110f481f85d2cd4982137b6a27eb2160bef78e",
+          "alpha_bbox_32": [
+            67,
+            14,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小兔子背侧45度待机_08.png",
+          "sha256": "fc33bd64c4b749b6291cfa66ced80140a7eda3f2dac7703cc3fdb11649987609",
+          "alpha_bbox_32": [
+            67,
+            14,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小兔子背侧45度待机_09.png",
+          "sha256": "7f1dbe19d4087d2a3fcb4d5678160440f9c54c936aa22fdb53a20724e74af6a3",
+          "alpha_bbox_32": [
+            67,
+            12,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小兔子背侧45度待机_10.png",
+          "sha256": "f571dda756df500af377af5cc150c55f938c30ab95535387cbe7a70d60f33dd8",
+          "alpha_bbox_32": [
+            67,
+            15,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小兔子背侧45度待机_11.png",
+          "sha256": "7cb3f9f610cb860d813288cd3ecedf0a40868721a4048ceeec8b16f6bce78269",
+          "alpha_bbox_32": [
+            67,
+            16,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小兔子背侧45度待机_12.png",
+          "sha256": "9726341ee0e52c4e33bbbf4559502dc8e7d62e1efb5942f4014f194da97b3968",
+          "alpha_bbox_32": [
+            67,
+            15,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小兔子背侧45度待机_13.png",
+          "sha256": "9671a21040abcd2bf4e09b9ba7e415a2f7d6f1314bf1ea489fb5e5a0f95567c7",
+          "alpha_bbox_32": [
+            66,
+            12,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小兔子背侧45度待机_14.png",
+          "sha256": "6c624e4340c50feb2acc2dbcb71db9f0717d0fd62c1570b8fc8ec2d796504d71",
+          "alpha_bbox_32": [
+            66,
+            14,
+            190,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_back",
+      "animation": "idle_back",
+      "row": 4,
+      "source_mirrored": false,
+      "source_folder": "小兔子待机/小兔子背面待机",
+      "source_preview": "小兔子背面待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小兔子背面待机_01.png",
+          "sha256": "17bec70c28d100e8e56277016809e79c333360991659bcc0d60c5ef8b18ba97b",
+          "alpha_bbox_32": [
+            56,
+            20,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小兔子背面待机_02.png",
+          "sha256": "83e360f1cb338e736a207989bf464d4e48af2423b95fe96ff85081a0de932163",
+          "alpha_bbox_32": [
+            56,
+            21,
+            203,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小兔子背面待机_03.png",
+          "sha256": "d8691036db94050532d78392561867056f97970c32873dd12e16069773116a79",
+          "alpha_bbox_32": [
+            57,
+            20,
+            202,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小兔子背面待机_04.png",
+          "sha256": "f1d16141b10f5a6a4f21cc67bd42c3f96d8e2b85dea0762f0447ff706ceb1078",
+          "alpha_bbox_32": [
+            56,
+            22,
+            202,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小兔子背面待机_05.png",
+          "sha256": "b7203a87fccc6c3c75376d742bf5fe1fa273b51ad95f5b8fc2d9e069aee04568",
+          "alpha_bbox_32": [
+            56,
+            19,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小兔子背面待机_06.png",
+          "sha256": "adade3c2ecafe633211a66805a2a2a1eea15a79c9cf3eb442dac3f9c5158f58e",
+          "alpha_bbox_32": [
+            55,
+            19,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小兔子背面待机_07.png",
+          "sha256": "243a0cb3362c88a693dfb9b9010241e2da1f30fddc8ad1211c92712ce149aa54",
+          "alpha_bbox_32": [
+            54,
+            20,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小兔子背面待机_08.png",
+          "sha256": "0360cf64816ed19a576f8d7fac1d2dc70425f8bc088cf3ae6a59bb9a8a85e269",
+          "alpha_bbox_32": [
+            54,
+            18,
+            199,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小兔子背面待机_09.png",
+          "sha256": "c884cc1149443552891c6819c69f66afec259da3f0db6d3ccc7d939af4d30e54",
+          "alpha_bbox_32": [
+            53,
+            18,
+            198,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小兔子背面待机_10.png",
+          "sha256": "bae57c59f846e69841869b3fe521a2fc1050c5daaad78c5074c775d9c606ce0b",
+          "alpha_bbox_32": [
+            53,
+            17,
+            198,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小兔子背面待机_11.png",
+          "sha256": "71a4ad1a30740116339bebc69938374fe08dc4e1f0c9d42cb5748b3c61117539",
+          "alpha_bbox_32": [
+            53,
+            18,
+            198,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小兔子背面待机_12.png",
+          "sha256": "33e24b1addaedcb71aa0e79cc1fa6a07403da16602b1b796a9208d45375a777e",
+          "alpha_bbox_32": [
+            55,
+            18,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小兔子背面待机_13.png",
+          "sha256": "a2cc97ca1b89f013745f2899c8cef58a9dec8fe2466d5212c1ac82dd2f48f344",
+          "alpha_bbox_32": [
+            56,
+            20,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小兔子背面待机_14.png",
+          "sha256": "e347f1ce1c6bb4b957b5dfc072924ca52393d6ccd794b6e544c360afda1f76d4",
+          "alpha_bbox_32": [
+            56,
+            21,
+            201,
+            242
+          ]
+        }
+      ]
+    }
+  ],
+  "base_frames": "res://art/rabbit_walk_frames/rabbit_walk_frames.tres"
+}

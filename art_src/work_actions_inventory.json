@@ -1,0 +1,48 @@
+{
+  "external_source": "E:\\Work",
+  "skipped": [
+    {
+      "asset": "rabbit_walk",
+      "matching_frames": 35,
+      "status": "already integrated; skipped"
+    },
+    {
+      "asset": "gray_cat_walk",
+      "matching_frames": 35,
+      "status": "already integrated; skipped"
+    }
+  ],
+  "imported": [
+    {
+      "source": "res://art_src/rabbit_actions/",
+      "clips": 5,
+      "frames": 70
+    },
+    {
+      "source": "res://art_src/gray_cat_actions/",
+      "clips": 5,
+      "frames": 70
+    },
+    {
+      "source": "res://art_src/bear_actions/",
+      "clips": 10,
+      "frames": 105
+    },
+    {
+      "source": "res://art_src/squirrel_actions/",
+      "clips": 3,
+      "frames": 35
+    },
+    {
+      "source": "res://art_src/dog_actions/",
+      "clips": 4,
+      "frames": 49
+    },
+    {
+      "source": "res://art_src/sheep_actions/",
+      "clips": 5,
+      "frames": 56
+    }
+  ],
+  "excluded": "7z packages duplicate expanded folders. Videos, GIF previews and 1024px concept images are not runtime animation frames."
+}

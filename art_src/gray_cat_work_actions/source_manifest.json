@@ -1,0 +1,420 @@
+{
+  "asset_prefix": "gray_cat_work_actions",
+  "output": "res://art/gray_cat_work_actions/",
+  "external_source": "E:\\Work",
+  "frame_size": [
+    256,
+    256
+  ],
+  "columns": 14,
+  "rows": 2,
+  "anchor": [
+    128,
+    247
+  ],
+  "visible_height": 240,
+  "source_preservation": "Byte-identical PNG copies. No redraw, recolor, resize, crop or per-frame recenter.",
+  "directions": [
+    {
+      "key": "work_right",
+      "animation": "work_right",
+      "row": 0,
+      "source_mirrored": false,
+      "source_folder": "小灰猫操作/小灰猫侧面操作",
+      "source_preview": "小灰猫侧面操作_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小灰猫侧面操作_01.png",
+          "sha256": "3add4aec71d2d4c100d1cea897c16e40e7a1c428dfa3db61f6eaee660c9c5ff4",
+          "alpha_bbox_32": [
+            47,
+            20,
+            209,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小灰猫侧面操作_02.png",
+          "sha256": "57ee8cacd565ad3350a31c512ed024c2b172df1fe651c71c50950620fb413981",
+          "alpha_bbox_32": [
+            44,
+            20,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小灰猫侧面操作_03.png",
+          "sha256": "7f4c558c54f6012dcccd0655eecb18bef40067a45d278687e7dc0ac0a26c06f3",
+          "alpha_bbox_32": [
+            37,
+            24,
+            212,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小灰猫侧面操作_04.png",
+          "sha256": "9e4fd273cf85dfe050e003996d5bfe66a673a6eb4c9e9bbf32e481f5a32a48dc",
+          "alpha_bbox_32": [
+            38,
+            24,
+            212,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小灰猫侧面操作_05.png",
+          "sha256": "dad464f3a62b3b022acdfef1b8970f7b89aca6f260d3c4b71bd54519dc3d2c9c",
+          "alpha_bbox_32": [
+            43,
+            23,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小灰猫侧面操作_06.png",
+          "sha256": "5f33a4dc7d6d235c15a3e484a68ce1abee5f7a008b87e6107602be2a7b7a4593",
+          "alpha_bbox_32": [
+            46,
+            22,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小灰猫侧面操作_07.png",
+          "sha256": "c8484a798b894d6c1c3b52d4ae69ace1a10892512bdda3539fd3508c6fe520c3",
+          "alpha_bbox_32": [
+            40,
+            20,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小灰猫侧面操作_08.png",
+          "sha256": "3cb5cc21e8ba403f3dc47862bbcc661bd758e3291e31f1545b10d9f6ecfc881e",
+          "alpha_bbox_32": [
+            38,
+            23,
+            212,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小灰猫侧面操作_09.png",
+          "sha256": "cad355786a285de46a0eb21e45db4b0b5ee3cf8988fc97e2a3d3424342929fbb",
+          "alpha_bbox_32": [
+            43,
+            24,
+            212,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小灰猫侧面操作_10.png",
+          "sha256": "76eaa3add99c72b8806f055756134ae3eaf67045f3f2ccfa0acafd4590c71897",
+          "alpha_bbox_32": [
+            46,
+            23,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小灰猫侧面操作_11.png",
+          "sha256": "00a0d0e4a2d343d6fd380589ca0bb92cb8b0f57d46173c673f142248a6385c70",
+          "alpha_bbox_32": [
+            42,
+            22,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小灰猫侧面操作_12.png",
+          "sha256": "947a8feab9dd479cc514a4490c9d830dcdce581e26e351c73c897b87bb16a277",
+          "alpha_bbox_32": [
+            37,
+            24,
+            212,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小灰猫侧面操作_13.png",
+          "sha256": "cb75c799c6fc83dfcfdfe2fd6d618dd5e87f1ecda0718e741bb45ad92d1e6582",
+          "alpha_bbox_32": [
+            39,
+            23,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小灰猫侧面操作_14.png",
+          "sha256": "4fc6bb0acc25919c08a4092c5429820dcbd278fbf83781d8759b9add266d319c",
+          "alpha_bbox_32": [
+            45,
+            22,
+            210,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "work_back_right",
+      "animation": "work_back_right",
+      "row": 1,
+      "source_mirrored": false,
+      "source_folder": "小灰猫操作/小灰猫背侧操作",
+      "source_preview": "小灰猫背侧操作_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小灰猫背侧操作_01.png",
+          "sha256": "057a1f8732c5b527d2f79c84fc5f511ce4c1d2fad1f852f5e65369707ef6eb6f",
+          "alpha_bbox_32": [
+            40,
+            14,
+            216,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小灰猫背侧操作_02.png",
+          "sha256": "29eba5b9962ed153a00a62c6265f8850f153fd568eedd0c655bb25d6aba55c16",
+          "alpha_bbox_32": [
+            38,
+            13,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小灰猫背侧操作_03.png",
+          "sha256": "ae88abd73934625f78946065647b19ec1fac429454f222ed364f86e2ac7f3475",
+          "alpha_bbox_32": [
+            34,
+            13,
+            219,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小灰猫背侧操作_04.png",
+          "sha256": "d23a3b3e7900399a581cf4dab7f39b2ed40fca03fb60e0853881673c1706dd5d",
+          "alpha_bbox_32": [
+            36,
+            13,
+            216,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小灰猫背侧操作_05.png",
+          "sha256": "23d1eb3088ac2ee5da21d6bd6a73ed4ed332fbbcae42d8a6cd488fe0eb54d952",
+          "alpha_bbox_32": [
+            40,
+            15,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小灰猫背侧操作_06.png",
+          "sha256": "eac002c6c3925e150f0f1ae47a375570b55a1037f0d6fd31694fc5a2875cc51f",
+          "alpha_bbox_32": [
+            33,
+            13,
+            217,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小灰猫背侧操作_07.png",
+          "sha256": "a1a75b81e8dbc8a5b0caf61299b99989632d63c1b08a1522a2d27459c77fe977",
+          "alpha_bbox_32": [
+            41,
+            14,
+            216,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小灰猫背侧操作_08.png",
+          "sha256": "9ae5efa1c48f6218791615bf0aee3fd95d43252ca2581597b147c7661147e4d9",
+          "alpha_bbox_32": [
+            37,
+            13,
+            219,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小灰猫背侧操作_09.png",
+          "sha256": "8edbd9cb5550b1f809fdb545751e7d2279bbdb49fd19b9515b9667bef13d222f",
+          "alpha_bbox_32": [
+            33,
+            15,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小灰猫背侧操作_10.png",
+          "sha256": "57c17586e4895ddc488688c0b741dd8863b47a3bfd3e04a4b4694a826c9b4002",
+          "alpha_bbox_32": [
+            39,
+            13,
+            216,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小灰猫背侧操作_11.png",
+          "sha256": "70fce7ac0f2daa3ff8b49818ede0bed14f239cc9f22cadc1ba442450c8c41c2e",
+          "alpha_bbox_32": [
+            39,
+            13,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小灰猫背侧操作_12.png",
+          "sha256": "a3b9142124699b9f8c77700be14a48e4de13e6298f0d50fcc01a92f2140f42a7",
+          "alpha_bbox_32": [
+            33,
+            15,
+            218,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小灰猫背侧操作_13.png",
+          "sha256": "7bb6cfc604daa870b6305af3c09f60866285e08d9ea1da991e6bf1f4da5ddc54",
+          "alpha_bbox_32": [
+            37,
+            13,
+            216,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小灰猫背侧操作_14.png",
+          "sha256": "341c2621e14cd7f0a8ac40289f85e458a22d2191ade056410dc48aa6fe8372bb",
+          "alpha_bbox_32": [
+            42,
+            15,
+            218,
+            242
+          ]
+        }
+      ]
+    }
+  ],
+  "base_frames": "res://art/gray_cat_actions/gray_cat_actions_frames.tres"
+}

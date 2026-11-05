@@ -8,18 +8,20 @@ const NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸", "rabbit":
 const ACTION_NAMES := {"walk": "走路", "idle": "待机", "sit": "坐姿", "work": "操作", "carry": "搬运", "pose": "站姿"}
 const RABBIT_FRAMES := preload("res://art/rabbit_actions/rabbit_actions_frames.tres")
 const RABBIT_SCENE := preload("res://presentation/rabbit_walk_frames/rabbit_walk.tscn")
-const GRAY_CAT_FRAMES := preload("res://art/gray_cat_actions/gray_cat_actions_frames.tres")
+const GRAY_CAT_FRAMES := preload("res://art/gray_cat_work_actions/gray_cat_work_actions_frames.tres")
 const GRAY_CAT_SCENE := preload("res://presentation/gray_cat_walk_frames/gray_cat_walk.tscn")
 const FRAME_ASSETS := {"rabbit": RABBIT_FRAMES, "gray_cat": GRAY_CAT_FRAMES,
 	"bear": preload("res://art/bear_actions/bear_actions_frames.tres"),
 	"squirrel": preload("res://art/squirrel_actions/squirrel_actions_frames.tres"),
 	"dog": preload("res://art/dog_actions/dog_actions_frames.tres"),
-	"sheep": preload("res://art/sheep_actions/sheep_actions_frames.tres")}
+	"sheep": preload("res://art/sheep_actions/sheep_actions_frames.tres"),
+	"hamster": preload("res://art/hamster_actions/hamster_actions_frames.tres")}
 const FRAME_SCENES := {"rabbit": RABBIT_SCENE, "gray_cat": GRAY_CAT_SCENE,
 	"bear": preload("res://presentation/characters/bear.tscn"),
 	"squirrel": preload("res://presentation/characters/squirrel.tscn"),
 	"dog": preload("res://presentation/characters/dog.tscn"),
-	"sheep": preload("res://presentation/characters/sheep.tscn")}
+	"sheep": preload("res://presentation/characters/sheep.tscn"),
+	"hamster": preload("res://presentation/characters/hamster.tscn")}
 const DIRECTION_SUFFIXES := ["_front_right", "_back_right", "_front", "_right", "_back"]
 
 
@@ -60,7 +62,7 @@ static func actions(art: String) -> Array:
 
 
 static func frame_height(art: String) -> float:
-	return 228.0 if art == "rabbit" else 240.0
+	return 228.0 if art == "rabbit" else 222.0 if art == "hamster" else 240.0
 
 
 static func walk_speed(art: String) -> float:

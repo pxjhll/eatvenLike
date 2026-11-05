@@ -1,0 +1,837 @@
+{
+  "asset_prefix": "sheep_actions",
+  "output": "res://art/sheep_actions/",
+  "external_source": "E:\\Work",
+  "frame_size": [
+    256,
+    256
+  ],
+  "columns": 14,
+  "rows": 5,
+  "anchor": [
+    128,
+    247
+  ],
+  "visible_height": 240,
+  "source_preservation": "Byte-identical PNG copies. No redraw, recolor, resize, crop or per-frame recenter.",
+  "directions": [
+    {
+      "key": "walk_right",
+      "animation": "walk_right",
+      "row": 0,
+      "source_mirrored": false,
+      "source_folder": "顾客备份/小羊/小羊走路/小羊侧面走路关键帧",
+      "source_preview": "小羊侧面走路_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        140,
+        150,
+        140,
+        140,
+        140,
+        150,
+        140
+      ],
+      "cycle_ms": 1000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小羊侧面走路_01.png",
+          "sha256": "4f39cddd27a361e7dd637e26e476d7d6710343eafdd025e429bcda63cd50ace1",
+          "alpha_bbox_32": [
+            49,
+            16,
+            206,
+            241
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小羊侧面走路_02.png",
+          "sha256": "1e3ce6fbc64062d5b520770173d5bc698c70b685df23924075c6feba9910324e",
+          "alpha_bbox_32": [
+            50,
+            17,
+            206,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小羊侧面走路_03.png",
+          "sha256": "844993205ab5c58e7e9e130fe6323921ed8d41f171b59ded8c45012449bb2cdc",
+          "alpha_bbox_32": [
+            50,
+            13,
+            206,
+            239
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小羊侧面走路_04.png",
+          "sha256": "982167f7f1dd843f6beb1d356a0b6b083df1d366a7f4befb107b4d51dff5acb8",
+          "alpha_bbox_32": [
+            50,
+            14,
+            206,
+            239
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小羊侧面走路_05.png",
+          "sha256": "c11c6198b4a3085b1b0219b492646a608a4a6a464a435474074ca351158caa59",
+          "alpha_bbox_32": [
+            50,
+            18,
+            206,
+            241
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小羊侧面走路_06.png",
+          "sha256": "397ca2c479f3a649642221de1ac1677f715b272c574088c2510637e57ab0ee4c",
+          "alpha_bbox_32": [
+            50,
+            16,
+            206,
+            241
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小羊侧面走路_07.png",
+          "sha256": "392af47f0ef1c50e9e444ddda87a9a875927ea57aaa6e40731c89d6f04a8898a",
+          "alpha_bbox_32": [
+            50,
+            13,
+            206,
+            241
+          ]
+        }
+      ]
+    },
+    {
+      "key": "walk_back_right",
+      "animation": "walk_back_right",
+      "row": 1,
+      "source_mirrored": false,
+      "source_folder": "顾客备份/小羊/小羊走路/小羊背侧45走路关键帧",
+      "source_preview": "小羊背侧45走路_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        140,
+        150,
+        140,
+        140,
+        140,
+        150,
+        140
+      ],
+      "cycle_ms": 1000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小羊背侧45走路_01.png",
+          "sha256": "faa2790b05d2d5b322a158552deb572119b010435ea39cfa03a3c4eed950227f",
+          "alpha_bbox_32": [
+            35,
+            16,
+            221,
+            241
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小羊背侧45走路_02.png",
+          "sha256": "d0457ed8d5e8b32d2a9c814907fc5da5e86923b7aaec5fe7b717d54060e3fbbc",
+          "alpha_bbox_32": [
+            34,
+            14,
+            219,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小羊背侧45走路_03.png",
+          "sha256": "f2f08f421ec49c08e7fb9b43839005713cf099a6b4515c5a34f90555bb6782e2",
+          "alpha_bbox_32": [
+            32,
+            15,
+            220,
+            243
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小羊背侧45走路_04.png",
+          "sha256": "1328b13e8536c8c040a5c1248dbcb5e45ee24d8beef81904bf77a867fde590f3",
+          "alpha_bbox_32": [
+            34,
+            16,
+            223,
+            243
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小羊背侧45走路_05.png",
+          "sha256": "8e641b988087dce0b556aab6e8918e467a6c3b0d0fd31560f7fd70c216110244",
+          "alpha_bbox_32": [
+            39,
+            14,
+            224,
+            238
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小羊背侧45走路_06.png",
+          "sha256": "e8d4ef1b67657128835738b64c507a1383044d38c8e203dce375d6e01cabbbbf",
+          "alpha_bbox_32": [
+            39,
+            14,
+            224,
+            238
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小羊背侧45走路_07.png",
+          "sha256": "d5ee4cf3c9a9697b4f492ba845599647d3684423bd6dac920270b4d19ffbe3e9",
+          "alpha_bbox_32": [
+            34,
+            16,
+            223,
+            240
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_back_right",
+      "animation": "idle_back_right",
+      "row": 2,
+      "source_mirrored": false,
+      "source_folder": "顾客备份/小羊/小羊待机/小羊站立待机关键帧",
+      "source_preview": "小羊站立待机_统一颜色.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小羊站立待机_01.png",
+          "sha256": "5a432e5b45367faec3aa93d75f9fcecd140086e3f34b0cea51abb2ffc249c771",
+          "alpha_bbox_32": [
+            35,
+            16,
+            221,
+            241
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小羊站立待机_02.png",
+          "sha256": "8896bfc03f0a921a3a8d937387458da0a945547f4904e1cda078a52b4fca55ad",
+          "alpha_bbox_32": [
+            30,
+            19,
+            221,
+            241
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小羊站立待机_03.png",
+          "sha256": "95fa58dc99028d5bb465f0930170432bfc204de3b3b83d986cf89789f9f07882",
+          "alpha_bbox_32": [
+            32,
+            16,
+            221,
+            241
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小羊站立待机_04.png",
+          "sha256": "58983fb6455eee66876aad727b511fbb32c7d402141ae4b512dfc51569ed9e85",
+          "alpha_bbox_32": [
+            36,
+            7,
+            221,
+            241
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小羊站立待机_05.png",
+          "sha256": "e4b60161d348778640130d5308e9c0b12fc95e0ee8aa4b40309a3d189d8edd24",
+          "alpha_bbox_32": [
+            33,
+            16,
+            222,
+            241
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小羊站立待机_06.png",
+          "sha256": "5242eb174d2c770da2ad134a116d44e190b20e832d04d79abdc4d635ae9e15ba",
+          "alpha_bbox_32": [
+            30,
+            19,
+            221,
+            241
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小羊站立待机_07.png",
+          "sha256": "337c7bf97b1a4ae4b9325da74495e0f041d7b78c126023ddc504ce0bee811326",
+          "alpha_bbox_32": [
+            35,
+            9,
+            221,
+            241
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小羊站立待机_08.png",
+          "sha256": "c30db207d43200883903eaa796071bf5a54970d2fc149d1bcf137f8813fb59a4",
+          "alpha_bbox_32": [
+            36,
+            11,
+            221,
+            241
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小羊站立待机_09.png",
+          "sha256": "e17fb91f6a47d4a14978da7a24cfa91868eaea5ea91d00c5d003060a57332486",
+          "alpha_bbox_32": [
+            31,
+            18,
+            222,
+            241
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小羊站立待机_10.png",
+          "sha256": "a91da3928687c93fc6cfb6474d984483e8eaebeec8d7229c1ff8bc4073b67832",
+          "alpha_bbox_32": [
+            32,
+            15,
+            220,
+            241
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小羊站立待机_11.png",
+          "sha256": "15a77a88211e25c38e2d08676ad314a98bc60267ec8b1b84ef042d463a9bc8d6",
+          "alpha_bbox_32": [
+            30,
+            16,
+            221,
+            241
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小羊站立待机_12.png",
+          "sha256": "35f126ed60c5026d0bc2bea58c36d2e002d02bfa749bb44d83e215a2587cb65d",
+          "alpha_bbox_32": [
+            33,
+            17,
+            221,
+            241
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小羊站立待机_13.png",
+          "sha256": "653f34e0628fc0eb007ba308e0e346b50fff87cca29475a2f9ca2cff6a1489c9",
+          "alpha_bbox_32": [
+            36,
+            11,
+            221,
+            241
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小羊站立待机_14.png",
+          "sha256": "c401f11d8b5a4239db75fbb8a6be04dcc42ece583365877baaee4cee906af30e",
+          "alpha_bbox_32": [
+            32,
+            13,
+            222,
+            241
+          ]
+        }
+      ]
+    },
+    {
+      "key": "sit_right",
+      "animation": "sit_right",
+      "row": 3,
+      "source_mirrored": false,
+      "source_folder": "顾客备份/小羊/小羊坐姿/小羊侧坐关键帧",
+      "source_preview": "小羊侧坐_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小羊侧坐_01.png",
+          "sha256": "7add250aafa98fe01f43691d21f65b8eccd052b5521aa5772f009094a420a9b8",
+          "alpha_bbox_32": [
+            50,
+            15,
+            206,
+            241
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小羊侧坐_02.png",
+          "sha256": "d1e09c1038c7b16e259064458534df9b45995373dcfed67930c45a7345aaa309",
+          "alpha_bbox_32": [
+            49,
+            15,
+            208,
+            241
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小羊侧坐_03.png",
+          "sha256": "f38e97e591c1d31d4304008ec9027df3d734177cc7d3a1aed62677e9226ddbf9",
+          "alpha_bbox_32": [
+            51,
+            15,
+            210,
+            241
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小羊侧坐_04.png",
+          "sha256": "cd1c05a8373ca4e19a12a8fea1cbfc9c7a4900f2b32020fc5c484e8f5ee67ada",
+          "alpha_bbox_32": [
+            50,
+            15,
+            210,
+            241
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小羊侧坐_05.png",
+          "sha256": "e32fdb29680497cfe9d5e248c660ab2ba9d493200b0194aa56bbfb6895bb79a8",
+          "alpha_bbox_32": [
+            50,
+            15,
+            206,
+            241
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小羊侧坐_06.png",
+          "sha256": "20d61d5be3eb72f5fc335c80296f8541ea8a231691bc3f8d1602bf063e5bc182",
+          "alpha_bbox_32": [
+            49,
+            15,
+            206,
+            241
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小羊侧坐_07.png",
+          "sha256": "bb4082aa3b1bc93be60f97e4097787c551a2a2233ea2c2605d51f9f37d314391",
+          "alpha_bbox_32": [
+            51,
+            15,
+            209,
+            241
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小羊侧坐_08.png",
+          "sha256": "62e132f0981419a292193819665b62076e40a656bc1bc390d404a915ff32f7c5",
+          "alpha_bbox_32": [
+            49,
+            15,
+            207,
+            241
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小羊侧坐_09.png",
+          "sha256": "fe1e46db6f38eedebda4ac11e95cc524a27434d48bb4ed21a2c5800fefa603ab",
+          "alpha_bbox_32": [
+            49,
+            15,
+            205,
+            241
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小羊侧坐_10.png",
+          "sha256": "cff5e67cb91a837e1019cf561d5bc301b4ba788835f49694fb17c5aa33d7bc52",
+          "alpha_bbox_32": [
+            49,
+            15,
+            208,
+            241
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小羊侧坐_11.png",
+          "sha256": "2caad3e9390449b029e78a8ff16e51312758b23774e5fd2a64ae9f194fd3a841",
+          "alpha_bbox_32": [
+            53,
+            15,
+            210,
+            241
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小羊侧坐_12.png",
+          "sha256": "5b5c6d6273f00cdd5a87546bb029cfa01adc9ee8b4da001b78abfdf3abfebb07",
+          "alpha_bbox_32": [
+            49,
+            15,
+            209,
+            241
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小羊侧坐_13.png",
+          "sha256": "4bab9d316ae51677f954e3ef4ff44bc2011c043a910298129f68ca85679e967c",
+          "alpha_bbox_32": [
+            50,
+            15,
+            207,
+            241
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小羊侧坐_14.png",
+          "sha256": "908d9c6f54a0c5d05d6c7f36e5786c821cc9cab001ca58625132f0f4de8b7cd1",
+          "alpha_bbox_32": [
+            49,
+            15,
+            205,
+            241
+          ]
+        }
+      ]
+    },
+    {
+      "key": "sit_front_right",
+      "animation": "sit_front_right",
+      "row": 4,
+      "source_mirrored": false,
+      "source_folder": "顾客备份/小羊/小羊坐姿/小羊正侧45坐关健帧",
+      "source_preview": "小羊正侧45坐_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小羊正侧45坐_01.png",
+          "sha256": "6363af33a5245a4a9f22c7d6a001e095446b555ed3be0d0373e95b2a8faf6bb6",
+          "alpha_bbox_32": [
+            33,
+            16,
+            223,
+            241
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小羊正侧45坐_02.png",
+          "sha256": "2b5310aa45b017796081a208a2e3ede9a56275c9630ba241a8992ca8a6e3cefa",
+          "alpha_bbox_32": [
+            33,
+            16,
+            224,
+            241
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小羊正侧45坐_03.png",
+          "sha256": "7bb2413db1360e53dee43038d1c913e011f2df23971d91209ff9188eb83faccf",
+          "alpha_bbox_32": [
+            35,
+            17,
+            226,
+            241
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小羊正侧45坐_04.png",
+          "sha256": "111f9296f5380c92b65609b37cbac31c3d9a9bf523e82d8b0340e648c2ac7bc7",
+          "alpha_bbox_32": [
+            35,
+            16,
+            224,
+            241
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小羊正侧45坐_05.png",
+          "sha256": "17430c54e9a77404c919f16b4f9ce4b9405a0e8411132ce11f0152bd6a465921",
+          "alpha_bbox_32": [
+            33,
+            16,
+            224,
+            241
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小羊正侧45坐_06.png",
+          "sha256": "b963367fde0a27f76e16c2295f77048f2988e78759fc0277ed68524d14505666",
+          "alpha_bbox_32": [
+            33,
+            16,
+            223,
+            241
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小羊正侧45坐_07.png",
+          "sha256": "e4f0f611ce8d57de41680275b29fde012763c382ba07aecbb5c398e92443352d",
+          "alpha_bbox_32": [
+            33,
+            16,
+            223,
+            241
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小羊正侧45坐_08.png",
+          "sha256": "30a1d00629d926ebf062bb9d82a23d403da897f75412c97517ff3ad24c4b09f6",
+          "alpha_bbox_32": [
+            33,
+            16,
+            225,
+            241
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小羊正侧45坐_09.png",
+          "sha256": "e8df19a967fe8897f4cc715899f1060e470da34ad1a596592c9d00e4ca31df04",
+          "alpha_bbox_32": [
+            36,
+            17,
+            225,
+            241
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小羊正侧45坐_10.png",
+          "sha256": "cd54e4e5a98a98cd614a209a7c0f1030b8012d1fff29d62a09b52abb07227b17",
+          "alpha_bbox_32": [
+            37,
+            17,
+            225,
+            241
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小羊正侧45坐_11.png",
+          "sha256": "bd27ddb50818555934d268b66ad9efe1e5b780f69fb357d3c09f7a05f8b90ca2",
+          "alpha_bbox_32": [
+            35,
+            17,
+            225,
+            241
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小羊正侧45坐_12.png",
+          "sha256": "5d44bf403675c649d7461c60062db3751efe7e247397a18e0ea7a04754566173",
+          "alpha_bbox_32": [
+            35,
+            16,
+            224,
+            241
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小羊正侧45坐_13.png",
+          "sha256": "71a860bdc81d87f80a6eba482ec16ba79ae32fb78ca26b096f0c3507538a2b42",
+          "alpha_bbox_32": [
+            33,
+            16,
+            223,
+            241
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小羊正侧45坐_14.png",
+          "sha256": "cfdb36d13879fa6bfc62c485f8f112605817d633de13f94e21a1ddac703ce407",
+          "alpha_bbox_32": [
+            33,
+            16,
+            223,
+            241
+          ]
+        }
+      ]
+    }
+  ]
+}

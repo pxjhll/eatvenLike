@@ -1,0 +1,528 @@
+{
+  "asset_prefix": "hamster_actions",
+  "output": "res://art/hamster_actions/",
+  "external_source": "E:\\Work",
+  "frame_size": [
+    256,
+    256
+  ],
+  "columns": 14,
+  "rows": 3,
+  "anchor": [
+    128,
+    243
+  ],
+  "visible_height": 222,
+  "source_preservation": "Byte-identical PNG copies. No redraw, recolor, resize, crop or per-frame recenter.",
+  "directions": [
+    {
+      "key": "walk_right",
+      "animation": "walk_right",
+      "row": 0,
+      "source_mirrored": false,
+      "source_folder": "小仓鼠/小仓鼠行走",
+      "source_preview": "小仓鼠行走_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 2000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小仓鼠行走_01.png",
+          "sha256": "d57ed1273159ea36cd7da19dc5779b5563ece24ab0118bf3647f0ee7a4ec4b5e",
+          "alpha_bbox_32": [
+            47,
+            31,
+            210,
+            243
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小仓鼠行走_02.png",
+          "sha256": "f98e78d2995b3fbdb9eaeb2dfacb6b92de7eb2b9f1b0f4a9982a1966a965ebec",
+          "alpha_bbox_32": [
+            46,
+            35,
+            209,
+            241
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小仓鼠行走_03.png",
+          "sha256": "0a264942c5ef85b9dc258360c258d94ab3d756764ce095ffa58cf5544c624212",
+          "alpha_bbox_32": [
+            47,
+            32,
+            209,
+            241
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小仓鼠行走_04.png",
+          "sha256": "2e876adc912b3c72ea6650e7bd2f2c6771515c507637251bce3514c1ce8a80ab",
+          "alpha_bbox_32": [
+            45,
+            34,
+            209,
+            243
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小仓鼠行走_05.png",
+          "sha256": "57bbd5052154ac51875aec1ff606924365bace5e9f3391e24349e6087450be7f",
+          "alpha_bbox_32": [
+            47,
+            32,
+            209,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小仓鼠行走_06.png",
+          "sha256": "e3c19dea5bc1ea38dcc609e8883318014fef4fd17daa407a028bdbbb1717b70c",
+          "alpha_bbox_32": [
+            46,
+            34,
+            209,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小仓鼠行走_07.png",
+          "sha256": "396e334d78c2a6d0c78931ed27fb2aa35408ccc65658c406f2d7569b6d5fbf67",
+          "alpha_bbox_32": [
+            46,
+            35,
+            209,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_back_right",
+      "animation": "idle_back_right",
+      "row": 1,
+      "source_mirrored": false,
+      "source_folder": "小仓鼠/小仓鼠背侧45待机",
+      "source_preview": "小仓鼠背侧45待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小仓鼠背侧45待机_01.png",
+          "sha256": "fff4bfdc194201d0103ddbd4cb22d0b426c9fdec1b48cafc4077b8abdc065eed",
+          "alpha_bbox_32": [
+            46,
+            30,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小仓鼠背侧45待机_02.png",
+          "sha256": "2a044444b79f256946cfe882b9cc5e3e32436796cfac90daea2305ce22401820",
+          "alpha_bbox_32": [
+            46,
+            30,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小仓鼠背侧45待机_03.png",
+          "sha256": "4abc0d60ca1186feab4663fbe5cfe8464110f766e91770b7808a542b1ce3333f",
+          "alpha_bbox_32": [
+            45,
+            31,
+            212,
+            241
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小仓鼠背侧45待机_04.png",
+          "sha256": "d9ce93cfe783375a8e0f07bd2f4a3bc9b6b1c544ed496891e2cf9e2a4f13a320",
+          "alpha_bbox_32": [
+            45,
+            32,
+            213,
+            241
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小仓鼠背侧45待机_05.png",
+          "sha256": "8a19e8c14f76f609ae077dc40c0b8fa101e5812adb34068e8975d90ed52afa6d",
+          "alpha_bbox_32": [
+            46,
+            31,
+            212,
+            241
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小仓鼠背侧45待机_06.png",
+          "sha256": "54e8f5ae4998c6b2482169847c8588449c296810cf557522f8cf57c360dc9850",
+          "alpha_bbox_32": [
+            46,
+            30,
+            211,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小仓鼠背侧45待机_07.png",
+          "sha256": "6c7781162b56d6992f50fe0fa11cf8bdfc3a95fea5cfe390dbf6a6d9d5af879c",
+          "alpha_bbox_32": [
+            46,
+            30,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小仓鼠背侧45待机_08.png",
+          "sha256": "7401ac730e627ff81f1581d144fcd958ced93da192ed9ad2505929eec6f6e4aa",
+          "alpha_bbox_32": [
+            46,
+            30,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小仓鼠背侧45待机_09.png",
+          "sha256": "69251caf21ce627278c1759d5455a7ddeba6e884a78a4a3c5d817843afcfd003",
+          "alpha_bbox_32": [
+            46,
+            31,
+            212,
+            241
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小仓鼠背侧45待机_10.png",
+          "sha256": "29d253bf94a98f91712a60976079d601f15315e49ce691d7022e86241402cb15",
+          "alpha_bbox_32": [
+            45,
+            32,
+            213,
+            241
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小仓鼠背侧45待机_11.png",
+          "sha256": "35f717ef4110479f18d116237c55ad846361cb40b4d28efa91a49713b4cfa10a",
+          "alpha_bbox_32": [
+            45,
+            31,
+            212,
+            241
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小仓鼠背侧45待机_12.png",
+          "sha256": "e04a2549e1bfa29432334913d59ef14bbcce6044e671e9420ed01d1c8a8eb865",
+          "alpha_bbox_32": [
+            46,
+            30,
+            211,
+            241
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小仓鼠背侧45待机_13.png",
+          "sha256": "a732f62e81929fd850897ffd679ba124c85a2d0a9f5101900bc2bbc59966d6cf",
+          "alpha_bbox_32": [
+            46,
+            29,
+            210,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小仓鼠背侧45待机_14.png",
+          "sha256": "6925adeec7e10c41b9060e707a513682bfd6fde3fc052abd6ce14847781f0fe9",
+          "alpha_bbox_32": [
+            46,
+            30,
+            210,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "sit_front_right",
+      "animation": "sit_front_right",
+      "row": 2,
+      "source_mirrored": false,
+      "source_folder": "小仓鼠/小仓鼠坐立待机",
+      "source_preview": "小仓鼠坐立待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小仓鼠坐立待机_01.png",
+          "sha256": "6b714318aa5e7c68b34ba6db74571f18d6d74293969d3ffa623ebce81fc568e3",
+          "alpha_bbox_32": [
+            48,
+            20,
+            213,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小仓鼠坐立待机_02.png",
+          "sha256": "2f26cda0b9f21e5e65d808be4de3e6c2f81d8b9e4d908481cfec818cd941c514",
+          "alpha_bbox_32": [
+            44,
+            22,
+            214,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小仓鼠坐立待机_03.png",
+          "sha256": "62be694116b78e006e4279ab293de5c15aa40db5ac6023c6a4f1647c9381832f",
+          "alpha_bbox_32": [
+            46,
+            24,
+            215,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小仓鼠坐立待机_04.png",
+          "sha256": "c448f6c75f5f2a1a2c19e9972ea6be7161f26edd6cc0d982f8963f3dc7654984",
+          "alpha_bbox_32": [
+            47,
+            25,
+            215,
+            241
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小仓鼠坐立待机_05.png",
+          "sha256": "9fbedf16b989823ca1874084e2a98ab7bd8cf81e2a8d6baeb975ee89afbfadbf",
+          "alpha_bbox_32": [
+            44,
+            24,
+            214,
+            241
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小仓鼠坐立待机_06.png",
+          "sha256": "720f19a1ed31d6d5ec43e497f41abcb836a6dbb0d06167f53788d83d51e314bf",
+          "alpha_bbox_32": [
+            46,
+            22,
+            213,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小仓鼠坐立待机_07.png",
+          "sha256": "c4422228b0226b80036428ee7ea78928c65ad6932b1fde2a7ace2bbe8521f51a",
+          "alpha_bbox_32": [
+            44,
+            22,
+            214,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小仓鼠坐立待机_08.png",
+          "sha256": "80a26cf6a10e7a0ea7c9b8a2783c6f1e636d57b4b4ca2b72710681014f1d6b39",
+          "alpha_bbox_32": [
+            48,
+            25,
+            215,
+            241
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小仓鼠坐立待机_09.png",
+          "sha256": "dcafe5d3ede4d91d030755b11a0606539ab1d82fa192bd1ca5a88f835df8f5f7",
+          "alpha_bbox_32": [
+            44,
+            21,
+            213,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小仓鼠坐立待机_10.png",
+          "sha256": "249dc6d1b3f36cbfae924765496650bf90d9742972bf46c6bbcc540662eee5f7",
+          "alpha_bbox_32": [
+            48,
+            22,
+            213,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小仓鼠坐立待机_11.png",
+          "sha256": "9dd122dc33311545bff1ef6848814244cedb857cbba069a86178d318a836afa4",
+          "alpha_bbox_32": [
+            44,
+            22,
+            214,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小仓鼠坐立待机_12.png",
+          "sha256": "773eeecca8b762d802e7b676995cf87972cb53ab534df0f06acc2642eaf5604f",
+          "alpha_bbox_32": [
+            47,
+            25,
+            215,
+            241
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小仓鼠坐立待机_13.png",
+          "sha256": "f0da97b62b0da4ebef6f5b789238b0c3e4ae0d65fdbbb423b22f81795aedbc88",
+          "alpha_bbox_32": [
+            45,
+            25,
+            215,
+            241
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小仓鼠坐立待机_14.png",
+          "sha256": "68e353231dd69c61223687a54efd3ec865aefafb4d65a01a11b3d728efe23553",
+          "alpha_bbox_32": [
+            46,
+            21,
+            214,
+            242
+          ]
+        }
+      ]
+    }
+  ]
+}

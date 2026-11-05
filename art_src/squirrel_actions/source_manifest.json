@@ -1,0 +1,528 @@
+{
+  "asset_prefix": "squirrel_actions",
+  "output": "res://art/squirrel_actions/",
+  "external_source": "E:\\Work",
+  "frame_size": [
+    256,
+    256
+  ],
+  "columns": 14,
+  "rows": 3,
+  "anchor": [
+    128,
+    247
+  ],
+  "visible_height": 240,
+  "source_preservation": "Byte-identical PNG copies. No redraw, recolor, resize, crop or per-frame recenter.",
+  "directions": [
+    {
+      "key": "walk_right",
+      "animation": "walk_right",
+      "row": 0,
+      "source_mirrored": false,
+      "source_folder": "顾客备份/小松鼠/小松鼠走路/小松鼠侧面走路关键帧",
+      "source_preview": "小松鼠侧面走路_256x256.gif",
+      "frame_count": 7,
+      "durations_ms": [
+        140,
+        150,
+        140,
+        140,
+        140,
+        150,
+        140
+      ],
+      "cycle_ms": 1000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小松鼠侧面走路_01.png",
+          "sha256": "8ee845ea1d85514225fc55bb42dccb9407978a198f1d751705f9a164a83318ce",
+          "alpha_bbox_32": [
+            12,
+            43,
+            230,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小松鼠侧面走路_02.png",
+          "sha256": "83c54b3a2bde08cb5db3a0c2c7adf5bb5a5562e2faa2f242ed051ecebef9e3db",
+          "alpha_bbox_32": [
+            14,
+            42,
+            230,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小松鼠侧面走路_03.png",
+          "sha256": "2938d4358186cc7756364c2ee7541c6acf1cf8816388e4efab17c35fcf077fb0",
+          "alpha_bbox_32": [
+            24,
+            37,
+            231,
+            240
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小松鼠侧面走路_04.png",
+          "sha256": "78a14fa6468b07a9182d4c61c7a55a6fce3ec2ace99164a99e75832d296fbccd",
+          "alpha_bbox_32": [
+            21,
+            41,
+            232,
+            240
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小松鼠侧面走路_05.png",
+          "sha256": "c14a71cad9fd0f3570775d2cecedb242d0f08c32b09236bb15d77c426c3cca3b",
+          "alpha_bbox_32": [
+            24,
+            38,
+            232,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小松鼠侧面走路_06.png",
+          "sha256": "892d6cdb70c7d9eb4cfeee36df2810d106bd4edd02b8758597104625fd5605ec",
+          "alpha_bbox_32": [
+            21,
+            39,
+            230,
+            235
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小松鼠侧面走路_07.png",
+          "sha256": "34d67aedab367ddb6385d7c6b5afa94d40d7e95f0acbc59995429fbd784fd974",
+          "alpha_bbox_32": [
+            13,
+            42,
+            230,
+            237
+          ]
+        }
+      ]
+    },
+    {
+      "key": "idle_back_right",
+      "animation": "idle_back_right",
+      "row": 1,
+      "source_mirrored": false,
+      "source_folder": "顾客备份/小松鼠/小松鼠站立/小松鼠背侧45度待机",
+      "source_preview": "小松鼠背侧45度待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小松鼠背侧45度待机_01.png",
+          "sha256": "294e4c058aa943f5773a2623172b726cb4d64fc0ee1804360bd484658aca478c",
+          "alpha_bbox_32": [
+            16,
+            32,
+            240,
+            240
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小松鼠背侧45度待机_02.png",
+          "sha256": "d4e6ec1f496482378ba922693ea2d5f12b07c1b33bf57221cf36d926d7cd1070",
+          "alpha_bbox_32": [
+            8,
+            33,
+            240,
+            240
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小松鼠背侧45度待机_03.png",
+          "sha256": "7571f311b1bd97ab213810989a8a8a2dd0b8f44dc1f381a960c78dd87537ab1a",
+          "alpha_bbox_32": [
+            0,
+            34,
+            241,
+            243
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小松鼠背侧45度待机_04.png",
+          "sha256": "2768cf6d438ea80208041401d982f90a5dbc727df31c46b192600911131236b4",
+          "alpha_bbox_32": [
+            15,
+            32,
+            240,
+            240
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小松鼠背侧45度待机_05.png",
+          "sha256": "e91522ed903b1e5c3e4d9fc76d522755f5bd29ff3f3357f8d376911cab7a5ec3",
+          "alpha_bbox_32": [
+            8,
+            32,
+            240,
+            240
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小松鼠背侧45度待机_06.png",
+          "sha256": "abd9625c6557629d907854c01f40809a4664ba858bef86203c74b28292add73b",
+          "alpha_bbox_32": [
+            0,
+            34,
+            241,
+            243
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小松鼠背侧45度待机_07.png",
+          "sha256": "7ea97b8f03bd12393504db9d55f40fc961b45c8f732803a75921413ccfc41eda",
+          "alpha_bbox_32": [
+            15,
+            32,
+            240,
+            240
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小松鼠背侧45度待机_08.png",
+          "sha256": "4a869cd2f6197010dcaaf36583678f5ba410d23a189b55a29016317114d04e68",
+          "alpha_bbox_32": [
+            8,
+            32,
+            240,
+            240
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小松鼠背侧45度待机_09.png",
+          "sha256": "3a000eebc95c333cb635adc66253e52d21423165855e021d7ffad12867f1658a",
+          "alpha_bbox_32": [
+            0,
+            34,
+            241,
+            243
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小松鼠背侧45度待机_10.png",
+          "sha256": "e4b7b60e4dee1e5da858114539d0ca065497317572fa9fb9b6b3ca9adcb2281d",
+          "alpha_bbox_32": [
+            8,
+            32,
+            240,
+            240
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小松鼠背侧45度待机_11.png",
+          "sha256": "f58f40eabcc4fd0c5123a803f185973d0de4813bdff421d70c3dcc05ec77f821",
+          "alpha_bbox_32": [
+            16,
+            32,
+            240,
+            240
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小松鼠背侧45度待机_12.png",
+          "sha256": "57b411e8e909390071c60e6dd2a2e99d07a11c0750b66fd0a9df9975487cc62a",
+          "alpha_bbox_32": [
+            8,
+            32,
+            240,
+            240
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小松鼠背侧45度待机_13.png",
+          "sha256": "3b93cbc293f5d021704d4daab049992378ed26f583c637af895ab1d673047222",
+          "alpha_bbox_32": [
+            0,
+            34,
+            241,
+            243
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小松鼠背侧45度待机_14.png",
+          "sha256": "6d4ab74ff591d4d58462aca4ac715e73e5c362b4aa617befeca385e42f25a0aa",
+          "alpha_bbox_32": [
+            11,
+            32,
+            240,
+            240
+          ]
+        }
+      ]
+    },
+    {
+      "key": "sit_right",
+      "animation": "sit_right",
+      "row": 2,
+      "source_mirrored": false,
+      "source_folder": "顾客备份/小松鼠/小松鼠坐姿/小松鼠坐姿待机",
+      "source_preview": "小松鼠坐姿待机_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小松鼠坐姿待机_01.png",
+          "sha256": "02c5fabe6df0a35e126e385b729913868f81f021310f8bdf4375cdf15f69e9d2",
+          "alpha_bbox_32": [
+            24,
+            37,
+            231,
+            237
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小松鼠坐姿待机_02.png",
+          "sha256": "c556cc8a2184fc899b41776b5b190dbe15fccad3bef9c5d28e2152e53dc5c1b4",
+          "alpha_bbox_32": [
+            28,
+            38,
+            231,
+            237
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小松鼠坐姿待机_03.png",
+          "sha256": "d17718fa445dd77608cfac50b9d96362e2e3e464c5f83f21b8b6dfc542201e5d",
+          "alpha_bbox_32": [
+            20,
+            42,
+            230,
+            237
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小松鼠坐姿待机_04.png",
+          "sha256": "1bec28d5aea21ec8446005197d3c13f7f2e5cd1b268f154d70218edc5e3414b9",
+          "alpha_bbox_32": [
+            3,
+            41,
+            231,
+            237
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小松鼠坐姿待机_05.png",
+          "sha256": "c699d5ff9bc5f5f725a8515830ef00a404ecdc297438600d504625c423a31e53",
+          "alpha_bbox_32": [
+            2,
+            42,
+            232,
+            237
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小松鼠坐姿待机_06.png",
+          "sha256": "2836c151b0c97d4080371ce05f19e572566eb50268d5eb717795802a01d5d603",
+          "alpha_bbox_32": [
+            16,
+            38,
+            232,
+            237
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小松鼠坐姿待机_07.png",
+          "sha256": "2fbb979ea1b554529acf3a7c661f4b83d7f6ac9bc81f29512b4afb7484586cef",
+          "alpha_bbox_32": [
+            29,
+            34,
+            232,
+            237
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小松鼠坐姿待机_08.png",
+          "sha256": "fafce4ae748de7148b8d609cd163821134d0340162463f39a3d2a94c65044e68",
+          "alpha_bbox_32": [
+            28,
+            38,
+            231,
+            237
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小松鼠坐姿待机_09.png",
+          "sha256": "51b244febb7126af69c6e30a7d683b701ea3e198d65c3cda9467d413c9c6bfc6",
+          "alpha_bbox_32": [
+            18,
+            42,
+            230,
+            237
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小松鼠坐姿待机_10.png",
+          "sha256": "81a0e7d187cd31b6dab027ae04c222a0a89408da418e67c86fc09b84889f1be4",
+          "alpha_bbox_32": [
+            3,
+            41,
+            230,
+            237
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小松鼠坐姿待机_11.png",
+          "sha256": "edd500eed43475dce254144282039fd1907a762e0c2b28932e0c6a6cd1d211f6",
+          "alpha_bbox_32": [
+            2,
+            42,
+            232,
+            237
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小松鼠坐姿待机_12.png",
+          "sha256": "79aab9cd2dd3b678e20e30655f50f3ecd4399211ed43e2476d0e9999fa4486f0",
+          "alpha_bbox_32": [
+            16,
+            38,
+            232,
+            237
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小松鼠坐姿待机_13.png",
+          "sha256": "6d4e336bb7d63c95cafe3adb00219449eeaf66ccb0c4bc56e2d011d6e930b1da",
+          "alpha_bbox_32": [
+            30,
+            35,
+            232,
+            237
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小松鼠坐姿待机_14.png",
+          "sha256": "d41a30219741b6e2563e62dcbf2c18f1bd1bf0613a173609c188a66c24b7cf5a",
+          "alpha_bbox_32": [
+            28,
+            38,
+            231,
+            237
+          ]
+        }
+      ]
+    }
+  ]
+}
