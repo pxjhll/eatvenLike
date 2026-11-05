@@ -261,5 +261,5 @@ level_flow = 0.0
 train_costs = Array[int]([15, 20, 30, 40, 55, 75, 100, 135, 180])
 front_upgrade_kinds = Array[String](["walk", "slot", "work", "walk"])
 front_upgrade_costs = Array[int]([10, 51, 130, 315])
-kitchen_upgrade_kinds = Array[String](["walk", "work", "carry", "walk", "work", "carry", "walk"])
-kitchen_upgrade_costs = Array[int]([20, 45, 101, 224, 452, 908, 1782])
+kitchen_upgrade_kinds = Array[String](["walk", "work", "carry", "walk", "work", "carry"])
+kitchen_upgrade_costs = Array[int]([20, 45, 101, 224, 452, 908])

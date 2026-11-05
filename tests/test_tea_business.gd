@@ -449,13 +449,13 @@ func test_price_levels_multiply_and_stars_jump() -> void:
 	check(not sim.upgrade_station("mix").is_empty(), "the milk machine stops at Lv7")
 	var pour: float = sim._speed("lemonade")
 	var last: float = sim._dish_price("lemonade")
-	for level in range(1, 7):
+	for level in range(1, 5):
 		check_eq(sim.upgrade_station("lemonade"), "", "lemonade stand upgrades")
 		# Even the small 12-gold cup must get dearer on every paid level (12.6 and 13.2 are not both "13").
 		check(sim._dish_price("lemonade") > last, "lemonade Lv%d raises the lemonade price" % sim.station_levels.lemonade)
 		last = sim._dish_price("lemonade")
-	check(not sim.upgrade_station("lemonade").is_empty(), "the lemonade stand stops at Lv7")
-	check(absf(sim._dish_price("lemonade") - 12 * pow(lemon_step, 6) * lemon_star * lemon_star) < 0.051, "lemonade: six levels and two stars")
+	check(not sim.upgrade_station("lemonade").is_empty(), "the lemonade stand stops at Lv5")
+	check(absf(sim._dish_price("lemonade") - 12 * pow(lemon_step, 4) * lemon_star) < 0.051, "lemonade: four levels and one star")
 	check_eq(sim._speed("lemonade"), pour, "lemonade stand levels raise the price, not the pour")
 	check_eq(sim.station_info("lemonade").kind, "price", "the lemonade stand is a price machine")
 
@@ -468,9 +468,9 @@ func test_v4_save_refunds_lemonade_levels_above_the_new_cap() -> void:
 	old.stations.boil.capacity = 6
 	var copy = make_shop()
 	check_eq(copy.load_dict(old), "", "a v4 save loads")
-	# The stand now stops at Lv7: the eighth level is refunded at its v4 price.
-	check_eq(copy.station_levels.lemonade, 7, "lemonade levels above the cap are taken back")
-	check_eq(copy.gold, old.gold + copy.LEMONADE_V4_COSTS[6], "the level above the cap is refunded")
+	# The stand now stops at Lv5: levels 6–8 are refunded at their v4 prices.
+	check_eq(copy.station_levels.lemonade, 5, "lemonade levels above the cap are taken back")
+	check_eq(copy.gold, old.gold + copy.LEMONADE_V4_COSTS[6] + copy.LEMONADE_V4_COSTS[5] + copy.LEMONADE_V4_COSTS[4], "the levels above the cap are refunded")
 	check_eq(copy.stations.boil.capacity, 12, "the brewer gets room for a six-cup pot")
 
 func test_v14_save_folds_levels_onto_the_shorter_v15_lists() -> void:
@@ -491,10 +491,21 @@ func test_v14_save_folds_levels_onto_the_shorter_v15_lists() -> void:
 	var copy = make_shop()
 	check_eq(copy.load_dict(old), "", "a v14 save loads")
 	check_eq(copy.station_levels.boil, 8, "a Lv10 brewer becomes the new top level")
-	check_eq([copy.station_levels.seal, copy.station_levels.mix, copy.station_levels.lemonade, copy.station_levels.press], [6, 7, 7, 6], "other machines stop at their new caps")
+	check_eq([copy.station_levels.seal, copy.station_levels.mix, copy.station_levels.lemonade, copy.station_levels.press], [6, 7, 5, 5], "other machines stop at their new caps")
 	check_eq([copy.material_levels.supply.tea_leaf, copy.material_levels.topping.pearl], [3, 3], "ingredients stop at Lv3")
-	check_eq([copy.kitchen_upgrades, copy.front_upgrades, copy.flyers], [7, 4, 4], "staff and flyer lists stop at their new ends")
+	check_eq([copy.kitchen_upgrades, copy.front_upgrades, copy.flyers], [6, 4, 4], "staff and flyer lists stop at their new ends")
 	check(copy.audit().valid, "the folded save stays consistent")
+
+func test_v15_playtest_save_folds_onto_the_shorter_lists() -> void:
+	var sim = opened()
+	if sim == null: return
+	var old: Dictionary = sim.to_dict()
+	old.station_levels.lemonade = 7
+	old.station_levels.press = 6
+	old.kitchen_upgrades = 7
+	var copy = make_shop()
+	check_eq(copy.load_dict(old), "", "a v15 playtest save with the old, longer lists loads")
+	check_eq([copy.station_levels.lemonade, copy.station_levels.press, copy.kitchen_upgrades], [5, 5, 6], "levels past the new ends are folded back")
 
 func test_recalling_every_observed_job_phase_preserves_goods_and_reservations() -> void:
 	var sim = opened()

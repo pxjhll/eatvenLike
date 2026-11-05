@@ -135,10 +135,10 @@ zone = "front"
 level_speed = Array[float]([1.0, 1.15, 1.32, 1.52, 1.75])
 upgrade_costs = Array[int]([20, 30, 45, 68])
 dishes = Array[String](["lemonade"])
-art_costs = Array[int]([25, 45, 81, 146, 262, 472])
+art_costs = Array[int]([25, 45, 81, 146])
 art_price_step = 0.05
 art_price_dishes = Array[String](["lemonade"])
-art_star_levels = Array[int]([4, 7])
+art_star_levels = Array[int]([4])
 art_star_mult = 1.25
 
 [sub_resource type="Resource" id="spot_lemonade_stand"]

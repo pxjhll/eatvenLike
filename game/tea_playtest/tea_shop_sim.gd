@@ -1920,6 +1920,8 @@ func load_dict(state: Dictionary) -> String:
 	if from_version is int and from_version < 13 and state.get("version") in [12, SAVE_VERSION]: state = _migrate_v12(state)
 	if state.get("version") is int and state.version == 13: state = _migrate_v13(state)
 	if state.get("version") is int and state.version == 14: state = _migrate_v14(state)
+	# Playtest builds of v15 had longer level lists (lemonade 7, press 6, kitchen 7): fold those onto today's ends.
+	elif state.get("version") is int and state.version == SAVE_VERSION: state = _clamp_levels(state.duplicate(true))
 	_round_seats(state)
 	var migrated: bool = from_version is int and from_version < SAVE_VERSION
 	var error := _validate_state(state, migrated)
@@ -2101,6 +2103,12 @@ func _migrate_v14(old: Dictionary) -> Dictionary:
 	if state.get("station_levels") is Dictionary:
 		var levels: Dictionary = state.station_levels
 		if levels.get("boil") is int: levels.boil = BOIL_V14_TO_V15[clampi(levels.boil, 1, 10) - 1]
+	return _clamp_levels(state)
+
+## Every machine, ingredient, staff list and flyer level stops at the end of its current list.
+func _clamp_levels(state: Dictionary) -> Dictionary:
+	if state.get("station_levels") is Dictionary:
+		var levels: Dictionary = state.station_levels
 		for id in levels.keys():
 			if levels[id] is int and id in MACHINE_IDS and _max_level(id) > 0: levels[id] = clampi(levels[id], 1, _max_level(id))
 	if state.get("material_levels") is Dictionary:
