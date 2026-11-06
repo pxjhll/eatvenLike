@@ -496,10 +496,17 @@ func _decide(s: Dictionary) -> void:
 		_next_step(s)
 		return
 	if _find_job(s): return
-	if s.target != "home":
+	# 没活就原地等，不来回跑；只有和别人挤在同一处时才让到待命点
+	if s.target != "home" and _crowded(s):
 		_go(s, "home", "待命")
 	s.phase = "walk" if s.walking else "idle"
 	s.task_label = "待命"
+
+
+func _crowded(s: Dictionary) -> bool:
+	for o in staff:
+		if o.id != s.id and Vector2(o.pos).distance_to(s.pos) < 60.0: return true
+	return false
 
 
 func _find_job(s: Dictionary) -> bool:

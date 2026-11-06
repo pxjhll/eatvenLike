@@ -11,6 +11,8 @@ func _initialize() -> void:
 		var frames: SpriteFrames = load("res://art/" + batch + "/" + batch + "_frames.tres")
 		# Inspect the lossless PNG; Godot's importer fills hidden transparent RGB at edges.
 		var atlas := Image.load_from_file(ProjectSettings.globalize_path("res://art/" + batch + "/" + batch + "_atlas.png"))
+		# 手机浏览器 WebGL 最大贴图常见 4096，超了整张画成黑块（2026-11-06 兔子收钱）
+		_check(atlas.get_width() <= 4096 and atlas.get_height() <= 4096, batch + " atlas fits 4096 for mobile WebGL")
 		for row: Dictionary in manifest.directions:
 			var clip: String = row.animation
 			_check(frames.get_frame_count(clip) == row.kept_frames.size() and frames.get_animation_loop(clip), "exact kept poses loop")
