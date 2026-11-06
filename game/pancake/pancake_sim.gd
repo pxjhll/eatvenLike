@@ -13,12 +13,12 @@ const COMPANIONS := {"rear_equipment": ["raw_ingredients"]}
 
 ## 员工站位（脚底，源坐标）。
 const POINTS := {
-	"register": Vector2(697, 768), "soy": Vector2(300, 742), "raw": Vector2(790, 430),
+	"register": Vector2(470, 776), "soy": Vector2(300, 742), "raw": Vector2(790, 430),
 	"griddle": Vector2(420, 432), "fryer": Vector2(272, 500), "crisps": Vector2(252, 626),
-	"topping": Vector2(560, 562), "packing": Vector2(716, 640), "home": Vector2(520, 742),
+	"topping": Vector2(560, 562), "packing": Vector2(716, 640), "home": Vector2(600, 700),
 }
-## 顾客位置：队伍从收银机前往左排；付了钱的人优先坐坐垫等饼，没坐垫就站在左边；排不下的队尾也坐坐垫。
-const QUEUE_SPOTS := [Vector2(684, 1074), Vector2(584, 1088), Vector2(484, 1094), Vector2(384, 1094), Vector2(284, 1088), Vector2(184, 1082)]
+## 顾客位置：队伍从柜台正中的收钱位往右排；付了钱的人优先坐坐垫等饼，没坐垫就站在左边；排不下的队尾也坐坐垫。
+const QUEUE_SPOTS := [Vector2(470, 1074), Vector2(570, 1080), Vector2(670, 1086), Vector2(770, 1092), Vector2(870, 1098), Vector2(820, 1150)]
 const WAIT_SPOTS := [Vector2(96, 1086), Vector2(60, 1130), Vector2(150, 1140), Vector2(40, 1060)]
 ## 坐垫中心，按解锁批次排列（2 / 3 / 4 个，累计 2 / 5 / 9）。
 const SEAT_SPOTS := [Vector2(114, 1236), Vector2(353, 1236), Vector2(598, 1221), Vector2(726, 1172), Vector2(836, 1221),

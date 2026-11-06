@@ -18,6 +18,9 @@ const TEA_SCENE := "res://presentation/tea_playtest/tea_playtest.tscn"
 const ICON_NODES := {"soy": 50, "food": 57}
 const UPGRADE_TEXT := {"speed": "速度 +14%", "price": "售价 +8%"}
 
+## 干活时面朝台子（0 正面 2 右 4 背面 6 左）：收钱面向客人，豆浆机在左手边。
+const WORK_FACING := {"register": 0, "soy": 6}
+
 var sim: PancakeSim
 var speed := 1.0
 ## 测试时可以换成临时路径，或设为 null 不存档。
@@ -185,7 +188,11 @@ func _sync_actors() -> void:
 			actor.setup(s.art, FONT, 150.0)
 			actors.add_child(actor)
 			_staff_actors[s.id] = actor
-		actor.display(s, sim.clock)
+		var shown: Dictionary = s
+		if s.phase == "work" and WORK_FACING.has(s.target):
+			shown = s.duplicate()
+			shown.facing = WORK_FACING[s.target]
+		actor.display(shown, sim.clock)
 	var alive := {}
 	for c in sim.customers:
 		alive[c.id] = true
