@@ -79,3 +79,19 @@ func test_cushions_unlock_in_three_stages_with_matching_shadows() -> void:
 		check_eq(cushions, row[1], "cumulative cushions at stage %d" % row[0])
 		check_eq(shadows, row[1], "shadows follow available cushions at stage %d" % row[0])
 	art.free()
+
+
+func test_play_scene_builds_and_unlocks_art() -> void:
+	var play: Node2D = load("res://presentation/pancake/pancake_play.tscn").instantiate()
+	(Engine.get_main_loop() as SceneTree).root.add_child(play)
+	var art: Node2D = play.art
+	check(art.source_node(34).visible, "打包台开局可见")
+	check(not art.source_node(161).visible, "豆浆机开之前隐藏")
+	check(play._frames["soy_milk"].visible, "豆浆机位置显示解锁虚线框")
+	play._try_unlock("soy_milk")
+	check(art.source_node(161).visible, "开放后显示豆浆机")
+	check(not play._frames["soy_milk"].visible and play._frames["rear_equipment"].visible, "虚线框移到下一台")
+	play.sim.run(40.0)
+	play._sync_actors()
+	check(play._staff_actors.size() == 1, "员工画在场景里")
+	play.free()

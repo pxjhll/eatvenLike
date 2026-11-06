@@ -17,6 +17,10 @@ var _unlocked := {}
 var _cushion_stage := 0
 
 func _ready() -> void:
+	# 编辑器里打开场景时全部显示，方便摆图；玩法状态只在运行时生效。
+	if Engine.is_editor_hint():
+		show_complete_layout()
+		return
 	reset_layout()
 	for key in opening_stations:
 		set_station_unlocked(key, true)
