@@ -1,0 +1,659 @@
+{
+  "asset_prefix": "rabbit_work_actions",
+  "output": "res://art/rabbit_work_actions/",
+  "external_source": "E:\\Work\\小兔子组装动作",
+  "frame_size": [
+    256,
+    256
+  ],
+  "columns": 17,
+  "rows": 3,
+  "anchor": [
+    128,
+    244
+  ],
+  "visible_height": 228,
+  "source_preservation": "Byte-identical PNG copies. No redraw, recolor, resize, crop or per-frame recenter.",
+  "directions": [
+    {
+      "key": "work_front",
+      "animation": "work_front",
+      "row": 0,
+      "source_mirrored": false,
+      "source_folder": "小兔子正面组装关键帧",
+      "source_preview": "小兔正面组装_4秒.gif",
+      "frame_count": 17,
+      "durations_ms": [
+        240,
+        230,
+        240,
+        230,
+        240,
+        230,
+        240,
+        230,
+        240,
+        230,
+        240,
+        230,
+        240,
+        230,
+        240,
+        230,
+        240
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小兔正面组装_01.png",
+          "sha256": "a447e26620cbbdd66048bde1f043cfede2f27cadc940cdd0cd26d809779a3ff3",
+          "alpha_bbox_32": [
+            56,
+            18,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小兔正面组装_02.png",
+          "sha256": "0de09e2b81af172c0bec4d8a29e63779c354b75d9b9331f878bcc9c7b5b1992a",
+          "alpha_bbox_32": [
+            56,
+            20,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小兔正面组装_03.png",
+          "sha256": "0c95dc4f923b7713be0711ce9fb63998c6b95d9be861e4a0342ef10ebd925291",
+          "alpha_bbox_32": [
+            58,
+            17,
+            202,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小兔正面组装_04.png",
+          "sha256": "2ad57ce7b0e67dd84e80ebd45fea78f19dbbae7a608df669204f221d9e4d5643",
+          "alpha_bbox_32": [
+            56,
+            18,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小兔正面组装_05.png",
+          "sha256": "92ea51a51b629fedd8d36ed1d0096528849032ea3ea851ba8ba94a4ff5cb29e3",
+          "alpha_bbox_32": [
+            54,
+            18,
+            199,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小兔正面组装_06.png",
+          "sha256": "15b82badec513cd34435952cf2efef714b93b9dae9134ac67b40f2459ff55648",
+          "alpha_bbox_32": [
+            56,
+            19,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小兔正面组装_07.png",
+          "sha256": "90397f41ee3e5579b45d5d23cf5d470c1f50bec85e5cef9cad1b36409b2e1d4b",
+          "alpha_bbox_32": [
+            57,
+            17,
+            202,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小兔正面组装_08.png",
+          "sha256": "ac3ffd3c454802354c65957fe3f63f5431195b7eb48596bae286c580185f373a",
+          "alpha_bbox_32": [
+            56,
+            18,
+            202,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小兔正面组装_09.png",
+          "sha256": "896c6b3f3b86536df15149e7cdac9dbf11af7f7c11c990e103e6d8925ab58ff6",
+          "alpha_bbox_32": [
+            54,
+            18,
+            199,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小兔正面组装_10.png",
+          "sha256": "73c36c70f8792a673139deb0fe63a09923c557e0d5e5f9e5bbef34279a2a905f",
+          "alpha_bbox_32": [
+            56,
+            19,
+            201,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小兔正面组装_11.png",
+          "sha256": "f342a3f9645ef1e45d9dafca02ae0086f10509b305af499a806c01ccc866ba8f",
+          "alpha_bbox_32": [
+            58,
+            17,
+            202,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小兔正面组装_12.png",
+          "sha256": "6957efad5ea5615951d44a0c28bc39fa8af9b1394e431f6790fae9d924f92dd9",
+          "alpha_bbox_32": [
+            55,
+            18,
+            200,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小兔正面组装_13.png",
+          "sha256": "ae97ef460b6b163320e4926a69988f4c242255787d7748af02a948f7ed57982a",
+          "alpha_bbox_32": [
+            54,
+            18,
+            199,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小兔正面组装_14.png",
+          "sha256": "9ba8e0411ad8425f9b302a543a21164e4353a5fc46c54668a62ac95d8496e8db",
+          "alpha_bbox_32": [
+            57,
+            18,
+            202,
+            242
+          ]
+        },
+        {
+          "index": 15,
+          "source_name": "小兔正面组装_15.png",
+          "sha256": "5982fc96b5aee1e6e93c04ad59221125d5f1a8adbe49255d0509a049dd127900",
+          "alpha_bbox_32": [
+            57,
+            18,
+            203,
+            242
+          ]
+        },
+        {
+          "index": 16,
+          "source_name": "小兔正面组装_16.png",
+          "sha256": "2dc623e2adc096c1d33098c46a06582baec954e4198187c7195f9695ed648e08",
+          "alpha_bbox_32": [
+            54,
+            18,
+            199,
+            242
+          ]
+        },
+        {
+          "index": 17,
+          "source_name": "小兔正面组装_17.png",
+          "sha256": "b72e550aad25b7d0533c1f73be77646a458b537f1ce856698de5a7b2e133caf4",
+          "alpha_bbox_32": [
+            55,
+            19,
+            200,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "work_right",
+      "animation": "work_right",
+      "row": 1,
+      "source_mirrored": false,
+      "source_folder": "小兔子侧面组装关键帧",
+      "source_preview": "小兔侧面组装_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小兔侧面组装_01.png",
+          "sha256": "d8f32eb7e4a21236989f51c78845485cd90670286d1b0ad40e3aa6ca8e2636ae",
+          "alpha_bbox_32": [
+            69,
+            17,
+            187,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小兔侧面组装_02.png",
+          "sha256": "4732a0183e05a3253e0a4069245f975684801b0fbdc3ed4e4656dcd26ccfd44b",
+          "alpha_bbox_32": [
+            70,
+            17,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小兔侧面组装_03.png",
+          "sha256": "4a60cb888bbf27ae2cea305276a83722c208fae5e44a980f333ba91fa546bae4",
+          "alpha_bbox_32": [
+            68,
+            16,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小兔侧面组装_04.png",
+          "sha256": "dc46181412ad412a8dad5bf2893f13c7aad3a1ac61dc387bbee5f3af1285d88c",
+          "alpha_bbox_32": [
+            69,
+            16,
+            189,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小兔侧面组装_05.png",
+          "sha256": "1a300da9bd0e3df4b143a6baf8d2044d10e2f2ee61d95245bf176801b6594e13",
+          "alpha_bbox_32": [
+            69,
+            17,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小兔侧面组装_06.png",
+          "sha256": "d804f98f7d62942b0bd430d6955c8a0b20a8ed68d4a6c85fb06930df08a28477",
+          "alpha_bbox_32": [
+            70,
+            17,
+            189,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小兔侧面组装_07.png",
+          "sha256": "19f63b660dd5e194df75318dcd855a501817fee8064484f405dd928bc3464e04",
+          "alpha_bbox_32": [
+            68,
+            16,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小兔侧面组装_08.png",
+          "sha256": "5e4a539c1846a12b0c69a81e7bbf931c5384d817acbec6bbeffc5ae569f8a604",
+          "alpha_bbox_32": [
+            70,
+            17,
+            189,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小兔侧面组装_09.png",
+          "sha256": "d8649cf16c9c04c6c66045ff34f877178188be55c932fe630f5802ecd3f65d99",
+          "alpha_bbox_32": [
+            68,
+            16,
+            191,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小兔侧面组装_10.png",
+          "sha256": "461e3e4b0fc780c3a86885272f6293543ffa13f1915c7c7dd4ce5fa85fcb2f9a",
+          "alpha_bbox_32": [
+            70,
+            17,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小兔侧面组装_11.png",
+          "sha256": "f56d976f1fda27b015438dbc4b77f2cd4728b6a37612c374576378d793ff82e6",
+          "alpha_bbox_32": [
+            69,
+            16,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小兔侧面组装_12.png",
+          "sha256": "2acdaa431d4ba899c462d3dfc3bce3e66796da0224fd6bcfe1ad186430a83466",
+          "alpha_bbox_32": [
+            69,
+            17,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小兔侧面组装_13.png",
+          "sha256": "c635280c7f9ad6cb87d51069dc32232edcf500a2b629513cafd60aa69aec444b",
+          "alpha_bbox_32": [
+            69,
+            16,
+            189,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小兔侧面组装_14.png",
+          "sha256": "37e2a3019417170978bcb9ad0ae8d284cffd89511e20e624b02d47aa87a6eddb",
+          "alpha_bbox_32": [
+            68,
+            16,
+            190,
+            242
+          ]
+        }
+      ]
+    },
+    {
+      "key": "work_back_right",
+      "animation": "work_back_right",
+      "row": 2,
+      "source_mirrored": false,
+      "source_folder": "小兔子背侧45组装关键帧",
+      "source_preview": "小兔背侧45组装_4秒.gif",
+      "frame_count": 14,
+      "durations_ms": [
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290,
+        290,
+        280,
+        290,
+        280,
+        290,
+        280,
+        290
+      ],
+      "cycle_ms": 4000,
+      "kept_frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "removed_frames": [],
+      "first_last_pixel_equal": false,
+      "frames": [
+        {
+          "index": 1,
+          "source_name": "小兔背侧45组装_01.png",
+          "sha256": "840a8a37c99f368ddff7422df162f6be6fc5a4cd209495071f1886420c812520",
+          "alpha_bbox_32": [
+            66,
+            14,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 2,
+          "source_name": "小兔背侧45组装_02.png",
+          "sha256": "5e3ab02bcc11ed2c48de0fa3157b2080a637c0ead20d7b490ab44b148de77e82",
+          "alpha_bbox_32": [
+            58,
+            14,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 3,
+          "source_name": "小兔背侧45组装_03.png",
+          "sha256": "ee05f37b0433a8c5c2bc2e50cd971077b442a2bb924cc6394acd3b776ac7a6bb",
+          "alpha_bbox_32": [
+            54,
+            14,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 4,
+          "source_name": "小兔背侧45组装_04.png",
+          "sha256": "f1bf4cdeb7dcf647d378e2af4af8765b6e5a5ab102520e5569064e49905bcb8f",
+          "alpha_bbox_32": [
+            58,
+            14,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 5,
+          "source_name": "小兔背侧45组装_05.png",
+          "sha256": "03c0b539662defc6991ff19e9843a6a230e9f3bfca95b8460a90e228896b1906",
+          "alpha_bbox_32": [
+            55,
+            14,
+            190,
+            242
+          ]
+        },
+        {
+          "index": 6,
+          "source_name": "小兔背侧45组装_06.png",
+          "sha256": "12916a487e4b2e44c80778bbd197cefe53e7768dd6a706cd71d37ff05e283bdf",
+          "alpha_bbox_32": [
+            56,
+            16,
+            189,
+            242
+          ]
+        },
+        {
+          "index": 7,
+          "source_name": "小兔背侧45组装_07.png",
+          "sha256": "78ec1672e489f619398bf7f4f647912edd794a5fd71cc92a33081f505305b439",
+          "alpha_bbox_32": [
+            57,
+            14,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 8,
+          "source_name": "小兔背侧45组装_08.png",
+          "sha256": "91d483e2d8bd070c93fea9597734a1f2c941ab20fdbeb1387c2d9dfd4386b66d",
+          "alpha_bbox_32": [
+            55,
+            16,
+            189,
+            242
+          ]
+        },
+        {
+          "index": 9,
+          "source_name": "小兔背侧45组装_09.png",
+          "sha256": "3c2741ae243d3bdf931a0b69c0384696504e25f1a03e98592f0d4e7f1077fff9",
+          "alpha_bbox_32": [
+            57,
+            14,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 10,
+          "source_name": "小兔背侧45组装_10.png",
+          "sha256": "9c955a22144f1649ebd4f382a7aa269ecca9b9820d61b725b379291d35d6fa47",
+          "alpha_bbox_32": [
+            56,
+            16,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 11,
+          "source_name": "小兔背侧45组装_11.png",
+          "sha256": "3fea7163ff77087cffd601a98cd9e03a9a334223f9c7f7e2c49e0ed0daf33bc9",
+          "alpha_bbox_32": [
+            56,
+            14,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 12,
+          "source_name": "小兔背侧45组装_12.png",
+          "sha256": "a993e9867d9cfbae02ff763fc5d7ddb44fb467f890f7bc330fdd168013cc8c80",
+          "alpha_bbox_32": [
+            56,
+            15,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 13,
+          "source_name": "小兔背侧45组装_13.png",
+          "sha256": "324240a0af3810b077ae876f47226f3ad81e58d1b671abe717c2ea72ba426612",
+          "alpha_bbox_32": [
+            57,
+            14,
+            188,
+            242
+          ]
+        },
+        {
+          "index": 14,
+          "source_name": "小兔背侧45组装_14.png",
+          "sha256": "44e06f29ba1107778bca5a0e2df917e43dcf67d762356e39e3f21c10b1a30450",
+          "alpha_bbox_32": [
+            56,
+            16,
+            189,
+            242
+          ]
+        }
+      ]
+    }
+  ],
+  "base_frames": "res://art/rabbit_actions/rabbit_actions_frames.tres"
+}

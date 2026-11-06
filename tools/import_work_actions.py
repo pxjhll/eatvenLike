@@ -31,7 +31,8 @@ def archive(root, name, clips, anchor, height, base=None):
     for row, (clip, relative) in enumerate(clips):
         folder = root / relative
         files = sorted(folder.glob("*.png"))
-        assert len(files) in (7, 14), (folder, len(files))
+        assert files, f"No PNG frames in {folder}"
+        manifest["columns"] = max(manifest["columns"], len(files))
         gifs = sorted(folder.glob("*.gif"))
         preview = next((p for p in gifs if "4秒" in p.name), gifs[0])
         with Image.open(preview) as gif:
