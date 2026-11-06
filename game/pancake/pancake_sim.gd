@@ -55,6 +55,8 @@ var cfg := {
 	"take": 1.5, "pour": 1.5, "raw": 1.0, "grill": 10.0, "crisp": 0.5, "top": 1.5, "pack": 2.5, "hand": 0.5,
 	"fry_load": 2.0, "fry_cook": 18.0, "fry_unload": 2.0, "fry_batch": 4, "crisp_cap": 8, "crisp_low": 3, "crisp_start": 4,
 	"patience": 60.0,
+	"late_grow": 1.15,
+	"rating_minutes": [22.0, 28.0],
 	"flyer_cooldown": 120.0, "flyer_wave": 4, "flyer_gap": 3.0,
 	# 每项升级只做一件事
 	"upgrades": {
@@ -91,6 +93,8 @@ var flyer_ready_at := 0.0
 var flyer_left := 0
 var flyer_timer := 0.0
 var events: Array = []         # [clock, text] for the HUD / bot
+## 第一次满足完店条件的时刻（-1 = 还没完店），结店评分用。
+var completed_at := -1.0
 var _next_customer_id := 1
 var _next_staff_id := 1
 
@@ -103,6 +107,7 @@ func _init(seed := 0) -> void:
 func reset() -> void:
 	clock = 0.0
 	gold = cfg.start_gold
+	completed_at = -1.0
 	earned = 0.0
 	unlocked = {}
 	for key in OPENING_STATIONS: unlocked[key] = true
@@ -156,7 +161,8 @@ func can_unlock(key: String) -> bool:
 
 func upgrade_cost(key: String) -> int:
 	var u: Dictionary = cfg.upgrades[key]
-	return int(round(u.cost * pow(u.grow, levels[key] - 1)))
+	# 后期每级再贵 ×1.15（同奶茶店第 4 轮），满级成为“多留一会儿拿奖杯”的取舍
+	return int(round(u.cost * pow(u.grow * float(cfg.late_grow), levels[key] - 1)))
 
 
 func upgrade_available(key: String) -> bool:
@@ -173,7 +179,8 @@ func staff_slots() -> int:
 
 func hire_cost() -> int:
 	var n := staff.size() - 1
-	return int(cfg.hire_cost[n]) if n < cfg.hire_cost.size() else -1
+	if n >= cfg.hire_cost.size(): return -1
+	return int(cfg.hire_cost[n])
 
 
 func can_hire() -> bool:
@@ -308,6 +315,7 @@ func step(dt: float) -> void:
 		fryer.timer -= dt
 		if fryer.timer <= 0.0: fryer.state = "done"
 	for s in staff: _staff_tick(s, dt)
+	if completed_at < 0.0 and shop_complete(): completed_at = clock
 
 
 func run(seconds: float, dt := 0.1) -> void:
@@ -604,3 +612,62 @@ func _finish_work(s: Dictionary) -> void:
 
 func _event(text: String) -> void:
 	events.append([clock, text])
+
+
+# ---------- 结店 ----------
+
+## 结店评分 1–3 星：完店用时 + 流失率。以后用来换员工升级（还没做）。
+func rating() -> int:
+	if completed_at < 0.0: return 0
+	var stars := 1
+	var minutes := completed_at / 60.0
+	if minutes <= float(cfg.rating_minutes[1]): stars += 1
+	if minutes <= float(cfg.rating_minutes[0]): stars += 1
+	var served := total_sold() + lost
+	if served > 0 and float(lost) / served > 0.2: stars -= 1
+	return clampi(stars, 1, 3)
+
+
+## 结店总结：用时、营业额、卖出份数、卖得最好的 3 样、各台等级、员工数、评分。
+func summary() -> Dictionary:
+	var top := []
+	for dish in sold:
+		if int(sold[dish]) > 0: top.append([int(sold[dish]), dish])
+	top.sort()
+	top.reverse()
+	return {"shop": "pancake", "seconds": completed_at if completed_at >= 0.0 else clock, "played": clock,
+		"earned": int(earned), "sold": total_sold(), "lost": lost, "top": top.slice(0, 3),
+		"levels": levels.duplicate(), "staff": staff.size(), "rating": rating()}
+
+
+# ---------- save ----------
+
+## 店内存档：只存进度，不存走到一半的员工和排队的客人（读档后从待命开始）。
+func to_dict() -> Dictionary:
+	return {"clock": clock, "gold": gold, "earned": earned, "unlocked": unlocked.duplicate(),
+		"levels": levels.duplicate(), "sold": sold.duplicate(), "lost": lost, "crisps": crisps,
+		"staff": staff.size(), "flyer_left": maxf(0.0, flyer_ready_at - clock), "completed_at": completed_at}
+
+
+func load_dict(d: Dictionary) -> String:
+	for key in ["clock", "gold", "unlocked", "levels", "sold", "staff"]:
+		if not d.has(key): return "缺少 " + key
+	if not d.unlocked is Dictionary or not d.levels is Dictionary or not d.sold is Dictionary:
+		return "格式不对"
+	var n := int(d.staff)
+	if n < 1 or n > int(cfg.staff_slots[-1]): return "员工人数不对"
+	reset()
+	clock = float(d.clock)
+	gold = float(d.gold)
+	earned = float(d.get("earned", 0.0))
+	for key in d.unlocked: unlocked[String(key)] = bool(d.unlocked[key])
+	for key in levels:
+		if d.levels.has(key): levels[key] = clampi(int(d.levels[key]), 1, int(cfg.upgrades[key].max))
+	for key in sold:
+		if d.sold.has(key): sold[key] = maxi(0, int(d.sold[key]))
+	lost = int(d.get("lost", 0))
+	crisps = int(d.get("crisps", 0))
+	flyer_ready_at = clock + float(d.get("flyer_left", 0.0))
+	completed_at = float(d.get("completed_at", -1.0))
+	while staff.size() < n: _add_staff()
+	return ""

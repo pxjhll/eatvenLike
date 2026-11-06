@@ -104,3 +104,36 @@ func test_baseline_player_finishes_in_about_twenty_minutes() -> void:
 	done.sort()
 	var median: float = done[done.size() / 2]
 	check(median > 16.0 and median < 26.0, "基准玩家约 20 分钟完店（中位 %.1f 分）" % median)
+
+
+func test_late_levels_cost_more_and_save_round_trips() -> void:
+	var sim := Sim.new(6)
+	sim.gold = 99999
+	sim.unlock("soy_milk")
+	sim.unlock("rear_equipment")
+	var u: Dictionary = sim.cfg.upgrades.rear_equipment
+	sim.levels.rear_equipment = 5
+	check_eq(sim.upgrade_cost("rear_equipment"), int(round(u.cost * pow(u.grow * 1.15, 4))), "后期每级再贵 ×1.15")
+	sim.levels.rear_equipment = 1
+	sim.hire()
+	sim.run(60.0)
+	var d := sim.to_dict()
+	var other := Sim.new(7)
+	check_eq(other.load_dict(d), "", "存档能读回")
+	check_eq(other.staff.size(), 2, "员工人数")
+	check(other.unlocked.get("raw_ingredients", false), "开放状态")
+	check_eq(int(other.sold.soy), int(sim.sold.soy), "卖出数")
+	check(absf(other.gold - sim.gold) < 0.01, "金币")
+	check(other.load_dict({"clock": 1}) != "", "缺字段的存档被拒绝")
+
+
+func test_rating_uses_finish_time_and_walkouts() -> void:
+	var sim := Sim.new(8)
+	check_eq(sim.rating(), 0, "没完店没有评分")
+	sim.completed_at = 20 * 60.0
+	sim.sold.soy = 100
+	check_eq(sim.rating(), 3, "22 分钟内完店、流失少：3 星")
+	sim.completed_at = 26 * 60.0
+	check_eq(sim.rating(), 2, "28 分钟内：2 星")
+	sim.lost = 50
+	check_eq(sim.rating(), 1, "走掉的客人超过两成扣一星")

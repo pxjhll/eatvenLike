@@ -131,6 +131,13 @@ func _ready() -> void:
 		guides_seen = store.loaded_guides
 		if not store.last_error.is_empty():
 			save_status = store.last_error
+		# 刚从煎饼摊结店过来：奶茶店从空店开始（员工不带过来）
+		var app := get_node_or_null("/root/App")
+		if app != null and app.profile.fresh_shop and app.profile.shop == "tea":
+			if sim.has_method("reset_shop"): sim.reset_shop()
+			app.profile.fresh_shop = false
+			app.profile.save()
+			store.save_game(sim, _speed_factor, guides_seen)
 	for node in art.find_children("*", "Node2D", true, false):
 		if node.get_meta("art_layer", "") in ["actors", "drinks"]:
 			node.visible = false

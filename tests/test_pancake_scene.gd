@@ -81,9 +81,17 @@ func test_cushions_unlock_in_three_stages_with_matching_shadows() -> void:
 	art.free()
 
 
-func test_play_scene_builds_and_unlocks_art() -> void:
+func _play(store_path := "") -> Node2D:
 	var play: Node2D = load("res://presentation/pancake/pancake_play.tscn").instantiate()
+	play.store = null if store_path.is_empty() else preload("res://game/pancake/pancake_save.gd").new(store_path)
+	play.profile = preload("res://game/app/profile.gd").new("user://test_profile_pancake.json")
+	play.profile.reset_all()
 	(Engine.get_main_loop() as SceneTree).root.add_child(play)
+	return play
+
+
+func test_play_scene_builds_and_unlocks_art() -> void:
+	var play := _play()
 	var art: Node2D = play.art
 	check(art.source_node(34).visible, "打包台开局可见")
 	check(not art.source_node(161).visible, "豆浆机开之前隐藏")
@@ -94,4 +102,78 @@ func test_play_scene_builds_and_unlocks_art() -> void:
 	play.sim.run(40.0)
 	play._sync_actors()
 	check(play._staff_actors.size() == 1, "员工画在场景里")
+	play.free()
+
+
+func test_guide_follows_opening_steps() -> void:
+	var play := _play()
+	var guide: Control = play.guide
+	guide.refresh(0.0)
+	check_eq(guide.active, "welcome", "先出欢迎卡")
+	check(guide.freezes(), "欢迎卡暂停营业")
+	guide._confirm()
+	check_eq(guide.active, "open", "然后指向豆浆机")
+	check(guide._hole.encloses(play.frame_screen_rect("soy_milk")), "洞套住豆浆机的虚线框")
+	play._try_unlock("soy_milk")
+	guide.refresh(0.0)
+	check_eq(guide.active, "first_sale", "开张后等第一单")
+	check(not guide.freezes(), "等第一单时照常营业")
+	play.sim.run(40.0)
+	guide.refresh(0.0)
+	play.sim.gold = 200
+	play._try_unlock("rear_equipment")
+	guide.refresh(0.0)
+	check_eq(guide.active, "hire", "开鏊子后提示招第二个人")
+	play.sim.hire()
+	guide.refresh(0.0)
+	check_eq(guide.active, "done", "招到人后出完成卡")
+	guide._confirm()
+	check_eq(guide.active, "", "引导结束")
+	play.free()
+
+
+func test_save_restores_progress_and_seen_guides() -> void:
+	var path := "user://test_pancake_save.json"
+	DirAccess.remove_absolute(path)
+	var play := _play(path)
+	play.guide._confirm()
+	play.sim.gold = 500
+	play._try_unlock("soy_milk")
+	play._try_unlock("rear_equipment")
+	play.sim.hire()
+	play.sim.upgrade("rear_equipment")
+	play.save_now()
+	play.free()
+	var again := _play(path)
+	check(again.sim.unlocked.get("rear_equipment", false), "读档后鏊子还开着")
+	check_eq(again.sim.staff.size(), 2, "读档后员工人数")
+	check_eq(int(again.sim.levels.rear_equipment), 2, "读档后升级等级")
+	check(again.guide.seen.has("welcome"), "看过的引导不再出")
+	check(again.art.source_node(21).visible, "读档后画面跟着开")
+	again.free()
+	DirAccess.remove_absolute(path)
+
+
+func test_finishing_the_shop_opens_summary_and_moves_profile_to_tea() -> void:
+	var play := _play()
+	var sim: PancakeSim = play.sim
+	sim.gold = 99999
+	for key in ["soy_milk", "rear_equipment", "fryer", "topping"]: sim.unlock(key)
+	for i in 5: sim.upgrade("topping")
+	for t in sim.cfg.tasks:
+		if t.has("dish"): sim.sold[t.dish] = int(t.count)
+	sim.step(0.1)
+	check(sim.completed_at > 0.0, "任务全部完成就算完店")
+	play._refresh_hud()
+	check(play._finish.visible, "顶栏出现结店按钮")
+	play.open_summary()
+	check(play._summary.visible and play._summary_text.text.contains("评分"), "结店总结有评分")
+	play._leave_pressed()
+	check(play._leave_armed, "第一下只提示不保留")
+	var record: Dictionary = sim.summary()
+	play.profile.finish_shop(record)
+	check_eq(play.profile.shop, "tea", "结店后下一家是奶茶店")
+	check(play.profile.fresh_shop, "奶茶店要从空店开始")
+	check_eq(play.profile.records.size(), 1, "留一行结店纪录")
+	play.profile.reset_all()
 	play.free()

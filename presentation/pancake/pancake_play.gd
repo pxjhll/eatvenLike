@@ -1,12 +1,15 @@
 extends Node2D
 ## 煎饼果子摊可玩版：v04 原画 + PancakeSim。员工和顾客画在原画坐标里，HUD 盖在上面。
-## 本版不存档，重开即从头开始。
+## 店内进度存在 user://pancake_shop.json（每 10 秒和切后台时存）；结店后切到奶茶店。
 
 const Sim := preload("res://game/pancake/pancake_sim.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const UnlockFrame := preload("res://presentation/tea_playtest/unlock_frame.gd")
 const UpgradeBadge := preload("res://presentation/tea_playtest/upgrade_badge.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
+const Store := preload("res://game/pancake/pancake_save.gd")
+const Guide := preload("res://presentation/pancake/pancake_guide.gd")
+const Profile := preload("res://game/app/profile.gd")
 const FONT := preload("res://art/ui/graybox_font.ttf")
 const COIN := preload("res://art/ui/coin.png")
 const SOURCE_SIZE := Vector2(937, 1678)
@@ -17,6 +20,16 @@ const UPGRADE_TEXT := {"speed": "速度 +14%", "price": "售价 +8%"}
 
 var sim: PancakeSim
 var speed := 1.0
+## 测试时可以换成临时路径，或设为 null 不存档。
+var store: RefCounted = Store.new()
+var profile: RefCounted
+var guide: Control = Guide.new()
+var _autosave := 0.0
+var _summary := PanelContainer.new()
+var _summary_text := Label.new()
+var _summary_leave := Button.new()
+var _leave_armed := false
+var _finish := Button.new()
 @onready var art: Node2D = $PancakeArt
 var actors := Node2D.new()
 var _staff_actors := {}
@@ -42,7 +55,15 @@ var _last_event := 0
 
 func _ready() -> void:
 	DisplayServer.window_set_title("煎饼果子摊")
+	if profile == null:
+		var app := get_node_or_null("/root/App")
+		profile = app.profile if app != null else Profile.new("user://profile_test.json")
+	# 已经开到奶茶店了：直接进奶茶店
+	if profile.shop == "tea" and store != null:
+		get_tree().change_scene_to_file.call_deferred(TEA_SCENE)
 	sim = Sim.new(int(Time.get_unix_time_from_system()))
+	var seen_guides: Array = []
+	if store != null and store.load_into(sim): seen_guides = store.guides
 	for key in ICON_NODES:
 		var node: Sprite2D = art.source_node(ICON_NODES[key])
 		if node != null: _icons[key] = node.texture
@@ -51,10 +72,13 @@ func _ready() -> void:
 	art.add_child(actors)
 	_build_frames()
 	_build_hud()
+	guide.setup(self, seen_guides, _style)
+	_hud.get_child(0).add_child(guide)
 	get_viewport().size_changed.connect(_fit)
 	_fit()
 	_sync_art()
 	_refresh_hud()
+	if store != null and not store.last_error.is_empty(): _show_toast(store.last_error, 3.0)
 
 
 func restart() -> void:
@@ -71,10 +95,17 @@ func restart() -> void:
 
 func _process(delta: float) -> void:
 	var dt := minf(delta, 0.1) * speed
+	if guide.freezes() or _summary.visible: dt = 0.0
 	var steps := maxi(1, ceili(dt / 0.05))
-	for i in steps: sim.step(dt / steps)
+	if dt > 0.0:
+		for i in steps: sim.step(dt / steps)
 	_sync_actors()
 	_refresh_hud()
+	guide.refresh(delta)
+	_autosave += delta
+	if _autosave >= 10.0:
+		_autosave = 0.0
+		save_now()
 	if _toast_time > 0.0:
 		_toast_time -= delta
 		_toast.visible = _toast_time > 0.0
@@ -217,10 +248,10 @@ func _build_hud() -> void:
 	_gold.add_theme_font_size_override("font_size", 28)
 	_gold.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(_gold)
-	var tea := Button.new()
-	tea.text = "去奶茶店"
-	tea.pressed.connect(func() -> void: get_tree().change_scene_to_file(TEA_SCENE))
-	row.add_child(tea)
+	_finish.text = "结店"
+	_finish.visible = false
+	_finish.pressed.connect(open_summary)
+	row.add_child(_finish)
 	_hint.add_theme_font_size_override("font_size", 21)
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	top_box.add_child(_hint)
@@ -280,6 +311,7 @@ func _build_hud() -> void:
 	var toast_style := _style("624831e6", "624831", 18)
 	_toast.add_theme_stylebox_override("normal", toast_style)
 	root.add_child(_toast)
+	_build_summary(root)
 
 
 func _refresh_hud() -> void:
@@ -321,9 +353,11 @@ func _refresh_hud() -> void:
 	if sim.events.size() != _last_event:
 		_last_event = sim.events.size()
 		_sync_art()
-	if sim.shop_complete() and not _done_shown:
+	_finish.visible = sim.completed_at >= 0.0
+	if sim.completed_at >= 0.0 and not _done_shown:
 		_done_shown = true
-		_show_toast("完店！菜单全开，任务全部完成", 4.0)
+		if sim.clock - sim.completed_at < 2.0:
+			_show_toast("完店了！可以点“结店”去奶茶店，也可以接着营业", 4.0)
 
 
 func _next_flavor() -> String:
@@ -339,6 +373,7 @@ func _hint_text() -> String:
 	var bottleneck := _bottleneck()
 	if not bottleneck.is_empty(): return bottleneck
 	if not nxt.is_empty(): return "攒 %d 金币开放%s" % [sim.unlock_cost(nxt), Sim.STATION_NAMES[nxt]]
+	if sim.completed_at >= 0.0: return "完店了！点右上角“结店”去奶茶店，也可以接着营业"
 	return "菜单已全开，完成任务就完店"
 
 
@@ -358,6 +393,8 @@ func _bottleneck() -> String:
 func _show_toast(text: String, seconds := 1.6) -> void:
 	_toast.text = text
 	_toast.visible = true
+	_toast.reset_size()
+	_toast.position = (get_viewport_rect().size - _toast.size) * Vector2(0.5, 0.42)
 	_toast_time = seconds
 
 
@@ -390,3 +427,99 @@ func _style(background: String, border: String, radius: int) -> StyleBoxFlat:
 	box.content_margin_top = 8
 	box.content_margin_bottom = 8
 	return box
+
+
+# ---------- 存档、引导定位 ----------
+
+func save_now() -> void:
+	if store != null and sim != null: store.save(sim, guide.seen_list())
+
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST]:
+		save_now()
+
+
+## 解锁虚线框在屏幕上的位置（引导挖洞用）。
+func frame_screen_rect(key: String) -> Rect2:
+	var frame: Control = _frames.get(key)
+	if frame == null: return Rect2()
+	return frame.get_global_transform_with_canvas() * Rect2(Vector2.ZERO, frame.size)
+
+
+func hire_screen_rect() -> Rect2:
+	return _hire.get_global_rect()
+
+
+# ---------- 结店 ----------
+
+func _build_summary(root: Control) -> void:
+	_summary.visible = false
+	_summary.custom_minimum_size = Vector2(600, 0)
+	_summary.add_theme_stylebox_override("panel", _style("fff5e2", "8b6446", 26))
+	root.add_child(_summary)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 14)
+	_summary.add_child(column)
+	var title := Label.new()
+	title.text = "结店总结 · 煎饼果子摊"
+	title.add_theme_font_size_override("font_size", 32)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(title)
+	_summary_text.add_theme_font_size_override("font_size", 23)
+	_summary_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_summary_text.custom_minimum_size.x = 560
+	column.add_child(_summary_text)
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 12)
+	column.add_child(buttons)
+	var stay := Button.new()
+	stay.text = "继续营业"
+	stay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stay.custom_minimum_size.y = 72
+	stay.pressed.connect(func() -> void: _summary.visible = false)
+	buttons.add_child(stay)
+	_summary_leave.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_summary_leave.custom_minimum_size.y = 72
+	_summary_leave.pressed.connect(_leave_pressed)
+	buttons.add_child(_summary_leave)
+
+
+func open_summary() -> void:
+	var d: Dictionary = sim.summary()
+	var lines := []
+	lines.append("评分　%s" % ("★".repeat(int(d.rating)) + "☆".repeat(3 - int(d.rating))))
+	lines.append("完店用时　%d 分 %02d 秒" % [int(d.seconds) / 60, int(d.seconds) % 60])
+	lines.append("营业额　%d 金币" % int(d.earned))
+	lines.append("卖出　%d 份（走掉 %d 位客人）" % [int(d.sold), int(d.lost)])
+	var top := []
+	for row in d.top: top.append("%s ×%d" % [Sim.DISHES[row[1]].name, int(row[0])])
+	if not top.is_empty(): lines.append("卖得最好　" + "、".join(top))
+	var lv := []
+	for key in sim.cfg.upgrades: lv.append("%s %d 级" % [sim.cfg.upgrades[key].name, int(d.levels[key])])
+	lines.append("台子　" + "、".join(lv))
+	lines.append("员工　%d 位，到奶茶店要重新招" % int(d.staff))
+	_summary_text.text = "\n".join(lines)
+	_leave_armed = false
+	_summary_leave.text = "去奶茶店"
+	_summary.visible = true
+	_summary.reset_size()
+	_summary.position = (get_viewport_rect().size - _summary.size) * 0.5
+
+
+## 第一下提示离开后不保留，第二下才真的走。
+func _leave_pressed() -> void:
+	if not _leave_armed:
+		_leave_armed = true
+		_summary_leave.text = "确定离开（金币、台子、员工都不保留）"
+		return
+	leave_shop()
+
+
+func leave_shop() -> void:
+	var record: Dictionary = sim.summary()
+	record.erase("levels")
+	profile.finish_shop(record)
+	if store != null: store.clear()
+	store = null
+	get_tree().change_scene_to_file(TEA_SCENE)
