@@ -13,7 +13,7 @@ const COMPANIONS := {"rear_equipment": ["raw_ingredients"]}
 
 ## 员工站位（脚底，源坐标）。
 const POINTS := {
-	"register": Vector2(470, 776), "soy": Vector2(290, 640), "raw": Vector2(790, 430),
+	"register": Vector2(470, 776), "soy": Vector2(232, 748), "raw": Vector2(790, 430),
 	"griddle": Vector2(420, 432), "fryer": Vector2(272, 500), "crisps": Vector2(252, 626),
 	"topping": Vector2(560, 562), "packing": Vector2(716, 640), "home": Vector2(600, 700),
 }

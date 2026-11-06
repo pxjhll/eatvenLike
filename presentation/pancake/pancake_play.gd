@@ -18,8 +18,8 @@ const TEA_SCENE := "res://presentation/tea_playtest/tea_playtest.tscn"
 const ICON_NODES := {"soy": 50, "food": 57}
 const UPGRADE_TEXT := {"speed": "速度 +14%", "price": "售价 +8%"}
 
-## 干活时面朝台子（0 正面 2 右 4 背面 6 左）：收钱面向客人，打豆浆站在豆浆机后面。
-const WORK_FACING := {"register": 0, "soy": 0}
+## 干活时面朝台子（0 正面 2 右 4 背面 6 左）：收钱面向客人，打豆浆面向豆浆机。
+const WORK_FACING := {"register": 0, "soy": 7}
 
 var sim: PancakeSim
 var speed := 1.0
@@ -35,6 +35,8 @@ var _leave_armed := false
 var _finish := Button.new()
 @onready var art: Node2D = $PancakeArt
 var actors := Node2D.new()
+## 员工站在柜台后面：放在柜台、豆浆机这些前排物件下面一层，客人仍在最上层。
+var staff_layer := Node2D.new()
 var _staff_actors := {}
 var _customer_actors := {}
 var _frames := {}
@@ -73,6 +75,10 @@ func _ready() -> void:
 	_measure_stations()
 	actors.y_sort_enabled = true
 	art.add_child(actors)
+	staff_layer.y_sort_enabled = true
+	var counter: CanvasItem = art.source_node(46)
+	counter.get_parent().add_child(staff_layer)
+	counter.get_parent().move_child(staff_layer, counter.get_index())
 	_build_frames()
 	_build_hud()
 	guide.setup(self, seen_guides, _style)
@@ -186,7 +192,7 @@ func _sync_actors() -> void:
 		if actor == null:
 			actor = Actor.new()
 			actor.setup(s.art, FONT, 150.0)
-			actors.add_child(actor)
+			staff_layer.add_child(actor)
 			_staff_actors[s.id] = actor
 		var shown: Dictionary = s
 		if s.phase == "work" and WORK_FACING.has(s.target):
