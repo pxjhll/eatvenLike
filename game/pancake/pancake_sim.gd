@@ -18,7 +18,7 @@ const POINTS := {
 	"topping": Vector2(560, 562), "packing": Vector2(716, 640), "home": Vector2(600, 700),
 }
 ## 顾客位置：队伍从柜台正中的收钱位往右排；付了钱的人优先坐坐垫等饼，没坐垫就站在左边；排不下的队尾也坐坐垫。
-const QUEUE_SPOTS := [Vector2(470, 1074), Vector2(570, 1080), Vector2(670, 1086), Vector2(770, 1092), Vector2(870, 1098), Vector2(820, 1150)]
+const QUEUE_SPOTS := [Vector2(470, 1074), Vector2(590, 1084), Vector2(710, 1094), Vector2(830, 1104), Vector2(780, 1190), Vector2(660, 1190)]
 const WAIT_SPOTS := [Vector2(96, 1086), Vector2(60, 1130), Vector2(150, 1140), Vector2(40, 1060)]
 ## 坐垫中心，按解锁批次排列（2 / 3 / 4 个，累计 2 / 5 / 9）。
 const SEAT_SPOTS := [Vector2(114, 1236), Vector2(353, 1236), Vector2(598, 1221), Vector2(726, 1172), Vector2(836, 1221),

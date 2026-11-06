@@ -105,6 +105,18 @@ func test_play_scene_builds_and_unlocks_art() -> void:
 	play.free()
 
 
+func test_characters_match_tea_shop_scale_and_stand_behind_counter() -> void:
+	var play := _play()
+	var Characters := preload("res://presentation/characters/character_library.gd")
+	var cup: Sprite2D = play.art.source_node(play.RULER_CUP)
+	var cup_height: float = (play.art.global_transform.affine_inverse() * cup.global_transform * cup.get_rect()).size.y
+	check(absf(play._staff_height / cup_height - 128.0 / 52.0) < 0.01, "员工和杯子的比例同奶茶店")
+	check(absf(play._customer_height / cup_height - 110.0 / 52.0) < 0.01, "客人和杯子的比例同奶茶店")
+	var counter: CanvasItem = play.art.source_node(46)
+	check(play.staff_layer.get_parent() == counter.get_parent() and play.staff_layer.get_index() < counter.get_index(), "员工画在柜台下层")
+	play.free()
+
+
 func test_guide_follows_opening_steps() -> void:
 	var play := _play()
 	var guide: Control = play.guide
