@@ -9,8 +9,8 @@ id = "lemon"
 display_name = "柠檬"
 item_id = "lemon_tea"
 unlock_level = 1
-upgrade_costs = Array[int]([25, 45, 80, 145])
-level_bonus = Array[float]([1.0, 1.025, 1.05, 1.08, 1.11])
+upgrade_costs = Array[int]([62, 112])
+level_bonus = Array[float]([1.0, 1.05, 1.1025])
 
 [resource]
 script = ExtResource("station_def")
@@ -21,10 +21,9 @@ zone = "front"
 cycle_seconds = 4.0
 level_speed = Array[float]([1.0])
 art_seconds = 4.0
-art_speeds = Array[float]([1.0, 1.45, 1.9, 2.35, 2.8, 3.4, 4.0, 4.75])
-art_costs = Array[int]([35, 60, 100, 175, 310, 530, 905])
-art_price_step = 0.0
+art_costs = Array[int]([88, 158, 284, 510])
+art_price_step = 0.05
 art_price_dishes = Array[String](["lemon_tea"])
-art_star_levels = Array[int]([4, 8])
-art_star_mult = 1.0
+art_star_levels = Array[int]([4])
+art_star_mult = 1.25
 materials = Array[ExtResource("material_slot_def")]([SubResource("mat_lemon")])

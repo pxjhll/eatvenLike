@@ -22,7 +22,7 @@ const STIR_SECONDS := 1.0
 ## the front serves only from the shelf and the lemonade stand.
 ## v12: the kitchen press table and banana tea are gone; lemon tea is pressed at the front from a lemonade
 ## and opens between the milk station and the topping machine. One conveyor (sealer → takeaway rack) is for sale.
-const SAVE_VERSION := 14
+const SAVE_VERSION := 15
 ## Sealed takeaway cups the rack on the shelf's lower tier holds.
 const PICKUP_CAPACITY := 6
 ## A newly opened dish (and takeaway once the sealer opens) starts at RAMP_START of its order weight
@@ -716,14 +716,14 @@ func station_info(requested: String) -> Dictionary:
 			elif row.base_price > 0:
 				# Flavor rows preview the real cup price, every other bonus on that cup included.
 				row.price_now = _dish_price(material.item_id)
-				row.price_next = -1
+				row.price_next = -1.0
 				if mat_level < mat_max:
 					material_levels[id][material.id] += 1
 					row.price_next = _dish_price(material.item_id)
 					material_levels[id][material.id] -= 1
 			materials.append(row)
-	var descriptions := {"supply": "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价", "boil": "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料；升级开放新口味（椰果、红豆、芋泥），每开一种来的客人更多", "press": "前台员工接一杯柠檬水，再亲手捣柠檬，做成柠檬茶；外带不用封口", "seal": "外带的杯子都要来这里封口；升级封得更快，5 级、10 级各加一个封口位", "lemonade": "服务员到展示柜现取柠檬水，外带不用封口；升级提高售价，出杯也更快", "counter": "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"}
-	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "新口味", "press": "手打速度", "lemonade": "出杯速度", "seal": "封口速度"}
+	var descriptions := {"supply": "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价", "boil": "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速", "mix": "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶", "topping": "人工加料；升级开放新口味（椰果、红豆、芋泥），每开一种来的客人更多", "press": "前台员工接一杯柠檬水，再亲手捣柠檬，做成柠檬茶；外带不用封口；升级提高柠檬茶售价", "seal": "外带的杯子都要来这里封口；升级封得更快，5 级加一个封口位", "lemonade": "服务员到展示柜现取柠檬水，外带不用封口；升级提高柠檬水售价", "counter": "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"}
+	var effects := {"boil": "煮茶速度", "mix": "售价", "topping": "新口味", "press": "售价", "lemonade": "售价", "seal": "封口速度"}
 	var speeds: Array = [1.0]
 	if definition != null: speeds = definition.art_speeds if _art_mode(definition) and not definition.art_speeds.is_empty() else definition.level_speed
 	var next_flavor := ""
@@ -742,11 +742,9 @@ func station_info(requested: String) -> Dictionary:
 			"next_flyer_customers": flyer_customers(flyers + 1), "next_flyer_cooldown": flyer_cooldown(flyers + 1), "flow": flow_multiplier(),
 			# A full line means more customers would only wait outside: the kitchen is the limit.
 			"queue_full": orders.size() >= _queue_capacity()}
-	# Capacity machines (brewer, sealer, topping) speed up the line; price machines raise what each cup earns.
-	# The press is both: a faster hand and a dearer cup each level.
-	# Each upgrade does one thing: capacity machines get faster, price machines make each cup dearer,
-	# and the topping machine opens the next flavor (a new dish on the menu).
-	seating.kind = "capacity" if id in ["boil", "seal", "press", "lemonade"] else "menu" if id == "topping" else ("price" if id in ["mix", "supply"] else "")
+	# Each upgrade does one thing: the machines that hold the line back (brewer, sealer) get faster,
+	# the rest make each cup dearer, and the topping machine opens the next flavor (a new dish on the menu).
+	seating.kind = "capacity" if id in ["boil", "seal"] else "menu" if id == "topping" else ("price" if id in ["mix", "supply", "press", "lemonade"] else "")
 	seating.stars = stars(id)
 	seating.max_stars = 2 if id == "seal" else (definition.art_star_levels.size() if definition != null else 0)
 	seating.next_star = upgrade_cost >= 0 and stars(id, level + 1) > stars(id)
@@ -770,8 +768,12 @@ func station_info(requested: String) -> Dictionary:
 		"unlock_note": PROGRESSION.stages[stage].unlock_note if stage > 0 else "",
 		"dish_name": dish_name(PROGRESSION.stages[stage].dish_id), "dish_price": _base_price(PROGRESSION.stages[stage].dish_id),
 		"price": _price_preview(id, "", upgrade_cost >= 0) if _art_mode(definition) and definition.art_price_step > 0 else {},
-		"seconds": definition.art_seconds / speeds[level - 1] if _art_mode(definition) and definition.art_seconds > 0 else -1.0,
-		"next_seconds": definition.art_seconds / speeds[level] if _art_mode(definition) and definition.art_seconds > 0 and upgrade_cost >= 0 else -1.0}.merged(seating, true)
+		"seconds": definition.art_seconds / speeds[level - 1] if _timed(definition) else -1.0,
+		"next_seconds": definition.art_seconds / speeds[level] if _timed(definition) and upgrade_cost >= 0 else -1.0}.merged(seating, true)
+
+## A machine whose levels shorten a timed step (the brewer): price machines keep one fixed time.
+func _timed(definition) -> bool:
+	return _art_mode(definition) and definition.art_seconds > 0 and not definition.art_speeds.is_empty()
 
 ## What one more level is worth, shown on a sample cup the player already sells.
 func _price_preview(id: String, material: String, has_next: bool) -> Dictionary:
@@ -792,7 +794,7 @@ func _price_preview(id: String, material: String, has_next: bool) -> Dictionary:
 	if "lemon_tea" in dishes: names.append("柠檬茶")
 	# Price the next level with the same combined bonus and single rounding as real sales.
 	var now := _dish_price(sample)
-	var next := -1
+	var next := -1.0
 	if has_next:
 		var levels: Dictionary = station_levels if material.is_empty() else material_levels[id]
 		var key := id if material.is_empty() else material
@@ -800,6 +802,10 @@ func _price_preview(id: String, material: String, has_next: bool) -> Dictionary:
 		next = _dish_price(sample)
 		levels[key] -= 1
 	return {"scope": "、".join(names), "step": roundi(step * 100), "sample": dish_name(sample), "now": now, "next": next}
+
+## "13" for a whole price, "13.2" otherwise.
+static func price_text(value: float) -> String:
+	return "%d" % roundi(value) if is_equal_approx(value, roundf(value)) else "%.1f" % value
 
 func _base_price(dish: String) -> int:
 	for definition in CONFIG.dishes:
@@ -991,6 +997,7 @@ var _full_seconds := 0.0
 var _boil_busy := 0.0
 var _kitchen_idle := 1.0
 var _front_idle := 1.0
+var _sale_carry := 0.0
 const HINT_AFTER := 20.0
 const HINT_SMOOTH := 0.1 / 20.0
 
@@ -1026,9 +1033,8 @@ func _bottleneck() -> Dictionary:
 	if top.is_empty(): return {}
 	var drink := dish_name(top)
 	if top in FRONT_DISHES:
-		if _front_idle < 0.15: return {"drink": drink, "fix": "升级前台员工", "text": "前台跟不上，%s排起了长队：升级前台员工" % drink, "target": "staff_front"}
-		var stand := "press" if top == "lemon_tea" else "lemonade"
-		return {"drink": drink, "fix": "升级" + station_info_name(stand), "text": "%s出得不够快：升级%s" % [drink, station_info_name(stand)], "target": stand}
+		# Front drinks are made by hand at the stand: only more or faster front staff pour them sooner.
+		return {"drink": drink, "fix": "升级前台员工", "text": "前台跟不上，%s排起了长队：升级前台员工或多招一位" % drink, "target": "staff_front"}
 	if kitchen_staff() <= 0: return {"drink": drink, "fix": "派员工去后厨", "text": "没有后厨员工，%s做不出来：派一位员工去后厨" % drink, "target": "staff_kitchen"}
 	if _boil_busy > 0.85: return {"drink": drink, "fix": "升级煮茶机", "text": "%s做不过来，煮茶机一直在煮：升级煮茶机" % drink, "target": "boil"}
 	if _kitchen_idle < 0.15: return {"drink": drink, "fix": "升级后厨员工", "text": "后厨跑不过来，%s排起了长队：升级后厨员工或多招一位" % drink, "target": "staff_kitchen"}
@@ -1783,32 +1789,24 @@ func _cancel_job(worker: Dictionary) -> void:
 	# Whatever this hand was following is left where it stands; the next follower picks it up from there.
 	worker.ticket = {}
 
-func _dish_price(dish: String) -> int:
-	var price := _base_price(dish)
-	# Price upgrades multiply: each level ×(1 + step), each star ×star_mult, across machines and ingredients.
-	# Every bonus on a cup adds to one sum (levels, stars, ingredients, flavour), so a maxed milk tea ends
-	# near ×3.5 rather than the ×10 that stacked multipliers reached.
-	# Each source adds whole gold, at least 1 per level bought, so no price level is lost to rounding.
-	var extra := 0
+## Prices keep one decimal: on a 12-gold lemonade a ×1.05 step is only 0.6 gold, and whole-gold rounding
+## would swallow some levels entirely (12.6 and 13.2 both show 13). Sales carry the fraction, see _record_sale.
+func _dish_price(dish: String) -> float:
+	var price := float(_base_price(dish))
+	# Price upgrades multiply: each level ×(1 + step), each star ×star_mult, and the sources on one cup
+	# (machine, ingredients, flavor) multiply together, so a level is worth more the dearer the cup already is.
+	var mult := 1.0
 	for id in ["lemonade", "boil", "mix", "supply", "press"]:
 		var definition = _definition(id)
 		if _art_mode(definition) and dish in definition.art_price_dishes:
-			extra += _gold_steps(price, definition.art_price_step, station_levels[id] - 1)
-			extra += _gold_steps(price, definition.art_star_mult - 1.0, stars(id))
+			mult *= pow(1.0 + definition.art_price_step, station_levels[id] - 1) * pow(definition.art_star_mult, stars(id))
 		for material in definition.materials:
-			if _art_mode(material) and dish in material.art_price_dishes: extra += _gold_steps(price, material.art_price_step, material_levels[id][material.id] - 1)
+			if _art_mode(material) and dish in material.art_price_dishes:
+				mult *= pow(1.0 + material.art_price_step, material_levels[id][material.id] - 1)
 	for id in ["topping", "press"]:
 		for material in _definition(id).materials:
-			if material.item_id == dish:
-				var levels: int = material_levels[id][material.id] - 1
-				var gain := _material_bonus(id, material.id) - 1.0
-				if levels > 0 and gain > 0.0: extra += maxi(levels, roundi(price * gain))
-	return roundi((price + extra) * tuned("price"))
-
-## Gold a price source adds for `count` levels of `step` on a cup of `base` gold: at least 1 per level.
-func _gold_steps(base: int, step: float, count: int) -> int:
-	if count <= 0 or step <= 0.0: return 0
-	return maxi(count, roundi(base * step * count))
+			if material.item_id == dish: mult *= material.bonus(material_levels[id][material.id])
+	return snappedf(price * mult * tuned("price"), 0.1)
 
 func _record_sale(job: Dictionary) -> void:
 	# A cup handed over from the shelf or the stand is drunk here: the customer takes a seat for a while.
@@ -1819,7 +1817,10 @@ func _record_sale(job: Dictionary) -> void:
 		diners.append({"seat": seat, "dish": job.item, "left": seat_seconds()})
 	sold += job.count
 	sold_by_dish[job.item] += job.count
-	var income: int = _dish_price(job.item) * job.count
+	# Gold stays whole: the tenths are carried to the next sale (a reload drops under one gold of carry).
+	var earned: float = _dish_price(job.item) * job.count + _sale_carry
+	var income: int = floori(earned + 0.0001)
+	_sale_carry = maxf(0.0, earned - income)
 	gold += income
 	revenue += income
 	_event("sale", "%s +%d" % [dish_name(job.item), income])
@@ -1918,6 +1919,9 @@ func load_dict(state: Dictionary) -> String:
 	if state.get("version") is int and state.version == 11: state = _migrate_v11(state)
 	if from_version is int and from_version < 13 and state.get("version") in [12, SAVE_VERSION]: state = _migrate_v12(state)
 	if state.get("version") is int and state.version == 13: state = _migrate_v13(state)
+	if state.get("version") is int and state.version == 14: state = _migrate_v14(state)
+	# Playtest builds of v15 had longer level lists (lemonade 7, press 6, kitchen 7): fold those onto today's ends.
+	elif state.get("version") is int and state.version == SAVE_VERSION: state = _clamp_levels(state.duplicate(true))
 	_round_seats(state)
 	var migrated: bool = from_version is int and from_version < SAVE_VERSION
 	var error := _validate_state(state, migrated)
@@ -2080,13 +2084,44 @@ func _migrate_v12(old: Dictionary) -> Dictionary:
 ## Early v13 saves of this version's test builds lack the seat field too, so it is filled in only where missing.
 func _migrate_v13(old: Dictionary) -> Dictionary:
 	var state: Dictionary = old.duplicate(true)
-	state.version = SAVE_VERSION
+	state.version = 14
 	if state.get("orders") is Array:
 		for order in state.orders:
 			if order is Dictionary and not order.has("seat"): order["seat"] = -1
 	for key in ["flyer_wave", "flyer_wait", "flyer_clock"]:
 		if not state.has(key): state[key] = 0.0
 	if not state.has("flyer_pending"): state.flyer_pending = 0
+	return state
+
+## v15 has fewer, bigger levels (2026-11-05 economy pass): levels bought past the new caps are kept at
+## the cap; the brewer's ten levels fold onto its eight by speed (old Lv3 = new Lv2, old Lv10 = new Lv8).
+const BOIL_V14_TO_V15 := [1, 1, 2, 3, 4, 5, 6, 6, 7, 8]
+
+func _migrate_v14(old: Dictionary) -> Dictionary:
+	var state: Dictionary = old.duplicate(true)
+	state.version = SAVE_VERSION
+	if state.get("station_levels") is Dictionary:
+		var levels: Dictionary = state.station_levels
+		if levels.get("boil") is int: levels.boil = BOIL_V14_TO_V15[clampi(levels.boil, 1, 10) - 1]
+	return _clamp_levels(state)
+
+## Every machine, ingredient, staff list and flyer level stops at the end of its current list.
+func _clamp_levels(state: Dictionary) -> Dictionary:
+	if state.get("station_levels") is Dictionary:
+		var levels: Dictionary = state.station_levels
+		for id in levels.keys():
+			if levels[id] is int and id in MACHINE_IDS and _max_level(id) > 0: levels[id] = clampi(levels[id], 1, _max_level(id))
+	if state.get("material_levels") is Dictionary:
+		for id in state.material_levels.keys():
+			var mats = state.material_levels[id]
+			if not mats is Dictionary or _definition(id) == null: continue
+			for material in mats.keys():
+				if mats[material] is int and _definition(id).material(material) != null:
+					mats[material] = clampi(mats[material], 1, _material_max(id, material))
+	for side in ["front", "kitchen"]:
+		var key: String = side + "_upgrades"
+		if state.get(key) is int: state[key] = mini(state[key], _upgrade_kinds(side).size())
+	if state.get("flyers") is int: state.flyers = clampi(state.flyers, 1, flyer_max_level())
 	return state
 
 ## Sends staff over this stage's front or kitchen slots back to the roster. True if anyone was recalled.

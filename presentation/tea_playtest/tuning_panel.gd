@@ -67,7 +67,7 @@ func _now(key: String) -> String:
 		"topping": return "%.1f 秒一杯" % (sim._topping_seconds() / sim._speed("topping") * sim.tuned("topping"))
 		"press": return "%.1f 秒一杯" % (sim.PRESS_DEF.art_seconds / sim._speed("press") * sim.tuned("press"))
 		"lemonade": return "%.1f 秒一杯" % (sim._definition("lemonade").cycle_seconds / sim._speed("lemonade") * sim.tuned("lemonade"))
-		"price": return "奶茶 %d 金币" % sim._dish_price("plain_milk_tea")
+		"price": return "奶茶 %s 金币" % sim.price_text(sim._dish_price("plain_milk_tea"))
 	return ""
 
 
