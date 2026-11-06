@@ -1,6 +1,6 @@
 extends SceneTree
 ## Verify every new atlas against exact source pixels and original GIF-relative timing.
-const BATCHES := ["rabbit_actions", "gray_cat_actions", "bear_actions", "squirrel_actions", "dog_actions", "sheep_actions", "hamster_actions", "gray_cat_work_actions"]
+const BATCHES := ["rabbit_actions", "gray_cat_actions", "bear_actions", "squirrel_actions", "dog_actions", "sheep_actions", "hamster_actions", "gray_cat_work_actions", "rabbit_work_actions"]
 var failures := 0
 var count := 0
 
@@ -33,7 +33,7 @@ func _initialize() -> void:
 					var old_texture: AtlasTexture = old.get_frame_texture(clip, i)
 					var texture: AtlasTexture = frames.get_frame_texture(clip, i)
 					_check(old_texture.region == texture.region and old_texture.atlas.resource_path == texture.atlas.resource_path and frames.get_frame_duration(clip, i) == old.get_frame_duration(clip, i), "reuse existing walk atlas without new source copies")
-	_check(count == 448, "385 previous frames plus 63 new frames archived")
+	_check(count == 493, "448 previous frames plus 45 rabbit assembly frames archived")
 	print("WORK ATLAS: %d source frames, %d failures" % [count, failures])
 	quit(1 if failures else 0)
 

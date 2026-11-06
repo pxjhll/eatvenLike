@@ -21,7 +21,7 @@ func _run() -> void:
 	await _click(view.ui.character_preview_button)
 	_check(view.ui.page == "characters", "menu opens embedded character preview")
 	var preview = view.ui.character_preview
-	_check(preview.art_id == "rabbit" and preview.available_actions.size() == 2, "rabbit lists its actual walk and idle actions")
+	_check(preview.art_id == "rabbit" and preview.available_actions.map(func(a): return a.id) == ["walk", "idle", "work"], "rabbit lists its actual walk, idle and assembly actions")
 	_check(preview.frame_actor.visible, "native frame actor is displayed")
 	var clock: float = sim.elapsed
 	await create_timer(0.25).timeout

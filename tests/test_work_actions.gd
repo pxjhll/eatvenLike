@@ -13,6 +13,7 @@ func _run() -> void:
 		if id in ["squirrel", "dog", "sheep", "hamster"]:
 			_check("sit" in ids, id + " exposes authored sitting")
 	_check("work" in library.actions("gray_cat").map(func(a): return a.id), "gray cat exposes authored operation")
+	_check("work" in library.actions("rabbit").map(func(a): return a.id), "rabbit exposes authored assembly")
 	if failures:
 		_finish()
 		return
@@ -34,13 +35,13 @@ func _run() -> void:
 		actor.display(worker, 0.9)
 		_check(actor.frame_actor.action == "walk" and actor.frame_actor.direction == 2, "movement resumes walk facing right")
 		_check(actor.frame_actor.sprite.flip_h == (id == "dog"), "dog's left-facing source walk is corrected without changing PNGs")
-		if id == "gray_cat":
+		if id in ["gray_cat", "rabbit"]:
 			worker.walking = false
 			worker.phase = "work"
 			worker.job = {"src": "boil"}
 			worker.pos = Vector2(350, 330)
 			actor.display(worker, 1.2)
-			_check(actor.frame_actor.action == "work" and actor.frame_actor.sprite.animation == "work_back_right" and not actor.frame_actor.sprite.flip_h, "gray cat operates toward the pot")
+			_check(actor.frame_actor.action == "work" and actor.frame_actor.sprite.animation == "work_back_right" and not actor.frame_actor.sprite.flip_h, id + " operates toward the pot")
 			var work_phase: float = actor.frame_actor.get_phase()
 			actor.display(worker, 1.2)
 			_check(is_equal_approx(work_phase, actor.frame_actor.get_phase()), "paused clock freezes operation")
@@ -48,7 +49,16 @@ func _run() -> void:
 			worker.job = {"src": "supply", "item": "lemonade"}
 			worker.pos = Vector2(190, 650)
 			actor.display(worker, 1.4)
-			_check(actor.frame_actor.sprite.animation == "work_right" and actor.frame_actor.sprite.flip_h, "gray cat uses mirrored side operation at the left dispenser")
+			_check(actor.frame_actor.sprite.animation == "work_right" and actor.frame_actor.sprite.flip_h, id + " uses mirrored side operation at the left dispenser")
+			if id == "rabbit":
+				var clips := ["work_front", "work_front", "work_right", "work_back_right", "work_back_right", "work_back_right", "work_right", "work_front"]
+				var counts := [17, 17, 14, 14, 14, 14, 14, 17]
+				for direction in 8:
+					actor.frame_actor.set_direction(direction)
+					_check(actor.frame_actor.sprite.animation == clips[direction], "rabbit assembly selects the nearest supplied view")
+					_check(actor.frame_actor.sprite.flip_h == (direction > 4), "rabbit assembly mirrors only left views")
+					_check(actor.frame_actor.sprite.sprite_frames.get_frame_count(clips[direction]) == counts[direction], "rabbit assembly keeps all 17 front and 14 side poses")
+					_check(is_equal_approx(actor.frame_actor.get_cycle_seconds(), 4.0), "rabbit assembly retains the four-second source loop")
 			worker.job = {"src": "boil", "item": "tea"}
 			for phase_name in ["idle", "pickup", "dropoff"]:
 				worker.phase = phase_name

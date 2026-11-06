@@ -19,7 +19,7 @@ func _run() -> void:
 		_check(not library.actions(art).is_empty(), "each character exposes its actual available actions")
 	_check(library.portrait("rabbit") is AtlasTexture, "rabbit portrait comes from its actual frame atlas")
 	var actions: Array = library.actions("rabbit")
-	_check(actions.size() == 2 and actions[0].id == "walk" and actions[1].id == "idle", "rabbit exposes the authored walk and idle actions")
+	_check(actions.map(func(a): return a.id) == ["walk", "idle", "work"] and actions[2].label == "组装" and actions[2].view_count == 3, "rabbit exposes walk, idle and its three-view assembly")
 	var actor: Node2D = load("res://presentation/tea_playtest/staff_actor.gd").new()
 	actor.setup("rabbit", load("res://art/ui/graybox_font.ttf"))
 	root.add_child(actor)
@@ -48,7 +48,7 @@ func _run() -> void:
 	actor.display(worker, clock + 0.1)
 	_check(absf(actor.frame_actor.get_phase() - phase) > 0.01, "advancing simulation time advances walking frames")
 	worker.walking = false
-	worker.phase = "work"
+	worker.phase = "idle"
 	worker.carry_item = "black_tea"
 	worker.carry_count = 2
 	actor.display(worker, clock + 0.2)

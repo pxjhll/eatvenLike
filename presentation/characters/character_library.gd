@@ -6,7 +6,7 @@ const CUSTOMER_IDS := ["squirrel", "dog", "sheep", "hamster"]
 const IDS := STAFF_IDS + CUSTOMER_IDS
 const NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸", "rabbit": "小兔子", "gray_cat": "小灰猫", "bear": "小熊", "squirrel": "小松鼠", "dog": "小狗", "sheep": "小羊", "hamster": "仓鼠"}
 const ACTION_NAMES := {"walk": "走路", "idle": "待机", "sit": "坐姿", "work": "操作", "carry": "搬运", "pose": "站姿"}
-const RABBIT_FRAMES := preload("res://art/rabbit_actions/rabbit_actions_frames.tres")
+const RABBIT_FRAMES := preload("res://art/rabbit_work_actions/rabbit_work_actions_frames.tres")
 const RABBIT_SCENE := preload("res://presentation/rabbit_walk_frames/rabbit_walk.tscn")
 const GRAY_CAT_FRAMES := preload("res://art/gray_cat_work_actions/gray_cat_work_actions_frames.tres")
 const GRAY_CAT_SCENE := preload("res://presentation/gray_cat_walk_frames/gray_cat_walk.tscn")
@@ -57,7 +57,8 @@ static func actions(art: String) -> Array:
 		var views: Array[String] = []
 		for suffix: String in DIRECTION_SUFFIXES:
 			if frames.has_animation(action + suffix): views.append(suffix)
-		result.append({"id": action, "label": ACTION_NAMES.get(action, action), "type": "frames", "directional": not views.is_empty(), "view_count": views.size()})
+		var label: String = "组装" if art == "rabbit" and action == "work" else ACTION_NAMES.get(action, action)
+		result.append({"id": action, "label": label, "type": "frames", "directional": not views.is_empty(), "view_count": views.size()})
 	return result
 
 
