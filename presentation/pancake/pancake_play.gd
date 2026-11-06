@@ -9,6 +9,7 @@ const UpgradeBadge := preload("res://presentation/tea_playtest/upgrade_badge.gd"
 const Characters := preload("res://presentation/characters/character_library.gd")
 const Store := preload("res://game/pancake/pancake_save.gd")
 const Guide := preload("res://presentation/pancake/pancake_guide.gd")
+const Art := preload("res://presentation/pancake/pancake_art.gd")
 const Profile := preload("res://game/app/profile.gd")
 const FONT := preload("res://art/ui/graybox_font.ttf")
 const COIN := preload("res://art/ui/coin.png")
@@ -37,8 +38,6 @@ var _leave_armed := false
 var _finish := Button.new()
 @onready var art: Node2D = $PancakeArt
 var actors := Node2D.new()
-## 员工站在柜台后面：放在柜台、豆浆机这些前排物件下面一层，客人仍在最上层。
-var staff_layer := Node2D.new()
 var _staff_height := 150.0
 var _customer_height := 140.0
 var _staff_actors := {}
@@ -82,12 +81,9 @@ func _ready() -> void:
 		var cup_height: float = (art.global_transform.affine_inverse() * cup.global_transform * cup.get_rect()).size.y
 		_staff_height = cup_height * Characters.STAFF_PER_CUP
 		_customer_height = cup_height * Characters.CUSTOMER_PER_CUP
+	# 人物和场景物件统一按脚底 y 排前后：人物 z = 脚底 y，柜台等物件的 z 在美术场景 DEPTH 里
 	actors.y_sort_enabled = true
-	art.add_child(actors)
-	staff_layer.y_sort_enabled = true
-	var counter: CanvasItem = art.source_node(46)
-	counter.get_parent().add_child(staff_layer)
-	counter.get_parent().move_child(staff_layer, counter.get_index())
+	art.source_node(46).get_parent().add_child(actors)
 	_build_frames()
 	_build_hud()
 	guide.setup(self, seen_guides, _style)
@@ -168,6 +164,7 @@ func _build_frames() -> void:
 		frame.add_theme_font_size_override("font_size", 26)
 		frame.pressed.connect(_try_unlock.bind(key))
 		frame.visible = false
+		frame.z_index = Art.TOP_Z
 		art.add_child(frame)
 		_frames[key] = frame
 
@@ -201,13 +198,14 @@ func _sync_actors() -> void:
 		if actor == null:
 			actor = Actor.new()
 			actor.setup(s.art, FONT, _staff_height)
-			staff_layer.add_child(actor)
+			actors.add_child(actor)
 			_staff_actors[s.id] = actor
 		var shown: Dictionary = s
 		if s.phase == "work" and WORK_FACING.has(s.target):
 			shown = s.duplicate()
 			shown.facing = WORK_FACING[s.target]
 		actor.display(shown, sim.clock)
+		actor.z_index = int(actor.position.y)
 	var alive := {}
 	for c in sim.customers:
 		alive[c.id] = true
@@ -220,6 +218,7 @@ func _sync_actors() -> void:
 		var walking: bool = c.pos.distance_to(c.spot) > 1.0
 		actor.display({"pos": c.pos, "walking": walking, "seated": c.seated and not walking, "phase": "idle",
 			"task_label": ""}, sim.clock)
+		actor.z_index = int(actor.position.y)
 		actor.task.visible = false
 		if c.state == "queue":
 			var left: float = 1.0 - c.wait / float(sim.cfg.patience)
