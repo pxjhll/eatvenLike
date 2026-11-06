@@ -17,6 +17,8 @@ var _card := PanelContainer.new()
 var _card_title := Label.new()
 var _card_body := Label.new()
 var _card_button := Button.new()
+var _show_card_now := false
+var _show_bubble_now := false
 
 
 func setup(play: Node2D, seen_ids: Array, style: Callable) -> void:
@@ -61,8 +63,14 @@ func freezes() -> bool:
 
 func refresh(delta: float) -> void:
 	_time += delta
+	_show_card_now = false
+	_show_bubble_now = false
 	_pick()
-	visible = not active.is_empty()
+	# 只在状态真的变了时才改 visible：每帧先隐藏再显示会让按钮丢掉按下状态，点了没反应
+	if _card.visible != _show_card_now: _card.visible = _show_card_now
+	if _bubble.visible != _show_bubble_now: _bubble.visible = _show_bubble_now
+	var want := not active.is_empty()
+	if visible != want: visible = want
 	queue_redraw()
 
 
@@ -71,8 +79,6 @@ func _pick() -> void:
 	active = ""
 	_blocking = false
 	_hole = Rect2()
-	_card.visible = false
-	_bubble.visible = false
 	if not seen.has("welcome"):
 		_show_card("welcome", "欢迎来到煎饼果子摊", "早点摊刚支起来，先卖豆浆，攒钱再开鏊子、油锅和加料台。\n员工会自己接单，从收钱一直做到递餐。", "开始")
 		return
@@ -107,14 +113,14 @@ func _show_card(id: String, title: String, body: String, button: String) -> void
 	_card_title.text = title
 	_card_body.text = body
 	_card_button.text = button
-	_card.visible = true
+	_show_card_now = true
 	_card.reset_size()
 	_card.position = (size - _card.size) * 0.5
 
 
 func _say(text: String) -> void:
 	_bubble_text.text = text
-	_bubble.visible = true
+	_show_bubble_now = true
 	_bubble.reset_size()
 	var x := (size.x - _bubble.size.x) * 0.5
 	var y := size.y * 0.42
@@ -146,5 +152,5 @@ func _draw() -> void:
 func _has_point(point: Vector2) -> bool:
 	if not visible: return false
 	if not _blocking: return false
-	if _card.visible: return true
+	if _show_card_now: return true
 	return not _hole.has_point(point)
