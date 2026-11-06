@@ -33,10 +33,15 @@ func test_script_strings_have_glyphs() -> void:
 		for path in _scripts(folder):
 			var font: FontFile = default_font
 			var source := FileAccess.get_file_as_string(path)
+			# Pancake labels are explicitly drawn with their own eight-glyph subset.
+			var label_font: FontFile = null
+			if source.contains('path="res://art/pancake/labels_font.otf"'):
+				label_font = load("res://art/pancake/labels_font.otf")
 			for line in source.split("\n"):
 				# Editor-only group names/descriptions do not use the game's subset UI font.
-				if line.strip_edges().begins_with("#") or line.strip_edges().begins_with("metadata/") or ".set_meta(" in line:
+				if line.strip_edges().begins_with("#") or line.strip_edges().begins_with("metadata/") or ".set_meta(" in line or line.begins_with("[node ") or "DisplayServer.window_set_title(" in line:
 					continue
+				font = label_font if label_font != null and line.begins_with("text = ") else default_font
 				for m in literal.search_all(line):
 					var missing := _missing(font, m.get_string(1))
 					check(missing.is_empty(), "%s 的「%s」缺字：%s" % [path.get_file(), m.get_string(1), missing])

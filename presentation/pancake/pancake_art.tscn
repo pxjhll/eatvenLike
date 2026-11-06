@@ -1,0 +1,993 @@
+[gd_scene load_steps=45 format=3]
+
+[ext_resource type="Script" path="res://presentation/pancake/pancake_art.gd" id="controller"]
+[ext_resource type="Script" path="res://presentation/pancake/procedural_layer.gd" id="procedural"]
+[ext_resource type="FontFile" path="res://art/pancake/labels_font.otf" id="font"]
+[ext_resource type="Texture2D" path="res://art/pancake/scene-atlas.png" id="atlas"]
+[ext_resource type="Texture2D" path="res://art/reference/ingredient_table.png" id="library_14"]
+[ext_resource type="Texture2D" path="res://art/reference/takeaway_bag.png" id="library_15"]
+[ext_resource type="Texture2D" path="res://art/reference/prep_bench.png" id="library_20"]
+[ext_resource type="Texture2D" path="res://art/reference/checkout.png" id="library_21"]
+[ext_resource type="Texture2D" path="res://art/reference/register.png" id="library_23"]
+[ext_resource type="Texture2D" path="res://art/reference/brewing_pipe.png" id="library_26"]
+
+[sub_resource type="AtlasTexture" id="sprite_0"]
+atlas = ExtResource("atlas")
+region = Rect2(1947, 433, 73, 48)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_1"]
+atlas = ExtResource("atlas")
+region = Rect2(989, 872, 160, 109)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_2"]
+atlas = ExtResource("atlas")
+region = Rect2(3, 1614, 912, 393)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_3"]
+atlas = ExtResource("atlas")
+region = Rect2(1947, 549, 60, 55)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_4"]
+atlas = ExtResource("atlas")
+region = Rect2(1317, 1001, 63, 75)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_5"]
+atlas = ExtResource("atlas")
+region = Rect2(1819, 354, 122, 304)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_6"]
+atlas = ExtResource("atlas")
+region = Rect2(1947, 487, 61, 56)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_7"]
+atlas = ExtResource("atlas")
+region = Rect2(1390, 742, 240, 186)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_8"]
+atlas = ExtResource("atlas")
+region = Rect2(1675, 568, 117, 90)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_9"]
+atlas = ExtResource("atlas")
+region = Rect2(1947, 354, 74, 73)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_10"]
+atlas = ExtResource("atlas")
+region = Rect2(1390, 934, 147, 108)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_11"]
+atlas = ExtResource("atlas")
+region = Rect2(1523, 1048, 100, 100)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_12"]
+atlas = ExtResource("atlas")
+region = Rect2(989, 568, 206, 146)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_13"]
+atlas = ExtResource("atlas")
+region = Rect2(1390, 1048, 127, 120)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_16"]
+atlas = ExtResource("atlas")
+region = Rect2(1390, 568, 279, 168)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_17"]
+atlas = ExtResource("atlas")
+region = Rect2(1830, 946, 188, 133)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_18"]
+atlas = ExtResource("atlas")
+region = Rect2(1317, 918, 59, 77)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_19"]
+atlas = ExtResource("atlas")
+region = Rect2(1819, 3, 183, 345)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_22"]
+atlas = ExtResource("atlas")
+region = Rect2(1675, 664, 160, 241)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_24"]
+atlas = ExtResource("atlas")
+region = Rect2(989, 720, 206, 146)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_25"]
+atlas = ExtResource("atlas")
+region = Rect2(1841, 805, 190, 135)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_27"]
+atlas = ExtResource("atlas")
+region = Rect2(1334, 568, 48, 69)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_28"]
+atlas = ExtResource("atlas")
+region = Rect2(921, 1948, 125, 91)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_29"]
+atlas = ExtResource("atlas")
+region = Rect2(1841, 664, 193, 135)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_30"]
+atlas = ExtResource("atlas")
+region = Rect2(1636, 911, 188, 134)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_31"]
+atlas = ExtResource("atlas")
+region = Rect2(989, 3, 824, 559)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_32"]
+atlas = ExtResource("atlas")
+region = Rect2(1052, 1948, 64, 73)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_33"]
+atlas = ExtResource("atlas")
+region = Rect2(1201, 568, 127, 174)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_34"]
+atlas = ExtResource("atlas")
+region = Rect2(989, 987, 149, 153)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_35"]
+atlas = ExtResource("atlas")
+region = Rect2(3, 3, 980, 1605)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_36"]
+atlas = ExtResource("atlas")
+region = Rect2(921, 1614, 463, 328)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_37"]
+atlas = ExtResource("atlas")
+region = Rect2(1155, 918, 156, 149)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_38"]
+atlas = ExtResource("atlas")
+region = Rect2(1543, 934, 78, 79)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="sprite_39"]
+atlas = ExtResource("atlas")
+region = Rect2(1201, 748, 144, 164)
+filter_clip = true
+
+[node name="PancakeArt" type="Node2D"]
+script = ExtResource("controller")
+texture_filter = 2
+
+[node name="SceneClip" type="Control" parent="."]
+offset_right = 937.0
+offset_bottom = 1678.0
+clip_contents = true
+mouse_filter = 2
+
+[node name="N162_基础设施" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, -14, 0)
+metadata/figcraft_id = 162
+metadata/source_name = "基础设施"
+
+[node name="N3_01 天空草地与远景树丛" type="Node2D" parent="SceneClip/N162_基础设施"]
+transform = Transform2D(1, 0, 0, 1, 14, 0)
+metadata/figcraft_id = 3
+metadata/source_name = "01 天空草地与远景树丛"
+
+[node name="N4_sky_grass_background" type="Sprite2D" parent="SceneClip/N162_基础设施/N3_01 天空草地与远景树丛"]
+transform = Transform2D(0.956122449, 0, 0, 1.045482866, 0, 0)
+texture = SubResource("sprite_35")
+centered = false
+metadata/figcraft_id = 4
+metadata/source_name = "sky_grass_background"
+
+[node name="N5_02 厨房地砖" type="Node2D" parent="SceneClip/N162_基础设施"]
+transform = Transform2D(1, 0, 0, 1, 90, 348)
+metadata/figcraft_id = 5
+metadata/source_name = "02 厨房地砖"
+
+[node name="N6_kitchen_tiled_floor" type="Sprite2D" parent="SceneClip/N162_基础设施/N5_02 厨房地砖"]
+transform = Transform2D(0.9805825243, 0, 0, 1.0590339893, 0, 0)
+texture = SubResource("sprite_31")
+centered = false
+metadata/figcraft_id = 6
+metadata/source_name = "kitchen_tiled_floor"
+
+[node name="N7_03 棚架与彩旗" type="Node2D" parent="SceneClip/N162_基础设施"]
+transform = Transform2D(1, 0, 0, 1, 8, 43)
+metadata/figcraft_id = 7
+metadata/source_name = "03 棚架与彩旗"
+
+[node name="N8_canopy_structure" type="Sprite2D" parent="SceneClip/N162_基础设施/N7_03 棚架与彩旗"]
+transform = Transform2D(1.0405701754, 0, 0, 0.9338422392, 0, 0)
+texture = SubResource("sprite_2")
+centered = false
+metadata/figcraft_id = 8
+metadata/source_name = "canopy_structure"
+
+[node name="N9_04 花草与树木" type="Node2D" parent="SceneClip/N162_基础设施"]
+transform = Transform2D(1, 0, 0, 1, 0, 273)
+metadata/figcraft_id = 9
+metadata/source_name = "04 花草与树木"
+
+[node name="N10_tulip_succulent_cluster" type="Sprite2D" parent="SceneClip/N162_基础设施/N9_04 花草与树木"]
+transform = Transform2D(1.0394265233, 0, 0, 0.9345238095, 46, 0)
+texture = SubResource("sprite_16")
+centered = false
+metadata/figcraft_id = 10
+metadata/source_name = "tulip_succulent_cluster"
+
+[node name="N11_daisy_planter" type="Sprite2D" parent="SceneClip/N162_基础设施/N9_04 花草与树木"]
+transform = Transform2D(0.868852459, 0, 0, 1.0394736842, 0, 141)
+texture = SubResource("sprite_5")
+centered = false
+metadata/figcraft_id = 11
+metadata/source_name = "daisy_planter"
+
+[node name="N12_right_flower_shrub" type="Sprite2D" parent="SceneClip/N162_基础设施/N9_04 花草与树木"]
+transform = Transform2D(0.5464480874, 0, 0, 1.0405797101, 897, 55)
+texture = SubResource("sprite_19")
+centered = false
+metadata/figcraft_id = 12
+metadata/source_name = "right_flower_shrub"
+
+[node name="N17_固定桌位" type="Node2D" parent="SceneClip/N162_基础设施"]
+transform = Transform2D(1, 0, 0, 1, 93, 351)
+metadata/figcraft_id = 17
+metadata/source_name = "固定桌位"
+
+[node name="N18_vertical_table" type="Sprite2D" parent="SceneClip/N162_基础设施/N17_固定桌位"]
+transform = Transform2D(0.4792332268, 0, 0, 0.3340807175, 0, 79)
+texture = ExtResource("library_20")
+centered = false
+metadata/figcraft_id = 18
+metadata/source_name = "vertical_table"
+
+[node name="N16_horizontal_table" type="Sprite2D" parent="SceneClip/N162_基础设施/N17_固定桌位"]
+transform = Transform2D(0.3958333333, 0, 0, 0.3733333333, 618, 0)
+texture = ExtResource("library_14")
+centered = false
+metadata/figcraft_id = 16
+metadata/source_name = "horizontal_table"
+
+[node name="N20_vertical_table" type="Sprite2D" parent="SceneClip/N162_基础设施/N17_固定桌位"]
+transform = Transform2D(0.482428115, 0, 0, 0.3295964126, 658, 88)
+texture = ExtResource("library_20")
+centered = false
+metadata/figcraft_id = 20
+metadata/source_name = "vertical_table"
+
+[node name="N133_接触阴影｜左花槽接触阴影" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, -1, 718)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(90, 15)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.2)
+blur_radius = 3.0
+metadata/owner_figcraft_id = 11
+metadata/figcraft_id = 133
+metadata/source_name = "接触阴影｜左花槽接触阴影"
+
+[node name="N134_接触阴影｜右花槽接触阴影" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 885, 673)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(94, 15)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.17)
+blur_radius = 3.0
+metadata/owner_figcraft_id = 12
+metadata/figcraft_id = 134
+metadata/source_name = "接触阴影｜右花槽接触阴影"
+
+[node name="N135_接触阴影｜后排工位接触阴影" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 358, 429)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(305, 13)
+ink = Color(0.4, 0.2627451, 0.20784314, 0.16)
+blur_radius = 3.0
+metadata/owner_figcraft_id = 21
+metadata/figcraft_id = 135
+metadata/source_name = "接触阴影｜后排工位接触阴影"
+
+[node name="N136_接触阴影｜原料台接触阴影" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 704, 424)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(177, 13)
+ink = Color(0.4, 0.2627451, 0.20784314, 0.15)
+blur_radius = 3.0
+metadata/owner_figcraft_id = 26
+metadata/figcraft_id = 136
+metadata/source_name = "接触阴影｜原料台接触阴影"
+
+[node name="N137_接触阴影｜油炸台落地阴影" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 83, 717)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(142, 16)
+ink = Color(0.4, 0.2627451, 0.20784314, 0.15)
+blur_radius = 3.0
+metadata/owner_figcraft_id = 18
+metadata/figcraft_id = 137
+metadata/source_name = "接触阴影｜油炸台落地阴影"
+
+[node name="N139_接触阴影｜装袋台落地阴影" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 744, 721)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(137, 16)
+ink = Color(0.4, 0.2627451, 0.20784314, 0.14)
+blur_radius = 3.0
+metadata/owner_figcraft_id = 20
+metadata/figcraft_id = 139
+metadata/source_name = "接触阴影｜装袋台落地阴影"
+
+[node name="N21_05 后排设备" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 342, 215)
+metadata/figcraft_id = 21
+metadata/source_name = "05 后排设备"
+metadata/unlock_key = "rear_equipment"
+visible = false
+
+[node name="N14_horizontal_table" type="Sprite2D" parent="SceneClip/N21_05 后排设备"]
+transform = Transform2D(0.6541666667, 0, 0, 0.4622222222, 13, 122)
+texture = ExtResource("library_14")
+centered = false
+metadata/figcraft_id = 14
+metadata/source_name = "horizontal_table"
+
+[node name="N22_connector_pipe" type="Sprite2D" parent="SceneClip/N21_05 后排设备"]
+transform = Transform2D(-0.4071428571, 0, 0, 0.5166666667, 268, 0)
+texture = ExtResource("library_26")
+centered = false
+metadata/figcraft_id = 22
+metadata/source_name = "connector_pipe"
+
+[node name="N23_pancake_griddle" type="Sprite2D" parent="SceneClip/N21_05 后排设备"]
+transform = Transform2D(1.0376461988, 0, 0, 1.0365853659, 0, 13)
+texture = SubResource("sprite_39")
+centered = false
+metadata/figcraft_id = 23
+metadata/source_name = "pancake_griddle"
+
+[node name="N24_round_pancake" type="Sprite2D" parent="SceneClip/N21_05 后排设备"]
+transform = Transform2D(1.0273972603, 0, 0, 0.7916666667, 49, 105)
+texture = SubResource("sprite_0")
+centered = false
+metadata/figcraft_id = 24
+metadata/source_name = "round_pancake"
+
+[node name="N25_batter_mixer" type="Sprite2D" parent="SceneClip/N21_05 后排设备"]
+transform = Transform2D(1.031496063, 0, 0, 1.0396825397, 190, 53.619047619)
+texture = SubResource("sprite_13")
+centered = false
+metadata/figcraft_id = 25
+metadata/source_name = "batter_mixer"
+
+[node name="N26_06 原料台" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 711.5, 312)
+metadata/figcraft_id = 26
+metadata/source_name = "06 原料台"
+metadata/unlock_key = "raw_ingredients"
+visible = false
+
+[node name="N27_flour_sack" type="Sprite2D" parent="SceneClip/N26_06 原料台"]
+transform = Transform2D(1.0384615385, 0, 0, 1.0253164557, 0, 0)
+texture = SubResource("sprite_38")
+centered = false
+metadata/figcraft_id = 27
+metadata/source_name = "flour_sack"
+
+[node name="N28_egg_carton" type="Sprite2D" parent="SceneClip/N26_06 原料台"]
+transform = Transform2D(1.027027027, 0, 0, 1.0273972603, 88.5, 4)
+texture = SubResource("sprite_9")
+centered = false
+metadata/figcraft_id = 28
+metadata/source_name = "egg_carton"
+
+[node name="N140_场景文字｜面粉" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 729, 354)
+script = ExtResource("procedural")
+kind = "text"
+layer_size = Vector2(40, 26)
+ink = Color(0.36, 0.2, 0.15, 1)
+text = "面粉"
+font = ExtResource("font")
+font_size = 20
+metadata/owner_figcraft_id = 27
+metadata/figcraft_id = 140
+metadata/source_name = "场景文字｜面粉"
+
+[node name="N141_接触阴影｜薄脆筐台面阴影" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 96, 644)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(117, 13)
+ink = Color(0.40784314, 0.2509804, 0.17254902, 0.18)
+blur_radius = 2.5
+metadata/owner_figcraft_id = 33
+metadata/figcraft_id = 141
+metadata/source_name = "接触阴影｜薄脆筐台面阴影"
+
+[node name="N31_08 油炸工位" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 88.5, 411)
+metadata/figcraft_id = 31
+metadata/source_name = "08 油炸工位"
+metadata/unlock_key = "fryer"
+visible = false
+
+[node name="N32_fryer" type="Sprite2D" parent="SceneClip/N31_08 油炸工位"]
+transform = Transform2D(1.0384615385, 0, 0, 1.0134228188, 0, 0)
+texture = SubResource("sprite_37")
+centered = false
+metadata/figcraft_id = 32
+metadata/source_name = "fryer"
+
+[node name="N33_filled_crisps_basket" type="Sprite2D" parent="SceneClip/N31_08 油炸工位"]
+transform = Transform2D(1.0341880342, 0, 0, 1.0333333333, 4, 155)
+texture = SubResource("sprite_8")
+centered = false
+metadata/figcraft_id = 33
+metadata/source_name = "filled_crisps_basket"
+
+[node name="N34_09 装袋工位" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 751, 490.5)
+metadata/figcraft_id = 34
+metadata/source_name = "09 装袋工位"
+metadata/unlock_key = "packing"
+visible = false
+
+[node name="N37_packing_machine_with_packet" type="Sprite2D" parent="SceneClip/N34_09 装袋工位"]
+transform = Transform2D(1.031496063, 0, 0, 1.0402298851, 0, 0)
+texture = SubResource("sprite_33")
+centered = false
+metadata/figcraft_id = 37
+metadata/source_name = "packing_machine_with_packet"
+
+[node name="N138_接触阴影｜加料台落地阴影" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 360, 722)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(355, 17)
+ink = Color(0.4, 0.2627451, 0.20784314, 0.16)
+blur_radius = 3.0
+metadata/owner_figcraft_id = 41
+metadata/figcraft_id = 138
+metadata/source_name = "接触阴影｜加料台落地阴影"
+
+[node name="N142_接触阴影｜煎饼筐台面阴影" type="Node2D" parent="SceneClip"]
+transform = Transform2D(0.8946615142, 0, 0, 0.9494949495, 380.2626305997, 665.1313131313)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(126, 14)
+ink = Color(0.40784314, 0.2509804, 0.17254902, 0.19)
+blur_radius = 2.5
+metadata/owner_figcraft_id = 42
+metadata/figcraft_id = 142
+metadata/source_name = "接触阴影｜煎饼筐台面阴影"
+
+[node name="N40_10 加料工位" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 355, 440)
+metadata/figcraft_id = 40
+metadata/source_name = "10 加料工位"
+metadata/unlock_key = "topping"
+visible = false
+
+[node name="N41_horizontal_table" type="Sprite2D" parent="SceneClip/N40_10 加料工位"]
+transform = Transform2D(0.7625, 0, 0, 0.5733333333, 0, 165)
+texture = ExtResource("library_14")
+centered = false
+metadata/figcraft_id = 41
+metadata/source_name = "horizontal_table"
+
+[node name="N42_filled_pancake_basket" type="Sprite2D" parent="SceneClip/N40_10 加料工位"]
+transform = Transform2D(0.9805490196, 0, 0, 1.032967033, 19, 143)
+texture = SubResource("sprite_28")
+centered = false
+metadata/figcraft_id = 42
+metadata/source_name = "filled_pancake_basket"
+
+[node name="N43_orange_ingredient_tray" type="Sprite2D" parent="SceneClip/N40_10 加料工位"]
+transform = Transform2D(1.0342741935, 0, 0, 1.0410958904, 152, 156)
+texture = SubResource("sprite_32")
+centered = false
+metadata/figcraft_id = 43
+metadata/source_name = "orange_ingredient_tray"
+
+[node name="N35_red_ingredient_tray" type="Sprite2D" parent="SceneClip/N40_10 加料工位"]
+transform = Transform2D(1.0260366442, 0, 0, 1.0178571429, 393, 0)
+texture = SubResource("sprite_6")
+centered = false
+metadata/figcraft_id = 35
+metadata/source_name = "red_ingredient_tray"
+
+[node name="N36_green_ingredient_tray" type="Sprite2D" parent="SceneClip/N40_10 加料工位"]
+transform = Transform2D(1.0245098039, 0, 0, 1.0363636364, 458.9411764706, 0)
+texture = SubResource("sprite_3")
+centered = false
+metadata/figcraft_id = 36
+metadata/source_name = "green_ingredient_tray"
+
+[node name="N143_接触阴影｜前台柜台落地阴影" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 51, 960)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(800, 24)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.18)
+blur_radius = 4.0
+metadata/owner_figcraft_id = 47
+metadata/figcraft_id = 143
+metadata/source_name = "接触阴影｜前台柜台落地阴影"
+
+[node name="N46_12 前台柜台与商品" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 41, 710)
+metadata/figcraft_id = 46
+metadata/source_name = "12 前台柜台与商品"
+metadata/unlock_key = "front_counter"
+visible = false
+
+[node name="N47_checkout" type="Sprite2D" parent="SceneClip/N46_12 前台柜台与商品"]
+transform = Transform2D(0.5835714286, 0, 0, 0.7035714286, 0, 69)
+texture = ExtResource("library_21")
+centered = false
+metadata/figcraft_id = 47
+metadata/source_name = "checkout"
+
+[node name="N166_货架" type="Node2D" parent="SceneClip/N46_12 前台柜台与商品"]
+transform = Transform2D(1, 0, 0, 1, 598, 0)
+metadata/figcraft_id = 166
+metadata/source_name = "货架"
+metadata/unlock_key = "rack"
+visible = false
+
+[node name="N49_packet_rack" type="Sprite2D" parent="SceneClip/N46_12 前台柜台与商品/N166_货架"]
+transform = Transform2D(1.0375, 0, 0, 0.7096774194, 0, 0)
+texture = SubResource("sprite_7")
+centered = false
+metadata/figcraft_id = 49
+metadata/source_name = "packet_rack"
+
+[node name="N53_pancake_packet" type="Sprite2D" parent="SceneClip/N46_12 前台柜台与商品/N166_货架"]
+transform = Transform2D(0.7142857143, 0, 0, 0.7090909091, 32, 45)
+texture = SubResource("sprite_4")
+centered = false
+metadata/figcraft_id = 53
+metadata/source_name = "pancake_packet"
+
+[node name="N54_pancake_packet" type="Sprite2D" parent="SceneClip/N46_12 前台柜台与商品/N166_货架"]
+transform = Transform2D(0.873015873, 0, 0, 0.8666666667, 97, 35)
+texture = SubResource("sprite_4")
+centered = false
+metadata/figcraft_id = 54
+metadata/source_name = "pancake_packet"
+
+[node name="N55_pancake_packet" type="Sprite2D" parent="SceneClip/N46_12 前台柜台与商品/N166_货架"]
+transform = Transform2D(1, 0, 0, 0.9927272727, 162, 26)
+texture = SubResource("sprite_4")
+centered = false
+metadata/figcraft_id = 55
+metadata/source_name = "pancake_packet"
+
+[node name="N167_接触阴影｜手提纸袋" type="Node2D" parent="SceneClip/N46_12 前台柜台与商品"]
+transform = Transform2D(1, 0, 0, 1, 373, 165)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(70, 10)
+ink = Color(0.35, 0.22, 0.15, 0.16)
+blur_radius = 2.2
+metadata/owner_figcraft_id = 169
+metadata/figcraft_id = 167
+metadata/source_name = "接触阴影｜手提纸袋"
+
+[node name="N169_takeaway_bag" type="Sprite2D" parent="SceneClip/N46_12 前台柜台与商品"]
+transform = Transform2D(0.36, 0, 0, 0.36, 371, 87)
+texture = ExtResource("library_15")
+centered = false
+metadata/figcraft_id = 169
+metadata/source_name = "takeaway_bag"
+
+[node name="N168_接触阴影｜红色托盘底座" type="Node2D" parent="SceneClip/N46_12 前台柜台与商品"]
+transform = Transform2D(1, 0, 0, 1, 680, 187)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(101, 10)
+ink = Color(0.35, 0.22, 0.15, 0.16)
+blur_radius = 2.2
+metadata/owner_figcraft_id = 170
+metadata/figcraft_id = 168
+metadata/source_name = "接触阴影｜红色托盘底座"
+
+[node name="N170_counter_red_device" type="Sprite2D" parent="SceneClip/N46_12 前台柜台与商品"]
+transform = Transform2D(1.04, 0, 0, 1.04, 677, 83)
+texture = SubResource("sprite_11")
+centered = false
+metadata/figcraft_id = 170
+metadata/source_name = "counter_red_device"
+
+[node name="N56_register" type="Sprite2D" parent="SceneClip/N46_12 前台柜台与商品"]
+transform = Transform2D(0.3462686567, 0, 0, 0.3464410154, 598, 101)
+texture = ExtResource("library_23")
+centered = false
+metadata/figcraft_id = 56
+metadata/source_name = "register"
+
+[node name="N57_pancake_packet" type="Sprite2D" parent="SceneClip/N46_12 前台柜台与商品"]
+transform = Transform2D(1.0317460317, 0, 0, 1.0133333333, 698, 83)
+texture = SubResource("sprite_4")
+centered = false
+metadata/figcraft_id = 57
+metadata/source_name = "pancake_packet"
+
+[node name="N161_豆浆机" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 103, 652)
+metadata/figcraft_id = 161
+metadata/source_name = "豆浆机"
+metadata/unlock_key = "soy_milk"
+visible = false
+
+[node name="N48_soy_milk_dispenser" type="Sprite2D" parent="SceneClip/N161_豆浆机"]
+transform = Transform2D(1.0375, 0, 0, 1.0393086008, 0, 0)
+texture = SubResource("sprite_22")
+centered = false
+metadata/figcraft_id = 48
+metadata/source_name = "soy_milk_dispenser"
+
+[node name="N50_soy_milk_cup" type="Sprite2D" parent="SceneClip/N161_豆浆机"]
+transform = Transform2D(1.0338983051, 0, 0, 1.025974026, 203, 129)
+texture = SubResource("sprite_18")
+centered = false
+metadata/figcraft_id = 50
+metadata/source_name = "soy_milk_cup"
+
+[node name="N51_soy_milk_cup" type="Sprite2D" parent="SceneClip/N161_豆浆机"]
+transform = Transform2D(1.0338983051, 0, 0, 1.025974026, 160, 170)
+texture = SubResource("sprite_18")
+centered = false
+metadata/figcraft_id = 51
+metadata/source_name = "soy_milk_cup"
+
+[node name="N52_soy_milk_cup" type="Sprite2D" parent="SceneClip/N161_豆浆机"]
+transform = Transform2D(1.0338983051, 0, 0, 1.025974026, 225, 170)
+texture = SubResource("sprite_18")
+centered = false
+metadata/figcraft_id = 52
+metadata/source_name = "soy_milk_cup"
+
+[node name="N144_场景文字｜豆浆机" type="Node2D" parent="SceneClip"]
+transform = Transform2D(0.9822485207, 0, 0, 0.9822485207, 144, 814)
+script = ExtResource("procedural")
+kind = "text"
+layer_size = Vector2(54, 24)
+ink = Color(0.36, 0.2, 0.15, 1)
+text = "豆浆机"
+font = ExtResource("font")
+font_size = 18
+metadata/owner_figcraft_id = 48
+metadata/figcraft_id = 144
+metadata/source_name = "场景文字｜豆浆机"
+
+[node name="N145_场景文字｜小" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 683, 774)
+script = ExtResource("procedural")
+kind = "text"
+layer_size = Vector2(22, 29)
+ink = Color(0.36, 0.2, 0.15, 1)
+text = "小"
+font = ExtResource("font")
+font_size = 22
+metadata/owner_figcraft_id = 53
+metadata/figcraft_id = 145
+metadata/source_name = "场景文字｜小"
+
+[node name="N146_场景文字｜中" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 753, 771)
+script = ExtResource("procedural")
+kind = "text"
+layer_size = Vector2(22, 29)
+ink = Color(0.36, 0.2, 0.15, 1)
+text = "中"
+font = ExtResource("font")
+font_size = 22
+metadata/owner_figcraft_id = 54
+metadata/figcraft_id = 146
+metadata/source_name = "场景文字｜中"
+
+[node name="N147_场景文字｜大" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 822, 769)
+script = ExtResource("procedural")
+kind = "text"
+layer_size = Vector2(22, 29)
+ink = Color(0.36, 0.2, 0.15, 1)
+text = "大"
+font = ExtResource("font")
+font_size = 22
+metadata/owner_figcraft_id = 55
+metadata/figcraft_id = 147
+metadata/source_name = "场景文字｜大"
+
+[node name="N148_场景文字｜大" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 0.987012987, 758, 827)
+script = ExtResource("procedural")
+kind = "text"
+layer_size = Vector2(24, 32)
+ink = Color(0.36, 0.2, 0.15, 1)
+text = "大"
+font = ExtResource("font")
+font_size = 24
+metadata/owner_figcraft_id = 57
+metadata/figcraft_id = 148
+metadata/source_name = "场景文字｜大"
+
+[node name="N149_接触阴影｜落地招牌接触阴影" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 735, 1109)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(145, 18)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.2)
+blur_radius = 4.0
+metadata/owner_figcraft_id = 63
+metadata/figcraft_id = 149
+metadata/source_name = "接触阴影｜落地招牌接触阴影"
+
+[node name="N62_14 野餐毯与招牌" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 113, 959.5)
+metadata/figcraft_id = 62
+metadata/source_name = "14 野餐毯与招牌"
+
+[node name="N63_menu_sign" type="Sprite2D" parent="SceneClip/N62_14 野餐毯与招牌"]
+transform = Transform2D(1.0402684564, 0, 0, 1.0392156863, 616, 0)
+texture = SubResource("sprite_34")
+centered = false
+metadata/figcraft_id = 63
+metadata/source_name = "menu_sign"
+
+[node name="N64_gingham_blanket" type="Sprite2D" parent="SceneClip/N62_14 野餐毯与招牌"]
+transform = Transform2D(1.4492440605, 0, 0, 1.125, 0, 171.5)
+texture = SubResource("sprite_36")
+centered = false
+metadata/figcraft_id = 64
+metadata/source_name = "gingham_blanket"
+
+[node name="N152_接触阴影｜坐垫接触阴影 43" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 39.1, 1290)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(156.22, 17)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.12)
+blur_radius = 4.0
+metadata/owner_figcraft_id = 66
+metadata/figcraft_id = 152
+metadata/source_name = "接触阴影｜坐垫接触阴影 43"
+
+[node name="N153_接触阴影｜坐垫接触阴影 44" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 278.1, 1290)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(156.22, 17)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.12)
+blur_radius = 4.0
+metadata/owner_figcraft_id = 67
+metadata/figcraft_id = 153
+metadata/source_name = "接触阴影｜坐垫接触阴影 44"
+
+[node name="N154_接触阴影｜坐垫接触阴影 45" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 528, 1275)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(146, 17)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.12)
+blur_radius = 4.0
+metadata/owner_figcraft_id = 68
+metadata/figcraft_id = 154
+metadata/source_name = "接触阴影｜坐垫接触阴影 45"
+
+[node name="N155_接触阴影｜坐垫接触阴影 46" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 670.15, 1218)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(117.53, 17)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.12)
+blur_radius = 4.0
+metadata/owner_figcraft_id = 69
+metadata/figcraft_id = 155
+metadata/source_name = "接触阴影｜坐垫接触阴影 46"
+
+[node name="N156_接触阴影｜坐垫接触阴影 47" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 767.55, 1276)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(143.81, 17)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.12)
+blur_radius = 4.0
+metadata/owner_figcraft_id = 70
+metadata/figcraft_id = 156
+metadata/source_name = "接触阴影｜坐垫接触阴影 47"
+
+[node name="N157_接触阴影｜坐垫接触阴影 48" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 59.8, 1494)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(140.16, 17)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.12)
+blur_radius = 4.0
+metadata/owner_figcraft_id = 71
+metadata/figcraft_id = 157
+metadata/source_name = "接触阴影｜坐垫接触阴影 48"
+
+[node name="N158_接触阴影｜坐垫接触阴影 49" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 279.25, 1495)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(142.35, 17)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.12)
+blur_radius = 4.0
+metadata/owner_figcraft_id = 72
+metadata/figcraft_id = 158
+metadata/source_name = "接触阴影｜坐垫接触阴影 49"
+
+[node name="N159_接触阴影｜坐垫接触阴影 50" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 528.65, 1493)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(154.03, 17)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.12)
+blur_radius = 4.0
+metadata/owner_figcraft_id = 73
+metadata/figcraft_id = 159
+metadata/source_name = "接触阴影｜坐垫接触阴影 50"
+
+[node name="N160_接触阴影｜坐垫接触阴影 51" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 762.25, 1495)
+script = ExtResource("procedural")
+kind = "shadow"
+layer_size = Vector2(142.35, 17)
+ink = Color(0.20784314, 0.25490198, 0.14509805, 0.12)
+blur_radius = 4.0
+metadata/owner_figcraft_id = 74
+metadata/figcraft_id = 160
+metadata/source_name = "接触阴影｜坐垫接触阴影 51"
+
+[node name="N65_15 九个坐垫" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 7, 1117)
+metadata/figcraft_id = 65
+metadata/source_name = "15 九个坐垫"
+
+[node name="N165_第一次解锁" type="Node2D" parent="SceneClip/N65_15 九个坐垫"]
+transform = Transform2D(1, 0, 0, 1, 0, 56)
+metadata/figcraft_id = 165
+metadata/source_name = "第一次解锁"
+visible = false
+
+[node name="N66_cushion_cream" type="Sprite2D" parent="SceneClip/N65_15 九个坐垫/N165_第一次解锁"]
+transform = Transform2D(1.0388349515, 0, 0, 0.8630136986, 0, 0)
+texture = SubResource("sprite_24")
+centered = false
+metadata/figcraft_id = 66
+metadata/source_name = "cushion_cream"
+
+[node name="N67_cushion_cream" type="Sprite2D" parent="SceneClip/N65_15 九个坐垫/N165_第一次解锁"]
+transform = Transform2D(1.0388349515, 0, 0, 0.8630136986, 239, 0)
+texture = SubResource("sprite_12")
+centered = false
+metadata/figcraft_id = 67
+metadata/source_name = "cushion_cream"
+
+[node name="N164_第二次解锁" type="Node2D" parent="SceneClip/N65_15 九个坐垫"]
+transform = Transform2D(1, 0, 0, 1, 491, 0)
+metadata/figcraft_id = 164
+metadata/source_name = "第二次解锁"
+visible = false
+
+[node name="N68_cushion_coral" type="Sprite2D" parent="SceneClip/N65_15 九个坐垫/N164_第二次解锁"]
+transform = Transform2D(1.0362694301, 0, 0, 0.9333333333, 0, 41)
+texture = SubResource("sprite_29")
+centered = false
+metadata/figcraft_id = 68
+metadata/source_name = "cushion_coral"
+
+[node name="N69_cushion_cream" type="Sprite2D" parent="SceneClip/N65_15 九个坐垫/N164_第二次解锁"]
+transform = Transform2D(0.7815533981, 0, 0, 0.7534246575, 148, 0)
+texture = SubResource("sprite_24")
+centered = false
+metadata/figcraft_id = 69
+metadata/source_name = "cushion_cream"
+
+[node name="N70_cushion_cream" type="Sprite2D" parent="SceneClip/N65_15 九个坐垫/N164_第二次解锁"]
+transform = Transform2D(1.0368421053, 0, 0, 0.9407407407, 240, 41)
+texture = SubResource("sprite_25")
+centered = false
+metadata/figcraft_id = 70
+metadata/source_name = "cushion_cream"
+
+[node name="N163_第三次解锁" type="Node2D" parent="SceneClip/N65_15 九个坐垫"]
+transform = Transform2D(1, 0, 0, 1, 24, 253)
+metadata/figcraft_id = 163
+metadata/source_name = "第三次解锁"
+visible = false
+
+[node name="N73_cushion_cream" type="Sprite2D" parent="SceneClip/N65_15 九个坐垫/N163_第三次解锁"]
+transform = Transform2D(1.0242718447, 0, 0, 0.904109589, 466, 0)
+texture = SubResource("sprite_24")
+centered = false
+metadata/figcraft_id = 73
+metadata/source_name = "cushion_cream"
+
+[node name="N74_cushion_sage" type="Sprite2D" parent="SceneClip/N65_15 九个坐垫/N163_第三次解锁"]
+transform = Transform2D(1.0372340426, 0, 0, 0.9328358209, 702, 9)
+texture = SubResource("sprite_30")
+centered = false
+metadata/figcraft_id = 74
+metadata/source_name = "cushion_sage"
+
+[node name="N71_cushion_cream" type="Sprite2D" parent="SceneClip/N65_15 九个坐垫/N163_第三次解锁"]
+transform = Transform2D(1.0212765957, 0, 0, 0.7819548872, 0, 29)
+texture = SubResource("sprite_17")
+centered = false
+metadata/figcraft_id = 71
+metadata/source_name = "cushion_cream"
+
+[node name="N72_cushion_cream" type="Sprite2D" parent="SceneClip/N65_15 九个坐垫/N163_第三次解锁"]
+transform = Transform2D(1.0372340426, 0, 0, 0.7894736842, 219, 29)
+texture = SubResource("sprite_17")
+centered = false
+metadata/figcraft_id = 72
+metadata/source_name = "cushion_cream"
+
+[node name="N75_16 野餐食品" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 161.5, 1240)
+metadata/figcraft_id = 75
+metadata/source_name = "16 野餐食品"
+
+[node name="N76_picnic_pancake_set" type="Sprite2D" parent="SceneClip/N75_16 野餐食品"]
+transform = Transform2D(1.0408163265, 0, 0, 1.037037037, 0, 0)
+texture = SubResource("sprite_10")
+centered = false
+metadata/figcraft_id = 76
+metadata/source_name = "picnic_pancake_set"
+
+[node name="N77_picnic_dessert_set" type="Sprite2D" parent="SceneClip/N75_16 野餐食品"]
+transform = Transform2D(1.0375, 0, 0, 1.0366972477, 467.5, 8)
+texture = SubResource("sprite_1")
+centered = false
+metadata/figcraft_id = 77
+metadata/source_name = "picnic_dessert_set"
+
+[node name="N83_16 野餐食品" type="Node2D" parent="SceneClip"]
+transform = Transform2D(1, 0, 0, 1, 728, 1365.5)
+metadata/figcraft_id = 83
+metadata/source_name = "16 野餐食品"
+
+[node name="N84_yellow_straw_cup" type="Sprite2D" parent="SceneClip/N83_16 野餐食品"]
+transform = Transform2D(1.0208333333, 0, 0, 1.0289855072, 0, 0)
+texture = SubResource("sprite_27")
+centered = false
+metadata/figcraft_id = 84
+metadata/source_name = "yellow_straw_cup"

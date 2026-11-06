@@ -12,6 +12,8 @@
 
 家具、机器及桌面物品使用独立透明图片；既有替换图保持原始像素尺寸。分组素材页、提示词与可重复导出工具见 `art_src/shop_layout_2026_11/README.md`。
 
+煎饼摊 v04 已接入独立的 Godot 分层场景，打开 `presentation/pancake/pancake_scene.tscn` 按 F6 可查看完整布局。固定设施开局常驻，功能组和 2/5/9 个坐垫阶段可单独控制，文字和阴影用代码绘制，角色预览不导入。现有奶茶玩法入口保持原实现。场景本体为 `presentation/pancake/pancake_art.tscn`，可用 `set_station_unlocked(key, enabled)` 控制功能组、`set_cushion_stage(0..3)` 控制坐垫阶段。
+
 ## 运行和验证
 
 ```sh
