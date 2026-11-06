@@ -64,12 +64,12 @@ func _run() -> void:
 	# Exercise clipping with a short sheet, independently of the shipping layout.
 	var sheet: Control = hud.get_node("Sheet")
 	var original_sheet_top := sheet.offset_top
-	sheet.offset_top = -650
+	sheet.offset_top = -450
 	await process_frame
 	await process_frame
 	# Hiring sits above the roster, so scroll past it until the first card's top slides under the heading.
 	var lift: float = view._staff_cards[0].get_global_rect().position.y - scroll.get_global_rect().position.y
-	scroll.scroll_vertical = int(lift / scroll.get_global_transform().get_scale().y) + 96
+	scroll.scroll_vertical = int(lift / scroll.get_global_transform().get_scale().y) + 24
 	await process_frame
 	await process_frame
 	var clipped_point: Vector2 = view._staff_cards[0].get_global_rect().position + Vector2(20, 4)

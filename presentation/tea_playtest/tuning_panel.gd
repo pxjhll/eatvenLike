@@ -4,6 +4,8 @@ extends PanelContainer
 ## apart from the shop save, and apply from the next cup / customer on.
 
 const FILE := "user://tuning.cfg"
+const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
+const Icons := preload("res://presentation/ui/reference_icons.gd")
 ## key, label, what the multiplier does to the number shown
 const ROWS := [
 	["seat", "用餐时间"], ["customer", "来客间隔"], ["boil", "煮茶时间"], ["mix", "调奶时间"],
@@ -18,12 +20,13 @@ var _sliders := {}
 var _values := {}
 var _font: Font
 var _log_info: Label
+var _available := Vector2(720, 1280)
 
 
 func setup(owner_game: Node, save_to_disk: bool) -> void:
 	game = owner_game
 	persist = save_to_disk
-	_font = load("res://art/ui/graybox_font.ttf")
+	_font = ReferenceTheme.ui_font()
 	if persist: _load()
 	_build()
 	visible = false
@@ -31,7 +34,9 @@ func setup(owner_game: Node, save_to_disk: bool) -> void:
 
 func toggle() -> void:
 	visible = not visible
-	if visible: refresh()
+	if visible:
+		refresh()
+		fit_to_size(_available)
 
 
 func set_value(key: String, value: float) -> void:
@@ -50,9 +55,12 @@ func reset_all() -> void:
 func refresh() -> void:
 	for row in ROWS:
 		var key: String = row[0]
-		_values[key].text = "×%.2f  %s" % [game.sim.tuned(key), _now(key)]
+		_values[key].text = "×%.2f" % game.sim.tuned(key)
+		_values[key].tooltip_text = _now(key)
+		_sliders[key].tooltip_text = "%s：%s" % [row[1], _now(key)]
 	if _log_info != null and game.recorder != null:
-		_log_info.text = "开店录制：%d 条（每 60 秒一条，购买和调参也会录）" % game.recorder.line_count() if game.recorder.enabled else "开店录制：这里不保存"
+		_log_info.text = "开店录制：%d 条" % game.recorder.line_count() if game.recorder.enabled else "开店录制：这里不保存"
+		_log_info.tooltip_text = "每 60 秒记录一次，购买和调参也会记录。"
 
 
 ## What the knob gives right now, in the units a player feels.
@@ -73,39 +81,58 @@ func _now(key: String) -> String:
 
 func _build() -> void:
 	name = "TuningPanel"
+	theme = ReferenceTheme.make_theme()
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	position = Vector2(16, 112)
 	custom_minimum_size = Vector2(688, 0)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(1.0, 0.97, 0.9, 0.94)
-	style.border_color = Color(0.55, 0.4, 0.28)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(16)
-	style.set_content_margin_all(14)
+	var style := ReferenceTheme.style("paper", 28)
+	style.set_content_margin_all(20)
 	add_theme_stylebox_override("panel", style)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	column.add_theme_constant_override("separation", 10)
 	add_child(column)
 	var heading := HBoxContainer.new()
+	heading.add_theme_constant_override("separation", 12)
 	column.add_child(heading)
-	var title := _label("调参（1.00 = 原设定）", 24)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var title := _label("调参", 36)
 	heading.add_child(title)
+	var hint := _label("1.00 = 原设定", 19)
+	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	heading.add_child(hint)
+	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var reset := _button("全部还原")
 	reset.name = "Reset"
 	reset.pressed.connect(reset_all)
 	heading.add_child(reset)
 	var close := _button("收起")
 	close.name = "Close"
+	close.add_theme_stylebox_override("normal", ReferenceTheme.style("gold", 14))
 	close.pressed.connect(toggle)
 	heading.add_child(close)
-	for row in ROWS:
+	var group: VBoxContainer
+	for index in ROWS.size():
+		var row: Array = ROWS[index]
+		if index == 0 or index == 8:
+			var group_panel := PanelContainer.new()
+			var group_style := ReferenceTheme.style("card", 18)
+			group_style.set_content_margin_all(5)
+			group_panel.add_theme_stylebox_override("panel", group_style)
+			column.add_child(group_panel)
+			group = VBoxContainer.new()
+			group.add_theme_constant_override("separation", 1)
+			group_panel.add_child(group)
 		var key: String = row[0]
+		var row_panel := PanelContainer.new()
+		var row_style := ReferenceTheme.style("card", 12)
+		row_style.content_margin_top = 7
+		row_style.content_margin_bottom = 7
+		row_panel.add_theme_stylebox_override("panel", row_style)
+		group.add_child(row_panel)
 		var line := HBoxContainer.new()
-		line.add_theme_constant_override("separation", 10)
-		column.add_child(line)
-		var name_label := _label(row[1], 22)
-		name_label.custom_minimum_size = Vector2(150, 0)
+		line.add_theme_constant_override("separation", 12)
+		row_panel.add_child(line)
+		var name_label := _label(row[1], 24)
+		name_label.custom_minimum_size = Vector2(164, 0)
+		name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		line.add_child(name_label)
 		var slider := HSlider.new()
 		slider.name = "Slider_" + key
@@ -113,40 +140,76 @@ func _build() -> void:
 		slider.max_value = game.sim.TUNE_MAX
 		slider.step = STEP
 		slider.value = game.sim.tuned(key)
-		slider.custom_minimum_size = Vector2(260, 40)
+		slider.custom_minimum_size = Vector2(150, 29)
+		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		slider.value_changed.connect(func(value: float) -> void: set_value(key, value))
 		line.add_child(slider)
 		_sliders[key] = slider
-		var value := _label("", 20)
-		value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var value := _label("", 22)
+		value.custom_minimum_size.x = 86
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var value_style := ReferenceTheme.style("pill", 10)
+		value_style.content_margin_top = 5
+		value_style.content_margin_bottom = 5
+		value.add_theme_stylebox_override("normal", value_style)
 		line.add_child(value)
 		_values[key] = value
-	column.add_child(_label("改动从下一杯、下一位客人开始生效；不影响存档。", 18))
-	column.add_child(HSeparator.new())
-	_log_info = _label("", 20)
+	var explanation := _label("改动从下一杯、下一位客人开始生效；不影响存档。", 18)
+	explanation.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(explanation)
+	_log_info = _label("", 16)
+	_log_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_log_info)
-	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 10)
+	var actions := GridContainer.new()
+	actions.columns = 2
+	actions.add_theme_constant_override("h_separation", 12)
+	actions.add_theme_constant_override("v_separation", 12)
 	column.add_child(actions)
 	var mark := _button("标出此时")
 	mark.name = "Mark"
+	mark.icon = Icons.texture("tag")
 	mark.tooltip_text = "不好玩时点一下，录制里会留一个标"
 	mark.pressed.connect(_mark)
 	actions.add_child(mark)
 	var copy := _button("复制录制")
 	copy.name = "Copy"
+	copy.icon = Icons.texture("record")
 	copy.pressed.connect(_copy)
 	actions.add_child(copy)
 	var export := _button("导出文件")
 	export.name = "Export"
+	export.icon = Icons.texture("export")
 	export.pressed.connect(_export)
 	actions.add_child(export)
 	var clear := _button("清空录制")
 	clear.name = "Clear"
+	clear.icon = Icons.texture("trash")
 	clear.pressed.connect(_clear)
 	actions.add_child(clear)
+	for action: Button in actions.get_children():
+		action.custom_minimum_size.y = 60
+		action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		action.add_theme_font_size_override("font_size", 24)
+		action.add_theme_constant_override("icon_max_width", 36)
+		action.add_theme_constant_override("h_separation", 12)
+	if get_parent() is Control:
+		get_parent().resized.connect(func() -> void: fit_to_size(get_parent().size))
+	fit_to_size(get_parent().size if get_parent() is Control else _available)
 	refresh()
+
+
+## Match the compact reference sheet while fitting the world-scaled UI and phone viewport.
+func fit_to_size(available: Vector2) -> void:
+	_available = available
+	if not is_inside_tree(): return
+	reset_size()
+	var content := get_combined_minimum_size()
+	var factor := minf(1.0, minf((available.x - 24.0) / content.x, (available.y - 216.0) / content.y))
+	scale = Vector2.ONE * maxf(0.1, factor)
+	size = Vector2(maxf(content.x, (available.x - 24.0) / scale.x), content.y)
+	position = Vector2((available.x - size.x * scale.x) / 2.0, maxf(104.0, available.y - 110.0 - size.y * scale.y))
 
 
 func _mark() -> void:
@@ -189,6 +252,9 @@ func _button(text: String) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(96, 44)
+	button.focus_mode = Control.FOCUS_NONE
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		button.add_theme_stylebox_override(state, ReferenceTheme.style("cream", 14, state))
 	button.add_theme_font_override("font", _font)
 	button.add_theme_font_size_override("font_size", 20)
 	return button

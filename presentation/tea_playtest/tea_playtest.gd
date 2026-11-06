@@ -470,19 +470,32 @@ func _build_tuning() -> void:
 	recorder = Recorder.new()
 	recorder.enabled = guide_enabled
 	recorder.setup(sim)
+	var tuning_shade := ColorRect.new()
+	tuning_shade.name = "TuningShade"
+	tuning_shade.color = Color(0.12, 0.09, 0.065, 0.34)
+	tuning_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Overlay/UI.add_child(tuning_shade)
+	tuning_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tuning_shade.offset_top = 106
+	tuning_shade.offset_bottom = -112
+	tuning_shade.hide()
 	tuning = TuningPanel.new()
 	$Overlay/UI.add_child(tuning)
 	tuning.setup(self, guide_enabled)
+	tuning.visibility_changed.connect(func() -> void: tuning_shade.visible = tuning.visible)
 	tuning_button = Button.new()
 	tuning_button.name = "Tuning"
 	tuning_button.text = "调参"
-	tuning_button.custom_minimum_size = Vector2(72, 0)
-	tuning_button.add_theme_font_override("font", _font)
-	tuning_button.add_theme_font_size_override("font_size", 22)
-	tuning_button.pressed.connect(tuning.toggle)
-	var row: Node = _speed_button.get_parent()
-	row.add_child(tuning_button)
-	row.move_child(tuning_button, _speed_button.get_index())
+	tuning_button.custom_minimum_size = Vector2(68, 34)
+	tuning_button.theme = ui.theme
+	tuning_button.add_theme_font_size_override("font_size", 17)
+	tuning_button.pressed.connect(func() -> void:
+		ui.open_page("shop")
+		tuning.toggle())
+	# The reference header has only speed and menu. Developer controls live in the
+	# menu footer, keeping the business target readable on a portrait viewport.
+	var footer: Node = ui._save_caption.get_parent()
+	footer.add_child(tuning_button)
 
 
 ## The open 调参 panel sits over the kitchen; taps and drags on it never reach the floor.
@@ -526,11 +539,7 @@ func _build_badges() -> void:
 
 func _chip(parent: Node, point: Vector2) -> Label:
 	var label := _label(parent, point, 16)
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color("fff5e2")
-	box.border_color = Color("b38c62")
-	box.set_border_width_all(2)
-	box.set_corner_radius_all(12)
+	var box := preload("res://presentation/ui/reference_theme.gd").style("pill", 12)
 	box.content_margin_left = 10
 	box.content_margin_right = 10
 	box.content_margin_top = 2
@@ -656,16 +665,37 @@ func _fit() -> void:
 	$Overlay/UI.scale = Vector2.ONE * world_factor
 	$Overlay/UI.size = Vector2(720, size.y / world_factor)
 	ui.fit_to_size($Overlay/UI.size)
+	if tuning != null and tuning.has_method("fit_to_size"):
+		tuning.fit_to_size($Overlay/UI.size)
 
 
 func _build_glass_toggle() -> void:
 	_glass_button = Button.new()
 	_glass_button.text = "玻璃隔板"
 	_glass_button.toggle_mode = true
-	_glass_button.custom_minimum_size.y = 78
+	_glass_button.custom_minimum_size.y = 64
+	_glass_button.icon = preload("res://presentation/ui/reference_icons.gd").texture("glass")
+	_glass_button.expand_icon = true
+	_glass_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_glass_button.add_theme_constant_override("icon_max_width", 38)
+	_glass_button.add_theme_constant_override("h_separation", 18)
+	_glass_button.add_theme_font_size_override("font_size", 25)
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		_glass_button.add_theme_stylebox_override(state, preload("res://presentation/ui/reference_theme.gd").style("card", 14, state))
 	_glass_button.theme = ui.theme
 	_glass_button.toggled.connect(set_glass_visible)
 	ui._page_nodes.menu.add_child(_glass_button)
+	ui._page_nodes.menu.move_child(_glass_button, ui.restart_button.get_index())
+	var glass_switch := preload("res://presentation/ui/reference_toggle.gd").new()
+	glass_switch.anchor_left = 1.0
+	glass_switch.anchor_right = 1.0
+	glass_switch.anchor_top = 0.5
+	glass_switch.anchor_bottom = 0.5
+	glass_switch.offset_left = -90
+	glass_switch.offset_right = -26
+	glass_switch.offset_top = -17
+	glass_switch.offset_bottom = 17
+	_glass_button.add_child(glass_switch)
 
 
 func set_glass_visible(show_glass: bool) -> void:

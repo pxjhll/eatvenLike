@@ -77,7 +77,7 @@ func _run() -> void:
 		view.sim.orders[0].reserved = false
 		view._refresh(0.0)
 		await process_frame
-		_check(hud.get_node("%GoalText").text.contains("排长队"), "a jammed line names its bottleneck in the goal bar")
+		_check(hud._bottleneck_button.is_visible_in_tree() and hud._bottleneck_button.text.contains("排队"), "a jammed line names its bottleneck in the reference hint banner")
 		_check(view._hint_ring.visible, "the fix gets a pulsing outline")
 		await _capture("hint")
 		view.sim._full_seconds = 0.0

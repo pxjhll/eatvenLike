@@ -13,6 +13,8 @@ const COUNTER_AREA := Rect2(370, 720, 130, 120)
 const DIM := Color(0.16, 0.1, 0.06, 0.62)
 const GLOW := Color("ffd98a")
 const HAND := Color("8b6446")
+const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
+const Icons := preload("res://presentation/ui/reference_icons.gd")
 
 var enabled := false
 var seen := {}
@@ -38,6 +40,8 @@ var _card_title: Label
 var _card_body: VBoxContainer
 var _card_primary: Button
 var _card_secondary: Button
+var _card_illustration: TextureRect
+var _card_medal: TextureRect
 
 
 func setup(view: Node2D, seen_ids: Array) -> void:
@@ -49,7 +53,7 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	for id in seen_ids:
 		seen[String(id)] = true
 	_bubble = PanelContainer.new()
-	_bubble.add_theme_stylebox_override("panel", _hud._style("fff5e2", "8b6446", 20, 3))
+	_bubble.add_theme_stylebox_override("panel", ReferenceTheme.style("paper", 20))
 	_bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bubble.custom_minimum_size.x = 440
 	add_child(_bubble)
@@ -66,23 +70,34 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	_bubble_skip.pressed.connect(_skip)
 	column.add_child(_bubble_skip)
 	_card = PanelContainer.new()
-	_card.add_theme_stylebox_override("panel", _hud._style("fff5e2", "8b6446", 26, 3))
+	var card_style := ReferenceTheme.style("paper", 40)
+	card_style.set_content_margin_all(28)
+	_card.add_theme_stylebox_override("panel", card_style)
 	_card.custom_minimum_size.x = 560
 	add_child(_card)
 	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 16)
+	body.add_theme_constant_override("separation", 22)
 	_card.add_child(body)
-	_card_title = _hud._text(body, "", 32)
-	_card_title.custom_minimum_size.x = 500
+	_card_medal = _picture(body, Icons.texture("medal"), Vector2(210, 176))
+	var heading := HBoxContainer.new()
+	heading.add_theme_constant_override("separation", 8)
+	body.add_child(heading)
+	_card_illustration = _picture(heading, Icons.portrait("raccoon"), Vector2(190, 190))
+	_card_title = _hud._text(heading, "", 40)
+	_card_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_card_title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_card_title.custom_minimum_size.x = 300
 	_card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_card_title.add_theme_color_override("font_outline_color", ReferenceTheme.INK)
+	_card_title.add_theme_constant_override("outline_size", 1)
 	_card_body = VBoxContainer.new()
 	_card_body.add_theme_constant_override("separation", 12)
 	body.add_child(_card_body)
 	var buttons: HBoxContainer = _hud._row(body, 14)
 	_card_secondary = _button(buttons, "跳过引导", _skip)
 	_card_primary = _button(buttons, "开始营业", _confirm)
-	_card_primary.add_theme_stylebox_override("normal", _hud._style("8b6446", "8b6446", 15))
-	_card_primary.add_theme_color_override("font_color", Color("fff8e9"))
+	for state in ["normal", "hover", "pressed"]:
+		_card_primary.add_theme_stylebox_override(state, ReferenceTheme.style("gold", 18, state))
 	_seen_event = _last_event()
 	refresh(0.0)
 
@@ -92,6 +107,9 @@ func _button(parent: Node, text: String, callback: Callable) -> Button:
 	button.text = text
 	button.custom_minimum_size.y = 72
 	button.focus_mode = Control.FOCUS_NONE
+	button.add_theme_font_size_override("font_size", 27)
+	for state in ["normal", "hover", "pressed"]:
+		button.add_theme_stylebox_override(state, ReferenceTheme.style("cream", 18, state))
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.pressed.connect(callback)
 	parent.add_child(button)
@@ -366,39 +384,74 @@ func _show_card() -> void:
 	_card.set_meta("kind", active)
 	for child in _card_body.get_children():
 		child.free()
+	_card_illustration.visible = active == "welcome"
+	_card_medal.visible = active == "shop_done"
+	_card_title.add_theme_font_size_override("font_size", 64 if active == "shop_done" else 40)
 	if active == "welcome":
 		_card_title.text = "欢迎，店长！"
 		_card_secondary.visible = true
 		_card_primary.text = "开始营业"
-		for row in [["drink_lemonade", "招待顾客，卖饮品收金币"], ["drink_black_tea", "开通后厨生产线，做新饮品"], ["drink_pearl_milk_tea", "完成经营任务，把小店做大"]]:
-			var line: HBoxContainer = _hud._row(_card_body, 16)
-			var icon := TextureRect.new()
-			icon.texture = load("res://art/ui/%s.png" % row[0])
-			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			icon.custom_minimum_size = Vector2(64, 64)
-			line.add_child(icon)
-			var label: Label = _hud._text(line, row[1], 24)
+		for row in [["lemonade", "招待顾客，卖饮品收金币"], ["boil", "开通后厨生产线，做新饮品"], ["goals", "完成经营任务，把小店做大"]]:
+			var panel := PanelContainer.new()
+			panel.add_theme_stylebox_override("panel", ReferenceTheme.style("card", 22))
+			_card_body.add_child(panel)
+			var line: HBoxContainer = _hud._row(panel, 12)
+			_picture(line, Icons.texture(row[0]), Vector2(80, 72))
+			var label: Label = _hud._text(line, row[1], 23)
 			label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			# Wrapped labels need a width up front, or the card measures one glyph per line.
-			label.custom_minimum_size.x = 420
+			label.custom_minimum_size.x = 370
 	elif active == "shop_done":
 		var sim = _view.sim
 		_card_title.text = "首店完成！"
 		_card_secondary.visible = false
 		_card_primary.text = "继续营业"
 		var minutes := int(sim.elapsed) / 60
-		var label: Label = _hud._text(_card_body, "用时 %d 分 %02d 秒 · 总营业额 %d 金\n第二家店还在准备中，可以继续把这家店做大。" % [minutes, int(sim.elapsed) % 60, sim.revenue], 23)
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.custom_minimum_size.x = 500
+		var metrics: HBoxContainer = _hud._row(_card_body, 14)
+		_stat(metrics, "clock", "用时", "%d 分 %02d 秒" % [minutes, int(sim.elapsed) % 60])
+		_stat(metrics, "coin", "总营业额", "%d 金" % sim.revenue)
+		_card_note("第二家店还在准备中，可以继续把这家店做大。")
 	else:
 		_card_title.text = "开店上手了！"
 		_card_secondary.visible = false
 		_card_primary.text = "继续营业"
 		var goal = _view.sim.PROGRESSION.stages[1]
-		var label: Label = _hud._text(_card_body, "接下来自己经营：攒够 %d 金币，就能开%s。\n点机器可以升级，点「员工」可以调整岗位。" % [goal.line_cost, goal.line_name], 23)
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.custom_minimum_size.x = 500
+		_card_note("接下来自己经营：攒够 %d 金币，就能开%s。\n点机器可以升级，点「员工」可以调整岗位。" % [goal.line_cost, goal.line_name])
+
+
+func _picture(parent: Node, texture: Texture2D, minimum: Vector2) -> TextureRect:
+	var picture := TextureRect.new()
+	picture.texture = texture
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	picture.custom_minimum_size = minimum
+	picture.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(picture)
+	return picture
+
+
+func _card_note(text: String) -> void:
+	var label: Label = _hud._text(_card_body, text, 22)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.custom_minimum_size.x = 500
+
+
+func _stat(parent: Node, icon: String, heading: String, value: String) -> void:
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", ReferenceTheme.style("card", 22))
+	parent.add_child(panel)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	panel.add_child(row)
+	_picture(row, Icons.texture(icon), Vector2(52, 72))
+	var column := VBoxContainer.new()
+	column.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(column)
+	var heading_label: Label = _hud._text(column, heading, 24)
+	heading_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	var value_label: Label = _hud._text(column, value, 28)
+	value_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 
 
 func _confirm() -> void:
@@ -463,7 +516,12 @@ func _say(text: String) -> void:
 func _place_bubble() -> void:
 	if _card.visible:
 		_card.reset_size()
-		_card.position = (size - _card.size) / 2.0
+		# UI lives in world-fit coordinates; use the visible viewport in those coordinates.
+		var visible_rect := _to_local(Transform2D.IDENTITY, get_viewport_rect()).intersection(Rect2(Vector2.ZERO, size))
+		if not visible_rect.has_area(): visible_rect = Rect2(Vector2.ZERO, size)
+		var factor := minf(1.0, minf((visible_rect.size.x - 40.0) / _card.size.x, (visible_rect.size.y - 220.0) / _card.size.y))
+		_card.scale = Vector2.ONE * maxf(0.1, factor)
+		_card.position = visible_rect.position + (visible_rect.size - _card.size * _card.scale) / 2.0
 	if not _bubble.visible:
 		return
 	_bubble.reset_size()
@@ -501,7 +559,11 @@ func _has_point(point: Vector2) -> bool:
 func _draw() -> void:
 	if not visible:
 		return
-	if _blocking:
+	if _blocking and active in ["welcome", "shop_done", "done"]:
+		var top: float = _hud.get_node("Header").get_rect().end.y
+		var bottom: float = _hud.get_node("Navigation").position.y
+		draw_rect(Rect2(0, top, size.x, maxf(0, bottom-top)), DIM)
+	elif _blocking:
 		var hole := _hole if _hole.has_area() else Rect2(size / 2.0, Vector2.ZERO)
 		draw_rect(Rect2(0, 0, size.x, hole.position.y), DIM)
 		draw_rect(Rect2(0, hole.end.y, size.x, size.y - hole.end.y), DIM)
