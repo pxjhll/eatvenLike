@@ -18,8 +18,8 @@ const TEA_SCENE := "res://presentation/tea_playtest/tea_playtest.tscn"
 const ICON_NODES := {"soy": 50, "food": 57}
 const UPGRADE_TEXT := {"speed": "速度 +14%", "price": "售价 +8%"}
 
-## 干活时面朝台子（0 正面 2 右 4 背面 6 左）：收钱面向客人，豆浆机在左手边。
-const WORK_FACING := {"register": 0, "soy": 6}
+## 干活时面朝台子（0 正面 2 右 4 背面 6 左）：收钱面向客人，打豆浆站在豆浆机后面。
+const WORK_FACING := {"register": 0, "soy": 0}
 
 var sim: PancakeSim
 var speed := 1.0
