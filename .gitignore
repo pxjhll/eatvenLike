@@ -15,6 +15,7 @@ docs/qa/*.txt
 *.pcraft
 
 # Local pancake artwork sources and exports; commit runtime assets only.
+/_work/
 *.figcraft
 /art_src/pancake_stall_2026_11_05/
 /output/
