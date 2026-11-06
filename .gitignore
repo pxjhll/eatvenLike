@@ -14,5 +14,7 @@ docs/qa/*.txt
 *.psb
 *.pcraft
 
-# Temporary FigCraft exports; the approved source lives under art_src/.
-/output/figcraft/
+# Local pancake artwork sources and exports; commit runtime assets only.
+*.figcraft
+/art_src/pancake_stall_2026_11_05/
+/output/

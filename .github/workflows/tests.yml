@@ -20,6 +20,8 @@ jobs:
         run: ./godot --headless --path . --import
       - name: Run tests
         run: timeout 240s ./godot --headless --path . -s tests/run_all.gd
+      - name: Pancake scene layout and unlock regression
+        run: timeout 30s ./godot --headless --path . -s tests/run_pancake_scene.gd
       - name: Shop UI interaction regression
         run: timeout 30s ./godot --headless --path . -s tests/render_shop_ui.gd
       - name: Art shop business interaction regression
