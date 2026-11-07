@@ -161,6 +161,8 @@ func build_tea() -> SpecShop:
 					step("topping", "top", sim._topping_seconds(), "加" + material.display_name, {"plain_milk_tea": 1}, {definition.id: 1}),
 					step("seal", "place", 0.0, "放出餐口", {definition.id: 1}, {})])
 		shop.dishes.append(dish)
+	# 菜单顺序照旧模拟（同一顺序抽单，随机数才对得上）
+	shop.dishes.sort_custom(func(a: SpecDish, b: SpecDish) -> bool: return sim.DISHES.find(a.id) < sim.DISHES.find(b.id))
 
 	# 机器（§3.3）
 	var stations := {}
@@ -381,7 +383,8 @@ func build_tea() -> SpecShop:
 	# 调度（§3.6）：照搬奶茶店的打分常量
 	var d := SpecDispatch.new()
 	var scores := {"follow": 90.0, "follow_step": 95.0, "serve": 110.0, "chore": 55.0, "topping": 72.0, "stir": 80.0,
-		"load_short": 70.0, "load": 26.0, "pot_short_bonus": 30.0}
+		"load_short": 70.0, "load": 26.0, "pot_short_bonus": 30.0,
+		"to_rack": 105.0, "to_process": 100.0}
 	for k in scores: d.base_scores[k] = scores[k]
 	d.wait_bonus_per_second = 0.1
 	d.wait_bonus_cap = 20.0
@@ -393,7 +396,14 @@ func build_tea() -> SpecShop:
 	d.help_while_waiting = true
 	d.chores_first = false
 	d.leave_seated_segments = true
+	d.throughput_weight = 18.0
+	d.fatigue_weight = 0.18
+	d.fatigue_gain = 0.004
+	d.fatigue_recover = 0.025
+	d.hop_seconds = 0.6
+	d.ticket_give_up = sim.TICKET_GIVE_UP
 	shop.dispatch = d
+	shop.layout = tea_layout()
 
 	# 员工（§3.5）
 	var staff := SpecStaffRules.new()
@@ -438,7 +448,9 @@ func build_tea() -> SpecShop:
 		c.id = belt.id
 		c.display_name = belt.display_name
 		c.from = sim._canonical(belt.from)
-		c.to = belt.to
+		c.to = "rack" if belt.to == "pickup" else belt.to
+		c.seconds = belt.seconds
+		c.interval = belt.interval
 		c.cost = belt.cost
 		c.stage = belt.stage
 		c.enabled = belt.id in sim.GAME_BELTS
@@ -552,7 +564,8 @@ func build_pancake() -> SpecShop:
 			"fryer":
 				s.block = "batch_pot"
 				s.params = {"cook_seconds": cfg.fry_cook, "load_seconds": cfg.fry_load, "unload_seconds": cfg.fry_unload,
-					"batch": cfg.fry_batch, "manual_load": true, "manual_unload": true, "fetch_seconds": cfg.crisp}
+					"batch": cfg.fry_batch, "manual_load": true, "manual_unload": true, "fetch_seconds": cfg.crisp,
+					"load_label": "下锅炸薄脆", "unload_label": "捞薄脆"}
 				var stock := SpecStockRule.new()
 				stock.item = "crisp"
 				stock.low = int(cfg.crisp_low)
@@ -664,6 +677,7 @@ func build_pancake() -> SpecShop:
 	d.chores_first = true
 	d.leave_seated_segments = false
 	shop.dispatch = d
+	shop.layout = pancake_layout(sim)
 
 	var staff := SpecStaffRules.new()
 	for pair in [["rabbit", "小兔子"], ["gray_cat", "小灰猫"], ["bear", "小熊"]]:
@@ -690,6 +704,43 @@ func build_pancake() -> SpecShop:
 	g.rating_lost_share = 0.2
 	shop.goals = g
 	return shop
+
+
+# ---------- 走位 ----------
+
+const TeaLayout := preload("res://content/tea/art_playtest_layout.gd")
+
+
+static func tea_layout() -> SpecLayout:
+	var layout := SpecLayout.new()
+	layout.nav = "grid"
+	layout.cell = TeaLayout.CELL
+	var grid := TeaLayout.grid()
+	layout.areas.assign([grid.kitchen_rect, grid.front_rect])
+	layout.grid_size = Vector2i(36, 75)
+	# 和 art_playtest_layout.grid() 同一组障碍（家具 + 堂食桌）
+	var obstacles := [Rect2(23, 269, 122, 348), Rect2(267, 235, 290, 70), Rect2(22, 220, 235, 75), Rect2(590, 367, 72, 213),
+		Rect2(560, 205, 132, 185), Rect2(522, 530, 178, 154), Rect2(32, 595, 122, 185), Rect2(32, 709, 291, 148),
+		Rect2(323, 752, 365, 105)]
+	for seat_table in TeaLayout.DINING_TABLES: obstacles.append(Rect2(seat_table - Vector2(110, 68), Vector2(220, 120)))
+	layout.obstacles.assign(obstacles)
+	for k in TeaLayout.POINTS: layout.points[k] = TeaLayout.POINTS[k]
+	for k in TeaLayout.POST_POINTS: layout.posts[k] = TeaLayout.POST_POINTS[k]
+	layout.spawn_point = "counter"
+	return layout
+
+
+static func pancake_layout(sim) -> SpecLayout:
+	var layout := SpecLayout.new()
+	layout.nav = "straight"
+	# 旧点名 → 机器 id
+	var names := {"register": "front_counter", "soy": "soy_milk", "raw": "raw_ingredients", "griddle": "rear_equipment",
+		"fryer": "fryer", "crisps": "crisps", "topping": "topping", "packing": "packing", "home": "home"}
+	for k in sim.POINTS: layout.points[names[k]] = sim.POINTS[k]
+	# 从油锅拿薄脆站在薄脆筐前，不是油锅前（站位键：机器.动作）
+	layout.aliases["fryer.crisp"] = "crisps"
+	layout.spawn_point = "home"
+	return layout
 
 
 # ---------- 关卡表 ----------

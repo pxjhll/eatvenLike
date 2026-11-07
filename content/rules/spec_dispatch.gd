@@ -25,3 +25,13 @@ extends Resource
 @export var chores_first: bool = false
 ## 不在岗的流动员工让出坐班机器那一段（奶茶店：加料段有人坐班时流动员工不碰）
 @export var leave_seated_segments: bool = true
+## 打分 = (基础分 + 每秒能做几份 × throughput_weight − 路程秒 × travel_penalty) × (1 − 疲劳 × fatigue_weight)
+@export var throughput_weight: float = 0.0
+@export var fatigue_weight: float = 0.0
+## 疲劳：干活每秒涨 fatigue_gain，空闲每秒回 fatigue_recover（0–1）
+@export var fatigue_gain: float = 0.0
+@export var fatigue_recover: float = 0.0
+## 搬一趟（拿 + 放）各要几秒手上功夫（不算走路）
+@export var hop_seconds: float = 0.0
+## 手上的单这么久推不动就放手（秒）
+@export var ticket_give_up: float = 0.0

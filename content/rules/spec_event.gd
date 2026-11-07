@@ -1,6 +1,8 @@
 class_name SpecEvent
 extends Resource
-## 奇遇（§3.13，预留，规则层还不播放）：投资人、网红、店长回访……
+## 奇遇（§3.13）：投资人、网红、店长回访……规则层 ShopRules 按 trigger 广播掷概率，有 choices 的进卡片队列。
+## trigger 可用：tick_second、tick_minute、sale、unlocked、upgraded、hired、stage、completed……（事件总线上的任何广播）
+## condition：min_stage（阶段至少）、open（已开张）；其他键 = 广播数据里的同名字段要等于这个值
 
 @export var id: String = ""
 @export var display_name: String = ""

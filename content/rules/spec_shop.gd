@@ -17,6 +17,8 @@ extends Resource
 @export var staff: SpecStaffRules
 @export var connections: Array[SpecConnection] = []
 @export var goals: SpecGoalRules
+## 走位：站位、坐班位、可走区域（规则层寻路用）
+@export var layout: SpecLayout
 @export var guide: Array[SpecGuideStep] = []
 ## 这家店自带的奇遇（预留）
 @export var events: Array[SpecEvent] = []
