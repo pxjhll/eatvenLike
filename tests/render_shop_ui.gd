@@ -110,6 +110,9 @@ func _run() -> void:
 	var hidden_card: Vector2 = view._staff_cards[0].get_global_rect().get_center()
 	await _gesture(hidden_card, _world(Vector2(325, 210)))
 	_check(view.sim.workers[0].post == "", "hidden staff cards cannot start a drag")
+	# That empty-floor drag scrolled the shop instead; it must not have moved any worker.
+	_check(view._scroll < 0.0, "dragging on empty floor scrolls the shop")
+	view.scroll_world_by(100000.0)
 	await _click(hud.staff_button)
 	await _gesture(view._staff_cards[0].get_global_rect().get_center(), _world(Vector2(325, 210)))
 	_check(view.sim.workers[0].post == "boil" and hud.page == "shop", "dragging visible roster card dismisses sheet and seats real employee")
