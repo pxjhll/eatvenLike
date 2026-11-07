@@ -1907,7 +1907,9 @@ func _order_steps(c: Dictionary) -> Array:
 			# 站位：布局里有“机器.动作”就站那儿（比如从锅里拿成品站在成品筐前），否则站机器前
 			var point: String = s.station + "." + s.action
 			if not shop.layout.aliases.has(point): point = s.station
-			steps.append({"point": point, "action": s.action, "seconds": s.seconds * s.repeat, "label": s.label, "station": s.station})
+			# holds：做完这一步手上拿着什么（只给界面画，不参与结算）
+			var holds: String = s.produces.keys()[0] if not s.produces.is_empty() else ""
+			steps.append({"point": point, "action": s.action, "seconds": s.seconds * s.repeat, "label": s.label, "station": s.station, "holds": holds})
 	steps.append({"point": counter_id, "action": "hand", "seconds": float(take.get("hand_seconds", 0.0)), "label": "递餐", "station": counter_id})
 	return steps
 
@@ -2074,10 +2076,15 @@ func _finish_work_single(s: Dictionary) -> void:
 			events.emit("sale", {"dish": c.kind, "income": c.paid})
 			s.order = -1
 			s.steps = []
+			s.carry_item = ""
+			s.carry_count = 0
 			return
 		_:
 			var station := shop.station(st.station)
 			if station.block == "hand" and int(station.params.get("users", 0)) > 0: stations[st.station].user = -1
+			if not String(st.get("holds", "")).is_empty():
+				s.carry_item = st.holds
+				s.carry_count = 1
 	s.step += 1
 
 

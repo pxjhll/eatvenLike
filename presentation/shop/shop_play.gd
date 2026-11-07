@@ -605,7 +605,7 @@ func _update_cups() -> void:
 		if not sprite.visible: continue
 		var row: Dictionary = draws[i]
 		var look := view.item_art(String(row.item))
-		var texture: Texture2D = load("res://art/reference/" + String(look.get("art", "pearl_tea")) + ".png")
+		var texture: Texture2D = look.texture
 		sprite.texture = texture
 		sprite.modulate = look.get("tint", Color.WHITE)
 		sprite.scale = Vector2.ONE * Actor.CUP_HEIGHT / texture.get_height()

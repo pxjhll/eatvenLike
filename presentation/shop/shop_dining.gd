@@ -170,7 +170,7 @@ func _table_cup(seat: int, item: String) -> void:
 	if _cups.has(seat): return
 	var art: Dictionary = art_of.call(item)
 	var sprite := Sprite2D.new()
-	sprite.texture = load("res://art/reference/" + String(art.get("art", "pearl_tea")) + ".png")
+	sprite.texture = art.texture
 	sprite.self_modulate = art.get("tint", Color.WHITE)
 	sprite.scale = Vector2.ONE * TABLE_CUP_HEIGHT / sprite.texture.get_height()
 	sprite.centered = false

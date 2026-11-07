@@ -120,7 +120,7 @@ func display(worker: Dictionary, clock: float) -> void:
 	amount.text = "×%d" % count
 	if carried.visible:
 		var art: Dictionary = item_art.call(item)
-		var texture: Texture2D = load("res://art/reference/" + String(art.get("art", "pearl_tea")) + ".png")
+		var texture: Texture2D = art.texture
 		carried.texture = texture
 		carried.modulate = art.get("tint", Color.WHITE)
 		carried.scale = Vector2.ONE * CUP_HEIGHT / texture.get_height()

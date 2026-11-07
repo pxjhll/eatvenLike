@@ -71,6 +71,26 @@ func test_two_staff_share_one_griddle() -> void:
 	check(int(rules.sold_by_dish.plain) > 3, "两人轮流用鏊子出饼")
 
 
+func test_staff_hold_what_they_made_until_handing_over() -> void:
+	var rules := ShopRules.new(_only("plain"))
+	rules.gold = 9999
+	rules.unlock("soy_milk")
+	rules.unlock("rear_equipment")
+	rules.send_flyers()
+	var held := {}
+	var sold_before := 0
+	var empty_after_sale := true
+	for i in 1200:
+		rules.step(0.1)
+		var s: Dictionary = rules.workers[0]
+		if s.carry_count > 0: held[s.carry_item] = true
+		if int(rules.sold_by_dish.plain) > sold_before:
+			sold_before = int(rules.sold_by_dish.plain)
+			empty_after_sale = empty_after_sale and s.carry_count == 0
+	check(held.has("batter") and held.has("pancake") and held.has("plain"), "手上依次拿着面糊、煎饼、包好的饼：%s" % [held.keys()])
+	check(sold_before > 0 and empty_after_sale, "递给客人后手上空了")
+
+
 func test_unlock_order_hires_and_flyer_cooldown() -> void:
 	var rules := ShopRules.new(PANCAKE)
 	rules.gold = 9999
