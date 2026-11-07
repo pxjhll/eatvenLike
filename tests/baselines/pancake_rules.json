@@ -27,8 +27,7 @@
 				"family": 0
 			},
 			"staff": 2,
-			"stage": 1,
-			"lost": 6
+			"stage": 1
 		},
 		"10": {
 			"revenue": 1107.0,
@@ -44,45 +43,42 @@
 				"family": 0
 			},
 			"staff": 3,
-			"stage": 2,
-			"lost": 8
+			"stage": 2
 		},
 		"20": {
-			"revenue": 3771.0,
-			"sold": 229,
-			"gold": 512.0,
+			"revenue": 3793.0,
+			"sold": 226,
+			"gold": 534.0,
 			"sold_by_dish": {
-				"soy": 113,
+				"soy": 111,
 				"plain": 32,
-				"guozi": 41,
-				"ham": 21,
-				"floss": 9,
+				"guozi": 40,
+				"ham": 20,
+				"floss": 6,
 				"bacon": 10,
-				"family": 3
+				"family": 7
 			},
 			"staff": 4,
-			"stage": 3,
-			"lost": 22
+			"stage": 3
 		},
 		"30": {
-			"revenue": 6852.0,
-			"sold": 364,
-			"gold": 355.0,
+			"revenue": 7034.0,
+			"sold": 368,
+			"gold": 537.0,
 			"sold_by_dish": {
-				"soy": 161,
-				"plain": 41,
-				"guozi": 71,
-				"ham": 33,
-				"floss": 18,
-				"bacon": 24,
-				"family": 16
+				"soy": 163,
+				"plain": 42,
+				"guozi": 69,
+				"ham": 31,
+				"floss": 15,
+				"bacon": 26,
+				"family": 22
 			},
 			"staff": 4,
-			"stage": 3,
-			"lost": 37
+			"stage": 3
 		}
 	},
-	"completed_at": 1346.9,
+	"completed_at": 1146.8,
 	"segments": [
 		{
 			"stage": -1,
@@ -105,7 +101,7 @@
 			"seconds": 120.0,
 			"arrived": 17,
 			"full_seconds": 12.8,
-			"lost": 4,
+			"lost": 0,
 			"sold": 15,
 			"staff_work": 0.468,
 			"staff_walk": 0.317,
@@ -120,13 +116,13 @@
 			"seconds": 240.0,
 			"arrived": 32,
 			"full_seconds": 28.8,
-			"lost": 4,
+			"lost": 0,
 			"sold": 32,
 			"staff_work": 0.53,
 			"staff_walk": 0.324,
 			"staff_idle": 0.146,
-			"top_wait": "等鏊子",
-			"top_wait_share": 0.013,
+			"top_wait": "",
+			"top_wait_share": 0.0,
 			"full_share": 0.12
 		},
 		{
@@ -140,30 +136,30 @@
 			"staff_work": 0.519,
 			"staff_walk": 0.409,
 			"staff_idle": 0.072,
-			"top_wait": "等鏊子",
-			"top_wait_share": 0.061,
+			"top_wait": "",
+			"top_wait_share": 0.0,
 			"full_share": 0.0
 		},
 		{
 			"stage": 3,
 			"start": 601.1,
 			"seconds": 1198.9,
-			"arrived": 253,
-			"full_seconds": 59.3,
-			"lost": 29,
-			"sold": 274,
-			"staff_work": 0.486,
-			"staff_walk": 0.443,
-			"staff_idle": 0.071,
-			"top_wait": "等鏊子",
-			"top_wait_share": 0.042,
-			"full_share": 0.049
+			"arrived": 251,
+			"full_seconds": 45.3,
+			"lost": 0,
+			"sold": 278,
+			"staff_work": 0.494,
+			"staff_walk": 0.451,
+			"staff_idle": 0.056,
+			"top_wait": "",
+			"top_wait_share": 0.0,
+			"full_share": 0.038
 		}
 	],
 	"levels": {
+		"soy_milk": 8,
 		"rear_equipment": 9,
 		"fryer": 8,
-		"soy_milk": 8,
 		"topping": 7
 	},
 	"actions": [
@@ -248,7 +244,7 @@
 			"upgrade rear_equipment"
 		],
 		[
-			781.0,
+			721.0,
 			"upgrade topping"
 		],
 		[
@@ -296,7 +292,7 @@
 			"upgrade topping"
 		],
 		[
-			1321.0,
+			1261.0,
 			"upgrade rear_equipment"
 		],
 		[
@@ -304,7 +300,7 @@
 			"upgrade fryer"
 		],
 		[
-			1501.0,
+			1441.0,
 			"upgrade topping"
 		],
 		[

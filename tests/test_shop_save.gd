@@ -25,7 +25,7 @@ func _play(rules: ShopRules, actions: Array, from: int, until: float) -> int:
 
 func _check_resume(shop: SpecShop, save_at: float) -> void:
 	_cleanup()
-	var base: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/%s_73b0ae3.json" % shop.id))
+	var base: Dictionary = Replay.baseline(shop.id)
 	var actions: Array = base.actions
 	var end: float = minf(float(base.minutes) * 60.0, save_at + 300.0)
 	var straight := ShopRules.new(shop)

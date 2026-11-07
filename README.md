@@ -10,7 +10,7 @@
 
 **加一家店**：写一份 `shop.tres`、做一个带锚点的美术场景、在关卡表里加一行，不改代码。`tests/fixtures/noodle/` 是一家只用数据写成的测试面馆（不上线），`tests/test_noodle_shop.gd` 证明它从开张一路开到完店。挪了美术、改了走位以后跑 `tools/sync_shop_layouts.gd` 把锚点写回店铺数据。
 
-两家店的行为以 main `73b0ae3` 的旧模拟为基准冻结：`tests/baselines/` 里存着机器人操作序列、整店结果和奶茶店界面数据，`replay_rules.gd` 在新规则层上重放对照。
+`tests/baselines/` 里存着每家店的机器人操作序列和整店结果，`replay_rules.gd` 在规则层上重放对照（±5%）。奶茶店仍用 main `73b0ae3` 旧模拟录下的基准和界面数据；煎饼摊改过数值，基准 `pancake_rules.json` 由 `record_rules.gd` 在通用规则上重录。改了某家店的数值，就用 `godot --headless --path . -s tests/baselines/record_rules.gd` 重录它的基准。
 
 ## 运行和验证
 

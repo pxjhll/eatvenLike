@@ -7,7 +7,7 @@ const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
 
 
 func _baseline(id: String) -> Dictionary:
-	return JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/%s_73b0ae3.json" % id))
+	return Replay.baseline(id)
 
 
 func _open_tea() -> ShopRules:
@@ -30,7 +30,7 @@ func test_tea_whole_shop_matches_old_sim_baseline() -> void:
 	_check_replay("tea", TEA)
 
 
-func test_pancake_whole_shop_matches_old_sim_baseline() -> void:
+func test_pancake_whole_shop_matches_its_baseline() -> void:
 	_check_replay("pancake", PANCAKE)
 
 

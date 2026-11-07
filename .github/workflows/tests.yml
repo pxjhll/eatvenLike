@@ -22,6 +22,8 @@ jobs:
         run: timeout 240s ./godot --headless --path . -s tests/run_all.gd
       - name: Shop layouts match the art scenes
         run: timeout 60s ./godot --headless --path . -s tools/sync_shop_layouts.gd -- --check
+      - name: Pancake baseline matches the shop data (re-record with tests/baselines/record_rules.gd)
+        run: timeout 120s ./godot --headless --path . -s tests/baselines/record_rules.gd -- --check
       - name: Generic shop scene - tea shop real-click regression (taps, panels, save, menu, restart, tuning)
         run: timeout 60s ./godot --headless --path . -s tests/render_shop_tea.gd
       - name: Generic shop scene - data-driven tutorial real-click regression
