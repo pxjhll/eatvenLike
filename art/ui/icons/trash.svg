@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<defs>
+<linearGradient id="cream" x2="0" y2="1">
+<stop stop-color="#fff9e9"/>
+<stop offset="1" stop-color="#f0cda1"/>
+</linearGradient>
+<linearGradient id="wood" x2="0" y2="1">
+<stop stop-color="#efb574"/>
+<stop offset="1" stop-color="#cb7937"/>
+</linearGradient>
+<linearGradient id="gold" x2="0" y2="1">
+<stop stop-color="#ffe398"/>
+<stop offset="1" stop-color="#f4a52f"/>
+</linearGradient>
+<linearGradient id="red" x2="0" y2="1">
+<stop stop-color="#ffb29c"/>
+<stop offset="1" stop-color="#cf6153"/>
+</linearGradient>
+<linearGradient id="glass" x2="1" y2="1">
+<stop stop-color="#e6f7fc"/>
+<stop offset="1" stop-color="#91b8c7"/>
+</linearGradient>
+</defs>
+<g stroke="#59321c" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+<path d="m24 13 1-5h15l1 5" fill="url(#red)"/>
+<path d="m13 20 4 35q0 4 5 4h21q4 0 4-4l4-35" fill="url(#red)"/>
+<rect x="9" y="14" width="46" height="8" rx="4" fill="url(#red)"/>
+<path d="M24 29v20m9-20v20m9-20v20" stroke="#803d2b" stroke-width="3"/>
+<path d="m18 26 2 24" stroke="#ffc6ac" stroke-width="2"/>
+</g>
+</svg>

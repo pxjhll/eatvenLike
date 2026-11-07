@@ -20,6 +20,9 @@ func _run() -> void:
 	var panel: PanelContainer = view.tuning
 	_check(panel != null and not panel.visible, "the tuning panel starts closed")
 	_check(view.recorder != null and not view.recorder.enabled, "test scenes never write the playtest log")
+	view.ui.open_page("menu")
+	await process_frame
+	await process_frame
 	await _press(view.tuning_button.get_global_transform_with_canvas() * (view.tuning_button.size / 2.0))
 	_check(panel.visible, "the header button opens the panel")
 	var seat: float = view.sim.seat_seconds()

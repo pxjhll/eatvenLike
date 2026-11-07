@@ -28,11 +28,11 @@ theme_override_constants/margin_bottom = 8
 
 [node name="Row" type="HBoxContainer" parent="Header/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="Coin" type="TextureRect" parent="Header/Margin/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
@@ -43,7 +43,7 @@ stretch_mode = 5
 unique_name_in_owner = true
 custom_minimum_size = Vector2(92, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
+theme_override_font_sizes/font_size = 38
 text = "50"
 
 [node name="Goal" type="Button" parent="Header/Margin/Row"]
@@ -71,7 +71,7 @@ alignment = 1
 [node name="GoalText" type="Label" parent="Header/Margin/Row/Goal/Column"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 22
 text_overrun_behavior = 3
 
 [node name="GoalBar" type="ProgressBar" parent="Header/Margin/Row/Goal/Column"]
@@ -84,16 +84,20 @@ show_percentage = false
 
 [node name="Speed" type="Button" parent="Header/Margin/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(78, 60)
 layout_mode = 2
+size_flags_vertical = 4
 focus_mode = 0
+theme_override_font_sizes/font_size = 27
 text = "×1"
 
 [node name="Menu" type="Button" parent="Header/Margin/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(88, 60)
 layout_mode = 2
+size_flags_vertical = 4
 focus_mode = 0
+theme_override_font_sizes/font_size = 27
 text = "菜单"
 
 [node name="ToastRow" type="CenterContainer" parent="."]
@@ -160,9 +164,11 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = 106.0
+offset_bottom = -112.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.24, 0.16, 0.1, 0.18)
+color = Color(0.12, 0.09, 0.065, 0.34)
 
 [node name="Sheet" type="PanelContainer" parent="."]
 unique_name_in_owner = true
@@ -171,17 +177,17 @@ layout_mode = 1
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 18.0
+offset_left = 0.0
 offset_top = -640.0
-offset_right = -18.0
-offset_bottom = -122.0
+offset_right = 0.0
+offset_bottom = -78.0
 
 [node name="Margin" type="MarginContainer" parent="Sheet"]
 layout_mode = 2
 theme_override_constants/margin_left = 22
 theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 22
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_bottom = 42
 
 [node name="Column" type="VBoxContainer" parent="Sheet/Margin"]
 layout_mode = 2
@@ -195,7 +201,7 @@ theme_override_constants/separation = 12
 [node name="Title" type="Label" parent="Sheet/Margin/Column/Heading"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 34
 text = "员工"
 
 [node name="Pill" type="Label" parent="Sheet/Margin/Column/Heading"]
@@ -215,9 +221,10 @@ text_overrun_behavior = 3
 
 [node name="Close" type="Button" parent="Sheet/Margin/Column/Heading"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(80, 64)
+custom_minimum_size = Vector2(88, 48)
 layout_mode = 2
 focus_mode = 0
+theme_override_font_sizes/font_size = 25
 text = "关闭"
 
 [node name="Scroll" type="ScrollContainer" parent="Sheet/Margin/Column"]

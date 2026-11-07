@@ -54,6 +54,17 @@ var _post_labels := {}
 var ui: Control
 ## The tutorial runs only in the real game (a scene that loads its own save); tests inject a sim.
 var guide: Control
+## The shop fills the screen width and scrolls up and down: _scroll is the world's
+## vertical offset in screen pixels (0 = top edge showing, negative = scrolled down).
+const MIN_VISIBLE_WORLD := 1100.0
+const PAN_SLOP := 12.0
+var _scroll := 0.0
+var _scroll_min := 0.0
+var _world_top := 0.0
+var _world_factor := 1.0
+var _pan_press := Vector2.INF
+var _pan_last := Vector2.ZERO
+var _panning := false
 var guide_enabled := false
 ## 调参 knobs and the playtest log (written only in the real game, not when tests inject a sim).
 var tuning: PanelContainer
@@ -470,19 +481,32 @@ func _build_tuning() -> void:
 	recorder = Recorder.new()
 	recorder.enabled = guide_enabled
 	recorder.setup(sim)
+	var tuning_shade := ColorRect.new()
+	tuning_shade.name = "TuningShade"
+	tuning_shade.color = Color(0.12, 0.09, 0.065, 0.34)
+	tuning_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Overlay/UI.add_child(tuning_shade)
+	tuning_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tuning_shade.offset_top = 106
+	tuning_shade.offset_bottom = -112
+	tuning_shade.hide()
 	tuning = TuningPanel.new()
 	$Overlay/UI.add_child(tuning)
 	tuning.setup(self, guide_enabled)
+	tuning.visibility_changed.connect(func() -> void: tuning_shade.visible = tuning.visible)
 	tuning_button = Button.new()
 	tuning_button.name = "Tuning"
 	tuning_button.text = "调参"
-	tuning_button.custom_minimum_size = Vector2(72, 0)
-	tuning_button.add_theme_font_override("font", _font)
-	tuning_button.add_theme_font_size_override("font_size", 22)
-	tuning_button.pressed.connect(tuning.toggle)
-	var row: Node = _speed_button.get_parent()
-	row.add_child(tuning_button)
-	row.move_child(tuning_button, _speed_button.get_index())
+	tuning_button.custom_minimum_size = Vector2(68, 34)
+	tuning_button.theme = ui.theme
+	tuning_button.add_theme_font_size_override("font_size", 17)
+	tuning_button.pressed.connect(func() -> void:
+		ui.open_page("shop")
+		tuning.toggle())
+	# The reference header has only speed and menu. Developer controls live in the
+	# menu footer, keeping the business target readable on a portrait viewport.
+	var footer: Node = ui._save_caption.get_parent()
+	footer.add_child(tuning_button)
 
 
 ## The open 调参 panel sits over the kitchen; taps and drags on it never reach the floor.
@@ -526,11 +550,7 @@ func _build_badges() -> void:
 
 func _chip(parent: Node, point: Vector2) -> Label:
 	var label := _label(parent, point, 16)
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color("fff5e2")
-	box.border_color = Color("b38c62")
-	box.set_border_width_all(2)
-	box.set_corner_radius_all(12)
+	var box := preload("res://presentation/ui/reference_theme.gd").style("pill", 12)
 	box.content_margin_left = 10
 	box.content_margin_right = 10
 	box.content_margin_top = 2
@@ -648,24 +668,73 @@ func _fit() -> void:
 	var size := get_viewport_rect().size
 	# Keep the user's higher mixer clear of the HUD without changing scene coordinates.
 	var fitted_size := Layout.WORLD_SIZE + Vector2(0, 50)
-	var world_factor := minf(size.x / fitted_size.x, size.y / fitted_size.y)
-	$Canvas.position = (size - fitted_size * world_factor) / 2.0 + Vector2(0, 50 * world_factor)
+	# Fill the screen width; the part that does not fit vertically is reached by scrolling.
+	# Wide (landscape) windows stop zooming once MIN_VISIBLE_WORLD units of height would be lost.
+	var world_factor := minf(size.x / fitted_size.x, size.y / MIN_VISIBLE_WORLD)
+	_world_factor = world_factor
+	var world_height := fitted_size.y * world_factor
+	_scroll_min = minf(0.0, size.y - world_height)
+	# A world shorter than the window sits centred and does not scroll.
+	_world_top = maxf(0.0, (size.y - world_height) / 2.0)
+	$Canvas.position.x = (size.x - fitted_size.x * world_factor) / 2.0
 	$Canvas.scale = Vector2.ONE * world_factor
+	scroll_world_by(0.0)
 	# Keep HUD panels inside the shop width; vertical anchors still follow the visible window.
 	$Overlay/UI.position = Vector2($Canvas.position.x, 0)
 	$Overlay/UI.scale = Vector2.ONE * world_factor
 	$Overlay/UI.size = Vector2(720, size.y / world_factor)
 	ui.fit_to_size($Overlay/UI.size)
+	if tuning != null and tuning.has_method("fit_to_size"):
+		tuning.fit_to_size($Overlay/UI.size)
+
+
+## Moves the shop up or down by a screen distance, clamped to the world's edges.
+func scroll_world_by(delta: float) -> void:
+	_scroll = clampf(_scroll + delta, _scroll_min, 0.0)
+	$Canvas.position.y = _world_top + 50.0 * _world_factor + _scroll
+
+
+## Scrolls just enough that a world rectangle sits between the header and the bottom bar.
+func reveal_world(rect: Rect2) -> void:
+	var canvas: Transform2D = $Canvas.get_global_transform_with_canvas()
+	var top: float = (canvas * rect.position).y
+	var bottom: float = (canvas * rect.end).y
+	var view_height: float = get_viewport_rect().size.y
+	var header: float = 110.0 * _world_factor
+	var footer: float = view_height - 120.0 * _world_factor
+	if bottom > footer:
+		scroll_world_by(footer - bottom)
+	elif top < header:
+		scroll_world_by(header - top)
 
 
 func _build_glass_toggle() -> void:
 	_glass_button = Button.new()
 	_glass_button.text = "玻璃隔板"
 	_glass_button.toggle_mode = true
-	_glass_button.custom_minimum_size.y = 78
+	_glass_button.custom_minimum_size.y = 64
+	_glass_button.icon = preload("res://presentation/ui/reference_icons.gd").texture("glass")
+	_glass_button.expand_icon = true
+	_glass_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_glass_button.add_theme_constant_override("icon_max_width", 38)
+	_glass_button.add_theme_constant_override("h_separation", 18)
+	_glass_button.add_theme_font_size_override("font_size", 25)
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		_glass_button.add_theme_stylebox_override(state, preload("res://presentation/ui/reference_theme.gd").style("card", 14, state))
 	_glass_button.theme = ui.theme
 	_glass_button.toggled.connect(set_glass_visible)
 	ui._page_nodes.menu.add_child(_glass_button)
+	ui._page_nodes.menu.move_child(_glass_button, ui.restart_button.get_index())
+	var glass_switch := preload("res://presentation/ui/reference_toggle.gd").new()
+	glass_switch.anchor_left = 1.0
+	glass_switch.anchor_right = 1.0
+	glass_switch.anchor_top = 0.5
+	glass_switch.anchor_bottom = 0.5
+	glass_switch.offset_left = -90
+	glass_switch.offset_right = -26
+	glass_switch.offset_top = -17
+	glass_switch.offset_bottom = 17
+	_glass_button.add_child(glass_switch)
 
 
 func set_glass_visible(show_glass: bool) -> void:
@@ -1056,10 +1125,51 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not sim.has_method("station_info"):
 		return
+	if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		if not ui.blocks_world(event.position) and not tuning_covers(event.position):
+			scroll_world_by(80.0 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -80.0)
+			get_viewport().set_input_as_handled()
+		return
 	var pressed: bool = event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed
 	pressed = pressed or (event is InputEventScreenTouch and event.pressed)
-	if not pressed or ui.blocks_world(event.position) or tuning_covers(event.position) or _drag.worker_id != -1:
+	var released: bool = event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed
+	released = released or (event is InputEventScreenTouch and not event.pressed and not event.canceled)
+	if pressed:
+		# A press on a staff member belongs to the staff drag; anything else may become a scroll or a tap.
+		_panning = false
+		_pan_press = Vector2.INF
+		if ui.blocks_world(event.position) or tuning_covers(event.position) or _drag.worker_id != -1:
+			return
+		_pan_press = event.position
+		_pan_last = event.position
 		return
+	if _pan_press == Vector2.INF:
+		return
+	var moved: bool = event is InputEventScreenDrag or (event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT)
+	if moved:
+		if _drag.worker_id != -1:
+			_pan_press = Vector2.INF
+			return
+		# A dimmed tutorial step points at a fixed spot, so the shop holds still under it.
+		if not _panning and event.position.distance_to(_pan_press) > PAN_SLOP and not (guide != null and guide.freezes()):
+			_panning = true
+		if _panning:
+			scroll_world_by(event.position.y - _pan_last.y)
+			get_viewport().set_input_as_handled()
+		_pan_last = event.position
+		return
+	if event is InputEventScreenTouch and event.canceled:
+		_pan_press = Vector2.INF
+		_panning = false
+		return
+	if not released:
+		return
+	var was_pan := _panning
+	_pan_press = Vector2.INF
+	_panning = false
+	if was_pan or _drag.worker_id != -1:
+		return
+	# A tap (press and release without scrolling) opens what is under it.
 	var point: Vector2 = $Canvas.get_global_transform_with_canvas().affine_inverse() * event.position
 	for id in STATION_REGIONS:
 		if STATION_REGIONS[id].has_point(point):

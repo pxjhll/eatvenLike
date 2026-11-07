@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "coordinate_system": "Original RGB reference pixels; crop boxes [left, top, right, bottom], exclusive right/bottom.",
+  "runtime_policy": "Only isolated complex illustrations. Panels, buttons and simple icons are native Godot geometry/SVG; reference screenshots are not loaded at runtime.",
+  "assets": {
+    "megaphone.png": {
+      "source": "_work/pancake_stall/UI图片/ui_review_2026_11_06/references/10_收银台.png",
+      "source_sha256": "3305bac20950f7cc6a6230e2e3481322545124f900fdf55ac8927674d72620b6",
+      "source_size": [
+        941,
+        1672
+      ],
+      "source_crop_ltrb": [
+        132,
+        1354,
+        229,
+        1443
+      ],
+      "retained_crop_local_ltrb": [
+        7,
+        6,
+        91,
+        78
+      ],
+      "padding_px": 6,
+      "output_size": [
+        96,
+        84
+      ],
+      "output_sha256": "74750ebde48e0c0faa61429d2717e4c00f7d30278802c13713e23053d49f815a",
+      "note": "Derivative of user-provided checkout reference. Boundary-connected pale background removed; all retained RGB pixels unchanged. Interior pale horn protected by original dark outline. No AI repainting or substitute icon."
+    },
+    "completion_medal.png": {
+      "source": "_work/pancake_stall/UI图片/ui_review_2026_11_06/references/12_首店完成.png",
+      "source_sha256": "9e27551c17f34a192713e729325edcbc57029129387378e6503008336a11a4ca",
+      "source_size": [
+        941,
+        1672
+      ],
+      "source_crop_ltrb": [
+        298,
+        517,
+        645,
+        719
+      ],
+      "intermediate": "_work/pancake_stall/UI图片/ui_review_2026_11_06/assets/illustration_completion_medal.png",
+      "intermediate_sha256": "74f74fb0aa4b45e74b899b4c31ca6f6124c3e47cd93b53ee9770cd25ad2d54e2",
+      "intermediate_size": [
+        327,
+        197
+      ],
+      "padding_added_px": 6,
+      "output_size": [
+        339,
+        209
+      ],
+      "output_sha256": "88791a51f44e22446217cc9cb4d8b4554382a3a0c74d6d4dada5485714c9ff29",
+      "note": "Derivative of original completion reference via existing cleaned illustration_completion_medal candidate; candidate copied without color edits or scaling and surrounded with 6 additional transparent pixels. Original clean extraction uses boundary-connected pale-background removal, trims alpha bounds, adds 2px transparent padding."
+    }
+  }
+}

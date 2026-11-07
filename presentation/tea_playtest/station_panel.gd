@@ -1,6 +1,12 @@
 extends VBoxContainer
 ## Action panel for a real physical station; every price/error comes from the sim.
 
+const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
+const Icons := preload("res://presentation/ui/reference_icons.gd")
+var _upgrade_before: Label
+var _upgrade_after: Label
+var _locked_icon: TextureRect
+
 var station_id := ""
 var unlock_button: Button
 var upgrade_button: Button
@@ -39,66 +45,148 @@ var _box_rows := {}
 func setup(view: Node2D, hud: Control) -> void:
 	_view = view
 	_hud = hud
-	add_theme_constant_override("separation", 14)
-	var upgrade: VBoxContainer = _hud._card(self, "f6ead3", "d7bd97")
-	_upgrade_row = upgrade.get_parent()
-	var line: HBoxContainer = _hud._row(upgrade, 12)
-	var copy := VBoxContainer.new()
-	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	copy.add_theme_constant_override("separation", 4)
-	line.add_child(copy)
-	_upgrade_title = _hud._text(copy, "", 23)
-	_upgrade_effect = _hud._text(copy, "", 19, true)
-	upgrade_button = _buy_button(line, func() -> void: _view.station_action("upgrade", station_id))
-	var seat: VBoxContainer = _hud._card(self, "f6ead3", "d7bd97")
+	add_theme_constant_override("separation", 12)
+	var upgrade := VBoxContainer.new()
+	upgrade.add_theme_constant_override("separation", 14)
+	add_child(upgrade)
+	_upgrade_row = upgrade
+	_upgrade_title = _hud._text(upgrade, "", 22)
+	_upgrade_title.hide()
+	var comparison: HBoxContainer = _hud._row(upgrade, 12)
+	for side in ["当前", "升级后"]:
+		var cell: VBoxContainer = _hud._card(comparison)
+		cell.get_parent().size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var caption: Label = _hud._text(cell, side, 19, true)
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var comparison_header := ReferenceTheme.style("gold", 8)
+		comparison_header.set("depth", 0.0)
+		comparison_header.set_content_margin_all(3)
+		caption.add_theme_stylebox_override("normal", comparison_header)
+		var value: Label = _hud._text(cell, "", 26)
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if side == "当前":
+			_upgrade_before = value
+			var arrow := _image(comparison, "arrow_right", 32)
+			arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		else: _upgrade_after = value
+	# The full effect line stays on screen: phones have no hover to reveal it.
+	_upgrade_effect = _hud._text(upgrade, "", 19, true)
+	_upgrade_effect.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	upgrade_button = _buy_button(upgrade, func() -> void: _view.station_action("upgrade", station_id))
+	upgrade_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_button_skin(upgrade_button, "orange")
+	var seat: VBoxContainer = _hud._card(self)
 	_seat_row = seat.get_parent()
-	var seat_line: HBoxContainer = _hud._row(seat, 12)
-	var seat_copy := VBoxContainer.new()
-	seat_copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	seat_copy.add_theme_constant_override("separation", 4)
-	seat_line.add_child(seat_copy)
+	var seat_line: HBoxContainer = _hud._row(seat, 14)
+	_image(seat_line, "seat", 60)
+	var seat_copy := _copy(seat_line)
 	_seat_title = _hud._text(seat_copy, "", 23)
-	_seat_effect = _hud._text(seat_copy, "", 19, true)
+	_seat_effect = _hud._text(seat_copy, "", 18, true)
 	seat_button = _buy_button(seat_line, func() -> void: _view.station_action("seat", station_id))
-	var flyer: VBoxContainer = _hud._card(self, "f6ead3", "d7bd97")
+	var flyer: VBoxContainer = _hud._card(self)
 	_flyer_row = flyer.get_parent()
-	var flyer_line: HBoxContainer = _hud._row(flyer, 12)
-	var flyer_copy := VBoxContainer.new()
-	flyer_copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	flyer_copy.add_theme_constant_override("separation", 4)
-	flyer_line.add_child(flyer_copy)
+	var flyer_line: HBoxContainer = _hud._row(flyer, 14)
+	_image(flyer_line, "flyer", 60)
+	var flyer_copy := _copy(flyer_line)
 	_flyer_title = _hud._text(flyer_copy, "", 23)
-	_flyer_effect = _hud._text(flyer_copy, "", 19, true)
+	_flyer_effect = _hud._text(flyer_copy, "", 18, true)
 	flyer_button = _buy_button(flyer_line, func() -> void: _view.station_action("flyers", station_id))
-	var flyer_up_line: HBoxContainer = _hud._row(flyer, 12)
-	var flyer_up_copy := VBoxContainer.new()
-	flyer_up_copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	flyer_up_copy.add_theme_constant_override("separation", 4)
-	flyer_up_line.add_child(flyer_up_copy)
+	var flyer_up_line: HBoxContainer = _hud._row(flyer, 14)
+	_image(flyer_up_line, "tag", 60)
+	var flyer_up_copy := _copy(flyer_up_line)
 	_flyer_upgrade_title = _hud._text(flyer_up_copy, "", 21)
-	_flyer_upgrade_effect = _hud._text(flyer_up_copy, "", 19, true)
+	_flyer_upgrade_effect = _hud._text(flyer_up_copy, "", 18, true)
 	flyer_upgrade_button = _buy_button(flyer_up_line, func() -> void: _view.station_action("flyer_upgrade", station_id))
-	_material_title = _hud._text(self, "", 21)
+	_material_title = _hud._text(self, "", 20)
+	_material_title.add_theme_stylebox_override("normal", ReferenceTheme.style("pill", 12))
 	_materials = VBoxContainer.new()
-	_materials.add_theme_constant_override("separation", 10)
+	_materials.add_theme_constant_override("separation", 12)
 	add_child(_materials)
 	_locked = VBoxContainer.new()
 	_locked.add_theme_constant_override("separation", 14)
 	add_child(_locked)
-	_locked_summary = _hud._text(_locked, "", 21, true)
+	var locked_card: VBoxContainer = _hud._card(_locked)
+	var locked_line: HBoxContainer = _hud._row(locked_card, 22)
+	_locked_icon = _image(locked_line, "boil", 112)
+	_locked_summary = _hud._text(locked_line, "", 22)
+	_locked_summary.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_members = _hud._row(_locked, 10)
 	var condition: VBoxContainer = _hud._card(_locked)
 	_condition = condition.get_parent()
 	var condition_line: HBoxContainer = _hud._row(condition)
-	_condition_text = _hud._text(condition_line, "", 21)
-	_condition_value = _hud._nowrap(_hud._text(condition_line, "", 21))
+	_condition_text = _hud._text(condition_line, "", 20)
+	_condition_value = _hud._nowrap(_hud._text(condition_line, "", 20))
 	_condition_value.size_flags_horizontal = Control.SIZE_SHRINK_END
-	_condition_bar = _hud._bar(condition, 16)
+	_condition_bar = _hud._bar(condition, 15)
 	unlock_button = _hud._action(_locked, "解锁", func() -> void: _view.station_action("unlock", station_id))
+	_button_skin(unlock_button, "orange")
+
+func _copy(parent: Node) -> VBoxContainer:
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 4)
+	parent.add_child(column)
+	return column
+
+func _image(parent: Node, key: String, extent: float) -> TextureRect:
+	var image := TextureRect.new()
+	image.texture = Icons.texture(key)
+	image.custom_minimum_size = Vector2(extent, extent)
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	image.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(image)
+	return image
+
+func _button_skin(button: Button, kind: String) -> void:
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		button.add_theme_stylebox_override(state, ReferenceTheme.style(kind, 13, state))
+
+func _station_icon() -> String:
+	return {"supply":"tea_leaf", "counter":"shop", "topping":"drink_pearl_milk_tea", "press":"drink_lemon_tea", "lemon_front":"drink_lemon_tea"}.get(station_id, station_id)
+
+func _material_icon(material: String) -> String:
+	return {"tea_leaf":"tea_leaf", "milk":"milk", "pearl":"drink_pearl_milk_tea", "coconut":"drink_coconut_milk_tea", "redbean":"drink_redbean_milk_tea", "taro":"drink_taro_milk_tea", "banana":"drink_banana_tea", "lemon":"drink_lemon_tea"}.get(material, "drink_" + material)
+
+func _refresh_comparison(info: Dictionary) -> void:
+	_upgrade_row.visible = info.unlocked and not String(info.get("effect", "")).is_empty()
+	var current := "Lv.%d" % int(info.level)
+	var after := "Lv.%d" % (int(info.level) + 1)
+	if info.get("upgrade_cost", -1) < 0: after = "满级"
+	elif info.has("batch") and info.get("next_batch", 0) > info.batch:
+		current = "%d 杯 / 锅" % info.batch
+		after = "%d 杯 / 锅" % info.next_batch
+	elif info.has("slots") and info.get("next_slots", 0) > info.slots:
+		current = "%d 封口位" % info.slots
+		after = "%d 封口位" % info.next_slots
+	elif not info.get("price", {}).is_empty():
+		current = "%s 金币 / 杯" % _p(info.price.now)
+		after = "%s 金币 / 杯" % _p(info.price.next)
+	elif float(info.get("seconds", -1)) > 0:
+		current = "%.1f 秒 / %s" % [info.seconds, "锅" if station_id == "boil" else "杯"]
+		after = "%.1f 秒 / %s" % [info.get("next_seconds", info.seconds), "锅" if station_id == "boil" else "杯"]
+	_upgrade_before.text = current
+	_upgrade_after.text = after
+	if info.get("upgrade_cost", -1) >= 0:
+		upgrade_button.text = ("升星" if info.get("next_star", false) else "升级") + " · %d 金币" % int(info.upgrade_cost)
+	if _upgrade_row.visible:
+		var kind: String = {"capacity":"产能升级", "price":"售价升级", "both":"产能售价升级", "menu":"开新口味"}.get(String(info.get("kind", "")), "设备升级")
+		# Keep the machine's name as the title; the upgrade kind goes underneath.
+		var machine: String = _hud.get_node("%Title").text
+		_hud.set_heading(machine, "Lv.%d → Lv.%d" % [info.level, info.level + 1] if info.get("upgrade_cost", -1) >= 0 else "满级", false, kind)
+	_locked_icon.texture = Icons.texture(_station_icon())
+	if "_heading_icon" in _hud and _hud._heading_icon != null:
+		_hud._heading_icon.texture = Icons.texture(_station_icon() if info.unlocked else "lock")
+		_hud._heading_icon.visible = true
+		_hud._heading_icon.custom_minimum_size = Vector2(84, 70) if _upgrade_row.visible else Vector2(42, 42)
+	_hud.get_node("Shade").color.a = 0.0 if info.unlocked else 0.34
 
 func _buy_button(parent: Node, action: Callable) -> Button:
 	var button: Button = _hud._action(parent, "", action)
-	button.custom_minimum_size = Vector2(150, 72)
+	button.custom_minimum_size = Vector2(170, 54)
+	button.add_theme_font_size_override("font_size", 21)
+	_button_skin(button, "gold")
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	return button
 
@@ -117,7 +205,7 @@ func refresh() -> void:
 	var unlocked: bool = info.unlocked
 	var in_line: bool = not unlocked and not info.get("line_members", []).is_empty()
 	var level_tag: String = ("Lv%d" % info.level + " " + "★".repeat(int(info.get("stars", 0)))).strip_edges()
-	_hud.set_heading(info.line_name if in_line else info.name, level_tag if unlocked else "未解锁", not unlocked, info.get("description", "") if unlocked else "")
+	_hud.set_heading("收银台" if station_id == "counter" else info.line_name if in_line else info.name, "" if station_id in ["counter", "supply"] else level_tag if unlocked else "未解锁", not unlocked, "")
 	_upgrade_row.visible = unlocked
 	_seat_row.visible = unlocked and info.has("seats")
 	if _seat_row.visible:
@@ -129,10 +217,15 @@ func refresh() -> void:
 	if unlocked:
 		_refresh_upgrade(info)
 		_refresh_materials(info)
+		for material in material_buttons:
+			var buy: Button = material_buttons[material]
+			if "金币" in buy.text:
+				buy.text = ("解锁" if _box_rows.has(material) else "升级") + " · " + buy.text
 	else:
 		_material_title.visible = false
 		_materials.visible = false
 		_refresh_locked(info)
+	_refresh_comparison(info)
 
 func _refresh_upgrade(info: Dictionary) -> void:
 	var level: int = info.level
@@ -190,6 +283,7 @@ func _refresh_materials(info: Dictionary) -> void:
 		for row in materials:
 			var card: VBoxContainer = _hud._card(_materials)
 			var line: HBoxContainer = _hud._row(card, 12)
+			_image(line, _material_icon(String(row.id)), 58)
 			var copy := VBoxContainer.new()
 			copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			copy.add_theme_constant_override("separation", 4)
