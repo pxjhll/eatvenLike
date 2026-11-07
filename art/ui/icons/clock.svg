@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<defs>
+<linearGradient id="cream" x2="0" y2="1">
+<stop stop-color="#fff9e9"/>
+<stop offset="1" stop-color="#f0cda1"/>
+</linearGradient>
+<linearGradient id="wood" x2="0" y2="1">
+<stop stop-color="#efb574"/>
+<stop offset="1" stop-color="#cb7937"/>
+</linearGradient>
+<linearGradient id="gold" x2="0" y2="1">
+<stop stop-color="#ffe398"/>
+<stop offset="1" stop-color="#f4a52f"/>
+</linearGradient>
+<linearGradient id="red" x2="0" y2="1">
+<stop stop-color="#ffb29c"/>
+<stop offset="1" stop-color="#cf6153"/>
+</linearGradient>
+<linearGradient id="glass" x2="1" y2="1">
+<stop stop-color="#e6f7fc"/>
+<stop offset="1" stop-color="#91b8c7"/>
+</linearGradient>
+</defs>
+<g stroke="#59321c" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+<circle cx="32" cy="33" r="24" fill="url(#gold)"/>
+<circle cx="32" cy="32" r="19" fill="url(#cream)" stroke="#aa713e" stroke-width="2"/>
+<path d="M32 18v15l10 5" fill="none"/>
+<circle cx="32" cy="32" r="2" fill="#754223" stroke="none"/>
+<path d="M15 14 11 10m38 4 4-4" stroke="#bf8649" stroke-width="5"/>
+</g>
+</svg>

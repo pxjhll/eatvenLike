@@ -1,18 +1,19 @@
 extends StyleBox
 ## Shared native skin. StyleBoxFlat overrides draw() in native code and bypasses
 ## the script virtual, so this uses StyleBox directly and native flat sublayers.
+## Each kind's palette lives in art/ui/reference_skin.tres (editable in the inspector).
 
-var kind := "cream"
-var state := "normal"
-var bg_color := Color("fff0d6")
-var radius := 16.0
-var face_bottom := Color("f9dfb8")
-var contour := Color("714425")
-var rim := Color("d5a16e")
-var depth_color := Color("bb8354")
-var depth := 4.0
-var rim_width := 1.7
-var highlight := Color("fffbed")
+@export var kind := "cream"
+@export var state := "normal"
+@export var bg_color := Color("fff0d6")
+@export var radius := 16.0
+@export var face_bottom := Color("f9dfb8")
+@export var contour := Color("714425")
+@export var rim := Color("d5a16e")
+@export var depth_color := Color("bb8354")
+@export var depth := 4.0
+@export var rim_width := 1.7
+@export var highlight := Color("fffbed")
 
 func _draw(canvas_item: RID, rect: Rect2) -> void:
 	if rect.size.x <= 0.0 or rect.size.y <= 0.0:

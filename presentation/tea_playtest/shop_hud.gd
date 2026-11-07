@@ -114,7 +114,8 @@ func _apply_theme() -> void:
 	%Coin.texture = COIN
 	_bottleneck_button = Button.new()
 	_bottleneck_button.name = "BottleneckHint"
-	_bottleneck_button.position = Vector2(74, 112)
+	# Sits just under the header bar, so it follows the header if that moves.
+	_bottleneck_button.position = Vector2(74, $Header.offset_bottom + 8)
 	_bottleneck_button.custom_minimum_size = Vector2(332, 48)
 	_bottleneck_button.add_theme_font_size_override("font_size", 21)
 	_bottleneck_button.add_theme_constant_override("icon_max_width", 29)
@@ -142,7 +143,7 @@ func _apply_theme() -> void:
 	var flat := StyleBoxEmpty.new()
 	for state in ["normal", "hover", "focus", "disabled"]:
 		goal_button.add_theme_stylebox_override(state, flat)
-	goal_button.add_theme_stylebox_override("pressed", _style("ead4b2", "ead4b2", 12, 0))
+	goal_button.add_theme_stylebox_override("pressed", ReferenceTheme.style("pill", 12, "pressed"))
 	var sheet_style := ReferenceTheme.style("paper", 28)
 	sheet_style.set_content_margin_all(0)
 	%Sheet.add_theme_stylebox_override("panel", sheet_style)
@@ -155,10 +156,7 @@ func _apply_theme() -> void:
 	%Heading.move_child(_heading_icon, 0)
 	for button in [menu_button, speed_button, close_button]:
 		_button_style(button, "cream")
-	var toast_style := _style("624831e6", "624831", 22, 0)
-	toast_style.content_margin_left = 22
-	toast_style.content_margin_right = 22
-	toast.add_theme_stylebox_override("normal", toast_style)
+	toast.add_theme_stylebox_override("normal", ReferenceTheme.style("toast", 22))
 	toast.add_theme_color_override("font_color", Color("fff6e5"))
 
 func _button_style(button: Button, kind: String, radius := 16.0) -> void:
@@ -249,6 +247,7 @@ func _row(parent: Node, separation := 12) -> HBoxContainer:
 
 func pill(label: Label, text: String, background: String, foreground: String) -> void:
 	label.text = text
+	# Status pills are tinted per status at runtime, so they stay a plain flat box.
 	var box := _style(background, background, 14, 0)
 	box.content_margin_top = 2
 	box.content_margin_bottom = 2
@@ -354,16 +353,7 @@ func _build_pages() -> void:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.custom_minimum_size.y = 74
 		button.add_theme_font_size_override("font_size", 28)
-	_button_style(confirm_restart_button, "danger", 22)
-	for state in ["normal", "hover", "pressed", "disabled"]:
-		var danger := ReferenceTheme.style("danger", 22, state)
-		if state != "disabled":
-			danger.set("bg_color", Color("df916e") if state == "hover" else Color("cf7b59") if state == "pressed" else Color("d48664"))
-			danger.set("face_bottom", Color("c66d4d") if state == "hover" else Color("af5135") if state == "pressed" else Color("bb5d40"))
-			danger.set("contour", Color("8f482e"))
-			danger.set("depth_color", Color("8b432a"))
-			danger.set("highlight", Color("f5b78e"))
-		confirm_restart_button.add_theme_stylebox_override(state, danger)
+	_button_style(confirm_restart_button, "danger_strong", 22)
 	for state in ["font_color", "font_hover_color", "font_pressed_color"]:
 		confirm_restart_button.add_theme_color_override(state, Color("fff6e7"))
 	var station_column := _column("station")
@@ -688,7 +678,7 @@ func _refresh_goals(sim) -> void:
 		var nodes: Dictionary = _task_rows[i]
 		var done: bool = row.complete
 		nodes.check.text = "✓" if done else ""
-		nodes.check.add_theme_stylebox_override("normal", _style("93b94a" if done else "ffe7be", "5f7e2d" if done else "996534", 8, 2))
+		nodes.check.add_theme_stylebox_override("normal", ReferenceTheme.style("check_done" if done else "check_todo", 8))
 		nodes.check.add_theme_color_override("font_color", Color("fff8e9"))
 		nodes.name.add_theme_color_override("font_color", Color("6f5a49" if done else "583e2d"))
 		nodes.bar.visible = not done
