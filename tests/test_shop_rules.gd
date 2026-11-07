@@ -179,23 +179,44 @@ func test_customer_wave_effect_brings_customers() -> void:
 	check(rules.arrivals() >= before + 3, "一波 3 位客人进店")
 
 
-# ---------- 干净检查（§7）：规则层不出现店铺、机器、菜品的名字 ----------
+# ---------- 干净检查（§7）：通用规则和界面代码里不出现任何店铺的机器、物品、菜品、原料 id ----------
 
-func test_rules_layer_has_no_shop_specific_names() -> void:
-	var names: Array = []
-	for shop in [TEA, PANCAKE]:
-		names.append(shop.id)
-		for st in shop.stations: names.append(st.id)
-		for d in shop.dishes: names.append(d.id)
-		for item in shop.items: names.append(item.id)
-		for kind in shop.staff.kinds: names.append(kind.id)
-	# 通用部件名（规则层常量）不算店铺专有
-	names = names.filter(func(n: String) -> bool: return not n in ["counter", "supply", "topping", "rack"])
-	for file in DirAccess.get_files_at("res://game/rules"):
-		if not file.ends_with(".gd"): continue
-		var text := FileAccess.get_file_as_string("res://game/rules/" + file)
-		for name in names:
-			check(not ('"%s"' % name) in text, "%s 里写死了 \"%s\"" % [file, name])
+## 要扫的目录：通用规则层、跨店存档、店铺数据格式、通用店铺场景和 HUD、共用界面
+const GENERIC_DIRS := ["res://game/rules", "res://game/app", "res://content/rules", "res://presentation/shop", "res://presentation/ui"]
+
+
+func _scripts(dir: String) -> Array:
+	var out: Array = []
+	for file in DirAccess.get_files_at(dir):
+		if file.ends_with(".gd") or file.ends_with(".tscn"): out.append(dir.path_join(file))
+	for sub in DirAccess.get_directories_at(dir): out.append_array(_scripts(dir.path_join(sub)))
+	return out
+
+
+func test_generic_code_has_no_shop_specific_names() -> void:
+	var names := {}
+	for shop: SpecShop in [TEA, PANCAKE, preload("res://tests/fixtures/noodle/shop.tres")]:
+		names[shop.id] = shop.id
+		for st in shop.stations:
+			names[st.id] = shop.id
+			for m in st.materials: names[m.id] = shop.id
+		for d in shop.dishes: names[d.id] = shop.id
+		for item in shop.items: names[item.id] = shop.id
+	# 积木类型名（counter / supply / topping …）和交接位置（shelf / rack）是规则层的词，和某些店的机器 id 重名不算；
+	# 员工种类是共用角色库（presentation/characters）的角色，不算某家店的
+	for block in SpecStation.BLOCKS: names.erase(block)
+	for place in ShopRules.PLACES: names.erase(place)
+	var scanned := 0
+	for dir in GENERIC_DIRS:
+		for path in _scripts(dir):
+			scanned += 1
+			var lines := FileAccess.get_file_as_string(path).split("\n")
+			for i in lines.size():
+				var line := lines[i].strip_edges()
+				if line.begins_with("#"): continue
+				for name in names:
+					check(not ('"%s"' % name) in line, "%s:%d 写死了 %s 的 \"%s\"" % [path, i + 1, names[name], name])
+	check(scanned > 30, "扫了 %d 个文件" % scanned)
 
 
 # ---------- 命令细节 ----------

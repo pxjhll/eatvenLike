@@ -6,21 +6,21 @@ const FONT := "res://art/ui/graybox_font.ttf"
 
 func test_content_names_have_glyphs() -> void:
 	var font: FontFile = load(FONT)
-	var shop: ShopConfig = load("res://content/tea/tea.tres")
 	var names: Array = preload("res://presentation/characters/character_library.gd").NAMES.values()
-	for staff in shop.hire_defs:
-		names.append(staff.display_name)
-	names.append(shop.display_name)
-	for item in shop.items:
-		names.append(item.display_name)
-	for dish in shop.dishes:
-		names.append(dish.display_name)
-	for slot in shop.slots:
-		names.append(slot.station.display_name)
-	var progression = load("res://content/tea/art_shop_progression.tres")
-	for stage in progression.stages:
-		for task in stage.tasks:
-			names.append(task.display_name)
+	var campaign: SpecCampaign = load("res://content/campaign/campaign.tres")
+	for city in campaign.cities:
+		for entry in city.shops:
+			names.append(entry.display_name)
+			if entry.shop_path.is_empty(): continue
+			var shop: SpecShop = load(entry.shop_path)
+			names.append(shop.display_name)
+			for list in [shop.items, shop.dishes, shop.stations, shop.staff.kinds, shop.connections]:
+				for thing in list: names.append(thing.display_name)
+			for st in shop.stations:
+				for m in st.materials: names.append(m.display_name)
+				for t in st.tracks: names.append(t.display_name)
+			for stage in shop.stages:
+				for task in stage.tasks: names.append(task.display_name)
 	for name in names:
 		check(_missing(font, name).is_empty(), "「%s」缺字：%s" % [name, _missing(font, name)])
 

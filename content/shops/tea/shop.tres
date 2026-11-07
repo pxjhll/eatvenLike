@@ -502,8 +502,8 @@ texts = Dictionary[String, String]({
 "hint_pot_fix": "升级{name}",
 "hint_staff": "后厨跑不过来，{drink}排起了长队：升级后厨员工或多招一位",
 "hint_staff_fix": "升级后厨员工",
-"icon_press": "mix",
-"icon_topping": "mix",
+"icon_press": "res://art/reference/brewer.png",
+"icon_topping": "res://art/reference/brewer.png",
 "need_operate": "待操作",
 "need_take": "待取茶",
 "open": "支付 {cost} 金币解锁{name}，开始营业",
@@ -547,7 +547,7 @@ skip_marks = Array[String](["opening"])
 style = "card"
 title = "欢迎，店长！"
 art = "raccoon"
-rows = [["lemonade", "招待顾客，卖饮品收金币"], ["boil", "开通后厨生产线，做新饮品"], ["goals", "完成经营任务，把小店做大"]]
+rows = [["res://art/ui/drink_lemonade.png", "招待顾客，卖饮品收金币"], ["res://art/reference/pearl_pot.png", "开通后厨生产线，做新饮品"], ["goals", "完成经营任务，把小店做大"]]
 confirm_label = "开始营业"
 cancel_label = "跳过引导"
 next = "opening"
@@ -1475,6 +1475,7 @@ tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_u86ql")])
 price_dishes = Array[String](["lemonade"])
 counts_for_flow = true
 description = "服务员到展示柜现取柠檬水，外带不用封口；升级提高柠檬水售价"
+icon = "res://art/ui/drink_lemonade.png"
 
 [sub_resource type="Resource" id="Resource_ygrx2"]
 script = ExtResource("7_1v0ns")
@@ -1515,6 +1516,7 @@ item = "tea_leaf"
 box_cost = 20
 box_station = "boil"
 track = SubResource("Resource_k3uxj")
+icon = "res://art/reference/tea_tin.png"
 
 [sub_resource type="Resource" id="Resource_nqjem"]
 script = ExtResource("7_1v0ns")
@@ -1555,6 +1557,7 @@ item = "milk"
 box_cost = 40
 box_station = "mix"
 track = SubResource("Resource_t68n5")
+icon = "res://art/reference/milk_bottle.png"
 
 [sub_resource type="Resource" id="Resource_5c0xc"]
 script = ExtResource("21_6l0ld")
@@ -1570,7 +1573,7 @@ zone = "kitchen"
 starts_unlocked = true
 materials = Array[ExtResource("22_snoov")]([SubResource("Resource_7o5ye"), SubResource("Resource_x06ba")])
 description = "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价"
-icon = "tea_leaf"
+icon = "res://art/reference/tea_tin.png"
 
 [sub_resource type="Resource" id="Resource_fc2hg"]
 script = ExtResource("23_xb1gn")
@@ -1743,6 +1746,7 @@ tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_6ntk2")])
 stock = Array[ExtResource("23_xb1gn")]([SubResource("Resource_fc2hg")])
 counts_for_flow = true
 description = "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速"
+icon = "res://art/reference/pearl_pot.png"
 
 [sub_resource type="Resource" id="Resource_wpr6n"]
 script = ExtResource("7_1v0ns")
@@ -1868,6 +1872,7 @@ zone = "kitchen"
 tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_semvr")])
 counts_for_flow = true
 description = "外带的杯子都要来这里封口；升级封得更快，5 级加一个封口位"
+icon = "res://art/reference/sealer.png"
 
 [sub_resource type="Resource" id="Resource_k8ju5"]
 script = ExtResource("7_1v0ns")
@@ -1975,6 +1980,7 @@ tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_fiuv3")])
 price_dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
 counts_for_flow = true
 description = "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶"
+icon = "res://art/reference/brewer.png"
 
 [sub_resource type="Resource" id="Resource_uw05n"]
 script = ExtResource("7_1v0ns")

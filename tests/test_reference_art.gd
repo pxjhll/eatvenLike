@@ -84,9 +84,9 @@ func test_art_scene_has_independent_occluders_and_clear_doorway() -> void:
 
 
 func test_ui_p0_art_covers_every_dish_and_checkout_keeps_its_aspect() -> void:
-	var sim_script: GDScript = load("res://game/tea_playtest/tea_shop_sim.gd")
-	for dish in sim_script.DISHES:
-		check(ResourceLoader.exists("res://art/ui/drink_%s.png" % dish), "order bubble icon for " + dish)
+	var tea: SpecShop = load("res://content/shops/tea/shop.tres")
+	for dish in tea.dishes:
+		check(ResourceLoader.exists("res://art/ui/drink_%s.png" % dish.id), "order bubble icon for " + dish.id)
 	for name in ["coin", "coin_small", "bubble"]:
 		check(ResourceLoader.exists("res://art/ui/%s.png" % name), "UI art " + name)
 	# The counter used to be a 620 px image stretched 2.3x sideways; it is now drawn at scene width.

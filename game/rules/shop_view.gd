@@ -488,6 +488,16 @@ func item_art(id: String) -> Dictionary:
 
 
 ## 在这台机器前干活朝哪个方向（8 方向；-1 = 不转）
+## 机器或原料的图标：店铺数据里写了就用（图标名或 res:// 图），没写就用 id
+func icon_of(id: String) -> String:
+	var st := shop.station(id)
+	if st != null: return st.icon if not st.icon.is_empty() else id
+	for s in shop.stations:
+		var m := s.material(id)
+		if m != null and not m.icon.is_empty(): return m.icon
+	return id
+
+
 func work_direction(station_id: String) -> int:
 	var st := shop.station(station_id)
 	return int(st.params.get("facing", -1)) if st != null else -1

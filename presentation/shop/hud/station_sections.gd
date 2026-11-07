@@ -247,7 +247,7 @@ class UnlockSection extends VBoxContainer:
 		add_theme_constant_override("separation", 14)
 		var box: VBoxContainer = hud._card(self)
 		var line: HBoxContainer = hud._row(box, 22)
-		icon = page.image(line, "boil", 112)
+		icon = page.image(line, "shop", 112)
 		summary = hud._text(line, "", 22)
 		summary.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		members = hud._row(self, 10)

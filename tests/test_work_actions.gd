@@ -18,9 +18,13 @@ func _run() -> void:
 		_finish()
 		return
 	var font := load("res://art/ui/graybox_font.ttf")
+	var tea: SpecShop = load("res://content/shops/tea/shop.tres")
+	var view := ShopView.new(ShopRules.new(tea))
 	for id in ["rabbit", "gray_cat", "bear", "squirrel", "dog", "sheep", "hamster"]:
-		var actor = load("res://presentation/tea_playtest/staff_actor.gd").new()
+		var actor = load("res://presentation/shop/shop_actor.gd").new()
 		actor.setup(id, font)
+		actor.work_direction = view.work_direction
+		actor.pouring_station = view.pouring_station
 		root.add_child(actor)
 		await process_frame
 		var worker := {"pos": Vector2.ZERO, "walking": false, "phase": "idle", "task_label": ""}
@@ -39,15 +43,13 @@ func _run() -> void:
 			worker.walking = false
 			worker.phase = "work"
 			worker.job = {"src": "boil"}
-			worker.pos = Vector2(350, 330)
 			actor.display(worker, 1.2)
 			_check(actor.frame_actor.action == "work" and actor.frame_actor.sprite.animation == "work_back_right" and not actor.frame_actor.sprite.flip_h, id + " operates toward the pot")
 			var work_phase: float = actor.frame_actor.get_phase()
 			actor.display(worker, 1.2)
 			_check(is_equal_approx(work_phase, actor.frame_actor.get_phase()), "paused clock freezes operation")
 			worker.phase = "pickup"
-			worker.job = {"src": "supply", "item": "lemonade"}
-			worker.pos = Vector2(190, 650)
+			worker.job = {"src": "lemonade", "item": "lemonade"}
 			actor.display(worker, 1.4)
 			_check(actor.frame_actor.sprite.animation == "work_right" and actor.frame_actor.sprite.flip_h, id + " uses mirrored side operation at the left dispenser")
 			if id == "rabbit":
@@ -76,42 +78,36 @@ func _run() -> void:
 				actor.display(worker, 1.2 + direction)
 				_check(actor.frame_actor.action == "sit" and actor.frame_actor.sprite.flip_h == ((direction == 6) != (id == "dog")), "sitting faces the table on either side")
 		actor.free()
-	# Exercise a real production job, so the operation is reachable from simulation state.
-	var operation_sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
-	operation_sim.gold = 1000000
-	operation_sim.revenue = 1000
-	operation_sim.unlock_station("lemonade")
-	operation_sim.unlock_station("boil")
-	operation_sim.unlock_box("tea_leaf")
-	operation_sim.acquire_staff("gray_cat", "test")
-	operation_sim.deploy_worker(5)
-	var operator = load("res://presentation/tea_playtest/staff_actor.gd").new()
+	# Exercise a real production job, so the operation is reachable from rules state.
+	var rules := ShopRules.new(tea)
+	rules.gold = 1000000
+	for station in ["lemonade", "boil"]: rules.unlock(station)
+	rules.unlock_box("tea_leaf")
+	for unused in 4: rules.hire()
+	var cat: Dictionary = rules.roster.filter(func(w: Dictionary) -> bool: return w.kind == "gray_cat")[0]
+	_check(rules.deploy_worker(cat.id) == "", "gray cat deploys into the kitchen")
+	var operator = load("res://presentation/shop/shop_actor.gd").new()
 	operator.setup("gray_cat", font)
+	operator.work_direction = view.work_direction
+	operator.pouring_station = view.pouring_station
 	root.add_child(operator)
 	await process_frame
 	var operated := false
 	for unused in 1800:
-		operation_sim.advance(0.1)
-		var worker: Dictionary = operation_sim.worker_by_id(5)
-		operator.display(worker, operation_sim.elapsed)
-		if worker.phase == "work":
+		rules.step(0.1)
+		operator.display(cat, rules.clock)
+		if cat.phase == "work":
 			operated = operator.frame_actor.action == "work"
 			break
-	_check(operated and operation_sim.audit().valid, "real kitchen production reaches operation without changing inventory accounting")
+	_check(operated, "real kitchen production reaches operation")
 	operator.free()
-	var sim = load("res://game/tea_playtest/tea_shop_sim.gd").new()
-	sim.gold = 10000
+	var hiring := ShopRules.new(tea)
+	hiring.gold = 10000
 	for id in ["raccoon", "fox", "rabbit", "gray_cat", "bear"]:
-		_check(sim.next_hire_art() == id and sim.hire(), "recruit existing animals before new bear")
-	_check(sim.worker_by_id(6).art == "bear", "bear has its own staff identity")
-	var copy = load("res://game/tea_playtest/tea_shop_sim.gd").new()
-	_check(copy.load_dict(sim.to_dict()).is_empty() and copy.worker_by_id(6).art == "bear", "bear survives save roundtrip")
-	var legacy: Dictionary = sim.to_dict()
-	legacy.roster[-1].art = "cat"
-	legacy.roster[-1].name = "Cat"
-	_check(copy.load_dict(legacy).is_empty(), "old repeated cat at id six remains valid")
-	_check(copy.acquire_staff("bear", "test").is_empty(), "new bear can be acquired without replacing old staff")
-	_check(copy.worker_by_id(6).art == "cat" and copy.worker_by_id(7).art == "bear", "old identity retained and bear gets a fresh id")
+		_check(hiring.next_hire_kind() == id and hiring.hire() == "", "recruit existing animals before new bear")
+	_check(hiring.worker_by_id(6).kind == "bear", "bear has its own staff identity")
+	var copy := ShopRules.new(tea)
+	_check(copy.load_dict(hiring.to_dict()) == "" and copy.worker_by_id(6).kind == "bear", "bear survives save roundtrip")
 	_finish()
 
 func _finish() -> void:

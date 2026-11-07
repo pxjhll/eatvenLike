@@ -4,7 +4,8 @@ extends SceneTree
 ##   godot --headless --path . -s tests/baselines/replay_rules.gd [-- --verbose]
 ## 退出码 1 = 有一项超出范围。
 
-const Recorder := preload("res://tests/baselines/record_baselines.gd")
+## 基准里记的时刻（分钟）
+const CHECKPOINTS := [5, 10, 20, 30, 45]
 const SHOPS := {"tea": "res://content/shops/tea/shop.tres", "pancake": "res://content/shops/pancake/shop.tres"}
 const TOLERANCE := 0.05
 
@@ -28,7 +29,7 @@ func _initialize() -> void:
 
 static func replay(shop: SpecShop, base: Dictionary) -> Dictionary:
 	var rules := ShopRules.new(shop)
-	var ledger = Recorder.Ledger.new()
+	var ledger = Ledger.new()
 	var minutes: float = base.minutes
 	var actions: Array = base.actions
 	var next_action := 0
@@ -55,7 +56,7 @@ static func replay(shop: SpecShop, base: Dictionary) -> Dictionary:
 			elif worker.phase == "work" or not worker.job.is_empty(): ledger.seg.work += ShopRules.STEP
 			else: ledger.seg.idle += ShopRules.STEP
 		if completed_at < 0.0 and rules.shop_complete(): completed_at = clock
-		for minute in Recorder.CHECKPOINTS:
+		for minute in CHECKPOINTS:
 			if not ledger.checkpoints.has(str(minute)) and clock >= minute * 60.0 - 0.0001:
 				ledger.checkpoints[str(minute)] = {"revenue": snappedf(rules.revenue, 0.1), "sold": rules.sold, "gold": snappedf(rules.gold, 0.1),
 					"sold_by_dish": rules.sold_by_dish.duplicate(), "staff": rules.workers.size(), "stage": rules.stage_index}
@@ -88,7 +89,7 @@ static func run_command(rules: ShopRules, command: String) -> String:
 
 static func compare(base: Dictionary, result: Dictionary) -> Array:
 	var rows: Array = []
-	for minute in Recorder.CHECKPOINTS:
+	for minute in CHECKPOINTS:
 		var key := str(minute)
 		if not base.checkpoints.has(key) or not result.checkpoints.has(key): continue
 		for field in ["revenue", "sold"]:
@@ -105,3 +106,39 @@ static func compare(base: Dictionary, result: Dictionary) -> Array:
 static func _close(old: float, new: float) -> bool:
 	if absf(old) < 20.0: return absf(new - old) <= 2.0
 	return absf(new - old) / absf(old) <= TOLERANCE
+
+
+## 分段记账：和录基准时（旧模拟，main 73b0ae3）同一种记法
+class Ledger:
+	var segments: Array = []
+	var seg: Dictionary = {}
+	var actions: Array = []
+	var unlocks: Dictionary = {}
+	var checkpoints: Dictionary = {}
+
+	func open(stage: int, clock: float) -> void:
+		if not seg.is_empty(): close(clock)
+		seg = {"stage": stage, "start": snappedf(clock, 0.1), "arrived": 0, "full_seconds": 0.0, "lost": 0,
+			"work": 0.0, "walk": 0.0, "idle": 0.0, "sold": 0, "waiting": {}}
+
+	func close(clock: float) -> void:
+		var total: float = seg.work + seg.walk + seg.idle
+		var out := {"stage": seg.stage, "start": seg.start, "seconds": snappedf(clock - seg.start, 0.1),
+			"arrived": seg.arrived, "full_seconds": snappedf(seg.full_seconds, 0.1), "lost": seg.lost, "sold": seg.sold,
+			"staff_work": snappedf(seg.work / maxf(total, 0.001), 0.001), "staff_walk": snappedf(seg.walk / maxf(total, 0.001), 0.001),
+			"staff_idle": snappedf(seg.idle / maxf(total, 0.001), 0.001)}
+		# 主要瓶颈：员工最常在哪等 / 满队时间占比
+		var worst := ""
+		var most := 0.0
+		for key in seg.waiting:
+			if seg.waiting[key] > most:
+				most = seg.waiting[key]
+				worst = key
+		out["top_wait"] = worst
+		out["top_wait_share"] = snappedf(most / maxf(total, 0.001), 0.001)
+		out["full_share"] = snappedf(seg.full_seconds / maxf(clock - seg.start, 0.001), 0.001)
+		segments.append(out)
+		seg = {}
+
+	func act(clock: float, command: String) -> void:
+		actions.append([snappedf(clock, 0.1), command])

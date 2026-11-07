@@ -20,7 +20,7 @@ func _run() -> void:
 	_check(library.portrait("rabbit") is AtlasTexture, "rabbit portrait comes from its actual frame atlas")
 	var actions: Array = library.actions("rabbit")
 	_check(actions.map(func(a): return a.id) == ["walk", "idle", "work"] and actions[2].label == "组装" and actions[2].view_count == 3, "rabbit exposes walk, idle and its three-view assembly")
-	var actor: Node2D = load("res://presentation/tea_playtest/staff_actor.gd").new()
+	var actor: Node2D = load("res://presentation/shop/shop_actor.gd").new()
 	actor.setup("rabbit", load("res://art/ui/graybox_font.ttf"))
 	root.add_child(actor)
 	await process_frame

@@ -1,26 +1,26 @@
-# eatvenLike · 手作奶茶店
+# eatvenLike · 小店经营
 
-当前版本是竖屏奶茶店经营游戏，入口为 `presentation/tea_playtest/tea_playtest.tscn`，使用 Godot 4.6.3。
+竖屏小店经营游戏，Godot 4.7。主场景 `presentation/shop/shop_play.tscn`，按跨店记录（`game/app/profile.gd`）和关卡表（`content/campaign/campaign.tres`）进店：北方城先是煎饼果子摊，结店后去奶茶店。
 
-新店以 50 金币和一名小猫开局，通过新手引导解锁首个饮品工位、卖出第一杯并招募员工。后续按营业额开放红茶、调奶、加料与手打饮品，支持堂食座位、外带封口、员工培养和店铺升星。后厨按订单制作，前台与后厨员工分别负责服务和生产；设备与配料支持升级，菜单内可查看经营任务。
+所有店跑同一套规则代码和同一套界面代码，店与店之间只有数据和美术不同（规格：Notion《通用店铺规则规格｜定稿 v1.0》）：
 
-普通招募可获得浣熊、狐狸、小兔子、小灰猫和小熊等伙伴，可派遣、收回、培养或拖到工位坐班，名额和岗位规则以当前店铺配置为准。菜单和员工页均可打开角色动作预览，支持暂停、逐帧和调速；兔子、灰猫和小熊提供走路、待机，兔子另有正面、侧面与背侧组装动作，灰猫另有侧面与背侧操作动作。顾客松鼠、小狗、小羊、仓鼠提供走路、待机、坐姿；原始视角不足时使用最近视角及左右镜像。其余伙伴目前提供站姿。小灰猫首次按顺序招募为第五位、110金币，已有重复员工的存档会沿用当前名册价格和空闲ID。
+- **规则层** `game/rules/`：`ShopRules` 管机器、菜谱工序、订单履约、员工调度、经济、阶段任务、加成栈、事件总线、奇遇；`ShopView` 给界面出快照（目标、机器面板、瓶颈提示）；`ShopSave` 每家店一个存档文件。代码里不出现任何店铺、机器、菜品的名字（`tests/test_shop_rules.gd` 的干净检查会扫）。
+- **店铺数据** `content/shops/<店>/shop.tres`：机器和工序积木类型、菜谱、履约规则、调度打分、全部数值、阶段、任务、员工、文案、引导步骤。在 Godot 里直接编辑；数据格式定义在 `content/rules/`。
+- **表现层** `presentation/shop/`：通用店铺场景、插槽式 HUD（`hud/default_hud.gd` 注册页签、面板页、小部件）、引导播放器、调参面板。每家店只提供一个美术场景（`presentation/shops/<店>/`），场景里放美术和按名字约定的锚点（`Anchors/Stations/<机器>`、`Queue`、`Seats`……）。
 
-经营、订单、库存、员工及岗位自动保存到独立的 `user://tea_shop.json`。菜单支持手动保存和重开店铺；重开保留已拥有员工及培养。建造和高级招募暂未开放。
+**加一家店**：写一份 `shop.tres`、做一个带锚点的美术场景、在关卡表里加一行，不改代码。`tests/fixtures/noodle/` 是一家只用数据写成的测试面馆（不上线），`tests/test_noodle_shop.gd` 证明它从开张一路开到完店。挪了美术、改了走位以后跑 `tools/sync_shop_layouts.gd` 把锚点写回店铺数据。
 
-店铺前厅采用上移柜台和四组双人圆桌布局。柠檬茶在前台手打（柠檬水加手打柠檬），在调奶台和加料机之间解锁；封口机到货架有一段可购买的传送带。菜单中的“玻璃隔板”开关可对比前后厅玻璃分隔效果。场景世界扩展为 720×1500，操作界面的横向尺寸与店铺对齐，顶部与底部随窗口适配。
-
-家具、机器及桌面物品使用独立透明图片；既有替换图保持原始像素尺寸。分组素材页、提示词与可重复导出工具见 `art_src/shop_layout_2026_11/README.md`。
-
-煎饼摊 v04 已接入独立的 Godot 分层场景，打开 `presentation/pancake/pancake_scene.tscn` 按 F6 可查看完整布局。固定设施开局常驻，功能组和 2/5/9 个坐垫阶段可单独控制，文字和阴影用代码绘制，角色预览不导入。现有奶茶玩法入口保持原实现。场景本体为 `presentation/pancake/pancake_art.tscn`，可用 `set_station_unlocked(key, enabled)` 控制功能组、`set_cushion_stage(0..3)` 控制坐垫阶段。
+两家店的行为以 main `73b0ae3` 的旧模拟为基准冻结：`tests/baselines/` 里存着机器人操作序列、整店结果和奶茶店界面数据，`replay_rules.gd` 在新规则层上重放对照。
 
 ## 运行和验证
 
 ```sh
 # 首次打开或添加全局脚本后导入资源
 godot --headless --path . --import
-# 当前店铺的逻辑、存档、美术与字体回归
+# 规则、数据、存档、美术与字体回归
 godot --headless --path . -s tests/run_all.gd
+# 界面点按回归（奶茶店、煎饼摊、引导、HUD 扩展）
+godot --headless --path . -s tests/render_shop_tea.gd
 # 启动游戏
 godot --path .
 ```
@@ -31,18 +31,19 @@ godot --path .
 
 | 路径 | 用途 |
 | --- | --- |
-| `game/tea_playtest/` | 物理生产、经营规则与店铺持久化 |
-| `game/app/` | 共享存档入口、原子文件写入与数值序列化 |
-| `content/tea/`、`content/defs/`、`content/staff/` | 当前店铺配置和共用资源定义 |
-| `presentation/tea_playtest/` | 店铺画面、界面、员工和拖拽操作 |
-| `presentation/reference/shop_art.tscn` | 当前店铺的可编辑分层美术场景 |
-| `presentation/characters/`、`presentation/rabbit_walk_frames/` | 游戏内角色预览和兔子帧动画 |
-| `art/reference/`、`art/rabbit_walk_frames/`、`art/ui/` | 正在使用的美术、动画、图标和字体 |
-| `art_src/rabbit_walk_frames/` | 兔子原始帧、时长记录和图集构建工具 |
-| `tests/` | 当前版本回归、交互与渲染检查 |
-| `tools/` | 字体裁剪和 Web 导出后处理 |
-| `docs/` | 当前美术需求、验证记录与清理说明 |
+| `game/rules/` | 通用规则层：ShopRules、ShopView、ShopSave、加成栈、事件总线、寻路 |
+| `game/app/` | 跨店记录（Profile）、原子文件写入与数值序列化 |
+| `content/rules/` | 店铺数据格式（Spec* 资源定义） |
+| `content/shops/`、`content/campaign/` | 每家店的数据、关卡表 |
+| `presentation/shop/` | 通用店铺场景、HUD、引导、调参面板、员工拖放 |
+| `presentation/shops/<店>/` | 每家店的美术场景和锚点 |
+| `presentation/reference/shop_art.tscn` | 奶茶店的可编辑分层美术（被 `presentation/shops/tea/tea_art.tscn` 引用） |
+| `presentation/characters/`、`presentation/*_walk_frames/` | 角色库、角色预览和帧动画 |
+| `art/` | 正在使用的美术、动画、图标和字体 |
+| `tests/` | 规则、数据、存档、界面点按和渲染回归；`tests/baselines/` 旧模拟基准；`tests/fixtures/noodle/` 测试面馆 |
+| `tools/` | 走位同步、字体裁剪和 Web 导出后处理 |
+| `docs/` | 美术需求、验证记录与清理说明 |
 
-2026-11-01 已将面包店/灰盒旧版、未接入的骨骼动画试验、PSD、生图源文件和历史验证产物归档到仓库外；详见 [清理与恢复说明](docs/cleanup-2026-11-01.md)。旧版入口已移除。当前奶茶店仍使用的早期共用资源定义予以保留。
+2026-11-01 已将面包店/灰盒旧版、未接入的骨骼动画试验、PSD、生图源文件和历史验证产物归档到仓库外；详见 [清理与恢复说明](docs/cleanup-2026-11-01.md)。旧版入口已移除。
 
 Web 构建和主线自动发布说明见 [Web 部署](docs/web-deployment.md)。

@@ -20,18 +20,10 @@ jobs:
         run: ./godot --headless --path . --import
       - name: Run tests
         run: timeout 240s ./godot --headless --path . -s tests/run_all.gd
-      - name: Old-sim baselines unchanged (73b0ae3)
-        run: timeout 60s ./godot --headless --path . -s tests/baselines/record_baselines.gd -- --check
-      - name: Shop UI interaction regression
-        run: timeout 30s ./godot --headless --path . -s tests/render_shop_ui.gd
-      - name: Art shop business interaction regression
-        run: timeout 45s ./godot --headless --path . -s tests/render_tea_business.gd
-      - name: First-shop tutorial interaction regression
-        run: timeout 45s ./godot --headless --path . -s tests/render_guide.gd
-      - name: Tuning panel and playtest log regression
-        run: timeout 30s ./godot --headless --path . -s tests/render_tuning.gd
-      - name: Generic shop scene - old vs new UI text parity (tea, whole shop)
-        run: timeout 120s ./godot --headless --path . -s tests/render_shop_parity.gd
+      - name: Shop layouts match the art scenes
+        run: timeout 60s ./godot --headless --path . -s tools/sync_shop_layouts.gd -- --check
+      - name: Generic shop scene - tea shop real-click regression (taps, panels, save, menu, restart, tuning)
+        run: timeout 60s ./godot --headless --path . -s tests/render_shop_tea.gd
       - name: Generic shop scene - data-driven tutorial real-click regression
         run: timeout 45s ./godot --headless --path . -s tests/render_shop_guide.gd
       - name: Generic shop scene - HUD extension acceptance and save round trip
@@ -48,14 +40,15 @@ jobs:
           timeout 30s ./godot --headless --path . -s tests/test_work_actions.gd
           timeout 30s ./godot --headless --path . -s tests/render_work_actions.gd
       # 真窗口 QA 要装 xvfb、跑好几分钟，只在合进 main 时跑，PR 上靠本地跑（省 Actions 分钟数）
-      - name: Tea window input and screenshot QA
+      - name: Shop window render and screenshot QA
         if: github.event_name == 'push'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y xvfb libgl1-mesa-dri
-          timeout 180s xvfb-run -a ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_tea_business.gd
+          timeout 180s xvfb-run -a ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_work_actions.gd
       - uses: actions/upload-artifact@v4
         if: always() && github.event_name == 'push'
         with:
-          name: tea-qa
-          path: docs/qa/tea-business-*.png
+          name: shop-qa
+          path: .godot/work_actions_capture/*.png
+          include-hidden-files: true
