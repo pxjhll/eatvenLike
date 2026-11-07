@@ -114,7 +114,30 @@ func _run() -> void:
 	await _click(hud.staff_button)
 	var drop_point := _world(Vector2(325, 210))
 	print("DEBUG canvas=", view.get_node("Canvas").global_position, " scale=", view.get_node("Canvas").scale, " scroll=", view._scroll, " vp=", view.get_viewport_rect().size, " root=", root.size, " card=", view._staff_cards[0].get_global_rect(), " drop=", drop_point, " blocks=", hud.blocks_world(drop_point), " target=", view._drag._drop_target(drop_point), " hidden_card=", hidden_card)
-	await _gesture(view._staff_cards[0].get_global_rect().get_center(), drop_point)
+	var dbg_from: Vector2 = view._staff_cards[0].get_global_rect().get_center()
+	print("DEBUG pre scroll_rect=", hud.get_node("%Scroll").get_global_rect(), " hit=", hud.card_hit_test(view._staff_cards[0], dbg_from), " guide=", view.guide != null and view.guide.freezes(), " page=", hud.page)
+	var dbg_press := InputEventMouseButton.new()
+	dbg_press.button_index = MOUSE_BUTTON_LEFT
+	dbg_press.position = dbg_from
+	dbg_press.pressed = true
+	Input.parse_input_event(dbg_press)
+	Input.flush_buffered_events()
+	print("DEBUG after press wid=", view._drag.worker_id, " page=", hud.page)
+	for i in range(1, 6):
+		var motion := InputEventMouseMotion.new()
+		motion.position = dbg_from.lerp(drop_point, i / 5.0)
+		motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+		Input.parse_input_event(motion)
+		Input.flush_buffered_events()
+		print("DEBUG motion ", i, " wid=", view._drag.worker_id, " dragging=", view._drag.dragging, " target=", view._drag.target, " page=", hud.page)
+	var dbg_release := dbg_press.duplicate()
+	dbg_release.position = drop_point
+	dbg_release.pressed = false
+	Input.parse_input_event(dbg_release)
+	Input.flush_buffered_events()
+	await process_frame
+	view._refresh(0)
+	await process_frame
 	print("DEBUG after post=", view.sim.workers[0].post, " page=", hud.page, " dragging=", view._drag.dragging, " wid=", view._drag.worker_id, " last_target=", view._drag.target, " blocks_now=", hud.blocks_world(drop_point), " header=", hud.get_node("Header").get_global_rect(), " sel=", hud.get_node("%Selection").get_global_rect(), hud.get_node("%Selection").is_visible_in_tree(), " nav=", hud.get_node("%Navigation").get_global_rect(), " hint=", view._drag._hint, " workers=", view.sim.workers.size())
 	_check(view.sim.workers[0].post == "boil" and hud.page == "shop", "dragging visible roster card dismisses sheet and seats real employee")
 	_check(view.sim.audit().valid, "new UI drag preserves simulation stock")
