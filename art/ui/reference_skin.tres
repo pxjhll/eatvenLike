@@ -1,0 +1,267 @@
+[gd_resource type="Theme" format=3]
+
+[ext_resource type="Script" uid="uid://c7llm1nom34ir" path="res://presentation/ui/reference_style.gd" id="1_style"]
+[ext_resource type="FontFile" uid="uid://6j1cxbp2576r" path="res://art/ui/graybox_font.ttf" id="2_font"]
+
+[sub_resource type="FontVariation" id="FontVariation_ui"]
+base_font = ExtResource("2_font")
+variation_embolden = 0.42
+
+[sub_resource type="StyleBox" id="StyleBox_cream"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+script = ExtResource("1_style")
+kind = "cream"
+bg_color = Color(1, 0.941176, 0.839216, 1)
+face_bottom = Color(0.976471, 0.87451, 0.721569, 1)
+contour = Color(0.443137, 0.266667, 0.145098, 1)
+rim = Color(0.835294, 0.631373, 0.431373, 1)
+depth_color = Color(0.733333, 0.513725, 0.329412, 1)
+depth = 4.0
+rim_width = 1.7
+highlight = Color(1, 0.984314, 0.929412, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_paper"]
+content_margin_left = 18.0
+content_margin_top = 18.0
+content_margin_right = 18.0
+content_margin_bottom = 18.0
+script = ExtResource("1_style")
+kind = "paper"
+bg_color = Color(1, 0.968627, 0.909804, 1)
+face_bottom = Color(1, 0.917647, 0.827451, 1)
+contour = Color(0.501961, 0.313725, 0.196078, 1)
+rim = Color(0.937255, 0.74902, 0.560784, 1)
+depth_color = Color(0.717647, 0.47451, 0.313725, 1)
+depth = 5.0
+rim_width = 3.0
+highlight = Color(1, 0.984314, 0.929412, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_header"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+script = ExtResource("1_style")
+kind = "header"
+bg_color = Color(1, 0.94902, 0.862745, 1)
+face_bottom = Color(1, 0.913725, 0.8, 1)
+contour = Color(0.443137, 0.266667, 0.145098, 1)
+rim = Color(0.905882, 0.678431, 0.498039, 1)
+depth_color = Color(0.662745, 0.388235, 0.243137, 1)
+depth = 5.0
+rim_width = 4.0
+highlight = Color(1, 0.984314, 0.929412, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_wood"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+script = ExtResource("1_style")
+kind = "wood"
+bg_color = Color(0.85098, 0.603922, 0.407843, 1)
+face_bottom = Color(0.72549, 0.435294, 0.282353, 1)
+contour = Color(0.411765, 0.223529, 0.141176, 1)
+rim = Color(0.929412, 0.690196, 0.482353, 1)
+depth_color = Color(0.458824, 0.25098, 0.176471, 1)
+depth = 7.0
+rim_width = 2.6
+highlight = Color(1, 0.984314, 0.929412, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_card"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+script = ExtResource("1_style")
+kind = "card"
+bg_color = Color(1, 0.956863, 0.886275, 1)
+face_bottom = Color(0.984314, 0.909804, 0.819608, 1)
+contour = Color(0.764706, 0.592157, 0.443137, 1)
+rim = Color(0.952941, 0.835294, 0.705882, 1)
+depth_color = Color(0.87451, 0.741176, 0.596078, 1)
+depth = 1.0
+rim_width = 0.8
+highlight = Color(1, 0.984314, 0.929412, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_pill"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+script = ExtResource("1_style")
+kind = "pill"
+bg_color = Color(1, 0.956863, 0.886275, 1)
+face_bottom = Color(0.984314, 0.909804, 0.819608, 1)
+contour = Color(0.764706, 0.592157, 0.443137, 1)
+rim = Color(0.952941, 0.835294, 0.705882, 1)
+depth_color = Color(0.87451, 0.741176, 0.596078, 1)
+depth = 0.0
+rim_width = 0.8
+highlight = Color(1, 0.984314, 0.929412, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_gold"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+script = ExtResource("1_style")
+kind = "gold"
+bg_color = Color(1, 0.858824, 0.521569, 1)
+face_bottom = Color(1, 0.792157, 0.380392, 1)
+contour = Color(0.54902, 0.309804, 0.113725, 1)
+rim = Color(1, 0.941176, 0.705882, 1)
+depth_color = Color(0.807843, 0.541176, 0.168627, 1)
+depth = 4.0
+rim_width = 1.7
+highlight = Color(1, 0.984314, 0.929412, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_orange"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+script = ExtResource("1_style")
+kind = "orange"
+bg_color = Color(0.909804, 0.607843, 0.286275, 1)
+face_bottom = Color(0.831373, 0.486275, 0.188235, 1)
+contour = Color(0.521569, 0.266667, 0.086275, 1)
+rim = Color(0.968627, 0.745098, 0.447059, 1)
+depth_color = Color(0.65098, 0.356863, 0.141176, 1)
+depth = 4.0
+rim_width = 1.7
+highlight = Color(1, 0.984314, 0.929412, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_fill"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+script = ExtResource("1_style")
+kind = "fill"
+bg_color = Color(0.960784, 0.65098, 0.301961, 1)
+face_bottom = Color(0.913725, 0.537255, 0.168627, 1)
+contour = Color(0.643137, 0.396078, 0.168627, 1)
+rim = Color(0.968627, 0.745098, 0.447059, 1)
+depth_color = Color(0.65098, 0.356863, 0.141176, 1)
+depth = 0.0
+rim_width = 0.7
+highlight = Color(1, 0.984314, 0.929412, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_danger"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+script = ExtResource("1_style")
+kind = "danger"
+bg_color = Color(1, 0.87451, 0.815686, 1)
+face_bottom = Color(0.968627, 0.760784, 0.686275, 1)
+contour = Color(0.662745, 0.376471, 0.266667, 1)
+rim = Color(1, 0.956863, 0.913725, 1)
+depth_color = Color(0.772549, 0.52549, 0.419608, 1)
+depth = 2.0
+rim_width = 1.7
+highlight = Color(1, 0.984314, 0.929412, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_danger_strong"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+script = ExtResource("1_style")
+kind = "danger_strong"
+bg_color = Color(0.831373, 0.52549, 0.392157, 1)
+face_bottom = Color(0.733333, 0.364706, 0.25098, 1)
+contour = Color(0.560784, 0.282353, 0.180392, 1)
+rim = Color(1, 0.956863, 0.913725, 1)
+depth_color = Color(0.545098, 0.262745, 0.164706, 1)
+depth = 2.0
+rim_width = 1.7
+highlight = Color(0.960784, 0.717647, 0.556863, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_toast"]
+content_margin_left = 22.0
+content_margin_top = 8.0
+content_margin_right = 22.0
+content_margin_bottom = 10.0
+script = ExtResource("1_style")
+kind = "toast"
+bg_color = Color(0.384314, 0.282353, 0.192157, 0.901961)
+face_bottom = Color(0.384314, 0.282353, 0.192157, 0.901961)
+contour = Color(0.384314, 0.282353, 0.192157, 1)
+rim = Color(0.384314, 0.282353, 0.192157, 0.901961)
+depth_color = Color(0.384314, 0.282353, 0.192157, 1)
+depth = 0.0
+rim_width = 0.0
+highlight = Color(1, 1, 1, 0)
+
+[sub_resource type="StyleBox" id="StyleBox_check_done"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+script = ExtResource("1_style")
+kind = "check_done"
+bg_color = Color(0.576471, 0.72549, 0.290196, 1)
+face_bottom = Color(0.517647, 0.662745, 0.25098, 1)
+contour = Color(0.372549, 0.494118, 0.176471, 1)
+rim = Color(0.662745, 0.8, 0.384314, 1)
+depth_color = Color(0.372549, 0.494118, 0.176471, 1)
+depth = 1.0
+rim_width = 1.0
+highlight = Color(1, 0.984314, 0.929412, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_check_todo"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+script = ExtResource("1_style")
+kind = "check_todo"
+bg_color = Color(1, 0.905882, 0.745098, 1)
+face_bottom = Color(0.984314, 0.862745, 0.666667, 1)
+contour = Color(0.6, 0.396078, 0.203922, 1)
+rim = Color(1, 0.952941, 0.862745, 1)
+depth_color = Color(0.788235, 0.592157, 0.4, 1)
+depth = 1.0
+rim_width = 1.0
+highlight = Color(1, 0.984314, 0.929412, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_track"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+script = ExtResource("1_style")
+kind = "track"
+bg_color = Color(0.901961, 0.764706, 0.611765, 1)
+face_bottom = Color(0.937255, 0.827451, 0.678431, 1)
+contour = Color(0.788235, 0.592157, 0.4, 1)
+rim = Color(0.862745, 0.705882, 0.529412, 1)
+depth_color = Color(0.835294, 0.666667, 0.490196, 1)
+depth = 0.0
+rim_width = 0.3
+highlight = Color(1, 0.960784, 0.839216, 0.25)
+
+[resource]
+default_font = SubResource("FontVariation_ui")
+default_font_size = 23
+ReferenceSkin/styles/cream = SubResource("StyleBox_cream")
+ReferenceSkin/styles/paper = SubResource("StyleBox_paper")
+ReferenceSkin/styles/header = SubResource("StyleBox_header")
+ReferenceSkin/styles/wood = SubResource("StyleBox_wood")
+ReferenceSkin/styles/card = SubResource("StyleBox_card")
+ReferenceSkin/styles/pill = SubResource("StyleBox_pill")
+ReferenceSkin/styles/gold = SubResource("StyleBox_gold")
+ReferenceSkin/styles/orange = SubResource("StyleBox_orange")
+ReferenceSkin/styles/fill = SubResource("StyleBox_fill")
+ReferenceSkin/styles/danger = SubResource("StyleBox_danger")
+ReferenceSkin/styles/danger_strong = SubResource("StyleBox_danger_strong")
+ReferenceSkin/styles/toast = SubResource("StyleBox_toast")
+ReferenceSkin/styles/check_done = SubResource("StyleBox_check_done")
+ReferenceSkin/styles/check_todo = SubResource("StyleBox_check_todo")
+ReferenceSkin/styles/track = SubResource("StyleBox_track")

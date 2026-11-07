@@ -284,7 +284,10 @@ func _test_touch_station_panels() -> void:
 				var cost: int = view.sim.station_info(id).upgrade_cost
 				await _touch(hud.station_panel.upgrade_button.get_global_rect().get_center())
 				_check(view.sim.station_info(id).level == level + 1 and view.sim.gold == gold - cost, "one touch buys exactly one machine level")
-			await _touch(_world(Vector2(350, 400)))
+			# Touch the dimmed shop just under the header's right end: the shop now fills the
+			# width, so a fixed world point can land on the taller panel instead of the shade.
+			var header_rect: Rect2 = hud.get_node("Header").get_global_rect()
+			await _touch(Vector2(header_rect.end.x - 40.0, header_rect.end.y + 24.0))
 			_check(hud.page == "shop", "touching the shade closes the station panel")
 	view.free()
 	Input.emulate_mouse_from_touch = emulated_mouse

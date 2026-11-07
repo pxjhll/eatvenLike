@@ -54,6 +54,17 @@ var _post_labels := {}
 var ui: Control
 ## The tutorial runs only in the real game (a scene that loads its own save); tests inject a sim.
 var guide: Control
+## The shop fills the screen width and scrolls up and down: _scroll is the world's
+## vertical offset in screen pixels (0 = top edge showing, negative = scrolled down).
+const MIN_VISIBLE_WORLD := 1100.0
+const PAN_SLOP := 12.0
+var _scroll := 0.0
+var _scroll_min := 0.0
+var _world_top := 0.0
+var _world_factor := 1.0
+var _pan_press := Vector2.INF
+var _pan_last := Vector2.ZERO
+var _panning := false
 var guide_enabled := false
 ## 调参 knobs and the playtest log (written only in the real game, not when tests inject a sim).
 var tuning: PanelContainer
@@ -657,9 +668,17 @@ func _fit() -> void:
 	var size := get_viewport_rect().size
 	# Keep the user's higher mixer clear of the HUD without changing scene coordinates.
 	var fitted_size := Layout.WORLD_SIZE + Vector2(0, 50)
-	var world_factor := minf(size.x / fitted_size.x, size.y / fitted_size.y)
-	$Canvas.position = (size - fitted_size * world_factor) / 2.0 + Vector2(0, 50 * world_factor)
+	# Fill the screen width; the part that does not fit vertically is reached by scrolling.
+	# Wide (landscape) windows stop zooming once MIN_VISIBLE_WORLD units of height would be lost.
+	var world_factor := minf(size.x / fitted_size.x, size.y / MIN_VISIBLE_WORLD)
+	_world_factor = world_factor
+	var world_height := fitted_size.y * world_factor
+	_scroll_min = minf(0.0, size.y - world_height)
+	# A world shorter than the window sits centred and does not scroll.
+	_world_top = maxf(0.0, (size.y - world_height) / 2.0)
+	$Canvas.position.x = (size.x - fitted_size.x * world_factor) / 2.0
 	$Canvas.scale = Vector2.ONE * world_factor
+	scroll_world_by(0.0)
 	# Keep HUD panels inside the shop width; vertical anchors still follow the visible window.
 	$Overlay/UI.position = Vector2($Canvas.position.x, 0)
 	$Overlay/UI.scale = Vector2.ONE * world_factor
@@ -667,6 +686,26 @@ func _fit() -> void:
 	ui.fit_to_size($Overlay/UI.size)
 	if tuning != null and tuning.has_method("fit_to_size"):
 		tuning.fit_to_size($Overlay/UI.size)
+
+
+## Moves the shop up or down by a screen distance, clamped to the world's edges.
+func scroll_world_by(delta: float) -> void:
+	_scroll = clampf(_scroll + delta, _scroll_min, 0.0)
+	$Canvas.position.y = _world_top + 50.0 * _world_factor + _scroll
+
+
+## Scrolls just enough that a world rectangle sits between the header and the bottom bar.
+func reveal_world(rect: Rect2) -> void:
+	var canvas: Transform2D = $Canvas.get_global_transform_with_canvas()
+	var top: float = (canvas * rect.position).y
+	var bottom: float = (canvas * rect.end).y
+	var view_height: float = get_viewport_rect().size.y
+	var header: float = 110.0 * _world_factor
+	var footer: float = view_height - 120.0 * _world_factor
+	if bottom > footer:
+		scroll_world_by(footer - bottom)
+	elif top < header:
+		scroll_world_by(header - top)
 
 
 func _build_glass_toggle() -> void:
@@ -1086,10 +1125,51 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not sim.has_method("station_info"):
 		return
+	if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		if not ui.blocks_world(event.position) and not tuning_covers(event.position):
+			scroll_world_by(80.0 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -80.0)
+			get_viewport().set_input_as_handled()
+		return
 	var pressed: bool = event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed
 	pressed = pressed or (event is InputEventScreenTouch and event.pressed)
-	if not pressed or ui.blocks_world(event.position) or tuning_covers(event.position) or _drag.worker_id != -1:
+	var released: bool = event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed
+	released = released or (event is InputEventScreenTouch and not event.pressed and not event.canceled)
+	if pressed:
+		# A press on a staff member belongs to the staff drag; anything else may become a scroll or a tap.
+		_panning = false
+		_pan_press = Vector2.INF
+		if ui.blocks_world(event.position) or tuning_covers(event.position) or _drag.worker_id != -1:
+			return
+		_pan_press = event.position
+		_pan_last = event.position
 		return
+	if _pan_press == Vector2.INF:
+		return
+	var moved: bool = event is InputEventScreenDrag or (event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT)
+	if moved:
+		if _drag.worker_id != -1:
+			_pan_press = Vector2.INF
+			return
+		# A dimmed tutorial step points at a fixed spot, so the shop holds still under it.
+		if not _panning and event.position.distance_to(_pan_press) > PAN_SLOP and not (guide != null and guide.freezes()):
+			_panning = true
+		if _panning:
+			scroll_world_by(event.position.y - _pan_last.y)
+			get_viewport().set_input_as_handled()
+		_pan_last = event.position
+		return
+	if event is InputEventScreenTouch and event.canceled:
+		_pan_press = Vector2.INF
+		_panning = false
+		return
+	if not released:
+		return
+	var was_pan := _panning
+	_pan_press = Vector2.INF
+	_panning = false
+	if was_pan or _drag.worker_id != -1:
+		return
+	# A tap (press and release without scrolling) opens what is under it.
 	var point: Vector2 = $Canvas.get_global_transform_with_canvas().affine_inverse() * event.position
 	for id in STATION_REGIONS:
 		if STATION_REGIONS[id].has_point(point):

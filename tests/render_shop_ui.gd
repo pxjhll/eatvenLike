@@ -27,6 +27,14 @@ func _run() -> void:
 		quit(1)
 		return
 	await _capture("home")
+	# The shop fills a 9:16 phone's width and scrolls vertically instead of leaving side bars.
+	var canvas: Node2D = view.get_node("Canvas")
+	_check(absf(canvas.global_position.x) < 0.5 and absf(canvas.scale.x - view.get_viewport_rect().size.x / 720.0) < 0.001, "portrait shop fills the screen width")
+	var top_y := canvas.global_position.y
+	view.scroll_world_by(-100000.0)
+	_check(absf(canvas.global_position.y + 1500.0 * canvas.scale.y - view.get_viewport_rect().size.y) < 0.5, "scrolling down stops at the bottom of the shop")
+	view.scroll_world_by(100000.0)
+	_check(absf(canvas.global_position.y - top_y) < 0.5, "scrolling up returns to the top of the shop")
 	root.size = Vector2i(1340, 1080)
 	await _layout()
 	var desktop_shop := Rect2(view.get_node("Canvas").global_position, Vector2(720, 1280) * view.get_node("Canvas").scale)
@@ -95,13 +103,38 @@ func _run() -> void:
 	root.size = Vector2i(720, 1280)
 	await _layout()
 	await process_frame
-	# An open sheet must not let a gesture pick the actor behind it.
-	await _gesture(_world(view.sim.workers[0].pos + Vector2(0, -65)), _world(Vector2(325, 210)))
-	_check(view.sim.workers[0].post == "" and not view._drag.dragging, "overlay blocks actor drag through its panel")
+	# An open sheet must not let a gesture pick the actor behind it. Press on the actor's
+	# body, but not where a roster card happens to sit on top: dragging a card is a real drag.
+	var actor_point := _world(view.sim.workers[0].pos + Vector2(0, -65))
+	var hud_buttons: Array = hud.find_children("*", "BaseButton", true, false).filter(func(button: BaseButton) -> bool: return button.is_visible_in_tree())
+	var found_spot := false
+	for rise in [-65.0, -30.0, -100.0, -10.0, -120.0]:
+		for shift in [0.0, -30.0, 30.0, -45.0, 45.0]:
+			var candidate := _world(view.sim.workers[0].pos + Vector2(shift, rise))
+			if not found_spot and not hud_buttons.any(func(button: BaseButton) -> bool: return button.get_global_rect().has_point(candidate)):
+				actor_point = candidate
+				found_spot = true
+	_check(found_spot, "found an actor point under the sheet that is not on a button")
+	var posts_under_sheet: Array = view.sim.workers.map(func(worker: Dictionary) -> String: return worker.post)
+	await _gesture(actor_point, _world(Vector2(325, 210)))
+	_check(view.sim.workers.map(func(worker: Dictionary) -> String: return worker.post) == posts_under_sheet and not view._drag.dragging, "overlay blocks actor drag through its panel")
 	await _click(hud.home_button)
-	var hidden_card: Vector2 = view._staff_cards[0].get_global_rect().get_center()
+	# Press where the hidden card was, but not on a worker standing on the floor there:
+	# grabbing a visible worker by the body is a real drag, not what this check is about.
+	var card_rect: Rect2 = view._staff_cards[0].get_global_rect()
+	var hidden_card: Vector2 = card_rect.get_center()
+	for fraction in [0.5, 0.15, 0.85, 0.3, 0.7]:
+		var candidate := card_rect.position + card_rect.size * Vector2(fraction, 0.5)
+		var floor_point: Vector2 = view.get_node("Canvas").get_global_transform_with_canvas().affine_inverse() * candidate
+		var on_worker := false
+		for worker in view.sim.workers:
+			on_worker = on_worker or Rect2(worker.pos + Vector2(-50, -130), Vector2(100, 145)).has_point(floor_point)
+		if not on_worker:
+			hidden_card = candidate
+			break
+	var posts_before: Array = view.sim.workers.map(func(worker: Dictionary) -> String: return worker.post)
 	await _gesture(hidden_card, _world(Vector2(325, 210)))
-	_check(view.sim.workers[0].post == "", "hidden staff cards cannot start a drag")
+	_check(view.sim.workers.map(func(worker: Dictionary) -> String: return worker.post) == posts_before, "hidden staff cards cannot start a drag")
 	await _click(hud.staff_button)
 	await _gesture(view._staff_cards[0].get_global_rect().get_center(), _world(Vector2(325, 210)))
 	_check(view.sim.workers[0].post == "boil" and hud.page == "shop", "dragging visible roster card dismisses sheet and seats real employee")
@@ -211,3 +244,4 @@ func _check(ok: bool, message: String) -> void:
 	if not ok:
 		failures += 1
 		push_error("SHOP UI GUI: " + message)
+
