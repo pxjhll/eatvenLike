@@ -26,7 +26,7 @@ func setup(view: Node2D, hud: Control) -> void:
 	var current: VBoxContainer = hud._card(self)
 	var current_row: HBoxContainer = hud._row(current, 18)
 	_goal_icon = hud._portrait(current_row, "cat", 100)
-	_goal_icon.texture = Icons.texture("seal")
+	_goal_icon.texture = Icons.texture("goals")
 	var body := VBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 5)
@@ -78,9 +78,9 @@ func refresh() -> void:
 	var view: ShopView = _view.view
 	var goal := view.goal()
 	_goal_title.text = goal.text
-	# 目标图标：texts["icon_<机器>"]（没写就用机器 / 原料箱 id），完成后用“目标”
+	# 目标图标：texts["icon_<机器>"]（没写就用机器 / 原料箱的图标），完成后用“目标”
 	var key := String(goal.id) if goal.kind in ["open", "box", "stage"] else ""
-	_goal_icon.texture = Icons.texture(view.text("icon_" + key, {}, key) if not key.is_empty() else "goals")
+	_goal_icon.texture = Icons.texture(view.text("icon_" + key, {}, view.icon_of(key)) if not key.is_empty() else "goals")
 	_goal_bar.get_parent().visible = int(goal.target) > 0
 	_goal_bar.value = clampf(float(goal.current) / maxf(1.0, float(goal.target)), 0, 1)
 	_goal_value.text = "%d / %d" % [goal.current, goal.target]

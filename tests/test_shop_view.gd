@@ -1,84 +1,67 @@
 extends "res://tests/test_case.gd"
-## 界面快照 ShopView（规格 §6.2.1）：奶茶店整局逐帧对旧模拟，界面读到的目标、瓶颈提示、机器面板数字都一样。
-## 旧模拟删除时（第 5 个 PR）把对比改成存下来的基准。
+## 界面快照 ShopView（规格 §6.2.1）：奶茶店整局对旧模拟录下的界面数据（tests/baselines/tea_ui_73b0ae3.json），
+## 界面读到的目标、瓶颈提示、机器面板数字（解锁、等级、升级价、售价预览、原料箱）都一样。
 
-const TeaSim := preload("res://game/tea_playtest/tea_shop_sim.gd")
 const Replay := preload("res://tests/baselines/replay_rules.gd")
 const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
 
 
-func _differences(old, view: ShopView) -> Array:
-	var out: Array = []
+## 和录基准时同一种记法
+static func signature(view: ShopView) -> Dictionary:
+	var out := {}
 	var g := view.goal()
-	var og: Dictionary = old.goal_progress()
-	if [g.text, int(g.current), int(g.target), g.long] != [og.text, int(og.current), int(og.target), old.current_goal()]:
-		out.append("目标 旧 %s / %s 新 %s / %s" % [og, old.current_goal(), [g.text, g.current, g.target], g.long])
+	out.goal = [g.text, int(g.current), int(g.target), g.long]
 	var hint := view.bottleneck()
-	var oh: Dictionary = old._bottleneck()
-	if [hint.get("text", ""), hint.get("fix", ""), hint.get("target", "")] != [oh.get("text", ""), oh.get("fix", ""), oh.get("target", "")]:
-		out.append("瓶颈 旧 %s 新 %s" % [oh, hint])
-	for st in TEA.stations:
-		var info: Dictionary = old.station_info(st.id)
+	out.hint = [hint.get("text", ""), hint.get("fix", ""), hint.get("target", "")]
+	for st in view.rules.shop.stations:
 		var card := view.station(st.id)
-		if [card.unlocked, card.level] != [info.unlocked, info.level]:
-			out.append("%s 解锁/等级 旧 %s 新 %s" % [st.id, [info.unlocked, info.level], [card.unlocked, card.level]])
-			continue
-		if not card.unlocked: continue
-		if card.has("track") and int(card.track.cost) != int(info.upgrade_cost):
-			out.append("%s 升级价 旧 %d 新 %d" % [st.id, info.upgrade_cost, card.track.cost])
-		if not info.price.is_empty():
-			var p := view.price_preview(st.id)
-			if not (is_equal_approx(p.now, info.price.now) and is_equal_approx(p.next, info.price.next)):
-				out.append("%s 售价预览 旧 %s 新 %s" % [st.id, info.price, p])
-		for row in info.materials:
-			var mine: Array = card.get("materials", []).filter(func(m: Dictionary) -> bool: return m.id == row.id)
-			var boxed: bool = row.get("box", false) and not row.box_unlocked
-			var want: int = row.box_cost if boxed else row.upgrade_cost
-			if mine.is_empty() or int(mine[0].level) != int(row.level) or int(mine[0].cost) != want \
-					or String(mine[0].state).begins_with("box") != boxed:
-				out.append("%s/%s 物料 旧 %s 新 %s" % [st.id, row.id, [row.level, row.upgrade_cost], mine])
+		var row: Array = [card.unlocked, card.level]
+		if card.unlocked:
+			row.append(int(card.track.cost) if card.has("track") else -1)
+			if view.price_preview(st.id).size() > 0:
+				var p := view.price_preview(st.id)
+				row.append_array([snappedf(p.now, 0.01), snappedf(p.next, 0.01)])
+			for m in card.get("materials", []):
+				row.append([m.id, int(m.level), int(m.cost), String(m.state).begins_with("box")])
+		out[st.id] = row
 	return out
+
+
+static func _same(a: Variant, b: Variant) -> bool:
+	if a is Array and b is Array:
+		if a.size() != b.size(): return false
+		for i in a.size():
+			if not _same(a[i], b[i]): return false
+		return true
+	if (a is float or a is int) and (b is float or b is int): return absf(float(a) - float(b)) < 0.011
+	return a == b
 
 
 func test_tea_snapshot_matches_old_ui_data_through_whole_shop() -> void:
 	var base: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/tea_73b0ae3.json"))
-	var old = TeaSim.new()
+	var recorded: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/tea_ui_73b0ae3.json"))
 	var rules := ShopRules.new(TEA)
 	var view := ShopView.new(rules)
 	var actions: Array = base.actions
 	var next_action := 0
 	var reported := 0
-	var checked := 0
-	for tick in int(base.minutes * 600):
-		old.advance(0.1)
-		rules.step(0.1)
-		while next_action < actions.size() and float(actions[next_action][0]) <= rules.clock + 0.0001:
-			var command: String = actions[next_action][1]
-			_old(old, command)
-			Replay.run_command(rules, command)
-			next_action += 1
-		if tick % 50 != 0: continue
-		checked += 1
-		for line in _differences(old, view):
-			if reported < 8: check(false, "t=%.0f %s" % [rules.clock, line])
+	var expected := {}
+	var rows: Array = recorded.rows
+	for row in rows:
+		var tick := int(row[0])
+		while rules.clock < (tick + 1) * ShopRules.STEP - 0.0001:
+			rules.step(ShopRules.STEP)
+			while next_action < actions.size() and float(actions[next_action][0]) <= rules.clock + 0.0001:
+				Replay.run_command(rules, actions[next_action][1])
+				next_action += 1
+		expected.merge(row[1], true)
+		var mine := signature(view)
+		for key in expected:
+			if _same(mine.get(key), expected[key]): continue
+			if reported < 8: check(false, "t=%.0f %s 旧 %s 新 %s" % [rules.clock, key, expected[key], mine.get(key)])
 			reported += 1
-	check(checked > 400, "整局查了 %d 次" % checked)
+	check(rows.size() > 400, "整局查了 %d 次" % rows.size())
 	check_eq(reported, 0, "整局界面数据一致")
-
-
-func _old(sim, command: String) -> void:
-	var parts := command.split(" ")
-	match parts[0]:
-		"unlock": sim.unlock_station(parts[1])
-		"box": sim.unlock_box(parts[1])
-		"hire": sim.hire()
-		"deploy": sim.deploy_worker(int(parts[1]))
-		"upgrade": sim.upgrade_station(parts[1])
-		"material": sim.upgrade_material(parts[1], parts[2])
-		"staff": sim.buy_staff_upgrade(parts[1])
-		"seat": sim.buy_seat()
-		"flyer_upgrade": sim.upgrade_flyers()
-		"flyer": sim.buy_flyers()
 
 
 func test_buffs_list_timed_modifiers() -> void:

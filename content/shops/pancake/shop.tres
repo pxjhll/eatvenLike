@@ -1350,7 +1350,7 @@ icon = "res://art/pancake/icons/packing.tres"
 
 [sub_resource type="Resource" id="Resource_gu1b7"]
 script = ExtResource("21_c0lsj")
-id = "rack"
+id = "packet_rack"
 display_name = "货架"
 block = "pickup"
 params = {

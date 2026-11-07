@@ -9,8 +9,11 @@ extends RefCounted
 
 const STEP := 0.1
 const SUPPLY := "supply"
+## 规则层自己的两个交接位置：出餐口的堂食区（货架）和外带区（外带架）。店铺数据里的传送带用这两个名字指它们，
+## 所以机器 id 不能叫这两个名字（test_shop_specs 查）
 const SHELF := "shelf"
 const RACK := "rack"
+const PLACES := [SHELF, RACK]
 const COUNTER := "counter"
 const UNLIMITED := 999
 
@@ -112,6 +115,10 @@ const STATE_KEYS := ["clock", "gold", "revenue", "sold", "sold_by_dish", "lost",
 	"_courier", "customers", "queue", "_next_customer_id", "full_seconds", "pot_busy", "side_idle"]
 
 
+## 这些状态按店铺数据里的 id（机器、原料、菜、座位组）存：读档时只认数据里现在有的 id，缺的补开局默认值（§3.12）
+const BY_DATA_ID := ["sold_by_dish", "unlocked", "levels", "boxes", "stations", "shelf_stock", "order_ramp", "seats"]
+
+
 func to_dict() -> Dictionary:
 	var out := {"shop": shop.id}
 	for key in STATE_KEYS:
@@ -144,16 +151,25 @@ static func _plain(v: Variant) -> Variant:
 ## 读档：先按店铺数据重开，再把存下的状态盖上去。返回错误说明（空 = 成功）。
 func load_dict(data: Dictionary) -> String:
 	if String(data.get("shop", "")) != shop.id: return "不是这家店的存档"
+	# 先全部查一遍再动手：坏存档不能改到正在玩的店
 	for key in STATE_KEYS:
 		if not data.has(key): return "缺少 " + key
+		var v: Variant = data[key]
+		var current: Variant = get(key)
+		if typeof(current) != typeof(v) and not (current is float and v is int): return "%s 类型不对" % key
+	for key in ["workers", "rng", "event_rng", "mods", "log", "pending_events"]:
+		if not data.get(key) is Array: return "缺少 " + key
 	reset()
 	for key in STATE_KEYS:
 		var v: Variant = data[key]
 		var current: Variant = get(key)
 		if current is Array and current.is_typed():
 			current.assign(v)
-		elif typeof(current) != typeof(v) and not (current is float and v is int):
-			return "%s 类型不对" % key
+		elif key in BY_DATA_ID:
+			# 按店铺数据的 id 存的状态：数据里新加的机器 / 菜用开局默认值，数据里已经删掉的丢掉
+			var merged: Dictionary = current
+			for id in v:
+				if merged.has(id): merged[id] = v[id].duplicate(true) if v[id] is Array or v[id] is Dictionary else v[id]
 		else:
 			set(key, v.duplicate(true) if v is Array or v is Dictionary else v)
 	workers = []

@@ -3,16 +3,15 @@ extends RefCounted
 ## 寻路：按 SpecLayout 选格子寻路或直线。路径缓存按起终格。
 
 var layout: SpecLayout
-var _grid: ShopGridDef
+var _grid: RuleGrid
 var _paths := {}
 
 
 func _init(layout_: SpecLayout) -> void:
 	layout = layout_
 	if layout.nav != "grid": return
-	_grid = ShopGridDef.new()
-	if layout.areas.size() > 0: _grid.kitchen_rect = layout.areas[0]
-	if layout.areas.size() > 1: _grid.front_rect = layout.areas[1]
+	_grid = RuleGrid.new()
+	_grid.areas.assign(layout.areas)
 	for y in layout.grid_size.y:
 		for x in layout.grid_size.x:
 			var c := Vector2i(x, y)

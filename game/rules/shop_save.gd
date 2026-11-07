@@ -136,8 +136,7 @@ func _read_existing() -> Dictionary:
 
 func _read_speed(value: Variant) -> float:
 	if value is float or value is int: return float(value)
-	# SaveService losslessly encodes floats. Validate before decoding, since its
-	# general legacy reader intentionally accepts a wider range of payloads.
+	# 浮点数按 SaveUtil 的 "f64:十六进制" 编码；先查格式再解码
 	if not value is String or not value.begins_with("f64:") or value.length() != 20: return NAN
 	var hex: String = value.substr(4)
 	for character in hex:

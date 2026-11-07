@@ -30,8 +30,6 @@
 [ext_resource type="Texture2D" uid="uid://2m2in2h2maso" path="res://art/reference/outer_right.png" id="31_i5bfi"]
 
 [ext_resource type="Script" path="res://presentation/shop/fitted_prop.gd" id="32_prop"]
-[ext_resource type="Script" path="res://presentation/tea_playtest/dining_area.gd" id="33_dining"]
-
 [ext_resource type="Texture2D" path="res://art/reference/takeaway_bag.png" id="figcraft_texture_28"]
 
 [ext_resource type="Texture2D" path="res://art/reference/topping_green_box.png" id="figcraft_texture_29"]
@@ -697,7 +695,6 @@ display_width = 500.0
 
 [node name="DiningArea" type="Node2D" parent="Sortables"]
 y_sort_enabled = true
-script = ExtResource("33_dining")
 
 [node name="FrontWoodFloor" type="Sprite2D" parent="."]
 z_index = -19

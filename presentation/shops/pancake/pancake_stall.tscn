@@ -565,7 +565,7 @@ metadata/source_name = "checkout"
 transform = Transform2D(1, 0, 0, 1, 598, 0)
 metadata/figcraft_id = 166
 metadata/source_name = "货架"
-metadata/unlock_key = "rack"
+metadata/unlock_key = "packet_rack"
 visible = false
 
 [node name="N49_packet_rack" type="Sprite2D" parent="SceneClip/N46_12 前台柜台与商品/N166_货架"]
