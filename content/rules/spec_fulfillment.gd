@@ -1,0 +1,39 @@
+class_name SpecFulfillment
+extends Resource
+## 订单履约（§3.2）：一位顾客从进店到离开。菜谱管“怎么做”，这里管“怎么卖”。
+
+## 附加菜：点主菜的顾客有 addon_chance 的概率顺带一份 addon_dish（煎饼摊 30% 豆浆）
+@export var addon_dish: String = ""
+@export var addon_chance: float = 0.0
+## 多菜订单由一人跟单时，附加菜先做（true）还是后做
+@export var addon_first: bool = true
+## 堂食/外带判定：seat_first = 有空座先坐下点单，没空座且外带开放 → 外带，否则站队堂食；
+## takeaway_only = 全部外带；share = 按阶段 takeaway_share 抽
+@export var dine_rule: String = "seat_first"
+## 外带开放要哪台机器（封口机）
+@export var takeaway_station: String = ""
+## 谁接单：front = 前厅员工；follower = 空闲员工领队首、未被认领的顾客，一人到底
+@export var taker: String = "front"
+## 交接：handoff = 后厨放出餐口、前厅递；single = 一人从收钱跟到递餐
+@export var handoff: String = "handoff"
+## 收款时机：on_take（接单收钱）/ on_deliver（交付时）
+@export var pay_at: String = "on_deliver"
+## 计价取整：dish_tenth_carry = 每道菜价保留 1 位小数、金币取整零头累计；order_round = 整单四舍五入
+@export var price_rounding: String = "dish_tenth_carry"
+## 让出队位：after_deliver = 交付后离队；after_pay = 收钱后离队去等位
+@export var leave_queue: String = "after_deliver"
+## 堂食吃多久走在阶段里（seat_seconds）；收钱后去哪等：wait_seats = 先坐等位座，没座站等候区
+@export var wait_area: String = ""
+## 耐心：mood_seconds = 变脸阈值；leave_after > 0 = 这么久没人认领就走；leave_who = 谁会走
+@export var mood_seconds: Array[float] = []
+@export var seated_patience: float = 1.0
+@export var leave_after: float = 0.0
+@export var leave_who: String = "none"
+## 新菜上菜单后先按 ramp_start 的权重，来 ramp_orders 位客人后到满权重（外带同理）
+@export var ramp_start: float = 1.0
+@export var ramp_orders: int = 0
+## 来客间隔的分布：fixed（按间隔匀速）/ exponential（指数分布）
+@export var arrival: String = "fixed"
+## 开张后头几位：开张瞬间来几位、第一位隔几秒
+@export var opening_customers: int = 0
+@export var first_customer_delay: float = 0.0

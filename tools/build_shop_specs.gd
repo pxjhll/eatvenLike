@@ -1,0 +1,711 @@
+extends SceneTree
+## 把 main 73b0ae3 两家店的数值原样搬进通用店铺数据（规格 §4）：
+##   godot --headless --path . -s tools/build_shop_specs.gd
+## 读旧数据（tea.tres / art_shop_progression.tres / press_table.tres / 奶茶店模拟里的常量 / 煎饼摊 cfg），
+## 写出 content/shops/tea/shop.tres、content/shops/pancake/shop.tres、content/campaign/campaign.tres。
+## 这是一次性迁移工具：旧模拟删除后（第 4、5 个 PR）它也一起删，之后直接在 Godot 里编辑 shop.tres。
+## 这里允许出现店铺和机器的名字，规则层不允许（§7 干净检查只扫 game/rules 和共用界面）。
+
+const TeaSim := preload("res://game/tea_playtest/tea_shop_sim.gd")
+const PancakeSim := preload("res://game/pancake/pancake_sim.gd")
+
+const OUT_TEA := "res://content/shops/tea/shop.tres"
+const OUT_PANCAKE := "res://content/shops/pancake/shop.tres"
+const OUT_CAMPAIGN := "res://content/campaign/campaign.tres"
+
+
+func _initialize() -> void:
+	var tea := build_tea()
+	var pancake := build_pancake()
+	var campaign := build_campaign()
+	var failed := false
+	for pair in [[tea, OUT_TEA], [pancake, OUT_PANCAKE], [campaign, OUT_CAMPAIGN]]:
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(String(pair[1]).get_base_dir()))
+		var error := ResourceSaver.save(pair[0], pair[1])
+		print("%s %s" % ["写出" if error == OK else "失败", pair[1]])
+		failed = failed or error != OK
+	quit(1 if failed else 0)
+
+
+# ---------- 小工具 ----------
+
+static func effect(kind: String, op: String, value: float, target := "", dishes: Array = [], part := "") -> SpecEffect:
+	var e := SpecEffect.make(kind, op, value, target)
+	e.dishes.assign(dishes)
+	e.price_part = part
+	return e
+
+
+static func level(cost: int, effects: Array, star := false) -> SpecUpgradeLevel:
+	var l := SpecUpgradeLevel.new()
+	l.cost = cost
+	l.effects.assign(effects)
+	l.star = star
+	return l
+
+
+static func track(id: String, name: String, label := "") -> SpecUpgradeTrack:
+	var t := SpecUpgradeTrack.new()
+	t.id = id
+	t.display_name = name
+	t.effect_label = label
+	return t
+
+
+static func item(id: String, name: String) -> SpecItem:
+	var i := SpecItem.new()
+	i.id = id
+	i.display_name = name
+	return i
+
+
+static func step(station: String, action: String, seconds: float, label: String, consumes := {}, produces := {}, repeat := 1) -> SpecStep:
+	var s := SpecStep.new()
+	s.station = station
+	s.action = action
+	s.seconds = seconds
+	s.label = label
+	for k in consumes: s.consumes[k] = consumes[k]
+	for k in produces: s.produces[k] = produces[k]
+	s.repeat = repeat
+	return s
+
+
+static func task(id: String, name: String, condition: String, target: String, amount: float) -> SpecTask:
+	var t := SpecTask.new()
+	t.id = id
+	t.display_name = name
+	t.condition = condition
+	t.target = target
+	t.amount = amount
+	return t
+
+
+## 旧“美术店”涨价机器 → 升级轨：每级售价 ×(1 + step)，到星级再 ×star_mult；可选每级速度 / 每锅份数（set）。
+static func art_track(id: String, name: String, label: String, costs: Array, price_step: float, price_dishes: Array,
+		star_levels: Array, star_mult: float, speeds: Array = [], batch: Array = []) -> SpecUpgradeTrack:
+	var t := track(id, name, label)
+	if not speeds.is_empty(): t.base_effects.append(effect("speed", "set", speeds[0]))
+	if not batch.is_empty(): t.base_effects.append(effect("batch", "set", batch[0]))
+	for index in costs.size():
+		var lv := index + 2
+		var effects: Array = []
+		if price_step > 0.0: effects.append(effect("price", "mul", 1.0 + price_step, "", price_dishes))
+		var star: bool = lv in star_levels
+		if star and star_mult != 1.0: effects.append(effect("price", "mul", star_mult, "", price_dishes))
+		if not speeds.is_empty(): effects.append(effect("speed", "set", speeds[mini(lv, speeds.size()) - 1]))
+		if not batch.is_empty(): effects.append(effect("batch", "set", batch[mini(lv, batch.size()) - 1]))
+		t.levels.append(level(int(costs[index]), effects, star))
+	return t
+
+
+# ---------- 奶茶店 ----------
+
+func build_tea() -> SpecShop:
+	var sim = TeaSim.new()
+	var config = sim.CONFIG
+	var progression = sim.PROGRESSION
+	var press = sim.PRESS_DEF
+	var shop := SpecShop.new()
+	shop.id = "tea"
+	shop.display_name = config.display_name
+	shop.start_gold = config.starting_gold
+	shop.random_seed = config.random_seed
+	shop.flavor_flow = progression.flavor_flow
+	shop.level_flow = progression.level_flow
+	shop.scene_path = "res://presentation/tea_playtest/tea_playtest.tscn"
+	shop.save_file = "tea_shop.json"
+	shop.scale_anchor = "cup"
+
+	for definition in config.items: shop.items.append(item(definition.id, definition.display_name))
+	shop.items.append(item("lemon_tea", "柠檬茶"))
+
+	var lemonade = sim._definition("lemonade")
+	var boil = sim._definition("boil")
+	var mix = sim._definition("mix")
+	var topping = sim._definition("topping")
+	var supply = sim._definition("supply")
+
+	# 菜品与工序链（§3.1）。茶汤 = 煮茶机一锅的中间品；红茶 = 茶汤直接出餐。
+	var fetch_leaf := step("supply", "fetch", 0.6, "拿茶叶", {}, {"tea_leaf": 1})
+	var brew := step("boil", "boil", 0.0, "煮茶", {"tea_leaf": 1}, {"tea": 1})
+	var mix_step := step("mix", "mix", 0.0, "调奶", {"tea": 1, "milk": 1}, {"plain_milk_tea": 1})
+	for definition in config.dishes:
+		var dish := SpecDish.new()
+		dish.id = definition.id
+		dish.display_name = definition.display_name
+		dish.item = definition.item_id
+		dish.price_parts["base"] = float(definition.price)
+		dish.front = definition.id in sim.FRONT_DISHES
+		dish.takeaway_process = not dish.front
+		match definition.id:
+			"lemonade":
+				dish.steps.append(step("lemonade", "pour", lemonade.cycle_seconds, "打柠檬水", {}, {"lemonade": 1}))
+			"lemon_tea":
+				dish.steps.append(step("lemonade", "pour", lemonade.cycle_seconds, "打柠檬水", {}, {"lemonade": 1}))
+				dish.steps.append(step("press", "press", press.art_seconds, "捣柠檬", {"lemonade": 1}, {"lemon_tea": 1}))
+				dish.flavor_station = "press"
+				dish.flavor_material = "lemon"
+			"black_tea":
+				dish.steps.append_array([fetch_leaf, brew, step("seal", "place", 0.0, "放出餐口", {"tea": 1}, {"black_tea": 1})])
+			"plain_milk_tea":
+				dish.steps.append_array([fetch_leaf, brew, mix_step, step("seal", "place", 0.0, "放出餐口", {"plain_milk_tea": 1}, {})])
+			_:
+				var material = null
+				for m in topping.materials:
+					if m.item_id == definition.id: material = m
+				dish.flavor_station = "topping"
+				dish.flavor_material = material.id
+				dish.topping_count = 1
+				dish.steps.append_array([fetch_leaf, brew, mix_step,
+					step("topping", "top", sim._topping_seconds(), "加" + material.display_name, {"plain_milk_tea": 1}, {definition.id: 1}),
+					step("seal", "place", 0.0, "放出餐口", {definition.id: 1}, {})])
+		shop.dishes.append(dish)
+
+	# 机器（§3.3）
+	var stations := {}
+	var s := SpecStation.new()
+	s.id = "counter"
+	s.display_name = "柜台"
+	s.block = "counter"
+	s.zone = "front"
+	s.starts_unlocked = true
+	s.params = {"take_seconds": 0.0, "hand_seconds": 0.6, "posts": 2}
+	stations[s.id] = s
+
+	s = SpecStation.new()
+	s.id = "lemonade"
+	s.display_name = lemonade.display_name
+	s.block = "dispenser"
+	s.zone = "front"
+	s.params = {"seconds": lemonade.cycle_seconds}
+	s.unlock_cost = sim._unlock_cost("lemonade")
+	s.price_dishes.assign(lemonade.art_price_dishes)
+	s.counts_for_flow = "lemonade" in sim.FLOW_MACHINES
+	s.tracks.append(art_track("level", lemonade.display_name, "售价", lemonade.art_costs, lemonade.art_price_step,
+		lemonade.art_price_dishes, lemonade.art_star_levels, lemonade.art_star_mult))
+	stations[s.id] = s
+
+	s = SpecStation.new()
+	s.id = "supply"
+	s.display_name = supply.display_name
+	s.block = "supply"
+	s.zone = "kitchen"
+	s.starts_unlocked = true
+	s.params = {"fetch_seconds": 0.6}
+	for definition in supply.materials:
+		var material := SpecMaterial.new()
+		material.id = definition.id
+		material.display_name = definition.display_name
+		material.item = definition.item_id
+		material.box_cost = definition.box_cost
+		material.box_station = sim._canonical(definition.box_machine)
+		material.track = art_track(definition.id, definition.display_name, "售价", definition.art_costs, definition.art_price_step,
+			definition.art_price_dishes, [], 1.0)
+		s.materials.append(material)
+	stations[s.id] = s
+
+	s = SpecStation.new()
+	s.id = "boil"
+	s.display_name = boil.display_name
+	s.block = "batch_pot"
+	s.zone = "kitchen"
+	s.seatable = true
+	s.seated_bonus = sim.SEATED_BONUS
+	s.params = {"cook_seconds": boil.art_seconds, "load_seconds": 0.6, "capacity": sim.BOIL_CAPACITY,
+		"manual_load": true, "manual_unload": true, "stir_points": sim.STIR_POINTS, "stir_seconds": sim.STIR_SECONDS}
+	s.counts_for_flow = "boil" in sim.FLOW_MACHINES
+	s.tracks.append(art_track("level", boil.display_name, "煮茶速度", boil.art_costs, 0.0, [], boil.art_star_levels,
+		boil.art_star_mult, boil.art_speeds, boil.art_batch))
+	var stock := SpecStockRule.new()
+	stock.item = "black_tea"
+	stock.base = sim.BLACK_TEA_CAP
+	stock.per_waiting = 1
+	s.stock.append(stock)
+	stations[s.id] = s
+
+	s = SpecStation.new()
+	s.id = "mix"
+	s.display_name = mix.display_name
+	s.block = "combine"
+	s.zone = "kitchen"
+	s.params = {"seconds": 4.0, "manual": false}
+	s.price_dishes.assign(mix.art_price_dishes)
+	s.counts_for_flow = "mix" in sim.FLOW_MACHINES
+	s.tracks.append(art_track("level", mix.display_name, "售价", mix.art_costs, mix.art_price_step, mix.art_price_dishes,
+		mix.art_star_levels, mix.art_star_mult))
+	stations[s.id] = s
+
+	s = SpecStation.new()
+	s.id = "topping"
+	s.display_name = topping.display_name
+	s.block = "topping"
+	s.zone = "kitchen"
+	s.seatable = true
+	s.seated_bonus = sim.SEATED_BONUS
+	s.params = {"seconds": sim._topping_seconds(), "users": 1, "flavor_cap": topping.flavor_cap}
+	s.counts_for_flow = "topping" in sim.FLOW_MACHINES
+	var level_track := track("level", topping.display_name, "新口味")
+	level_track.base_effects.append(effect("speed", "set", topping.level_speed[0]))
+	for index in topping.upgrade_costs.size():
+		var lv: int = index + 2
+		var effects: Array = [effect("speed", "set", topping.level_speed[mini(lv, topping.level_speed.size()) - 1])]
+		for m in topping.materials:
+			if m.unlock_level == lv: effects.append(effect("open_flavor", "set", 1.0, m.id))
+		level_track.levels.append(level(int(topping.upgrade_costs[index]), effects))
+	s.tracks.append(level_track)
+	for definition in topping.materials:
+		var material := SpecMaterial.new()
+		material.id = definition.id
+		material.display_name = definition.display_name
+		material.item = definition.item_id
+		material.track = _bonus_track(definition)
+		s.materials.append(material)
+	stations[s.id] = s
+
+	s = SpecStation.new()
+	s.id = "press"
+	s.display_name = press.display_name
+	s.block = "hand"
+	s.zone = "front"
+	s.params = {"seconds": press.art_seconds, "users": 1}
+	s.price_dishes.assign(press.art_price_dishes)
+	s.counts_for_flow = "press" in sim.FLOW_MACHINES
+	s.tracks.append(art_track("level", press.display_name, "售价", press.art_costs, press.art_price_step, press.art_price_dishes,
+		press.art_star_levels, press.art_star_mult))
+	for definition in press.materials:
+		var material := SpecMaterial.new()
+		material.id = definition.id
+		material.display_name = definition.display_name
+		material.item = definition.item_id
+		material.track = _bonus_track(definition)
+		s.materials.append(material)
+	stations[s.id] = s
+
+	# 封口机 = 出餐口的加工环节（§3.3）；外带架 = 外带分区 6 位。
+	s = SpecStation.new()
+	s.id = "seal"
+	s.display_name = "封口机"
+	s.block = "pickup"
+	s.zone = "kitchen"
+	# 堂食区每种菜的格数 = max(店铺货架容量, 当前队伍上限)（跟单模式），外带架 6 格
+	s.params = {"zones": {"dine": config.shelf_capacity, "takeaway": sim.PICKUP_CAPACITY}, "dine_per_dish": true,
+		"dine_at_least_queue": sim.follow_orders, "process_seconds": progression.seal_seconds,
+		"process_slots": progression.seal_slots[0], "process_into": "takeaway"}
+	s.counts_for_flow = "seal" in sim.FLOW_MACHINES
+	var seal_track := track("level", "封口机", "封口速度")
+	seal_track.base_effects.append(effect("speed", "set", progression.seal_speeds[0]))
+	seal_track.base_effects.append(effect("process_slots", "set", progression.seal_slots[0]))
+	for index in progression.seal_costs.size():
+		var lv: int = index + 2
+		var slots: int = progression.seal_slots[mini(lv, progression.seal_slots.size()) - 1]
+		var star: bool = slots > progression.seal_slots[mini(lv - 1, progression.seal_slots.size()) - 1]
+		seal_track.levels.append(level(int(progression.seal_costs[index]), [
+			effect("speed", "set", progression.seal_speeds[mini(lv, progression.seal_speeds.size()) - 1]),
+			effect("process_slots", "set", slots)], star))
+	s.tracks.append(seal_track)
+	stations[s.id] = s
+
+	for id in ["counter", "lemonade", "supply", "boil", "seal", "mix", "press", "topping"]:
+		shop.stations.append(stations[id])
+	for st in shop.stations: st.description = sim.station_info(st.id).description
+
+	# 阶段（§3.9）：阶段 0 = 开张（柠檬水台），之后每阶段开一组机器。
+	for index in progression.stages.size():
+		var old = progression.stages[index]
+		var stage := SpecStage.new()
+		stage.id = "stage%d" % index
+		stage.display_name = old.line_name if index > 0 else "开张"
+		stage.stations.assign(sim.STAGE_MACHINES[index] if index > 0 else ["lemonade"])
+		stage.cost = old.line_cost if index > 0 else sim._unlock_cost("lemonade")
+		stage.dish = old.dish_id
+		stage.unlock_note = old.unlock_note
+		stage.customer_interval = old.customer_interval
+		for k in old.order_weights: stage.order_weights[k] = old.order_weights[k]
+		stage.takeaway_share = old.takeaway_share
+		stage.staff_slots["kitchen"] = old.staff_slots
+		stage.queue_capacity = old.queue_capacity
+		stage.seat_seconds = old.seat_seconds if old.seat_seconds > 0 else progression.seat_seconds
+		for old_task in old.tasks:
+			var target: String = old_task.target_id
+			var condition := "sell_count"
+			if old_task.condition == 2:
+				condition = "track_level"
+				target = sim._canonical(target)
+			stage.tasks.append(task(old_task.id, old_task.display_name, condition, target, old_task.amount))
+		shop.stages.append(stage)
+
+	# 履约（§3.2）
+	var f := SpecFulfillment.new()
+	f.dine_rule = "seat_first"
+	f.takeaway_station = "seal"
+	f.taker = "front"
+	f.handoff = "handoff"
+	f.pay_at = "on_deliver"
+	f.price_rounding = "dish_tenth_carry"
+	f.leave_queue = "after_deliver"
+	f.mood_seconds.assign([sim.MOOD_IMPATIENT, sim.MOOD_ANGRY])
+	f.seated_patience = sim.SEATED_PATIENCE
+	f.leave_who = "none"
+	f.ramp_start = sim.RAMP_START
+	f.ramp_orders = sim.RAMP_ORDERS
+	f.arrival = "fixed"
+	f.opening_customers = 3
+	shop.fulfillment = f
+
+	# 传单
+	var flyer := SpecFlyer.new()
+	flyer.wave_seconds = progression.flyer_seconds
+	flyer.when_full = "wait_outside"
+	flyer.track = track("flyer", "传单", "传单")
+	flyer.track.base_effects.append(effect("flyer_customers", "set", progression.flyer_customers[0]))
+	flyer.track.base_effects.append(effect("flyer_cooldown", "set", progression.flyer_cooldowns[0]))
+	for index in progression.flyer_upgrade_costs.size():
+		var lv: int = index + 2
+		flyer.track.levels.append(level(int(progression.flyer_upgrade_costs[index]), [
+			effect("flyer_customers", "set", progression.flyer_customers[mini(lv, progression.flyer_customers.size()) - 1]),
+			effect("flyer_cooldown", "set", progression.flyer_cooldowns[mini(lv, progression.flyer_cooldowns.size()) - 1])]))
+	shop.flyer = flyer
+
+	# 座位
+	var seats := SpecSeatGroup.new()
+	seats.id = "dine"
+	seats.purpose = "dine"
+	seats.start = progression.seat_start
+	seats.step = progression.seat_step
+	seats.costs.assign(progression.seat_costs)
+	seats.seconds = progression.seat_seconds
+	seats.patience = sim.SEATED_PATIENCE
+	shop.seat_groups.append(seats)
+
+	# 调度（§3.6）：照搬奶茶店的打分常量
+	var d := SpecDispatch.new()
+	var scores := {"follow": 90.0, "follow_step": 95.0, "serve": 110.0, "chore": 55.0, "topping": 72.0, "stir": 80.0,
+		"load_short": 70.0, "load": 26.0, "pot_short_bonus": 30.0}
+	for k in scores: d.base_scores[k] = scores[k]
+	d.wait_bonus_per_second = 0.1
+	d.wait_bonus_cap = 20.0
+	d.shortage_per = 45.0
+	d.shortage_cap = 90.0
+	d.travel_penalty = 1.2
+	d.merge = "carry"
+	d.resume_from_stock = true
+	d.help_while_waiting = true
+	d.chores_first = false
+	d.leave_seated_segments = true
+	shop.dispatch = d
+
+	# 员工（§3.5）
+	var staff := SpecStaffRules.new()
+	var probe = TeaSim.new()
+	for art in sim.ARTS:
+		var worker: Dictionary = probe._make_worker(sim.ARTS.find(art))
+		var kind := SpecStaffKind.new()
+		kind.id = art
+		kind.display_name = worker.name
+		kind.stats["walk"] = float(worker.speed)
+		kind.stats["work"] = float(worker.skill)
+		kind.stats["carry"] = float(worker.capacity)
+		staff.kinds.append(kind)
+	staff.starting.assign([sim.ARTS[0]])
+	staff.starting_post = "counter"
+	staff.hire_pool.assign(sim.ARTS)
+	staff.hire_rule = "fewest"
+	staff.hire_cost_base = sim.hire_cost()
+	staff.hire_cost_step = 25
+	staff.zones.assign(["front", "kitchen"])
+	staff.front_base_slots = 1
+	staff.can_drag = true
+	for side in ["front", "kitchen"]:
+		var t := track(side, "前台" if side == "front" else "后厨", "员工")
+		var kinds: Array = sim._upgrade_kinds(side)
+		var costs: Array = sim._upgrade_costs_for(side)
+		for index in kinds.size():
+			var e: SpecEffect
+			match kinds[index]:
+				"walk": e = effect("walk", "mul", 1.0 + progression.walk_step, side)
+				"work": e = effect("work", "mul", 1.0 + progression.work_step, side)
+				"carry": e = effect("carry", "add", 1.0, side)
+				"slot": e = effect("staff_slot", "add", 1.0, side)
+			t.levels.append(level(int(costs[index]), [e]))
+		staff.tracks.append(t)
+	staff.home_anchor = "counter"
+	shop.staff = staff
+
+	# 连接（§3.7）：游戏里只开放 封口机 → 外带架 一段
+	for belt in progression.belts:
+		var c := SpecConnection.new()
+		c.id = belt.id
+		c.display_name = belt.display_name
+		c.from = sim._canonical(belt.from)
+		c.to = belt.to
+		c.cost = belt.cost
+		c.stage = belt.stage
+		c.enabled = belt.id in sim.GAME_BELTS
+		shop.connections.append(c)
+
+	# 目标（§3.9）
+	var g := SpecGoalRules.new()
+	g.opening_station = "lemonade"
+	g.texts["open"] = "支付 {cost} 金币解锁{name}，开始营业"
+	g.texts["box"] = "支付 {cost} 金币在原料柜解锁{name}箱"
+	g.texts["stage"] = "支付 {cost} 金币解锁{name}"
+	g.texts["task"] = "{name}（{current} / {target}）"
+	g.texts["done"] = "经营任务已全部完成，继续营业"
+	g.complete_when.assign(["all_stages", "all_tasks"])
+	shop.goals = g
+	return shop
+
+
+static func _bonus_track(definition) -> SpecUpgradeTrack:
+	## 口味槽：每级这一杯售价 = 基础价 × level_bonus[lv-1]（set，不和别的口味连乘）
+	var t := track(definition.id, definition.display_name, "售价")
+	t.requires_level = definition.unlock_level
+	t.base_effects.append(effect("price", "set", definition.bonus(1), "", [definition.item_id]))
+	for index in definition.max_level() - 1:
+		t.levels.append(level(int(definition.upgrade_costs[index]),
+			[effect("price", "set", definition.bonus(index + 2), "", [definition.item_id])]))
+	return t
+
+
+# ---------- 煎饼摊 ----------
+
+func build_pancake() -> SpecShop:
+	var sim = PancakeSim.new(0)
+	var cfg: Dictionary = sim.cfg
+	var shop := SpecShop.new()
+	shop.id = "pancake"
+	shop.display_name = "煎饼果子摊"
+	shop.start_gold = int(cfg.start_gold)
+	shop.random_seed = 0
+	shop.scene_path = "res://presentation/pancake/pancake_play.tscn"
+	shop.save_file = "pancake_shop.json"
+	shop.scale_anchor = "cup"
+
+	for pair in [["batter", "面糊鸡蛋"], ["crisp", "薄脆"], ["pancake", "煎饼"]]: shop.items.append(item(pair[0], pair[1]))
+	for id in sim.DISHES: shop.items.append(item(id, sim.DISHES[id].name))
+
+	# 菜品：煎饼果子系列的价格 = 煎饼果子底价 + 料钱，加料台升级只给料钱涨价
+	var base_price: float = sim.DISHES.guozi.price
+	for id in sim.DISHES:
+		var old: Dictionary = sim.DISHES[id]
+		var dish := SpecDish.new()
+		dish.id = id
+		dish.display_name = old.name
+		dish.item = id
+		dish.takeaway_process = false
+		if old.has("tops"):
+			dish.price_parts["base"] = base_price
+			dish.price_parts["topping"] = float(old.price) - base_price
+			dish.flavor_station = "topping"
+			dish.flavor_material = id
+			dish.topping_count = int(old.tops)
+		else:
+			dish.price_parts["base"] = float(old.price)
+		if id == "soy":
+			dish.steps.append(step("soy_milk", "pour", cfg.pour, "打豆浆", {}, {"soy": 1}))
+		else:
+			dish.steps.append(step("raw_ingredients", "fetch", cfg.raw, "拿面糊鸡蛋", {}, {"batter": 1}))
+			dish.steps.append(step("rear_equipment", "grill", cfg.grill, "摊饼", {"batter": 1}, {"pancake": 1}))
+			if id != "plain": dish.steps.append(step("fryer", "crisp", cfg.crisp, "拿薄脆", {"crisp": 1}, {}))
+			if old.has("tops"): dish.steps.append(step("topping", "top", cfg.top, "加料", {}, {}, int(old.tops)))
+			dish.steps.append(step("packing", "pack", cfg.pack, "卷饼装袋", {"pancake": 1}, {id: 1}))
+		shop.dishes.append(dish)
+
+	var stations: Array[SpecStation] = []
+	var s := SpecStation.new()
+	s.id = "front_counter"
+	s.display_name = "前台"
+	s.block = "counter"
+	s.starts_unlocked = true
+	s.params = {"take_seconds": cfg.take, "hand_seconds": cfg.hand, "posts": 1}
+	stations.append(s)
+
+	for key in sim.STATION_ORDER:
+		s = SpecStation.new()
+		s.id = key
+		s.display_name = sim.STATION_NAMES[key]
+		s.unlock_cost = sim.unlock_cost(key)
+		var u: Dictionary = cfg.upgrades[key]
+		var t := track("level", u.name, "速度" if u.effect == "speed" else "售价")
+		var probe = PancakeSim.new(0)
+		probe.unlocked[key] = true
+		for lv in range(2, int(u.max) + 1):
+			probe.levels[key] = lv - 1
+			var cost: int = probe.upgrade_cost(key)
+			var effects: Array = []
+			if u.effect == "speed": effects.append(effect("duration", "mul", u.mult))
+			elif key == "topping": effects.append(effect("price", "mul", u.mult, "", [], "topping"))
+			else: effects.append(effect("price", "mul", u.mult))
+			for dish_id in sim.DISHES:
+				if int(sim.DISHES[dish_id].get("lv", 0)) == lv and key == "topping": effects.append(effect("open_flavor", "set", 1.0, dish_id))
+			t.levels.append(level(cost, effects))
+		s.tracks.append(t)
+		match key:
+			"soy_milk":
+				s.block = "dispenser"
+				s.params = {"seconds": cfg.pour}
+				s.price_dishes.assign(["soy"])
+			"rear_equipment":
+				s.block = "hand"
+				s.params = {"seconds": cfg.grill, "users": 1}
+			"fryer":
+				s.block = "batch_pot"
+				s.params = {"cook_seconds": cfg.fry_cook, "load_seconds": cfg.fry_load, "unload_seconds": cfg.fry_unload,
+					"batch": cfg.fry_batch, "manual_load": true, "manual_unload": true, "fetch_seconds": cfg.crisp}
+				var stock := SpecStockRule.new()
+				stock.item = "crisp"
+				stock.low = int(cfg.crisp_low)
+				stock.cap = int(cfg.crisp_cap)
+				stock.start = int(cfg.crisp_start)
+				s.stock.append(stock)
+			"topping":
+				s.block = "topping"
+				s.params = {"seconds": cfg.top, "users": 0}
+				s.price_dishes.assign(sim.DISHES.keys().filter(func(id: String) -> bool: return sim.DISHES[id].has("tops")))
+				for dish_id in sim.DISHES:
+					if not sim.DISHES[dish_id].has("lv"): continue
+					var material := SpecMaterial.new()
+					material.id = dish_id
+					material.display_name = sim.DISHES[dish_id].name
+					material.item = dish_id
+					material.track = track(dish_id, material.display_name)
+					material.track.requires_level = int(sim.DISHES[dish_id].lv)
+					s.materials.append(material)
+		stations.append(s)
+		if key == "rear_equipment":
+			for extra in sim.COMPANIONS[key]:
+				var companion := SpecStation.new()
+				companion.id = extra
+				companion.display_name = "面糊鸡蛋"
+				companion.block = "supply"
+				companion.companion_of = key
+				companion.params = {"fetch_seconds": cfg.raw}
+				stations.append(companion)
+
+	s = SpecStation.new()
+	s.id = "packing"
+	s.display_name = "打包台"
+	s.block = "combine"
+	s.starts_unlocked = true
+	s.params = {"seconds": cfg.pack, "manual": true}
+	stations.append(s)
+	s = SpecStation.new()
+	s.id = "rack"
+	s.display_name = "货架"
+	s.block = "pickup"
+	s.starts_unlocked = true
+	s.params = {"zones": {}, "decor": true}
+	stations.append(s)
+	shop.stations = stations
+
+	# 阶段：段 0 = 豆浆机（开张），之后每开一台加一段
+	for index in sim.STATION_ORDER.size():
+		var key: String = sim.STATION_ORDER[index]
+		var stage := SpecStage.new()
+		stage.id = "stage%d" % index
+		stage.display_name = "开张" if index == 0 else sim.STATION_NAMES[key]
+		stage.stations.assign([key])
+		stage.cost = sim.unlock_cost(key)
+		stage.customer_interval = cfg.interval[index]
+		var weights: Dictionary = cfg.weights[index]
+		for k in weights: stage.order_weights[k] = weights[k]
+		if weights.has("meat"):
+			stage.flavor_group = "meat"
+			stage.flavor_fallback = "guozi"
+		stage.staff_slots[""] = int(cfg.staff_slots[index])
+		stage.queue_capacity = int(cfg.standing[index])
+		stage.wait_seats = int(cfg.cushions[index])
+		stage.dish = ["soy", "plain", "guozi", "ham"][index]
+		shop.stages.append(stage)
+	# 任务挂在最后一段（煎饼摊任务全程可做）
+	for old in cfg.tasks:
+		if old.has("flavor"): shop.stages[-1].tasks.append(task(old.id, old.text, "flavor_open", old.flavor, 1.0))
+		else: shop.stages[-1].tasks.append(task(old.id, old.text, "sell_count", old.dish, float(old.count)))
+
+	var f := SpecFulfillment.new()
+	f.addon_dish = "soy"
+	f.addon_chance = cfg.soy_addon
+	f.addon_first = true
+	f.dine_rule = "takeaway_only"
+	f.taker = "follower"
+	f.handoff = "single"
+	f.pay_at = "on_take"
+	f.price_rounding = "order_round"
+	f.leave_queue = "after_pay"
+	f.wait_area = "wait_seats"
+	f.leave_after = cfg.patience
+	f.leave_who = "queued_unclaimed"
+	f.arrival = "exponential"
+	f.first_customer_delay = 1.5
+	shop.fulfillment = f
+
+	var flyer := SpecFlyer.new()
+	flyer.gap = cfg.flyer_gap
+	flyer.when_full = "lost"
+	flyer.track = track("flyer", "传单", "传单")
+	flyer.track.base_effects.append(effect("flyer_customers", "set", cfg.flyer_wave))
+	flyer.track.base_effects.append(effect("flyer_cooldown", "set", cfg.flyer_cooldown))
+	shop.flyer = flyer
+
+	var cushions := SpecSeatGroup.new()
+	cushions.id = "cushion"
+	cushions.purpose = "wait"
+	cushions.start = 0
+	shop.seat_groups.append(cushions)
+
+	var d := SpecDispatch.new()
+	d.base_scores["chore"] = 100.0
+	d.base_scores["take"] = 50.0
+	d.merge = "fixed"
+	d.merge_cap = 1
+	d.resume_from_stock = false
+	d.help_while_waiting = true
+	d.chores_first = true
+	d.leave_seated_segments = false
+	shop.dispatch = d
+
+	var staff := SpecStaffRules.new()
+	for pair in [["rabbit", "小兔子"], ["gray_cat", "小灰猫"], ["bear", "小熊"]]:
+		var kind := SpecStaffKind.new()
+		kind.id = pair[0]
+		kind.display_name = pair[1]
+		kind.stats["walk"] = float(cfg.walk_speed)
+		kind.stats["work"] = 1.0
+		kind.stats["carry"] = 1.0
+		staff.kinds.append(kind)
+	staff.starting.assign(["rabbit"])
+	staff.hire_pool.assign(["rabbit", "gray_cat", "bear"])
+	staff.hire_rule = "cycle"
+	staff.hire_order.assign(["gray_cat", "bear", "rabbit"])
+	staff.hire_costs.assign(cfg.hire_cost)
+	staff.can_drag = false
+	staff.home_anchor = "home"
+	shop.staff = staff
+
+	var g := SpecGoalRules.new()
+	g.opening_station = "soy_milk"
+	g.complete_when.assign(["all_stages", "all_flavors", "all_tasks"])
+	g.rating_minutes.assign(cfg.rating_minutes)
+	g.rating_lost_share = 0.2
+	shop.goals = g
+	return shop
+
+
+# ---------- 关卡表 ----------
+
+func build_campaign() -> SpecCampaign:
+	var campaign := SpecCampaign.new()
+	var north := SpecCity.new()
+	north.id = "north"
+	north.display_name = "北方"
+	north.theme = "北方风味"
+	for row in [["pancake", "煎饼果子摊", OUT_PANCAKE, 20.0], ["tea", "奶茶店", OUT_TEA, 30.0], ["bakery", "面包店", "", 35.0]]:
+		var shop := SpecCampaignShop.new()
+		shop.id = row[0]
+		shop.display_name = row[1]
+		shop.shop_path = row[2]
+		shop.target_minutes = row[3]
+		north.shops.append(shop)
+	campaign.cities.append(north)
+	return campaign

@@ -1,0 +1,545 @@
+{
+	"shop": "tea",
+	"seed": 20261025,
+	"minutes": 45.0,
+	"bot": "glance_once_a_minute",
+	"unlocks": {
+		"lemonade": 1.0,
+		"boil": 181.0,
+		"box_tea_leaf": 181.0,
+		"hire2": 241.0,
+		"hire3": 481.0,
+		"seal": 601.0,
+		"mix": 781.0,
+		"box_milk": 781.0,
+		"hire4": 781.0,
+		"press": 1201.0,
+		"topping": 1561.0,
+		"hire5": 1621.0,
+		"hire6": 1621.0,
+		"hire7": 1621.0
+	},
+	"checkpoints": {
+		"5": {
+			"revenue": 274,
+			"sold": 22,
+			"gold": 84,
+			"sold_by_dish": {
+				"lemonade": 22,
+				"black_tea": 0,
+				"plain_milk_tea": 0,
+				"pearl_milk_tea": 0,
+				"coconut_milk_tea": 0,
+				"redbean_milk_tea": 0,
+				"taro_milk_tea": 0,
+				"lemon_tea": 0
+			},
+			"staff": 2,
+			"stage": 1
+		},
+		"10": {
+			"revenue": 948,
+			"sold": 65,
+			"gold": 362,
+			"sold_by_dish": {
+				"lemonade": 58,
+				"black_tea": 7,
+				"plain_milk_tea": 0,
+				"pearl_milk_tea": 0,
+				"coconut_milk_tea": 0,
+				"redbean_milk_tea": 0,
+				"taro_milk_tea": 0,
+				"lemon_tea": 0
+			},
+			"staff": 3,
+			"stage": 1
+		},
+		"20": {
+			"revenue": 3802,
+			"sold": 174,
+			"gold": 790,
+			"sold_by_dish": {
+				"lemonade": 108,
+				"black_tea": 36,
+				"plain_milk_tea": 30,
+				"pearl_milk_tea": 0,
+				"coconut_milk_tea": 0,
+				"redbean_milk_tea": 0,
+				"taro_milk_tea": 0,
+				"lemon_tea": 0
+			},
+			"staff": 4,
+			"stage": 3
+		},
+		"30": {
+			"revenue": 10579,
+			"sold": 328,
+			"gold": 1285,
+			"sold_by_dish": {
+				"lemonade": 144,
+				"black_tea": 59,
+				"plain_milk_tea": 74,
+				"pearl_milk_tea": 9,
+				"coconut_milk_tea": 7,
+				"redbean_milk_tea": 4,
+				"taro_milk_tea": 2,
+				"lemon_tea": 29
+			},
+			"staff": 7,
+			"stage": 5
+		},
+		"45": {
+			"revenue": 33670,
+			"sold": 607,
+			"gold": 16782,
+			"sold_by_dish": {
+				"lemonade": 174,
+				"black_tea": 81,
+				"plain_milk_tea": 106,
+				"pearl_milk_tea": 51,
+				"coconut_milk_tea": 46,
+				"redbean_milk_tea": 44,
+				"taro_milk_tea": 44,
+				"lemon_tea": 61
+			},
+			"staff": 7,
+			"stage": 5
+		}
+	},
+	"completed_at": 2133.1,
+	"segments": [
+		{
+			"stage": 0,
+			"start": 0.1,
+			"seconds": 181.0,
+			"arrived": 15,
+			"full_seconds": 91.3,
+			"lost": 0,
+			"sold": 13,
+			"staff_work": 0.201,
+			"staff_walk": 0.376,
+			"staff_idle": 0.423,
+			"top_wait": "",
+			"top_wait_share": 0.0,
+			"full_share": 0.504
+		},
+		{
+			"stage": 1,
+			"start": 181.1,
+			"seconds": 420.0,
+			"arrived": 53,
+			"full_seconds": 213.6,
+			"lost": 0,
+			"sold": 52,
+			"staff_work": 0.174,
+			"staff_walk": 0.381,
+			"staff_idle": 0.445,
+			"top_wait": "",
+			"top_wait_share": 0.0,
+			"full_share": 0.509
+		},
+		{
+			"stage": 2,
+			"start": 601.1,
+			"seconds": 180.0,
+			"arrived": 32,
+			"full_seconds": 0.0,
+			"lost": 0,
+			"sold": 32,
+			"staff_work": 0.162,
+			"staff_walk": 0.5,
+			"staff_idle": 0.338,
+			"top_wait": "",
+			"top_wait_share": 0.0,
+			"full_share": 0.0
+		},
+		{
+			"stage": 3,
+			"start": 781.1,
+			"seconds": 420.0,
+			"arrived": 82,
+			"full_seconds": 10.4,
+			"lost": 0,
+			"sold": 77,
+			"staff_work": 0.15,
+			"staff_walk": 0.462,
+			"staff_idle": 0.387,
+			"top_wait": "wait:mix",
+			"top_wait_share": 0.058,
+			"full_share": 0.025
+		},
+		{
+			"stage": 4,
+			"start": 1201.1,
+			"seconds": 360.0,
+			"arrived": 90,
+			"full_seconds": 0.0,
+			"lost": 0,
+			"sold": 91,
+			"staff_work": 0.2,
+			"staff_walk": 0.542,
+			"staff_idle": 0.259,
+			"top_wait": "wait:mix",
+			"top_wait_share": 0.067,
+			"full_share": 0.0
+		},
+		{
+			"stage": 5,
+			"start": 1561.1,
+			"seconds": 1138.9,
+			"arrived": 346,
+			"full_seconds": 411.5,
+			"lost": 0,
+			"sold": 342,
+			"staff_work": 0.198,
+			"staff_walk": 0.511,
+			"staff_idle": 0.291,
+			"top_wait": "wait:mix",
+			"top_wait_share": 0.13,
+			"full_share": 0.361
+		}
+	],
+	"levels": {
+		"supply": 1,
+		"boil": 8,
+		"mix": 7,
+		"topping": 4,
+		"press": 5,
+		"seal": 6,
+		"lemonade": 5,
+		"counter": 1
+	},
+	"material_levels": {
+		"supply": {
+			"tea_leaf": 3,
+			"milk": 3
+		},
+		"topping": {
+			"pearl": 3,
+			"coconut": 3,
+			"redbean": 3,
+			"taro": 3
+		},
+		"press": {
+			"lemon": 3
+		}
+	},
+	"actions": [
+		[
+			1.0,
+			"unlock lemonade"
+		],
+		[
+			61.0,
+			"staff front"
+		],
+		[
+			61.0,
+			"staff kitchen"
+		],
+		[
+			61.0,
+			"upgrade lemonade"
+		],
+		[
+			181.0,
+			"unlock boil"
+		],
+		[
+			181.0,
+			"box tea_leaf"
+		],
+		[
+			181.0,
+			"upgrade boil"
+		],
+		[
+			241.0,
+			"hire"
+		],
+		[
+			241.0,
+			"deploy 2"
+		],
+		[
+			301.0,
+			"seat"
+		],
+		[
+			361.0,
+			"staff kitchen"
+		],
+		[
+			361.0,
+			"upgrade boil"
+		],
+		[
+			361.0,
+			"upgrade lemonade"
+		],
+		[
+			421.0,
+			"material supply tea_leaf"
+		],
+		[
+			421.0,
+			"staff front"
+		],
+		[
+			481.0,
+			"hire"
+		],
+		[
+			481.0,
+			"deploy 3"
+		],
+		[
+			481.0,
+			"flyer_upgrade"
+		],
+		[
+			601.0,
+			"unlock seal"
+		],
+		[
+			601.0,
+			"upgrade lemonade"
+		],
+		[
+			601.0,
+			"upgrade seal"
+		],
+		[
+			661.0,
+			"upgrade lemonade"
+		],
+		[
+			661.0,
+			"upgrade seal"
+		],
+		[
+			721.0,
+			"upgrade seal"
+		],
+		[
+			781.0,
+			"unlock mix"
+		],
+		[
+			781.0,
+			"box milk"
+		],
+		[
+			781.0,
+			"hire"
+		],
+		[
+			781.0,
+			"deploy 4"
+		],
+		[
+			841.0,
+			"upgrade boil"
+		],
+		[
+			841.0,
+			"upgrade seal"
+		],
+		[
+			841.0,
+			"material supply milk"
+		],
+		[
+			901.0,
+			"upgrade boil"
+		],
+		[
+			961.0,
+			"upgrade seal"
+		],
+		[
+			1021.0,
+			"upgrade mix"
+		],
+		[
+			1021.0,
+			"material supply tea_leaf"
+		],
+		[
+			1021.0,
+			"staff kitchen"
+		],
+		[
+			1021.0,
+			"material supply milk"
+		],
+		[
+			1081.0,
+			"upgrade mix"
+		],
+		[
+			1081.0,
+			"staff front"
+		],
+		[
+			1201.0,
+			"unlock press"
+		],
+		[
+			1201.0,
+			"upgrade press"
+		],
+		[
+			1201.0,
+			"material press lemon"
+		],
+		[
+			1261.0,
+			"upgrade press"
+		],
+		[
+			1261.0,
+			"upgrade press"
+		],
+		[
+			1321.0,
+			"upgrade boil"
+		],
+		[
+			1321.0,
+			"material press lemon"
+		],
+		[
+			1381.0,
+			"upgrade press"
+		],
+		[
+			1441.0,
+			"seat"
+		],
+		[
+			1441.0,
+			"upgrade mix"
+		],
+		[
+			1441.0,
+			"flyer_upgrade"
+		],
+		[
+			1501.0,
+			"staff kitchen"
+		],
+		[
+			1561.0,
+			"unlock topping"
+		],
+		[
+			1561.0,
+			"upgrade topping"
+		],
+		[
+			1621.0,
+			"hire"
+		],
+		[
+			1621.0,
+			"deploy 5"
+		],
+		[
+			1621.0,
+			"hire"
+		],
+		[
+			1621.0,
+			"deploy 6"
+		],
+		[
+			1621.0,
+			"hire"
+		],
+		[
+			1621.0,
+			"deploy 7"
+		],
+		[
+			1621.0,
+			"upgrade topping"
+		],
+		[
+			1621.0,
+			"upgrade topping"
+		],
+		[
+			1621.0,
+			"material topping pearl"
+		],
+		[
+			1681.0,
+			"material topping coconut"
+		],
+		[
+			1681.0,
+			"material topping redbean"
+		],
+		[
+			1681.0,
+			"material topping pearl"
+		],
+		[
+			1681.0,
+			"material topping taro"
+		],
+		[
+			1681.0,
+			"material topping coconut"
+		],
+		[
+			1681.0,
+			"material topping redbean"
+		],
+		[
+			1741.0,
+			"material topping taro"
+		],
+		[
+			1741.0,
+			"staff front"
+		],
+		[
+			1741.0,
+			"upgrade mix"
+		],
+		[
+			1801.0,
+			"upgrade boil"
+		],
+		[
+			1861.0,
+			"seat"
+		],
+		[
+			1861.0,
+			"staff kitchen"
+		],
+		[
+			1921.0,
+			"flyer_upgrade"
+		],
+		[
+			1921.0,
+			"upgrade mix"
+		],
+		[
+			1981.0,
+			"staff kitchen"
+		],
+		[
+			2041.0,
+			"upgrade mix"
+		],
+		[
+			2161.0,
+			"upgrade boil"
+		]
+	]
+}

@@ -1,0 +1,319 @@
+{
+	"shop": "pancake",
+	"seed": 0,
+	"minutes": 30.0,
+	"bot": "glance_once_a_minute",
+	"unlocks": {
+		"soy_milk": 1.0,
+		"rear_equipment": 121.0,
+		"hire2": 121.0,
+		"fryer": 361.0,
+		"hire3": 361.0,
+		"topping": 601.0,
+		"hire4": 661.0
+	},
+	"checkpoints": {
+		"5": {
+			"revenue": 345.0,
+			"sold": 37,
+			"gold": 159.0,
+			"sold_by_dish": {
+				"soy": 28,
+				"plain": 9,
+				"guozi": 0,
+				"ham": 0,
+				"floss": 0,
+				"bacon": 0,
+				"family": 0
+			},
+			"staff": 2,
+			"stage": 1,
+			"lost": 6
+		},
+		"10": {
+			"revenue": 1107.0,
+			"sold": 90,
+			"gold": 366.0,
+			"sold_by_dish": {
+				"soy": 52,
+				"plain": 25,
+				"guozi": 13,
+				"ham": 0,
+				"floss": 0,
+				"bacon": 0,
+				"family": 0
+			},
+			"staff": 3,
+			"stage": 2,
+			"lost": 8
+		},
+		"20": {
+			"revenue": 3771.0,
+			"sold": 229,
+			"gold": 512.0,
+			"sold_by_dish": {
+				"soy": 113,
+				"plain": 32,
+				"guozi": 41,
+				"ham": 21,
+				"floss": 9,
+				"bacon": 10,
+				"family": 3
+			},
+			"staff": 4,
+			"stage": 3,
+			"lost": 22
+		},
+		"30": {
+			"revenue": 6852.0,
+			"sold": 364,
+			"gold": 355.0,
+			"sold_by_dish": {
+				"soy": 161,
+				"plain": 41,
+				"guozi": 71,
+				"ham": 33,
+				"floss": 18,
+				"bacon": 24,
+				"family": 16
+			},
+			"staff": 4,
+			"stage": 3,
+			"lost": 37
+		}
+	},
+	"completed_at": 1346.9,
+	"segments": [
+		{
+			"stage": -1,
+			"start": 0.1,
+			"seconds": 1.0,
+			"arrived": 0,
+			"full_seconds": 0.0,
+			"lost": 0,
+			"sold": 0,
+			"staff_work": 0.0,
+			"staff_walk": 0.0,
+			"staff_idle": 1.0,
+			"top_wait": "",
+			"top_wait_share": 0.0,
+			"full_share": 0.0
+		},
+		{
+			"stage": 0,
+			"start": 1.1,
+			"seconds": 120.0,
+			"arrived": 17,
+			"full_seconds": 12.8,
+			"lost": 4,
+			"sold": 15,
+			"staff_work": 0.468,
+			"staff_walk": 0.317,
+			"staff_idle": 0.216,
+			"top_wait": "",
+			"top_wait_share": 0.0,
+			"full_share": 0.107
+		},
+		{
+			"stage": 1,
+			"start": 121.1,
+			"seconds": 240.0,
+			"arrived": 32,
+			"full_seconds": 28.8,
+			"lost": 4,
+			"sold": 32,
+			"staff_work": 0.53,
+			"staff_walk": 0.324,
+			"staff_idle": 0.146,
+			"top_wait": "等鏊子",
+			"top_wait_share": 0.013,
+			"full_share": 0.12
+		},
+		{
+			"stage": 2,
+			"start": 361.1,
+			"seconds": 240.0,
+			"arrived": 38,
+			"full_seconds": 0.0,
+			"lost": 0,
+			"sold": 43,
+			"staff_work": 0.519,
+			"staff_walk": 0.409,
+			"staff_idle": 0.072,
+			"top_wait": "等鏊子",
+			"top_wait_share": 0.061,
+			"full_share": 0.0
+		},
+		{
+			"stage": 3,
+			"start": 601.1,
+			"seconds": 1198.9,
+			"arrived": 253,
+			"full_seconds": 59.3,
+			"lost": 29,
+			"sold": 274,
+			"staff_work": 0.486,
+			"staff_walk": 0.443,
+			"staff_idle": 0.071,
+			"top_wait": "等鏊子",
+			"top_wait_share": 0.042,
+			"full_share": 0.049
+		}
+	],
+	"levels": {
+		"rear_equipment": 9,
+		"fryer": 8,
+		"soy_milk": 8,
+		"topping": 7
+	},
+	"actions": [
+		[
+			1.0,
+			"unlock soy_milk"
+		],
+		[
+			61.0,
+			"flyer"
+		],
+		[
+			61.0,
+			"upgrade soy_milk"
+		],
+		[
+			121.0,
+			"unlock rear_equipment"
+		],
+		[
+			121.0,
+			"hire"
+		],
+		[
+			181.0,
+			"upgrade rear_equipment"
+		],
+		[
+			181.0,
+			"upgrade soy_milk"
+		],
+		[
+			241.0,
+			"upgrade rear_equipment"
+		],
+		[
+			241.0,
+			"upgrade soy_milk"
+		],
+		[
+			361.0,
+			"unlock fryer"
+		],
+		[
+			361.0,
+			"hire"
+		],
+		[
+			421.0,
+			"flyer"
+		],
+		[
+			421.0,
+			"upgrade rear_equipment"
+		],
+		[
+			421.0,
+			"upgrade rear_equipment"
+		],
+		[
+			481.0,
+			"upgrade fryer"
+		],
+		[
+			481.0,
+			"upgrade soy_milk"
+		],
+		[
+			481.0,
+			"upgrade fryer"
+		],
+		[
+			601.0,
+			"unlock topping"
+		],
+		[
+			661.0,
+			"hire"
+		],
+		[
+			721.0,
+			"upgrade rear_equipment"
+		],
+		[
+			781.0,
+			"upgrade topping"
+		],
+		[
+			781.0,
+			"upgrade soy_milk"
+		],
+		[
+			781.0,
+			"upgrade topping"
+		],
+		[
+			781.0,
+			"upgrade fryer"
+		],
+		[
+			841.0,
+			"upgrade rear_equipment"
+		],
+		[
+			901.0,
+			"upgrade topping"
+		],
+		[
+			961.0,
+			"upgrade soy_milk"
+		],
+		[
+			961.0,
+			"upgrade fryer"
+		],
+		[
+			1021.0,
+			"upgrade topping"
+		],
+		[
+			1081.0,
+			"upgrade soy_milk"
+		],
+		[
+			1141.0,
+			"upgrade fryer"
+		],
+		[
+			1201.0,
+			"upgrade topping"
+		],
+		[
+			1321.0,
+			"upgrade rear_equipment"
+		],
+		[
+			1381.0,
+			"upgrade fryer"
+		],
+		[
+			1501.0,
+			"upgrade topping"
+		],
+		[
+			1621.0,
+			"upgrade rear_equipment"
+		],
+		[
+			1741.0,
+			"upgrade fryer"
+		]
+	]
+}

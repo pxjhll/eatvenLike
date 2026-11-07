@@ -20,6 +20,8 @@ jobs:
         run: ./godot --headless --path . --import
       - name: Run tests
         run: timeout 240s ./godot --headless --path . -s tests/run_all.gd
+      - name: Old-sim baselines unchanged (73b0ae3)
+        run: timeout 60s ./godot --headless --path . -s tests/baselines/record_baselines.gd -- --check
       - name: Pancake scene layout and unlock regression
         run: timeout 30s ./godot --headless --path . -s tests/run_pancake_scene.gd
       - name: Pancake guide real-click regression
