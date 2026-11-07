@@ -6,6 +6,7 @@ extends RefCounted
 ## Anchors/
 ##   Stations/<机器 id>/Tap        点按打开面板的区域（矩形）
 ##                     /Frame      没解锁时的虚线框（矩形）
+##                     /Mark       红色 ↑ 摆在哪（点；没写就放在 Tap 的右上角）
 ##                     /Badge      进度条和“待操作”气泡（点）
 ##                     /Buffer     做好等人取的那一杯摆在哪（点，meta host = 压在哪件家具上）
 ##                     /Post       坐班区（矩形）+ /PostPoint（点）
@@ -111,7 +112,12 @@ func layout(base: SpecLayout) -> SpecLayout:
 		var r := rect("Nav/Areas/" + name)
 		out.areas.append(Rect2i(roundi(r.position.x / cell), roundi(r.position.y / cell), roundi(r.size.x / cell), roundi(r.size.y / cell)))
 	out.obstacles.clear()
-	for name in children("Nav/Obstacles"): out.obstacles.append(rect("Nav/Obstacles/" + name))
+	out.obstacle_stations.clear()
+	for name in children("Nav/Obstacles"):
+		out.obstacles.append(rect("Nav/Obstacles/" + name))
+		out.obstacle_stations.append(String(meta("Nav/Obstacles/" + name, "station", "")))
+	# 全是空的就不写（没有跟机器走的障碍）
+	if out.obstacle_stations.all(func(s: String) -> bool: return s.is_empty()): out.obstacle_stations.clear()
 	out.points.clear()
 	for name in children("Nav/Points"): out.points[name] = point("Nav/Points/" + name)
 	out.posts.clear()

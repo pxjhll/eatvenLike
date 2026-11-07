@@ -22,48 +22,48 @@ metadata/customer_speed = 140.0
 [node name="Tap" type="Node2D" parent="Anchors/Stations/soy_milk"]
 position = Vector2(103, 652)
 script = ExtResource("anchor")
-size = Vector2(286, 250)
+size = Vector2(166, 250)
 
 [node name="Frame" type="Node2D" parent="Anchors/Stations/soy_milk"]
 position = Vector2(103, 652)
 script = ExtResource("anchor")
-size = Vector2(286, 250)
+size = Vector2(166, 250)
 
 [node name="rear_equipment" type="Node2D" parent="Anchors/Stations"]
 
 [node name="Tap" type="Node2D" parent="Anchors/Stations/rear_equipment"]
 position = Vector2(342, 215)
 script = ExtResource("anchor")
-size = Vector2(439, 226)
+size = Vector2(321, 180)
 
 [node name="Frame" type="Node2D" parent="Anchors/Stations/rear_equipment"]
 position = Vector2(342, 215)
 script = ExtResource("anchor")
-size = Vector2(439, 226)
+size = Vector2(321, 180)
 
 [node name="fryer" type="Node2D" parent="Anchors/Stations"]
 
 [node name="Tap" type="Node2D" parent="Anchors/Stations/fryer"]
 position = Vector2(88, 411)
 script = ExtResource("anchor")
-size = Vector2(162, 248)
+size = Vector2(162, 151)
 
 [node name="Frame" type="Node2D" parent="Anchors/Stations/fryer"]
 position = Vector2(88, 411)
 script = ExtResource("anchor")
-size = Vector2(162, 248)
+size = Vector2(162, 151)
 
 [node name="topping" type="Node2D" parent="Anchors/Stations"]
 
 [node name="Tap" type="Node2D" parent="Anchors/Stations/topping"]
-position = Vector2(355, 580)
+position = Vector2(374, 583)
 script = ExtResource("anchor")
-size = Vector2(322, 154)
+size = Vector2(199, 100)
 
 [node name="Frame" type="Node2D" parent="Anchors/Stations/topping"]
-position = Vector2(355, 580)
+position = Vector2(374, 583)
 script = ExtResource("anchor")
-size = Vector2(322, 154)
+size = Vector2(199, 100)
 
 [node name="front_counter" type="Node2D" parent="Anchors/Stations"]
 
@@ -71,6 +71,9 @@ size = Vector2(322, 154)
 position = Vector2(41, 760)
 script = ExtResource("anchor")
 size = Vector2(847, 216)
+
+[node name="Mark" type="Node2D" parent="Anchors/Stations/front_counter"]
+position = Vector2(745, 805)
 
 [node name="Badge" type="Node2D" parent="Anchors/Stations/fryer"]
 position = Vector2(110, 400)
@@ -147,3 +150,90 @@ position = Vector2(468, 1720)
 
 [node name="Sale" type="Node2D" parent="Anchors/Counter"]
 position = Vector2(470, 690)
+
+[node name="Nav" type="Node2D" parent="Anchors"]
+metadata/nav = "grid"
+metadata/cell = 20.0
+metadata/grid_size = Vector2i(47, 84)
+
+[node name="Areas" type="Node2D" parent="Anchors/Nav"]
+
+[node name="0" type="Node2D" parent="Anchors/Nav/Areas"]
+position = Vector2(80, 340)
+script = ExtResource("anchor")
+size = Vector2(800, 460)
+
+[node name="Obstacles" type="Node2D" parent="Anchors/Nav"]
+
+[node name="0" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(335, 600)
+script = ExtResource("anchor")
+size = Vector2(406, 135)
+metadata/note = "中间桌子"
+metadata/station = "topping"
+
+[node name="1" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(355, 337)
+script = ExtResource("anchor")
+size = Vector2(314, 104)
+metadata/note = "后排桌子"
+metadata/station = "rear_equipment"
+
+[node name="2" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(79, 430)
+script = ExtResource("anchor")
+size = Vector2(150, 298)
+metadata/note = "左边竖桌"
+
+[node name="3" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(737, 439)
+script = ExtResource("anchor")
+size = Vector2(151, 294)
+metadata/note = "右边竖桌"
+
+[node name="4" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(697, 340)
+script = ExtResource("anchor")
+size = Vector2(190, 100)
+metadata/note = "右后桌子"
+
+[node name="5" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(103, 652)
+script = ExtResource("anchor")
+size = Vector2(166, 150)
+metadata/note = "豆浆机"
+
+[node name="6" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(41, 795)
+script = ExtResource("anchor")
+size = Vector2(817, 180)
+metadata/note = "前台柜台"
+
+[node name="Points" type="Node2D" parent="Anchors/Nav"]
+
+[node name="crisps" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(252, 626)
+
+[node name="front_counter" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(470, 776)
+
+[node name="fryer" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(272, 500)
+
+[node name="home" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(600, 758)
+
+[node name="packing" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(770, 752)
+
+[node name="raw_ingredients" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(690, 455)
+
+[node name="rear_equipment" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(420, 465)
+
+[node name="soy_milk" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(290, 720)
+
+[node name="topping" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(560, 562)

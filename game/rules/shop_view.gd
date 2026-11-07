@@ -150,7 +150,7 @@ func station(id: String) -> Dictionary:
 		card.sections.append("materials")
 		card.materials = st.materials.map(func(m: SpecMaterial) -> Dictionary: return material_row(st, m))
 	if id == rules.counter_id:
-		if rules.dine_group() != null:
+		if rules.buy_group() != null:
 			card.sections.append("seats")
 			card.seats = seats()
 		if shop.flyer != null:
@@ -353,10 +353,14 @@ func material_row(st: SpecStation, m: SpecMaterial) -> Dictionary:
 
 
 func seats() -> Dictionary:
-	var g := rules.dine_group()
-	var total := rules.seat_total()
-	var full := g.start + g.step * g.costs.size()
-	return {"total": total, "max": full, "used": rules.diners.size() + rules.seated_orders(), "step": g.step,
+	var g := rules.buy_group()
+	var dine := g.purpose == "dine"
+	var total: int = int(rules.seats.get(g.id, 0))
+	var full := g.start + (ShopRules._sum(g.steps) if not g.steps.is_empty() else g.step * g.costs.size())
+	var used := rules.diners.size() + rules.seated_orders() if dine else mini(rules.wait_seats(), rules.customers.filter(func(c: Dictionary) -> bool: return c.state == "paid").size())
+	var next := rules._seat_step(g) if rules.seat_cost() >= 0 else 0
+	return {"total": total, "max": full, "cap": rules.seat_cap(g), "used": used, "step": next, "purpose": g.purpose,
+		"title": text("seats_title_" + g.purpose, {}, "堂食座位" if dine else "等位坐垫"),
 		"cost": rules.seat_cost(), "error": rules.seat_error()}
 
 
@@ -381,7 +385,7 @@ func can_buy(id: String) -> bool:
 	if not rules.station_unlocked(id): return false
 	if rules.track_of(id) != null and rules.upgrade_error(id).is_empty(): return true
 	if id == rules.counter_id:
-		if rules.dine_group() != null and rules.seat_error().is_empty(): return true
+		if rules.buy_group() != null and rules.seat_error().is_empty(): return true
 		if shop.flyer != null and rules.upgrade_error("flyer").is_empty(): return true
 		# 传单只在队伍还有空的时候提示
 		if shop.flyer != null and rules.flyer_error().is_empty() and rules.queue_size() * 2 < rules.queue_capacity(): return true
@@ -477,14 +481,33 @@ func worker_card(worker: Dictionary) -> Dictionary:
 		"task": task_text(worker)}
 
 
-## 物品怎么画：{art: art/reference 里的图名, tint}
+## 员工手上这步活的进度（0–1）；没在干活、或者活在机器上（机器自己有进度条）返回 -1
+func work_progress(worker: Dictionary) -> float:
+	if worker.get("phase", "") != "work": return -1.0
+	var duration: float = float(worker.get("duration", 0.0))
+	if duration <= 0.0 or not worker.get("job", {}).is_empty(): return -1.0
+	return clampf(1.0 - float(worker.get("timer", 0.0)) / duration, 0.0, 1.0)
+
+
+## 物品怎么画：{art: art/reference 里的图名, tint, texture}
+## texture：写了 art 用 art/reference/<art>.png，没写 art 但有图标就用图标，都没有才用默认杯子
 func item_art(id: String) -> Dictionary:
 	var dish := shop.dish(id)
 	var key: String = dish.item if dish != null and not dish.item.is_empty() else id
 	for item in shop.items:
 		if item.id == key or item.id == id:
-			return {"art": item.art if not item.art.is_empty() else "pearl_tea", "tint": item.tint}
-	return {"art": "pearl_tea", "tint": Color.WHITE}
+			if item.art.is_empty() and item.icon != null:
+				return {"art": "", "tint": item.tint, "texture": item.icon}
+			var art: String = item.art if not item.art.is_empty() else DEFAULT_ITEM_ART
+			return {"art": art, "tint": item.tint, "texture": _art_texture(art)}
+	return {"art": DEFAULT_ITEM_ART, "tint": Color.WHITE, "texture": _art_texture(DEFAULT_ITEM_ART)}
+
+
+const DEFAULT_ITEM_ART := "pearl_tea"
+
+
+func _art_texture(art: String) -> Texture2D:
+	return load("res://art/reference/" + art + ".png")
 
 
 ## 在这台机器前干活朝哪个方向（8 方向；-1 = 不转）

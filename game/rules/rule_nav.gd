@@ -5,6 +5,7 @@ extends RefCounted
 var layout: SpecLayout
 var _grid: RuleGrid
 var _paths := {}
+var _open_key := ""
 
 
 func _init(layout_: SpecLayout) -> void:
@@ -12,11 +13,28 @@ func _init(layout_: SpecLayout) -> void:
 	if layout.nav != "grid": return
 	_grid = RuleGrid.new()
 	_grid.areas.assign(layout.areas)
+	set_open({})
+
+
+## 哪些机器开着（跟机器一起出现的障碍才挡路）。开着的机器变了就重算格子、清路线缓存。
+func set_open(unlocked: Dictionary) -> void:
+	if _grid == null: return
+	var active: Array[Rect2] = []
+	var key := ""
+	for index in layout.obstacles.size():
+		var station: String = layout.obstacle_stations[index] if index < layout.obstacle_stations.size() else ""
+		if station.is_empty() or unlocked.get(station, false):
+			active.append(layout.obstacles[index])
+			key += "%d," % index
+	if key == _open_key and not _grid.blocked_cells.is_empty(): return
+	_open_key = key
+	_paths.clear()
+	_grid.blocked_cells.clear()
 	for y in layout.grid_size.y:
 		for x in layout.grid_size.x:
 			var c := Vector2i(x, y)
 			var center := _grid.cell_center(c, layout.cell)
-			for box in layout.obstacles:
+			for box in active:
 				if box.has_point(center):
 					_grid.blocked_cells.append(c)
 					break

@@ -1,7 +1,7 @@
 extends SceneTree
 ## 在通用规则层上录煎饼摊的整店基准（旧模拟已删，改数值以后用它重录）：
 ##   godot --headless --path . -s tests/baselines/record_rules.gd [-- --check]
-## 机器人和录旧基准时同一套决策（每分钟看一眼：先解锁、员工忙就招人、买最便宜的升级，
+## 机器人和录旧基准时同一套决策（每分钟看一眼：先解锁、员工忙就招人、买最便宜的升级（机器、员工、传单、座位），
 ## 鏊子忙时优先升鏊子，攒钱解锁时超过目标 1/4 的升级先不买）。录下操作序列以后用 replay_rules 重放算出各项结果，
 ## 写出 tests/baselines/pancake_rules.json，格式和 *_73b0ae3.json 一样。
 ## --check：重录一遍和已存的比，不一致退出码 1。
@@ -64,19 +64,24 @@ static func record(shop: SpecShop) -> Dictionary:
 				unlocks["hire%d" % rules.workers.size()] = at
 				actions.append([at, "hire"])
 				continue
+			# 能花钱的地方：机器升级、员工升级、传单升级、买座位（价格、命令）
 			var opts := []
 			for st in shop.stations:
 				if not st.tracks.is_empty() and rules.station_unlocked(st.id) and rules.upgrade_error(st.id) == "":
-					opts.append([rules.upgrade_cost(st.id), st.id])
+					opts.append([rules.upgrade_cost(st.id), "upgrade " + st.id])
+			for t in shop.staff.tracks:
+				if rules.upgrade_error("staff/" + t.id) == "": opts.append([rules.upgrade_cost("staff/" + t.id), "staff " + t.id])
+			if rules.upgrade_error("flyer") == "": opts.append([rules.upgrade_cost("flyer"), "flyer_upgrade"])
+			if rules.buy_group() != null and rules.seat_error() == "": opts.append([rules.seat_cost(), "seat"])
 			if opts.is_empty(): break
 			opts.sort()
 			var pick: Array = opts[0]
-			var prefer := hand_load > 0.7 and opts.any(func(o: Array) -> bool: return o[1] == hand)
-			if prefer: pick = opts.filter(func(o: Array) -> bool: return o[1] == hand)[0]
+			var prefer := hand_load > 0.7 and opts.any(func(o: Array) -> bool: return o[1] == "upgrade " + hand)
+			if prefer: pick = opts.filter(func(o: Array) -> bool: return o[1] == "upgrade " + hand)[0]
 			var target := rules.next_stage_cost() if not nxt.is_empty() else 0
 			if not nxt.is_empty() and pick[0] > 0.25 * target and not prefer: break
-			if rules.upgrade(pick[1]) != "": break
-			actions.append([at, "upgrade " + pick[1]])
+			if Replay.run_command(rules, pick[1]) != "": break
+			actions.append([at, pick[1]])
 	var base := {"minutes": MINUTES, "actions": actions}
 	var result := Replay.replay(shop, base)
 	var levels := {}
