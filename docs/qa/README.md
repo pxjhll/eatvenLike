@@ -9,7 +9,7 @@ godot --headless --path . -s tools/sync_shop_layouts.gd -- --check   # 店铺数
 godot --headless --path . -s tests/render_shop_tea.gd         # 奶茶店真实点按：开店、面板、存读档、菜单、重开、调参
 godot --headless --path . -s tests/render_shop_pancake.gd     # 煎饼摊：引导、原画、结店去下一家
 godot --headless --path . -s tests/render_shop_guide.gd       # 奶茶店引导
-godot --headless --path . -s tests/render_shop_extend.gd      # HUD 扩展点（假页签、奇遇卡、加成图标）
+godot --headless --path . -s tests/render_shop_extend.gd      # HUD 扩展点、鼠标与触屏员工拖放
 godot --headless --path . -s tests/render_work_actions.gd     # 角色动作在店里
 ```
 
@@ -17,4 +17,7 @@ godot --headless --path . -s tests/render_work_actions.gd     # 角色动作在�
 
 实际画面与截图检查使用 `--rendering-method gl_compatibility --audio-driver Dummy` 代替 `--headless`；独立帧动画预览可运行 `tests/render_rabbit_frame_atlas.gd`。
 
-生成的根目录截图、GIF 和日志已加入 `.gitignore`，不再积累到提交中。2026-11-01 的完整流程排查及问题证据保留在 [本次报告](2026-11-01-playthrough/report.md)，该报告描述清理前的测试覆盖，旧版测试和骨骼试验现已归档。清理后的验证见 [清理说明](../cleanup-2026-11-01.md)。
+历史 QA 保存在迁移前的提交中。
+
+- [2026-11-01 试玩报告、截图、日志和复现脚本](https://github.com/pxjhll/eatvenLike/tree/26013a213e6b577443917687873e663ea8fbcc1d/docs/qa/2026-11-01-playthrough)
+- [2026-11-06 原生 UI 对照报告与截图](https://github.com/pxjhll/eatvenLike/tree/26013a213e6b577443917687873e663ea8fbcc1d/docs/qa/native-ui-reference-2026-11-06.md)及[当时的对照图工具](https://github.com/pxjhll/eatvenLike/tree/26013a213e6b577443917687873e663ea8fbcc1d/tools/build_native_ui_review.py)

@@ -24,16 +24,6 @@
       ]
     },
     {
-      "id": "pearl_jar",
-      "source": "art_src/shop_layout_2026_11/sources/exec-2f48e65c-f07c-451e-b9f3-de2fd1c66716.png",
-      "destination": "art/reference/pearl_jar.png",
-      "size": [
-        224,
-        208
-      ],
-      "prompt": "Create ONE independent isolated transparent RGBA sprite for a 2D cozy cartoon tea shop game. Use attached image ONLY as design and art style reference. Refined clean hand-painted illustration, rounded friendly shapes, dark warm brown contour of consistent thickness, warm wood and cream colors, gentle upper-left light, simple readable material highlights. Orthographic projection with fixed slightly elevated front viewing angle matching reference: horizontal edges parallel, verticals parallel, no perspective convergence, no isometric diamond view. Complete object fully visible, modest transparent padding, background truly alpha transparent, not checkerboard or black fill. No text, annotation, characters, environment or additional objects. No outer glow, no vignette or cast shadows extending far beyond object. Specific asset: One clear short wide open glass jar filled with dark brown tapioca pearls. No table. Ratio width to height about 1.08."
-    },
-    {
       "id": "tea_tin",
       "source": "art_src/shop_layout_2026_11/sources/exec-7506d1f9-c9a7-4830-90c2-063fba8ed481.png",
       "destination": "art/reference/tea_tin.png",
@@ -157,23 +147,6 @@
         418,
         1254,
         836
-      ]
-    },
-    {
-      "id": "lemonade_display_table",
-      "destination": "art/reference/lemonade_display_table.png",
-      "size": [
-        600,
-        220
-      ],
-      "row": 2,
-      "col": 0,
-      "source": "art_src/shop_layout_2026_11/sources/exec-f36558a8-d4dc-4e16-826a-644a945f64e3.png",
-      "crop": [
-        0,
-        836,
-        418,
-        1254
       ]
     },
     {
@@ -416,23 +389,6 @@
         0,
         1254,
         627
-      ]
-    },
-    {
-      "id": "lemon_small_cup",
-      "destination": "art/reference/lemon_small_cup.png",
-      "size": [
-        120,
-        150
-      ],
-      "row": 1,
-      "col": 0,
-      "source": "art_src/shop_layout_2026_11/sources/exec-e3dc4285-aa73-4201-abb1-2f3a71e2c154.png",
-      "crop": [
-        0,
-        627,
-        418,
-        1254
       ]
     },
     {

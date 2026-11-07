@@ -25,7 +25,7 @@ godot --headless --path . -s tests/render_shop_tea.gd
 godot --path .
 ```
 
-兔子帧完整性、界面和实际渲染检查见 [验证说明](docs/qa/README.md)。清理前版本的流程排查和问题证据见 [2026-11-01 报告](docs/qa/2026-11-01-playthrough/report.md)，当前主线行为以现有实现和回归结果为准。
+兔子帧完整性、界面和实际渲染检查见 [验证说明](docs/qa/README.md)。历史报告与复现脚本可从验证说明的归档链接找回。
 
 ## 目录
 

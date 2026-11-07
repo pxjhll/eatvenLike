@@ -27,7 +27,9 @@
 - `art_src/shop_layout_2026_11/`：设备/家具/配料分组源图、原始尺寸、调色前图及导出记录。
 - `output/figcraft/`：本地临时导出目录，已由 Git 忽略，不进入 PR。
 
-## 验证
+## 历史验证
+
+下列结果对应[迁移前的测试入口](https://github.com/pxjhll/eatvenLike/tree/26013a213e6b577443917687873e663ea8fbcc1d/tests)。当前命令见[验证说明](../README.md)。
 
 Godot 4.6.3：`tests/run_all.gd` 完整 112 用例、0 失败。
 

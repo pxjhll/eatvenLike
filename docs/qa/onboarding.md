@@ -33,7 +33,7 @@
 ## 验证
 
 - `godot --headless --path . -s tests/run_all.gd`：137 个用例 0 失败（含字体缺字检查）。
-- `tests/render_guide.gd`（已加进 CI）：真实点击走完整个开场；高亮外的点击被吞掉；压暗时经营时间不走；完成后写入存档；红茶线引导、客人走掉引导各只出一次；重开游戏记得看过的引导；旧存档跳过开场。
-- `xvfb-run godot --path . --rendering-method gl_compatibility -s tests/render_guide.gd` 出截图，拼成下图：
+- [旧版引导校验](https://github.com/pxjhll/eatvenLike/tree/26013a213e6b577443917687873e663ea8fbcc1d/tests/render_guide.gd)（当前 CI 使用 `tests/render_shop_guide.gd`）：真实点击走完整个开场；高亮外的点击被吞掉；压暗时经营时间不走；完成后写入存档；红茶线引导、客人走掉引导各只出一次；重开游戏记得看过的引导；旧存档跳过开场。
+- `xvfb-run godot --path . --rendering-method gl_compatibility -s tests/render_guide.gd` 是旧提交中生成下图的命令：
 
 ![引导流程](guide-flow.png)

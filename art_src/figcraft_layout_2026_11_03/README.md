@@ -27,11 +27,6 @@
 python tools/apply_figcraft_shop_layout.py
 ```
 
-验证命令（使用本机 Godot 路径）：
-
-```powershell
-godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_figcraft_layout.gd
-godot --headless --path . -s tests/run_all.gd
-```
+[原布局校验脚本](https://github.com/pxjhll/eatvenLike/tree/26013a213e6b577443917687873e663ea8fbcc1d/tests/render_figcraft_layout.gd)对应迁移前的场景。当前项目可运行 `godot --headless --path . -s tools/sync_shop_layouts.gd -- --check` 核对通用店铺布局。
 
 专门检查包含 44 张图片坐标、尺寸、纹理、13 个分组在开局/逐步解锁/重置后的可见性，以及最终阶段的真实 UI 解锁和指引。全套 112 个回归用例、原生布局和员工拖拽检查均通过。预览位于 `docs/qa/figcraft-restored-layout.png`、`figcraft-opening.png`、`figcraft-fully-unlocked.png`。

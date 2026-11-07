@@ -191,6 +191,9 @@ offset_bottom = 1678.0
 clip_contents = true
 mouse_filter = 2
 
+[node name="Sortables" type="Node2D" parent="SceneClip"]
+metadata/z_by_y = true
+
 [node name="N162_基础设施" type="Node2D" parent="SceneClip"]
 transform = Transform2D(1, 0, 0, 1, -14, 0)
 metadata/figcraft_id = 162
