@@ -24,6 +24,13 @@ jobs:
         run: timeout 60s ./godot --headless --path . -s tools/sync_shop_layouts.gd -- --check
       - name: Pancake baseline matches the shop data (re-record with tests/baselines/record_rules.gd)
         run: timeout 120s ./godot --headless --path . -s tests/baselines/record_rules.gd -- --check
+      - name: Exported pack keeps every shop scene node (web build converts scenes to binary)
+        run: |
+          timeout 60s ./godot --headless --path . -s "$PWD/tests/dump_shop_scenes.gd" -- /tmp/scenes-source.txt
+          mkdir -p build && touch build/.gdignore
+          timeout 180s ./godot --headless --path . --export-pack Web build/check.pck
+          timeout 60s ./godot --headless --main-pack build/check.pck -s "$PWD/tests/dump_shop_scenes.gd" -- /tmp/scenes-export.txt
+          diff /tmp/scenes-source.txt /tmp/scenes-export.txt
       - name: Generic shop scene - tea shop real-click regression (taps, panels, save, menu, restart, tuning)
         run: timeout 60s ./godot --headless --path . -s tests/render_shop_tea.gd
       - name: Generic shop scene - data-driven tutorial real-click regression

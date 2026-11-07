@@ -991,3 +991,6 @@ texture = SubResource("sprite_27")
 centered = false
 metadata/figcraft_id = 84
 metadata/source_name = "yellow_straw_cup"
+
+[node name="Sortables" type="Node2D" parent="SceneClip"]
+metadata/z_by_y = true

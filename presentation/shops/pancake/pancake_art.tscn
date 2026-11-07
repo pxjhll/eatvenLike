@@ -7,9 +7,6 @@
 
 [node name="Stall" parent="." instance=ExtResource("stall")]
 
-[node name="Sortables" type="Node2D" parent="Stall/SceneClip"]
-metadata/z_by_y = true
-
 [node name="Anchors" type="Node2D" parent="."]
 metadata/world_size = Vector2(937, 1678)
 metadata/customer_height = 167.0
