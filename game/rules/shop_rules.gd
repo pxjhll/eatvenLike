@@ -337,7 +337,14 @@ func _refresh_all_modifiers() -> void:
 
 ## 一条升级轨在 level 级时的全部效果折成加成：同种效果、同一对象、同一范围合成一条。
 func _refresh_track(st: SpecStation, t: SpecUpgradeTrack, key: String, level: int, default_target: String) -> void:
+	## 重算后放回原来的位置：升级条目不挪到栈尾，奇遇等后加的 set 照样盖过升级
+	var at: int = mods.entries.size()
+	for index in mods.entries.size():
+		if mods.entries[index].source == "upgrade" and mods.entries[index].source_id == key:
+			at = index
+			break
 	mods.remove("upgrade", key)
+	var kept: int = mods.entries.size()
 	var groups := {}
 	var effects: Array[SpecEffect] = []
 	effects.append_array(t.base_effects)
@@ -363,6 +370,8 @@ func _refresh_track(st: SpecStation, t: SpecUpgradeTrack, key: String, level: in
 		if g.kind in SET_KINDS: op = "set"
 		elif g.kind in ADD_KINDS: op = "add"
 		mods.add("upgrade", key, g.kind, op, g.value, g.target, g.dishes, g.part)
+	var added: Array = mods.entries.slice(kept)
+	mods.entries = mods.entries.slice(0, at) + added + mods.entries.slice(at, kept)
 
 
 func track_of(key: String) -> SpecUpgradeTrack:
@@ -989,11 +998,14 @@ func _cancel_job(worker: Dictionary) -> void:
 ## 预览：把某条升级轨临时加一级，算完 fn 再还原（面板“当前 → 下一级”用）。
 func preview(key: String, fn: Callable) -> Variant:
 	if track_of(key) == null: return fn.call()
+	## 预览完原样放回加成栈（同一批条目、同样的顺序和剩余时间）：重算会把升级条目挪到最后，
+	## 让升级的 set 盖过奇遇的 set
+	var saved: Array = mods.entries.duplicate()
 	levels[key] = int(levels[key]) + 1
 	_refresh_key(key)
 	var result: Variant = fn.call()
 	levels[key] = int(levels[key]) - 1
-	_refresh_key(key)
+	mods.entries = saved
 	return result
 
 
