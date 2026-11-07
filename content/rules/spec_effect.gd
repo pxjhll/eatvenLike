@@ -15,7 +15,8 @@ extends Resource
 ## flyer_customers / flyer_cooldown   传单一波人数 / 冷却秒数（set）
 ## walk / work / carry                员工走路 / 手速 / 搬运（target = 员工区域或员工 id）
 ## staff_slot     某区域员工上限 +1（target = 区域）
-## event_chance   奇遇触发概率倍率（幸运值走这里）
+## event_chance   奇遇触发概率倍率
+## luck           员工幸运值（target = 员工区域或员工 id，add）；全店合计 L 时奇遇概率 ×(1 + L)
 ## patience       顾客耐心倍率
 ## grant_gold     一次性：给金币
 ## customer_wave  一次性：来一波客人（value = 人数）
@@ -23,7 +24,7 @@ extends Resource
 ## unlock_recipe  一次性：开放一道菜（target = 菜品 id）
 ## shop_news      一次性：新店消息（target = 关卡表里的店铺 id）
 const KINDS := ["speed", "duration", "price", "batch", "process_slots", "open_flavor", "flow", "seats",
-	"flyer_customers", "flyer_cooldown", "walk", "work", "carry", "staff_slot", "event_chance", "patience",
+	"flyer_customers", "flyer_cooldown", "walk", "work", "carry", "staff_slot", "event_chance", "luck", "patience",
 	"grant_gold", "customer_wave", "unlock_staff_kind", "unlock_recipe", "shop_news"]
 const ONE_SHOT := ["grant_gold", "customer_wave", "unlock_staff_kind", "unlock_recipe", "shop_news"]
 

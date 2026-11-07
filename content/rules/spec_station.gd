@@ -10,7 +10,8 @@ const BLOCKS := ["supply", "batch_pot", "hand", "combine", "topping", "dispenser
 @export var block: String = ""
 ## 类型参数，键见规格 §3.3：
 ## supply     fetch_seconds
-## batch_pot  cook_seconds, load_seconds, unload_seconds, batch, capacity, manual_load, manual_unload, stir_points, stir_seconds
+## batch_pot  cook_seconds, load_seconds, unload_seconds, batch, capacity, manual_load, manual_unload, stir_points, stir_seconds,
+##            load_label, unload_label（员工头顶的字）
 ## hand       seconds, users
 ## combine    seconds, manual
 ## topping    seconds, users, flavor_cap
