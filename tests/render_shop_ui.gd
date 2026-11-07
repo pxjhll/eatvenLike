@@ -27,6 +27,14 @@ func _run() -> void:
 		quit(1)
 		return
 	await _capture("home")
+	# The shop fills a 9:16 phone's width and scrolls vertically instead of leaving side bars.
+	var canvas: Node2D = view.get_node("Canvas")
+	_check(absf(canvas.global_position.x) < 0.5 and absf(canvas.scale.x - view.get_viewport_rect().size.x / 720.0) < 0.001, "portrait shop fills the screen width")
+	var top_y := canvas.global_position.y
+	view.scroll_world_by(-100000.0)
+	_check(absf(canvas.global_position.y + 1500.0 * canvas.scale.y - view.get_viewport_rect().size.y) < 0.5, "scrolling down stops at the bottom of the shop")
+	view.scroll_world_by(100000.0)
+	_check(absf(canvas.global_position.y - top_y) < 0.5, "scrolling up returns to the top of the shop")
 	root.size = Vector2i(1340, 1080)
 	await _layout()
 	var desktop_shop := Rect2(view.get_node("Canvas").global_position, Vector2(720, 1280) * view.get_node("Canvas").scale)

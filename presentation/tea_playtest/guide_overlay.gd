@@ -490,6 +490,8 @@ func _focus(target: Control, text: String) -> void:
 
 
 func _focus_world(rect: Rect2, text: String) -> void:
+	# The shop scrolls; bring the target on screen before cutting the hole around it.
+	if _view.has_method("reveal_world"): _view.reveal_world(rect)
 	_hole = _world_rect(rect)
 	_blocking = true
 	_point = _hole.get_center()
