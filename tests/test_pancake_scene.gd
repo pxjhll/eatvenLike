@@ -105,6 +105,27 @@ func test_play_scene_builds_and_unlocks_art() -> void:
 	play.free()
 
 
+func test_characters_match_tea_shop_scale_and_sort_by_feet() -> void:
+	var play := _play()
+	var Characters := preload("res://presentation/characters/character_library.gd")
+	var cup: Sprite2D = play.art.source_node(play.RULER_CUP)
+	var cup_height: float = (play.art.global_transform.affine_inverse() * cup.global_transform * cup.get_rect()).size.y
+	check(absf(play._staff_height / cup_height - 128.0 / 52.0) < 0.01, "员工和杯子的比例同奶茶店")
+	check(absf(play._customer_height / cup_height - 110.0 / 52.0) < 0.01, "客人和杯子的比例同奶茶店")
+	play._try_unlock("soy_milk")
+	play.sim.next_customer = 0.0
+	play.sim.run(3.0)
+	play._sync_actors()
+	var counter_z: int = play.art.source_node(46).z_index
+	var staff: Node2D = play._staff_actors.values()[0]
+	check(staff.z_index < counter_z, "柜台后面的员工画在柜台下面")
+	check(play.art.source_node(161).z_index >= counter_z, "豆浆机跟柜台一起挡住员工")
+	for c in play._customer_actors.values():
+		check(c.z_index > counter_z, "柜台前的客人画在柜台上面")
+	check(play._frames["rear_equipment"].z_index > 1678, "解锁框在所有人物上面")
+	play.free()
+
+
 func test_guide_follows_opening_steps() -> void:
 	var play := _play()
 	var guide: Control = play.guide

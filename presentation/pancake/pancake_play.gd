@@ -9,6 +9,7 @@ const UpgradeBadge := preload("res://presentation/tea_playtest/upgrade_badge.gd"
 const Characters := preload("res://presentation/characters/character_library.gd")
 const Store := preload("res://game/pancake/pancake_save.gd")
 const Guide := preload("res://presentation/pancake/pancake_guide.gd")
+const Art := preload("res://presentation/pancake/pancake_art.gd")
 const Profile := preload("res://game/app/profile.gd")
 const FONT := preload("res://art/ui/graybox_font.ttf")
 const COIN := preload("res://art/ui/coin.png")
@@ -16,7 +17,12 @@ const SOURCE_SIZE := Vector2(937, 1678)
 const TEA_SCENE := "res://presentation/tea_playtest/tea_playtest.tscn"
 ## 订单气泡里的图：豆浆杯、纸袋煎饼（原画里的图块）。
 const ICON_NODES := {"soy": 50, "food": 57}
+## 量人物大小用的杯子（豆浆杯）。
+const RULER_CUP := 50
 const UPGRADE_TEXT := {"speed": "速度 +14%", "price": "售价 +8%"}
+
+## 干活时面朝台子（0 正面 2 右 4 背面 6 左）：收钱面向客人，打豆浆面向豆浆机。
+const WORK_FACING := {"register": 0, "soy": 7}
 
 var sim: PancakeSim
 var speed := 1.0
@@ -32,6 +38,8 @@ var _leave_armed := false
 var _finish := Button.new()
 @onready var art: Node2D = $PancakeArt
 var actors := Node2D.new()
+var _staff_height := 150.0
+var _customer_height := 140.0
 var _staff_actors := {}
 var _customer_actors := {}
 var _frames := {}
@@ -68,8 +76,14 @@ func _ready() -> void:
 		var node: Sprite2D = art.source_node(ICON_NODES[key])
 		if node != null: _icons[key] = node.texture
 	_measure_stations()
+	var cup: Sprite2D = art.source_node(RULER_CUP)
+	if cup != null:
+		var cup_height: float = (art.global_transform.affine_inverse() * cup.global_transform * cup.get_rect()).size.y
+		_staff_height = cup_height * Characters.STAFF_PER_CUP
+		_customer_height = cup_height * Characters.CUSTOMER_PER_CUP
+	# 人物和场景物件统一按脚底 y 排前后：人物 z = 脚底 y，柜台等物件的 z 在美术场景 DEPTH 里
 	actors.y_sort_enabled = true
-	art.add_child(actors)
+	art.source_node(46).get_parent().add_child(actors)
 	_build_frames()
 	_build_hud()
 	guide.setup(self, seen_guides, _style)
@@ -150,6 +164,7 @@ func _build_frames() -> void:
 		frame.add_theme_font_size_override("font_size", 26)
 		frame.pressed.connect(_try_unlock.bind(key))
 		frame.visible = false
+		frame.z_index = Art.TOP_Z
 		art.add_child(frame)
 		_frames[key] = frame
 
@@ -182,22 +197,28 @@ func _sync_actors() -> void:
 		var actor: Node2D = _staff_actors.get(s.id)
 		if actor == null:
 			actor = Actor.new()
-			actor.setup(s.art, FONT, 150.0)
+			actor.setup(s.art, FONT, _staff_height)
 			actors.add_child(actor)
 			_staff_actors[s.id] = actor
-		actor.display(s, sim.clock)
+		var shown: Dictionary = s
+		if s.phase == "work" and WORK_FACING.has(s.target):
+			shown = s.duplicate()
+			shown.facing = WORK_FACING[s.target]
+		actor.display(shown, sim.clock)
+		actor.z_index = int(actor.position.y)
 	var alive := {}
 	for c in sim.customers:
 		alive[c.id] = true
 		var actor: Node2D = _customer_actors.get(c.id)
 		if actor == null:
 			actor = Actor.new()
-			actor.setup(Characters.customer_art(c.art_index), FONT, 140.0)
+			actor.setup(Characters.customer_art(c.art_index), FONT, _customer_height)
 			actors.add_child(actor)
 			_customer_actors[c.id] = actor
 		var walking: bool = c.pos.distance_to(c.spot) > 1.0
 		actor.display({"pos": c.pos, "walking": walking, "seated": c.seated and not walking, "phase": "idle",
 			"task_label": ""}, sim.clock)
+		actor.z_index = int(actor.position.y)
 		actor.task.visible = false
 		if c.state == "queue":
 			var left: float = 1.0 - c.wait / float(sim.cfg.patience)

@@ -8,6 +8,16 @@ const STATIONS := {
 	"soy_milk": 161, "rack": 166,
 }
 const CUSHION_GROUPS := [165, 164, 163]
+## 会挡住人物的物件：z = 物件落地的 y（源坐标）。人物的 z = 脚底 y，谁更靠前谁画在上面。
+## 没列出的（天空、地砖、靠墙的桌子和后排设备、坐垫、野餐毯）都在人物下面。
+## 摆在台面上的东西跟着台子走：豆浆机、台面文字用柜台的值。
+const DEPTH := {
+	41: 734, 42: 734, 43: 734,
+	46: 976, 161: 976, 144: 976, 145: 976, 146: 976, 147: 976, 148: 976,
+	63: 1118,
+}
+## 解锁虚线框等交互物件放在所有人物上面。
+const TOP_Z := 2000
 
 @export var review_all_unlocked := false
 @export var opening_stations: PackedStringArray = []
@@ -21,11 +31,17 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		show_complete_layout()
 		return
+	apply_depth()
 	reset_layout()
 	for key in opening_stations:
 		set_station_unlocked(key, true)
 	set_cushion_stage(opening_cushion_stage)
 	if review_all_unlocked: show_complete_layout()
+
+func apply_depth() -> void:
+	for id in DEPTH:
+		var node := source_node(id)
+		if node != null: node.z_index = DEPTH[id]
 
 func source_node(id: int) -> CanvasItem:
 	if _by_id.is_empty():

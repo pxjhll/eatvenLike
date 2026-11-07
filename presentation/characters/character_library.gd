@@ -4,6 +4,10 @@ extends RefCounted
 const STAFF_IDS := ["cat", "raccoon", "fox", "rabbit", "gray_cat", "bear"]
 const CUSTOMER_IDS := ["squirrel", "dog", "sheep", "hamster"]
 const IDS := STAFF_IDS + CUSTOMER_IDS
+## 所有店共用的人物比例，用一只杯子的高度当尺子（照奶茶店：杯 52、员工 128、客人 110）。
+## 新场景量出自己杯子的高度再乘这两个数，人物和物件的比例就和奶茶店一致。
+const STAFF_PER_CUP := 128.0 / 52.0
+const CUSTOMER_PER_CUP := 110.0 / 52.0
 const NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸", "rabbit": "小兔子", "gray_cat": "小灰猫", "bear": "小熊", "squirrel": "小松鼠", "dog": "小狗", "sheep": "小羊", "hamster": "仓鼠"}
 const ACTION_NAMES := {"walk": "走路", "idle": "待机", "sit": "坐姿", "work": "操作", "carry": "搬运", "pose": "站姿"}
 const RABBIT_FRAMES := preload("res://art/rabbit_work_actions/rabbit_work_actions_frames.tres")
