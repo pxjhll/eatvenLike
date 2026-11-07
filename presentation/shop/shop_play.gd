@@ -331,7 +331,9 @@ func _actor(kind: String, height := 128.0) -> Node2D:
 	actor.work_direction = view.work_direction
 	actor.pouring_station = view.pouring_station
 	actor.order_icon = _order_icon
+	actor.work_progress = view.work_progress
 	actor.setup(kind, _font, height)
+	actor.progress_bar.theme = ui.theme
 	return actor
 
 
@@ -400,7 +402,8 @@ func _build_world_labels() -> void:
 	for id in anchors.station_rects():
 		var region: Rect2 = anchors.station_rects()[id]
 		var mark := UpgradeBadge.new()
-		mark.center_on(Vector2(region.end.x - 14, region.position.y + 14))
+		var spot := Vector2(region.end.x - 14, region.position.y + 14)
+		mark.center_on(anchors.point("Stations/%s/Mark" % id, spot))
 		parent.add_child(mark)
 		_upgrade_marks[id] = mark
 	if _seats != null:
@@ -424,6 +427,10 @@ func _frame(rect: Rect2, action: Callable) -> Button:
 	frame.add_theme_font_size_override("font_size", 17)
 	frame.pressed.connect(action)
 	$Canvas/WorldLabels.add_child(frame)
+	# 按脚底前后排序的店：虚线框画在地上那一层，站在框前面的员工不被挡住
+	if _z_by_y and rect.has_area():
+		frame.z_as_relative = false
+		frame.z_index = int(rect.end.y)
 	return frame
 
 
@@ -694,7 +701,7 @@ func _update_customers_single(delta: float) -> void:
 	var waiting := anchors.points("Waiting")
 	var group := _wait_group()
 	var seats := anchors.points("Seats/" + group) if not group.is_empty() else []
-	var free_seats := mini(rules.current_stage().wait_seats, seats.size())
+	var free_seats := mini(rules.wait_seats(), seats.size())
 	var standing := rules.current_stage().queue_capacity
 	var spots := {}
 	var seat := 0
@@ -890,7 +897,7 @@ func buy_staff_upgrade(side: String) -> void:
 	var gold_before := rules.gold
 	var error := rules.upgrade("staff/" + side)
 	if error.is_empty(): _bought("staff_%s/%s" % [side, info.name], gold_before)
-	_show_toast(error if not error.is_empty() else _t("staff_upgraded", {"side": _t("side_" + side), "name": info.name}))
+	_show_toast(error if not error.is_empty() else _t("staff_upgraded", {"side": info.title, "name": info.name}))
 	if error.is_empty(): save_now(false)
 	_refresh(0.0)
 

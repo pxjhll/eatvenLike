@@ -22,6 +22,8 @@ var _point := Vector2.INF
 var _time := 0.0
 ## 有客人等急了：等能提示的时候（店铺页、没有别的引导）再说一次
 var _angry_pending := false
+## 一人跟单的店客人等急了会走：记下看过的流失人数，多出来就算“等急了”（-1 = 还没开始记）
+var _lost_seen := -1
 ## 步骤开始时店里有几个人（hired 条件用）
 var _staff_at_start := 0
 var _bubble: PanelContainer
@@ -281,6 +283,11 @@ func _waiting() -> Array:
 
 
 func _any_angry() -> bool:
+	if _single():
+		var lost: int = _view.rules.lost
+		var more := _lost_seen >= 0 and lost > _lost_seen
+		_lost_seen = lost
+		return more
 	for order in _view.rules.orders:
 		if _view.rules.order_mood(order) >= 2: return true
 	return false
@@ -289,6 +296,11 @@ func _any_angry() -> bool:
 ## 客人为什么等急了，按玩家会先修的顺序：堂食坐满 → 还有空岗位 → 做这杯的机器
 func _angry_cause() -> String:
 	var rules: ShopRules = _view.rules
+	if _single():
+		var g := rules.buy_group()
+		if g != null and g.purpose == "wait" and rules.seat_cost() >= 0 and int(rules.seats.get(g.id, 0)) < rules.seat_cap(g): return "seats"
+		if rules.workers.size() < rules.staff_slots(): return "staff"
+		return "machine"
 	var angry: Array = rules.orders.filter(func(order: Dictionary) -> bool: return rules.order_mood(order) >= 2)
 	if angry.is_empty(): return ""
 	var dine_in: bool = angry.any(func(order: Dictionary) -> bool: return not order.get("takeaway", false))
@@ -298,8 +310,25 @@ func _angry_cause() -> String:
 
 
 ## 等得最久的那杯是哪台机器做的：前厅饮品 = 它自己的机器，后厨饮品 = 工序链上第一台
+func _single() -> bool:
+	return _view.rules.shop.fulfillment.handoff == "single"
+
+
 func _slow_machine() -> String:
 	var rules: ShopRules = _view.rules
+	if _single():
+		# 排得最久的客人点的菜：工序里第一台能升级的机器
+		var dish := ""
+		for id in rules.queue:
+			dish = String(rules.customer(id).get("kind", ""))
+			break
+		if dish.is_empty() and not rules.dish_ids.is_empty(): dish = rules.dish_ids[0]
+		var d := rules.shop.dish(dish)
+		if d != null:
+			for step in d.steps:
+				var st := rules.shop.station(step.station)
+				if st != null and not st.tracks.is_empty() and rules.station_unlocked(st.id): return st.id
+		return rules.counter_id
 	var oldest: Dictionary = {}
 	for order in rules.orders:
 		if oldest.is_empty() or order.wait > oldest.wait: oldest = order

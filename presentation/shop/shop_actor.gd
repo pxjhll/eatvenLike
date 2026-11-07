@@ -13,6 +13,10 @@ var work_direction: Callable = func(_station: String) -> int: return -1
 var pouring_station: Callable = func(_worker: Dictionary) -> String: return ""
 ## 订单气泡里的图：物品 → 贴图（默认 art/ui/drink_<id>.png）
 var order_icon: Callable = func(item: String) -> Texture2D: return drink_icon(item)
+## 手上这步活干了多少（0–1；-1 = 没在干、不画进度条）
+var work_progress: Callable = func(_worker: Dictionary) -> float: return -1.0
+## 头顶的进度条（外面给主题）
+var progress_bar := ProgressBar.new()
 var body := Sprite2D.new()
 var carried := Sprite2D.new()
 var amount := Label.new()
@@ -77,6 +81,13 @@ func setup(art_id: String, font: Font, height := 128.0) -> void:
 	_order_cup.centered = false
 	_order_cup.visible = false
 	add_child(_order_cup)
+	progress_bar.max_value = 1.0
+	progress_bar.show_percentage = false
+	progress_bar.size = Vector2(84, 12)
+	progress_bar.position = Vector2(-42, -height - 18)
+	progress_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	progress_bar.visible = false
+	add_child(progress_bar)
 
 
 func show_order(item: String, patience: float, mood := 0, takeaway := false) -> void:
@@ -113,6 +124,9 @@ func display(worker: Dictionary, clock: float) -> void:
 	body.position.y = -body.texture.get_height() * _base_scale.y + bob
 	body.rotation = sin(clock * 10.0) * 0.025 if working else 0.0
 	task.text = task_text.call(worker)
+	var done: float = work_progress.call(worker)
+	progress_bar.visible = done >= 0.0
+	if progress_bar.visible: progress_bar.value = done
 	var item: String = worker.get("carry_item", "")
 	var count: int = worker.get("carry_count", 0)
 	carried.visible = not item.is_empty() and count > 0

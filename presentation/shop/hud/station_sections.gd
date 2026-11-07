@@ -76,13 +76,18 @@ class SeatsSection extends PanelContainer:
 
 	func refresh(card: Dictionary) -> void:
 		var seats: Dictionary = card.seats
-		title.text = "堂食座位 %d / %d" % [seats.total, seats.max]
+		title.text = "%s %d / %d" % [seats.title, seats.total, seats.max]
 		if int(seats.cost) < 0:
 			effect.text = "座位已加满 · 现在 %d 位客人在座" % seats.used
 			button.text = "满级"
 			button.disabled = true
 			return
-		effect.text = "加一张座位 · 现在 %d 位客人在座" % seats.used
+		if int(seats.total) + int(seats.step) > int(seats.cap):
+			effect.text = "下一阶段开放更多 · 现在 %d 位客人在座" % seats.used
+		elif seats.purpose == "dine":
+			effect.text = "加一张座位 · 现在 %d 位客人在座" % seats.used
+		else:
+			effect.text = "加 %d 个座位 · 现在 %d 位客人在座" % [int(seats.step), seats.used]
 		button.text = "%d 金币" % int(seats.cost)
 		button.disabled = not String(seats.error).is_empty()
 

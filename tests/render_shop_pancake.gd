@@ -82,7 +82,12 @@ func _run() -> void:
 	await _click(view._station_buttons.rear_equipment)
 	await _click(hud.page_node("station").unlock_button)
 	_check(_rules().station_unlocked("rear_equipment") and _stall(21).is_visible_in_tree() and _stall(140).visible, "开鏊子：后排设备和面粉一起摆出来")
-	_check(_stall(165).is_visible_in_tree() and not _stall(164).is_visible_in_tree(), "第 2 段摆出第一批坐垫")
+	view._refresh(0)
+	_check(not _stall(165).is_visible_in_tree(), "坐垫要自己买，开鏊子不白送")
+	_rules().gold = 60.0
+	_check(_rules().buy_seat() == "" and _rules().seat_error() == "下一阶段开放更多座位", "第 2 段只能买第一批 2 个坐垫")
+	view._refresh(0)
+	_check(_stall(165).is_visible_in_tree() and not _stall(164).is_visible_in_tree(), "买了第一批坐垫就摆出来")
 	await _click(hud.tab("shop"))
 	_rules().gold = 60.0
 	guide.refresh(0)
@@ -128,7 +133,9 @@ func _run() -> void:
 	# 完店：弹完店卡，目标页出“结店”，总结卡第一下只提醒，第二下去奶茶店
 	_rules().gold = 99999
 	for id in ["fryer", "topping"]: _rules().unlock(id)
-	while _rules().upgrade_cost("topping") >= 0: _rules().upgrade("topping")
+	for id in ["soy_milk", "rear_equipment", "topping"]:
+		while _rules().upgrade_cost(id) >= 0: _rules().upgrade(id)
+	while _rules().buy_seat() == "": pass
 	for row in _rules().task_rows():
 		var task: SpecTask = null
 		for stage in PANCAKE.stages:

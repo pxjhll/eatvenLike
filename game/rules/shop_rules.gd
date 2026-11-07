@@ -172,6 +172,7 @@ func load_dict(data: Dictionary) -> String:
 				if merged.has(id): merged[id] = v[id].duplicate(true) if v[id] is Array or v[id] is Dictionary else v[id]
 		else:
 			set(key, v.duplicate(true) if v is Array or v is Dictionary else v)
+	nav.set_open(unlocked)
 	workers = []
 	for id in data.get("workers", []):
 		for w in roster:
@@ -274,6 +275,8 @@ func reset(seed := -1) -> void:
 	for st in shop.stations:
 		unlocked[st.id] = st.starts_unlocked
 		for t in st.tracks: levels[st.id] = 1
+	nav.set_open(unlocked)
+	for st in shop.stations:
 		for m in st.materials:
 			levels[st.id + "/" + m.id] = 1
 			if m.box_cost > 0: boxes[m.id] = false
@@ -612,7 +615,7 @@ func order_weights() -> Dictionary:
 
 
 func queue_capacity() -> int:
-	if shop.fulfillment.handoff == "single": return current_stage().queue_capacity + current_stage().wait_seats
+	if shop.fulfillment.handoff == "single": return current_stage().queue_capacity + wait_seats()
 	return current_stage().queue_capacity + seated_orders()
 
 
@@ -682,6 +685,50 @@ func dine_group() -> SpecSeatGroup:
 func seat_total() -> int:
 	var g := dine_group()
 	return int(seats.get(g.id, 0)) if g != null else 0
+
+
+## 能花钱买的那组座位（写了 costs 的第一组）：奶茶店是堂食座，煎饼摊是等位坐垫
+func buy_group() -> SpecSeatGroup:
+	for g in shop.seat_groups:
+		if not g.costs.is_empty(): return g
+	return null
+
+
+## 一人跟单店的等位座：有能买的等位组就按买了几个算，否则阶段直接给
+func wait_seats() -> int:
+	var g := buy_group()
+	if g != null and g.purpose == "wait": return int(seats.get(g.id, 0))
+	return current_stage().wait_seats
+
+
+## 这组座位现在最多摆几个：等位组受当前阶段的 wait_seats 限制（下一阶段开放更多），堂食组不限
+func seat_cap(g: SpecSeatGroup) -> int:
+	var full := g.start + (_sum(g.steps) if not g.steps.is_empty() else g.step * g.costs.size())
+	if g.purpose == "wait": return mini(full, current_stage().wait_seats)
+	return full
+
+
+func _seat_step(g: SpecSeatGroup) -> int:
+	if g.steps.is_empty(): return maxi(1, g.step)
+	var index := _seat_buys(g)
+	return g.steps[index] if index < g.steps.size() else 0
+
+
+func _seat_buys(g: SpecSeatGroup) -> int:
+	var have := int(seats.get(g.id, 0)) - g.start
+	if g.steps.is_empty(): return have / maxi(1, g.step)
+	var bought := 0
+	for n in g.steps:
+		if have < n: break
+		have -= n
+		bought += 1
+	return bought
+
+
+static func _sum(values: Array) -> int:
+	var total := 0
+	for v in values: total += int(v)
+	return total
 
 
 func seat_seconds() -> float:
@@ -1926,25 +1973,38 @@ func _staff_tick(s: Dictionary) -> void:
 	_decide_single(s)
 
 
+## 沿寻路路线走（格子寻路的店绕开桌子，直线走的店路线就是起点到终点）
 func _walk_single(s: Dictionary) -> void:
-	var goal := nav.point(s.target)
-	var to: Vector2 = goal - s.pos
+	# 旧存档读进来时没有路线：现算一条
+	if s.path.is_empty():
+		s.path = nav.path(s.pos, nav.point(s.target))
+		s.path_index = 1 if s.path.size() > 1 else 0
 	var move: float = walk_speed(s) * STEP
-	if to.length() <= move:
-		s.pos = goal
-		s.walking = false
-		_arrived_single(s)
-	else:
-		s.pos += to.normalized() * move
+	while move > 0.0 and s.path_index < s.path.size():
+		var target: Vector2 = s.path[s.path_index]
+		var gap: float = s.pos.distance_to(target)
+		if gap <= move + 0.00001:
+			s.pos = target
+			move -= gap
+			s.path_index += 1
+		else:
+			s.pos = s.pos.move_toward(target, move)
+			move = 0.0
+	if s.path_index < s.path.size(): return
+	s.walking = false
+	_arrived_single(s)
 
 
 func _go(s: Dictionary, point: String, label: String) -> void:
 	s.target = point
 	s.task_label = label
-	if s.pos.distance_to(nav.point(point)) < 1.0:
+	var goal := nav.point(point)
+	if s.pos.distance_to(goal) < 1.0:
 		s.walking = false
 		_arrived_single(s)
 	else:
+		s.path = nav.path(s.pos, goal)
+		s.path_index = 1 if s.path.size() > 1 else 0
 		s.walking = true
 		s.phase = "walk"
 
@@ -1952,6 +2012,8 @@ func _go(s: Dictionary, point: String, label: String) -> void:
 func _work_single(s: Dictionary, seconds: float) -> void:
 	s.phase = "work"
 	s.timer = seconds
+	# 只给界面画进度条
+	s.duration = seconds
 
 
 func _decide_single(s: Dictionary) -> void:
@@ -2138,6 +2200,7 @@ func unlock(id: String) -> String:
 		for rule in shop.station(key).stock:
 			stations[key].stock = rule.start
 	stage_index = maxi(stage_index, stage)
+	nav.set_open(unlocked)
 	if shop.fulfillment.handoff == "single":
 		if id == shop.goals.opening_station: _next_customer = shop.fulfillment.first_customer_delay
 	elif orders.is_empty():
@@ -2213,16 +2276,19 @@ func upgrade(key: String) -> String:
 	return ""
 
 
+## 下一次买座位的价格；-1 = 全部买完
 func seat_cost() -> int:
-	var g := dine_group()
+	var g := buy_group()
 	if g == null: return -1
-	var index := (seat_total() - g.start) / maxi(1, g.step)
+	var index := _seat_buys(g)
 	return g.costs[index] if index >= 0 and index < g.costs.size() else -1
 
 
 func seat_error() -> String:
 	if not is_open(): return "请先开张"
 	if seat_cost() < 0: return "座位已满"
+	var g := buy_group()
+	if int(seats.get(g.id, 0)) + _seat_step(g) > seat_cap(g): return "下一阶段开放更多座位"
 	if gold < seat_cost(): return "金币不足，需要 %d" % seat_cost()
 	return ""
 
@@ -2231,8 +2297,8 @@ func buy_seat() -> String:
 	var error := seat_error()
 	if not error.is_empty(): return error
 	gold -= seat_cost()
-	var g := dine_group()
-	seats[g.id] = seat_total() + g.step
+	var g := buy_group()
+	seats[g.id] = int(seats.get(g.id, 0)) + _seat_step(g)
 	events.emit("seat", {})
 	return ""
 

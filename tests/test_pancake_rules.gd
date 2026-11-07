@@ -91,6 +91,25 @@ func test_staff_hold_what_they_made_until_handing_over() -> void:
 	check(sold_before > 0 and empty_after_sale, "递给客人后手上空了")
 
 
+func test_staff_walk_around_tables_that_are_out() -> void:
+	var rules := ShopRules.new(PANCAKE)
+	var pts := PANCAKE.layout.points
+	var table: Rect2 = PANCAKE.layout.obstacles[PANCAKE.layout.obstacle_stations.find("topping")]
+	var crosses := func() -> bool:
+		for p in rules.nav.path(pts.topping, pts.front_counter):
+			if table.has_point(p): return true
+		return false
+	check(crosses.call(), "加料台没开时中间没有桌子，直接走过去")
+	rules.gold = 99999
+	for i in 6:
+		var n := rules.next_unlock()
+		if n != "": rules.unlock(n)
+	check(not crosses.call(), "加料台开了，员工绕开中间的桌子")
+	for a in pts:
+		for b in pts:
+			if a != b: check(not rules.nav.path(pts[a], pts[b]).is_empty(), "%s 走得到 %s" % [a, b])
+
+
 func test_unlock_order_hires_and_flyer_cooldown() -> void:
 	var rules := ShopRules.new(PANCAKE)
 	rules.gold = 9999

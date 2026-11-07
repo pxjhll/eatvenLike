@@ -9,6 +9,8 @@ extends Resource
 @export var areas: Array[Rect2i] = []
 ## 障碍（像素矩形），格子中心落在里面就不能走
 @export var obstacles: Array[Rect2] = []
+## 和 obstacles 一一对应：这台机器开了这块障碍才在（比如加料台的桌子跟加料台一起摆出来）；空 / 没写 = 一直在
+@export var obstacle_stations: Array[String] = []
 @export var grid_size: Vector2i = Vector2i.ZERO
 ## 各处的站位（像素）：机器 id、counter、shelf、rack、home、entrance……
 @export var points: Dictionary[String, Vector2] = {}
