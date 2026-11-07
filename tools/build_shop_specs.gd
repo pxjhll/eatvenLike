@@ -96,6 +96,14 @@ static func art_track(id: String, name: String, label: String, costs: Array, pri
 		if not speeds.is_empty(): effects.append(effect("speed", "set", speeds[mini(lv, speeds.size()) - 1]))
 		if not batch.is_empty(): effects.append(effect("batch", "set", batch[mini(lv, batch.size()) - 1]))
 		t.levels.append(level(int(costs[index]), effects, star))
+	# 旧面板的举例顺序和简称（柠檬茶 > 奶茶 > 红茶 > 柠檬水）
+	var names := {"lemon_tea": "柠檬茶", "plain_milk_tea": "奶茶", "black_tea": "红茶", "lemonade": "柠檬水"}
+	var shown: Array = []
+	for dish in ["lemonade", "black_tea", "plain_milk_tea", "lemon_tea"]:
+		if dish in price_dishes: shown.append(names[dish])
+	for dish in ["lemon_tea", "plain_milk_tea", "black_tea", "lemonade"]:
+		if dish in price_dishes: t.preview_dishes.append(dish)
+	t.preview_label = "、".join(shown)
 	return t
 
 
@@ -464,8 +472,33 @@ func build_tea() -> SpecShop:
 	g.texts["stage"] = "支付 {cost} 金币解锁{name}"
 	g.texts["task"] = "{name}（{current} / {target}）"
 	g.texts["done"] = "经营任务已全部完成，继续营业"
+	g.texts["open_short"] = "解锁{name}，开始营业"
+	g.texts["box_short"] = "解锁{name}箱"
+	g.texts["stage_short"] = "攒金币 · 解锁{name}"
+	g.texts["done_short"] = "经营任务已全部完成"
+	g.texts["need_take"] = "待取茶"
+	g.texts["need_operate"] = "待操作"
+	g.texts["hint_front"] = "前台跟不上，{drink}排起了长队：升级前台员工或多招一位"
+	g.texts["hint_front_fix"] = "升级前台员工"
+	g.texts["hint_no_kitchen"] = "没有后厨员工，{drink}做不出来：派一位员工去后厨"
+	g.texts["hint_no_kitchen_fix"] = "派员工去后厨"
+	g.texts["hint_pot"] = "{drink}做不过来，{name}一直在煮：升级{name}"
+	g.texts["hint_pot_fix"] = "升级{name}"
+	g.texts["hint_staff"] = "后厨跑不过来，{drink}排起了长队：升级后厨员工或多招一位"
+	g.texts["hint_staff_fix"] = "升级后厨员工"
+	g.texts["hint_machine"] = "{drink}做不过来：升级{name}"
+	g.texts["hint_machine_fix"] = "升级{name}"
 	g.complete_when.assign(["all_stages", "all_tasks"])
 	shop.goals = g
+	# 界面：图标、计量单位（旧界面 station_panel 里的对照表搬到数据里）
+	var icons := {"supply": "tea_leaf", "counter": "shop", "topping": "drink_pearl_milk_tea", "press": "drink_lemon_tea"}
+	var material_icons := {"pearl": "drink_pearl_milk_tea", "coconut": "drink_coconut_milk_tea", "redbean": "drink_redbean_milk_tea",
+		"taro": "drink_taro_milk_tea", "lemon": "drink_lemon_tea"}
+	for st in shop.stations:
+		st.icon = icons.get(st.id, "")
+		st.params["unit"] = "杯"
+		for m in st.materials: m.icon = material_icons.get(m.id, "")
+	shop.station("seal").params["slot_label"] = "封口位"
 	return shop
 
 

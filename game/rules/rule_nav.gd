@@ -36,6 +36,15 @@ func has_post(name: String) -> bool:
 	return layout.posts.has(name)
 
 
+## 能不能站人：格子寻路的店要在可走区域里、不在障碍上，并且走得到 to；直线走的店哪里都行。
+func walkable(point: Vector2, to: Vector2) -> bool:
+	if not is_finite(point.x) or not is_finite(point.y): return false
+	if _grid == null: return true
+	var c := _grid.world_to_cell(point, layout.cell)
+	if not _grid.contains_cell(c) or c in _grid.blocked_cells: return false
+	return not path(point, to).is_empty()
+
+
 func path(from: Vector2, to: Vector2) -> PackedVector2Array:
 	if _grid == null: return PackedVector2Array([from, to])
 	var start := _grid.world_to_cell(from, layout.cell)

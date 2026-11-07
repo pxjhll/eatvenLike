@@ -484,9 +484,25 @@ opening_customers = 3
 script = ExtResource("11_12epd")
 texts = Dictionary[String, String]({
 "box": "支付 {cost} 金币在原料柜解锁{name}箱",
+"box_short": "解锁{name}箱",
 "done": "经营任务已全部完成，继续营业",
+"done_short": "经营任务已全部完成",
+"hint_front": "前台跟不上，{drink}排起了长队：升级前台员工或多招一位",
+"hint_front_fix": "升级前台员工",
+"hint_machine": "{drink}做不过来：升级{name}",
+"hint_machine_fix": "升级{name}",
+"hint_no_kitchen": "没有后厨员工，{drink}做不出来：派一位员工去后厨",
+"hint_no_kitchen_fix": "派员工去后厨",
+"hint_pot": "{drink}做不过来，{name}一直在煮：升级{name}",
+"hint_pot_fix": "升级{name}",
+"hint_staff": "后厨跑不过来，{drink}排起了长队：升级后厨员工或多招一位",
+"hint_staff_fix": "升级后厨员工",
+"need_operate": "待操作",
+"need_take": "待取茶",
 "open": "支付 {cost} 金币解锁{name}，开始营业",
+"open_short": "解锁{name}，开始营业",
 "stage": "支付 {cost} 金币解锁{name}",
+"stage_short": "攒金币 · 解锁{name}",
 "task": "{name}（{current} / {target}）"
 })
 opening_station = "lemonade"
@@ -998,11 +1014,13 @@ block = "counter"
 params = {
 "hand_seconds": 0.6,
 "posts": 2,
-"take_seconds": 0.0
+"take_seconds": 0.0,
+"unit": "杯"
 }
 zone = "front"
 starts_unlocked = true
 description = "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"
+icon = "shop"
 
 [sub_resource type="Resource" id="Resource_at115"]
 script = ExtResource("7_1v0ns")
@@ -1061,6 +1079,8 @@ id = "level"
 display_name = "柠檬水台"
 levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_uggdv"), SubResource("Resource_ouank"), SubResource("Resource_4xnnl"), SubResource("Resource_n2pvj")])
 effect_label = "售价"
+preview_dishes = Array[String](["lemonade"])
+preview_label = "柠檬水"
 
 [sub_resource type="Resource" id="Resource_uvjpb"]
 script = ExtResource("21_6l0ld")
@@ -1068,7 +1088,8 @@ id = "lemonade"
 display_name = "柠檬水台"
 block = "dispenser"
 params = {
-"seconds": 2.0
+"seconds": 2.0,
+"unit": "杯"
 }
 zone = "front"
 unlock_cost = 10
@@ -1105,6 +1126,8 @@ id = "tea_leaf"
 display_name = "茶叶"
 levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_63bmn"), SubResource("Resource_m4scj")])
 effect_label = "售价"
+preview_dishes = Array[String](["plain_milk_tea", "black_tea"])
+preview_label = "红茶、奶茶"
 
 [sub_resource type="Resource" id="Resource_wrbwp"]
 script = ExtResource("22_snoov")
@@ -1143,6 +1166,8 @@ id = "milk"
 display_name = "牛奶"
 levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_jt77o"), SubResource("Resource_q2lll")])
 effect_label = "售价"
+preview_dishes = Array[String](["plain_milk_tea"])
+preview_label = "奶茶"
 
 [sub_resource type="Resource" id="Resource_w1iat"]
 script = ExtResource("22_snoov")
@@ -1159,12 +1184,14 @@ id = "supply"
 display_name = "原料柜"
 block = "supply"
 params = {
-"fetch_seconds": 0.6
+"fetch_seconds": 0.6,
+"unit": "杯"
 }
 zone = "kitchen"
 starts_unlocked = true
 materials = Array[ExtResource("22_snoov")]([SubResource("Resource_wrbwp"), SubResource("Resource_w1iat")])
 description = "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价"
+icon = "tea_leaf"
 
 [sub_resource type="Resource" id="Resource_4ygtl"]
 script = ExtResource("23_xb1gn")
@@ -1324,7 +1351,8 @@ params = {
 "manual_load": true,
 "manual_unload": true,
 "stir_points": [0.3333333333333333, 0.6666666666666666],
-"stir_seconds": 1.0
+"stir_seconds": 1.0,
+"unit": "杯"
 }
 zone = "kitchen"
 seatable = true
@@ -1446,6 +1474,8 @@ params = {
 "process_into": "takeaway",
 "process_seconds": 9.0,
 "process_slots": 1,
+"slot_label": "封口位",
+"unit": "杯",
 "zones": {
 "dine": 12,
 "takeaway": 6
@@ -1542,6 +1572,8 @@ id = "level"
 display_name = "调奶台"
 levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_81ppo"), SubResource("Resource_kbe2e"), SubResource("Resource_5am13"), SubResource("Resource_xpo8d"), SubResource("Resource_y0bc1"), SubResource("Resource_hygpt")])
 effect_label = "售价"
+preview_dishes = Array[String](["plain_milk_tea"])
+preview_label = "奶茶"
 
 [sub_resource type="Resource" id="Resource_abtgb"]
 script = ExtResource("21_6l0ld")
@@ -1550,7 +1582,8 @@ display_name = "调奶台"
 block = "combine"
 params = {
 "manual": false,
-"seconds": 4.0
+"seconds": 4.0,
+"unit": "杯"
 }
 zone = "kitchen"
 tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_semvr")])
@@ -1602,6 +1635,7 @@ id = "lemon"
 display_name = "柠檬"
 item = "lemon_tea"
 track = SubResource("Resource_kub0l")
+icon = "drink_lemon_tea"
 
 [sub_resource type="Resource" id="Resource_tkbbj"]
 script = ExtResource("7_1v0ns")
@@ -1660,6 +1694,8 @@ id = "level"
 display_name = "手打台"
 levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_6fsjj"), SubResource("Resource_p3x0k"), SubResource("Resource_pailp"), SubResource("Resource_72f1v")])
 effect_label = "售价"
+preview_dishes = Array[String](["lemon_tea"])
+preview_label = "柠檬茶"
 
 [sub_resource type="Resource" id="Resource_m73s2"]
 script = ExtResource("21_6l0ld")
@@ -1668,6 +1704,7 @@ display_name = "手打台"
 block = "hand"
 params = {
 "seconds": 4.0,
+"unit": "杯",
 "users": 1
 }
 zone = "front"
@@ -1676,6 +1713,7 @@ tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_uw05n")])
 price_dishes = Array[String](["lemon_tea"])
 counts_for_flow = true
 description = "前台员工接一杯柠檬水，再亲手捣柠檬，做成柠檬茶；外带不用封口；升级提高柠檬茶售价"
+icon = "drink_lemon_tea"
 
 [sub_resource type="Resource" id="Resource_vd0ku"]
 script = ExtResource("7_1v0ns")
@@ -1721,6 +1759,7 @@ id = "pearl"
 display_name = "珍珠"
 item = "pearl_milk_tea"
 track = SubResource("Resource_w0igs")
+icon = "drink_pearl_milk_tea"
 
 [sub_resource type="Resource" id="Resource_aakk8"]
 script = ExtResource("7_1v0ns")
@@ -1767,6 +1806,7 @@ id = "coconut"
 display_name = "椰果"
 item = "coconut_milk_tea"
 track = SubResource("Resource_e6p3x")
+icon = "drink_coconut_milk_tea"
 
 [sub_resource type="Resource" id="Resource_i46xi"]
 script = ExtResource("7_1v0ns")
@@ -1813,6 +1853,7 @@ id = "redbean"
 display_name = "红豆"
 item = "redbean_milk_tea"
 track = SubResource("Resource_5l4xw")
+icon = "drink_redbean_milk_tea"
 
 [sub_resource type="Resource" id="Resource_107pf"]
 script = ExtResource("7_1v0ns")
@@ -1859,6 +1900,7 @@ id = "taro"
 display_name = "芋泥"
 item = "taro_milk_tea"
 track = SubResource("Resource_w6r8h")
+icon = "drink_taro_milk_tea"
 
 [sub_resource type="Resource" id="Resource_oa1x0"]
 script = ExtResource("7_1v0ns")
@@ -1929,6 +1971,7 @@ block = "topping"
 params = {
 "flavor_cap": 3,
 "seconds": 2.0,
+"unit": "杯",
 "users": 1
 }
 zone = "kitchen"
@@ -1938,6 +1981,7 @@ materials = Array[ExtResource("22_snoov")]([SubResource("Resource_lv7og"), SubRe
 tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_vuhrv")])
 counts_for_flow = true
 description = "人工加料；升级开放新口味（椰果、红豆、芋泥），每开一种来的客人更多"
+icon = "drink_pearl_milk_tea"
 
 [resource]
 script = ExtResource("15_3rult")

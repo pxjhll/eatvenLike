@@ -12,3 +12,5 @@ extends Resource
 @export var box_station: String = ""
 ## 这个槽自己的升级轨（requires_level = 机器几级才开放）
 @export var track: SpecUpgradeTrack
+## 图标键；空 = 用 id
+@export var icon: String = ""

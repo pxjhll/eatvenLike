@@ -200,6 +200,9 @@ func reset(seed := -1) -> void:
 	events_seen = []
 	pending_events = []
 	event_defs = []
+	full_seconds = 0.0
+	pot_busy = {}
+	side_idle = {}
 	for ev in shop.events: add_event(ev)
 	events.on("*", _on_broadcast)
 	for kind in shop.staff.starting:
@@ -427,6 +430,7 @@ func _tick() -> void:
 	if int(round(clock * 10.0)) % 600 == 0: events.emit("tick_minute", {"time": clock})
 	if shop.fulfillment.handoff == "single": _tick_single()
 	else: _tick_handoff()
+	_track_bottleneck()
 	if completed_at < 0.0 and shop_complete():
 		completed_at = clock
 		events.emit("completed", {})
@@ -816,6 +820,117 @@ func deploy_worker(id: int, post := "") -> String:
 	if not post.is_empty(): _seat_at(worker, post)
 	events.emit("deployed", {"id": id})
 	return ""
+
+
+## 拖人（§3.5）：post 空 = 去 point 那块空地流动；post = 坐班机器或柜台。只检查、不改状态。
+func placement_error(id: int, post: String, point := Vector2.INF) -> String:
+	if not shop.staff.can_drag: return "这家店不能调岗"
+	var worker := worker_by_id(id)
+	if worker.is_empty(): return "未拥有这位员工"
+	if not post.is_empty():
+		if post != counter_id and not post in seatables: return "无效岗位"
+		if not station_unlocked(post): return "请先解锁设备"
+		if post != counter_id and post_owner(post, id) != -1: return "岗位已有员工"
+	var front := post == counter_id
+	if not worker.deployed or front != (worker.post == counter_id):
+		var room := role_room(post, id)
+		if not room.is_empty(): return room
+	if front and post_owner(counter_id, id) != -1: return "岗位已有员工"
+	var target: Vector2 = nav.post(post) if not post.is_empty() else (worker.pos if point == Vector2.INF else point)
+	if not nav.walkable(target, nav.point(counter_id)): return "无法放置在这里"
+	return ""
+
+
+## 派到某处：没上岗的先上岗，再换到这个岗位 / 这块空地。
+func place_worker(id: int, post: String, point := Vector2.INF) -> String:
+	var error := placement_error(id, post, point)
+	if not error.is_empty(): return error
+	var worker := worker_by_id(id)
+	if not worker.deployed:
+		worker.deployed = true
+		workers.append(worker)
+		events.emit("deployed", {"id": id})
+	_cancel_job(worker)
+	worker.post = post
+	worker.pos = nav.post(post) if not post.is_empty() else (worker.pos if point == Vector2.INF else point)
+	events.emit("placed", {"id": id, "post": post})
+	return ""
+
+
+## 收回名册：手上的活放下，东西留在原处。
+func recall_worker(id: int) -> String:
+	var worker := worker_by_id(id)
+	if worker.is_empty(): return "未拥有这位员工"
+	if not worker.deployed: return "员工已在待派遣名册"
+	_cancel_job(worker)
+	worker.post = ""
+	worker.deployed = false
+	workers.erase(worker)
+	events.emit("recalled", {"id": id})
+	return ""
+
+
+## 后厨有人、但都坐在机器上：没人在机器之间搬东西。
+func no_kitchen_carrier() -> bool:
+	if shop.staff.zones.is_empty(): return false
+	var kitchen: Array = workers.filter(func(w: Dictionary) -> bool: return w.post != counter_id)
+	return not kitchen.is_empty() and kitchen.all(func(w: Dictionary) -> bool: return not String(w.post).is_empty())
+
+
+## 放下手上的活：预留全部释放，拿在手上的东西放回原处，跟的单留给别人接（§3.6 预留与回收）。
+func _cancel_job(worker: Dictionary) -> void:
+	var job: Dictionary = worker.job
+	if not job.is_empty():
+		if worker.carry_count > 0:
+			if job.src == supply_id: generated -= worker.carry_count
+			elif job.src == SHELF:
+				shelf_count += worker.carry_count
+				shelf_stock[job.item] = int(shelf_stock.get(job.item, 0)) + worker.carry_count
+			else:
+				var stock: Dictionary = stations[job.src].input if job.kind in ["work", "pot_start"] else stations[job.src].output
+				stock[job.item] = int(stock.get(job.item, 0)) + worker.carry_count
+		elif not job.kind in ["pot_take", "stir"]:
+			if job.src == SHELF: shelf_reserved_out -= job.count
+			elif job.src != supply_id: stations[job.src].reserved_out[job.item] = int(stations[job.src].reserved_out.get(job.item, 0)) - job.count
+		if _is_operation(job):
+			stations[job.src].work_reserved = false
+			if shop.station(job.src).block == "topping": stations[job.src].processing_item = ""
+		elif job.dst == SHELF: shelf_reserved_in -= job.count
+		elif job.dst != counter_id and stations.has(job.dst): stations[job.dst].reserved_in -= job.count
+		if job.kind == "serve":
+			for order in orders:
+				if order.id == job.order_id: order.reserved = false
+		if stations.has(job.src): _refresh_after_pickup(stations[job.src])
+	worker.job = {}
+	worker.ticket = {}
+	worker.carry_count = 0
+	worker.carry_item = ""
+	worker.phase = "idle"
+	worker.task_label = "idle"
+	worker.walking = false
+	worker.path = PackedVector2Array()
+	worker.path_index = 0
+	worker.action_left = 0.0
+
+
+## 预览：把某条升级轨临时加一级，算完 fn 再还原（面板“当前 → 下一级”用）。
+func preview(key: String, fn: Callable) -> Variant:
+	if track_of(key) == null: return fn.call()
+	levels[key] = int(levels[key]) + 1
+	_refresh_key(key)
+	var result: Variant = fn.call()
+	levels[key] = int(levels[key]) - 1
+	_refresh_key(key)
+	return result
+
+
+func _refresh_key(key: String) -> void:
+	var t := track_of(key)
+	if key.begins_with("staff/"): _refresh_track(null, t, key, int(levels[key]) + 1, key.get_slice("/", 1))
+	elif key == "flyer": _refresh_track(null, t, key, levels[key], "")
+	else:
+		var st := shop.station(key.get_slice("/", 0))
+		_refresh_track(st, t, key, levels[key], st.id)
 
 
 # ---------- 机器 ----------
@@ -1955,12 +2070,7 @@ func upgrade(key: String) -> String:
 	if not error.is_empty(): return error
 	gold -= upgrade_cost(key)
 	levels[key] = int(levels[key]) + 1
-	var t := track_of(key)
-	if key.begins_with("staff/"): _refresh_track(null, t, key, int(levels[key]) + 1, key.get_slice("/", 1))
-	elif key == "flyer": _refresh_track(null, t, key, levels[key], "")
-	else:
-		var st := shop.station(key.get_slice("/", 0))
-		_refresh_track(st, t, key, levels[key], st.id)
+	_refresh_key(key)
 	events.emit("upgraded", {"key": key, "level": levels[key]})
 	return ""
 
@@ -2048,6 +2158,33 @@ func apply_effect(source: String, source_id: String, effect: SpecEffect, seconds
 		_:
 			mods.add_effect(source, source_id, effect, seconds)
 			events.emit("modifier_started", {"source": source, "id": source_id, "kind": effect.kind, "seconds": seconds})
+
+
+# ---------- 瓶颈提示（§3.10）：只读统计，不影响经营 ----------
+
+## 队伍连续满了多少秒；各批量锅忙碌程度、前厅 / 后厨员工空闲程度（平滑值，0–1）
+var full_seconds := 0.0
+var pot_busy: Dictionary = {}
+var side_idle: Dictionary = {}
+const HINT_SMOOTH := 0.1 / 20.0
+
+
+func _track_bottleneck() -> void:
+	var standing := queue_size() - (seated_orders() if shop.fulfillment.handoff != "single" else 0)
+	full_seconds = full_seconds + STEP if is_open() and standing >= current_stage().queue_capacity else 0.0
+	for id in pots:
+		var pot: Dictionary = stations[id]
+		var busy := 0.0
+		if shop.fulfillment.handoff == "single": busy = 1.0 if pot.phase == "cook" else 0.0
+		elif int(pot.processing) > 0 and pot.phase != "awaiting_take": busy = 1.0
+		pot_busy[id] = lerpf(float(pot_busy.get(id, 0.0)), busy, HINT_SMOOTH)
+	var idle := {}
+	for worker in workers:
+		var side := side_of(worker)
+		if not idle.has(side): idle[side] = [0, 0]
+		idle[side][1] += 1
+		if worker.job.is_empty() and worker.phase in ["idle", "wait"] and int(worker.get("order", -1)) < 0: idle[side][0] += 1
+	for side in idle: side_idle[side] = lerpf(float(side_idle.get(side, 0.0)), float(idle[side][0]) / idle[side][1], HINT_SMOOTH)
 
 
 # ---------- 奇遇（§3.13） ----------

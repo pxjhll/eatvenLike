@@ -18,6 +18,7 @@ const BLOCKS := ["supply", "batch_pot", "hand", "combine", "topping", "dispenser
 ## dispenser  seconds
 ## pickup     zones {区: 容量}, process_seconds, process_slots, process_into
 ## counter    take_seconds, hand_seconds, posts
+## 通用（界面用）：unit（一份叫什么：杯 / 份）、slot_label（加工位叫什么：封口位）
 @export var params: Dictionary = {}
 ## front / kitchen / 空（不分区）
 @export var zone: String = ""
@@ -36,6 +37,8 @@ const BLOCKS := ["supply", "batch_pot", "hand", "combine", "topping", "dispenser
 ## 升级是否算进“机器等级加客流”
 @export var counts_for_flow: bool = false
 @export_multiline var description: String = ""
+## 图标键（art/ui/icons/<icon>.svg）；空 = 用 id
+@export var icon: String = ""
 
 
 func track(track_id: String) -> SpecUpgradeTrack:
