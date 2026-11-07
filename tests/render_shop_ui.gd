@@ -102,9 +102,11 @@ func _run() -> void:
 	print("DEBUG L100 posts=", view.sim.workers.map(func(w): return [w.id, w.post]), " scroll=", view._scroll, " page=", hud.page)
 	header.offset_bottom = original_header_bottom
 	await _click(hud.staff_button)
+	print("DEBUG after staff click page=", hud.page, " btn=", hud.staff_button.get_global_rect(), " vp=", view.get_viewport_rect().size, " root=", root.size)
 	root.size = Vector2i(720, 1280)
 	await _layout()
 	await process_frame
+	print("DEBUG after layout page=", hud.page, " w0=", view.sim.workers[0].pos, " w1=", view.sim.workers[1].pos, " press=", _world(view.sim.workers[0].pos + Vector2(0, -65)), " blocks=", hud.blocks_world(_world(view.sim.workers[0].pos + Vector2(0, -65))))
 	# An open sheet must not let a gesture pick the actor behind it.
 	await _gesture(_world(view.sim.workers[0].pos + Vector2(0, -65)), _world(Vector2(325, 210)))
 	_check(view.sim.workers[0].post == "" and not view._drag.dragging, "overlay blocks actor drag through its panel")
