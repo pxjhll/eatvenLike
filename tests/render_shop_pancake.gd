@@ -130,6 +130,15 @@ func _run() -> void:
 	view._refresh(0)
 	_check(_stall(21).is_visible_in_tree(), "读档：画面跟着开")
 
+	# 调参面板：跳到上一家 / 下一家店（第一家没有上一家）
+	view.change_scene_on_leave = false
+	_check(view.jump_shop(-1) == "", "第一家店没有上一家")
+	_check(view.jump_shop(1) == "tea" and view.profile.shop == "tea" and not view.profile.fresh_shop, "跳到下一家奶茶店")
+	_check(FileAccess.file_exists(save_path), "跳店前存好煎饼摊")
+	view.profile.shop = "pancake"
+	view.profile.save()
+	view.change_scene_on_leave = true
+
 	# 完店：弹完店卡，目标页出“结店”，总结卡第一下只提醒，第二下去奶茶店
 	_rules().gold = 99999
 	for id in ["fryer", "topping"]: _rules().unlock(id)

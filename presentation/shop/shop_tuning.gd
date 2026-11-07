@@ -185,6 +185,18 @@ func _build() -> void:
 	actions.add_theme_constant_override("h_separation", 12)
 	actions.add_theme_constant_override("v_separation", 12)
 	column.add_child(actions)
+	var previous := _button("上一家店")
+	previous.name = "PreviousShop"
+	previous.icon = Icons.texture("previous")
+	previous.tooltip_text = "存好这家店，跳到上一家店（那家有存档就接着玩）"
+	previous.pressed.connect(func() -> void: game.jump_shop(-1))
+	actions.add_child(previous)
+	var next := _button("下一家店")
+	next.name = "NextShop"
+	next.icon = Icons.texture("next")
+	next.tooltip_text = "存好这家店，跳到下一家店（那家有存档就接着玩）"
+	next.pressed.connect(func() -> void: game.jump_shop(1))
+	actions.add_child(next)
 	var mark := _button("标出此时")
 	mark.name = "Mark"
 	mark.icon = Icons.texture("tag")

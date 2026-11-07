@@ -21,6 +21,7 @@ const ArtGroups := preload("res://presentation/shop/art_groups.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
 const CAMPAIGN: SpecCampaign = preload("res://content/campaign/campaign.tres")
+const Profile := preload("res://game/app/profile.gd")
 ## 竖屏铺满宽度；横屏最多少看 MIN_VISIBLE_WORLD 这么高的店面
 const MIN_VISIBLE_WORLD := 1100.0
 ## 界面按这个宽度排版（竖屏铺满宽度）；店面比它宽的店，店面另外缩放
@@ -872,6 +873,26 @@ func leave_shop() -> void:
 	if not change_scene_on_leave: return
 	rules = null
 	get_tree().change_scene_to_file(scene_file_path if not scene_file_path.is_empty() else "res://presentation/shop/shop_play.tscn")
+
+
+## 调参用：直接跳到关卡表里的上一家（-1）/ 下一家（+1）店。先存好这家店，那家店有存档就接着玩，没有就从空店开始。
+## 返回跳到的店 id（到头了返回空）。
+func jump_shop(offset: int) -> String:
+	var ids := Profile.shops()
+	var at := ids.find(rules.shop.id)
+	var to := at + offset
+	if at < 0 or to < 0 or to >= ids.size() or profile == null:
+		_show_toast("已经是第一家店了" if offset < 0 else "已经是最后一家店了")
+		return ""
+	save_now(false)
+	profile.shop = ids[to]
+	profile.fresh_shop = false
+	profile.save()
+	shop_left.emit(ids[to])
+	if change_scene_on_leave:
+		rules = null
+		get_tree().change_scene_to_file(scene_file_path if not scene_file_path.is_empty() else "res://presentation/shop/shop_play.tscn")
+	return ids[to]
 
 
 # ---------- 命令（界面组件调这些） ----------
