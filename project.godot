@@ -17,6 +17,7 @@ config/features=PackedStringArray("4.6", "Mobile")
 [autoload]
 
 App="*res://game/app/app.gd"
+ShopAudio="*res://presentation/audio/shop_audio.gd"
 
 [display]
 

@@ -130,6 +130,7 @@ func _say(text: String) -> void:
 
 
 func _confirm() -> void:
+	ShopAudio.play_cue(&"tap")
 	seen[active] = true
 	_play.save_now()
 	refresh(0.0)
