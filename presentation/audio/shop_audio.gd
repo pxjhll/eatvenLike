@@ -23,7 +23,8 @@ var _music := AudioStreamPlayer.new()
 var _players: Dictionary[StringName, AudioStreamPlayer] = {}
 var _shop: StringName
 var _last_sale_ms := -SALE_INTERVAL_MS
-var _can_play := not OS.has_feature("web")
+# Headless simulations have no audio output and can exit before the mixer drains.
+var _can_play := not OS.has_feature("web") and DisplayServer.get_name() != "headless"
 
 
 func _ready() -> void:
@@ -42,7 +43,7 @@ func _ready() -> void:
 		player.volume_db = CUES[cue][1]
 		add_child(player)
 		_players[cue] = player
-	set_process_input(not _can_play)
+	set_process_input(OS.has_feature("web"))
 
 
 func _input(event: InputEvent) -> void:
