@@ -12,6 +12,7 @@ const PancakeSim := preload("res://game/pancake/pancake_sim.gd")
 const OUT_TEA := "res://content/shops/tea/shop.tres"
 const OUT_PANCAKE := "res://content/shops/pancake/shop.tres"
 const OUT_CAMPAIGN := "res://content/campaign/campaign.tres"
+const TEA_ART := "res://presentation/shops/tea/tea_art.tscn"
 
 
 func _initialize() -> void:
@@ -96,6 +97,14 @@ static func art_track(id: String, name: String, label: String, costs: Array, pri
 		if not speeds.is_empty(): effects.append(effect("speed", "set", speeds[mini(lv, speeds.size()) - 1]))
 		if not batch.is_empty(): effects.append(effect("batch", "set", batch[mini(lv, batch.size()) - 1]))
 		t.levels.append(level(int(costs[index]), effects, star))
+	# 旧面板的举例顺序和简称（柠檬茶 > 奶茶 > 红茶 > 柠檬水）
+	var names := {"lemon_tea": "柠檬茶", "plain_milk_tea": "奶茶", "black_tea": "红茶", "lemonade": "柠檬水"}
+	var shown: Array = []
+	for dish in ["lemonade", "black_tea", "plain_milk_tea", "lemon_tea"]:
+		if dish in price_dishes: shown.append(names[dish])
+	for dish in ["lemon_tea", "plain_milk_tea", "black_tea", "lemonade"]:
+		if dish in price_dishes: t.preview_dishes.append(dish)
+	t.preview_label = "、".join(shown)
 	return t
 
 
@@ -113,8 +122,9 @@ func build_tea() -> SpecShop:
 	shop.random_seed = config.random_seed
 	shop.flavor_flow = progression.flavor_flow
 	shop.level_flow = progression.level_flow
-	shop.scene_path = "res://presentation/tea_playtest/tea_playtest.tscn"
-	shop.save_file = "tea_shop.json"
+	# 通用界面层 + 奶茶店美术场景（锚点在场景里，§6.1）
+	shop.scene_path = TEA_ART
+	shop.save_file = "shop_tea.json"
 	shop.scale_anchor = "cup"
 
 	for definition in config.items: shop.items.append(item(definition.id, definition.display_name))
@@ -403,7 +413,7 @@ func build_tea() -> SpecShop:
 	d.hop_seconds = 0.6
 	d.ticket_give_up = sim.TICKET_GIVE_UP
 	shop.dispatch = d
-	shop.layout = tea_layout()
+	shop.layout = tea_layout_from_scene() if ResourceLoader.exists(TEA_ART) else tea_layout()
 
 	# 员工（§3.5）
 	var staff := SpecStaffRules.new()
@@ -464,9 +474,171 @@ func build_tea() -> SpecShop:
 	g.texts["stage"] = "支付 {cost} 金币解锁{name}"
 	g.texts["task"] = "{name}（{current} / {target}）"
 	g.texts["done"] = "经营任务已全部完成，继续营业"
+	g.texts["open_short"] = "解锁{name}，开始营业"
+	g.texts["box_short"] = "解锁{name}箱"
+	g.texts["stage_short"] = "攒金币 · 解锁{name}"
+	g.texts["done_short"] = "经营任务已全部完成"
+	g.texts["need_take"] = "待取茶"
+	g.texts["need_operate"] = "待操作"
+	g.texts["hint_front"] = "前台跟不上，{drink}排起了长队：升级前台员工或多招一位"
+	g.texts["hint_front_fix"] = "升级前台员工"
+	g.texts["hint_no_kitchen"] = "没有后厨员工，{drink}做不出来：派一位员工去后厨"
+	g.texts["hint_no_kitchen_fix"] = "派员工去后厨"
+	g.texts["hint_pot"] = "{drink}做不过来，{name}一直在煮：升级{name}"
+	g.texts["hint_pot_fix"] = "升级{name}"
+	g.texts["hint_staff"] = "后厨跑不过来，{drink}排起了长队：升级后厨员工或多招一位"
+	g.texts["hint_staff_fix"] = "升级后厨员工"
+	g.texts["hint_machine"] = "{drink}做不过来：升级{name}"
+	g.texts["hint_machine_fix"] = "升级{name}"
 	g.complete_when.assign(["all_stages", "all_tasks"])
 	shop.goals = g
+	# 界面：图标、计量单位（旧界面 station_panel 里的对照表搬到数据里）
+	var icons := {"supply": "tea_leaf", "counter": "shop", "topping": "drink_pearl_milk_tea", "press": "drink_lemon_tea"}
+	var material_icons := {"pearl": "drink_pearl_milk_tea", "coconut": "drink_coconut_milk_tea", "redbean": "drink_redbean_milk_tea",
+		"taro": "drink_taro_milk_tea", "lemon": "drink_lemon_tea"}
+	for st in shop.stations:
+		st.icon = icons.get(st.id, "")
+		st.params["unit"] = "杯"
+		for m in st.materials: m.icon = material_icons.get(m.id, "")
+	shop.station("seal").params["slot_label"] = "封口位"
+	# 干活朝向（8 方向）：旧 staff_actor.WORK_DIRECTIONS
+	for pair in [["boil", 3], ["mix", 3], ["topping", 5], ["press", 6], ["lemonade", 6]]: shop.station(pair[0]).params["facing"] = pair[1]
+	# 物品怎么画：旧 staff_actor.item_asset / item_color
+	var tints := {"black_tea": Color("d9935f"), "coconut_milk_tea": Color("fff8df"), "redbean_milk_tea": Color("ffd8cf"),
+		"taro_milk_tea": Color("e1d0ff"), "lemon_tea": Color("f2b36a")}
+	for it in shop.items:
+		it.art = "tea_tin" if it.id == "raw" else "fruit_tea" if it.id in ["lemonade", "lemon_tea"] \
+			else "cream_tea" if it.id in ["tea", "black_tea", "milk_tea", "plain_milk_tea", "coconut_milk_tea", "taro_milk_tea"] else "pearl_tea"
+		it.tint = tints.get(it.id, Color.WHITE)
+	# 员工类型：旧 shop_hud 的 ROLES / descriptions
+	var roles := {"speed": "速度型", "carry": "力量型", "skill": "操作型"}
+	var descriptions := {"cat": "跑得快的多面手", "raccoon": "擅长批量搬运", "fox": "擅长手工制作", "rabbit": "擅长快速搬运",
+		"gray_cat": "跑得快的多面手", "bear": "擅长批量搬运"}
+	for kind in shop.staff.kinds:
+		kind.role = roles.get(probe._make_worker(sim.ARTS.find(kind.id)).role, "")
+		kind.description = descriptions.get(kind.id, "")
+	# 员工头顶的字：旧 staff_actor.TASKS，按规则层的通用动作名
+	for pair in [["idle", "待命"], ["load", "补原料"], ["pot_start", "人工投料"], ["pot_take", "取出茶汤"], ["stir", "待操作"],
+			["transfer", "送去{to}"], ["transfer@topping", "送去加料"], ["work", "手工加料"], ["work@press", "捣柠檬"],
+			["carry_to_process", "送去封口"], ["carry_to_rack", "送上外带格"], ["carry_to_shelf", "成品上架"], ["serve", "取杯送餐"]]:
+		g.texts["task_" + pair[0]] = pair[1]
+	# 员工页：岗位名、名额、拖人说明（旧 shop_hud）
+	for pair in [["post_", "流动"], ["post_counter", "前台"], ["post_boil", "煮茶"], ["post_topping", "加料"]]: g.texts[pair[0]] = pair[1]
+	g.texts["staff_slots"] = "前台 {front_used}/{front} · 后厨 {kitchen_used}/{kitchen}"
+	g.texts["unit"] = "杯"
+	g.texts["icon_press"] = "mix"
+	g.texts["icon_topping"] = "mix"
+	g.texts["drag_hint"] = "拖到柜台 = 前台（接待客人）；拖到工位或空地 = 后厨"
+	shop.station("counter").params["panel_title"] = "收银台"
+	shop.station("boil").params["frame_title"] = "stage"
+	# 面板标题下的升级种类（旧 tea_shop_sim：一台机器一种）
+	for pair in [["boil", "capacity"], ["seal", "capacity"], ["topping", "menu"], ["mix", "price"], ["supply", "price"], ["press", "price"], ["lemonade", "price"]]:
+		var t := shop.station(pair[0]).track("level")
+		if t != null: t.kind = pair[1]
+	# 拖人：松手前的提示、放下后的提示（旧 staff_drag_controller）
+	for pair in [["drop_", "恢复流动"], ["drop_counter", "前台接单"], ["drop_boil", "坐班煮茶台"], ["drop_topping", "坐班加料台"],
+			["placed_", "已安排到后厨"], ["placed_counter", "已安排到前台：只负责接待客人、取杯上菜。"],
+			["placed_boil", "已安排到煮茶台坐班"], ["placed_topping", "已安排到加料台坐班"]]:
+		g.texts[pair[0]] = pair[1]
+	for pair in [["press", "水果"], ["topping", "配料"], ["supply", "原料"]]: shop.station(pair[0]).params["materials_label"] = pair[1]
+	shop.guide.assign(tea_guide())
 	return shop
+
+
+static func guide_step(id: String, trigger: String, when: Array, done_when: Array, cues: Array, skip := "以后再说") -> SpecGuideStep:
+	var s := SpecGuideStep.new()
+	s.id = id
+	s.trigger = trigger
+	s.when.assign(when)
+	s.done_when.assign(done_when)
+	s.cues.assign(cues)
+	s.skip_label = skip
+	return s
+
+
+static func guide_card(id: String, title: String, confirm: String, text := "") -> SpecGuideStep:
+	var s := SpecGuideStep.new()
+	s.id = id
+	s.style = "card"
+	s.title = title
+	s.confirm_label = confirm
+	s.text = text
+	return s
+
+
+## 奶茶店引导（旧 guide_overlay.gd 的步骤和原句，搬成数据）
+static func tea_guide() -> Array:
+	var steps: Array = []
+	var welcome := guide_card("welcome", "欢迎，店长！", "开始营业")
+	welcome.shop_page_only = false
+	welcome.when.assign(["!open"])
+	welcome.seen_when.assign(["open", "stage>=1"])
+	welcome.art = "raccoon"
+	welcome.rows = [["lemonade", "招待顾客，卖饮品收金币"], ["boil", "开通后厨生产线，做新饮品"], ["goals", "完成经营任务，把小店做大"]]
+	welcome.cancel_label = "跳过引导"
+	welcome.skip_marks.assign(["opening"])
+	welcome.next = "opening"
+	steps.append(welcome)
+	var opening := guide_step("opening", "start", [], [], [
+		{"if": ["!open", "page:station:lemonade"], "at": "ui:unlock", "text": "点「解锁」，花 10 金币摆上柠檬水台"},
+		{"if": ["!open", "!page:shop"], "go": "shop"},
+		{"if": ["!open"], "at": "frame:lemonade", "text": "先开张！点这里摆上柠檬水台"},
+		{"if": ["sold:0"], "at": "area:Guide/CounterArea", "pause": false, "text": "小猫会自己做柠檬水、招呼客人。\n看看第一杯卖出去！"},
+		{"if": ["staff<opening", "waiting", "!page:staff"], "at": "ui:tab:staff", "text": "新伙伴在名册里，点「员工」"},
+		{"if": ["staff<opening", "waiting"], "select_waiting": true, "at": "ui:deploy", "text": "点「派到店内」，让伙伴一起干活"},
+		{"if": ["staff<opening", "!can_hire"], "wait": true},
+		{"if": ["staff<opening", "!page:staff"], "at": "ui:tab:staff", "text": "收到金币了！人手多出杯更快，点「员工」"},
+		{"if": ["staff<opening"], "at": "ui:hire", "text": "招一位新伙伴，招来直接上岗"},
+		{"then": "done"}], "跳过引导")
+	opening.shop_page_only = false
+	opening.seen_when.assign(["stage>=1", "open&staff>=opening"])
+	opening.skip_marks.assign(["welcome"])
+	steps.append(opening)
+	var done := guide_card("done", "开店上手了！", "继续营业", "接下来自己经营：攒够 {cost} 金币，就能开{line}。\n点机器可以升级，点「员工」可以调整岗位。")
+	done.trigger = "next"
+	done.params = {"stage": 1}
+	done.finish_marks.assign(["opening"])
+	steps.append(done)
+	var signs := ["", "boil", "seal", "mix", "press", "topping"]
+	for n in range(1, signs.size()):
+		var sign: String = signs[n]
+		var line := guide_step("line_%d" % n, "start", ["stage>=%d" % (n - 1), "stage<%d" % n, "affordable:" + sign],
+			["stage>=%d" % n, "!affordable:" + sign], [
+			{"if": ["page:station:" + sign], "at": "ui:unlock", "text": "点「解锁」开通{line}"},
+			{"if": ["!page:shop"], "go": "shop"},
+			{"at": "frame:" + sign, "text": "金币够了！开通{line}，能卖新饮品"}])
+		line.params = {"stage": n}
+		steps.append(line)
+	var shop_done := guide_card("shop_done", "首店完成！", "继续营业", "第二家店还在准备中，可以继续把这家店做大。")
+	shop_done.when.assign(["complete"])
+	shop_done.title_size = 64
+	shop_done.medal = "medal"
+	shop_done.stats = [["clock", "用时", "time"], ["coin", "总营业额", "revenue"]]
+	steps.append(shop_done)
+	for m in ["tea_leaf", "milk"]:
+		steps.append(guide_step("box_" + m, "start", ["box:" + m, "box_affordable"], ["!box:" + m, "!box_affordable"], [
+			{"if": ["page:station:supply"], "at": "ui:material:" + m, "text": "解锁{box}箱，{machine}才有原料"},
+			{"if": ["!page:shop"], "go": "shop"},
+			{"at": "frame:supply", "text": "{machine}要用{box}：去原料柜解锁{box}箱"}]))
+	steps.append(guide_step("kitchen", "start", ["stage>=1", "kitchen_staff:0", "no_box", "can_staff"], ["!kitchen_staff:0"], [
+		{"if": ["waiting", "!page:staff"], "at": "ui:tab:staff", "text": "后厨还没人！新伙伴在名册里，点「员工」"},
+		{"if": ["waiting"], "select_waiting": true, "at": "ui:deploy", "text": "点「派到店内」，让伙伴去后厨煮茶"},
+		{"if": ["!can_hire"], "back": true},
+		{"if": ["!page:staff"], "at": "ui:tab:staff", "text": "前台只管接待客人，煮茶要后厨员工：点「员工」"},
+		{"at": "ui:hire", "text": "招一位伙伴，招来直接去后厨"}]))
+	steps.append(guide_step("more_staff", "start", ["stage>=5", "room", "can_staff"], ["hired", "!room"], [
+		{"if": ["waiting", "!page:staff"], "at": "ui:tab:staff", "text": "加料机开通了，每杯要多走一段路。\n还有空岗位，点「员工」派伙伴上岗"},
+		{"if": ["waiting"], "select_waiting": true, "at": "ui:deploy", "text": "点「派到店内」，让伙伴一起干活"},
+		{"if": ["!can_hire"], "back": true},
+		{"if": ["!page:staff"], "at": "ui:tab:staff", "text": "加料机开通了，每杯要多走一段路。\n还有空岗位，点「员工」再招一位，\n煮茶机也要升级跟上"},
+		{"at": "ui:hire", "text": "招一位新伙伴，招来直接上岗"}]))
+	steps.append(guide_step("lost_seats", "angry", ["angry:seats"], ["!page:shop"], [
+		{"at": "ui:chip:seats", "text": "有客人等急了！堂食坐满了，\n点这里加座位，客人才能坐下"}], "知道了"))
+	steps.append(guide_step("lost_staff", "angry", ["angry:staff"], ["!page:shop"], [
+		{"at": "ui:tab:staff", "text": "有客人等急了！还有空岗位，\n点「员工」招一位伙伴"}], "知道了"))
+	steps.append(guide_step("lost_machine", "angry", ["angry:machine"], ["!page:shop"], [
+		{"at": "station:{slow_id}", "text": "有客人等急了！{slow}跟不上，\n点它升级，出杯更快"}], "知道了"))
+	return steps
 
 
 static func _bonus_track(definition) -> SpecUpgradeTrack:
@@ -709,6 +881,14 @@ func build_pancake() -> SpecShop:
 # ---------- 走位 ----------
 
 const TeaLayout := preload("res://content/tea/art_playtest_layout.gd")
+
+
+## 奶茶店的走位从美术场景的锚点导出（规格 §6.1）
+static func tea_layout_from_scene() -> SpecLayout:
+	var art: Node = load(TEA_ART).instantiate()
+	var layout := ShopAnchors.new(art.get_node("Anchors")).layout(tea_layout())
+	art.free()
+	return layout
 
 
 static func tea_layout() -> SpecLayout:

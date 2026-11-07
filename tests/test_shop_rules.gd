@@ -108,6 +108,25 @@ func test_influencer_doubles_flow_for_sixty_seconds() -> void:
 	check(is_equal_approx(rules.flow_multiplier(), base), "60 秒后恢复")
 
 
+func test_preview_keeps_event_set_on_top() -> void:
+	var rules := _open_tea()
+	rules.gold = 5000.0
+	check_eq(rules.unlock("boil"), "", "开煮茶机")
+	var key := "boil"
+	check(rules.track_of(key) != null, "煮茶机有升级轨")
+	var batch := SpecEffect.make("batch", "set", 9.0)
+	batch.target = "boil"
+	rules.apply_effect("event", "big_pot", batch, 60.0)
+	check_eq(rules.pot_batch("boil"), 9, "奇遇把一锅设成 9 杯")
+	var order: Array = rules.mods.entries.duplicate()
+	var next: int = rules.preview(key, func() -> int: return rules.pot_batch("boil"))
+	check_eq(next, 9, "预览下一级时奇遇仍盖过升级")
+	check_eq(rules.pot_batch("boil"), 9, "预览完奇遇仍然生效")
+	check(rules.mods.entries == order, "预览完加成栈原样放回")
+	check_eq(rules.upgrade(key), "", "奇遇期间真的升一级")
+	check_eq(rules.pot_batch("boil"), 9, "升级后奇遇仍然盖过升级")
+
+
 func test_investor_card_grants_gold_after_accept() -> void:
 	var rules := _open_tea()
 	var ev := _event("investor", [SpecEffect.make("grant_gold", "add", 500.0)], 0.0,

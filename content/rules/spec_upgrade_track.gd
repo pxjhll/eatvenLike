@@ -12,6 +12,12 @@ extends Resource
 @export var requires_level: int = 1
 ## 面板上这条轨的效果说明（“煮茶速度”“售价”“新口味”）
 @export var effect_label: String = ""
+## 售价预览（界面）：拿哪道菜举例——按顺序取第一道已开的，都没开取第一道；空 = 按菜单顺序取最后一道已开的
+@export var preview_dishes: Array[String] = []
+## 售价预览里“涨哪些菜”的说法；空 = 列出涨价菜的全名
+@export var preview_label: String = ""
+## 面板标题下那一行说这是哪种升级：capacity 产能 / price 售价 / both / menu 开新口味；空 = 按下一级的效果推
+@export var kind: String = ""
 
 
 func max_level() -> int:

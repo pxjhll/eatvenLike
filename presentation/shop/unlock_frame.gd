@@ -5,7 +5,7 @@ extends Button
 const LINE := Color(0.36, 0.25, 0.18, 0.8)
 const TEXT := Color("5a4030")
 const FILL := Color(1, 1, 1, 0.4)
-const UpgradeBadge := preload("res://presentation/tea_playtest/upgrade_badge.gd")
+const UpgradeBadge := preload("res://presentation/shop/upgrade_badge.gd")
 var can_unlock := false:
 	set(value):
 		if value != can_unlock:

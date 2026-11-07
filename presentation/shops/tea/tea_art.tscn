@@ -1,0 +1,530 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://presentation/reference/shop_art.tscn" id="art"]
+[ext_resource type="Script" path="res://presentation/shop/shop_dining.gd" id="dining"]
+[ext_resource type="Script" path="res://presentation/shop/anchor_rect.gd" id="anchor"]
+
+[node name="TeaArt" instance=ExtResource("art")]
+
+[node name="GlassPartition" parent="Sortables/Checkout"]
+metadata/toggle_label = "玻璃隔板"
+metadata/toggle_icon = "glass"
+
+[node name="DiningArea" parent="Sortables"]
+script = ExtResource("dining")
+
+[node name="Anchors" type="Node2D" parent="."]
+metadata/world_size = Vector2(720, 1500)
+metadata/top_margin = 50.0
+metadata/customer_height = 110.0
+
+[node name="Stations" type="Node2D" parent="Anchors"]
+
+[node name="supply" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/supply"]
+position = Vector2(69, 141)
+script = ExtResource("anchor")
+size = Vector2(134, 95)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/supply"]
+position = Vector2(69, 155)
+script = ExtResource("anchor")
+size = Vector2(134, 78)
+
+[node name="boil" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/boil"]
+position = Vector2(291, 117)
+script = ExtResource("anchor")
+size = Vector2(143, 110)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/boil"]
+position = Vector2(291, 136)
+script = ExtResource("anchor")
+size = Vector2(143, 90)
+
+[node name="Badge" type="Marker2D" parent="Anchors/Stations/boil"]
+position = Vector2(300, 114)
+
+[node name="Post" type="Node2D" parent="Anchors/Stations/boil"]
+position = Vector2(291, 117)
+script = ExtResource("anchor")
+size = Vector2(143, 110)
+
+[node name="PostPoint" type="Marker2D" parent="Anchors/Stations/boil"]
+position = Vector2(270, 330)
+
+[node name="mix" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/mix"]
+position = Vector2(440, 79)
+script = ExtResource("anchor")
+size = Vector2(110, 155)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/mix"]
+position = Vector2(446, 112)
+script = ExtResource("anchor")
+size = Vector2(106, 116)
+
+[node name="Badge" type="Marker2D" parent="Anchors/Stations/mix"]
+position = Vector2(452, 79)
+
+[node name="Buffer" type="Marker2D" parent="Anchors/Stations/mix"]
+position = Vector2(493, 218)
+metadata/host = "MachineTable"
+
+[node name="topping" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/topping"]
+position = Vector2(23, 269)
+script = ExtResource("anchor")
+size = Vector2(122, 348)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/topping"]
+position = Vector2(30, 290)
+script = ExtResource("anchor")
+size = Vector2(108, 285)
+
+[node name="Badge" type="Marker2D" parent="Anchors/Stations/topping"]
+position = Vector2(36, 616)
+
+[node name="Buffer" type="Marker2D" parent="Anchors/Stations/topping"]
+position = Vector2(78, 465)
+metadata/host = "PrepBench"
+
+[node name="Post" type="Node2D" parent="Anchors/Stations/topping"]
+position = Vector2(20, 269)
+script = ExtResource("anchor")
+size = Vector2(128, 350)
+
+[node name="PostPoint" type="Marker2D" parent="Anchors/Stations/topping"]
+position = Vector2(190, 410)
+
+[node name="seal" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/seal"]
+position = Vector2(558, 205)
+script = ExtResource("anchor")
+size = Vector2(134, 185)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/seal"]
+position = Vector2(564, 228)
+script = ExtResource("anchor")
+size = Vector2(123, 154)
+
+[node name="Badge" type="Marker2D" parent="Anchors/Stations/seal"]
+position = Vector2(564, 178)
+
+[node name="Buffer" type="Marker2D" parent="Anchors/Stations/seal"]
+position = Vector2(626, 405)
+metadata/host = "Sealer"
+
+[node name="lemonade" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/lemonade"]
+position = Vector2(31, 595)
+script = ExtResource("anchor")
+size = Vector2(123, 184)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/lemonade"]
+position = Vector2(35, 625)
+script = ExtResource("anchor")
+size = Vector2(119, 145)
+
+[node name="press" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/press"]
+position = Vector2(189, 656)
+script = ExtResource("anchor")
+size = Vector2(113, 141)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/press"]
+position = Vector2(195, 675)
+script = ExtResource("anchor")
+size = Vector2(108, 110)
+
+[node name="counter" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Post" type="Node2D" parent="Anchors/Stations/counter"]
+position = Vector2(32, 709)
+script = ExtResource("anchor")
+size = Vector2(656, 148)
+
+[node name="PostPoint" type="Marker2D" parent="Anchors/Stations/counter"]
+position = Vector2(410, 730)
+
+[node name="Drops" type="Node2D" parent="Anchors"]
+metadata/grab_band = Vector2(98, 1200)
+
+[node name="0" type="Node2D" parent="Anchors/Drops"]
+position = Vector2(31, 595)
+script = ExtResource("anchor")
+size = Vector2(123, 184)
+metadata/post = "counter"
+
+[node name="1" type="Node2D" parent="Anchors/Drops"]
+position = Vector2(189, 656)
+script = ExtResource("anchor")
+size = Vector2(113, 141)
+metadata/post = "counter"
+
+[node name="2" type="Node2D" parent="Anchors/Drops"]
+position = Vector2(291, 117)
+script = ExtResource("anchor")
+size = Vector2(143, 110)
+metadata/post = "boil"
+metadata/point = Vector2(270, 330)
+metadata/show = true
+
+[node name="3" type="Node2D" parent="Anchors/Drops"]
+position = Vector2(20, 269)
+script = ExtResource("anchor")
+size = Vector2(128, 350)
+metadata/post = "topping"
+metadata/point = Vector2(190, 410)
+metadata/show = true
+
+[node name="4" type="Node2D" parent="Anchors/Drops"]
+position = Vector2(32, 709)
+script = ExtResource("anchor")
+size = Vector2(656, 148)
+metadata/post = "counter"
+metadata/point = Vector2(410, 730)
+metadata/show = true
+
+[node name="5" type="Node2D" parent="Anchors/Drops"]
+position = Vector2(440, 79)
+script = ExtResource("anchor")
+size = Vector2(110, 155)
+metadata/invalid = "automatic_station"
+
+[node name="6" type="Node2D" parent="Anchors/Drops"]
+position = Vector2(548, 198)
+script = ExtResource("anchor")
+size = Vector2(145, 200)
+metadata/invalid = "automatic_station"
+
+[node name="Connections" type="Node2D" parent="Anchors"]
+
+[node name="seal_to_shelf" type="Node2D" parent="Anchors/Connections"]
+metadata/art = "BeltVertical"
+metadata/note = "封好口的外带杯自动送上货架外带格，后厨不用再搬"
+
+[node name="Frame" type="Node2D" parent="Anchors/Connections/seal_to_shelf"]
+position = Vector2(590, 385)
+script = ExtResource("anchor")
+size = Vector2(72, 150)
+
+[node name="Path" type="Node2D" parent="Anchors/Connections/seal_to_shelf"]
+
+[node name="0" type="Marker2D" parent="Anchors/Connections/seal_to_shelf/Path"]
+position = Vector2(626, 391)
+
+[node name="1" type="Marker2D" parent="Anchors/Connections/seal_to_shelf/Path"]
+position = Vector2(626, 512)
+
+[node name="2" type="Marker2D" parent="Anchors/Connections/seal_to_shelf/Path"]
+position = Vector2(608, 574)
+
+[node name="Shelf" type="Node2D" parent="Anchors"]
+
+[node name="shelf" type="Node2D" parent="Anchors/Shelf"]
+metadata/host = "Rack"
+
+[node name="0" type="Marker2D" parent="Anchors/Shelf/shelf"]
+position = Vector2(557, 574)
+
+[node name="1" type="Marker2D" parent="Anchors/Shelf/shelf"]
+position = Vector2(608, 574)
+
+[node name="2" type="Marker2D" parent="Anchors/Shelf/shelf"]
+position = Vector2(659, 574)
+
+[node name="rack" type="Node2D" parent="Anchors/Shelf"]
+metadata/host = "Rack"
+
+[node name="0" type="Marker2D" parent="Anchors/Shelf/rack"]
+position = Vector2(557, 634)
+
+[node name="1" type="Marker2D" parent="Anchors/Shelf/rack"]
+position = Vector2(608, 634)
+
+[node name="2" type="Marker2D" parent="Anchors/Shelf/rack"]
+position = Vector2(659, 634)
+
+[node name="Chips" type="Node2D" parent="Anchors"]
+
+[node name="Shelf" type="Marker2D" parent="Anchors/Chips"]
+position = Vector2(560, 684)
+
+[node name="Seats" type="Marker2D" parent="Anchors/Chips"]
+position = Vector2(42, 918)
+
+[node name="Counter" type="Node2D" parent="Anchors"]
+
+[node name="Sale" type="Marker2D" parent="Anchors/Counter"]
+position = Vector2(490, 740)
+
+[node name="Pickup" type="Marker2D" parent="Anchors/Counter"]
+position = Vector2(635, 925)
+
+[node name="Dining" type="Node2D" parent="Anchors/Counter"]
+position = Vector2(20, 1060)
+script = ExtResource("anchor")
+size = Vector2(680, 380)
+
+[node name="Queue" type="Node2D" parent="Anchors"]
+
+[node name="0" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(530, 925)
+
+[node name="1" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(425, 925)
+
+[node name="2" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(320, 925)
+
+[node name="3" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(215, 925)
+
+[node name="4" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(530, 1012)
+
+[node name="5" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(425, 1012)
+
+[node name="6" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(320, 1012)
+
+[node name="7" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(215, 1012)
+
+[node name="Seats" type="Node2D" parent="Anchors"]
+
+[node name="dine" type="Node2D" parent="Anchors/Seats"]
+metadata/sit_offset = Vector2(0, -12)
+
+[node name="0" type="Marker2D" parent="Anchors/Seats/dine"]
+position = Vector2(85, 1143.0834)
+metadata/art = "dining_chair_left"
+metadata/width = 70.0
+metadata/facing = 2
+
+[node name="1" type="Marker2D" parent="Anchors/Seats/dine"]
+position = Vector2(296, 1143.0834)
+metadata/art = "dining_chair_right"
+metadata/width = 70.0
+metadata/facing = 6
+
+[node name="2" type="Marker2D" parent="Anchors/Seats/dine"]
+position = Vector2(424, 1143.0834)
+metadata/art = "dining_chair_left"
+metadata/width = 70.0
+metadata/facing = 2
+
+[node name="3" type="Marker2D" parent="Anchors/Seats/dine"]
+position = Vector2(635, 1143.0834)
+metadata/art = "dining_chair_right"
+metadata/width = 70.0
+metadata/facing = 6
+
+[node name="4" type="Marker2D" parent="Anchors/Seats/dine"]
+position = Vector2(86, 1340.0834)
+metadata/art = "dining_chair_left"
+metadata/width = 70.0
+metadata/facing = 2
+
+[node name="5" type="Marker2D" parent="Anchors/Seats/dine"]
+position = Vector2(297, 1340.0834)
+metadata/art = "dining_chair_right"
+metadata/width = 70.0
+metadata/facing = 6
+
+[node name="6" type="Marker2D" parent="Anchors/Seats/dine"]
+position = Vector2(422, 1340.0834)
+metadata/art = "dining_chair_left"
+metadata/width = 70.0
+metadata/facing = 2
+
+[node name="7" type="Marker2D" parent="Anchors/Seats/dine"]
+position = Vector2(633, 1340.0834)
+metadata/art = "dining_chair_right"
+metadata/width = 70.0
+metadata/facing = 6
+
+[node name="Tables" type="Node2D" parent="Anchors"]
+
+[node name="dine" type="Node2D" parent="Anchors/Tables"]
+metadata/per_table = 2
+
+[node name="0" type="Marker2D" parent="Anchors/Tables/dine"]
+position = Vector2(191, 1151.5)
+metadata/art = "dining_table"
+metadata/width = 180.0
+
+[node name="1" type="Marker2D" parent="Anchors/Tables/dine"]
+position = Vector2(530, 1151.5)
+metadata/art = "dining_table"
+metadata/width = 180.0
+
+[node name="2" type="Marker2D" parent="Anchors/Tables/dine"]
+position = Vector2(192, 1348.5)
+metadata/art = "dining_table"
+metadata/width = 180.0
+
+[node name="3" type="Marker2D" parent="Anchors/Tables/dine"]
+position = Vector2(528, 1348.5)
+metadata/art = "dining_table"
+metadata/width = 180.0
+
+[node name="Entrance" type="Marker2D" parent="Anchors"]
+position = Vector2(360, 1540)
+
+[node name="Aisle" type="Marker2D" parent="Anchors"]
+position = Vector2(360, 1045)
+
+[node name="Lanes" type="Node2D" parent="Anchors"]
+
+[node name="0" type="Marker2D" parent="Anchors/Lanes"]
+position = Vector2(360, 1045)
+
+[node name="1" type="Marker2D" parent="Anchors/Lanes"]
+position = Vector2(360, 1226)
+
+[node name="Nav" type="Node2D" parent="Anchors"]
+metadata/nav = "grid"
+metadata/cell = 20.0
+metadata/grid_size = Vector2i(36, 75)
+
+[node name="Areas" type="Node2D" parent="Anchors/Nav"]
+
+[node name="0" type="Node2D" parent="Anchors/Nav/Areas"]
+position = Vector2(40, 260)
+script = ExtResource("anchor")
+size = Vector2(640, 440)
+
+[node name="1" type="Node2D" parent="Anchors/Nav/Areas"]
+position = Vector2(40, 700)
+script = ExtResource("anchor")
+size = Vector2(640, 720)
+
+[node name="Obstacles" type="Node2D" parent="Anchors/Nav"]
+
+[node name="0" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(23, 269)
+script = ExtResource("anchor")
+size = Vector2(122, 348)
+
+[node name="1" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(267, 235)
+script = ExtResource("anchor")
+size = Vector2(290, 70)
+
+[node name="2" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(22, 220)
+script = ExtResource("anchor")
+size = Vector2(235, 75)
+
+[node name="3" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(590, 367)
+script = ExtResource("anchor")
+size = Vector2(72, 213)
+
+[node name="4" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(560, 205)
+script = ExtResource("anchor")
+size = Vector2(132, 185)
+
+[node name="5" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(522, 530)
+script = ExtResource("anchor")
+size = Vector2(178, 154)
+
+[node name="6" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(32, 595)
+script = ExtResource("anchor")
+size = Vector2(122, 185)
+
+[node name="7" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(32, 709)
+script = ExtResource("anchor")
+size = Vector2(291, 148)
+
+[node name="8" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(323, 752)
+script = ExtResource("anchor")
+size = Vector2(365, 105)
+
+[node name="9" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(81, 1083.5)
+script = ExtResource("anchor")
+size = Vector2(220, 120)
+
+[node name="10" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(420, 1083.5)
+script = ExtResource("anchor")
+size = Vector2(220, 120)
+
+[node name="11" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(82, 1280.5)
+script = ExtResource("anchor")
+size = Vector2(220, 120)
+
+[node name="12" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(418, 1280.5)
+script = ExtResource("anchor")
+size = Vector2(220, 120)
+
+[node name="Points" type="Node2D" parent="Anchors/Nav"]
+
+[node name="supply" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(210, 310)
+
+[node name="boil" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(350, 330)
+
+[node name="mix" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(480, 330)
+
+[node name="topping" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(190, 490)
+
+[node name="seal" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(530, 430)
+
+[node name="shelf" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(490, 630)
+
+[node name="counter" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(410, 730)
+
+[node name="belt_in" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(530, 430)
+
+[node name="lemonade" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(190, 650)
+
+[node name="press" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(315, 690)
+
+[node name="seal_belt" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(530, 430)
+
+[node name="Posts" type="Node2D" parent="Anchors/Nav"]
+
+[node name="boil" type="Marker2D" parent="Anchors/Nav/Posts"]
+position = Vector2(270, 330)
+
+[node name="topping" type="Marker2D" parent="Anchors/Nav/Posts"]
+position = Vector2(190, 410)
+
+[node name="counter" type="Marker2D" parent="Anchors/Nav/Posts"]
+position = Vector2(410, 730)
+
+[node name="Guide" type="Node2D" parent="Anchors"]
+
+[node name="CounterArea" type="Node2D" parent="Anchors/Guide"]
+position = Vector2(370, 720)
+script = ExtResource("anchor")
+size = Vector2(130, 120)

@@ -19,3 +19,5 @@ extends Resource
 @export var duration: float = 0.0
 @export var speaker: String = ""
 @export_multiline var card_text: String = ""
+## 卡片和顶栏加成用的图标键
+@export var icon: String = ""
