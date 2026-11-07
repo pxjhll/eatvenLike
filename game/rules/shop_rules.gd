@@ -101,6 +101,79 @@ func _init(shop_: SpecShop, seed := -1) -> void:
 	reset(seed)
 
 
+# ---------- 存档（§3.12）：整店运行状态按名字存，读回来逐帧接着跑 ----------
+
+## 要存的状态。新加的运行时变量写进这里（存读档测试会把没存全的情况查出来）。
+const STATE_KEYS := ["clock", "gold", "revenue", "sold", "sold_by_dish", "lost", "stage_index", "unlocked", "levels", "boxes",
+	"completed_at", "paused", "tune", "stations", "shelf_stock", "shelf_count", "shelf_reserved_in", "shelf_reserved_out",
+	"generated", "orders", "diners", "roster", "hire_pool", "event_ready_at", "events_seen", "belts", "belt_clock",
+	"belt_items", "order_ramp", "flyer_wave", "flyer_wait", "flyer_clock", "flyer_pending", "flyer_ready_at", "flyer_left",
+	"flyer_timer", "seats", "_accumulator", "_order_clock", "_next_order", "_next_staff", "_sale_carry", "_next_customer",
+	"_courier", "customers", "queue", "_next_customer_id", "full_seconds", "pot_busy", "side_idle"]
+
+
+func to_dict() -> Dictionary:
+	var out := {"shop": shop.id}
+	for key in STATE_KEYS:
+		var v: Variant = get(key)
+		out[key] = _plain(v)
+	# 上岗员工就是名册里的同一份：按 id 存，读回来指回名册
+	out.workers = workers.map(func(w: Dictionary) -> int: return w.id)
+	out.rng = [rng.seed, rng.state]
+	out.event_rng = [event_rng.seed, event_rng.state]
+	out.mods = _plain(mods.entries)
+	out.log = _plain(events.log)
+	# 奇遇按 id 存：店铺数据里的奇遇，加上等玩家选的卡片
+	out.pending_events = pending_events.map(func(ev: SpecEvent) -> String: return ev.id)
+	return out
+
+
+## 深拷贝成只含普通数组 / 字典的值（带类型的数组存档里不收）
+static func _plain(v: Variant) -> Variant:
+	if v is Array:
+		var out: Array = []
+		for x in v: out.append(_plain(x))
+		return out
+	if v is Dictionary:
+		var out := {}
+		for k in v: out[k] = _plain(v[k])
+		return out
+	return v
+
+
+## 读档：先按店铺数据重开，再把存下的状态盖上去。返回错误说明（空 = 成功）。
+func load_dict(data: Dictionary) -> String:
+	if String(data.get("shop", "")) != shop.id: return "不是这家店的存档"
+	for key in STATE_KEYS:
+		if not data.has(key): return "缺少 " + key
+	reset()
+	for key in STATE_KEYS:
+		var v: Variant = data[key]
+		var current: Variant = get(key)
+		if current is Array and current.is_typed():
+			current.assign(v)
+		elif typeof(current) != typeof(v) and not (current is float and v is int):
+			return "%s 类型不对" % key
+		else:
+			set(key, v.duplicate(true) if v is Array or v is Dictionary else v)
+	workers = []
+	for id in data.get("workers", []):
+		for w in roster:
+			if w.id == id: workers.append(w)
+	rng.seed = int(data.rng[0])
+	rng.state = int(data.rng[1])
+	event_rng.seed = int(data.event_rng[0])
+	event_rng.state = int(data.event_rng[1])
+	mods.entries = data.mods.duplicate(true)
+	events.log = data.log.duplicate(true)
+	events.clock = clock
+	pending_events = []
+	for id in data.pending_events:
+		for ev in event_defs:
+			if ev.id == id: pending_events.append(ev)
+	return ""
+
+
 func _derive_roles() -> void:
 	for st in shop.stations:
 		match st.block:
