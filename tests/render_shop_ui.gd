@@ -138,7 +138,7 @@ func _run() -> void:
 	await process_frame
 	view._refresh(0)
 	await process_frame
-	print("DEBUG after post=", view.sim.workers[0].post, " page=", hud.page, " dragging=", view._drag.dragging, " wid=", view._drag.worker_id, " last_target=", view._drag.target, " blocks_now=", hud.blocks_world(drop_point), " header=", hud.get_node("Header").get_global_rect(), " sel=", hud.get_node("%Selection").get_global_rect(), hud.get_node("%Selection").is_visible_in_tree(), " nav=", hud.get_node("%Navigation").get_global_rect(), " hint=", view._drag._hint, " workers=", view.sim.workers.size())
+	print("DEBUG after post=", view.sim.workers[0].post, " page=", hud.page, " dragging=", view._drag.dragging, " wid=", view._drag.worker_id, " last_target=", view._drag.target, " blocks_now=", hud.blocks_world(drop_point), " header=", hud.get_node("Header").get_global_rect(), " sel=", hud.get_node("%Selection").get_global_rect(), hud.get_node("%Selection").is_visible_in_tree(), " nav=", hud.get_node("%Navigation").get_global_rect(), " toast=", view._toast.text, " workers=", view.sim.workers.map(func(w): return [w.id, w.post]), " all=", view.all_staff().map(func(w): return w.id))
 	_check(view.sim.workers[0].post == "boil" and hud.page == "shop", "dragging visible roster card dismisses sheet and seats real employee")
 	_check(view.sim.audit().valid, "new UI drag preserves simulation stock")
 	await _click(hud.menu_button)
