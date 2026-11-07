@@ -18,8 +18,8 @@ unzip -q -o -j "$build_tools/templates.tpz" 'templates/web_*' -d "$templates_dir
 timeout 180s "$godot" --headless --path . --import
 # The suite takes ~90 s on a fast machine; Pages builders are slower, so leave room.
 timeout 300s "$godot" --headless --path . -s tests/run_all.gd
-timeout 90s "$godot" --headless --path . -s tests/render_shop_ui.gd
-timeout 120s "$godot" --headless --path . -s tests/render_tea_business.gd
+timeout 90s "$godot" --headless --path . -s tests/render_shop_tea.gd
+timeout 90s "$godot" --headless --path . -s tests/render_shop_pancake.gd
 
 mkdir -p build/web
 touch build/.gdignore

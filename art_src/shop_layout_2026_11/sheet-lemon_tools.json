@@ -43,16 +43,6 @@
       "col": 2
     },
     {
-      "id": "lemon_small_cup",
-      "destination": "art/reference/lemon_small_cup.png",
-      "size": [
-        120,
-        150
-      ],
-      "row": 1,
-      "col": 0
-    },
-    {
       "id": "counter_red_device",
       "destination": "art/reference/counter_red_device.png",
       "size": [

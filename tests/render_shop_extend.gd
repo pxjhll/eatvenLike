@@ -83,6 +83,10 @@ func _run() -> void:
 	_check(cook.post == "boil", "拖到煮茶机：坐班")
 	await _drag(_screen(cook.pos + Vector2(0, -40)), _screen(Vector2(300, 480)))
 	_check(cook.post == "" and cook.deployed, "拖回空地：恢复流动")
+	await _touch_drag(_screen(cook.pos + Vector2(0, -40)), _screen(view.anchors.meta("Drops/2", "point")))
+	_check(cook.post == "boil", "触屏拖到煮茶机：坐班")
+	await _touch_drag(_screen(cook.pos + Vector2(0, -40)), _screen(Vector2(300, 480)))
+	_check(cook.post == "" and cook.deployed, "触屏拖回空地：恢复流动")
 
 	# 调参面板：机器一行一个，拖了马上生效
 	view.tuning.toggle()
@@ -155,6 +159,26 @@ func _drag(from: Vector2, to: Vector2) -> void:
 	var release := press.duplicate()
 	release.position = to
 	release.pressed = false
+	Input.parse_input_event(release)
+	Input.flush_buffered_events()
+	await process_frame
+
+
+func _touch_drag(from: Vector2, to: Vector2) -> void:
+	var press := InputEventScreenTouch.new()
+	press.position = from
+	press.pressed = true
+	Input.parse_input_event(press)
+	Input.flush_buffered_events()
+	for i in range(1, 7):
+		var motion := InputEventScreenDrag.new()
+		motion.position = from.lerp(to, i / 6.0)
+		motion.relative = (to - from) / 6.0
+		Input.parse_input_event(motion)
+		Input.flush_buffered_events()
+		await process_frame
+	var release := InputEventScreenTouch.new()
+	release.position = to
 	Input.parse_input_event(release)
 	Input.flush_buffered_events()
 	await process_frame

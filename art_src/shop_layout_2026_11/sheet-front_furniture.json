@@ -76,16 +76,6 @@
       "col": 2
     },
     {
-      "id": "lemonade_display_table",
-      "destination": "art/reference/lemonade_display_table.png",
-      "size": [
-        600,
-        220
-      ],
-      "row": 2,
-      "col": 0
-    },
-    {
       "id": "milk_bottle",
       "destination": "art/reference/milk_bottle.png",
       "size": [
