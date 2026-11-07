@@ -18,6 +18,8 @@ var game: Node
 var persist := false
 var _sliders := {}
 var _values := {}
+## What each knob gives right now (秒一杯 …), shown under its name: phones have no hover.
+var _nows := {}
 var _font: Font
 var _log_info: Label
 var _available := Vector2(720, 1280)
@@ -56,11 +58,9 @@ func refresh() -> void:
 	for row in ROWS:
 		var key: String = row[0]
 		_values[key].text = "×%.2f" % game.sim.tuned(key)
-		_values[key].tooltip_text = _now(key)
-		_sliders[key].tooltip_text = "%s：%s" % [row[1], _now(key)]
+		_nows[key].text = _now(key)
 	if _log_info != null and game.recorder != null:
-		_log_info.text = "开店录制：%d 条" % game.recorder.line_count() if game.recorder.enabled else "开店录制：这里不保存"
-		_log_info.tooltip_text = "每 60 秒记录一次，购买和调参也会记录。"
+		_log_info.text = "开店录制：%d 条（每 60 秒一条，购买和调参也会录）" % game.recorder.line_count() if game.recorder.enabled else "开店录制：这里不保存"
 
 
 ## What the knob gives right now, in the units a player feels.
@@ -130,10 +130,17 @@ func _build() -> void:
 		var line := HBoxContainer.new()
 		line.add_theme_constant_override("separation", 12)
 		row_panel.add_child(line)
+		var name_box := VBoxContainer.new()
+		name_box.custom_minimum_size = Vector2(164, 0)
+		name_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		name_box.add_theme_constant_override("separation", 0)
+		line.add_child(name_box)
 		var name_label := _label(row[1], 24)
-		name_label.custom_minimum_size = Vector2(164, 0)
-		name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		line.add_child(name_label)
+		name_box.add_child(name_label)
+		var now_label := _label("", 16)
+		now_label.modulate = Color(1, 1, 1, 0.75)
+		name_box.add_child(now_label)
+		_nows[key] = now_label
 		var slider := HSlider.new()
 		slider.name = "Slider_" + key
 		slider.min_value = game.sim.TUNE_MIN

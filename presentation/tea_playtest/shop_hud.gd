@@ -22,6 +22,7 @@ var _view: Node2D
 var _portraits := {}
 var _staff_titles: Array[Label] = []
 var _staff_tags: Array[Label] = []
+var _staff_levels: Array[Label] = []
 var _staff_portraits: Array[TextureRect] = []
 ## Hiring sits at the top of the staff page: one tap hires and puts the new partner straight to work.
 var _recruit_label: Label
@@ -296,7 +297,6 @@ func _build_pages() -> void:
 	_selected_role = _nowrap(_text(heading, "", 17))
 	_selected_role.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_selected_doing = _text(detail_body, "", 17, true)
-	_selected_doing.visible = false
 	for stat in [["speed", "移速"], ["capacity", "搬量"], ["skill", "操作"]]:
 		var line := _row(detail_body, 10)
 		var caption := _nowrap(_text(line, stat[1], 22))
@@ -322,9 +322,9 @@ func _build_pages() -> void:
 		button.add_theme_constant_override("icon_max_width", 17)
 		button.add_theme_constant_override("h_separation", 3)
 		_button_style(button, "gold" if button in [train_button, kitchen_upgrade_button] else "cream", 14)
-	var drag_hint := _text(staff, "───  拖动员工到工位  ───", 20, true)
+	# Phones have no hover, so the drag rule is spelled out in place.
+	var drag_hint := _text(staff, "拖到柜台 = 前台（接待客人）；拖到工位或空地 = 后厨", 19, true)
 	drag_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	drag_hint.tooltip_text = "拖到柜台 = 前台（接待客人）；拖到工位或空地 = 后厨"
 	var menu := _column("menu")
 	character_preview_button = _menu_action(menu, "角色预览", "hat", open_character_preview)
 	pause_button = _menu_action(menu, "暂停营业", "pause", func() -> void: _view.sim.paused = not _view.sim.paused; refresh())
@@ -426,6 +426,7 @@ func _rebuild_roster() -> void:
 	_view._staff_cards.clear()
 	_staff_titles.clear()
 	_staff_tags.clear()
+	_staff_levels.clear()
 	_staff_portraits.clear()
 	for worker in _view.all_staff():
 		var card := Button.new()
@@ -455,6 +456,11 @@ func _rebuild_roster() -> void:
 		label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		_staff_titles.append(label)
+		var level := Label.new()
+		level.add_theme_font_size_override("font_size", 17)
+		level.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		body.add_child(level)
+		_staff_levels.append(level)
 		var tag_row := HBoxContainer.new()
 		tag_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		body.add_child(tag_row)
@@ -512,7 +518,7 @@ func refresh() -> void:
 		var is_selected: bool = int(worker.id) == _view.selected_worker
 		var status := _status(worker)
 		_staff_titles[i].text = _staff_name(worker, roster)
-		_view._staff_cards[i].tooltip_text = "%s · Lv%d · %s" % [_staff_name(worker, roster), worker.level, ROLES[worker.role]]
+		_staff_levels[i].text = "Lv%d" % worker.level
 		pill(_staff_tags[i], status[0], status[1], status[2])
 		_staff_portraits[i].modulate = Color.WHITE if _view.staff_is_deployed(int(worker.id)) else Color(1, 1, 1, 0.55)
 		if _styled_selection != _view.selected_worker:
@@ -542,13 +548,11 @@ func refresh() -> void:
 			var button: Button = train_button if side == "front" else kitchen_upgrade_button
 			var info: Dictionary = sim.staff_upgrade_info(side)
 			var title: String = "前台" if side == "front" else "后厨"
-			button.text = ("%s已满级" % title) if info.cost < 0 else "%s升级 · %d 金币\n%s" % [title, int(info.cost), info.name]
-			button.tooltip_text = ("%s升级已买完" % title) if info.cost < 0 else "%s %d/%d：%s · %d 金币" % [title, int(info.bought) + 1, int(info.total), info.name, int(info.cost)]
+			button.text = ("%s升级已买完" % title) if info.cost < 0 else "%s %d/%d · %d 金币\n%s" % [title, int(info.bought) + 1, int(info.total), int(info.cost), info.name]
 			button.disabled = info.cost < 0 or sim.gold < int(info.cost)
 	else:
 		var train_cost: int = sim.train_cost(_view.selected_worker)
 		train_button.text = "已满级" if train_cost < 0 else "培养 Lv%d\n%d 金币" % [int(selected.level) + 1, train_cost]
-		train_button.tooltip_text = "已满级" if train_cost < 0 else "培养 Lv%d · %d 金币" % [int(selected.level) + 1, train_cost]
 		train_button.disabled = train_cost < 0 or sim.gold < train_cost
 	var room := has_staff_room()
 	hire_button.disabled = sim.hire_cost() < 0 or sim.gold < sim.hire_cost() or not room
@@ -563,8 +567,7 @@ func refresh() -> void:
 				break
 	_recruit_portrait.texture = _portraits[next_art]
 	var descriptions := {"cat": "小猫 · 速度型\n跑得快的多面手", "raccoon": "浣熊 · 力量型\n擅长批量搬运", "fox": "狐狸 · 操作型\n擅长手工制作", "rabbit": "小兔子 · 速度型\n擅长快速搬运", "gray_cat": "小灰猫 · 速度型\n跑得快的多面手", "bear": "小熊 · 力量型\n擅长批量搬运"}
-	_recruit_label.text = String(descriptions.get(next_art, NAMES[next_art])).get_slice("\n", 0)
-	_recruit_label.tooltip_text = "招来直接上岗" if room else "解锁新设备后有更多空位"
+	_recruit_label.text = String(descriptions.get(next_art, NAMES[next_art])).get_slice("\n", 0) + ("\n招来直接上岗" if room else "\n解锁新设备后有更多空位")
 	pause_button.text = "继续营业" if sim.paused else "暂停营业"
 	belt_button.text = "运输方式  ·  传送带" if sim.use_belts else "运输方式  ·  人工搬运"
 	belt_button.visible = not sim.has_method("buy_belt")
@@ -611,8 +614,7 @@ func _refresh_goal_bar(sim) -> void:
 	var hint: Dictionary = sim.bottleneck_hint() if sim.has_method("bottleneck_hint") else {}
 	_bottleneck_button.visible = not hint.is_empty()
 	if not hint.is_empty():
-		_bottleneck_button.text = String(hint.short).replace("排长队", "排队").replace("升级", "看") + " ›"
-		_bottleneck_button.tooltip_text = hint.text
+		_bottleneck_button.text = String(hint.short).replace("排长队", "排队") + " ›"
 		var drink_icon := "drink_black_tea"
 		if sim.has_method("dish_name"):
 			for dish in sim.DISHES:

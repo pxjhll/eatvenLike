@@ -69,8 +69,9 @@ func setup(view: Node2D, hud: Control) -> void:
 			var arrow := _image(comparison, "arrow_right", 32)
 			arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		else: _upgrade_after = value
+	# The full effect line stays on screen: phones have no hover to reveal it.
 	_upgrade_effect = _hud._text(upgrade, "", 19, true)
-	_upgrade_effect.hide()
+	_upgrade_effect.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	upgrade_button = _buy_button(upgrade, func() -> void: _view.station_action("upgrade", station_id))
 	upgrade_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_button_skin(upgrade_button, "orange")
@@ -167,13 +168,13 @@ func _refresh_comparison(info: Dictionary) -> void:
 		after = "%.1f 秒 / %s" % [info.get("next_seconds", info.seconds), "锅" if station_id == "boil" else "杯"]
 	_upgrade_before.text = current
 	_upgrade_after.text = after
-	_upgrade_row.tooltip_text = _upgrade_title.text + "\n" + _upgrade_effect.text
-	upgrade_button.tooltip_text = _upgrade_effect.text
 	if info.get("upgrade_cost", -1) >= 0:
 		upgrade_button.text = ("升星" if info.get("next_star", false) else "升级") + " · %d 金币" % int(info.upgrade_cost)
 	if _upgrade_row.visible:
 		var kind: String = {"capacity":"产能升级", "price":"售价升级", "both":"产能售价升级", "menu":"开新口味"}.get(String(info.get("kind", "")), "设备升级")
-		_hud.set_heading(kind, "Lv.%d → Lv.%d" % [info.level, info.level + 1] if info.get("upgrade_cost", -1) >= 0 else "满级", false, "")
+		# Keep the machine's name as the title; the upgrade kind goes underneath.
+		var machine: String = _hud.get_node("%Title").text
+		_hud.set_heading(machine, "Lv.%d → Lv.%d" % [info.level, info.level + 1] if info.get("upgrade_cost", -1) >= 0 else "满级", false, kind)
 	_locked_icon.texture = Icons.texture(_station_icon())
 	if "_heading_icon" in _hud and _hud._heading_icon != null:
 		_hud._heading_icon.texture = Icons.texture(_station_icon() if info.unlocked else "lock")
