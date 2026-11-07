@@ -24,6 +24,26 @@ timeout 90s "$godot" --headless --path . -s tests/render_shop_pancake.gd
 mkdir -p build/web
 touch build/.gdignore
 timeout 180s "$godot" --headless --path . --export-release Web build/web/index.html
+
+# Launch the exported pack outside the source tree. Packed scenes can differ
+# from the source scenes that the interaction regressions load.
+web_pack="$PWD/build/web/index.pck"
+for shop in pancake tea; do
+  smoke_data="$build_tools/pack-smoke-$shop"
+  profile_dir="$smoke_data/godot/app_userdata/eatvenLike"
+  mkdir -p "$profile_dir"
+  printf '{"shop":"%s"}\n' "$shop" > "$profile_dir/profile.json"
+  smoke_log="$build_tools/pack-smoke-$shop.log"
+  if ! (cd "$build_tools" && XDG_DATA_HOME="$smoke_data" timeout 30s "$godot" --headless --main-pack "$web_pack" --quit-after 8) > "$smoke_log" 2>&1 ||
+     grep -Eq '^(SCRIPT ERROR|ERROR):' "$smoke_log" ||
+     [ ! -s "$profile_dir/shop_$shop.json" ]; then
+    cat "$smoke_log" >&2
+    echo "Exported Web pack failed to start shop: $shop" >&2
+    exit 1
+  fi
+  echo "Exported Web pack started shop: $shop"
+done
+
 python3 tools/prepare_web_export.py "$PWD/build/web"
 # Compression is handled by the loader, so do not add Content-Encoding: gzip.
 cat > build/web/_headers <<'HEADERS'
