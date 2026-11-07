@@ -18,12 +18,17 @@ unzip -q -o -j "$build_tools/templates.tpz" 'templates/web_*' -d "$templates_dir
 timeout 180s "$godot" --headless --path . --import
 # The suite takes ~90 s on a fast machine; Pages builders are slower, so leave room.
 timeout 300s "$godot" --headless --path . -s tests/run_all.gd
-timeout 90s "$godot" --headless --path . -s tests/render_shop_ui.gd
-timeout 120s "$godot" --headless --path . -s tests/render_tea_business.gd
+timeout 90s "$godot" --headless --path . -s tests/render_shop_tea.gd
+timeout 90s "$godot" --headless --path . -s tests/render_shop_pancake.gd
 
 mkdir -p build/web
 touch build/.gdignore
 timeout 180s "$godot" --headless --path . --export-release Web build/web/index.html
+# 导出会把文本场景转成二进制，个别写法会在这一步丢节点（2026-11-07 煎饼摊 Sortables）。
+# 工程里和导出包里各摊开一次店铺场景，节点对不上就不发布。
+timeout 60s "$godot" --headless --path . -s "$PWD/tests/dump_shop_scenes.gd" -- "$build_tools/scenes-source.txt"
+timeout 60s "$godot" --headless --main-pack build/web/index.pck -s "$PWD/tests/dump_shop_scenes.gd" -- "$build_tools/scenes-export.txt"
+diff "$build_tools/scenes-source.txt" "$build_tools/scenes-export.txt"
 python3 tools/prepare_web_export.py "$PWD/build/web"
 # Compression is handled by the loader, so do not add Content-Encoding: gzip.
 cat > build/web/_headers <<'HEADERS'
