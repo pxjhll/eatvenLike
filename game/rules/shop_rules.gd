@@ -164,6 +164,9 @@ func reset(seed := -1) -> void:
 	generated = 0
 	orders = []
 	diners = []
+	customers = []
+	queue = []
+	_next_customer_id = 1
 	belts = {}
 	belt_clock = {}
 	belt_items = []
@@ -803,11 +806,14 @@ func deploy_worker(id: int, post := "") -> String:
 	if worker.is_empty(): return "未拥有这位员工"
 	if worker.deployed: return ""
 	if post.is_empty() and not role_room("").is_empty() and role_room(counter_id).is_empty(): post = counter_id
+	if not post.is_empty() and post != counter_id:
+		if not post in seatables: return "这里不能坐班"
+		if post_owner(post, id) != -1: return "这里已经有人了"
 	var error := role_room(post, id)
 	if not error.is_empty(): return error
 	worker.deployed = true
 	workers.append(worker)
-	if post == counter_id: _seat_at(worker, counter_id)
+	if not post.is_empty(): _seat_at(worker, post)
 	events.emit("deployed", {"id": id})
 	return ""
 

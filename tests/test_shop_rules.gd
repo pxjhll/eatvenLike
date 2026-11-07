@@ -177,3 +177,28 @@ func test_rules_layer_has_no_shop_specific_names() -> void:
 		var text := FileAccess.get_file_as_string("res://game/rules/" + file)
 		for name in names:
 			check(not ('"%s"' % name) in text, "%s 里写死了 \"%s\"" % [file, name])
+
+
+# ---------- 命令细节 ----------
+
+func test_deploy_to_a_kitchen_post_seats_the_worker() -> void:
+	var rules := _open_tea()
+	rules.gold = 100000.0
+	for id in ["boil"]: check_eq(rules.unlock(id), "", "解锁 " + id)
+	check_eq(rules.hire(), "", "招人")
+	var worker: Dictionary = rules.roster[-1]
+	check_eq(rules.deploy_worker(worker.id, "boil"), "", "派到煮茶机坐班")
+	check_eq(worker.post, "boil", "坐在煮茶机")
+	check_eq(rules.post_owner("boil"), worker.id, "煮茶机有人了")
+	check(rules.deploy_worker(worker.id, "nowhere") == "", "已上岗的员工再派一次不报错")
+
+
+func test_reset_clears_single_mode_customers() -> void:
+	var rules := ShopRules.new(PANCAKE)
+	rules.unlock("soy_milk")
+	rules.run(60.0)
+	check(rules.arrivals() > 0, "有客人来过")
+	rules.reset()
+	check_eq(rules.queue.size(), 0, "重开后没有排队的人")
+	check_eq(rules.customers.size(), 0, "重开后没有顾客")
+	check_eq(rules.arrivals(), 0, "来客计数归零")
