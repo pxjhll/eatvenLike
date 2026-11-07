@@ -155,6 +155,7 @@ func press(index: int) -> void:
 	_shown = ""
 	var buttons: Array = card.get("buttons", [{"label": "知道了", "primary": true}])
 	if index >= 0 and index < buttons.size():
+		ShopAudio.play_cue(&"tap")
 		var action: Variant = buttons[index].get("action")
 		if action is Callable and (action as Callable).is_valid(): (action as Callable).call()
 	refresh()
@@ -229,6 +230,7 @@ func _input(event: InputEvent) -> void:
 		and not event.pressed and event.device != InputEvent.DEVICE_ID_EMULATION)
 	if not released:
 		return
+	ShopAudio.unlock_from_input(event)
 	get_viewport().set_input_as_handled()
 	var primary := primary_index()
 	for index in _buttons.get_child_count():

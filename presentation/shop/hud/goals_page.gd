@@ -68,7 +68,7 @@ func setup(view: Node2D, hud: Control) -> void:
 	leave_button.add_theme_font_size_override("font_size", 26)
 	for state in ["normal", "hover", "pressed"]:
 		leave_button.add_theme_stylebox_override(state, ReferenceTheme.style("gold", 18, state))
-	leave_button.pressed.connect(func() -> void: view.open_summary())
+	hud.bind_action(leave_button, func() -> void: view.open_summary())
 	leave_button.visible = false
 	add_child(leave_button)
 

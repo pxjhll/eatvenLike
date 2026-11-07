@@ -27,6 +27,7 @@ extends Resource
 @export var level_flow: float = 0.0
 ## 美术场景、存档文件名
 @export_file("*.tscn") var scene_path: String = ""
+@export var background_music: AudioStream
 @export var save_file: String = ""
 ## 人物大小按哪个锚点量
 @export var scale_anchor: String = ""

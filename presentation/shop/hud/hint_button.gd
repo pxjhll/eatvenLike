@@ -19,7 +19,7 @@ func setup(view: Node2D, hud: Control) -> void:
 	focus_mode = Control.FOCUS_NONE
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	hud._button_style(self, "cream", 18)
-	pressed.connect(_go)
+	hud.bind_action(self, _go)
 	hide()
 
 

@@ -113,6 +113,7 @@ func _ready() -> void:
 			profile.save()
 			store.save_game(rules, _speed_factor, guides_seen)
 	shop = rules.shop
+	ShopAudio.enter_shop(rules.events, shop.background_music)
 	view = ShopView.new(rules)
 	DisplayServer.window_set_title(shop.display_name)
 	_font = load("res://art/ui/graybox_font.ttf")
@@ -214,6 +215,7 @@ func _t(key: String, values := {}) -> String:
 func restart() -> void:
 	if is_instance_valid(_drag): _drag.cancel()
 	rules.reset()
+	ShopAudio.enter_shop(rules.events, shop.background_music)
 	_reset_visuals()
 	_show_toast(_t("restarted"))
 	_refresh(0.0)
@@ -863,6 +865,7 @@ func leave_shop() -> void:
 	store = null
 	shop_left.emit(String(profile.shop))
 	if not change_scene_on_leave: return
+	ShopAudio.leave_shop(rules.events)
 	rules = null
 	get_tree().change_scene_to_file(scene_file_path if not scene_file_path.is_empty() else "res://presentation/shop/shop_play.tscn")
 
@@ -1090,7 +1093,9 @@ func _notification(what: int) -> void:
 
 
 func _exit_tree() -> void:
-	if rules != null: save_now(false)
+	if rules != null:
+		ShopAudio.leave_shop(rules.events)
+		save_now(false)
 
 
 ## 瓶颈提示的黄框：一闪一闪，不挡点按
