@@ -106,11 +106,15 @@ func _run() -> void:
 	# An open sheet must not let a gesture pick the actor behind it. Press on the actor's
 	# body, but not where a roster card happens to sit on top: dragging a card is a real drag.
 	var actor_point := _world(view.sim.workers[0].pos + Vector2(0, -65))
-	for lift in [-65.0, -30.0, -100.0, -120.0, -10.0]:
-		var candidate := _world(view.sim.workers[0].pos + Vector2(0, lift))
-		if not view._staff_cards.any(func(card: Button) -> bool: return hud.card_hit_test(card, candidate)):
-			actor_point = candidate
-			break
+	var hud_buttons: Array = hud.find_children("*", "BaseButton", true, false).filter(func(button: BaseButton) -> bool: return button.is_visible_in_tree())
+	var found_spot := false
+	for lift in [-65.0, -30.0, -100.0, -10.0, -120.0]:
+		for shift in [0.0, -30.0, 30.0, -45.0, 45.0]:
+			var candidate := _world(view.sim.workers[0].pos + Vector2(shift, lift))
+			if not found_spot and not hud_buttons.any(func(button: BaseButton) -> bool: return button.get_global_rect().has_point(candidate)):
+				actor_point = candidate
+				found_spot = true
+	_check(found_spot, "found an actor point under the sheet that is not on a button")
 	var posts_under_sheet: Array = view.sim.workers.map(func(worker: Dictionary) -> String: return worker.post)
 	await _gesture(actor_point, _world(Vector2(325, 210)))
 	_check(view.sim.workers.map(func(worker: Dictionary) -> String: return worker.post) == posts_under_sheet and not view._drag.dragging, "overlay blocks actor drag through its panel")
