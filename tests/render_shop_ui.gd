@@ -108,9 +108,9 @@ func _run() -> void:
 	var actor_point := _world(view.sim.workers[0].pos + Vector2(0, -65))
 	var hud_buttons: Array = hud.find_children("*", "BaseButton", true, false).filter(func(button: BaseButton) -> bool: return button.is_visible_in_tree())
 	var found_spot := false
-	for lift in [-65.0, -30.0, -100.0, -10.0, -120.0]:
+	for rise in [-65.0, -30.0, -100.0, -10.0, -120.0]:
 		for shift in [0.0, -30.0, 30.0, -45.0, 45.0]:
-			var candidate := _world(view.sim.workers[0].pos + Vector2(shift, lift))
+			var candidate := _world(view.sim.workers[0].pos + Vector2(shift, rise))
 			if not found_spot and not hud_buttons.any(func(button: BaseButton) -> bool: return button.get_global_rect().has_point(candidate)):
 				actor_point = candidate
 				found_spot = true
