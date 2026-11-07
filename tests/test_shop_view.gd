@@ -72,3 +72,14 @@ func test_buffs_list_timed_modifiers() -> void:
 	var buffs := view.buffs()
 	check_eq(buffs.size(), 1, "一个加成图标")
 	check(is_equal_approx(float(buffs[0].left), 60.0), "剩 60 秒")
+
+
+func test_item_art_uses_item_icon_when_no_scene_art() -> void:
+	var pancake: SpecShop = load("res://content/shops/pancake/shop.tres")
+	var view := ShopView.new(ShopRules.new(pancake))
+	for item in pancake.items:
+		if not item.art.is_empty() or item.icon == null: continue
+		check(view.item_art(item.id).texture == item.icon, "%s 拿在手上画自己的图标" % item.id)
+	check(view.item_art("guozi").texture == pancake.items.filter(func(i): return i.id == "guozi")[0].icon, "按菜品 id 也找到图标")
+	var tea_view := ShopView.new(ShopRules.new(TEA))
+	check(tea_view.item_art("lemonade").texture != null, "奶茶店照旧用场景图")

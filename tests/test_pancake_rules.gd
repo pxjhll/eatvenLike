@@ -71,6 +71,45 @@ func test_two_staff_share_one_griddle() -> void:
 	check(int(rules.sold_by_dish.plain) > 3, "两人轮流用鏊子出饼")
 
 
+func test_staff_hold_what_they_made_until_handing_over() -> void:
+	var rules := ShopRules.new(_only("plain"))
+	rules.gold = 9999
+	rules.unlock("soy_milk")
+	rules.unlock("rear_equipment")
+	rules.send_flyers()
+	var held := {}
+	var sold_before := 0
+	var empty_after_sale := true
+	for i in 1200:
+		rules.step(0.1)
+		var s: Dictionary = rules.workers[0]
+		if s.carry_count > 0: held[s.carry_item] = true
+		if int(rules.sold_by_dish.plain) > sold_before:
+			sold_before = int(rules.sold_by_dish.plain)
+			empty_after_sale = empty_after_sale and s.carry_count == 0
+	check(held.has("batter") and held.has("pancake") and held.has("plain"), "手上依次拿着面糊、煎饼、包好的饼：%s" % [held.keys()])
+	check(sold_before > 0 and empty_after_sale, "递给客人后手上空了")
+
+
+func test_staff_walk_around_tables_that_are_out() -> void:
+	var rules := ShopRules.new(PANCAKE)
+	var pts := PANCAKE.layout.points
+	var table: Rect2 = PANCAKE.layout.obstacles[PANCAKE.layout.obstacle_stations.find("topping")]
+	var crosses := func() -> bool:
+		for p in rules.nav.path(pts.topping, pts.front_counter):
+			if table.has_point(p): return true
+		return false
+	check(crosses.call(), "加料台没开时中间没有桌子，直接走过去")
+	rules.gold = 99999
+	for i in 6:
+		var n := rules.next_unlock()
+		if n != "": rules.unlock(n)
+	check(not crosses.call(), "加料台开了，员工绕开中间的桌子")
+	for a in pts:
+		for b in pts:
+			if a != b: check(not rules.nav.path(pts[a], pts[b]).is_empty(), "%s 走得到 %s" % [a, b])
+
+
 func test_unlock_order_hires_and_flyer_cooldown() -> void:
 	var rules := ShopRules.new(PANCAKE)
 	rules.gold = 9999
@@ -119,3 +158,15 @@ func test_rating_uses_finish_time_and_walkouts() -> void:
 	var summary := view.summary()
 	check_eq(summary.shop, "pancake", "结店纪录记店铺 id")
 	check(summary.levels.has("rear_equipment") and summary.levels.has("topping"), "结店纪录有各台等级")
+
+
+func test_waiting_customers_never_leave_they_get_angry() -> void:
+	var rules := ShopRules.new(_only("soy"))
+	check_eq(rules.unlock("soy_milk"), "", "开豆浆机")
+	rules.workers.clear()
+	rules.run(5.0)
+	check(not rules.queue.is_empty(), "没人干活时客人排着")
+	var first: Dictionary = rules.customer(int(rules.queue[0]))
+	rules.run(120.0)
+	check_eq(rules.customer(int(first.id)).get("state", ""), "queue", "等了两分钟也不走")
+	check_eq(rules.order_mood(first), 2, "等久了生气")

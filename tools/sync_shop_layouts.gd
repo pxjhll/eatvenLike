@@ -43,6 +43,6 @@ static func synced_layout(shop: SpecShop) -> SpecLayout:
 
 
 static func _same(a: SpecLayout, b: SpecLayout) -> bool:
-	for key in ["nav", "cell", "grid_size", "areas", "obstacles", "points", "posts", "aliases", "spawn_point"]:
+	for key in ["nav", "cell", "grid_size", "areas", "obstacles", "obstacle_stations", "points", "posts", "aliases", "spawn_point"]:
 		if var_to_str(a.get(key)) != var_to_str(b.get(key)): return false
 	return true

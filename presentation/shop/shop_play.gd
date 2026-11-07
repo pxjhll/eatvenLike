@@ -21,6 +21,7 @@ const ArtGroups := preload("res://presentation/shop/art_groups.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
 const CAMPAIGN: SpecCampaign = preload("res://content/campaign/campaign.tres")
+const Profile := preload("res://game/app/profile.gd")
 ## 竖屏铺满宽度；横屏最多少看 MIN_VISIBLE_WORLD 这么高的店面
 const MIN_VISIBLE_WORLD := 1100.0
 ## 界面按这个宽度排版（竖屏铺满宽度）；店面比它宽的店，店面另外缩放
@@ -333,7 +334,9 @@ func _actor(kind: String, height := 128.0) -> Node2D:
 	actor.work_direction = view.work_direction
 	actor.pouring_station = view.pouring_station
 	actor.order_icon = _order_icon
+	actor.work_progress = view.work_progress
 	actor.setup(kind, _font, height)
+	actor.progress_bar.theme = ui.theme
 	return actor
 
 
@@ -402,7 +405,8 @@ func _build_world_labels() -> void:
 	for id in anchors.station_rects():
 		var region: Rect2 = anchors.station_rects()[id]
 		var mark := UpgradeBadge.new()
-		mark.center_on(Vector2(region.end.x - 14, region.position.y + 14))
+		var spot := Vector2(region.end.x - 14, region.position.y + 14)
+		mark.center_on(anchors.point("Stations/%s/Mark" % id, spot))
 		parent.add_child(mark)
 		_upgrade_marks[id] = mark
 	if _seats != null:
@@ -426,6 +430,10 @@ func _frame(rect: Rect2, action: Callable) -> Button:
 	frame.add_theme_font_size_override("font_size", 17)
 	frame.pressed.connect(action)
 	$Canvas/WorldLabels.add_child(frame)
+	# 按脚底前后排序的店：虚线框画在地上那一层，站在框前面的员工不被挡住
+	if _z_by_y and rect.has_area():
+		frame.z_as_relative = false
+		frame.z_index = int(rect.end.y)
 	return frame
 
 
@@ -607,7 +615,7 @@ func _update_cups() -> void:
 		if not sprite.visible: continue
 		var row: Dictionary = draws[i]
 		var look := view.item_art(String(row.item))
-		var texture: Texture2D = load("res://art/reference/" + String(look.get("art", "pearl_tea")) + ".png")
+		var texture: Texture2D = look.texture
 		sprite.texture = texture
 		sprite.modulate = look.get("tint", Color.WHITE)
 		sprite.scale = Vector2.ONE * Actor.CUP_HEIGHT / texture.get_height()
@@ -696,7 +704,7 @@ func _update_customers_single(delta: float) -> void:
 	var waiting := anchors.points("Waiting")
 	var group := _wait_group()
 	var seats := anchors.points("Seats/" + group) if not group.is_empty() else []
-	var free_seats := mini(rules.current_stage().wait_seats, seats.size())
+	var free_seats := mini(rules.wait_seats(), seats.size())
 	var standing := rules.current_stage().queue_capacity
 	var spots := {}
 	var seat := 0
@@ -732,6 +740,9 @@ func _update_customers_single(delta: float) -> void:
 		if c.state == "queue" and patience > 0.0:
 			var left: float = 1.0 - float(c.wait) / patience
 			actor.show_order(String(c.kind), left, 0 if left > 0.5 else 1 if left > 0.2 else 2)
+		elif c.state == "queue":
+			# 不走的客人（和奶茶店一样）：等久了只变脸
+			actor.show_order(String(c.kind), -1.0, rules.order_mood(c))
 		else:
 			actor.show_order(String(c.kind), -1.0)
 		actor.display({"pos": point, "walking": not arrived, "seated": spots[c.id][1] and arrived, "phase": "idle", "task_label": ""}, rules.clock)
@@ -870,6 +881,26 @@ func leave_shop() -> void:
 	get_tree().change_scene_to_file(scene_file_path if not scene_file_path.is_empty() else "res://presentation/shop/shop_play.tscn")
 
 
+## 调参用：直接跳到关卡表里的上一家（-1）/ 下一家（+1）店。先存好这家店，那家店有存档就接着玩，没有就从空店开始。
+## 返回跳到的店 id（到头了返回空）。
+func jump_shop(offset: int) -> String:
+	var ids := Profile.shops()
+	var at := ids.find(rules.shop.id)
+	var to := at + offset
+	if at < 0 or to < 0 or to >= ids.size() or profile == null:
+		_show_toast("已经是第一家店了" if offset < 0 else "已经是最后一家店了")
+		return ""
+	save_now(false)
+	profile.shop = ids[to]
+	profile.fresh_shop = false
+	profile.save()
+	shop_left.emit(ids[to])
+	if change_scene_on_leave:
+		rules = null
+		get_tree().change_scene_to_file(scene_file_path if not scene_file_path.is_empty() else "res://presentation/shop/shop_play.tscn")
+	return ids[to]
+
+
 # ---------- 命令（界面组件调这些） ----------
 
 ## 招人直接上岗（先后厨再前台）；以后拖到别的岗位换活
@@ -893,7 +924,7 @@ func buy_staff_upgrade(side: String) -> void:
 	var gold_before := rules.gold
 	var error := rules.upgrade("staff/" + side)
 	if error.is_empty(): _bought("staff_%s/%s" % [side, info.name], gold_before)
-	_show_toast(error if not error.is_empty() else _t("staff_upgraded", {"side": _t("side_" + side), "name": info.name}))
+	_show_toast(error if not error.is_empty() else _t("staff_upgraded", {"side": info.title, "name": info.name}))
 	if error.is_empty(): save_now(false)
 	_refresh(0.0)
 
