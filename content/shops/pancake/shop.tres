@@ -13,10 +13,14 @@
 [ext_resource type="Script" path="res://content/rules/spec_goal_rules.gd" id="11_jablx"]
 [ext_resource type="Script" path="res://content/rules/spec_guide_step.gd" id="12_p70m1"]
 [ext_resource type="Script" path="res://content/rules/spec_item.gd" id="13_icdnm"]
+[ext_resource type="Texture2D" path="res://art/pancake/icons/batter.tres" id="14_3rjv3"]
 [ext_resource type="Script" path="res://content/rules/spec_layout.gd" id="14_phbrp"]
+[ext_resource type="Texture2D" path="res://art/pancake/icons/crisps.tres" id="15_2y8k5"]
 [ext_resource type="Script" path="res://content/rules/spec_shop.gd" id="15_50a0c"]
+[ext_resource type="Texture2D" path="res://art/pancake/icons/pancake_packet.tres" id="16_f53vs"]
 [ext_resource type="Script" path="res://content/rules/spec_seat_group.gd" id="16_n1vsr"]
 [ext_resource type="Script" path="res://content/rules/spec_staff_kind.gd" id="17_70k8p"]
+[ext_resource type="Texture2D" path="res://art/pancake/icons/soy_cup.tres" id="17_wn2x6"]
 [ext_resource type="Script" path="res://content/rules/spec_staff_rules.gd" id="18_5yr4h"]
 [ext_resource type="Script" path="res://content/rules/spec_stage.gd" id="19_fwjhy"]
 [ext_resource type="Script" path="res://content/rules/spec_task.gd" id="20_0u725"]
@@ -476,60 +480,174 @@ first_customer_delay = 1.5
 
 [sub_resource type="Resource" id="Resource_wtmls"]
 script = ExtResource("11_jablx")
+texts = Dictionary[String, String]({
+"done": "经营任务已全部完成，继续营业",
+"done_short": "完店了！去「目标」结店，也可以接着营业",
+"hint_machine": "{drink}做不过来：升级{name}",
+"hint_machine_fix": "升级{name}",
+"hint_pot": "薄脆供不上，{drink}排起了长队：升级{name}",
+"hint_pot_fix": "升级{name}",
+"hint_staff": "队伍满了：人手不够，招人",
+"hint_staff_fix": "招人",
+"icon_fryer": "res://art/pancake/icons/fryer.tres",
+"icon_packing": "res://art/pancake/icons/packing.tres",
+"icon_raw_ingredients": "res://art/pancake/icons/batter.tres",
+"icon_rear_equipment": "res://art/pancake/icons/griddle.tres",
+"icon_soy_milk": "res://art/pancake/icons/soy_milk.tres",
+"icon_stat_sold": "res://art/pancake/icons/pancake_packet.tres",
+"icon_topping": "res://art/pancake/icons/topping.tres",
+"need_take": "待捞",
+"open": "支付 {cost} 金币解锁{name}，开始营业",
+"open_short": "点亮{name}开张（{cost} 金币）",
+"staff_slots": "员工 {used}/{all}",
+"stage": "支付 {cost} 金币解锁{name}",
+"stage_short": "攒金币 · 开放{name}",
+"task": "{name}（{current} / {target}）",
+"unit": "份"
+})
 opening_station = "soy_milk"
 complete_when = Array[String](["all_stages", "all_flavors", "all_tasks"])
 rating_minutes = Array[float]([22.0, 28.0])
 rating_lost_share = 0.2
 
+[sub_resource type="Resource" id="Resource_3rjv3"]
+script = ExtResource("12_p70m1")
+id = "welcome"
+when = Array[String](["!open"])
+seen_when = Array[String](["open"])
+shop_page_only = false
+skip_marks = Array[String](["opening", "hire", "done"])
+style = "card"
+title = "欢迎来到煎饼果子摊"
+text = "早点摊刚支起来，先卖豆浆，攒钱再开鏊子、油锅和加料台。
+员工会自己接单，从收钱一直做到递餐。"
+confirm_label = "开始"
+cancel_label = "跳过引导"
+next = "opening"
+
+[sub_resource type="Resource" id="Resource_2y8k5"]
+script = ExtResource("12_p70m1")
+id = "opening"
+done_when = Array[String](["!sold:0"])
+seen_when = Array[String](["stage>=1"])
+shop_page_only = false
+cues = Array[Dictionary]([{
+"at": "ui:unlock",
+"if": ["!open", "page:station:soy_milk"],
+"text": "点「解锁」，花 10 金币开张"
+}, {
+"go": "shop",
+"if": ["!open", "!page:shop"]
+}, {
+"at": "frame:soy_milk",
+"if": ["!open"],
+"text": "点豆浆机，花 10 金币开张"
+}, {
+"at": "station:front_counter",
+"pause": false,
+"text": "员工去前台收钱、打豆浆。
+看第一单卖出去"
+}])
+skip_label = "跳过引导"
+skip_marks = Array[String](["welcome"])
+
+[sub_resource type="Resource" id="Resource_f53vs"]
+script = ExtResource("12_p70m1")
+id = "hire"
+when = Array[String](["stage>=1", "staff<2", "can_hire"])
+done_when = Array[String](["hired", "!room"])
+seen_when = Array[String](["staff>=2"])
+cues = Array[Dictionary]([{
+"at": "ui:tab:staff",
+"if": ["!page:staff"],
+"text": "一个人又收钱又摊饼，忙不过来了。
+点「员工」招第二个人"
+}, {
+"at": "ui:hire",
+"text": "一个人又收钱又摊饼，忙不过来了。
+招第二个人"
+}])
+
+[sub_resource type="Resource" id="Resource_wn2x6"]
+script = ExtResource("12_p70m1")
+id = "done"
+when = Array[String](["seen:hire"])
+style = "card"
+title = "开张完成"
+text = "之后每分钟回来看一眼就行：
+攒够钱开下一台；队伍排满了就招人；台子上出现红色 ↑ 就点它升级。"
+
+[sub_resource type="Resource" id="Resource_u2yoc"]
+script = ExtResource("12_p70m1")
+id = "shop_done"
+when = Array[String](["complete"])
+style = "card"
+title = "完店了！"
+title_size = 56
+medal = "medal"
+stats = [["clock", "用时", "time"], ["coin", "总营业额", "revenue"]]
+text = "可以去「目标」点「结店」去奶茶店，也可以接着营业。"
+confirm_label = "接着营业"
+
 [sub_resource type="Resource" id="Resource_60obm"]
 script = ExtResource("13_icdnm")
 id = "batter"
 display_name = "面糊鸡蛋"
+icon = ExtResource("14_3rjv3")
 
 [sub_resource type="Resource" id="Resource_fadod"]
 script = ExtResource("13_icdnm")
 id = "crisp"
 display_name = "薄脆"
+icon = ExtResource("15_2y8k5")
 
 [sub_resource type="Resource" id="Resource_f5p8v"]
 script = ExtResource("13_icdnm")
 id = "pancake"
 display_name = "煎饼"
+icon = ExtResource("16_f53vs")
 
 [sub_resource type="Resource" id="Resource_rhawp"]
 script = ExtResource("13_icdnm")
 id = "soy"
 display_name = "豆浆"
+icon = ExtResource("17_wn2x6")
 
 [sub_resource type="Resource" id="Resource_bph1j"]
 script = ExtResource("13_icdnm")
 id = "plain"
 display_name = "原味煎饼"
+icon = ExtResource("16_f53vs")
 
 [sub_resource type="Resource" id="Resource_f7tu3"]
 script = ExtResource("13_icdnm")
 id = "guozi"
 display_name = "煎饼果子"
+icon = ExtResource("16_f53vs")
 
 [sub_resource type="Resource" id="Resource_nkp5d"]
 script = ExtResource("13_icdnm")
 id = "ham"
 display_name = "火腿煎饼果子"
+icon = ExtResource("16_f53vs")
 
 [sub_resource type="Resource" id="Resource_suyc0"]
 script = ExtResource("13_icdnm")
 id = "floss"
 display_name = "肉松煎饼果子"
+icon = ExtResource("16_f53vs")
 
 [sub_resource type="Resource" id="Resource_vvdok"]
 script = ExtResource("13_icdnm")
 id = "bacon"
 display_name = "培根煎饼果子"
+icon = ExtResource("16_f53vs")
 
 [sub_resource type="Resource" id="Resource_fj6u1"]
 script = ExtResource("13_icdnm")
 id = "family"
 display_name = "全家福"
+icon = ExtResource("16_f53vs")
 
 [sub_resource type="Resource" id="Resource_q0hq4"]
 script = ExtResource("14_phbrp")
@@ -563,6 +681,7 @@ stats = Dictionary[String, float]({
 "walk": 200.0,
 "work": 1.0
 })
+description = "擅长快速搬运"
 
 [sub_resource type="Resource" id="Resource_j5lce"]
 script = ExtResource("17_70k8p")
@@ -573,6 +692,7 @@ stats = Dictionary[String, float]({
 "walk": 200.0,
 "work": 1.0
 })
+description = "跑得快的多面手"
 
 [sub_resource type="Resource" id="Resource_j3474"]
 script = ExtResource("17_70k8p")
@@ -583,6 +703,7 @@ stats = Dictionary[String, float]({
 "walk": 200.0,
 "work": 1.0
 })
+description = "擅长批量搬运"
 
 [sub_resource type="Resource" id="Resource_q5hjk"]
 script = ExtResource("18_5yr4h")
@@ -712,11 +833,15 @@ id = "front_counter"
 display_name = "前台"
 block = "counter"
 params = {
+"facing": 0,
 "hand_seconds": 0.5,
 "posts": 1,
-"take_seconds": 1.5
+"take_seconds": 1.5,
+"unit": "份"
 }
 starts_unlocked = true
+description = "收钱、递餐；点这里发传单招客人"
+icon = "shop"
 
 [sub_resource type="Resource" id="Resource_udq4k"]
 script = ExtResource("7_f53vs")
@@ -794,6 +919,7 @@ id = "level"
 display_name = "豆浆机"
 levels = Array[ExtResource("8_wn2x6")]([SubResource("Resource_fg00o"), SubResource("Resource_04imy"), SubResource("Resource_fjs4y"), SubResource("Resource_4r80l"), SubResource("Resource_m0ix2"), SubResource("Resource_gqg8w"), SubResource("Resource_byh7d")])
 effect_label = "售价"
+kind = "price"
 
 [sub_resource type="Resource" id="Resource_1a1j3"]
 script = ExtResource("21_c0lsj")
@@ -801,11 +927,15 @@ id = "soy_milk"
 display_name = "豆浆机"
 block = "dispenser"
 params = {
-"seconds": 1.5
+"facing": 7,
+"seconds": 1.5,
+"unit": "份"
 }
 unlock_cost = 10
 tracks = Array[ExtResource("9_u2yoc")]([SubResource("Resource_ljmrk")])
 price_dishes = Array[String](["soy"])
+description = "打豆浆：单点一杯，或者买饼顺带一杯"
+icon = "res://art/pancake/icons/soy_milk.tres"
 
 [sub_resource type="Resource" id="Resource_3bb8v"]
 script = ExtResource("7_f53vs")
@@ -893,6 +1023,7 @@ id = "level"
 display_name = "鏊子"
 levels = Array[ExtResource("8_wn2x6")]([SubResource("Resource_adh44"), SubResource("Resource_gob0w"), SubResource("Resource_xnkio"), SubResource("Resource_sqt17"), SubResource("Resource_uvysj"), SubResource("Resource_ge4x0"), SubResource("Resource_0vyy3"), SubResource("Resource_qysyd")])
 effect_label = "速度"
+kind = "capacity"
 
 [sub_resource type="Resource" id="Resource_mf2hd"]
 script = ExtResource("21_c0lsj")
@@ -901,10 +1032,13 @@ display_name = "鏊子"
 block = "hand"
 params = {
 "seconds": 10.0,
+"unit": "份",
 "users": 1
 }
 unlock_cost = 50
 tracks = Array[ExtResource("9_u2yoc")]([SubResource("Resource_ypisq")])
+description = "摊煎饼：一口鏊子同时只能一个人用"
+icon = "res://art/pancake/icons/griddle.tres"
 
 [sub_resource type="Resource" id="Resource_e1t54"]
 script = ExtResource("21_c0lsj")
@@ -912,9 +1046,11 @@ id = "raw_ingredients"
 display_name = "面糊鸡蛋"
 block = "supply"
 params = {
-"fetch_seconds": 1.0
+"fetch_seconds": 1.0,
+"unit": "份"
 }
 companion_of = "rear_equipment"
+icon = "res://art/pancake/icons/batter.tres"
 
 [sub_resource type="Resource" id="Resource_rspli"]
 script = ExtResource("23_yyiis")
@@ -999,6 +1135,7 @@ id = "level"
 display_name = "油锅"
 levels = Array[ExtResource("8_wn2x6")]([SubResource("Resource_jr4pn"), SubResource("Resource_l1vwp"), SubResource("Resource_vmk3m"), SubResource("Resource_3slq1"), SubResource("Resource_0txa6"), SubResource("Resource_nxkul"), SubResource("Resource_hhtv0")])
 effect_label = "速度"
+kind = "capacity"
 
 [sub_resource type="Resource" id="Resource_lynu0"]
 script = ExtResource("21_c0lsj")
@@ -1013,12 +1150,15 @@ params = {
 "load_seconds": 2.0,
 "manual_load": true,
 "manual_unload": true,
+"unit": "份",
 "unload_label": "捞薄脆",
 "unload_seconds": 2.0
 }
 unlock_cost = 160
 tracks = Array[ExtResource("9_u2yoc")]([SubResource("Resource_fiqlo")])
 stock = Array[ExtResource("23_yyiis")]([SubResource("Resource_rspli")])
+description = "炸薄脆：一锅 4 份，下锅和捞出都要人"
+icon = "res://art/pancake/icons/fryer.tres"
 
 [sub_resource type="Resource" id="Resource_mvsvg"]
 script = ExtResource("9_u2yoc")
@@ -1031,6 +1171,7 @@ id = "ham"
 display_name = "火腿煎饼果子"
 item = "ham"
 track = SubResource("Resource_mvsvg")
+icon = "res://art/pancake/icons/pancake_packet.tres"
 
 [sub_resource type="Resource" id="Resource_455mb"]
 script = ExtResource("9_u2yoc")
@@ -1044,6 +1185,7 @@ id = "floss"
 display_name = "肉松煎饼果子"
 item = "floss"
 track = SubResource("Resource_455mb")
+icon = "res://art/pancake/icons/pancake_packet.tres"
 
 [sub_resource type="Resource" id="Resource_gplun"]
 script = ExtResource("9_u2yoc")
@@ -1057,6 +1199,7 @@ id = "bacon"
 display_name = "培根煎饼果子"
 item = "bacon"
 track = SubResource("Resource_gplun")
+icon = "res://art/pancake/icons/pancake_packet.tres"
 
 [sub_resource type="Resource" id="Resource_6ip6a"]
 script = ExtResource("9_u2yoc")
@@ -1070,6 +1213,7 @@ id = "family"
 display_name = "全家福"
 item = "family"
 track = SubResource("Resource_6ip6a")
+icon = "res://art/pancake/icons/pancake_packet.tres"
 
 [sub_resource type="Resource" id="Resource_3sqaa"]
 script = ExtResource("7_f53vs")
@@ -1172,6 +1316,7 @@ id = "level"
 display_name = "加料台"
 levels = Array[ExtResource("8_wn2x6")]([SubResource("Resource_gtej6"), SubResource("Resource_n7bqk"), SubResource("Resource_13kgt"), SubResource("Resource_uxc0q"), SubResource("Resource_i2v3x"), SubResource("Resource_tsai5"), SubResource("Resource_6kpid")])
 effect_label = "售价"
+kind = "both"
 
 [sub_resource type="Resource" id="Resource_uvl3f"]
 script = ExtResource("21_c0lsj")
@@ -1180,12 +1325,15 @@ display_name = "加料台"
 block = "topping"
 params = {
 "seconds": 1.5,
+"unit": "份",
 "users": 0
 }
 unlock_cost = 320
 materials = Array[ExtResource("22_kr8mi")]([SubResource("Resource_v4oy5"), SubResource("Resource_rl4qp"), SubResource("Resource_xfb48"), SubResource("Resource_tv2em")])
 tracks = Array[ExtResource("9_u2yoc")]([SubResource("Resource_musef")])
 price_dishes = Array[String](["ham", "floss", "bacon", "family"])
+description = "加火腿、肉松、培根：升级涨价，到级开新口味"
+icon = "res://art/pancake/icons/topping.tres"
 
 [sub_resource type="Resource" id="Resource_umxff"]
 script = ExtResource("21_c0lsj")
@@ -1194,9 +1342,11 @@ display_name = "打包台"
 block = "combine"
 params = {
 "manual": true,
-"seconds": 2.5
+"seconds": 2.5,
+"unit": "份"
 }
 starts_unlocked = true
+icon = "res://art/pancake/icons/packing.tres"
 
 [sub_resource type="Resource" id="Resource_gu1b7"]
 script = ExtResource("21_c0lsj")
@@ -1205,6 +1355,7 @@ display_name = "货架"
 block = "pickup"
 params = {
 "decor": true,
+"unit": "份",
 "zones": {}
 }
 starts_unlocked = true
@@ -1225,6 +1376,7 @@ seat_groups = Array[ExtResource("16_n1vsr")]([SubResource("Resource_aibho")])
 staff = SubResource("Resource_q5hjk")
 goals = SubResource("Resource_wtmls")
 layout = SubResource("Resource_q0hq4")
-scene_path = "res://presentation/pancake/pancake_play.tscn"
-save_file = "pancake_shop.json"
+guide = Array[ExtResource("12_p70m1")]([SubResource("Resource_3rjv3"), SubResource("Resource_2y8k5"), SubResource("Resource_f53vs"), SubResource("Resource_wn2x6"), SubResource("Resource_u2yoc")])
+scene_path = "res://presentation/shops/pancake/pancake_art.tscn"
+save_file = "shop_pancake.json"
 scale_anchor = "cup"

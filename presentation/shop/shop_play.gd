@@ -17,12 +17,14 @@ const UpgradeBadge := preload("res://presentation/shop/upgrade_badge.gd")
 const TuningPanel := preload("res://presentation/shop/shop_tuning.gd")
 const Recorder := preload("res://presentation/shop/shop_recorder.gd")
 const DefaultHud := preload("res://presentation/shop/hud/default_hud.gd")
-const ArtGroups := preload("res://presentation/tea_playtest/shop_art_groups.gd")
+const ArtGroups := preload("res://presentation/shop/art_groups.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
 const CAMPAIGN: SpecCampaign = preload("res://content/campaign/campaign.tres")
 ## 竖屏铺满宽度；横屏最多少看 MIN_VISIBLE_WORLD 这么高的店面
 const MIN_VISIBLE_WORLD := 1100.0
+## 界面按这个宽度排版（竖屏铺满宽度）；店面比它宽的店，店面另外缩放
+const UI_WIDTH := 720.0
 const PAN_SLOP := 12.0
 const WALK_SPEED := 170.0
 
@@ -31,6 +33,11 @@ var rules: ShopRules
 var view: ShopView
 var anchors: ShopAnchors
 var store: ShopSave
+## 跨店记录（Profile）：默认用 App 的；测试可以塞一份临时的
+var profile: RefCounted
+## 结店后自己换到下一家店的场景（测试关掉，只听 shop_left）
+var change_scene_on_leave := true
+signal shop_left(next_shop_id: String)
 var save_status := "自动存档已开启"
 var art: Node2D
 var ui: Control
@@ -46,6 +53,13 @@ var _drag: Node2D
 var _world_size := Vector2(720, 1500)
 var _top_margin := 0.0
 var _customer_height := 110.0
+var _staff_height := 128.0
+var _customer_speed := WALK_SPEED
+## 员工、客人、杯子挂在哪个节点下排前后；z_by_y = 那个节点里没有 y 排序，按脚底 y 设 z（物件的 z 在美术场景里）
+var _sortables: Node2D
+var _z_by_y := false
+## 店面缩放（世界单位 → 界面单位）
+var _ui_factor := 1.0
 var _actors := {}
 var _customers := {}
 var _customer_positions := {}
@@ -84,18 +98,19 @@ var _panning := false
 func _ready() -> void:
 	var guides_seen: Array = []
 	var app := get_node_or_null("/root/App")
+	if profile == null and app != null: profile = app.profile
 	if rules == null:
 		guide_enabled = true
-		if store == null: store = ShopSave.new(_profile_shop(app))
+		if store == null: store = ShopSave.new(_profile_shop())
 		rules = store.load_game()
 		_speed_factor = store.loaded_speed
 		guides_seen = store.loaded_guides
 		if not store.last_error.is_empty(): save_status = store.last_error
 		# 刚从上一家店结店过来：从空店开始（员工不带过来）
-		if app != null and app.profile.fresh_shop and app.profile.shop == store.shop.id:
+		if profile != null and profile.fresh_shop and profile.shop == store.shop.id:
 			rules = ShopRules.new(store.shop)
-			app.profile.fresh_shop = false
-			app.profile.save()
+			profile.fresh_shop = false
+			profile.save()
 			store.save_game(rules, _speed_factor, guides_seen)
 	shop = rules.shop
 	view = ShopView.new(rules)
@@ -109,6 +124,11 @@ func _ready() -> void:
 	_world_size = anchors.meta(".", "world_size", _world_size)
 	_top_margin = float(anchors.meta(".", "top_margin", 0.0))
 	_customer_height = float(anchors.meta(".", "customer_height", _customer_height))
+	_staff_height = float(anchors.meta(".", "staff_height", _staff_height))
+	_customer_speed = float(anchors.meta(".", "customer_speed", _customer_speed))
+	_sortables = art.get_node(String(anchors.meta(".", "sortables", "Sortables")))
+	_z_by_y = _sortables.get_meta("z_by_y", false)
+	$Canvas/WorldLabels.z_index = int(anchors.meta(".", "labels_z", $Canvas/WorldLabels.z_index))
 	for node in art.find_children("*", "Node2D", true, false):
 		if node.get_meta("art_layer", "") in ["actors", "drinks"]: node.visible = false
 	_dining = art.find_children("*", "Node2D", true, false).filter(func(n: Node) -> bool: return n.get_script() == Dining).front() \
@@ -136,8 +156,8 @@ func _ready() -> void:
 	if carrier_warning(): _show_toast(_t("no_carrier"))
 
 
-func _profile_shop(app: Node) -> SpecShop:
-	var id: String = app.profile.shop if app != null and not String(app.profile.shop).is_empty() else ""
+func _profile_shop() -> SpecShop:
+	var id: String = profile.shop if profile != null and not String(profile.shop).is_empty() else ""
 	for city in CAMPAIGN.cities:
 		for entry in city.shops:
 			if not entry.shop_path.is_empty() and (id.is_empty() or entry.id == id): return load(entry.shop_path)
@@ -175,6 +195,15 @@ const DEFAULT_TEXTS := {
 	"frame_seat": "加 {step} 个座位\n{cost} 金币",
 	"frame_seat_tip": "有空座位的堂食客人先坐下再点单，坐着等更有耐心",
 	"frame_connection": "传送带\n{cost} 金币",
+	"summary_title": "结店总结 · {shop}",
+	"summary_rating": "评分　{stars}",
+	"summary_sold": "卖出 {sold} 份（走掉 {lost} 位客人）",
+	"summary_top": "卖得最好　{dishes}",
+	"summary_levels": "台子　{levels}",
+	"summary_staff": "员工 {staff} 位，到{next}要重新招",
+	"summary_stay": "继续营业",
+	"summary_leave": "去{next}",
+	"summary_confirm": "确定离开（金币、台子、员工都不保留）",
 }
 
 
@@ -251,12 +280,13 @@ func _refresh(delta: float) -> void:
 		if belt != null and belt.get_meta("art_layer", "") == "belts": belt.visible = rules.belts.has(id)
 	for worker in rules.workers:
 		if not _actors.has(worker.id):
-			var actor := _actor(String(worker.kind))
-			art.get_node("Sortables").add_child(actor)
+			var actor := _actor(String(worker.kind), _staff_height)
+			_sortables.add_child(actor)
 			_actors[worker.id] = actor
 		var actor: Node2D = _actors[worker.id]
 		actor.selected = ui.show_selection and int(worker.id) == selected_worker
 		actor.display(worker, rules.clock)
+		if _z_by_y: actor.z_index = int(actor.position.y)
 		actor.task.visible = ui.show_selection and int(worker.id) == selected_worker and ui.page == "shop"
 	for id in _badges:
 		var status := view.machine_status(id)
@@ -300,6 +330,7 @@ func _actor(kind: String, height := 128.0) -> Node2D:
 	actor.task_text = view.task_text
 	actor.work_direction = view.work_direction
 	actor.pouring_station = view.pouring_station
+	actor.order_icon = _order_icon
 	actor.setup(kind, _font, height)
 	return actor
 
@@ -566,7 +597,7 @@ func _update_cups() -> void:
 	while _cups.size() < draws.size():
 		var sprite := Sprite2D.new()
 		sprite.centered = false
-		art.get_node("Sortables").add_child(sprite)
+		_sortables.add_child(sprite)
 		_cups.append(sprite)
 	for i in _cups.size():
 		var sprite := _cups[i]
@@ -579,13 +610,17 @@ func _update_cups() -> void:
 		sprite.modulate = look.get("tint", Color.WHITE)
 		sprite.scale = Vector2.ONE * Actor.CUP_HEIGHT / texture.get_height()
 		# 放在家具上的杯子排在那件家具的落脚点前面一点：压得住家具，又在离镜头更近的员工后面
-		var host: Node2D = art.get_node_or_null("Sortables/" + String(row.host)) if not String(row.host).is_empty() else null
+		var host: Node2D = _sortables.get_node_or_null(String(row.host)) if not String(row.host).is_empty() else null
 		var sort_y: float = row.pos.y if host == null else maxf(row.pos.y, host.position.y + 1.0)
 		sprite.position = Vector2(row.pos.x, sort_y)
 		sprite.offset = Vector2(-texture.get_width() / 2.0, -texture.get_height() - (sort_y - row.pos.y) / sprite.scale.y)
+		if _z_by_y: sprite.z_index = int(sort_y)
 
 
 func _update_customers(delta: float) -> void:
+	if shop.fulfillment.handoff == "single":
+		_update_customers_single(delta)
+		return
 	var active := {}
 	var queue := anchors.points("Queue")
 	var entrance := anchors.point("Entrance", Vector2(_world_size.x / 2.0, _world_size.y))
@@ -603,7 +638,7 @@ func _update_customers(delta: float) -> void:
 		active[order.id] = true
 		if not _customers.has(order.id):
 			var actor := _actor(Characters.customer_art(int(order.id)), _customer_height)
-			art.get_node("Sortables").add_child(actor)
+			_sortables.add_child(actor)
 			_customers[order.id] = actor
 			_customer_positions[order.id] = entrance
 			_customer_entering[order.id] = true
@@ -649,6 +684,85 @@ func _update_customers(delta: float) -> void:
 		_customer_positions.erase(id)
 		_customer_orders.erase(id)
 		_customer_entering.erase(id)
+
+
+## 一人跟单的店（规格 §3.2）：排队的站在队伍位上，站不下的坐等位；付了钱的先坐等位等餐，没等位就站在一边；
+## 拿到餐、等不及走掉的客人走回门口再消失。
+func _update_customers_single(delta: float) -> void:
+	var queue := anchors.points("Queue")
+	var entrance := anchors.point("Entrance", Vector2(_world_size.x / 2.0, _world_size.y))
+	var waiting := anchors.points("Waiting")
+	var group := _wait_group()
+	var seats := anchors.points("Seats/" + group) if not group.is_empty() else []
+	var free_seats := mini(rules.current_stage().wait_seats, seats.size())
+	var standing := rules.current_stage().queue_capacity
+	var spots := {}
+	var seat := 0
+	var aside := 0
+	for c: Dictionary in rules.customers:
+		if c.state != "paid": continue
+		if seat < free_seats:
+			spots[c.id] = [seats[seat], true]
+			seat += 1
+		elif not waiting.is_empty():
+			spots[c.id] = [waiting[mini(aside, waiting.size() - 1)], false]
+			aside += 1
+	for i in rules.queue.size():
+		var id: int = rules.queue[i]
+		if (i < standing or seat >= free_seats) and not queue.is_empty(): spots[id] = [queue[mini(i, queue.size() - 1)], false]
+		elif seat < free_seats:
+			spots[id] = [seats[seat], true]
+			seat += 1
+	var patience: float = shop.fulfillment.leave_after
+	for c: Dictionary in rules.customers:
+		if not spots.has(c.id): continue
+		if not _customers.has(c.id):
+			var actor := _actor(Characters.customer_art(int(c.id)), _customer_height)
+			_sortables.add_child(actor)
+			_customers[c.id] = actor
+			_customer_positions[c.id] = entrance
+		var goal: Vector2 = spots[c.id][0]
+		var point: Vector2 = Vector2(_customer_positions[c.id]).move_toward(goal, delta * _customer_speed)
+		_customer_positions[c.id] = point
+		_customer_orders[c.id] = c
+		var arrived := point.distance_to(goal) <= 1.0
+		var actor: Node2D = _customers[c.id]
+		if c.state == "queue" and patience > 0.0:
+			var left: float = 1.0 - float(c.wait) / patience
+			actor.show_order(String(c.kind), left, 0 if left > 0.5 else 1 if left > 0.2 else 2)
+		else:
+			actor.show_order(String(c.kind), -1.0)
+		actor.display({"pos": point, "walking": not arrived, "seated": spots[c.id][1] and arrived, "phase": "idle", "task_label": ""}, rules.clock)
+		if _z_by_y: actor.z_index = int(actor.position.y)
+	# 不在规则层里的客人：走回门口再消失
+	for id in _customers.keys():
+		if spots.has(id): continue
+		var actor: Node2D = _customers[id]
+		actor.show_order("", -1.0)
+		var point: Vector2 = Vector2(_customer_positions[id]).move_toward(entrance, delta * _customer_speed)
+		_customer_positions[id] = point
+		actor.display({"pos": point, "walking": true, "phase": "idle", "task_label": ""}, rules.clock)
+		if _z_by_y: actor.z_index = int(actor.position.y)
+		if point.distance_to(entrance) <= 4.0:
+			actor.free()
+			_customers.erase(id)
+			_customer_positions.erase(id)
+			_customer_orders.erase(id)
+
+
+func _wait_group() -> String:
+	for g in shop.seat_groups:
+		if g.purpose == "wait": return g.id
+	return ""
+
+
+## 订单气泡里的图：店铺数据给了物品图标就用它，否则用 art/ui/drink_<id>.png
+func _order_icon(item: String) -> Texture2D:
+	var dish := shop.dish(item)
+	var key: String = dish.item if dish != null and not dish.item.is_empty() else item
+	for it in shop.items:
+		if it.id == key and it.icon != null: return it.icon
+	return Actor.drink_icon(item)
 
 
 func _along(points: PackedVector2Array, progress: float) -> Vector2:
@@ -700,6 +814,57 @@ func tuning_covers(screen: Vector2) -> bool:
 
 func _bought(what: String, gold_before: float) -> void:
 	if recorder != null: recorder.log_buy(what, gold_before)
+
+
+# ---------- 结店（§3.9）：完店后可以去关卡表里的下一家店，不强制 ----------
+
+## 关卡表里的下一家店（已做好数据的）；没有就是 null
+func next_shop() -> SpecShop:
+	var id := CAMPAIGN.next_shop(shop.id)
+	for city in CAMPAIGN.cities:
+		for entry in city.shops:
+			if entry.id == id and not entry.shop_path.is_empty(): return load(entry.shop_path)
+	return null
+
+
+func can_leave() -> bool:
+	return rules.completed_at >= 0.0 and profile != null and next_shop() != null
+
+
+## 结店总结卡：第一下“去下一家”只提醒什么都不保留，第二下才走
+func open_summary(armed := false) -> void:
+	if not can_leave(): return
+	var d := view.summary()
+	var nxt := next_shop().display_name
+	var lines: Array = [_t("summary_rating", {"stars": "★".repeat(int(d.rating)) + "☆".repeat(3 - int(d.rating))}),
+		_t("summary_sold", {"sold": d.sold, "lost": d.lost})]
+	var top: Array = d.top.map(func(row: Array) -> String: return "%s ×%d" % [view.dish_name(String(row[1])), int(row[0])])
+	if not top.is_empty(): lines.append(_t("summary_top", {"dishes": "、".join(top)}))
+	var levels: Array = []
+	for id in d.levels: levels.append("%s %d 级" % [view.station_name(id), int(d.levels[id])])
+	if not levels.is_empty(): lines.append(_t("summary_levels", {"levels": "、".join(levels)}))
+	lines.append(_t("summary_staff", {"staff": d.staff, "next": nxt}))
+	var seconds := int(d.seconds)
+	ui.popups.remove("summary")
+	ui.popups.push({"id": "summary", "title": _t("summary_title", {"shop": shop.display_name}), "title_size": 34, "medal": "medal",
+		"stats": [["clock", "完店用时", "%d 分 %02d 秒" % [seconds / 60, seconds % 60]], ["coin", "营业额", "%d 金" % int(d.earned)]],
+		"note": "\n".join(lines), "buttons": [{"label": _t("summary_stay"), "primary": true},
+			{"label": _t("summary_confirm") if armed else _t("summary_leave", {"next": nxt}),
+				"action": leave_shop if armed else open_summary.bind(true)}]})
+
+
+## 离开这家店：记一行结店纪录、清掉店内存档，换到下一家（从空店开始）
+func leave_shop() -> void:
+	if not can_leave(): return
+	var record := view.summary()
+	record.erase("levels")
+	profile.finish_shop(record)
+	if store != null: store.delete()
+	store = null
+	shop_left.emit(String(profile.shop))
+	if not change_scene_on_leave: return
+	rules = null
+	get_tree().change_scene_to_file(scene_file_path if not scene_file_path.is_empty() else "res://presentation/shop/shop_play.tscn")
 
 
 # ---------- 命令（界面组件调这些） ----------
@@ -823,8 +988,11 @@ func _staffing_warning() -> String:
 func _fit() -> void:
 	var size := get_viewport_rect().size
 	var fitted_size := _world_size + Vector2(0, _top_margin)
-	var world_factor := minf(size.x / fitted_size.x, size.y / MIN_VISIBLE_WORLD)
+	# 店面比界面宽的店（世界单位更小）：店面照样铺满宽度，界面另按 UI_WIDTH 排
+	var world_scale := fitted_size.x / UI_WIDTH
+	var world_factor := minf(size.x / fitted_size.x, size.y / (MIN_VISIBLE_WORLD * world_scale))
 	_world_factor = world_factor
+	_ui_factor = world_factor * world_scale
 	var world_height := fitted_size.y * world_factor
 	_scroll_min = minf(0.0, size.y - world_height)
 	_world_top = maxf(0.0, (size.y - world_height) / 2.0)
@@ -832,8 +1000,8 @@ func _fit() -> void:
 	$Canvas.scale = Vector2.ONE * world_factor
 	scroll_world_by(0.0)
 	$Overlay/UI.position = Vector2($Canvas.position.x, 0)
-	$Overlay/UI.scale = Vector2.ONE * world_factor
-	$Overlay/UI.size = Vector2(_world_size.x, size.y / world_factor)
+	$Overlay/UI.scale = Vector2.ONE * _ui_factor
+	$Overlay/UI.size = Vector2(UI_WIDTH, size.y / _ui_factor)
 	ui.fit_to_size($Overlay/UI.size)
 	if tuning != null: tuning.fit_to_size($Overlay/UI.size)
 
@@ -849,8 +1017,8 @@ func reveal_world(rect: Rect2) -> void:
 	var top: float = (canvas * rect.position).y
 	var bottom: float = (canvas * rect.end).y
 	var view_height: float = get_viewport_rect().size.y
-	var header: float = 110.0 * _world_factor
-	var footer: float = view_height - 120.0 * _world_factor
+	var header: float = 110.0 * _ui_factor
+	var footer: float = view_height - 120.0 * _ui_factor
 	if bottom > footer: scroll_world_by(footer - bottom)
 	elif top < header: scroll_world_by(header - top)
 

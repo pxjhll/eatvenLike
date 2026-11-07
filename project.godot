@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="eatvenLike"
-run/main_scene="res://presentation/pancake/pancake_play.tscn"
+run/main_scene="res://presentation/shop/shop_play.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 
 [autoload]

@@ -1,16 +1,15 @@
 extends SceneTree
 ## 排查用：旧模拟和 ShopRules 按同一串机器人操作逐帧对比，打印前 3 处分歧（金币、销量、来客、排队、员工位置）。
-##   godot --headless --path . -s tests/baselines/diff_old_sim.gd -- tea|pancake
-## 旧模拟删除时（第 4、5 个 PR）一起删。
+##   godot --headless --path . -s tests/baselines/diff_old_sim.gd
+## 只剩奶茶店（煎饼摊旧模拟第 4 个 PR 删了）；奶茶店旧模拟删除时（第 5 个 PR）一起删。
 const TeaSim := preload("res://game/tea_playtest/tea_shop_sim.gd")
-const PancakeSim := preload("res://game/pancake/pancake_sim.gd")
 const Replay := preload("res://tests/baselines/replay_rules.gd")
 
 func _initialize() -> void:
-	var which: String = OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "tea"
+	var which := "tea"
 	var base: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/%s_73b0ae3.json" % which))
 	var rules := ShopRules.new(load("res://content/shops/%s/shop.tres" % which))
-	var old = TeaSim.new() if which == "tea" else PancakeSim.new(0)
+	var old = TeaSim.new()
 	var actions: Array = base.actions
 	var next_action := 0
 	var reported := 0
