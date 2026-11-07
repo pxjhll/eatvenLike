@@ -158,3 +158,15 @@ func test_rating_uses_finish_time_and_walkouts() -> void:
 	var summary := view.summary()
 	check_eq(summary.shop, "pancake", "结店纪录记店铺 id")
 	check(summary.levels.has("rear_equipment") and summary.levels.has("topping"), "结店纪录有各台等级")
+
+
+func test_waiting_customers_never_leave_they_get_angry() -> void:
+	var rules := ShopRules.new(_only("soy"))
+	check_eq(rules.unlock("soy_milk"), "", "开豆浆机")
+	rules.workers.clear()
+	rules.run(5.0)
+	check(not rules.queue.is_empty(), "没人干活时客人排着")
+	var first: Dictionary = rules.customer(int(rules.queue[0]))
+	rules.run(120.0)
+	check_eq(rules.customer(int(first.id)).get("state", ""), "queue", "等了两分钟也不走")
+	check_eq(rules.order_mood(first), 2, "等久了生气")

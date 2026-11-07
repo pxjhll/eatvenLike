@@ -738,6 +738,9 @@ func _update_customers_single(delta: float) -> void:
 		if c.state == "queue" and patience > 0.0:
 			var left: float = 1.0 - float(c.wait) / patience
 			actor.show_order(String(c.kind), left, 0 if left > 0.5 else 1 if left > 0.2 else 2)
+		elif c.state == "queue":
+			# 不走的客人（和奶茶店一样）：等久了只变脸
+			actor.show_order(String(c.kind), -1.0, rules.order_mood(c))
 		else:
 			actor.show_order(String(c.kind), -1.0)
 		actor.display({"pos": point, "walking": not arrived, "seated": spots[c.id][1] and arrived, "phase": "idle", "task_label": ""}, rules.clock)

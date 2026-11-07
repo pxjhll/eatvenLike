@@ -287,7 +287,10 @@ func _any_angry() -> bool:
 		var lost: int = _view.rules.lost
 		var more := _lost_seen >= 0 and lost > _lost_seen
 		_lost_seen = lost
-		return more
+		if more: return true
+		for id in _view.rules.queue:
+			if _view.rules.order_mood(_view.rules.customer(id)) >= 2: return true
+		return false
 	for order in _view.rules.orders:
 		if _view.rules.order_mood(order) >= 2: return true
 	return false

@@ -62,16 +62,16 @@
 			"stage": 3
 		},
 		"30": {
-			"revenue": 7828.0,
-			"sold": 389,
-			"gold": 700.0,
+			"revenue": 7847.0,
+			"sold": 391,
+			"gold": 719.0,
 			"sold_by_dish": {
 				"soy": 168,
-				"plain": 49,
-				"guozi": 80,
-				"ham": 26,
-				"floss": 19,
-				"bacon": 27,
+				"plain": 51,
+				"guozi": 81,
+				"ham": 25,
+				"floss": 18,
+				"bacon": 28,
 				"family": 20
 			},
 			"staff": 4,
@@ -144,16 +144,16 @@
 			"stage": 3,
 			"start": 721.1,
 			"seconds": 1078.9,
-			"arrived": 235,
-			"full_seconds": 22.6,
+			"arrived": 240,
+			"full_seconds": 23.9,
 			"lost": 0,
-			"sold": 280,
-			"staff_work": 0.435,
-			"staff_walk": 0.511,
-			"staff_idle": 0.054,
+			"sold": 282,
+			"staff_work": 0.436,
+			"staff_walk": 0.512,
+			"staff_idle": 0.052,
 			"top_wait": "",
 			"top_wait_share": 0.0,
-			"full_share": 0.021
+			"full_share": 0.022
 		}
 	],
 	"levels": {

@@ -525,7 +525,7 @@ pay_at = "on_take"
 price_rounding = "order_round"
 leave_queue = "after_pay"
 wait_area = "wait_seats"
-leave_after = 60.0
+mood_seconds = Array[float]([15.0, 30.0])
 leave_who = "queued_unclaimed"
 arrival = "exponential"
 first_customer_delay = 1.5
@@ -709,7 +709,7 @@ when = Array[String](["angry:seats"])
 done_when = Array[String](["!page:shop"])
 cues = Array[Dictionary]([{
 "at": "station:front_counter",
-"text": "有客人等不及走了！坐垫不够，
+"text": "有客人等急了！坐垫坐满了，
 点前台加坐垫，客人能坐着等"
 }])
 skip_label = "知道了"
@@ -722,7 +722,7 @@ when = Array[String](["angry:staff"])
 done_when = Array[String](["!page:shop"])
 cues = Array[Dictionary]([{
 "at": "ui:tab:staff",
-"text": "有客人等不及走了！还有空岗位，
+"text": "有客人等急了！还有空岗位，
 点「员工」招一位伙伴"
 }])
 skip_label = "知道了"
@@ -735,7 +735,7 @@ when = Array[String](["angry:machine"])
 done_when = Array[String](["!page:shop"])
 cues = Array[Dictionary]([{
 "at": "station:{slow_id}",
-"text": "有客人等不及走了！{slow}跟不上，
+"text": "有客人等急了！{slow}跟不上，
 点它升级，出得更快"
 }])
 skip_label = "知道了"
