@@ -1,0 +1,17 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://content/audio/shop_cue_map.gd" id="1_cues"]
+
+[resource]
+script = ExtResource("1_cues")
+cues = Dictionary[String, StringName]({
+"box": &"unlock",
+"completed": &"complete",
+"connection": &"unlock",
+"flyer": &"flyers",
+"hired": &"hire",
+"sale": &"sale",
+"seat": &"unlock",
+"unlocked": &"unlock",
+"upgraded": &"upgrade"
+})

@@ -3,6 +3,7 @@ extends VBoxContainer
 
 const Icons := preload("res://presentation/ui/reference_icons.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
+const AudioControls := preload("res://presentation/audio/shop_audio_controls.gd")
 const Toggle := preload("res://presentation/ui/reference_toggle.gd")
 
 var _view: Node2D
@@ -23,6 +24,10 @@ func setup(view: Node2D, hud: Control) -> void:
 	_item("角色预览", "hat", func() -> void: hud.page_node("characters").select("rabbit"); hud.open_page("characters"))
 	pause_button = _item("暂停营业", "pause", func() -> void: view.rules.paused = not view.rules.paused; hud.refresh())
 	save_button = _item("保存进度", "save", func() -> void: view.save_now())
+	var audio_controls := AudioControls.new()
+	audio_controls.name = "AudioControls"
+	add_child(audio_controls)
+	audio_controls.setup(hud)
 	for node in view.art.find_children("*", "Node2D", true, false):
 		if node.has_meta("toggle_label"): _toggle(node)
 	restart_button = _item("重新开始", "trash", hud.open_page.bind("restart"))
@@ -71,6 +76,7 @@ func _toggle(node: Node2D) -> void:
 		button.add_theme_stylebox_override(state, ReferenceTheme.style("card", 14, state))
 	button.set_pressed_no_signal(node.visible)
 	button.toggled.connect(func(on: bool) -> void: node.visible = on)
+	_hud.bind_action(button)
 	add_child(button)
 	var knob := Toggle.new()
 	knob.anchor_left = 1.0

@@ -1,5 +1,6 @@
 [gd_resource type="Resource" script_class="SpecShop" format=3]
 
+[ext_resource type="AudioStream" path="res://art/audio/milk_tea_afternoon.ogg" id="music_theme"]
 [ext_resource type="Script" path="res://content/rules/spec_connection.gd" id="1_tjgba"]
 [ext_resource type="Script" path="res://content/rules/spec_dish.gd" id="2_ctjwf"]
 [ext_resource type="Script" path="res://content/rules/spec_step.gd" id="3_xwcms"]
@@ -2400,6 +2401,7 @@ goals = SubResource("Resource_ufdpv")
 layout = SubResource("Resource_45mrc")
 guide = Array[ExtResource("12_anqca")]([SubResource("Resource_4p3jx"), SubResource("Resource_1wmsa"), SubResource("Resource_ho7ym"), SubResource("Resource_tsvuk"), SubResource("Resource_njies"), SubResource("Resource_nwen5"), SubResource("Resource_pkfa0"), SubResource("Resource_h2bkm"), SubResource("Resource_4lrgi"), SubResource("Resource_ifvmf"), SubResource("Resource_m6brp"), SubResource("Resource_j7ryq"), SubResource("Resource_l8d5n"), SubResource("Resource_tb00n"), SubResource("Resource_wx7ac"), SubResource("Resource_fm6n5")])
 flavor_flow = 0.12
+background_music = ExtResource("music_theme")
 scene_path = "res://presentation/shops/tea/tea_art.tscn"
 save_file = "shop_tea.json"
 scale_anchor = "cup"

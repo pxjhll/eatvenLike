@@ -39,10 +39,10 @@ func setup(view: Node2D) -> void:
 	_apply_theme()
 	for key in Characters.NAMES:
 		_portraits[key] = Characters.portrait(key)
-	menu_button.pressed.connect(func() -> void: open_page("shop" if page == "menu" else "menu"))
-	goal_button.pressed.connect(open_page.bind("goals"))
-	close_button.pressed.connect(open_page.bind("shop"))
-	speed_button.pressed.connect(func() -> void:
+	bind_action(menu_button, func() -> void: open_page("shop" if page == "menu" else "menu"))
+	bind_action(goal_button, open_page.bind("goals"))
+	bind_action(close_button, open_page.bind("shop"))
+	bind_action(speed_button, func() -> void:
 		_view._speed_factor = 1.0 if _view._speed_factor >= 4.0 else _view._speed_factor * 2.0
 		refresh())
 	%Shade.gui_input.connect(func(event: InputEvent) -> void:
@@ -50,8 +50,8 @@ func setup(view: Node2D) -> void:
 			open_page("shop")
 		elif event is InputEventScreenTouch and event.pressed:
 			open_page("shop"))
-	$Selection/Row/Details.pressed.connect(open_page.bind("staff"))
-	$Selection/Row/Dismiss.pressed.connect(func() -> void: show_selection = false; refresh())
+	bind_action($Selection/Row/Details, open_page.bind("staff"))
+	bind_action($Selection/Row/Dismiss, func() -> void: show_selection = false; refresh())
 	popups = PopupQueue.new()
 	popups.name = "Popups"
 	add_child(popups)
@@ -79,7 +79,7 @@ func register_tab(id: String, label: String, icon: String, page_id := "") -> But
 	button.add_theme_constant_override("h_separation", 14)
 	button.add_theme_font_size_override("font_size", 32)
 	var target := page_id if not page_id.is_empty() else id
-	button.pressed.connect(open_page.bind(target))
+	bind_action(button, open_page.bind(target))
 	%Tabs.add_child(button)
 	_tabs.append({"id": id, "page": target, "button": button})
 	_style_tabs()
@@ -208,12 +208,18 @@ func _nowrap(label: Label) -> Label:
 	return label
 
 
+func bind_action(button: BaseButton, action := Callable()) -> void:
+	button.pressed.connect(ShopAudio.play_cue.bind(&"tap"))
+	if action.is_valid():
+		button.pressed.connect(action)
+
+
 func _action(parent: Node, text: String, callback: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size.y = 60
 	button.focus_mode = Control.FOCUS_NONE
-	button.pressed.connect(callback)
+	bind_action(button, callback)
 	button.expand_icon = true
 	button.add_theme_constant_override("icon_max_width", 24)
 	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_focus_color"]:

@@ -115,7 +115,7 @@ func _rebuild() -> void:
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.focus_mode = Control.FOCUS_NONE
 		card.set_meta("worker_id", int(worker.id))
-		card.pressed.connect(func() -> void: _view.selected_worker = int(worker.id); _hud.refresh())
+		_hud.bind_action(card, func() -> void: _view.selected_worker = int(worker.id); _hud.refresh())
 		_cards.add_child(card)
 		var content := HBoxContainer.new()
 		content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

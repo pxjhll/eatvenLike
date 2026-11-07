@@ -39,6 +39,8 @@ jobs:
         run: timeout 60s ./godot --headless --path . -s tests/render_shop_extend.gd
       - name: Generic shop scene - pancake stall (guide, art, summary, next shop) real-click regression
         run: timeout 60s ./godot --headless --path . -s tests/render_shop_pancake.gd
+      - name: Generic shop audio integration
+        run: timeout 30s ./godot --headless --path . -s tests/render_shop_audio.gd
       - name: Animated character frame and gameplay regression
         run: |
           timeout 30s ./godot --headless --path . -s tests/test_rabbit_frame_atlas.gd

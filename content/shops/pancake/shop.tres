@@ -1,5 +1,6 @@
 [gd_resource type="Resource" script_class="SpecShop" format=3]
 
+[ext_resource type="AudioStream" path="res://art/audio/pancake_morning.ogg" id="music_theme"]
 [ext_resource type="Script" path="res://content/rules/spec_connection.gd" id="1_fapgp"]
 [ext_resource type="Script" path="res://content/rules/spec_dish.gd" id="2_713ex"]
 [ext_resource type="Script" path="res://content/rules/spec_step.gd" id="3_nwmtm"]
@@ -1615,6 +1616,7 @@ staff = SubResource("Resource_q5hjk")
 goals = SubResource("Resource_wtmls")
 layout = SubResource("Resource_ldojk")
 guide = Array[ExtResource("12_p70m1")]([SubResource("Resource_3rjv3"), SubResource("Resource_2y8k5"), SubResource("Resource_f53vs"), SubResource("Resource_wn2x6"), SubResource("Resource_nqi46"), SubResource("Resource_h5pau"), SubResource("Resource_ow3tk"), SubResource("Resource_u2yoc"), SubResource("Resource_psx6r"), SubResource("Resource_alpd3"), SubResource("Resource_rbnse")])
+background_music = ExtResource("music_theme")
 scene_path = "res://presentation/shops/pancake/pancake_art.tscn"
 save_file = "shop_pancake.json"
 scale_anchor = "cup"
