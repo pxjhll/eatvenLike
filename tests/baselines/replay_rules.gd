@@ -1,12 +1,14 @@
 extends SceneTree
 ## 通用规则层整店回归（规格 §7）：把旧模拟基准里机器人的那串操作按原时刻在 ShopRules 上重放，
-## 和 tests/baselines/<店>_73b0ae3.json 对比 5 / 10 / 20 / 30 分钟营业额、销量、完店时刻，偏差都要在 ±5% 内。
+## 和 tests/baselines/ 里各店的基准（BASELINES）对比 5 / 10 / 20 / 30 分钟营业额、销量、完店时刻，偏差都要在 ±5% 内。
 ##   godot --headless --path . -s tests/baselines/replay_rules.gd [-- --verbose]
 ## 退出码 1 = 有一项超出范围。
 
 ## 基准里记的时刻（分钟）
 const CHECKPOINTS := [5, 10, 20, 30, 45]
 const SHOPS := {"tea": "res://content/shops/tea/shop.tres", "pancake": "res://content/shops/pancake/shop.tres"}
+## 各店的基准文件：奶茶店仍对 main 73b0ae3 旧模拟录下的；煎饼摊改过数值，用 record_rules.gd 在通用规则上重录
+const BASELINES := {"tea": "tea_73b0ae3.json", "pancake": "pancake_rules.json"}
 const TOLERANCE := 0.05
 
 
@@ -14,7 +16,7 @@ func _initialize() -> void:
 	var verbose := "--verbose" in OS.get_cmdline_user_args()
 	var failed := false
 	for id in SHOPS:
-		var base: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/%s_73b0ae3.json" % id))
+		var base: Dictionary = baseline(id)
 		var result := replay(load(SHOPS[id]), base)
 		var rows := compare(base, result)
 		print("== %s ==" % id)
@@ -25,6 +27,10 @@ func _initialize() -> void:
 			print("  失败的操作：", result.failed_actions)
 			for seg in result.segments: print("  ", seg)
 	quit(1 if failed else 0)
+
+
+static func baseline(id: String) -> Dictionary:
+	return JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/" + BASELINES[id]))
 
 
 static func replay(shop: SpecShop, base: Dictionary) -> Dictionary:

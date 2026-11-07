@@ -1205,7 +1205,7 @@ icon = "res://art/pancake/icons/pancake_packet.tres"
 script = ExtResource("9_u2yoc")
 id = "family"
 display_name = "全家福"
-requires_level = 5
+requires_level = 4
 
 [sub_resource type="Resource" id="Resource_tv2em"]
 script = ExtResource("22_kr8mi")
@@ -1255,10 +1255,16 @@ kind = "price"
 price_part = "topping"
 value = 1.08
 
+[sub_resource type="Resource" id="Resource_14lfw"]
+script = ExtResource("7_f53vs")
+kind = "open_flavor"
+target = "family"
+op = "set"
+
 [sub_resource type="Resource" id="Resource_13kgt"]
 script = ExtResource("8_wn2x6")
 cost = 145
-effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_q646e")])
+effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_q646e"), SubResource("Resource_14lfw")])
 
 [sub_resource type="Resource" id="Resource_anqe8"]
 script = ExtResource("7_f53vs")
@@ -1266,16 +1272,10 @@ kind = "price"
 price_part = "topping"
 value = 1.08
 
-[sub_resource type="Resource" id="Resource_14lfw"]
-script = ExtResource("7_f53vs")
-kind = "open_flavor"
-target = "family"
-op = "set"
-
 [sub_resource type="Resource" id="Resource_uxc0q"]
 script = ExtResource("8_wn2x6")
 cost = 225
-effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_anqe8"), SubResource("Resource_14lfw")])
+effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_anqe8")])
 
 [sub_resource type="Resource" id="Resource_r73kj"]
 script = ExtResource("7_f53vs")

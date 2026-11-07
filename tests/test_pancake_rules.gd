@@ -34,8 +34,10 @@ func test_one_staff_follows_a_food_order_through_every_station() -> void:
 	rules.gold = 9999
 	for id in ["soy_milk", "rear_equipment", "fryer", "topping"]: check_eq(rules.unlock(id), "", "开放" + id)
 	check(rules.station_unlocked("raw_ingredients"), "面粉鸡蛋和鏊子一起开")
-	for i in 4: rules.upgrade("topping")
-	check(rules.dish_open("family"), "加料台 5 级开全家福")
+	for i in 2: rules.upgrade("topping")
+	check(not rules.dish_open("family"), "加料台 3 级还没有全家福")
+	rules.upgrade("topping")
+	check(rules.dish_open("family"), "加料台 4 级开全家福")
 	var visited := {}
 	var gold_before := rules.gold
 	var paid_at := -1.0
