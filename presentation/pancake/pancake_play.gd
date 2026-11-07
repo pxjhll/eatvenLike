@@ -12,6 +12,7 @@ const Guide := preload("res://presentation/pancake/pancake_guide.gd")
 const Art := preload("res://presentation/pancake/pancake_art.gd")
 const Profile := preload("res://game/app/profile.gd")
 const FONT := preload("res://art/ui/graybox_font.ttf")
+const AudioControls := preload("res://presentation/audio/shop_audio_controls.gd")
 const COIN := preload("res://art/ui/coin.png")
 const SOURCE_SIZE := Vector2(937, 1678)
 const TEA_SCENE := "res://presentation/tea_playtest/tea_playtest.tscn"
@@ -59,6 +60,7 @@ var _toast := Label.new()
 var _toast_time := 0.0
 var _done_shown := false
 var _last_event := 0
+var _last_earned := 0.0
 
 
 func _ready() -> void:
@@ -69,9 +71,12 @@ func _ready() -> void:
 	# 已经开到奶茶店了：直接进奶茶店
 	if profile.shop == "tea" and store != null:
 		get_tree().change_scene_to_file.call_deferred(TEA_SCENE)
+	else:
+		ShopAudio.enter_shop(&"pancake")
 	sim = Sim.new(int(Time.get_unix_time_from_system()))
 	var seen_guides: Array = []
 	if store != null and store.load_into(sim): seen_guides = store.guides
+	_last_earned = sim.earned
 	for key in ICON_NODES:
 		var node: Sprite2D = art.source_node(ICON_NODES[key])
 		if node != null: _icons[key] = node.texture
@@ -103,6 +108,7 @@ func restart() -> void:
 	_customer_actors.clear()
 	_done_shown = false
 	_last_event = 0
+	_last_earned = sim.earned
 	_sync_art()
 	_refresh_hud()
 
@@ -112,7 +118,13 @@ func _process(delta: float) -> void:
 	if guide.freezes() or _summary.visible: dt = 0.0
 	var steps := maxi(1, ceili(dt / 0.05))
 	if dt > 0.0:
+		var was_complete := sim.completed_at >= 0.0
 		for i in steps: sim.step(dt / steps)
+		if not was_complete and sim.completed_at >= 0.0:
+			ShopAudio.play_cue(&"complete")
+	if sim.earned > _last_earned:
+		ShopAudio.play_cue(&"sale")
+	_last_earned = sim.earned
 	_sync_actors()
 	_refresh_hud()
 	guide.refresh(delta)
@@ -184,6 +196,7 @@ func _sync_art() -> void:
 
 func _try_unlock(key: String) -> void:
 	if sim.unlock(key):
+		ShopAudio.play_cue(&"unlock")
 		_sync_art()
 		_show_toast("开放了%s" % Sim.STATION_NAMES[key])
 	else:
@@ -273,6 +286,7 @@ func _build_hud() -> void:
 	_finish.visible = false
 	_finish.pressed.connect(open_summary)
 	row.add_child(_finish)
+	row.add_child(AudioControls.new())
 	_hint.add_theme_font_size_override("font_size", 21)
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	top_box.add_child(_hint)
@@ -298,13 +312,20 @@ func _build_hud() -> void:
 		b.focus_mode = Control.FOCUS_NONE
 		bottom.add_child(b)
 	_flyer.pressed.connect(func() -> void:
-		if sim.send_flyers(): _show_toast("发传单：来了一波客人")
+		if sim.send_flyers():
+			ShopAudio.play_cue(&"flyers")
+			_show_toast("发传单：来了一波客人")
 	)
 	_hire.pressed.connect(func() -> void:
-		if sim.hire(): _show_toast("招到新员工")
+		if sim.hire():
+			ShopAudio.play_cue(&"hire")
+			_show_toast("招到新员工")
 	)
 	_upgrade_toggle.text = "升级"
-	_upgrade_toggle.pressed.connect(func() -> void: _upgrade_panel.visible = not _upgrade_panel.visible)
+	_upgrade_toggle.pressed.connect(func() -> void:
+		ShopAudio.play_cue(&"tap")
+		_upgrade_panel.visible = not _upgrade_panel.visible
+	)
 
 	_upgrade_panel.visible = false
 	_upgrade_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE)
@@ -319,7 +340,9 @@ func _build_hud() -> void:
 		b.custom_minimum_size = Vector2(520, 64)
 		b.focus_mode = Control.FOCUS_NONE
 		b.pressed.connect(func() -> void:
-			if sim.upgrade(key): _show_toast("%s 升到 %d 级" % [sim.cfg.upgrades[key].name, sim.levels[key]])
+			if sim.upgrade(key):
+				ShopAudio.play_cue(&"upgrade")
+				_show_toast("%s 升到 %d 级" % [sim.cfg.upgrades[key].name, sim.levels[key]])
 		)
 		_upgrade_list.add_child(b)
 		_upgrade_buttons[key] = b
@@ -507,6 +530,7 @@ func _build_summary(root: Control) -> void:
 
 
 func open_summary() -> void:
+	ShopAudio.play_cue(&"tap")
 	var d: Dictionary = sim.summary()
 	var lines := []
 	lines.append("评分　%s" % ("★".repeat(int(d.rating)) + "☆".repeat(3 - int(d.rating))))

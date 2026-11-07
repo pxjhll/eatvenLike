@@ -41,6 +41,7 @@ var _toast: Label
 var _toast_left := 0.0
 var _last_sold := 0
 var _last_revenue := 0
+var _done_shown := false
 var _hire_button: Button
 var _train_button: Button
 var _pause_button: Button
@@ -152,6 +153,7 @@ func _ready() -> void:
 	for node in art.find_children("*", "Node2D", true, false):
 		if node.get_meta("art_layer", "") in ["actors", "drinks"]:
 			node.visible = false
+	ShopAudio.enter_shop(&"tea")
 	_build_ui()
 	_build_glass_toggle()
 	_build_tuning()
@@ -208,6 +210,7 @@ func _reset_visuals() -> void:
 	_known_seats.clear()
 	_last_sold = sim.sold
 	_last_revenue = _revenue()
+	_done_shown = sim.has_method("shop_complete") and sim.shop_complete()
 	for pop in _pops:
 		pop.label.free()
 	_pops.clear()
@@ -306,9 +309,13 @@ func _refresh(delta: float) -> void:
 	if "diners" in sim:
 		art.get_node("Sortables/DiningArea").refresh(sim.seats, sim.diners, _font, sim.elapsed, delta if not sim.paused and ui.page != "characters" and not (guide != null and guide.freezes()) else 0.0)
 	if sim.sold > _last_sold:
+		ShopAudio.play_cue(&"sale")
 		_pop_income(_revenue() - _last_revenue)
 	_last_sold = sim.sold
 	_last_revenue = _revenue()
+	if not _done_shown and sim.has_method("shop_complete") and sim.shop_complete():
+		_done_shown = true
+		ShopAudio.play_cue(&"complete")
 
 
 func _total(stock: Dictionary) -> int:
@@ -607,6 +614,7 @@ func hire_worker() -> void:
 		return
 	var gold_before: int = sim.gold
 	if sim.hire():
+		ShopAudio.play_cue(&"hire")
 		_bought("hire", gold_before)
 		selected_worker = int(all_staff().back().id)
 		var deployed: bool = not sim.has_method("deploy_worker") or sim.deploy_worker(selected_worker).is_empty()
@@ -617,6 +625,7 @@ func hire_worker() -> void:
 
 func _train_selected() -> void:
 	if sim.train(selected_worker):
+		ShopAudio.play_cue(&"upgrade")
 		_show_toast("培养完成，擅长的能力已提升。")
 		save_now(false)
 	_refresh(0.0)
@@ -626,7 +635,9 @@ func buy_staff_upgrade(side: String) -> void:
 	var info: Dictionary = sim.staff_upgrade_info(side)
 	var gold_before: int = sim.gold
 	var error: String = sim.buy_staff_upgrade(side)
-	if error.is_empty(): _bought("staff_%s/%s" % [side, info.name], gold_before)
+	if error.is_empty():
+		ShopAudio.play_cue(&"upgrade")
+		_bought("staff_%s/%s" % [side, info.name], gold_before)
 	_show_toast(error if not error.is_empty() else "%s升级：%s" % ["前台" if side == "front" else "后厨", info.name])
 	if error.is_empty():
 		save_now(false)
@@ -808,6 +819,10 @@ func station_action(action: String, station: String, material := "") -> void:
 	var done: String = {"unlock": "设备已解锁。", "box": "原料箱已解锁。", "seat": "加了两个座位。", "flyers": "传单发出去了。", "flyer_upgrade": "传单升级了。"}.get(action, "升级完成。")
 	_show_toast(error if not error.is_empty() else done)
 	if error.is_empty():
+		match action:
+			"unlock", "box", "seat": ShopAudio.play_cue(&"unlock")
+			"flyers": ShopAudio.play_cue(&"flyers")
+			"upgrade", "material", "flyer_upgrade": ShopAudio.play_cue(&"upgrade")
 		var level: int = sim.station_levels.get(station, 0) if action != "material" else sim.material_levels.get(station, {}).get(material, 0)
 		_bought("%s %s%s Lv%d" % [action, station, ("/" + material) if material != "" else "", level], gold_before)
 		save_now(false)
@@ -1000,6 +1015,7 @@ func buy_belt(id := BELT_ID) -> void:
 	if not error.is_empty():
 		_show_toast(error)
 		return
+	ShopAudio.play_cue(&"unlock")
 	_bought("belt " + id, before)
 	_show_toast("传送带装好了：" + String(BELT_NOTES.get(id, "")).get_slice("，", 0))
 	save_now(false)

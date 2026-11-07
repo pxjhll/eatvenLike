@@ -455,6 +455,7 @@ func _stat(parent: Node, icon: String, heading: String, value: String) -> void:
 
 
 func _confirm() -> void:
+	ShopAudio.play_cue(&"tap")
 	if active == "welcome":
 		seen.welcome = true
 		active = "opening"
@@ -464,6 +465,7 @@ func _confirm() -> void:
 
 
 func _skip() -> void:
+	ShopAudio.play_cue(&"tap")
 	if active in ["welcome", "opening", "done"]:
 		seen.welcome = true
 		seen.opening = true

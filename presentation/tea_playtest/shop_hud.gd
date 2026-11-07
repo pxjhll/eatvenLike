@@ -5,6 +5,7 @@ const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const StationPanel := preload("res://presentation/tea_playtest/station_panel.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
 const CharacterPreview := preload("res://presentation/characters/character_preview.gd")
+const AudioControls := preload("res://presentation/audio/shop_audio_controls.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Icons := preload("res://presentation/ui/reference_icons.gd")
 const NAMES := Characters.NAMES
@@ -326,6 +327,7 @@ func _build_pages() -> void:
 	var drag_hint := _text(staff, "拖到柜台 = 前台（接待客人）；拖到工位或空地 = 后厨", 19, true)
 	drag_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var menu := _column("menu")
+	menu.add_child(AudioControls.new())
 	character_preview_button = _menu_action(menu, "角色预览", "hat", open_character_preview)
 	pause_button = _menu_action(menu, "暂停营业", "pause", func() -> void: _view.sim.paused = not _view.sim.paused; refresh())
 	save_button = _menu_action(menu, "保存进度", "save", func() -> void: _view.save_now())
@@ -706,6 +708,8 @@ func open_page(next_page: String) -> void:
 		return
 	if is_instance_valid(_view._drag):
 		_view._drag.cancel()
+	if page != next_page:
+		ShopAudio.play_cue(&"tap")
 	page = next_page
 	%Shade.visible = page != "shop"
 	%Shade.color.a = 0.34

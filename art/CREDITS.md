@@ -5,3 +5,7 @@
 The rabbit walking animation uses the user's original frames. Copies, source timing and provenance remain in `art_src/rabbit_walk_frames/`; runtime resources are in `art/rabbit_walk_frames/`.
 
 Font credits and the complete license are in `art/ui/font_license.txt`. Glyph subsetting changes only coverage, not letter design. Rebuild the subset with `tools/subset_font.py` and an appropriate licensed source font. The existing font filename is retained so current scenes and scripts keep their resource references.
+
+## Audio
+
+The two shop themes and seven interaction cues in `art/audio/` are original compositions and synthesized sounds made for eatvenLike. They use no third-party samples or recordings. The editable score and rendering instructions are in `art_src/audio/render.py`.
