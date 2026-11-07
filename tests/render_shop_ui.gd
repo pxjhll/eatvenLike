@@ -84,7 +84,6 @@ func _run() -> void:
 	_check(clipped_point.y < scroll.get_global_rect().position.y, "scroll fixture clips card under the panel heading")
 	await _gesture(clipped_point, _world(Vector2(325, 210)))
 	_check(view.sim.workers[0].post == "" and hud.page == "staff", "clipped roster card cannot be dragged through panel heading")
-	print("DEBUG L86 posts=", view.sim.workers.map(func(w): return [w.id, w.post]), " scroll=", view._scroll, " page=", hud.page)
 	scroll.scroll_vertical = 0
 	sheet.offset_top = original_sheet_top
 	var header: Control = hud.get_node("Header")
@@ -99,18 +98,22 @@ func _run() -> void:
 	_check(hud.blocks_world(header_target), "expanded header fixture overlaps the upper workstation art")
 	await _gesture(view._staff_cards[0].get_global_rect().get_center(), header_target)
 	_check(view.sim.workers[0] == before_header_drop and not view._drag.dragging, "dropping over header preserves employee assignment and work")
-	print("DEBUG L100 posts=", view.sim.workers.map(func(w): return [w.id, w.post]), " scroll=", view._scroll, " page=", hud.page)
 	header.offset_bottom = original_header_bottom
 	await _click(hud.staff_button)
-	print("DEBUG after staff click page=", hud.page, " btn=", hud.staff_button.get_global_rect(), " vp=", view.get_viewport_rect().size, " root=", root.size)
 	root.size = Vector2i(720, 1280)
 	await _layout()
 	await process_frame
-	print("DEBUG after layout page=", hud.page, " w0=", view.sim.workers[0].pos, " w1=", view.sim.workers[1].pos, " press=", _world(view.sim.workers[0].pos + Vector2(0, -65)), " blocks=", hud.blocks_world(_world(view.sim.workers[0].pos + Vector2(0, -65))))
-	# An open sheet must not let a gesture pick the actor behind it.
-	await _gesture(_world(view.sim.workers[0].pos + Vector2(0, -65)), _world(Vector2(325, 210)))
-	_check(view.sim.workers[0].post == "" and not view._drag.dragging, "overlay blocks actor drag through its panel")
-	print("DEBUG L108 posts=", view.sim.workers.map(func(w): return [w.id, w.post]), " scroll=", view._scroll, " page=", hud.page)
+	# An open sheet must not let a gesture pick the actor behind it. Press on the actor's
+	# body, but not where a roster card happens to sit on top: dragging a card is a real drag.
+	var actor_point := _world(view.sim.workers[0].pos + Vector2(0, -65))
+	for lift in [-65.0, -30.0, -100.0, -120.0, -10.0]:
+		var candidate := _world(view.sim.workers[0].pos + Vector2(0, lift))
+		if not view._staff_cards.any(func(card: Button) -> bool: return hud.card_hit_test(card, candidate)):
+			actor_point = candidate
+			break
+	var posts_under_sheet: Array = view.sim.workers.map(func(worker: Dictionary) -> String: return worker.post)
+	await _gesture(actor_point, _world(Vector2(325, 210)))
+	_check(view.sim.workers.map(func(worker: Dictionary) -> String: return worker.post) == posts_under_sheet and not view._drag.dragging, "overlay blocks actor drag through its panel")
 	await _click(hud.home_button)
 	# Press where the hidden card was, but not on a worker standing on the floor there:
 	# grabbing a visible worker by the body is a real drag, not what this check is about.
@@ -128,7 +131,6 @@ func _run() -> void:
 	var posts_before: Array = view.sim.workers.map(func(worker: Dictionary) -> String: return worker.post)
 	await _gesture(hidden_card, _world(Vector2(325, 210)))
 	_check(view.sim.workers.map(func(worker: Dictionary) -> String: return worker.post) == posts_before, "hidden staff cards cannot start a drag")
-	print("DEBUG L125 posts=", view.sim.workers.map(func(w): return [w.id, w.post]), " scroll=", view._scroll, " page=", hud.page)
 	await _click(hud.staff_button)
 	await _gesture(view._staff_cards[0].get_global_rect().get_center(), _world(Vector2(325, 210)))
 	_check(view.sim.workers[0].post == "boil" and hud.page == "shop", "dragging visible roster card dismisses sheet and seats real employee")
@@ -238,3 +240,4 @@ func _check(ok: bool, message: String) -> void:
 	if not ok:
 		failures += 1
 		push_error("SHOP UI GUI: " + message)
+
