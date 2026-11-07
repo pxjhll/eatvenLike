@@ -11,6 +11,8 @@ var task_text: Callable = func(worker: Dictionary) -> String: return String(work
 var work_direction: Callable = func(_station: String) -> int: return -1
 ## 正在“接”现成饮品（从展示柜接）的员工也算在干活：{src: 机器 id, items: [...]} 由外面判断
 var pouring_station: Callable = func(_worker: Dictionary) -> String: return ""
+## 订单气泡里的图：物品 → 贴图（默认 art/ui/drink_<id>.png）
+var order_icon: Callable = func(item: String) -> Texture2D: return drink_icon(item)
 var body := Sprite2D.new()
 var carried := Sprite2D.new()
 var amount := Label.new()
@@ -85,7 +87,9 @@ func show_order(item: String, patience: float, mood := 0, takeaway := false) -> 
 	_mood = mood
 	_takeaway = takeaway
 	task.visible = false
-	var texture := drink_icon(item)
+	_order_cup.visible = not item.is_empty()
+	if item.is_empty(): return
+	var texture: Texture2D = order_icon.call(item)
 	_order_cup.texture = texture
 	_order_cup.scale = Vector2.ONE * 40.0 / texture.get_height()
 	_order_cup.position = Vector2(-46, -_height - 62)
@@ -156,7 +160,8 @@ func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -
 	var poured: String = pouring_station.call(worker)
 	if not walking and not worker.get("seated", false) and frame_actor.has_action("work") and (worker.get("phase", "idle") == "work" or not poured.is_empty()):
 		desired = "work"
-		var station: String = poured if not poured.is_empty() else String(job.get("src", ""))
+		# 一人跟单的店没有 job：在哪个点干活就按哪台机器的朝向
+		var station: String = poured if not poured.is_empty() else String(job.get("src", worker.get("target", "")))
 		var direction: int = work_direction.call(station)
 		if not worker.has("facing") and direction >= 0:
 			frame_actor.set_direction(direction)

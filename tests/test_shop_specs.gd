@@ -1,9 +1,9 @@
 extends "res://tests/test_case.gd"
 ## 通用店铺数据（规格 §4）和 main 73b0ae3 旧模拟逐项对数：售价、升级价格、等级上限、秒数、每锅份数、
-## 封口位、星级、传单、座位、员工、阶段、任务、履约常量。旧模拟退役前（第 4、5 个 PR）这组用例一直保留。
+## 封口位、星级、传单、座位、员工、阶段、任务、履约常量。奶茶店旧模拟退役前（第 5 个 PR）这组用例一直保留。
+## 煎饼摊旧模拟已在第 4 个 PR 删掉，它的数据由整店回放对照基准（test_shop_rules）。
 
 const TeaSim := preload("res://game/tea_playtest/tea_shop_sim.gd")
-const PancakeSim := preload("res://game/pancake/pancake_sim.gd")
 const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
 const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
 const CAMPAIGN: SpecCampaign = preload("res://content/campaign/campaign.tres")
@@ -174,71 +174,6 @@ func test_tea_flyer_seats_staff_and_fulfillment_match_old_sim() -> void:
 	check_eq(f.ramp_orders, sim.RAMP_ORDERS, "新菜爬坡人数")
 	check_eq(TEA.start_gold, sim.CONFIG.starting_gold, "开局金币")
 	check_eq(TEA.flavor_flow, p.flavor_flow, "口味客流")
-
-
-# ---------- 煎饼摊 ----------
-
-func test_pancake_upgrades_match_old_sim() -> void:
-	var sim = PancakeSim.new(0)
-	for key in sim.cfg.upgrades:
-		var t := _level_track(PANCAKE, key)
-		check_eq(t.max_level(), int(sim.cfg.upgrades[key].max), key + " 最高级")
-		sim.unlocked[key] = true
-		for lv in range(1, t.max_level()):
-			sim.levels[key] = lv
-			check_eq(t.cost(lv), sim.upgrade_cost(key), "%s Lv%d 价格" % [key, lv])
-			if sim.cfg.upgrades[key].effect == "speed":
-				check(is_equal_approx(t.fold("duration", lv, 1.0), sim._speed(key)), "%s Lv%d 秒数倍率" % [key, lv])
-	for key in sim.STATION_ORDER:
-		check_eq(PANCAKE.station(key).unlock_cost, sim.unlock_cost(key), key + " 解锁价")
-	check_eq(PANCAKE.station("raw_ingredients").companion_of, "rear_equipment", "面糊鸡蛋随鏊子开")
-
-
-func test_pancake_prices_match_old_sim_at_every_level() -> void:
-	var sim = PancakeSim.new(0)
-	for soy_lv in range(1, 9):
-		for top_lv in range(1, 9):
-			sim.levels.soy_milk = soy_lv
-			sim.levels.topping = top_lv
-			var levels := {"soy_milk": soy_lv, "topping": top_lv}
-			for dish in PANCAKE.dishes:
-				check(is_equal_approx(SpecPrice.dish_price(PANCAKE, dish, levels), sim.price(dish.id)),
-					"%s 豆浆 Lv%d 加料 Lv%d 售价" % [dish.id, soy_lv, top_lv])
-
-
-func test_pancake_steps_stages_and_rules_match_old_sim() -> void:
-	var sim = PancakeSim.new(0)
-	for dish in PANCAKE.dishes:
-		var customer := {"kind": dish.id, "soy": dish.id == "soy"}
-		var old: Array = sim._order_steps(customer).slice(1, -1)
-		check_eq(dish.steps.size(), old.size(), dish.id + " 工序步数")
-		for index in mini(dish.steps.size(), old.size()):
-			check_eq(dish.steps[index].label, old[index][3], "%s 第 %d 步" % [dish.id, index])
-			check(is_equal_approx(dish.steps[index].seconds * dish.steps[index].repeat, float(old[index][2])), "%s 第 %d 步秒数" % [dish.id, index])
-	var cfg: Dictionary = sim.cfg
-	for index in PANCAKE.stages.size():
-		var stage := PANCAKE.stages[index]
-		check_eq(stage.customer_interval, cfg.interval[index], "段 %d 间隔" % index)
-		check_eq(stage.queue_capacity, int(cfg.standing[index]), "段 %d 站位" % index)
-		check_eq(stage.wait_seats, int(cfg.cushions[index]), "段 %d 坐垫" % index)
-		check_eq(stage.staff_slots.get("", -1), int(cfg.staff_slots[index]), "段 %d 人数" % index)
-		check_eq(stage.order_weights.size(), cfg.weights[index].size(), "段 %d 权重" % index)
-	var tasks := 0
-	for stage in PANCAKE.stages: tasks += stage.tasks.size()
-	check_eq(tasks, cfg.tasks.size(), "任务数")
-	var f := PANCAKE.fulfillment
-	check_eq(f.addon_chance, cfg.soy_addon, "顺带豆浆概率")
-	check_eq(f.leave_after, cfg.patience, "排队多久走")
-	check_eq(f.pay_at, "on_take", "收钱时收款")
-	check_eq(PANCAKE.flyer.gap, cfg.flyer_gap, "传单入场间隔")
-	check_eq(int(PANCAKE.flyer.track.fold("flyer_customers", 1, 0.0)), int(cfg.flyer_wave), "传单人数")
-	check_eq(PANCAKE.flyer.track.fold("flyer_cooldown", 1, 0.0), cfg.flyer_cooldown, "传单冷却")
-	check_eq(PANCAKE.staff.hire_costs.size(), cfg.hire_cost.size(), "招人次数")
-	var fryer := PANCAKE.station("fryer")
-	check_eq(fryer.params.batch, cfg.fry_batch, "一锅薄脆")
-	check_eq(fryer.stock[0].low, int(cfg.crisp_low), "薄脆补货线")
-	check_eq(fryer.stock[0].cap, int(cfg.crisp_cap), "薄脆上限")
-	check_eq(PANCAKE.start_gold, int(cfg.start_gold), "开局金币")
 
 
 # ---------- 通用 ----------

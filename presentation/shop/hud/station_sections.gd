@@ -96,6 +96,7 @@ class FlyerSection extends PanelContainer:
 	var effect: Label
 	var upgrade_title: Label
 	var upgrade_effect: Label
+	var upgrade_line: HBoxContainer
 
 	func setup(page_: Node) -> void:
 		page = page_
@@ -112,6 +113,7 @@ class FlyerSection extends PanelContainer:
 		effect = hud._text(copy, "", 18, true)
 		button = page.buy_button(line, func() -> void: page.view_node().station_action("flyers", page.station_id))
 		var up_line: HBoxContainer = hud._row(column, 14)
+		upgrade_line = up_line
 		page.image(up_line, "tag", 60)
 		var up_copy: VBoxContainer = page.copy(up_line)
 		upgrade_title = hud._text(up_copy, "", 21)
@@ -131,10 +133,16 @@ class FlyerSection extends PanelContainer:
 			effect.text = "%d 秒后可以再发%s" % [ceili(wait), hint]
 			button.text = "%d 秒" % ceili(wait)
 		else:
-			effect.text = "不花钱 · %d 秒内招来 %d 位客人，间隔 %d 秒%s" % [int(f.seconds), int(f.customers), int(f.cooldown), hint]
+			if float(f.seconds) > 0.0:
+				effect.text = "不花钱 · %d 秒内招来 %d 位客人，间隔 %d 秒%s" % [int(f.seconds), int(f.customers), int(f.cooldown), hint]
+			else:
+				effect.text = "不花钱 · 招来 %d 位客人，间隔 %d 秒%s" % [int(f.customers), int(f.cooldown), hint]
 			if coming > 0: effect.text += " · 上一批还有 %d 位没到" % coming
 			button.text = "发传单"
 		button.disabled = not String(f.error).is_empty()
+		# 没有升级轨的传单不显示升级那一行
+		upgrade_line.visible = f.get("upgradable", true)
+		if not upgrade_line.visible: return
 		var cost := int(f.upgrade_cost)
 		upgrade_title.text = "传单升级"
 		if cost < 0:

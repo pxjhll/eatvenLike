@@ -1,0 +1,152 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://presentation/shops/pancake/pancake_stall.tscn" id="stall"]
+[ext_resource type="Script" path="res://presentation/shop/anchor_rect.gd" id="anchor"]
+
+[node name="PancakeArt" type="Node2D"]
+
+[node name="Stall" parent="." instance=ExtResource("stall")]
+
+[node name="Sortables" type="Node2D" parent="Stall/SceneClip"]
+metadata/z_by_y = true
+
+[node name="Anchors" type="Node2D" parent="."]
+metadata/world_size = Vector2(937, 1678)
+metadata/customer_height = 167.0
+metadata/staff_height = 194.5
+metadata/sortables = "Stall/SceneClip/Sortables"
+metadata/labels_z = 2000
+metadata/customer_speed = 140.0
+
+[node name="Stations" type="Node2D" parent="Anchors"]
+
+[node name="soy_milk" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/soy_milk"]
+position = Vector2(103, 652)
+script = ExtResource("anchor")
+size = Vector2(286, 250)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/soy_milk"]
+position = Vector2(103, 652)
+script = ExtResource("anchor")
+size = Vector2(286, 250)
+
+[node name="rear_equipment" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/rear_equipment"]
+position = Vector2(342, 215)
+script = ExtResource("anchor")
+size = Vector2(439, 226)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/rear_equipment"]
+position = Vector2(342, 215)
+script = ExtResource("anchor")
+size = Vector2(439, 226)
+
+[node name="fryer" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/fryer"]
+position = Vector2(88, 411)
+script = ExtResource("anchor")
+size = Vector2(162, 248)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/fryer"]
+position = Vector2(88, 411)
+script = ExtResource("anchor")
+size = Vector2(162, 248)
+
+[node name="topping" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/topping"]
+position = Vector2(355, 580)
+script = ExtResource("anchor")
+size = Vector2(322, 154)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/topping"]
+position = Vector2(355, 580)
+script = ExtResource("anchor")
+size = Vector2(322, 154)
+
+[node name="front_counter" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/front_counter"]
+position = Vector2(41, 760)
+script = ExtResource("anchor")
+size = Vector2(847, 216)
+
+[node name="Badge" type="Node2D" parent="Anchors/Stations/fryer"]
+position = Vector2(110, 400)
+
+[node name="Queue" type="Node2D" parent="Anchors"]
+
+[node name="0" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(470, 1074)
+
+[node name="1" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(590, 1084)
+
+[node name="2" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(710, 1094)
+
+[node name="3" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(830, 1104)
+
+[node name="4" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(780, 1190)
+
+[node name="5" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(660, 1190)
+
+[node name="Seats" type="Node2D" parent="Anchors"]
+
+[node name="cushion" type="Node2D" parent="Anchors/Seats"]
+
+[node name="0" type="Node2D" parent="Anchors/Seats/cushion"]
+position = Vector2(114, 1236)
+
+[node name="1" type="Node2D" parent="Anchors/Seats/cushion"]
+position = Vector2(353, 1236)
+
+[node name="2" type="Node2D" parent="Anchors/Seats/cushion"]
+position = Vector2(598, 1221)
+
+[node name="3" type="Node2D" parent="Anchors/Seats/cushion"]
+position = Vector2(726, 1172)
+
+[node name="4" type="Node2D" parent="Anchors/Seats/cushion"]
+position = Vector2(836, 1221)
+
+[node name="5" type="Node2D" parent="Anchors/Seats/cushion"]
+position = Vector2(602, 1436)
+
+[node name="6" type="Node2D" parent="Anchors/Seats/cushion"]
+position = Vector2(830, 1441)
+
+[node name="7" type="Node2D" parent="Anchors/Seats/cushion"]
+position = Vector2(127, 1451)
+
+[node name="8" type="Node2D" parent="Anchors/Seats/cushion"]
+position = Vector2(347, 1451)
+
+[node name="Waiting" type="Node2D" parent="Anchors"]
+
+[node name="0" type="Node2D" parent="Anchors/Waiting"]
+position = Vector2(96, 1086)
+
+[node name="1" type="Node2D" parent="Anchors/Waiting"]
+position = Vector2(60, 1130)
+
+[node name="2" type="Node2D" parent="Anchors/Waiting"]
+position = Vector2(150, 1140)
+
+[node name="3" type="Node2D" parent="Anchors/Waiting"]
+position = Vector2(40, 1060)
+
+[node name="Entrance" type="Node2D" parent="Anchors"]
+position = Vector2(468, 1720)
+
+[node name="Counter" type="Node2D" parent="Anchors"]
+
+[node name="Sale" type="Node2D" parent="Anchors/Counter"]
+position = Vector2(470, 690)

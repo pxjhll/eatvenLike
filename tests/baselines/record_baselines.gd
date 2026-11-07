@@ -10,9 +10,8 @@ extends SceneTree
 ## --check：重跑一遍，和已存的 json 不一致就退出码 1（旧模拟在删除前不允许被改动）。
 
 const TeaSim := preload("res://game/tea_playtest/tea_shop_sim.gd")
-const PancakeSim := preload("res://game/pancake/pancake_sim.gd")
 ## 奶茶店按 30 分钟设计，这个机器人比较保守，多跑到 45 分钟看完店时间
-const MINUTES := {"tea": 45.0, "pancake": 30.0}
+const MINUTES := {"tea": 45.0}
 const CHECKPOINTS := [5, 10, 20, 30, 45]
 const DIR := "res://tests/baselines/"
 
@@ -20,7 +19,8 @@ const DIR := "res://tests/baselines/"
 func _initialize() -> void:
 	var check := "--check" in OS.get_cmdline_user_args()
 	var failed := false
-	for pair in [["tea", record_tea()], ["pancake", record_pancake(0)]]:
+	# 煎饼摊旧模拟已删（第 4 个 PR）：pancake_73b0ae3.json 冻结不再重录，整店回放照它对
+	for pair in [["tea", record_tea()]]:
 		var path: String = DIR + "%s_73b0ae3.json" % pair[0]
 		var text := JSON.stringify(pair[1], "\t", false)
 		if check:
@@ -191,85 +191,3 @@ func _tea_buy(sim, command: String) -> String:
 		"seat": return sim.buy_seat()
 		"flyer_upgrade": return sim.upgrade_flyers()
 	return "未知命令"
-
-
-# ---------- 煎饼摊（与 game/pancake/pancake_bot.gd 同一套决策） ----------
-
-func record_pancake(seed: int) -> Dictionary:
-	var sim = PancakeSim.new(seed)
-	var ledger := Ledger.new()
-	var dt := 0.1
-	var next_visit := 1.0
-	var completed_at := -1.0
-	var last_stage := -2
-	var busy := 0.0
-	var griddle_busy := 0.0
-	var samples := 0
-	var arrived_id: int = sim._next_customer_id
-	var lost_before: int = sim.lost
-	var sold_before: int = sim.total_sold()
-	while sim.clock < MINUTES.pancake * 60.0 - 0.0001:
-		sim.step(dt)
-		var clock: float = sim.clock
-		var stage: int = sim.stage() if sim.is_open() else -1
-		if stage != last_stage:
-			last_stage = stage
-			ledger.open(stage, clock)
-		ledger.seg.arrived += sim._next_customer_id - arrived_id
-		arrived_id = sim._next_customer_id
-		ledger.seg.lost += sim.lost - lost_before
-		lost_before = sim.lost
-		ledger.seg.sold += sim.total_sold() - sold_before
-		sold_before = sim.total_sold()
-		if sim.is_open() and sim.queue.size() >= sim.queue_capacity(): ledger.seg.full_seconds += dt
-		samples += 1
-		for s in sim.staff:
-			if s.phase != "idle": busy += 1.0 / sim.staff.size()
-			if s.walking: ledger.seg.walk += dt
-			elif s.phase == "work": ledger.seg.work += dt
-			else:
-				ledger.seg.idle += dt
-				if s.phase == "wait":
-					ledger.seg.waiting[s.task_label] = ledger.seg.waiting.get(s.task_label, 0.0) + dt
-		if sim.griddle_user != -1: griddle_busy += 1.0
-		if completed_at < 0.0 and sim.shop_complete(): completed_at = clock
-		for minute in CHECKPOINTS:
-			if not ledger.checkpoints.has(str(minute)) and clock >= minute * 60.0 - 0.0001:
-				ledger.checkpoints[str(minute)] = {"revenue": snappedf(sim.earned, 0.1), "sold": sim.total_sold(), "gold": snappedf(sim.gold, 0.1),
-					"sold_by_dish": sim.sold.duplicate(), "staff": sim.staff.size(), "stage": sim.stage(), "lost": sim.lost}
-		if clock + 0.0001 < next_visit: continue
-		next_visit += 60.0
-		var staff_load := busy / maxf(1.0, samples)
-		var griddle_load := griddle_busy / maxf(1.0, samples)
-		busy = 0.0
-		griddle_busy = 0.0
-		samples = 0
-		if sim.queue.size() <= 1 and sim.send_flyers(): ledger.act(clock, "flyer")
-		for _i in 6:
-			var nxt: String = sim.next_unlock()
-			if not nxt.is_empty() and sim.unlock(nxt):
-				ledger.unlocks[nxt] = snappedf(clock, 0.1)
-				ledger.act(clock, "unlock " + nxt)
-				continue
-			if sim.staff.size() < sim.staff_slots() and staff_load > 0.7 and sim.hire():
-				ledger.unlocks["hire%d" % sim.staff.size()] = snappedf(clock, 0.1)
-				ledger.act(clock, "hire")
-				continue
-			var opts := []
-			for key in sim.cfg.upgrades:
-				if sim.upgrade_available(key): opts.append([sim.upgrade_cost(key), key])
-			if opts.is_empty(): break
-			opts.sort()
-			var pick: Array = opts[0]
-			if griddle_load > 0.7:
-				for o in opts:
-					if o[1] == "rear_equipment": pick = o
-			var target: int = sim.unlock_cost(nxt) if not nxt.is_empty() else 0
-			var is_pref: bool = pick[1] == "rear_equipment" and griddle_load > 0.7
-			if not nxt.is_empty() and pick[0] > 0.25 * target and not is_pref: break
-			if not sim.upgrade(pick[1]): break
-			ledger.act(clock, "upgrade " + pick[1])
-	ledger.close(sim.clock)
-	return {"shop": "pancake", "seed": seed, "minutes": MINUTES.pancake, "bot": "glance_once_a_minute",
-		"unlocks": ledger.unlocks, "checkpoints": ledger.checkpoints, "completed_at": snappedf(completed_at, 0.1),
-		"segments": ledger.segments, "levels": sim.levels.duplicate(), "actions": ledger.actions}

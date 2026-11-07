@@ -82,6 +82,34 @@ func goal() -> Dictionary:
 	return {"kind": "done", "id": "", "current": 1, "target": 1, "text": text("done_short", {}, "经营任务已全部完成"), "long": text("done")}
 
 
+## 完店评分（1–3 星；没完店 0）：完店用时在 rating_minutes 以内各加一星，走掉的客人超过 rating_lost_share 扣一星
+func rating() -> int:
+	if rules.completed_at < 0.0: return 0
+	var stars := 1
+	var minutes := rules.completed_at / 60.0
+	for limit in shop.goals.rating_minutes:
+		if minutes <= limit: stars += 1
+	var served := rules.sold + rules.lost
+	if shop.goals.rating_lost_share > 0.0 and served > 0 and float(rules.lost) / served > shop.goals.rating_lost_share: stars -= 1
+	return clampi(stars, 1, 3)
+
+
+## 结店总结（§3.9）：{shop, seconds 完店用时, played, earned, sold, lost, top [[份数, 菜]…前 3], levels, staff, rating}
+func summary() -> Dictionary:
+	var top := []
+	for dish in rules.sold_by_dish:
+		if int(rules.sold_by_dish[dish]) > 0: top.append([int(rules.sold_by_dish[dish]), dish])
+	top.sort()
+	top.reverse()
+	var levels := {}
+	for st in shop.stations:
+		var t := rules.track_of(st.id)
+		if t != null and not t.levels.is_empty(): levels[st.id] = rules.level(st.id)
+	return {"shop": shop.id, "seconds": rules.completed_at if rules.completed_at >= 0.0 else rules.clock, "played": rules.clock,
+		"earned": int(rules.revenue), "sold": rules.sold, "lost": rules.lost, "top": top.slice(0, 3), "levels": levels,
+		"staff": rules.roster.size(), "rating": rating()}
+
+
 func tasks() -> Array:
 	return rules.task_rows()
 
@@ -247,7 +275,10 @@ func current_effect(id: String) -> String:
 func seconds(id: String) -> float:
 	var st := shop.station(id)
 	if st.block == "batch_pot": return rules.pot_seconds(id)
-	return rules.machine_seconds(id)
+	var result := rules.machine_seconds(id)
+	# 员工在台前做的（手工台、出品台）：台子的秒数经提速
+	if result <= 0.0 and st.params.has("seconds"): result = float(st.params.seconds) * rules.duration_mult(id) / rules.speed(id)
+	return result
 
 
 ## 涨价预览：拿一道已经在卖的菜当例子，算真实售价（全部加成、同一取整）
@@ -341,6 +372,7 @@ func flyer() -> Dictionary:
 	return {"level": rules.level("flyer"), "customers": rules.flyer_customers(), "cooldown": rules.flyer_cooldown(),
 		"seconds": shop.flyer.wave_seconds, "wait": wait, "wave": rules.flyer_wave, "pending": rules.flyer_left if single else rules.flyer_pending,
 		"error": rules.flyer_error(), "queue_full": rules.queue_size() >= rules.queue_capacity(),
+		"upgradable": shop.flyer.track != null and not shop.flyer.track.levels.is_empty(), "gap": shop.flyer.gap,
 		"upgrade_cost": cost, "upgrade_error": rules.upgrade_error("flyer"), "next_customers": next_customers, "next_cooldown": next_cooldown}
 
 
@@ -369,13 +401,16 @@ func machine_status(id: String) -> Dictionary:
 		return n
 	var output: int = total.call(s.output)
 	var working: bool = s.phase in ["heating", "mixing", "working", "sealing", "cook"]
+	var progress := float(s.progress)
+	# 一人跟单的店的锅只记剩几秒
+	if s.phase == "cook" and rules.pot_seconds(id) > 0.0: progress = clampf(1.0 - float(s.remaining) / rules.pot_seconds(id), 0.0, 1.0)
 	var need := ""
 	if not working:
-		if s.phase == "awaiting_take": need = text("need_take", {}, "待取")
+		if s.phase in ["awaiting_take", "done"]: need = text("need_take", {}, "待取")
 		elif s.phase == "stir": need = text("need_operate", {}, "待操作")
 		elif output > 0: need = "待取 %d" % output
 		elif total.call(s.input) > 0 and shop.station(id).block in ["batch_pot", "topping"]: need = text("need_operate", {}, "待操作")
-	return {"working": working, "progress": float(s.progress), "need": need, "input": total.call(s.input),
+	return {"working": working, "progress": progress, "need": need, "input": total.call(s.input),
 		"processing": int(s.get("processing", 0)), "output": output}
 
 

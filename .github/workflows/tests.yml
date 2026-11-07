@@ -22,10 +22,6 @@ jobs:
         run: timeout 240s ./godot --headless --path . -s tests/run_all.gd
       - name: Old-sim baselines unchanged (73b0ae3)
         run: timeout 60s ./godot --headless --path . -s tests/baselines/record_baselines.gd -- --check
-      - name: Pancake scene layout and unlock regression
-        run: timeout 30s ./godot --headless --path . -s tests/run_pancake_scene.gd
-      - name: Pancake guide real-click regression
-        run: timeout 30s ./godot --headless --path . -s tests/render_pancake_guide.gd
       - name: Shop UI interaction regression
         run: timeout 30s ./godot --headless --path . -s tests/render_shop_ui.gd
       - name: Art shop business interaction regression
@@ -40,6 +36,8 @@ jobs:
         run: timeout 45s ./godot --headless --path . -s tests/render_shop_guide.gd
       - name: Generic shop scene - HUD extension acceptance and save round trip
         run: timeout 60s ./godot --headless --path . -s tests/render_shop_extend.gd
+      - name: Generic shop scene - pancake stall (guide, art, summary, next shop) real-click regression
+        run: timeout 60s ./godot --headless --path . -s tests/render_shop_pancake.gd
       - name: Animated character frame and gameplay regression
         run: |
           timeout 30s ./godot --headless --path . -s tests/test_rabbit_frame_atlas.gd

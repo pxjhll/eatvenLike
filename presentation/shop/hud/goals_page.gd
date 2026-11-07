@@ -14,6 +14,9 @@ var _task_column: VBoxContainer
 var _task_rows: Array[Dictionary] = []
 var _task_signature := ""
 var _stat_values := {}
+var _stat_cells := {}
+## 完店后才出现：结店去下一家
+var leave_button: Button
 
 
 func setup(view: Node2D, hud: Control) -> void:
@@ -50,13 +53,24 @@ func setup(view: Node2D, hud: Control) -> void:
 	for stat in [["sold", "已售出", "drink_lemonade"], ["revenue", "营业额", "coin"], ["shelf", "货架", "shelf"]]:
 		var cell: VBoxContainer = hud._card(stats)
 		cell.get_parent().size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_stat_cells[stat[0]] = cell.get_parent()
 		var line: HBoxContainer = hud._row(cell, 6)
 		var icon: TextureRect = hud._portrait(line, "cat", 29)
-		icon.texture = Icons.texture(stat[2])
+		icon.texture = Icons.texture(view.view.text("icon_stat_" + stat[0], {}, stat[2]))
 		hud._nowrap(hud._text(line, stat[1], 21, true))
 		_stat_values[stat[0]] = hud._nowrap(hud._text(line, "", 23))
 		_stat_values[stat[0]].size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_stat_values[stat[0]].horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	leave_button = Button.new()
+	leave_button.text = view.view.text("leave_button", {}, "结店")
+	leave_button.custom_minimum_size.y = 72
+	leave_button.focus_mode = Control.FOCUS_NONE
+	leave_button.add_theme_font_size_override("font_size", 26)
+	for state in ["normal", "hover", "pressed"]:
+		leave_button.add_theme_stylebox_override(state, ReferenceTheme.style("gold", 18, state))
+	leave_button.pressed.connect(func() -> void: view.open_summary())
+	leave_button.visible = false
+	add_child(leave_button)
 
 
 func refresh() -> void:
@@ -115,3 +129,8 @@ func refresh() -> void:
 	_stat_values.sold.text = "%d %s" % [rules.sold, view.text("unit", {}, "份")]
 	_stat_values.revenue.text = str(int(rules.revenue))
 	_stat_values.shelf.text = "%d / %d" % [rules.shelf_count, rules.shelf_capacity()]
+	# 没有货架的店不显示货架
+	_stat_cells.shelf.visible = rules.shelf_capacity() > 0
+	if leave_button.visible != _view.can_leave():
+		leave_button.visible = _view.can_leave()
+		_hud.relayout()

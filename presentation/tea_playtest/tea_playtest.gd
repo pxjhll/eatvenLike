@@ -3,7 +3,7 @@ extends Node2D
 
 const Sim := preload("res://game/tea_playtest/tea_playtest_sim.gd")
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
-const ArtGroups := preload("res://presentation/tea_playtest/shop_art_groups.gd")
+const ArtGroups := preload("res://presentation/shop/art_groups.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 const DragController := preload("res://presentation/tea_playtest/staff_drag_controller.gd")
 const Guide := preload("res://presentation/tea_playtest/guide_overlay.gd")

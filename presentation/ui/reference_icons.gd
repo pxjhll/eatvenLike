@@ -30,7 +30,10 @@ static func texture(key: String) -> Texture2D:
 	if _cache.has(key):
 		return _cache[key] as Texture2D
 	var result: Texture2D
-	if key == "staff":
+	if key.begins_with("res://"):
+		# 店铺数据直接给图（比如店铺美术图集里的一块）
+		result = load(key) as Texture2D if ResourceLoader.exists(key) else null
+	elif key == "staff":
 		result = face("cat")
 	elif ART.has(key):
 		result = load(ART[key]) as Texture2D

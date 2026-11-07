@@ -1,7 +1,7 @@
 [gd_scene load_steps=45 format=3]
 
-[ext_resource type="Script" path="res://presentation/pancake/pancake_art.gd" id="controller"]
-[ext_resource type="Script" path="res://presentation/pancake/procedural_layer.gd" id="procedural"]
+[ext_resource type="Script" path="res://presentation/shops/pancake/pancake_stall.gd" id="controller"]
+[ext_resource type="Script" path="res://presentation/shops/pancake/procedural_layer.gd" id="procedural"]
 [ext_resource type="FontFile" path="res://art/pancake/labels_font.otf" id="font"]
 [ext_resource type="Texture2D" path="res://art/pancake/scene-atlas.png" id="atlas"]
 [ext_resource type="Texture2D" path="res://art/reference/ingredient_table.png" id="library_14"]
