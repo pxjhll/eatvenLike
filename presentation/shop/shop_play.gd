@@ -4,8 +4,9 @@ extends Node2D
 ## 规则层 ShopRules 管全部状态和时间，界面只读 ShopView 快照、只发命令（§3.11）。
 ##
 ## 打开方式：
-## - 正式游戏：读 App.profile.shop 那家店的数据和它的存档（ShopSave）
-## - 测试：先把 shop（或 rules）塞进来再加进场景树，不读写存档、不放引导
+## - 正式游戏：读 App.profile.shop 那家店的数据和它的存档（ShopSave），放引导
+## - 只塞 store：读这个存档，放引导（测试读档用）
+## - 塞 rules：直接用这家店，不放引导（测试用；同时塞 store 才会存档）
 
 const Actor := preload("res://presentation/shop/shop_actor.gd")
 const Dining := preload("res://presentation/shop/shop_dining.gd")
@@ -84,22 +85,18 @@ func _ready() -> void:
 	var guides_seen: Array = []
 	var app := get_node_or_null("/root/App")
 	if rules == null:
-		if shop == null:
-			guide_enabled = true
-			shop = _profile_shop(app)
-			store = ShopSave.new(shop)
-			rules = store.load_game()
-			_speed_factor = store.loaded_speed
-			guides_seen = store.loaded_guides
-			if not store.last_error.is_empty(): save_status = store.last_error
-			# 刚从上一家店结店过来：从空店开始（员工不带过来）
-			if app != null and app.profile.fresh_shop and app.profile.shop == shop.id:
-				rules = ShopRules.new(shop)
-				app.profile.fresh_shop = false
-				app.profile.save()
-				store.save_game(rules, _speed_factor, guides_seen)
-		else:
-			rules = ShopRules.new(shop)
+		guide_enabled = true
+		if store == null: store = ShopSave.new(_profile_shop(app))
+		rules = store.load_game()
+		_speed_factor = store.loaded_speed
+		guides_seen = store.loaded_guides
+		if not store.last_error.is_empty(): save_status = store.last_error
+		# 刚从上一家店结店过来：从空店开始（员工不带过来）
+		if app != null and app.profile.fresh_shop and app.profile.shop == store.shop.id:
+			rules = ShopRules.new(store.shop)
+			app.profile.fresh_shop = false
+			app.profile.save()
+			store.save_game(rules, _speed_factor, guides_seen)
 	shop = rules.shop
 	view = ShopView.new(rules)
 	DisplayServer.window_set_title(shop.display_name)

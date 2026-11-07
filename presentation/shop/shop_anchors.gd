@@ -49,7 +49,8 @@ func rect(path: String) -> Rect2:
 
 func meta(path: String, key: String, fallback: Variant = null) -> Variant:
 	var n := node(path)
-	return n.get_meta(key, fallback) if n != null else fallback
+	# get_meta 的默认值是 null 时会报错，所以先问有没有
+	return n.get_meta(key) if n != null and n.has_meta(key) else fallback
 
 
 ## 一组按序号排的点（Queue/0、Queue/1 …）

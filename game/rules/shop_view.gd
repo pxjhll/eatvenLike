@@ -167,6 +167,8 @@ func track_row(key: String) -> Dictionary:
 	var capacity := kinds.keys().any(func(k: String) -> bool: return k in CAPACITY_KINDS)
 	var price := kinds.has("price")
 	row.kind = "both" if capacity and price else "capacity" if capacity else "price" if price else "menu" if kinds.has("open_flavor") else ""
+	# 面板标题下那一行说的升级种类：数据里写了就用数据的
+	row.heading_kind = t.kind if not t.kind.is_empty() else row.kind
 	if key.begins_with("staff/") or key == "flyer": return row
 	var st := shop.station(id)
 	var unit: String = st.params.get("unit", "份")
@@ -305,7 +307,8 @@ func material_row(st: SpecStation, m: SpecMaterial) -> Dictionary:
 		return row
 	var dish := shop.dish(m.item)
 	var preview := price_preview(key)
-	if not preview.is_empty():
+	# 按倍率涨价的物料（原料）写“每杯 ×1.05”；按菜加价的口味直接写售价
+	if not preview.is_empty() and not is_equal_approx(float(preview.mult), 1.0):
 		# 物料行的售价按整数显示（和旧面板一致）
 		row.effect = ("%s每%s ×%.2f · %s %d 金" % [preview.scope, st.params.get("unit", "份"), preview.mult, preview.sample, int(preview.now)]
 			if row.cost < 0 else "%s每%s ×%.2f · %s %d → %d 金" % [preview.scope, st.params.get("unit", "份"), preview.mult,
@@ -406,7 +409,7 @@ func effect_name(effects: Array) -> String:
 		match e.kind:
 			"walk": parts.append("走路快 +%d%%" % roundi((e.value - 1.0) * 100))
 			"work": parts.append("手脚快 +%d%%" % roundi((e.value - 1.0) * 100))
-			"carry": parts.append("一次多搬 %d 份" % int(e.value))
+			"carry": parts.append("一次多搬 %d %s" % [int(e.value), text("unit", {}, "份")])
 			"staff_slot": parts.append("多一个%s位" % ("前台" if e.target == "front" else "后厨"))
 			"luck": parts.append("运气 +%s" % price_text(e.value))
 			_: parts.append(e.kind)

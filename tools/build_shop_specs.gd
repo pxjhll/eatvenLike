@@ -531,6 +531,10 @@ func build_tea() -> SpecShop:
 	g.texts["drag_hint"] = "拖到柜台 = 前台（接待客人）；拖到工位或空地 = 后厨"
 	shop.station("counter").params["panel_title"] = "收银台"
 	shop.station("boil").params["frame_title"] = "stage"
+	# 面板标题下的升级种类（旧 tea_shop_sim：一台机器一种）
+	for pair in [["boil", "capacity"], ["seal", "capacity"], ["topping", "menu"], ["mix", "price"], ["supply", "price"], ["press", "price"], ["lemonade", "price"]]:
+		var t := shop.station(pair[0]).track("level")
+		if t != null: t.kind = pair[1]
 	# 拖人：松手前的提示、放下后的提示（旧 staff_drag_controller）
 	for pair in [["drop_", "恢复流动"], ["drop_counter", "前台接单"], ["drop_boil", "坐班煮茶台"], ["drop_topping", "坐班加料台"],
 			["placed_", "已安排到后厨"], ["placed_counter", "已安排到前台：只负责接待客人、取杯上菜。"],

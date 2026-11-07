@@ -14,7 +14,8 @@ const Profile := preload("res://game/app/profile.gd")
 const FONT := preload("res://art/ui/graybox_font.ttf")
 const COIN := preload("res://art/ui/coin.png")
 const SOURCE_SIZE := Vector2(937, 1678)
-const TEA_SCENE := "res://presentation/tea_playtest/tea_playtest.tscn"
+## 下一家店（奶茶店起）都走通用店铺场景，它按 profile.shop 读那家店的数据
+const TEA_SCENE := "res://presentation/shop/shop_play.tscn"
 ## 订单气泡里的图：豆浆杯、纸袋煎饼（原画里的图块）。
 const ICON_NODES := {"soy": 50, "food": 57}
 ## 量人物大小用的杯子（豆浆杯）。
@@ -66,8 +67,8 @@ func _ready() -> void:
 	if profile == null:
 		var app := get_node_or_null("/root/App")
 		profile = app.profile if app != null else Profile.new("user://profile_test.json")
-	# 已经开到奶茶店了：直接进奶茶店
-	if profile.shop == "tea" and store != null:
+	# 已经开到下一家店了：直接进那家店
+	if not profile.shop.is_empty() and profile.shop != "pancake" and store != null:
 		get_tree().change_scene_to_file.call_deferred(TEA_SCENE)
 	sim = Sim.new(int(Time.get_unix_time_from_system()))
 	var seen_guides: Array = []

@@ -1457,6 +1457,7 @@ levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_urru1"), SubResour
 effect_label = "售价"
 preview_dishes = Array[String](["lemonade"])
 preview_label = "柠檬水"
+kind = "price"
 
 [sub_resource type="Resource" id="Resource_gjncs"]
 script = ExtResource("21_6l0ld")
@@ -1716,6 +1717,7 @@ display_name = "煮茶机"
 base_effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_purrk"), SubResource("Resource_h5fjk")])
 levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_76oly"), SubResource("Resource_grok8"), SubResource("Resource_ae368"), SubResource("Resource_m74ij"), SubResource("Resource_bjqmi"), SubResource("Resource_4v3c2"), SubResource("Resource_7v10f")])
 effect_label = "煮茶速度"
+kind = "capacity"
 
 [sub_resource type="Resource" id="Resource_qiwxu"]
 script = ExtResource("21_6l0ld")
@@ -1842,6 +1844,7 @@ display_name = "封口机"
 base_effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_wpr6n"), SubResource("Resource_ojf4a")])
 levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_81ppo"), SubResource("Resource_uvvs1"), SubResource("Resource_0gbvm"), SubResource("Resource_y0bc1"), SubResource("Resource_hygpt")])
 effect_label = "封口速度"
+kind = "capacity"
 
 [sub_resource type="Resource" id="Resource_abtgb"]
 script = ExtResource("21_6l0ld")
@@ -1954,6 +1957,7 @@ levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_0m85s"), SubResour
 effect_label = "售价"
 preview_dishes = Array[String](["plain_milk_tea"])
 preview_label = "奶茶"
+kind = "price"
 
 [sub_resource type="Resource" id="Resource_72f1v"]
 script = ExtResource("21_6l0ld")
@@ -2077,6 +2081,7 @@ levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_lv7og"), SubResour
 effect_label = "售价"
 preview_dishes = Array[String](["lemon_tea"])
 preview_label = "柠檬茶"
+kind = "price"
 
 [sub_resource type="Resource" id="Resource_lutj5"]
 script = ExtResource("21_6l0ld")
@@ -2345,6 +2350,7 @@ display_name = "加料机"
 base_effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_18cdu")])
 levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_5c0bn"), SubResource("Resource_cog4c"), SubResource("Resource_7711k")])
 effect_label = "新口味"
+kind = "menu"
 
 [sub_resource type="Resource" id="Resource_nup3k"]
 script = ExtResource("21_6l0ld")

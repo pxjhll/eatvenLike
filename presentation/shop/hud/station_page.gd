@@ -87,7 +87,7 @@ func refresh() -> void:
 	if unlocked and not track.is_empty():
 		_sections.track.visible = not String(track.effect).is_empty()
 		if _sections.track.visible:
-			var kind: String = _view.view.text("track_kind_" + String(track.kind), {}, KIND_LABELS.get(String(track.kind), "设备升级"))
+			var kind: String = _view.view.text("track_kind_" + String(track.heading_kind), {}, KIND_LABELS.get(String(track.heading_kind), "设备升级"))
 			var next := "Lv.%d → Lv.%d" % [int(card.level), int(card.level) + 1] if int(track.cost) >= 0 else "满级"
 			_hud.set_heading(title, next, false, kind)
 	var icon: TextureRect = _hud.heading_icon()

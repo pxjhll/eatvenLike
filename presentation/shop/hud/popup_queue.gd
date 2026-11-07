@@ -215,6 +215,11 @@ func _place() -> void:
 	_card.position = visible_rect.position + (visible_rect.size - _card.size * _card.scale) / 2.0
 
 
+## 折行的字排好版以后卡片才知道真高度：弹着的时候每帧重新摆一次
+func _process(_delta: float) -> void:
+	if visible: _place()
+
+
 ## 抬起的那一下（触屏或鼠标）在按钮之前处理：点在副按钮上 = 副按钮，其他地方 = 主按钮
 func _input(event: InputEvent) -> void:
 	if queue.is_empty() or not queue[0].get("any_tap", true):

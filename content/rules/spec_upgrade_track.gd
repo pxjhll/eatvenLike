@@ -16,6 +16,8 @@ extends Resource
 @export var preview_dishes: Array[String] = []
 ## 售价预览里“涨哪些菜”的说法；空 = 列出涨价菜的全名
 @export var preview_label: String = ""
+## 面板标题下那一行说这是哪种升级：capacity 产能 / price 售价 / both / menu 开新口味；空 = 按下一级的效果推
+@export var kind: String = ""
 
 
 func max_level() -> int:
