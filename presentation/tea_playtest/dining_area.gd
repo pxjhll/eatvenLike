@@ -1,7 +1,7 @@
 extends Node2D
 ## Four empty tables; purchased chairs and seated customers are independent visual layers.
 const Layout := preload("res://content/tea/art_playtest_layout.gd")
-const Prop := preload("res://presentation/tea_playtest/fitted_prop.gd")
+const Prop := preload("res://presentation/shop/fitted_prop.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
 var _chairs: Array[Sprite2D] = []
 var _tables: Array[Sprite2D] = []

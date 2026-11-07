@@ -151,6 +151,7 @@ func _unlock_section(id: String, stage: int) -> Dictionary:
 
 
 ## 一条升级轨的面板行：{key, title, kind, level, max, cost, error, now, next, effect, star_next}
+## now / next = 面板上“当前 → 升级后”两格；effect = 底下一整句（手机没有悬停，整句直接写出来）
 func track_row(key: String) -> Dictionary:
 	var t := rules.track_of(key)
 	var id := key.get_slice("/", 0)
@@ -168,40 +169,65 @@ func track_row(key: String) -> Dictionary:
 	row.kind = "both" if capacity and price else "capacity" if capacity else "price" if price else "menu" if kinds.has("open_flavor") else ""
 	if key.begins_with("staff/") or key == "flyer": return row
 	var st := shop.station(id)
-	var lines: Array = []
-	if kinds.has("batch"):
-		var now := rules.pot_batch(id)
-		var next: int = rules.preview(key, func() -> int: return rules.pot_batch(id))
-		row.now = "%d %s / 锅" % [now, st.params.get("unit", "份")]
-		row.next = "%d %s / 锅" % [next, st.params.get("unit", "份")]
-		lines.append("一锅 %d → %d %s" % [now, next, st.params.get("unit", "份")])
-	elif kinds.has("process_slots") and rules.preview(key, func() -> int: return rules.process_slots(id)) > rules.process_slots(id):
-		var label: String = st.params.get("slot_label", "加工位")
-		row.now = "%d %s" % [rules.process_slots(id), label]
-		row.next = "%d %s" % [rules.preview(key, func() -> int: return rules.process_slots(id)), label]
-		lines.append("%s %s → %s" % [label, row.now.get_slice(" ", 0), row.next.get_slice(" ", 0)])
-	elif price:
-		var preview := price_preview(key)
-		if not preview.is_empty():
-			row.now = "%s 金币 / %s" % [price_text(preview.now), st.params.get("unit", "份")]
-			row.next = "%s 金币 / %s" % [price_text(preview.next), st.params.get("unit", "份")]
-			lines.append("%s每%s ×%.2f · %s %s → %s 金" % [preview.scope, st.params.get("unit", "份"), preview.mult, preview.sample,
-				price_text(preview.now), price_text(preview.next)])
-	elif kinds.has("speed") or kinds.has("duration"):
-		var now := seconds(id)
-		var next: float = rules.preview(key, func() -> float: return seconds(id))
-		var per: String = "锅" if st.block == "batch_pot" else st.params.get("unit", "份")
-		row.now = "%.1f 秒 / %s" % [now, per]
-		row.next = "%.1f 秒 / %s" % [next, per]
-		lines.append("%s · 每%s %.1f → %.1f 秒" % [t.effect_label, per, now, next])
-	for e in next_effects:
-		if e.kind == "open_flavor":
-			var m := st.material(e.target)
-			lines.append("开放" + (m.display_name if m != null else e.target) + "，客人更多")
+	var unit: String = st.params.get("unit", "份")
+	var per := "每批" if st.block == "batch_pot" else "每" + unit
+	var preview := price_preview(key)
+	var batch_now := rules.pot_batch(id) if st.block == "batch_pot" else 0
+	var batch_next: int = rules.preview(key, func() -> int: return rules.pot_batch(id)) if cost >= 0 and st.block == "batch_pot" else batch_now
+	var slots_now := rules.process_slots(id) if st.block == "pickup" else 0
+	var slots_next: int = rules.preview(key, func() -> int: return rules.process_slots(id)) if cost >= 0 and st.block == "pickup" else slots_now
+	var timed := st.block in ["batch_pot", "pickup"] or kinds.has("speed") or kinds.has("duration")
+	var s_now := seconds(id)
+	var s_next: float = rules.preview(key, func() -> float: return seconds(id)) if cost >= 0 else s_now
+	# 两格对比：加杯 > 加位 > 涨价 > 提速
+	if cost >= 0:
+		if batch_next > batch_now:
+			row.now = "%d %s / 锅" % [batch_now, unit]
+			row.next = "%d %s / 锅" % [batch_next, unit]
+		elif slots_next > slots_now:
+			var label: String = st.params.get("slot_label", "加工位")
+			row.now = "%d %s" % [slots_now, label]
+			row.next = "%d %s" % [slots_next, label]
+		elif not preview.is_empty():
+			row.now = "%s 金币 / %s" % [price_text(preview.now), unit]
+			row.next = "%s 金币 / %s" % [price_text(preview.next), unit]
+		elif timed:
+			var pot := "锅" if st.block == "batch_pot" else unit
+			row.now = "%.1f 秒 / %s" % [s_now, pot]
+			row.next = "%.1f 秒 / %s" % [s_next, pot]
+	# 整句
+	var line := ""
 	if cost < 0:
-		lines = [current_effect(id)]
-	row.effect = " · ".join(lines)
+		if not preview.is_empty(): line = "%s %s 金" % [preview.sample, price_text(preview.now)]
+		elif st.block == "pickup": line = "%s %d · 每%s %.1f 秒" % [st.params.get("slot_label", "加工位"), slots_now, unit, s_now]
+		elif st.block == "batch_pot": line = "一锅 %d %s · 每锅 %.1f 秒" % [batch_now, unit, s_now]
+		elif timed: line = "%s %.1f 秒" % [per, s_now]
+		elif _opens_flavors(t): line = "口味全开"
+	else:
+		if not preview.is_empty():
+			line = "%s每%s ×%.2f · %s %s → %s 金" % [preview.scope, unit, preview.mult, preview.sample, price_text(preview.now), price_text(preview.next)]
+			if row.kind == "both":
+				line = line + " · 更快" if row.star_next else "%s %s → %s 金 · %s %.1f → %.1f 秒" % [preview.sample,
+					price_text(preview.now), price_text(preview.next), per, s_now, s_next]
+		elif st.block == "pickup":
+			line = "%s %d → %d" % [st.params.get("slot_label", "加工位"), slots_now, slots_next] if slots_next > slots_now else "每%s %.1f → %.1f 秒" % [unit, s_now, s_next]
+		elif batch_next > batch_now:
+			line = "一锅 %d → %d %s" % [batch_now, batch_next, unit]
+		elif timed:
+			line = "%s · %s %.1f → %.1f 秒" % [t.effect_label, per, s_now, s_next]
+		for e in next_effects:
+			if e.kind == "open_flavor":
+				var m := st.material(e.target)
+				line += (" · " if not line.is_empty() else "") + "开放" + (m.display_name if m != null else e.target) + "，客人更多"
+	row.effect = line
 	return row
+
+
+func _opens_flavors(t: SpecUpgradeTrack) -> bool:
+	for lv in t.levels:
+		for e in lv.effects:
+			if e.kind == "open_flavor": return true
+	return false
 
 
 ## 满级时显示的现状一句
@@ -230,8 +256,10 @@ func price_preview(key: String) -> Dictionary:
 	var st := shop.station(id)
 	var scope: Array = st.price_dishes
 	var level := rules.level(key)
-	if level <= t.levels.size():
-		for e in t.levels[level - 1].effects:
+	# 满级以后说的是最后一级的涨幅
+	var shown: SpecUpgradeLevel = t.levels[mini(level, t.levels.size()) - 1] if level > 0 and not t.levels.is_empty() else null
+	if shown != null:
+		for e in shown.effects:
 			if e.kind == "price" and not e.dishes.is_empty(): scope = e.dishes
 	if scope.is_empty(): return {}
 	var sample: String = scope[0]
@@ -245,8 +273,8 @@ func price_preview(key: String) -> Dictionary:
 		for d in shop.dishes:
 			if d.id in scope and rules.dish_open(d.id, false): sample = d.id
 	var mult := 1.0
-	if level <= t.levels.size():
-		for e in t.levels[level - 1].effects:
+	if shown != null:
+		for e in shown.effects:
 			if e.kind == "price" and e.op == "mul": mult *= e.value
 	var now := rules.dish_price(sample)
 	var next: float = rules.preview(key, func() -> float: return rules.dish_price(sample)) if level <= t.levels.size() else -1.0
@@ -278,9 +306,10 @@ func material_row(st: SpecStation, m: SpecMaterial) -> Dictionary:
 	var dish := shop.dish(m.item)
 	var preview := price_preview(key)
 	if not preview.is_empty():
-		row.effect = ("%s每%s ×%.2f · %s %s 金" % [preview.scope, st.params.get("unit", "份"), preview.mult, preview.sample, price_text(preview.now)]
-			if row.cost < 0 else "%s每%s ×%.2f · %s %s → %s 金" % [preview.scope, st.params.get("unit", "份"), preview.mult,
-				preview.sample, price_text(preview.now), price_text(preview.next)])
+		# 物料行的售价按整数显示（和旧面板一致）
+		row.effect = ("%s每%s ×%.2f · %s %d 金" % [preview.scope, st.params.get("unit", "份"), preview.mult, preview.sample, int(preview.now)]
+			if row.cost < 0 else "%s每%s ×%.2f · %s %d → %d 金" % [preview.scope, st.params.get("unit", "份"), preview.mult,
+				preview.sample, int(preview.now), int(preview.next)])
 	elif dish != null:
 		var now := rules.dish_price(dish.id)
 		row.effect = "售价 %s 金" % price_text(now)
@@ -390,6 +419,54 @@ func slots() -> Dictionary:
 		"kitchen_used": rules.kitchen_staff(), "all": rules.staff_slots(), "used": rules.workers.size()}
 
 
+## 员工头顶的字：texts["task_<动作>@<机器>"] → texts["task_<动作>"] → 原样（单人模式的规则层直接给中文）
+func task_text(worker: Dictionary) -> String:
+	var label: String = worker.get("task_label", "")
+	if label.is_empty(): label = "idle"
+	var job: Dictionary = worker.get("job", {})
+	var at: String = job.get("dst", "")
+	var values := {"to": station_name(at), "item": item_name(String(job.get("item", "")))}
+	var specific := text("task_%s@%s" % [label, at], values)
+	if not specific.is_empty(): return specific
+	return text("task_" + label, values, label)
+
+
+## 员工卡片：{id, kind, name, role, description, level, stats{walk, work, carry}, deployed, post, task}
+func worker_card(worker: Dictionary) -> Dictionary:
+	var kind := rules._kind(String(worker.kind))
+	return {"id": worker.id, "kind": worker.kind, "name": kind.display_name, "role": kind.role, "description": kind.description,
+		"level": int(worker.get("level", 1)), "stats": worker.stats, "deployed": worker.deployed, "post": worker.post,
+		"task": task_text(worker)}
+
+
+## 物品怎么画：{art: art/reference 里的图名, tint}
+func item_art(id: String) -> Dictionary:
+	var dish := shop.dish(id)
+	var key: String = dish.item if dish != null and not dish.item.is_empty() else id
+	for item in shop.items:
+		if item.id == key or item.id == id:
+			return {"art": item.art if not item.art.is_empty() else "pearl_tea", "tint": item.tint}
+	return {"art": "pearl_tea", "tint": Color.WHITE}
+
+
+## 在这台机器前干活朝哪个方向（8 方向；-1 = 不转）
+func work_direction(station_id: String) -> int:
+	var st := shop.station(station_id)
+	return int(st.params.get("facing", -1)) if st != null else -1
+
+
+## 正从展示柜接现成饮品的员工：返回那台机器（动画按“干活”放）
+func pouring_station(worker: Dictionary) -> String:
+	if worker.get("phase", "") != "pickup": return ""
+	var job: Dictionary = worker.get("job", {})
+	for d in shop.dishes:
+		if d.front and d.id == String(job.get("item", "")):
+			for step in d.steps:
+				var st := shop.station(step.station)
+				if st != null and st.block == "dispenser": return st.id
+	return ""
+
+
 # ---------- 瓶颈提示（§3.10） ----------
 
 const HINT_AFTER := 20.0
@@ -440,3 +517,29 @@ func bottleneck() -> Dictionary:
 func buffs() -> Array:
 	return rules.mods.timed().map(func(e: Dictionary) -> Dictionary:
 		return {"source": e.source, "id": e.source_id, "kind": e.kind, "value": e.value, "left": e.left, "total": e.total})
+
+
+## 加成图标：来自哪个奇遇就用它的图标，否则按种类 texts["buff_icon_<种类>"]，再没有就用“目标”
+func buff_icon(buff: Dictionary) -> String:
+	var ev := _event_def(String(buff.get("id", "")))
+	if ev != null and not ev.icon.is_empty(): return ev.icon
+	return text("buff_icon_" + String(buff.get("kind", "")), {}, "goals")
+
+
+func buff_name(buff: Dictionary) -> String:
+	var ev := _event_def(String(buff.get("id", "")))
+	return ev.display_name if ev != null else String(buff.get("kind", ""))
+
+
+## 等玩家选的奇遇卡：{id, title, text, icon, speaker, choices: [label…]}
+func event_card() -> Dictionary:
+	if rules.pending_events.is_empty(): return {}
+	var ev: SpecEvent = rules.pending_events[0]
+	return {"id": ev.id, "title": ev.display_name, "text": ev.card_text, "icon": ev.icon, "speaker": ev.speaker,
+		"choices": ev.choices.map(func(c: Dictionary) -> String: return String(c.get("label", "")))}
+
+
+func _event_def(id: String) -> SpecEvent:
+	for ev in rules.event_defs:
+		if ev.id == id: return ev
+	return null

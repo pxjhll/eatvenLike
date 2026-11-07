@@ -1727,6 +1727,36 @@ func _connection(id: String) -> SpecConnection:
 	return null
 
 
+## 能买的连接（界面画虚线框用）：{id, name, from, to, cost, owned, error, available}
+func connection_rows() -> Array:
+	var rows: Array = []
+	for c in shop.connections:
+		if not c.enabled: continue
+		rows.append({"id": c.id, "name": c.display_name, "from": c.from, "to": c.to, "cost": c.cost, "owned": belts.has(c.id),
+			"error": connection_error(c.id), "available": is_open() and stage_index >= c.stage})
+	return rows
+
+
+func connection_error(id: String) -> String:
+	var c := _connection(id)
+	if c == null or not c.enabled: return "未知传送带"
+	if belts.has(id): return "这里已经装了传送带"
+	if not is_open() or stage_index < c.stage: return "请先解锁" + shop.stages[c.stage].display_name
+	if gold < c.cost: return "金币不足，需要 %d" % c.cost
+	return ""
+
+
+func buy_connection(id: String) -> String:
+	var error := connection_error(id)
+	if not error.is_empty(): return error
+	var c := _connection(id)
+	gold -= c.cost
+	belts[id] = true
+	belt_clock[id] = 0.0
+	events.emit("connection", {"id": id})
+	return ""
+
+
 func _belted(source: String, destination: String) -> bool:
 	for id in belts:
 		var c := _connection(id)

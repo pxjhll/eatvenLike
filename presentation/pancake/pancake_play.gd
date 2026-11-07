@@ -4,8 +4,8 @@ extends Node2D
 
 const Sim := preload("res://game/pancake/pancake_sim.gd")
 const Actor := preload("res://presentation/tea_playtest/staff_actor.gd")
-const UnlockFrame := preload("res://presentation/tea_playtest/unlock_frame.gd")
-const UpgradeBadge := preload("res://presentation/tea_playtest/upgrade_badge.gd")
+const UnlockFrame := preload("res://presentation/shop/unlock_frame.gd")
+const UpgradeBadge := preload("res://presentation/shop/upgrade_badge.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
 const Store := preload("res://game/pancake/pancake_save.gd")
 const Guide := preload("res://presentation/pancake/pancake_guide.gd")
