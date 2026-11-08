@@ -133,6 +133,10 @@ func test_bag_option_adds_a_step_and_raises_the_price() -> void:
 	var bag := {"kind": "guozi", "addon": false, "options": ["bag"]}
 	check_eq(rules.order_price_single(bag), int(round(rules.raw_price("guozi") * 1.25)), "装袋的这份贵 25%")
 	check(rules.order_price_single(bag) > rules.order_price_single(plain), "比不装袋贵")
+	var soy := rules.shop.fulfillment.addon_dish
+	check_eq(rules.order_price_single({"kind": soy, "addon": true, "options": ["bag"]}), int(round(rules.raw_price(soy) * 1.25)), "只点豆浆装袋也贵 25%")
+	check_eq(rules.order_price_single({"kind": "guozi", "addon": true, "options": ["bag"]}),
+		int(round(rules.raw_price("guozi") * 1.25 + rules.raw_price(soy))), "搭配的豆浆不乘装袋倍数")
 	var steps: Array = rules._order_steps(bag)
 	check_eq(steps[-2].label, "装袋", "装袋在递餐前")
 	check_eq(steps[-2].holds, "bagged", "手上拿着手提袋")

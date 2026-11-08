@@ -48,9 +48,9 @@
 			"stage": 2
 		},
 		"20": {
-			"revenue": 3658.0,
+			"revenue": 3665.0,
 			"sold": 226,
-			"gold": 451.0,
+			"gold": 458.0,
 			"sold_by_dish": {
 				"soy": 106,
 				"plain": 37,
@@ -64,9 +64,9 @@
 			"stage": 4
 		},
 		"30": {
-			"revenue": 8495.0,
+			"revenue": 8543.0,
 			"sold": 405,
-			"gold": 821.0,
+			"gold": 869.0,
 			"sold_by_dish": {
 				"soy": 174,
 				"plain": 52,

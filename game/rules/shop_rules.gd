@@ -2193,14 +2193,12 @@ func _item_name(id: String) -> String:
 
 func order_price_single(c: Dictionary) -> int:
 	var f := shop.fulfillment
-	var total := 0.0
-	if c.kind != f.addon_dish:
-		var main := raw_price(c.kind)
-		for id in c.get("options", []):
-			var option := _option(String(id))
-			if option != null: main *= option.price_mult
-		total += main
-	if c.addon: total += raw_price(f.addon_dish)
+	# 点的那份（只点豆浆时就是豆浆）乘订单选项的倍数；搭配的那杯豆浆不乘
+	var total := raw_price(c.kind)
+	for id in c.get("options", []):
+		var option := _option(String(id))
+		if option != null: total *= option.price_mult
+	if c.addon and c.kind != f.addon_dish: total += raw_price(f.addon_dish)
 	return int(round(total))
 
 
