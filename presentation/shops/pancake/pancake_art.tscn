@@ -90,12 +90,12 @@ script = ExtResource("anchor")
 size = Vector2(165, 110)
 
 [node name="Put" type="Node2D" parent="Anchors/Stations/bag"]
-position = Vector2(520, 850)
+position = Vector2(515, 848)
 
 [node name="roll" type="Node2D" parent="Anchors/Stations"]
 
 [node name="Put" type="Node2D" parent="Anchors/Stations/roll"]
-position = Vector2(405, 850)
+position = Vector2(425, 848)
 
 [node name="front_counter" type="Node2D" parent="Anchors/Stations"]
 
@@ -190,7 +190,7 @@ metadata/grid_size = Vector2i(47, 84)
 [node name="0" type="Node2D" parent="Anchors/Nav/Areas"]
 position = Vector2(80, 340)
 script = ExtResource("anchor")
-size = Vector2(800, 460)
+size = Vector2(800, 480)
 
 [node name="Obstacles" type="Node2D" parent="Anchors/Nav"]
 
@@ -226,9 +226,9 @@ size = Vector2(166, 150)
 metadata/note = "豆浆机"
 
 [node name="5" type="Node2D" parent="Anchors/Nav/Obstacles"]
-position = Vector2(41, 795)
+position = Vector2(41, 822)
 script = ExtResource("anchor")
-size = Vector2(817, 180)
+size = Vector2(817, 153)
 metadata/note = "前台柜台"
 
 [node name="Points" type="Node2D" parent="Anchors/Nav"]
@@ -237,7 +237,7 @@ metadata/note = "前台柜台"
 position = Vector2(252, 626)
 
 [node name="front_counter" type="Marker2D" parent="Anchors/Nav/Points"]
-position = Vector2(470, 776)
+position = Vector2(470, 808)
 
 [node name="fryer" type="Marker2D" parent="Anchors/Nav/Points"]
 position = Vector2(272, 500)
@@ -246,10 +246,10 @@ position = Vector2(272, 500)
 position = Vector2(600, 758)
 
 [node name="roll" type="Marker2D" parent="Anchors/Nav/Points"]
-position = Vector2(470, 776)
+position = Vector2(425, 808)
 
 [node name="bag" type="Marker2D" parent="Anchors/Nav/Points"]
-position = Vector2(540, 776)
+position = Vector2(515, 808)
 
 [node name="batter_mixer" type="Marker2D" parent="Anchors/Nav/Points"]
 position = Vector2(590, 465)

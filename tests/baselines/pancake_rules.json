@@ -7,21 +7,21 @@
 		"soy_milk": 1.0,
 		"rear_equipment": 121.0,
 		"box flour": 121.0,
-		"hire2": 181.0,
-		"fryer": 361.0,
-		"hire3": 421.0,
+		"hire2": 241.0,
+		"fryer": 421.0,
+		"hire3": 481.0,
 		"topping": 841.0,
 		"hire4": 901.0,
-		"bag": 1021.0
+		"bag": 961.0
 	},
 	"checkpoints": {
 		"5": {
-			"revenue": 315.0,
-			"sold": 39,
-			"gold": 117.0,
+			"revenue": 255.0,
+			"sold": 31,
+			"gold": 108.0,
 			"sold_by_dish": {
-				"soy": 30,
-				"plain": 9,
+				"soy": 24,
+				"plain": 7,
 				"guozi": 0,
 				"ham": 0,
 				"floss": 0,
@@ -32,12 +32,12 @@
 			"stage": 1
 		},
 		"10": {
-			"revenue": 1021.0,
-			"sold": 90,
-			"gold": 235.0,
+			"revenue": 937.0,
+			"sold": 80,
+			"gold": 191.0,
 			"sold_by_dish": {
-				"soy": 53,
-				"plain": 22,
+				"soy": 44,
+				"plain": 21,
 				"guozi": 15,
 				"ham": 0,
 				"floss": 0,
@@ -48,39 +48,39 @@
 			"stage": 2
 		},
 		"20": {
-			"revenue": 3665.0,
-			"sold": 226,
-			"gold": 458.0,
+			"revenue": 3622.0,
+			"sold": 218,
+			"gold": 412.0,
 			"sold_by_dish": {
-				"soy": 106,
-				"plain": 37,
+				"soy": 97,
+				"plain": 42,
 				"guozi": 48,
-				"ham": 12,
-				"floss": 19,
-				"bacon": 4,
-				"family": 0
+				"ham": 8,
+				"floss": 10,
+				"bacon": 11,
+				"family": 2
 			},
 			"staff": 4,
 			"stage": 4
 		},
 		"30": {
-			"revenue": 8543.0,
-			"sold": 405,
-			"gold": 869.0,
+			"revenue": 8029.0,
+			"sold": 386,
+			"gold": 1037.0,
 			"sold_by_dish": {
-				"soy": 174,
-				"plain": 52,
-				"guozi": 82,
-				"ham": 24,
-				"floss": 37,
-				"bacon": 16,
-				"family": 20
+				"soy": 164,
+				"plain": 55,
+				"guozi": 84,
+				"ham": 18,
+				"floss": 24,
+				"bacon": 23,
+				"family": 18
 			},
 			"staff": 4,
 			"stage": 4
 		}
 	},
-	"completed_at": 1404.5,
+	"completed_at": 1365.1,
 	"segments": [
 		{
 			"stage": -1,
@@ -101,81 +101,81 @@
 			"stage": 0,
 			"start": 1.1,
 			"seconds": 120.0,
-			"arrived": 17,
-			"full_seconds": 11.1,
+			"arrived": 16,
+			"full_seconds": 9.5,
 			"lost": 0,
 			"sold": 16,
 			"staff_work": 0.307,
-			"staff_walk": 0.329,
-			"staff_idle": 0.363,
+			"staff_walk": 0.382,
+			"staff_idle": 0.312,
 			"top_wait": "",
 			"top_wait_share": 0.0,
-			"full_share": 0.093
+			"full_share": 0.079
 		},
 		{
 			"stage": 1,
 			"start": 121.1,
-			"seconds": 240.0,
-			"arrived": 32,
-			"full_seconds": 37.2,
+			"seconds": 300.0,
+			"arrived": 35,
+			"full_seconds": 62.1,
 			"lost": 0,
-			"sold": 32,
-			"staff_work": 0.527,
-			"staff_walk": 0.312,
-			"staff_idle": 0.16,
+			"sold": 37,
+			"staff_work": 0.56,
+			"staff_walk": 0.341,
+			"staff_idle": 0.098,
 			"top_wait": "",
 			"top_wait_share": 0.0,
-			"full_share": 0.155
+			"full_share": 0.207
 		},
 		{
 			"stage": 2,
-			"start": 361.1,
-			"seconds": 480.0,
-			"arrived": 76,
-			"full_seconds": 0.0,
+			"start": 421.1,
+			"seconds": 420.0,
+			"arrived": 75,
+			"full_seconds": 47.0,
 			"lost": 0,
-			"sold": 92,
-			"staff_work": 0.465,
-			"staff_walk": 0.357,
-			"staff_idle": 0.178,
+			"sold": 86,
+			"staff_work": 0.493,
+			"staff_walk": 0.409,
+			"staff_idle": 0.098,
 			"top_wait": "",
 			"top_wait_share": 0.0,
-			"full_share": 0.0
+			"full_share": 0.112
 		},
 		{
 			"stage": 3,
 			"start": 841.1,
-			"seconds": 180.0,
-			"arrived": 39,
+			"seconds": 120.0,
+			"arrived": 26,
 			"full_seconds": 0.0,
 			"lost": 0,
-			"sold": 42,
-			"staff_work": 0.429,
-			"staff_walk": 0.433,
-			"staff_idle": 0.138,
+			"sold": 24,
+			"staff_work": 0.419,
+			"staff_walk": 0.436,
+			"staff_idle": 0.145,
 			"top_wait": "",
 			"top_wait_share": 0.0,
 			"full_share": 0.0
 		},
 		{
 			"stage": 4,
-			"start": 1021.1,
-			"seconds": 778.9,
+			"start": 961.1,
+			"seconds": 838.9,
 			"arrived": 189,
-			"full_seconds": 22.4,
+			"full_seconds": 16.9,
 			"lost": 0,
 			"sold": 223,
-			"staff_work": 0.452,
-			"staff_walk": 0.429,
-			"staff_idle": 0.119,
+			"staff_work": 0.421,
+			"staff_walk": 0.419,
+			"staff_idle": 0.159,
 			"top_wait": "",
 			"top_wait_share": 0.0,
-			"full_share": 0.029
+			"full_share": 0.02
 		}
 	],
 	"levels": {
 		"soy_milk": 8,
-		"rear_equipment": 9,
+		"rear_equipment": 8,
 		"fryer": 7,
 		"topping": 7
 	},
@@ -202,91 +202,91 @@
 		],
 		[
 			181.0,
-			"hire"
+			"upgrade rear_equipment"
 		],
 		[
 			181.0,
-			"upgrade rear_equipment"
+			"upgrade soy_milk"
 		],
 		[
 			241.0,
+			"hire"
+		],
+		[
+			301.0,
 			"flyer"
 		],
 		[
-			241.0,
-			"upgrade rear_equipment"
-		],
-		[
-			241.0,
+			301.0,
 			"upgrade rear_equipment"
 		],
 		[
 			301.0,
-			"upgrade soy_milk"
+			"upgrade rear_equipment"
 		],
 		[
 			301.0,
 			"seat"
 		],
 		[
-			301.0,
-			"staff "
+			361.0,
+			"upgrade rear_equipment"
 		],
 		[
 			361.0,
-			"unlock fryer"
+			"staff "
 		],
 		[
 			421.0,
-			"hire"
-		],
-		[
-			481.0,
 			"flyer"
 		],
 		[
-			481.0,
-			"upgrade rear_equipment"
+			421.0,
+			"unlock fryer"
 		],
 		[
 			481.0,
+			"hire"
+		],
+		[
+			541.0,
+			"upgrade rear_equipment"
+		],
+		[
+			541.0,
 			"upgrade soy_milk"
 		],
 		[
-			541.0,
-			"upgrade rear_equipment"
-		],
-		[
-			541.0,
+			601.0,
 			"flyer_upgrade"
 		],
 		[
 			601.0,
-			"upgrade rear_equipment"
-		],
-		[
-			661.0,
 			"upgrade fryer"
 		],
 		[
-			661.0,
+			601.0,
 			"upgrade soy_milk"
 		],
 		[
-			661.0,
+			601.0,
 			"upgrade fryer"
 		],
 		[
-			721.0,
+			661.0,
 			"seat"
 		],
 		[
-			721.0,
+			661.0,
 			"staff "
 		],
 		[
-			841.0,
+			721.0,
 			"flyer"
+		],
+		[
+			721.0,
+			"upgrade rear_equipment"
 		],
 		[
 			841.0,
@@ -313,20 +313,8 @@
 			"hire"
 		],
 		[
-			901.0,
-			"material topping floss"
-		],
-		[
 			961.0,
-			"upgrade topping"
-		],
-		[
-			961.0,
-			"material topping bacon"
-		],
-		[
-			961.0,
-			"material topping bacon"
+			"unlock bag"
 		],
 		[
 			1021.0,
@@ -334,10 +322,22 @@
 		],
 		[
 			1021.0,
-			"unlock bag"
+			"material topping floss"
 		],
 		[
 			1021.0,
+			"upgrade topping"
+		],
+		[
+			1021.0,
+			"material topping bacon"
+		],
+		[
+			1021.0,
+			"material topping bacon"
+		],
+		[
+			1081.0,
 			"upgrade soy_milk"
 		],
 		[
@@ -353,20 +353,20 @@
 			"material topping family"
 		],
 		[
-			1081.0,
-			"upgrade fryer"
-		],
-		[
 			1141.0,
-			"flyer_upgrade"
-		],
-		[
-			1141.0,
-			"upgrade soy_milk"
+			"upgrade rear_equipment"
 		],
 		[
 			1201.0,
-			"upgrade rear_equipment"
+			"upgrade fryer"
+		],
+		[
+			1201.0,
+			"flyer_upgrade"
+		],
+		[
+			1201.0,
+			"upgrade soy_milk"
 		],
 		[
 			1261.0,
@@ -381,7 +381,11 @@
 			"upgrade fryer"
 		],
 		[
-			1321.0,
+			1381.0,
+			"flyer"
+		],
+		[
+			1381.0,
 			"upgrade topping"
 		],
 		[
@@ -390,35 +394,35 @@
 		],
 		[
 			1441.0,
-			"flyer"
-		],
-		[
-			1441.0,
-			"upgrade rear_equipment"
-		],
-		[
-			1501.0,
 			"flyer_upgrade"
 		],
 		[
-			1561.0,
+			1441.0,
 			"upgrade fryer"
 		],
 		[
-			1561.0,
+			1501.0,
 			"upgrade topping"
 		],
 		[
-			1621.0,
+			1561.0,
+			"flyer"
+		],
+		[
+			1561.0,
 			"staff "
 		],
 		[
-			1681.0,
+			1621.0,
 			"upgrade fryer"
 		],
 		[
-			1741.0,
+			1681.0,
 			"upgrade topping"
+		],
+		[
+			1741.0,
+			"flyer"
 		]
 	]
 }

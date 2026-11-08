@@ -72,7 +72,6 @@ label = "拿面粉鸡蛋"
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "mix"
-into_machine = true
 seconds = 1.0
 consumes = Dictionary[String, int]({
 "flour": 1
@@ -82,12 +81,12 @@ produces = Dictionary[String, int]({
 })
 label = "打面糊"
 fixed = true
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_hfxa7"]
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
-into_machine = true
 seconds = 10.0
 consumes = Dictionary[String, int]({
 "batter": 1
@@ -96,12 +95,12 @@ produces = Dictionary[String, int]({
 "pancake": 1
 })
 label = "摊饼"
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_cdm4k"]
 script = ExtResource("3_nwmtm")
 station = "roll"
 action = "roll"
-put_down = true
 seconds = 2.5
 consumes = Dictionary[String, int]({
 "pancake": 1
@@ -110,6 +109,7 @@ produces = Dictionary[String, int]({
 "plain": 1
 })
 label = "卷饼"
+put_down = true
 
 [sub_resource type="Resource" id="Resource_4lafi"]
 script = ExtResource("2_713ex")
@@ -136,7 +136,6 @@ label = "拿面粉鸡蛋"
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "mix"
-into_machine = true
 seconds = 1.0
 consumes = Dictionary[String, int]({
 "flour": 1
@@ -146,12 +145,12 @@ produces = Dictionary[String, int]({
 })
 label = "打面糊"
 fixed = true
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_cpw7y"]
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
-into_machine = true
 seconds = 10.0
 consumes = Dictionary[String, int]({
 "batter": 1
@@ -160,6 +159,7 @@ produces = Dictionary[String, int]({
 "pancake": 1
 })
 label = "摊饼"
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_b2nlq"]
 script = ExtResource("3_nwmtm")
@@ -178,7 +178,6 @@ label = "拿薄脆"
 script = ExtResource("3_nwmtm")
 station = "roll"
 action = "roll"
-put_down = true
 seconds = 2.5
 consumes = Dictionary[String, int]({
 "pancake_crisp": 1
@@ -187,6 +186,7 @@ produces = Dictionary[String, int]({
 "guozi": 1
 })
 label = "卷饼"
+put_down = true
 
 [sub_resource type="Resource" id="Resource_ctpuc"]
 script = ExtResource("2_713ex")
@@ -213,7 +213,6 @@ label = "拿面粉鸡蛋"
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "mix"
-into_machine = true
 seconds = 1.0
 consumes = Dictionary[String, int]({
 "flour": 1
@@ -223,12 +222,12 @@ produces = Dictionary[String, int]({
 })
 label = "打面糊"
 fixed = true
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_che6p"]
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
-into_machine = true
 seconds = 10.0
 consumes = Dictionary[String, int]({
 "batter": 1
@@ -237,6 +236,7 @@ produces = Dictionary[String, int]({
 "pancake": 1
 })
 label = "摊饼"
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_87lyh"]
 script = ExtResource("3_nwmtm")
@@ -268,7 +268,6 @@ label = "加料"
 script = ExtResource("3_nwmtm")
 station = "roll"
 action = "roll"
-put_down = true
 seconds = 2.5
 consumes = Dictionary[String, int]({
 "ham_top": 1
@@ -277,6 +276,7 @@ produces = Dictionary[String, int]({
 "ham": 1
 })
 label = "卷饼"
+put_down = true
 
 [sub_resource type="Resource" id="Resource_0heg1"]
 script = ExtResource("2_713ex")
@@ -307,7 +307,6 @@ label = "拿面粉鸡蛋"
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "mix"
-into_machine = true
 seconds = 1.0
 consumes = Dictionary[String, int]({
 "flour": 1
@@ -317,12 +316,12 @@ produces = Dictionary[String, int]({
 })
 label = "打面糊"
 fixed = true
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_a5y5p"]
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
-into_machine = true
 seconds = 10.0
 consumes = Dictionary[String, int]({
 "batter": 1
@@ -331,6 +330,7 @@ produces = Dictionary[String, int]({
 "pancake": 1
 })
 label = "摊饼"
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_jj76k"]
 script = ExtResource("3_nwmtm")
@@ -362,7 +362,6 @@ label = "加料"
 script = ExtResource("3_nwmtm")
 station = "roll"
 action = "roll"
-put_down = true
 seconds = 2.5
 consumes = Dictionary[String, int]({
 "floss_top": 1
@@ -371,6 +370,7 @@ produces = Dictionary[String, int]({
 "floss": 1
 })
 label = "卷饼"
+put_down = true
 
 [sub_resource type="Resource" id="Resource_gex3d"]
 script = ExtResource("2_713ex")
@@ -401,7 +401,6 @@ label = "拿面粉鸡蛋"
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "mix"
-into_machine = true
 seconds = 1.0
 consumes = Dictionary[String, int]({
 "flour": 1
@@ -411,12 +410,12 @@ produces = Dictionary[String, int]({
 })
 label = "打面糊"
 fixed = true
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_os17r"]
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
-into_machine = true
 seconds = 10.0
 consumes = Dictionary[String, int]({
 "batter": 1
@@ -425,6 +424,7 @@ produces = Dictionary[String, int]({
 "pancake": 1
 })
 label = "摊饼"
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_cye4v"]
 script = ExtResource("3_nwmtm")
@@ -456,7 +456,6 @@ label = "加料"
 script = ExtResource("3_nwmtm")
 station = "roll"
 action = "roll"
-put_down = true
 seconds = 2.5
 consumes = Dictionary[String, int]({
 "bacon_top": 1
@@ -465,6 +464,7 @@ produces = Dictionary[String, int]({
 "bacon": 1
 })
 label = "卷饼"
+put_down = true
 
 [sub_resource type="Resource" id="Resource_6x2r7"]
 script = ExtResource("2_713ex")
@@ -495,7 +495,6 @@ label = "拿面粉鸡蛋"
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "mix"
-into_machine = true
 seconds = 1.0
 consumes = Dictionary[String, int]({
 "flour": 1
@@ -505,12 +504,12 @@ produces = Dictionary[String, int]({
 })
 label = "打面糊"
 fixed = true
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_umxff"]
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
-into_machine = true
 seconds = 10.0
 consumes = Dictionary[String, int]({
 "batter": 1
@@ -519,6 +518,7 @@ produces = Dictionary[String, int]({
 "pancake": 1
 })
 label = "摊饼"
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_gu1b7"]
 script = ExtResource("3_nwmtm")
@@ -550,7 +550,6 @@ label = "加料"
 script = ExtResource("3_nwmtm")
 station = "roll"
 action = "roll"
-put_down = true
 seconds = 2.5
 consumes = Dictionary[String, int]({
 "family_top": 1
@@ -559,6 +558,7 @@ produces = Dictionary[String, int]({
 "family": 1
 })
 label = "卷饼"
+put_down = true
 
 [sub_resource type="Resource" id="Resource_deb46"]
 script = ExtResource("2_713ex")
@@ -1032,20 +1032,20 @@ icon = ExtResource("25_c0lsj")
 [sub_resource type="Resource" id="Resource_lpupo"]
 script = ExtResource("14_phbrp")
 nav = "grid"
-areas = Array[Rect2i]([Rect2i(4, 17, 40, 23)])
-obstacles = Array[Rect2]([Rect2(355, 337, 314, 104), Rect2(79, 430, 150, 298), Rect2(737, 439, 151, 294), Rect2(697, 340, 190, 100), Rect2(103, 652, 166, 150), Rect2(41, 795, 817, 180)])
+areas = Array[Rect2i]([Rect2i(4, 17, 40, 24)])
+obstacles = Array[Rect2]([Rect2(355, 337, 314, 104), Rect2(79, 430, 150, 298), Rect2(737, 439, 151, 294), Rect2(697, 340, 190, 100), Rect2(103, 652, 166, 150), Rect2(41, 822, 817, 153)])
 obstacle_stations = Array[String](["rear_equipment", "", "", "", "", ""])
 grid_size = Vector2i(47, 84)
 points = Dictionary[String, Vector2]({
-"bag": Vector2(540, 776),
+"bag": Vector2(515, 808),
 "batter_mixer": Vector2(590, 465),
 "crisps": Vector2(252, 626),
-"front_counter": Vector2(470, 776),
+"front_counter": Vector2(470, 808),
 "fryer": Vector2(272, 500),
 "home": Vector2(600, 758),
 "raw_ingredients": Vector2(690, 455),
 "rear_equipment": Vector2(420, 465),
-"roll": Vector2(470, 776),
+"roll": Vector2(425, 808),
 "soy_milk": Vector2(290, 720),
 "topping": Vector2(712, 590)
 })
@@ -1058,12 +1058,12 @@ spawn_point = "home"
 [sub_resource type="Resource" id="Resource_tu4gf"]
 script = ExtResource("3_nwmtm")
 action = "bag"
-put_down = true
 seconds = 2.0
 produces = Dictionary[String, int]({
 "bagged": 1
 })
 label = "装袋"
+put_down = true
 
 [sub_resource type="Resource" id="Resource_43m6u"]
 script = ExtResource("27_kr8mi")
