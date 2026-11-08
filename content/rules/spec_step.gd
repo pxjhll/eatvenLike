@@ -17,3 +17,5 @@ extends Resource
 @export var fixed: bool = false
 ## 手上的东西放进机器里做（比如面粉倒进鏊子打糊）：做这一步时员工手上不画东西
 @export var into_machine: bool = false
+## 手上的东西先放到台面上再做（比如在柜台上卷饼）：做这一步时东西画在台面上（场景里 Stations/<台子>/Put 点），做完再拿起来
+@export var put_down: bool = false

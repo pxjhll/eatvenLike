@@ -291,6 +291,9 @@ func _refresh(delta: float) -> void:
 		actor.display(worker, rules.clock)
 		if _z_by_y: actor.z_index = int(actor.position.y)
 		actor.task.visible = ui.show_selection and int(worker.id) == selected_worker and ui.page == "shop"
+		_show_put_down(worker)
+	for id in _put_items.keys():
+		if not deployed.has(int(id)): _put_items[id].visible = false
 	for id in _badges:
 		var status := view.machine_status(id)
 		var open := rules.station_unlocked(id)
@@ -420,6 +423,38 @@ func _build_world_labels() -> void:
 		staff_tab.add_child(_staff_mark)
 		_staff_ring = HintRing.new()
 		staff_tab.add_child(_staff_ring)
+
+
+## 放在台面上做的工序（put_down）：员工手上的东西画到台面上的 Put 点，做完再拿起来
+var _put_items := {}
+
+
+func _show_put_down(worker: Dictionary) -> void:
+	var steps: Array = worker.get("steps", [])
+	var at: int = worker.get("step", 0)
+	var step: Dictionary = steps[at] if at < steps.size() else {}
+	var item: String = worker.get("carry_item", "")
+	var path := "Stations/%s/Put" % String(step.get("station", ""))
+	var show: bool = worker.get("phase", "") == "work" and bool(step.get("put_down", false)) and not item.is_empty() and anchors.has(path)
+	if not show:
+		if _put_items.has(worker.id): _put_items[worker.id].visible = false
+		return
+	if not _put_items.has(worker.id):
+		var sprite := Sprite2D.new()
+		sprite.z_as_relative = false
+		# 台面上的东西画在柜台、人物上面（虚线框下面）
+		sprite.z_index = RenderingServer.CANVAS_ITEM_Z_MAX - 20
+		_sortables.add_child(sprite)
+		_put_items[worker.id] = sprite
+	var sprite: Sprite2D = _put_items[worker.id]
+	var look: Dictionary = view.item_art(item)
+	var texture: Texture2D = look.get("texture", null)
+	if texture == null: return
+	sprite.texture = texture
+	sprite.modulate = look.get("tint", Color.WHITE)
+	sprite.scale = Vector2.ONE * 52.0 / maxf(texture.get_width(), texture.get_height())
+	sprite.position = anchors.point(path)
+	sprite.visible = true
 
 
 ## 所有店的解锁虚线框一样大，不跟机器大小走；以场景里 Frame 的中心为准
@@ -878,8 +913,8 @@ func open_summary(armed := false) -> void:
 	ui.popups.remove("summary")
 	ui.popups.push({"id": "summary", "title": _t("summary_title", {"shop": shop.display_name}), "title_size": 34, "medal": "medal",
 		"stats": [["clock", "完店用时", "%d 分 %02d 秒" % [seconds / 60, seconds % 60]], ["coin", "营业额", "%d 金" % int(d.earned)]],
-		"note": "\n".join(lines), "buttons": [{"label": _t("summary_stay"), "primary": true},
-			{"label": _t("summary_confirm") if armed else _t("summary_leave", {"next": nxt}),
+		"note": "\n".join(lines), "buttons": [{"label": _t("summary_stay")},
+			{"label": _t("summary_confirm") if armed else _t("summary_leave", {"next": nxt}), "primary": true,
 				"action": leave_shop if armed else open_summary.bind(true)}]})
 
 

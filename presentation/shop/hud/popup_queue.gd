@@ -106,8 +106,11 @@ func refresh() -> void:
 
 
 func _build(card: Dictionary) -> void:
-	for child in _body.get_children(): child.free()
-	for child in _buttons.get_children(): child.free()
+	# 按钮的事可能马上排一张新卡（比如结店总结第一下换成“确定离开”）：那时正在发信号的按钮不能直接 free，先摘下来再延后释放
+	for holder in [_body, _buttons]:
+		for child in holder.get_children():
+			holder.remove_child(child)
+			child.queue_free()
 	var art := String(card.get("art", ""))
 	_art.visible = not art.is_empty()
 	if not art.is_empty(): _art.texture = Icons.portrait(art) if art in _hud.Characters.IDS else Icons.texture(art)

@@ -132,7 +132,7 @@ func display(worker: Dictionary, clock: float) -> void:
 	# 这一步把手上的东西放进机器里做了，手上就不画
 	var steps: Array = worker.get("steps", [])
 	var at: int = worker.get("step", 0)
-	var in_machine: bool = worker.get("phase", "") == "work" and at < steps.size() and bool(steps[at].get("into_machine", false))
+	var in_machine: bool = worker.get("phase", "") == "work" and at < steps.size() and (bool(steps[at].get("into_machine", false)) or bool(steps[at].get("put_down", false)))
 	carried.visible = not item.is_empty() and count > 0 and not in_machine
 	amount.visible = carried.visible and count > 1
 	amount.text = "×%d" % count
