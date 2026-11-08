@@ -108,19 +108,25 @@ position = Vector2(110, 400)
 position = Vector2(470, 1074)
 
 [node name="1" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(590, 1084)
+position = Vector2(378, 1079)
 
 [node name="2" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(710, 1094)
+position = Vector2(286, 1084)
 
 [node name="3" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(830, 1104)
+position = Vector2(194, 1089)
 
 [node name="4" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(780, 1190)
+position = Vector2(102, 1094)
 
 [node name="5" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(660, 1190)
+position = Vector2(10, 1099)
+
+[node name="6" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(-82, 1104)
+
+[node name="7" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(-174, 1109)
 
 [node name="Seats" type="Node2D" parent="Anchors"]
 

@@ -698,6 +698,14 @@ func _update_customers(delta: float) -> void:
 
 ## 一人跟单的店（规格 §3.2）：排队的站在队伍位上，站不下的坐等位；付了钱的先坐等位等餐，没等位就站在一边；
 ## 拿到餐、等不及走掉的客人走回门口再消失。
+## 队伍第 slot 位；超出场景里摆的点就顺着最后一段接着往外排，不叠在最后一格
+static func _queue_spot(queue: Array, slot: int) -> Vector2:
+	if slot < queue.size(): return queue[slot]
+	var last: Vector2 = queue[-1]
+	var step: Vector2 = last - queue[-2] if queue.size() > 1 else Vector2(0, 40)
+	return last + step * float(slot - queue.size() + 1)
+
+
 func _update_customers_single(delta: float) -> void:
 	var queue := anchors.points("Queue")
 	var entrance := anchors.point("Entrance", Vector2(_world_size.x / 2.0, _world_size.y))
@@ -720,12 +728,12 @@ func _update_customers_single(delta: float) -> void:
 			spots[c.id] = [waiting[mini(aside, waiting.size() - 1)], false]
 			aside += 1
 		elif not queue.is_empty():
-			spots[c.id] = [queue[mini(in_line, queue.size() - 1)], false]
+			spots[c.id] = [_queue_spot(queue, in_line), false]
 			in_line += 1
 	for i in rules.queue.size():
 		var id: int = rules.queue[i]
 		var slot := i + in_line
-		if (i < standing or seat >= free_seats) and not queue.is_empty(): spots[id] = [queue[mini(slot, queue.size() - 1)], false]
+		if (i < standing or seat >= free_seats) and not queue.is_empty(): spots[id] = [_queue_spot(queue, slot), false]
 		elif seat < free_seats:
 			spots[id] = [seats[seat], true]
 			seat += 1

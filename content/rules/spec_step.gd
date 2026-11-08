@@ -15,3 +15,5 @@ extends Resource
 @export var repeat: int = 1
 ## true = 这一步的秒数不受机器升级影响（同一台机器上的快动作，比如鏊子旁边打面糊）
 @export var fixed: bool = false
+## 手上的东西放进机器里做（比如面粉倒进鏊子打糊）：做这一步时员工手上不画东西
+@export var into_machine: bool = false

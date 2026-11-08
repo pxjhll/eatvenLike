@@ -129,7 +129,11 @@ func display(worker: Dictionary, clock: float) -> void:
 	if progress_bar.visible: progress_bar.value = done
 	var item: String = worker.get("carry_item", "")
 	var count: int = worker.get("carry_count", 0)
-	carried.visible = not item.is_empty() and count > 0
+	# 这一步把手上的东西放进机器里做了，手上就不画
+	var steps: Array = worker.get("steps", [])
+	var at: int = worker.get("step", 0)
+	var in_machine: bool = worker.get("phase", "") == "work" and at < steps.size() and bool(steps[at].get("into_machine", false))
+	carried.visible = not item.is_empty() and count > 0 and not in_machine
 	amount.visible = carried.visible and count > 1
 	amount.text = "×%d" % count
 	if carried.visible:

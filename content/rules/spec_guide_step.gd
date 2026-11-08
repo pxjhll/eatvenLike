@@ -59,6 +59,8 @@ extends Resource
 @export_multiline var text: String = ""
 @export var confirm_label: String = "知道了"
 @export var cancel_label: String = ""
+## 确认键另外做的事：leave = 打开结店总结去下一家店（去不了时只留取消键当主按钮）
+@export var confirm_action: String = ""
 @export var next: String = ""
 ## 说话的角色（默认三花猫店长）
 @export var speaker: String = "manager"

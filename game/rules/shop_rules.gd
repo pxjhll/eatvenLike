@@ -1973,7 +1973,7 @@ func _order_steps(c: Dictionary) -> Array:
 			if not shop.layout.aliases.has(point): point = s.station
 			# holds：做完这一步手上拿着什么（只给界面画，不参与结算）
 			var holds: String = s.produces.keys()[0] if not s.produces.is_empty() else ""
-			steps.append({"point": point, "action": s.action, "seconds": s.seconds * s.repeat, "label": s.label, "station": s.station, "holds": holds, "fixed": s.fixed})
+			steps.append({"point": point, "action": s.action, "seconds": s.seconds * s.repeat, "label": s.label, "station": s.station, "holds": holds, "fixed": s.fixed, "into_machine": s.into_machine})
 	for id in c.get("options", []):
 		var option := _option(String(id))
 		if option == null or option.step == null: continue
@@ -1982,7 +1982,7 @@ func _order_steps(c: Dictionary) -> Array:
 		var point: String = station + "." + s.action
 		if not shop.layout.aliases.has(point): point = station
 		var holds: String = s.produces.keys()[0] if not s.produces.is_empty() else ""
-		steps.append({"point": point, "action": s.action, "seconds": s.seconds * s.repeat, "label": s.label, "station": station, "holds": holds, "fixed": s.fixed})
+		steps.append({"point": point, "action": s.action, "seconds": s.seconds * s.repeat, "label": s.label, "station": station, "holds": holds, "fixed": s.fixed, "into_machine": s.into_machine})
 	steps.append({"point": counter_id, "action": "hand", "seconds": float(take.get("hand_seconds", 0.0)),
 		"label": "递餐" if shop.fulfillment.pay_at == "on_take" else "递餐收钱", "station": counter_id})
 	return steps

@@ -172,10 +172,9 @@ func _run() -> void:
 	for tray in [201, 202, 203, 204]: _check(_stall(tray).is_visible_in_tree(), "口味开了，料盘 %d 摆出来" % tray)
 	guide.refresh(0)
 	_check(guide.active == "shop_done" and hud.popups.has_card("guide:shop_done"), "弹完店卡")
-	await _click(hud.popups.button(hud.popups.primary_index()))
-	await _click(hud.tab("goals"))
-	var leave: Button = hud.page_node("goals").leave_button
-	await _click(leave)
+	var primary: Button = hud.popups.button(hud.popups.primary_index())
+	_check(primary.text == "去下一家店" and _find_button(hud.popups, "接着营业") != null, "完店卡：主按钮去下一家店，次按钮接着营业")
+	await _click(primary)
 	_check(hud.popups.has_card("summary") and hud.popups._title.text.contains("煎饼果子摊"), "结店总结卡")
 	_check(_texts(hud.popups).any(func(t: String) -> bool: return t.contains("评分")), "总结里有评分")
 	var left := []

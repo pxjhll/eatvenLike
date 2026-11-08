@@ -72,6 +72,7 @@ label = "拿面粉鸡蛋"
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "mix"
+into_machine = true
 seconds = 1.0
 consumes = Dictionary[String, int]({
 "flour": 1
@@ -86,6 +87,7 @@ fixed = true
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
+into_machine = true
 seconds = 10.0
 consumes = Dictionary[String, int]({
 "batter": 1
@@ -133,6 +135,7 @@ label = "拿面粉鸡蛋"
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "mix"
+into_machine = true
 seconds = 1.0
 consumes = Dictionary[String, int]({
 "flour": 1
@@ -147,6 +150,7 @@ fixed = true
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
+into_machine = true
 seconds = 10.0
 consumes = Dictionary[String, int]({
 "batter": 1
@@ -207,6 +211,7 @@ label = "拿面粉鸡蛋"
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "mix"
+into_machine = true
 seconds = 1.0
 consumes = Dictionary[String, int]({
 "flour": 1
@@ -221,6 +226,7 @@ fixed = true
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
+into_machine = true
 seconds = 10.0
 consumes = Dictionary[String, int]({
 "batter": 1
@@ -298,6 +304,7 @@ label = "拿面粉鸡蛋"
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "mix"
+into_machine = true
 seconds = 1.0
 consumes = Dictionary[String, int]({
 "flour": 1
@@ -312,6 +319,7 @@ fixed = true
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
+into_machine = true
 seconds = 10.0
 consumes = Dictionary[String, int]({
 "batter": 1
@@ -389,6 +397,7 @@ label = "拿面粉鸡蛋"
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "mix"
+into_machine = true
 seconds = 1.0
 consumes = Dictionary[String, int]({
 "flour": 1
@@ -403,6 +412,7 @@ fixed = true
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
+into_machine = true
 seconds = 10.0
 consumes = Dictionary[String, int]({
 "batter": 1
@@ -480,6 +490,7 @@ label = "拿面粉鸡蛋"
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "mix"
+into_machine = true
 seconds = 1.0
 consumes = Dictionary[String, int]({
 "flour": 1
@@ -494,6 +505,7 @@ fixed = true
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
+into_machine = true
 seconds = 10.0
 consumes = Dictionary[String, int]({
 "batter": 1
@@ -865,8 +877,10 @@ title = "完店了！"
 title_size = 56
 medal = "medal"
 stats = [["clock", "用时", "time"], ["coin", "总营业额", "revenue"]]
-text = "可以去「目标」点「结店」去奶茶店，也可以接着营业。"
-confirm_label = "接着营业"
+text = "可以去下一家店，也可以接着营业。"
+confirm_label = "去下一家店"
+cancel_label = "接着营业"
+confirm_action = "leave"
 
 [sub_resource type="Resource" id="Resource_psx6r"]
 script = ExtResource("12_p70m1")
