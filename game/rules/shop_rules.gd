@@ -589,6 +589,12 @@ func _order_interval() -> float:
 	return current_stage().customer_interval / flow_multiplier() * tuned("customer")
 
 
+## 现在平均几秒来一位客人（一人跟单的店不算机器等级带来的客流）
+func customer_interval() -> float:
+	if shop.fulfillment.handoff != "single": return _order_interval()
+	return current_stage().customer_interval / mods.value("flow", 1.0) * tuned("customer")
+
+
 func ramp(key: String) -> float:
 	var f := shop.fulfillment
 	if f.ramp_orders <= 0: return 1.0
@@ -787,6 +793,57 @@ func order_mood(order: Dictionary) -> int:
 	var patience := mods.value("patience", 1.0)
 	var wait: float = order.wait * (f.seated_patience if int(order.get("seat", -1)) >= 0 else 1.0) / patience
 	return 2 if wait >= f.mood_seconds[1] else (1 if wait >= f.mood_seconds[0] else 0)
+
+
+# ---------- 通用查询（记录器、提示、界面都问这几个，不翻各交接方式的内部字段） ----------
+
+## 还在等餐的客人：一人跟单的店是排着队的客人，跟单+递杯的店是订单
+func waiting_customers() -> Array:
+	if shop.fulfillment.handoff != "single": return orders
+	var out: Array = []
+	for id in queue:
+		var c := customer(id)
+		if not c.is_empty(): out.append(c)
+	return out
+
+
+## 等急了（心情最差）的客人有几个
+func angry_count() -> int:
+	var count := 0
+	for c in waiting_customers():
+		if order_mood(c) >= 2: count += 1
+	return count
+
+
+## 这个员工现在手上没活（没跟单、没杂活、没在搬东西）
+func worker_idle(worker: Dictionary) -> bool:
+	return worker.job.is_empty() and worker.phase in ["idle", "wait"] and int(worker.get("order", -1)) < 0
+
+
+## 这台机器正在自己做东西（锅在煮、自动机器在转；做好等人拿不算）
+func machine_working(id: String) -> bool:
+	if not station_unlocked(id): return false
+	var station: Dictionary = stations[id]
+	if shop.fulfillment.handoff == "single": return station.phase == "cook"
+	return int(station.processing) > 0 and station.phase != "awaiting_take"
+
+
+## 能买的那组座位现在有几个能坐：堂食组 = 堂食座，等位组 = 等位坐垫
+func seat_count() -> int:
+	var g := buy_group()
+	if g == null: return 0
+	return wait_seats() if g.purpose == "wait" else int(seats.get(g.id, 0))
+
+
+## 那组座位现在坐了几个人：堂食 = 在吃的 + 坐着等的，等位 = 点完单在坐垫上等的
+func seats_used() -> int:
+	var g := buy_group()
+	if g == null: return 0
+	if g.purpose == "dine": return diners.size() + seated_orders()
+	var paid := 0
+	for c in customers:
+		if c.state == "paid": paid += 1
+	return mini(wait_seats(), paid)
 
 
 # ---------- 员工 ----------
@@ -1902,7 +1959,7 @@ func _arrivals_single() -> void:
 			flyer_timer = shop.flyer.gap
 			_spawn_single()
 	if _next_customer <= 0.0:
-		var interval := current_stage().customer_interval / mods.value("flow", 1.0) * tuned("customer")
+		var interval := customer_interval()
 		_next_customer = -log(1.0 - rng.randf() * 0.999) * interval
 		_spawn_single()
 
@@ -2425,7 +2482,7 @@ func _track_bottleneck() -> void:
 		var side := side_of(worker)
 		if not idle.has(side): idle[side] = [0, 0]
 		idle[side][1] += 1
-		if worker.job.is_empty() and worker.phase in ["idle", "wait"] and int(worker.get("order", -1)) < 0: idle[side][0] += 1
+		if worker_idle(worker): idle[side][0] += 1
 	for side in idle: side_idle[side] = lerpf(float(side_idle.get(side, 0.0)), float(idle[side][0]) / idle[side][1], HINT_SMOOTH)
 
 

@@ -357,7 +357,7 @@ func seats() -> Dictionary:
 	var dine := g.purpose == "dine"
 	var total: int = int(rules.seats.get(g.id, 0))
 	var full := g.start + (ShopRules._sum(g.steps) if not g.steps.is_empty() else g.step * g.costs.size())
-	var used := rules.diners.size() + rules.seated_orders() if dine else mini(rules.wait_seats(), rules.customers.filter(func(c: Dictionary) -> bool: return c.state == "paid").size())
+	var used := rules.seats_used()
 	var next := rules._seat_step(g) if rules.seat_cost() >= 0 else 0
 	return {"total": total, "max": full, "cap": rules.seat_cap(g), "used": used, "step": next, "purpose": g.purpose,
 		"title": text("seats_title_" + g.purpose, {}, "堂食座位" if dine else "等位坐垫"),

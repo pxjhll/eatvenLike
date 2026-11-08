@@ -1,5 +1,5 @@
 extends RefCounted
-## 试玩记录（通用）：每 60 秒店内时间一行 JSON（金币、杯数、排队、人手、调参、等级），每次购买和调参也记一行，
+## 试玩记录（通用）：每 60 秒店内时间一行 JSON（金币、杯数、走掉的客人、排队、人手、调参、等级），每次购买和调参也记一行，
 ## 追加到 user://playlog.txt，方便把一局复制出来分析。和店内存档分开。
 
 const FILE := "user://playlog.txt"
@@ -13,6 +13,7 @@ var _clock := 0.0
 var _acc := {}
 var _last_revenue := 0.0
 var _last_sold := 0
+var _last_lost := 0
 var _session := ""
 
 
@@ -20,6 +21,7 @@ func setup(shop_sim: ShopRules) -> void:
 	sim = shop_sim
 	_last_revenue = sim.revenue
 	_last_sold = sim.sold
+	_last_lost = sim.lost
 	_session = Time.get_datetime_string_from_system()
 	_reset_acc()
 	write({"session": _session, "t": _t(), "stage": sim.stage_index, "gold": sim.gold, "tune": _tune()})
@@ -30,20 +32,19 @@ func tick(shop_seconds: float) -> void:
 	if not enabled or shop_seconds <= 0: return
 	_clock += shop_seconds
 	_acc.n += shop_seconds
-	var capacity: int = sim.queue_capacity()
-	if sim.orders.size() >= capacity: _acc.full += shop_seconds
-	var angry := 0
-	for order in sim.orders:
-		if sim.order_mood(order) == 2: angry += 1
-	_acc.angry += shop_seconds * angry / maxf(1.0, sim.orders.size())
+	# 只问规则层的通用查询，任何店都一样记（不翻某种交接方式的内部字段）
+	var waiting: int = sim.queue_size()
+	if waiting >= sim.queue_capacity(): _acc.full += shop_seconds
+	_acc.angry += shop_seconds * sim.angry_count() / maxf(1.0, waiting)
 	var idle := 0
 	for worker in sim.workers:
-		if worker.job.is_empty(): idle += 1
+		if sim.worker_idle(worker): idle += 1
 	_acc.idle += shop_seconds * idle / maxf(1.0, sim.workers.size())
 	# 锅和自动机器忙了多久
 	for id in sim.pots + sim.autos:
-		if sim.station_unlocked(id) and int(sim.stations[id].get("processing", 0)) > 0: _acc.busy[id] = float(_acc.busy.get(id, 0.0)) + shop_seconds
-	if sim.seat_total() > 0: _acc.seats += shop_seconds * sim.diners.size() / float(sim.seat_total())
+		if sim.machine_working(id): _acc.busy[id] = float(_acc.busy.get(id, 0.0)) + shop_seconds
+	var seat_count: int = sim.seat_count()
+	if seat_count > 0: _acc.seats += shop_seconds * sim.seats_used() / float(seat_count)
 	if _clock >= SAMPLE_SECONDS:
 		_clock -= SAMPLE_SECONDS
 		sample()
@@ -52,13 +53,14 @@ func tick(shop_seconds: float) -> void:
 func sample() -> void:
 	var n: float = maxf(0.001, _acc.n)
 	write({"t": _t(), "stage": sim.stage_index, "gold": sim.gold, "income": sim.revenue - _last_revenue,
-		"cups": sim.sold - _last_sold, "queue": sim.orders.size(), "cap": sim.queue_capacity(),
+		"cups": sim.sold - _last_sold, "lost": sim.lost - _last_lost, "queue": sim.queue_size(), "cap": sim.queue_capacity(),
 		"full": snappedf(_acc.full / n, 0.01), "angry": snappedf(_acc.angry / n, 0.01), "idle": snappedf(_acc.idle / n, 0.01),
 		"busy": _busy(n), "seats_used": snappedf(_acc.seats / n, 0.01),
-		"staff": sim.workers.size(), "seats": sim.seat_total(), "interval": snappedf(sim._order_interval(), 0.1),
+		"staff": sim.workers.size(), "seats": sim.seat_count(), "interval": snappedf(sim.customer_interval(), 0.1),
 		"levels": sim.levels.duplicate(), "tune": _tune()})
 	_last_revenue = sim.revenue
 	_last_sold = sim.sold
+	_last_lost = sim.lost
 	_reset_acc()
 
 

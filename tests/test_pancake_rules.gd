@@ -223,3 +223,46 @@ func test_waiting_customers_never_leave_they_get_angry() -> void:
 	rules.run(120.0)
 	check_eq(rules.customer(int(first.id)).get("state", ""), "queue", "等了两分钟也不走")
 	check_eq(rules.order_mood(first), 2, "等久了生气")
+
+
+## 试玩记录只问规则层的通用查询：煎饼摊（一人跟单）的排队、生气、空闲、坐垫、走掉的客人都要记得到
+func test_playlog_records_queue_staff_seats_and_walkaways() -> void:
+	var Recorder := preload("res://presentation/shop/shop_recorder.gd")
+	var rules := ShopRules.new(_only("soy"))
+	check_eq(rules.unlock("soy_milk"), "", "开豆浆机")
+	var recorder = Recorder.new()
+	recorder.file_path = "user://test_playlog_pancake.txt"
+	if FileAccess.file_exists(recorder.file_path): DirAccess.remove_absolute(ProjectSettings.globalize_path(recorder.file_path))
+	recorder.setup(rules)
+	# 第一分钟：一个员工照常干活，不会整分钟都闲着
+	for i in 600:
+		rules.step(0.1)
+		recorder.tick(0.1)
+	# 第二分钟：没人干活，队排满、客人等急了、后来的走掉
+	rules.workers.clear()
+	for i in 600:
+		rules.step(0.1)
+		recorder.tick(0.1)
+	var rows: Array = []
+	for line in recorder.text().split("\n", false):
+		var row: Dictionary = JSON.parse_string(line)
+		if row.has("income"): rows.append(row)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(recorder.file_path))
+	check_eq(rows.size(), 2, "两分钟两行")
+	check(float(rows[0].idle) < 1.0, "有活干的员工不算空闲：%s" % rows[0].idle)
+	check(int(rows[0].cups) > 0, "第一分钟卖出了")
+	check_eq(int(rows[1].queue), rules.queue_size(), "排队人数是煎饼摊自己的队")
+	check(int(rows[1].queue) > 0 and float(rows[1].full) > 0.0, "没人干活时记到排满")
+	check(float(rows[1].angry) > 0.0, "记到等急了的客人")
+	check(int(rows[1].lost) > 0, "记到排满后走掉的客人")
+	check_eq(int(rows[1].seats), rules.seat_count(), "坐垫数是等位坐垫")
+
+
+func test_generic_queries_answer_for_the_single_handoff_shop() -> void:
+	var rules := ShopRules.new(_only("soy"))
+	check_eq(rules.unlock("soy_milk"), "", "开豆浆机")
+	rules.workers.clear()
+	rules.run(150.0)
+	check_eq(rules.waiting_customers().size(), rules.queue.size(), "等餐的客人 = 排着的队")
+	check(rules.angry_count() > 0, "等久了算等急了")
+	check(is_equal_approx(rules.customer_interval(), rules.current_stage().customer_interval), "客流间隔按阶段")
