@@ -735,6 +735,22 @@ func _update_customers(delta: float) -> void:
 
 ## 一人跟单的店（规格 §3.2）：排队的站在队伍位上，站不下的坐等位；付了钱的先坐等位等餐，没等位就站在一边；
 ## 拿到餐、等不及走掉的客人走回门口再消失。
+## 客人 id → 坐垫序号（坐下就不换）
+var _seat_of := {}
+
+
+## 这位客人的坐垫：坐过的还是那个，没坐过就拿最前面空着的；没空位返回 -1
+func _take_seat(id: int, free_seats: int) -> int:
+	if _seat_of.has(id): return int(_seat_of[id])
+	var taken := {}
+	for other in _seat_of.values(): taken[int(other)] = true
+	for index in free_seats:
+		if not taken.has(index):
+			_seat_of[id] = index
+			return index
+	return -1
+
+
 ## 队伍第 slot 位；超出场景里摆的点就顺着最后一段接着往外排，不叠在最后一格
 static func _queue_spot(queue: Array, slot: int) -> Vector2:
 	if slot < queue.size(): return queue[slot]
@@ -752,28 +768,36 @@ func _update_customers_single(delta: float) -> void:
 	var free_seats := mini(rules.wait_seats(), seats.size())
 	var standing := rules.current_stage().queue_capacity
 	var spots := {}
-	var seat := 0
 	var aside := 0
+	# 坐下的客人记住自己那个坐垫，直到拿到餐离开都不换位置
+	var present := {}
+	for c: Dictionary in rules.customers:
+		if c.state in ["queue", "paid"]: present[c.id] = true
+	for id in _seat_of.keys():
+		if not present.has(id) or int(_seat_of[id]) >= free_seats: _seat_of.erase(id)
 	# 场景里没有等候区（Waiting）的店：点完单没坐垫的客人留在柜台前排着，排在还没点单的人前面
 	var in_line := 0
 	for c: Dictionary in rules.customers:
 		if c.state != "paid": continue
-		if seat < free_seats:
+		var seat := _take_seat(c.id, free_seats)
+		if seat >= 0:
 			spots[c.id] = [seats[seat], true]
-			seat += 1
 		elif not waiting.is_empty():
 			spots[c.id] = [waiting[mini(aside, waiting.size() - 1)], false]
 			aside += 1
 		elif not queue.is_empty():
 			spots[c.id] = [_queue_spot(queue, in_line), false]
 			in_line += 1
+	var line := 0
 	for i in rules.queue.size():
 		var id: int = rules.queue[i]
-		var slot := i + in_line
-		if (i < standing or seat >= free_seats) and not queue.is_empty(): spots[id] = [_queue_spot(queue, slot), false]
-		elif seat < free_seats:
-			spots[id] = [seats[seat], true]
-			seat += 1
+		var seated := _seat_of.has(id)
+		if not seated and (i < standing or _seat_of.size() >= free_seats) and not queue.is_empty():
+			spots[id] = [_queue_spot(queue, line + in_line), false]
+			line += 1
+			continue
+		var seat := _take_seat(id, free_seats)
+		if seat >= 0: spots[id] = [seats[seat], true]
 	var patience: float = shop.fulfillment.leave_after
 	for c: Dictionary in rules.customers:
 		if not spots.has(c.id): continue

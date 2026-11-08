@@ -90,6 +90,15 @@ func _run() -> void:
 	_check(_rules().buy_seat() == "" and _rules().seat_error() == "下一阶段开放更多座位", "第 2 段只能买第一批 2 个坐垫")
 	view._refresh(0)
 	_check(_stall(165).is_visible_in_tree() and not _stall(164).is_visible_in_tree(), "买了第一批坐垫就摆出来")
+	# 坐下的客人一直坐在同一个坐垫上，直到拿到餐离开
+	var seat_of := {}
+	var moved := 0
+	for unused in 400:
+		view._process(0.25)
+		for id in view._seat_of:
+			if seat_of.has(id) and seat_of[id] != view._seat_of[id]: moved += 1
+			seat_of[id] = view._seat_of[id]
+	_check(not seat_of.is_empty() and moved == 0, "坐下的客人不换坐垫（坐过 %d 位，换位 %d 次）" % [seat_of.size(), moved])
 	await _click(hud.tab("shop"))
 	_rules().gold = 60.0
 	guide.refresh(0)
