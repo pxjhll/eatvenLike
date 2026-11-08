@@ -709,6 +709,8 @@ func _update_customers_single(delta: float) -> void:
 	var spots := {}
 	var seat := 0
 	var aside := 0
+	# 场景里没有等候区（Waiting）的店：点完单没坐垫的客人留在柜台前排着，排在还没点单的人前面
+	var in_line := 0
 	for c: Dictionary in rules.customers:
 		if c.state != "paid": continue
 		if seat < free_seats:
@@ -717,9 +719,13 @@ func _update_customers_single(delta: float) -> void:
 		elif not waiting.is_empty():
 			spots[c.id] = [waiting[mini(aside, waiting.size() - 1)], false]
 			aside += 1
+		elif not queue.is_empty():
+			spots[c.id] = [queue[mini(in_line, queue.size() - 1)], false]
+			in_line += 1
 	for i in rules.queue.size():
 		var id: int = rules.queue[i]
-		if (i < standing or seat >= free_seats) and not queue.is_empty(): spots[id] = [queue[mini(i, queue.size() - 1)], false]
+		var slot := i + in_line
+		if (i < standing or seat >= free_seats) and not queue.is_empty(): spots[id] = [queue[mini(slot, queue.size() - 1)], false]
 		elif seat < free_seats:
 			spots[id] = [seats[seat], true]
 			seat += 1
@@ -747,16 +753,17 @@ func _update_customers_single(delta: float) -> void:
 			actor.show_order(String(c.kind), -1.0)
 		actor.display({"pos": point, "walking": not arrived, "seated": spots[c.id][1] and arrived, "phase": "idle", "task_label": ""}, rules.clock)
 		if _z_by_y: actor.z_index = int(actor.position.y)
-	# 不在规则层里的客人：走回门口再消失
+	# 不在规则层里的客人：走到出口（场景没放 Exit 就回门口）再消失
+	var exit := anchors.point("Exit", entrance)
 	for id in _customers.keys():
 		if spots.has(id): continue
 		var actor: Node2D = _customers[id]
 		actor.show_order("", -1.0)
-		var point: Vector2 = Vector2(_customer_positions[id]).move_toward(entrance, delta * _customer_speed)
+		var point: Vector2 = Vector2(_customer_positions[id]).move_toward(exit, delta * _customer_speed)
 		_customer_positions[id] = point
 		actor.display({"pos": point, "walking": true, "phase": "idle", "task_label": ""}, rules.clock)
 		if _z_by_y: actor.z_index = int(actor.position.y)
-		if point.distance_to(entrance) <= 4.0:
+		if point.distance_to(exit) <= 4.0:
 			actor.free()
 			_customers.erase(id)
 			_customer_positions.erase(id)

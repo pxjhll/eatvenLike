@@ -13,3 +13,5 @@ extends Resource
 @export var label: String = ""
 ## 这一步的秒数乘的系数（加料 = 料的份数）
 @export var repeat: int = 1
+## true = 这一步的秒数不受机器升级影响（同一台机器上的快动作，比如鏊子旁边打面糊）
+@export var fixed: bool = false

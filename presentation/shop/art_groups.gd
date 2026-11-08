@@ -4,6 +4,8 @@ extends RefCounted
 ##   <机器 id>           这台机器开了才显示
 ##   belt:<连接 id>      这段传送带买了才显示
 ##   ingredient_box      买过任意一个原料箱
+##   box:<原料 id>       买了这个原料箱
+##   flavor:<菜 id>      这道口味菜开了（加料台上的料盘）
 ##   wait_seats:<N>      至少有 N 个等位座（买来的，或阶段直接给的）
 ## 另外，带 follows 标记（指向另一个节点）的阴影、文字跟着那个节点显示。
 
@@ -23,6 +25,11 @@ static func refresh(art: Node2D, sim: RefCounted) -> void:
 				visibility[group] = "belts" in sim and sim.belts.has(rule.trim_prefix("belt:"))
 			elif rule == "ingredient_box":
 				visibility[group] = sim.boxes.values().has(true)
+			elif rule.begins_with("box:"):
+				visibility[group] = bool(sim.boxes.get(rule.trim_prefix("box:"), false))
+			elif rule.begins_with("flavor:"):
+				var dish: Variant = sim.shop.dish(rule.trim_prefix("flavor:"))
+				visibility[group] = dish != null and sim.flavor_open(dish)
 			elif rule.begins_with("wait_seats:"):
 				visibility[group] = sim.has_method("wait_seats") and sim.wait_seats() >= int(rule.get_slice(":", 1))
 			else:

@@ -43,11 +43,13 @@ func _run() -> void:
 	guide = view.guide
 	_check(_rules().shop.id == "pancake" and guide.enabled, "按跨店记录进煎饼摊，放引导")
 
-	# 原画：开店前只有固定摆设和前台、打包台
+	# 原画：开店前只有固定摆设和前台；面粉箱、加料台、柜台上的袋子盒子都没摆
 	view._refresh(0)
-	_check(_stall(34).is_visible_in_tree() and _stall(46).is_visible_in_tree(), "打包台、前台开局就在")
+	_check(_stall(46).is_visible_in_tree(), "前台开局就在")
 	_check(not _stall(161).is_visible_in_tree() and not _stall(21).is_visible_in_tree(), "豆浆机、鏊子没开之前看不见")
-	_check(not _stall(140).visible, "面粉的字跟着原料台藏起来")
+	_check(not _stall(27).is_visible_in_tree() and not _stall(140).visible, "面粉箱和面粉的字没买之前藏着")
+	_check(not _stall(200).is_visible_in_tree() and not _stall(210).is_visible_in_tree(), "加料台、柜台袋子盒子没开之前看不见")
+	_check(view.anchors.points("Waiting").is_empty() and view.anchors.point("Exit") != Vector2.INF, "客人从左边进、下边走：有出口锚点，不用旧的等候点")
 	for id in [165, 164, 163]: _check(not _stall(id).is_visible_in_tree(), "坐垫 %d 开局不摆" % id)
 
 	# 引导：欢迎卡 → 指豆浆机的虚线框 → 面板里的解锁键
@@ -65,10 +67,11 @@ func _run() -> void:
 	guide.refresh(0)
 	_check(_rules().sold > 0 and guide.active == "", "第一单卖出去，引导收起")
 
-	# 客人：排队的站在队伍位上，豆浆机后面的员工被柜台挡住
-	_run_until(func() -> bool: return not _rules().queue.is_empty(), 60.0)
+	# 客人：在柜台前排队（点完单没坐垫的人也留在队里，排在前面），豆浆机后面的员工被柜台挡住
+	_run_until(func() -> bool: return _rules().customers.any(func(c: Dictionary) -> bool: return c.state in ["queue", "paid"]), 60.0)
 	view._process(0.1)
-	var queued: int = _rules().queue[0]
+	var line: Array = _rules().customers.filter(func(c: Dictionary) -> bool: return c.state == "paid")
+	var queued: int = int(line[0].id) if not line.is_empty() else int(_rules().queue[0])
 	for unused in 60: view._refresh(0.25)
 	var first: Node2D = view._customers.get(queued)
 	_check(first != null and first.position.distance_to(view.anchors.points("Queue")[0]) < 2.0, "排第一的客人站在队伍第一位")
@@ -81,8 +84,7 @@ func _run() -> void:
 	_rules().gold = 60.0
 	await _click(view._station_buttons.rear_equipment)
 	await _click(hud.page_node("station").unlock_button)
-	_check(_rules().station_unlocked("rear_equipment") and _stall(21).is_visible_in_tree() and _stall(140).visible, "开鏊子：后排设备和面粉一起摆出来")
-	view._refresh(0)
+	_check(_rules().station_unlocked("rear_equipment") and _stall(21).is_visible_in_tree() and not _stall(27).is_visible_in_tree(), "开鏊子：鏊子摆出来，面粉箱还没买")
 	_check(not _stall(165).is_visible_in_tree(), "坐垫要自己买，开鏊子不白送")
 	_rules().gold = 60.0
 	_check(_rules().buy_seat() == "" and _rules().seat_error() == "下一阶段开放更多座位", "第 2 段只能买第一批 2 个坐垫")
@@ -100,6 +102,15 @@ func _run() -> void:
 	guide.refresh(0)
 	_check(guide.active == "done" and hud.popups.has_card("guide:done"), "招到人出“开张完成”卡")
 	await _click(hud.popups.button(hud.popups.primary_index()))
+	_rules().gold = 60.0
+	guide.refresh(0)
+	_check(guide.active == "box_flour" and guide._hole.intersects(_local(view._station_buttons.raw_ingredients)), "鏊子要面粉：手指指着原料台")
+	await _click(view._station_buttons.raw_ingredients)
+	await _click(hud.page_node("station").material_buttons.get("flour"))
+	view._refresh(0)
+	_check(bool(_rules().boxes.flour) and _stall(27).is_visible_in_tree() and _stall(140).visible, "买了面粉箱：面粉袋和字摆出来")
+	await _click(hud.tab("shop"))
+	guide.refresh(0)
 	_check(guide.active == "" and not hud.popups.has_card(), "引导走完")
 
 	# 点柜台：面板里发传单，传单没有升级就不显示升级那一行
@@ -141,9 +152,11 @@ func _run() -> void:
 
 	# 完店：弹完店卡，目标页出“结店”，总结卡第一下只提醒，第二下去奶茶店
 	_rules().gold = 99999
-	for id in ["fryer", "topping"]: _rules().unlock(id)
+	for id in ["fryer", "topping", "bag"]: _rules().unlock(id)
 	for id in ["soy_milk", "rear_equipment", "topping"]:
 		while _rules().upgrade_cost(id) >= 0: _rules().upgrade(id)
+	for dish in ["ham", "floss", "bacon", "family"]:
+		while _rules().upgrade_cost("topping/" + dish) >= 0: _rules().upgrade("topping/" + dish)
 	while _rules().buy_seat() == "": pass
 	for row in _rules().task_rows():
 		var task: SpecTask = null
@@ -155,6 +168,8 @@ func _run() -> void:
 	view._refresh(0)
 	_check(_rules().completed_at >= 0.0, "任务都完成就算完店")
 	_check(_stall(163).is_visible_in_tree(), "加料段 9 个坐垫全摆出来")
+	_check(_stall(200).is_visible_in_tree() and _stall(210).is_visible_in_tree(), "加料台、柜台袋子盒子都摆出来")
+	for tray in [201, 202, 203, 204]: _check(_stall(tray).is_visible_in_tree(), "口味开了，料盘 %d 摆出来" % tray)
 	guide.refresh(0)
 	_check(guide.active == "shop_done" and hud.popups.has_card("guide:shop_done"), "弹完店卡")
 	await _click(hud.popups.button(hud.popups.primary_index()))

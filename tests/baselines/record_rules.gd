@@ -1,7 +1,7 @@
 extends SceneTree
 ## 在通用规则层上录煎饼摊的整店基准（旧模拟已删，改数值以后用它重录）：
 ##   godot --headless --path . -s tests/baselines/record_rules.gd [-- --check]
-## 机器人和录旧基准时同一套决策（每分钟看一眼：先解锁、员工忙就招人、买最便宜的升级（机器、员工、传单、座位），
+## 机器人和录旧基准时同一套决策（每分钟看一眼：先买新机器要的原料箱、再解锁、员工忙就招人、买最便宜的升级（机器、原料/口味、员工、传单、座位），
 ## 鏊子忙时优先升鏊子，攒钱解锁时超过目标 1/4 的升级先不买）。录下操作序列以后用 replay_rules 重放算出各项结果，
 ## 写出 tests/baselines/pancake_rules.json，格式和 *_73b0ae3.json 一样。
 ## --check：重录一遍和已存的比，不一致退出码 1。
@@ -55,6 +55,12 @@ static func record(shop: SpecShop) -> Dictionary:
 		var at := snappedf(clock, 0.1)
 		if rules.queue_size() <= 1 and rules.send_flyers() == "": actions.append([at, "flyer"])
 		for _i in 6:
+			# 新机器要用的原料箱先买（买了才能卖新菜）
+			var box := rules.pending_box()
+			if not box.is_empty() and rules.unlock_box(box) == "":
+				unlocks["box " + box] = at
+				actions.append([at, "box " + box])
+				continue
 			var nxt := rules.next_unlock()
 			if not nxt.is_empty() and rules.unlock(nxt) == "":
 				unlocks[nxt] = at
@@ -69,6 +75,10 @@ static func record(shop: SpecShop) -> Dictionary:
 			for st in shop.stations:
 				if not st.tracks.is_empty() and rules.station_unlocked(st.id) and rules.upgrade_error(st.id) == "":
 					opts.append([rules.upgrade_cost(st.id), "upgrade " + st.id])
+				for m in st.materials:
+					var key := st.id + "/" + m.id
+					if m.track != null and not m.track.levels.is_empty() and rules.upgrade_error(key) == "":
+						opts.append([rules.upgrade_cost(key), "material %s %s" % [st.id, m.id]])
 			for t in shop.staff.tracks:
 				if rules.upgrade_error("staff/" + t.id) == "": opts.append([rules.upgrade_cost("staff/" + t.id), "staff " + t.id])
 			if rules.upgrade_error("flyer") == "": opts.append([rules.upgrade_cost("flyer"), "flyer_upgrade"])

@@ -1915,11 +1915,27 @@ func _spawn_single() -> void:
 	var kind := _pick_dish(order_weights())
 	var f := shop.fulfillment
 	var addon: bool = kind == f.addon_dish or (not f.addon_dish.is_empty() and rng.randf() < f.addon_chance)
-	var c := {"id": _next_customer_id, "kind": kind, "addon": addon, "state": "queue", "wait": 0.0, "claimed": false, "paid": 0}
+	var c := {"id": _next_customer_id, "kind": kind, "addon": addon, "state": "queue", "wait": 0.0, "claimed": false, "paid": 0,
+		"options": _roll_options()}
 	_next_customer_id += 1
 	customers.append(c)
 	queue.append(c.id)
 	events.emit("arrived", {"dish": kind})
+
+
+## 订单附加选项（§3.2）：机器开了的选项按比例抽；没有开着的选项就不动随机数（不改变别的店的节奏）
+func _roll_options() -> Array:
+	var out: Array = []
+	for option in shop.order_options:
+		if not station_unlocked(option.station): continue
+		if rng.randf() < option.share: out.append(option.id)
+	return out
+
+
+func _option(id: String) -> SpecOrderOption:
+	for option in shop.order_options:
+		if option.id == id: return option
+	return null
 
 
 func _customers_single() -> void:
@@ -1943,7 +1959,8 @@ func customer(id: int) -> Dictionary:
 
 func _order_steps(c: Dictionary) -> Array:
 	var take := shop.station(counter_id).params
-	var steps := [{"point": counter_id, "action": "take", "seconds": float(take.get("take_seconds", 0.0)), "label": "收钱", "station": counter_id}]
+	var take_label := "收钱" if shop.fulfillment.pay_at == "on_take" else "接单"
+	var steps := [{"point": counter_id, "action": "take", "seconds": float(take.get("take_seconds", 0.0)), "label": take_label, "station": counter_id}]
 	var f := shop.fulfillment
 	var dishes: Array = []
 	if c.addon and c.kind != f.addon_dish and f.addon_first: dishes.append(f.addon_dish)
@@ -1956,8 +1973,18 @@ func _order_steps(c: Dictionary) -> Array:
 			if not shop.layout.aliases.has(point): point = s.station
 			# holds：做完这一步手上拿着什么（只给界面画，不参与结算）
 			var holds: String = s.produces.keys()[0] if not s.produces.is_empty() else ""
-			steps.append({"point": point, "action": s.action, "seconds": s.seconds * s.repeat, "label": s.label, "station": s.station, "holds": holds})
-	steps.append({"point": counter_id, "action": "hand", "seconds": float(take.get("hand_seconds", 0.0)), "label": "递餐", "station": counter_id})
+			steps.append({"point": point, "action": s.action, "seconds": s.seconds * s.repeat, "label": s.label, "station": s.station, "holds": holds, "fixed": s.fixed})
+	for id in c.get("options", []):
+		var option := _option(String(id))
+		if option == null or option.step == null: continue
+		var s := option.step
+		var station: String = s.station if not s.station.is_empty() else option.station
+		var point: String = station + "." + s.action
+		if not shop.layout.aliases.has(point): point = station
+		var holds: String = s.produces.keys()[0] if not s.produces.is_empty() else ""
+		steps.append({"point": point, "action": s.action, "seconds": s.seconds * s.repeat, "label": s.label, "station": station, "holds": holds, "fixed": s.fixed})
+	steps.append({"point": counter_id, "action": "hand", "seconds": float(take.get("hand_seconds", 0.0)),
+		"label": "递餐" if shop.fulfillment.pay_at == "on_take" else "递餐收钱", "station": counter_id})
 	return steps
 
 
@@ -2087,7 +2114,8 @@ func _arrived_single(s: Dictionary) -> void:
 			s.task_label = "等" + station.display_name
 			return
 		busy.user = s.id
-		_work_single(s, st.seconds * duration_mult(st.station) / speed(st.station) / skill(s))
+		var machine: float = 1.0 if st.get("fixed", false) else duration_mult(st.station) / speed(st.station)
+		_work_single(s, st.seconds * machine / skill(s))
 	elif station.block == "batch_pot":
 		var pot: Dictionary = stations[st.station]
 		if pot.stock < 1:
@@ -2121,13 +2149,18 @@ func _finish_work_single(s: Dictionary) -> void:
 	var st: Dictionary = s.steps[s.step]
 	match st.action:
 		"take":
+			# 接了单客人就离队去等（state 仍叫 paid）；钱在 pay_at 说的时候进账
 			queue.erase(c.id)
 			var paid := order_price_single(c)
-			gold += paid
-			revenue += paid
+			if shop.fulfillment.pay_at == "on_take":
+				gold += paid
+				revenue += paid
 			c.paid = paid
 			c.state = "paid"
 		"hand":
+			if shop.fulfillment.pay_at != "on_take":
+				gold += c.paid
+				revenue += c.paid
 			c.state = "leaving"
 			sold_by_dish[c.kind] = int(sold_by_dish[c.kind]) + 1
 			sold += 1
@@ -2143,7 +2176,9 @@ func _finish_work_single(s: Dictionary) -> void:
 			return
 		_:
 			var station := shop.station(st.station)
-			if station.block == "hand" and int(station.params.get("users", 0)) > 0: stations[st.station].user = -1
+			# 同一台机器接着做下一步（比如先打糊再摊饼）就不放手
+			var next_same: bool = s.step + 1 < s.steps.size() and String(s.steps[s.step + 1].station) == String(st.station)
+			if station.block == "hand" and int(station.params.get("users", 0)) > 0 and not next_same: stations[st.station].user = -1
 			if not String(st.get("holds", "")).is_empty():
 				s.carry_item = st.holds
 				s.carry_count = 1
@@ -2159,7 +2194,12 @@ func _item_name(id: String) -> String:
 func order_price_single(c: Dictionary) -> int:
 	var f := shop.fulfillment
 	var total := 0.0
-	if c.kind != f.addon_dish: total += raw_price(c.kind)
+	if c.kind != f.addon_dish:
+		var main := raw_price(c.kind)
+		for id in c.get("options", []):
+			var option := _option(String(id))
+			if option != null: main *= option.price_mult
+		total += main
 	if c.addon: total += raw_price(f.addon_dish)
 	return int(round(total))
 
