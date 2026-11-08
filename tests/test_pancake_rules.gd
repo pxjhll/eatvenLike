@@ -1,6 +1,6 @@
 extends "res://tests/test_case.gd"
 ## 煎饼摊玩法跑在通用规则层上（旧 pancake_sim 的行为用例搬过来）：开局、一人跟单走完每台机器、鏊子一次一人、
-## 解锁顺序、招人名额、传单冷却、升级上限、评分。整店节奏由 test_shop_rules 的整店回放对照基准。
+## 面粉箱单独买、打糊加摊饼同一台、装袋选项、口味升级、解锁顺序、招人名额、传单冷却、升级上限、评分。整店节奏由 test_shop_rules 的整店回放对照基准。
 
 const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
 
@@ -16,9 +16,10 @@ func _only(dish: String) -> SpecShop:
 	return shop
 
 
-func test_opening_has_counter_packing_and_one_staff_but_no_customers() -> void:
+func test_opening_has_counter_roll_and_one_staff_but_no_customers() -> void:
 	var rules := ShopRules.new(PANCAKE)
-	check(rules.station_unlocked("front_counter") and rules.station_unlocked("packing"), "前台和打包台开局就在")
+	check(rules.station_unlocked("front_counter") and rules.station_unlocked("roll"), "前台和柜台上的卷饼开局就在")
+	check(not rules.station_unlocked("bag"), "装袋要单独解锁")
 	check(not rules.is_open(), "豆浆机开之前不营业")
 	check_eq(rules.workers.size(), 1, "开局 1 名员工")
 	check_eq(rules.next_unlock(), "soy_milk", "第一个解锁是豆浆机")
@@ -29,85 +30,137 @@ func test_opening_has_counter_packing_and_one_staff_but_no_customers() -> void:
 	check(int(rules.sold_by_dish.soy) > 0, "开张后卖出豆浆")
 
 
+func test_flour_box_is_its_own_buy_after_the_griddle() -> void:
+	var rules := ShopRules.new(PANCAKE)
+	rules.gold = 9999
+	rules.unlock("soy_milk")
+	check(rules.box_error("flour") != "", "鏊子没开不能买面粉箱")
+	check_eq(rules.unlock("rear_equipment"), "", "开鏊子")
+	check(not rules.dish_open("plain"), "光有鏊子还卖不了原味煎饼")
+	check_eq(rules.pending_box(), "flour", "鏊子开了就提示买面粉箱")
+	var gold := rules.gold
+	check_eq(rules.unlock_box("flour"), "", "买面粉箱")
+	check_eq(gold - rules.gold, 20.0, "面粉箱 20 金币")
+	check(rules.dish_open("plain"), "买了面粉箱就能卖原味煎饼")
+
+
+func _open_all(rules: ShopRules) -> void:
+	rules.gold = 99999
+	for id in ["soy_milk", "rear_equipment", "fryer", "topping"]: check_eq(rules.unlock(id), "", "开放" + id)
+	check_eq(rules.unlock_box("flour"), "", "买面粉箱")
+
+
 func test_one_staff_follows_a_food_order_through_every_station() -> void:
 	var rules := ShopRules.new(_only("family"))
-	rules.gold = 9999
-	for id in ["soy_milk", "rear_equipment", "fryer", "topping"]: check_eq(rules.unlock(id), "", "开放" + id)
-	check(rules.station_unlocked("raw_ingredients"), "面粉鸡蛋和鏊子一起开")
+	_open_all(rules)
 	for i in 2: rules.upgrade("topping")
 	check(not rules.dish_open("family"), "加料台 3 级还没有全家福")
 	rules.upgrade("topping")
 	check(rules.dish_open("family"), "加料台 4 级开全家福")
-	var visited := {}
+	var visited := []
+	var held := []
 	var gold_before := rules.gold
-	var paid_at := -1.0
+	var paid_before_sale := false
 	while rules.clock < 120.0 and int(rules.sold_by_dish.family) == 0:
 		rules.step(0.1)
 		var s: Dictionary = rules.workers[0]
-		if s.phase == "work": visited[s.task_label] = true
-		if paid_at < 0.0 and rules.gold > gold_before: paid_at = rules.clock
-	check_eq(int(rules.sold_by_dish.family), 1, "一名员工把全家福从收钱做到递餐")
-	for label in ["收钱", "拿面糊鸡蛋", "摊饼", "拿薄脆", "加料", "卷饼装袋", "递餐"]:
-		check(visited.has(label), "跟单经过：" + label)
-	check(paid_at > 0.0, "先付钱再等餐")
+		if s.phase == "work" and (visited.is_empty() or visited[-1] != s.task_label) and visited.size() < 8: visited.append(s.task_label)
+		if s.carry_count > 0 and (held.is_empty() or held[-1] != s.carry_item): held.append(s.carry_item)
+		if int(rules.sold_by_dish.family) == 0 and rules.gold > gold_before: paid_before_sale = true
+	check_eq(int(rules.sold_by_dish.family), 1, "一名员工把全家福从接单做到递餐")
+	check_eq(visited, ["接单", "拿面粉鸡蛋", "打面糊", "摊饼", "拿薄脆", "加料", "卷饼", "递餐收钱"], "跟单顺序：原料 → 鏊子 → 薄脆筐 → 加料台 → 柜台")
+	check_eq(held, ["flour", "batter", "pancake", "pancake_crisp", "family_top", "family"], "手上拿的东西跟着工序变")
+	check(not paid_before_sale and rules.gold > gold_before, "和奶茶店一样，递餐时才收钱")
 
 
-func test_two_staff_share_one_griddle() -> void:
+func test_batter_is_quick_and_griddle_upgrades_only_speed_up_grilling() -> void:
 	var rules := ShopRules.new(_only("plain"))
-	rules.gold = 9999
-	rules.unlock("soy_milk")
-	rules.unlock("rear_equipment")
-	check_eq(rules.hire(), "", "第 2 段能招第 2 人")
-	check(rules.hire() != "", "第 2 段最多 2 人")
+	_open_all(rules)
+	var times := func() -> Dictionary:
+		var out := {}
+		var r := ShopRules.new(_only("plain"))
+		_open_all(r)
+		for i in rules.level("rear_equipment") - 1: r.upgrade("rear_equipment")
+		var started := {}
+		while r.clock < 60.0 and int(r.sold_by_dish.plain) == 0:
+			r.step(0.1)
+			var s: Dictionary = r.workers[0]
+			if s.phase == "work" and not started.has(s.task_label): started[s.task_label] = float(s.duration)
+		return started
+	var before: Dictionary = times.call()
+	for i in 4: rules.upgrade("rear_equipment")
+	var after: Dictionary = times.call()
+	check(float(before["打面糊"]) <= 1.0, "打面糊约 1 秒")
+	check_eq(after["打面糊"], before["打面糊"], "鏊子升级不改打面糊")
+	check(float(after["摊饼"]) < float(before["摊饼"]), "鏊子升级加快摊饼")
+
+
+func test_one_griddle_is_held_from_batter_to_pancake() -> void:
+	var rules := ShopRules.new(_only("plain"))
+	_open_all(rules)
+	check_eq(rules.hire(), "", "招第 2 人")
 	rules.send_flyers()
-	var both_grilling := false
-	for i in 1200:
+	var both := false
+	var cut_in := false
+	var owner := -1
+	for i in 1500:
 		rules.step(0.1)
-		var grilling := 0
+		var at_griddle := 0
 		for s in rules.workers:
-			if s.phase == "work" and s.task_label == "摊饼": grilling += 1
-		both_grilling = both_grilling or grilling > 1
-	check(not both_grilling, "一口鏊子同时只给一个人摊饼")
+			if s.phase == "work" and s.task_label in ["打面糊", "摊饼"]:
+				at_griddle += 1
+				if s.task_label == "摊饼" and owner != -1 and owner != s.id: cut_in = true
+				owner = s.id if s.task_label == "打面糊" else owner
+		both = both or at_griddle > 1
+	check(not both, "一口鏊子同时只给一个人用（打糊和摊饼算一台）")
+	check(not cut_in, "打完面糊接着摊，中间没人插进来")
 	check(int(rules.sold_by_dish.plain) > 3, "两人轮流用鏊子出饼")
 
 
-func test_staff_hold_what_they_made_until_handing_over() -> void:
-	var rules := ShopRules.new(_only("plain"))
-	rules.gold = 9999
-	rules.unlock("soy_milk")
-	rules.unlock("rear_equipment")
-	rules.send_flyers()
-	var held := {}
-	var sold_before := 0
-	var empty_after_sale := true
-	for i in 1200:
-		rules.step(0.1)
-		var s: Dictionary = rules.workers[0]
-		if s.carry_count > 0: held[s.carry_item] = true
-		if int(rules.sold_by_dish.plain) > sold_before:
-			sold_before = int(rules.sold_by_dish.plain)
-			empty_after_sale = empty_after_sale and s.carry_count == 0
-	check(held.has("batter") and held.has("pancake") and held.has("plain"), "手上依次拿着面糊、煎饼、包好的饼：%s" % [held.keys()])
-	check(sold_before > 0 and empty_after_sale, "递给客人后手上空了")
+func test_bag_option_adds_a_step_and_raises_the_price() -> void:
+	var rules := ShopRules.new(_only("guozi"))
+	_open_all(rules)
+	rules._spawn_single()
+	check(not rules.customers[-1].options.has("bag"), "装袋没开时没人要袋子")
+	check_eq(rules.unlock("bag"), "", "开装袋")
+	var bagged := 0
+	for i in 200:
+		rules._spawn_single()
+		rules.queue.clear()
+		if rules.customers[-1].options.has("bag"): bagged += 1
+	check(bagged > 50 and bagged < 110, "约 4 成客人要袋子：%d/200" % bagged)
+	var plain := {"kind": "guozi", "addon": false, "options": []}
+	var bag := {"kind": "guozi", "addon": false, "options": ["bag"]}
+	check_eq(rules.order_price_single(bag), int(round(rules.raw_price("guozi") * 1.25)), "装袋的这份贵 25%")
+	check(rules.order_price_single(bag) > rules.order_price_single(plain), "比不装袋贵")
+	var soy := rules.shop.fulfillment.addon_dish
+	check_eq(rules.order_price_single({"kind": soy, "addon": true, "options": ["bag"]}), int(round(rules.raw_price(soy) * 1.25)), "只点豆浆装袋也贵 25%")
+	check_eq(rules.order_price_single({"kind": "guozi", "addon": true, "options": ["bag"]}),
+		int(round(rules.raw_price("guozi") * 1.25 + rules.raw_price(soy))), "搭配的豆浆不乘装袋倍数")
+	var steps: Array = rules._order_steps(bag)
+	check_eq(steps[-2].label, "装袋", "装袋在递餐前")
+	check_eq(steps[-2].holds, "bagged", "手上拿着手提袋")
 
 
-func test_staff_walk_around_tables_that_are_out() -> void:
+func test_flavors_have_two_price_levels_like_the_tea_toppings() -> void:
+	var rules := ShopRules.new(PANCAKE)
+	_open_all(rules)
+	var price := rules.dish_price("ham")
+	check(rules.upgrade_error("topping/ham").is_empty(), "火腿口味能升级")
+	check_eq(rules.upgrade("topping/ham"), "", "火腿 Lv2")
+	check(rules.dish_price("ham") > price, "口味升级涨价")
+	check_eq(rules.upgrade("topping/ham"), "", "火腿 Lv3")
+	check_eq(rules.level("topping/ham"), 3, "口味最高 3 级")
+	check(rules.upgrade_error("topping/ham") != "", "3 级封顶")
+
+
+func test_staff_walk_to_every_point() -> void:
 	var rules := ShopRules.new(PANCAKE)
 	var pts := PANCAKE.layout.points
-	var table: Rect2 = PANCAKE.layout.obstacles[PANCAKE.layout.obstacle_stations.find("topping")]
-	var crosses := func() -> bool:
-		for p in rules.nav.path(pts.topping, pts.front_counter):
-			if table.has_point(p): return true
-		return false
-	check(crosses.call(), "加料台没开时中间没有桌子，直接走过去")
-	rules.gold = 99999
-	for i in 6:
-		var n := rules.next_unlock()
-		if n != "": rules.unlock(n)
-	check(not crosses.call(), "加料台开了，员工绕开中间的桌子")
 	for a in pts:
 		for b in pts:
 			if a != b: check(not rules.nav.path(pts[a], pts[b]).is_empty(), "%s 走得到 %s" % [a, b])
+	check(not "topping" in PANCAKE.layout.obstacle_stations, "中间的加料桌拿掉了，加料台在右边竖桌")
 
 
 func test_unlock_order_hires_and_flyer_cooldown() -> void:
@@ -120,10 +173,10 @@ func test_unlock_order_hires_and_flyer_cooldown() -> void:
 	check(rules.send_flyers() != "", "传单有冷却")
 	rules.run(rules.flyer_cooldown() + 1.0)
 	check_eq(rules.send_flyers(), "", "冷却结束可以再发")
-	for id in ["rear_equipment", "fryer", "topping"]: check_eq(rules.unlock(id), "", "按顺序开放" + id)
+	for id in ["rear_equipment", "fryer", "topping", "bag"]: check_eq(rules.unlock(id), "", "按顺序开放" + id)
 	check_eq(rules.staff_slots(), 4, "加料段最多 4 人")
 	check_eq(rules.current_stage().wait_seats, 9, "加料段 9 个坐垫")
-	check(rules.next_unlock().is_empty(), "四台都开了")
+	check(rules.next_unlock().is_empty(), "五样都开了")
 
 
 func test_upgrades_raise_soy_price_and_griddle_caps_at_nine() -> void:

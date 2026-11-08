@@ -56,14 +56,46 @@ size = Vector2(162, 151)
 [node name="topping" type="Node2D" parent="Anchors/Stations"]
 
 [node name="Tap" type="Node2D" parent="Anchors/Stations/topping"]
-position = Vector2(374, 583)
+position = Vector2(737, 439)
 script = ExtResource("anchor")
-size = Vector2(199, 100)
+size = Vector2(151, 294)
 
 [node name="Frame" type="Node2D" parent="Anchors/Stations/topping"]
-position = Vector2(374, 583)
+position = Vector2(737, 439)
 script = ExtResource("anchor")
-size = Vector2(199, 100)
+size = Vector2(151, 294)
+
+[node name="raw_ingredients" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/raw_ingredients"]
+position = Vector2(697, 290)
+script = ExtResource("anchor")
+size = Vector2(190, 150)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/raw_ingredients"]
+position = Vector2(697, 290)
+script = ExtResource("anchor")
+size = Vector2(190, 150)
+
+[node name="bag" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/bag"]
+position = Vector2(460, 780)
+script = ExtResource("anchor")
+size = Vector2(165, 110)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/bag"]
+position = Vector2(460, 780)
+script = ExtResource("anchor")
+size = Vector2(165, 110)
+
+[node name="Put" type="Node2D" parent="Anchors/Stations/bag"]
+position = Vector2(515, 848)
+
+[node name="roll" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Put" type="Node2D" parent="Anchors/Stations/roll"]
+position = Vector2(425, 848)
 
 [node name="front_counter" type="Node2D" parent="Anchors/Stations"]
 
@@ -84,19 +116,25 @@ position = Vector2(110, 400)
 position = Vector2(470, 1074)
 
 [node name="1" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(590, 1084)
+position = Vector2(378, 1079)
 
 [node name="2" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(710, 1094)
+position = Vector2(286, 1084)
 
 [node name="3" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(830, 1104)
+position = Vector2(194, 1089)
 
 [node name="4" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(780, 1190)
+position = Vector2(102, 1094)
 
 [node name="5" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(660, 1190)
+position = Vector2(10, 1099)
+
+[node name="6" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(-82, 1104)
+
+[node name="7" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(-174, 1109)
 
 [node name="Seats" type="Node2D" parent="Anchors"]
 
@@ -129,22 +167,13 @@ position = Vector2(127, 1451)
 [node name="8" type="Node2D" parent="Anchors/Seats/cushion"]
 position = Vector2(347, 1451)
 
-[node name="Waiting" type="Node2D" parent="Anchors"]
-
-[node name="0" type="Node2D" parent="Anchors/Waiting"]
-position = Vector2(96, 1086)
-
-[node name="1" type="Node2D" parent="Anchors/Waiting"]
-position = Vector2(60, 1130)
-
-[node name="2" type="Node2D" parent="Anchors/Waiting"]
-position = Vector2(150, 1140)
-
-[node name="3" type="Node2D" parent="Anchors/Waiting"]
-position = Vector2(40, 1060)
-
 [node name="Entrance" type="Node2D" parent="Anchors"]
+position = Vector2(-60, 1110)
+metadata/note = "客人从左边中间进来"
+
+[node name="Exit" type="Node2D" parent="Anchors"]
 position = Vector2(468, 1720)
+metadata/note = "拿到餐从下方中间离开"
 
 [node name="Counter" type="Node2D" parent="Anchors"]
 
@@ -161,52 +190,45 @@ metadata/grid_size = Vector2i(47, 84)
 [node name="0" type="Node2D" parent="Anchors/Nav/Areas"]
 position = Vector2(80, 340)
 script = ExtResource("anchor")
-size = Vector2(800, 460)
+size = Vector2(800, 480)
 
 [node name="Obstacles" type="Node2D" parent="Anchors/Nav"]
 
 [node name="0" type="Node2D" parent="Anchors/Nav/Obstacles"]
-position = Vector2(335, 600)
-script = ExtResource("anchor")
-size = Vector2(406, 135)
-metadata/note = "中间桌子"
-metadata/station = "topping"
-
-[node name="1" type="Node2D" parent="Anchors/Nav/Obstacles"]
 position = Vector2(355, 337)
 script = ExtResource("anchor")
 size = Vector2(314, 104)
 metadata/note = "后排桌子"
 metadata/station = "rear_equipment"
 
-[node name="2" type="Node2D" parent="Anchors/Nav/Obstacles"]
+[node name="1" type="Node2D" parent="Anchors/Nav/Obstacles"]
 position = Vector2(79, 430)
 script = ExtResource("anchor")
 size = Vector2(150, 298)
 metadata/note = "左边竖桌"
 
-[node name="3" type="Node2D" parent="Anchors/Nav/Obstacles"]
+[node name="2" type="Node2D" parent="Anchors/Nav/Obstacles"]
 position = Vector2(737, 439)
 script = ExtResource("anchor")
 size = Vector2(151, 294)
 metadata/note = "右边竖桌"
 
-[node name="4" type="Node2D" parent="Anchors/Nav/Obstacles"]
+[node name="3" type="Node2D" parent="Anchors/Nav/Obstacles"]
 position = Vector2(697, 340)
 script = ExtResource("anchor")
 size = Vector2(190, 100)
 metadata/note = "右后桌子"
 
-[node name="5" type="Node2D" parent="Anchors/Nav/Obstacles"]
+[node name="4" type="Node2D" parent="Anchors/Nav/Obstacles"]
 position = Vector2(103, 652)
 script = ExtResource("anchor")
 size = Vector2(166, 150)
 metadata/note = "豆浆机"
 
-[node name="6" type="Node2D" parent="Anchors/Nav/Obstacles"]
-position = Vector2(41, 795)
+[node name="5" type="Node2D" parent="Anchors/Nav/Obstacles"]
+position = Vector2(41, 822)
 script = ExtResource("anchor")
-size = Vector2(817, 180)
+size = Vector2(817, 153)
 metadata/note = "前台柜台"
 
 [node name="Points" type="Node2D" parent="Anchors/Nav"]
@@ -215,7 +237,7 @@ metadata/note = "前台柜台"
 position = Vector2(252, 626)
 
 [node name="front_counter" type="Marker2D" parent="Anchors/Nav/Points"]
-position = Vector2(470, 776)
+position = Vector2(470, 808)
 
 [node name="fryer" type="Marker2D" parent="Anchors/Nav/Points"]
 position = Vector2(272, 500)
@@ -223,8 +245,14 @@ position = Vector2(272, 500)
 [node name="home" type="Marker2D" parent="Anchors/Nav/Points"]
 position = Vector2(600, 758)
 
-[node name="packing" type="Marker2D" parent="Anchors/Nav/Points"]
-position = Vector2(770, 752)
+[node name="roll" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(425, 808)
+
+[node name="bag" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(515, 808)
+
+[node name="batter_mixer" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(590, 465)
 
 [node name="raw_ingredients" type="Marker2D" parent="Anchors/Nav/Points"]
 position = Vector2(690, 455)
@@ -236,4 +264,4 @@ position = Vector2(420, 465)
 position = Vector2(290, 720)
 
 [node name="topping" type="Marker2D" parent="Anchors/Nav/Points"]
-position = Vector2(560, 562)
+position = Vector2(712, 590)

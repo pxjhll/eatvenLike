@@ -13,7 +13,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Download Godot 4.7
         run: |
-          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
+          # GitHub 下载偶尔回一个不是 zip 的页面：失败就等一会儿重下，最多 5 次
+          for attempt in 1 2 3 4 5; do
+            curl -fsSL --retry 3 --retry-all-errors -o godot.zip https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip && unzip -tq godot.zip && break
+            echo "Godot download attempt $attempt failed, retrying"; sleep $((attempt * 5))
+          done
           unzip -q godot.zip
           mv Godot_v4.7-stable_linux.x86_64 godot
       - name: Import (build class cache)

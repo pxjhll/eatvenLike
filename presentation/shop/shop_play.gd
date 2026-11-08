@@ -291,6 +291,9 @@ func _refresh(delta: float) -> void:
 		actor.display(worker, rules.clock)
 		if _z_by_y: actor.z_index = int(actor.position.y)
 		actor.task.visible = ui.show_selection and int(worker.id) == selected_worker and ui.page == "shop"
+		_show_put_down(worker)
+	for id in _put_items.keys():
+		if not deployed.has(int(id)): _put_items[id].visible = false
 	for id in _badges:
 		var status := view.machine_status(id)
 		var open := rules.station_unlocked(id)
@@ -422,18 +425,53 @@ func _build_world_labels() -> void:
 		staff_tab.add_child(_staff_ring)
 
 
+## 放在台面上做的工序（put_down）：员工手上的东西画到台面上的 Put 点，做完再拿起来
+var _put_items := {}
+
+
+func _show_put_down(worker: Dictionary) -> void:
+	var steps: Array = worker.get("steps", [])
+	var at: int = worker.get("step", 0)
+	var step: Dictionary = steps[at] if at < steps.size() else {}
+	var item: String = worker.get("carry_item", "")
+	var path := "Stations/%s/Put" % String(step.get("station", ""))
+	var show: bool = worker.get("phase", "") == "work" and bool(step.get("put_down", false)) and not item.is_empty() and anchors.has(path)
+	if not show:
+		if _put_items.has(worker.id): _put_items[worker.id].visible = false
+		return
+	if not _put_items.has(worker.id):
+		var sprite := Sprite2D.new()
+		sprite.z_as_relative = false
+		# 台面上的东西画在柜台、人物上面（虚线框下面）
+		sprite.z_index = RenderingServer.CANVAS_ITEM_Z_MAX - 20
+		_sortables.add_child(sprite)
+		_put_items[worker.id] = sprite
+	var sprite: Sprite2D = _put_items[worker.id]
+	var look: Dictionary = view.item_art(item)
+	var texture: Texture2D = look.get("texture", null)
+	if texture == null: return
+	sprite.texture = texture
+	sprite.modulate = look.get("tint", Color.WHITE)
+	sprite.scale = Vector2.ONE * 52.0 / maxf(texture.get_width(), texture.get_height())
+	sprite.position = anchors.point(path)
+	sprite.visible = true
+
+
+## 所有店的解锁虚线框一样大，不跟机器大小走；以场景里 Frame 的中心为准
+const FRAME_SIZE := Vector2(140, 140)
+
+
 func _frame(rect: Rect2, action: Callable) -> Button:
 	var frame := UnlockFrame.new()
-	frame.position = rect.position
-	frame.size = rect.size
+	frame.size = FRAME_SIZE
+	frame.position = rect.get_center() - FRAME_SIZE / 2.0
 	frame.theme = ui.theme
 	frame.add_theme_font_size_override("font_size", 17)
 	frame.pressed.connect(action)
 	$Canvas/WorldLabels.add_child(frame)
-	# 按脚底前后排序的店：虚线框画在地上那一层，站在框前面的员工不被挡住
-	if _z_by_y and rect.has_area():
-		frame.z_as_relative = false
-		frame.z_index = int(rect.end.y)
+	# 虚线框画在所有场景美术和人物上面，不会被柜台、桌子挡住
+	frame.z_as_relative = false
+	frame.z_index = RenderingServer.CANVAS_ITEM_Z_MAX - 10
 	return frame
 
 
@@ -464,8 +502,7 @@ func _refresh_station_signs() -> void:
 			var table_index: int = rules.seat_total() / maxi(1, int(anchors.meta("Tables/" + group.id, "per_table", 2)))
 			frame.visible = rules.is_open() and rules.seat_cost() >= 0 and table_index < tables.size()
 			if not frame.visible: continue
-			frame.position = tables[table_index] + Vector2(-60, -78)
-			frame.size = Vector2(120, 72)
+			frame.position = tables[table_index] + Vector2(0, -42) - FRAME_SIZE / 2.0
 			frame.can_unlock = rules.seat_error().is_empty()
 			frame.text = _t("frame_seat", {"step": group.step, "cost": rules.seat_cost()})
 			frame.tooltip_text = _t("frame_seat_tip") + "\n" + rules.seat_error()
@@ -698,6 +735,30 @@ func _update_customers(delta: float) -> void:
 
 ## 一人跟单的店（规格 §3.2）：排队的站在队伍位上，站不下的坐等位；付了钱的先坐等位等餐，没等位就站在一边；
 ## 拿到餐、等不及走掉的客人走回门口再消失。
+## 客人 id → 坐垫序号（坐下就不换）
+var _seat_of := {}
+
+
+## 这位客人的坐垫：坐过的还是那个，没坐过就拿最前面空着的；没空位返回 -1
+func _take_seat(id: int, free_seats: int) -> int:
+	if _seat_of.has(id): return int(_seat_of[id])
+	var taken := {}
+	for other in _seat_of.values(): taken[int(other)] = true
+	for index in free_seats:
+		if not taken.has(index):
+			_seat_of[id] = index
+			return index
+	return -1
+
+
+## 队伍第 slot 位；超出场景里摆的点就顺着最后一段接着往外排，不叠在最后一格
+static func _queue_spot(queue: Array, slot: int) -> Vector2:
+	if slot < queue.size(): return queue[slot]
+	var last: Vector2 = queue[-1]
+	var step: Vector2 = last - queue[-2] if queue.size() > 1 else Vector2(0, 40)
+	return last + step * float(slot - queue.size() + 1)
+
+
 func _update_customers_single(delta: float) -> void:
 	var queue := anchors.points("Queue")
 	var entrance := anchors.point("Entrance", Vector2(_world_size.x / 2.0, _world_size.y))
@@ -707,22 +768,36 @@ func _update_customers_single(delta: float) -> void:
 	var free_seats := mini(rules.wait_seats(), seats.size())
 	var standing := rules.current_stage().queue_capacity
 	var spots := {}
-	var seat := 0
 	var aside := 0
+	# 坐下的客人记住自己那个坐垫，直到拿到餐离开都不换位置
+	var present := {}
+	for c: Dictionary in rules.customers:
+		if c.state in ["queue", "paid"]: present[c.id] = true
+	for id in _seat_of.keys():
+		if not present.has(id) or int(_seat_of[id]) >= free_seats: _seat_of.erase(id)
+	# 场景里没有等候区（Waiting）的店：点完单没坐垫的客人留在柜台前排着，排在还没点单的人前面
+	var in_line := 0
 	for c: Dictionary in rules.customers:
 		if c.state != "paid": continue
-		if seat < free_seats:
+		var seat := _take_seat(c.id, free_seats)
+		if seat >= 0:
 			spots[c.id] = [seats[seat], true]
-			seat += 1
 		elif not waiting.is_empty():
 			spots[c.id] = [waiting[mini(aside, waiting.size() - 1)], false]
 			aside += 1
+		elif not queue.is_empty():
+			spots[c.id] = [_queue_spot(queue, in_line), false]
+			in_line += 1
+	var line := 0
 	for i in rules.queue.size():
 		var id: int = rules.queue[i]
-		if (i < standing or seat >= free_seats) and not queue.is_empty(): spots[id] = [queue[mini(i, queue.size() - 1)], false]
-		elif seat < free_seats:
-			spots[id] = [seats[seat], true]
-			seat += 1
+		var seated := _seat_of.has(id)
+		if not seated and (i < standing or _seat_of.size() >= free_seats) and not queue.is_empty():
+			spots[id] = [_queue_spot(queue, line + in_line), false]
+			line += 1
+			continue
+		var seat := _take_seat(id, free_seats)
+		if seat >= 0: spots[id] = [seats[seat], true]
 	var patience: float = shop.fulfillment.leave_after
 	for c: Dictionary in rules.customers:
 		if not spots.has(c.id): continue
@@ -747,16 +822,17 @@ func _update_customers_single(delta: float) -> void:
 			actor.show_order(String(c.kind), -1.0)
 		actor.display({"pos": point, "walking": not arrived, "seated": spots[c.id][1] and arrived, "phase": "idle", "task_label": ""}, rules.clock)
 		if _z_by_y: actor.z_index = int(actor.position.y)
-	# 不在规则层里的客人：走回门口再消失
+	# 不在规则层里的客人：走到出口（场景没放 Exit 就回门口）再消失
+	var exit := anchors.point("Exit", entrance)
 	for id in _customers.keys():
 		if spots.has(id): continue
 		var actor: Node2D = _customers[id]
 		actor.show_order("", -1.0)
-		var point: Vector2 = Vector2(_customer_positions[id]).move_toward(entrance, delta * _customer_speed)
+		var point: Vector2 = Vector2(_customer_positions[id]).move_toward(exit, delta * _customer_speed)
 		_customer_positions[id] = point
 		actor.display({"pos": point, "walking": true, "phase": "idle", "task_label": ""}, rules.clock)
 		if _z_by_y: actor.z_index = int(actor.position.y)
-		if point.distance_to(entrance) <= 4.0:
+		if point.distance_to(exit) <= 4.0:
 			actor.free()
 			_customers.erase(id)
 			_customer_positions.erase(id)
@@ -861,8 +937,8 @@ func open_summary(armed := false) -> void:
 	ui.popups.remove("summary")
 	ui.popups.push({"id": "summary", "title": _t("summary_title", {"shop": shop.display_name}), "title_size": 34, "medal": "medal",
 		"stats": [["clock", "完店用时", "%d 分 %02d 秒" % [seconds / 60, seconds % 60]], ["coin", "营业额", "%d 金" % int(d.earned)]],
-		"note": "\n".join(lines), "buttons": [{"label": _t("summary_stay"), "primary": true},
-			{"label": _t("summary_confirm") if armed else _t("summary_leave", {"next": nxt}),
+		"note": "\n".join(lines), "buttons": [{"label": _t("summary_stay")},
+			{"label": _t("summary_confirm") if armed else _t("summary_leave", {"next": nxt}), "primary": true,
 				"action": leave_shop if armed else open_summary.bind(true)}]})
 
 

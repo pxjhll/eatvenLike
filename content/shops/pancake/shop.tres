@@ -1,6 +1,5 @@
 [gd_resource type="Resource" script_class="SpecShop" format=3]
 
-[ext_resource type="AudioStream" path="res://art/audio/pancake_morning.ogg" id="music_theme"]
 [ext_resource type="Script" path="res://content/rules/spec_connection.gd" id="1_fapgp"]
 [ext_resource type="Script" path="res://content/rules/spec_dish.gd" id="2_713ex"]
 [ext_resource type="Script" path="res://content/rules/spec_step.gd" id="3_nwmtm"]
@@ -14,7 +13,6 @@
 [ext_resource type="Script" path="res://content/rules/spec_goal_rules.gd" id="11_jablx"]
 [ext_resource type="Script" path="res://content/rules/spec_guide_step.gd" id="12_p70m1"]
 [ext_resource type="Script" path="res://content/rules/spec_item.gd" id="13_icdnm"]
-[ext_resource type="Texture2D" path="res://art/pancake/icons/batter.tres" id="14_3rjv3"]
 [ext_resource type="Script" path="res://content/rules/spec_layout.gd" id="14_phbrp"]
 [ext_resource type="Texture2D" path="res://art/pancake/icons/crisps.tres" id="15_2y8k5"]
 [ext_resource type="Script" path="res://content/rules/spec_shop.gd" id="15_50a0c"]
@@ -23,11 +21,21 @@
 [ext_resource type="Script" path="res://content/rules/spec_staff_kind.gd" id="17_70k8p"]
 [ext_resource type="Texture2D" path="res://art/pancake/icons/soy_cup.tres" id="17_wn2x6"]
 [ext_resource type="Script" path="res://content/rules/spec_staff_rules.gd" id="18_5yr4h"]
+[ext_resource type="Texture2D" path="res://art/pancake/items/flour.png" id="18_phbrp"]
+[ext_resource type="Texture2D" path="res://art/pancake/items/pancake.png" id="19_50a0c"]
 [ext_resource type="Script" path="res://content/rules/spec_stage.gd" id="19_fwjhy"]
 [ext_resource type="Script" path="res://content/rules/spec_task.gd" id="20_0u725"]
+[ext_resource type="Texture2D" path="res://art/pancake/items/pancake_crisp.png" id="20_n1vsr"]
+[ext_resource type="Texture2D" path="res://art/pancake/items/ham.png" id="21_70k8p"]
 [ext_resource type="Script" path="res://content/rules/spec_station.gd" id="21_c0lsj"]
+[ext_resource type="Texture2D" path="res://art/pancake/items/floss.png" id="22_5yr4h"]
 [ext_resource type="Script" path="res://content/rules/spec_material.gd" id="22_kr8mi"]
+[ext_resource type="Texture2D" path="res://art/pancake/items/bacon.png" id="23_fwjhy"]
 [ext_resource type="Script" path="res://content/rules/spec_stock_rule.gd" id="23_yyiis"]
+[ext_resource type="Texture2D" path="res://art/pancake/items/family.png" id="24_0u725"]
+[ext_resource type="Texture2D" path="res://art/pancake/items/bag.png" id="25_c0lsj"]
+[ext_resource type="Script" path="res://content/rules/spec_order_option.gd" id="27_kr8mi"]
+[ext_resource type="AudioStream" path="res://art/audio/pancake_morning.ogg" id="music_theme"]
 
 [sub_resource type="Resource" id="Resource_ghdy6"]
 script = ExtResource("3_nwmtm")
@@ -56,11 +64,26 @@ station = "raw_ingredients"
 action = "fetch"
 seconds = 1.0
 produces = Dictionary[String, int]({
-"batter": 1
+"flour": 1
 })
-label = "拿面糊鸡蛋"
+label = "拿面粉鸡蛋"
 
 [sub_resource type="Resource" id="Resource_x2ql6"]
+script = ExtResource("3_nwmtm")
+station = "rear_equipment"
+action = "mix"
+seconds = 1.0
+consumes = Dictionary[String, int]({
+"flour": 1
+})
+produces = Dictionary[String, int]({
+"batter": 1
+})
+label = "打面糊"
+fixed = true
+into_machine = true
+
+[sub_resource type="Resource" id="Resource_hfxa7"]
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
@@ -72,11 +95,12 @@ produces = Dictionary[String, int]({
 "pancake": 1
 })
 label = "摊饼"
+into_machine = true
 
-[sub_resource type="Resource" id="Resource_hfxa7"]
+[sub_resource type="Resource" id="Resource_cdm4k"]
 script = ExtResource("3_nwmtm")
-station = "packing"
-action = "pack"
+station = "roll"
+action = "roll"
 seconds = 2.5
 consumes = Dictionary[String, int]({
 "pancake": 1
@@ -84,7 +108,8 @@ consumes = Dictionary[String, int]({
 produces = Dictionary[String, int]({
 "plain": 1
 })
-label = "卷饼装袋"
+label = "卷饼"
+put_down = true
 
 [sub_resource type="Resource" id="Resource_4lafi"]
 script = ExtResource("2_713ex")
@@ -94,20 +119,35 @@ item = "plain"
 price_parts = Dictionary[String, float]({
 "base": 15.0
 })
-steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_qd1b2"), SubResource("Resource_x2ql6"), SubResource("Resource_hfxa7")])
+steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_qd1b2"), SubResource("Resource_x2ql6"), SubResource("Resource_hfxa7"), SubResource("Resource_cdm4k")])
 takeaway_process = false
 
-[sub_resource type="Resource" id="Resource_cdm4k"]
+[sub_resource type="Resource" id="Resource_f7vts"]
 script = ExtResource("3_nwmtm")
 station = "raw_ingredients"
 action = "fetch"
 seconds = 1.0
 produces = Dictionary[String, int]({
+"flour": 1
+})
+label = "拿面粉鸡蛋"
+
+[sub_resource type="Resource" id="Resource_pwe3r"]
+script = ExtResource("3_nwmtm")
+station = "rear_equipment"
+action = "mix"
+seconds = 1.0
+consumes = Dictionary[String, int]({
+"flour": 1
+})
+produces = Dictionary[String, int]({
 "batter": 1
 })
-label = "拿面糊鸡蛋"
+label = "打面糊"
+fixed = true
+into_machine = true
 
-[sub_resource type="Resource" id="Resource_f7vts"]
+[sub_resource type="Resource" id="Resource_cpw7y"]
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
@@ -119,8 +159,9 @@ produces = Dictionary[String, int]({
 "pancake": 1
 })
 label = "摊饼"
+into_machine = true
 
-[sub_resource type="Resource" id="Resource_pwe3r"]
+[sub_resource type="Resource" id="Resource_b2nlq"]
 script = ExtResource("3_nwmtm")
 station = "fryer"
 action = "crisp"
@@ -128,20 +169,24 @@ seconds = 0.5
 consumes = Dictionary[String, int]({
 "crisp": 1
 })
+produces = Dictionary[String, int]({
+"pancake_crisp": 1
+})
 label = "拿薄脆"
 
-[sub_resource type="Resource" id="Resource_cpw7y"]
+[sub_resource type="Resource" id="Resource_8t27y"]
 script = ExtResource("3_nwmtm")
-station = "packing"
-action = "pack"
+station = "roll"
+action = "roll"
 seconds = 2.5
 consumes = Dictionary[String, int]({
-"pancake": 1
+"pancake_crisp": 1
 })
 produces = Dictionary[String, int]({
 "guozi": 1
 })
-label = "卷饼装袋"
+label = "卷饼"
+put_down = true
 
 [sub_resource type="Resource" id="Resource_ctpuc"]
 script = ExtResource("2_713ex")
@@ -151,20 +196,35 @@ item = "guozi"
 price_parts = Dictionary[String, float]({
 "base": 22.0
 })
-steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_cdm4k"), SubResource("Resource_f7vts"), SubResource("Resource_pwe3r"), SubResource("Resource_cpw7y")])
+steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_f7vts"), SubResource("Resource_pwe3r"), SubResource("Resource_cpw7y"), SubResource("Resource_b2nlq"), SubResource("Resource_8t27y")])
 takeaway_process = false
 
-[sub_resource type="Resource" id="Resource_b2nlq"]
+[sub_resource type="Resource" id="Resource_sfhp0"]
 script = ExtResource("3_nwmtm")
 station = "raw_ingredients"
 action = "fetch"
 seconds = 1.0
 produces = Dictionary[String, int]({
+"flour": 1
+})
+label = "拿面粉鸡蛋"
+
+[sub_resource type="Resource" id="Resource_f28y0"]
+script = ExtResource("3_nwmtm")
+station = "rear_equipment"
+action = "mix"
+seconds = 1.0
+consumes = Dictionary[String, int]({
+"flour": 1
+})
+produces = Dictionary[String, int]({
 "batter": 1
 })
-label = "拿面糊鸡蛋"
+label = "打面糊"
+fixed = true
+into_machine = true
 
-[sub_resource type="Resource" id="Resource_8t27y"]
+[sub_resource type="Resource" id="Resource_che6p"]
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
@@ -176,8 +236,9 @@ produces = Dictionary[String, int]({
 "pancake": 1
 })
 label = "摊饼"
+into_machine = true
 
-[sub_resource type="Resource" id="Resource_sfhp0"]
+[sub_resource type="Resource" id="Resource_87lyh"]
 script = ExtResource("3_nwmtm")
 station = "fryer"
 action = "crisp"
@@ -185,27 +246,37 @@ seconds = 0.5
 consumes = Dictionary[String, int]({
 "crisp": 1
 })
+produces = Dictionary[String, int]({
+"pancake_crisp": 1
+})
 label = "拿薄脆"
 
-[sub_resource type="Resource" id="Resource_f28y0"]
+[sub_resource type="Resource" id="Resource_rabor"]
 script = ExtResource("3_nwmtm")
 station = "topping"
 action = "top"
 seconds = 1.5
+consumes = Dictionary[String, int]({
+"pancake_crisp": 1
+})
+produces = Dictionary[String, int]({
+"ham_top": 1
+})
 label = "加料"
 
-[sub_resource type="Resource" id="Resource_che6p"]
+[sub_resource type="Resource" id="Resource_3p7hd"]
 script = ExtResource("3_nwmtm")
-station = "packing"
-action = "pack"
+station = "roll"
+action = "roll"
 seconds = 2.5
 consumes = Dictionary[String, int]({
-"pancake": 1
+"ham_top": 1
 })
 produces = Dictionary[String, int]({
 "ham": 1
 })
-label = "卷饼装袋"
+label = "卷饼"
+put_down = true
 
 [sub_resource type="Resource" id="Resource_0heg1"]
 script = ExtResource("2_713ex")
@@ -216,23 +287,38 @@ price_parts = Dictionary[String, float]({
 "base": 22.0,
 "topping": 6.0
 })
-steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_b2nlq"), SubResource("Resource_8t27y"), SubResource("Resource_sfhp0"), SubResource("Resource_f28y0"), SubResource("Resource_che6p")])
+steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_sfhp0"), SubResource("Resource_f28y0"), SubResource("Resource_che6p"), SubResource("Resource_87lyh"), SubResource("Resource_rabor"), SubResource("Resource_3p7hd")])
 takeaway_process = false
 flavor_station = "topping"
 flavor_material = "ham"
 topping_count = 1
 
-[sub_resource type="Resource" id="Resource_87lyh"]
+[sub_resource type="Resource" id="Resource_17s07"]
 script = ExtResource("3_nwmtm")
 station = "raw_ingredients"
 action = "fetch"
 seconds = 1.0
 produces = Dictionary[String, int]({
+"flour": 1
+})
+label = "拿面粉鸡蛋"
+
+[sub_resource type="Resource" id="Resource_i4hl3"]
+script = ExtResource("3_nwmtm")
+station = "rear_equipment"
+action = "mix"
+seconds = 1.0
+consumes = Dictionary[String, int]({
+"flour": 1
+})
+produces = Dictionary[String, int]({
 "batter": 1
 })
-label = "拿面糊鸡蛋"
+label = "打面糊"
+fixed = true
+into_machine = true
 
-[sub_resource type="Resource" id="Resource_rabor"]
+[sub_resource type="Resource" id="Resource_a5y5p"]
 script = ExtResource("3_nwmtm")
 station = "rear_equipment"
 action = "grill"
@@ -244,8 +330,9 @@ produces = Dictionary[String, int]({
 "pancake": 1
 })
 label = "摊饼"
+into_machine = true
 
-[sub_resource type="Resource" id="Resource_3p7hd"]
+[sub_resource type="Resource" id="Resource_jj76k"]
 script = ExtResource("3_nwmtm")
 station = "fryer"
 action = "crisp"
@@ -253,27 +340,37 @@ seconds = 0.5
 consumes = Dictionary[String, int]({
 "crisp": 1
 })
+produces = Dictionary[String, int]({
+"pancake_crisp": 1
+})
 label = "拿薄脆"
 
-[sub_resource type="Resource" id="Resource_17s07"]
+[sub_resource type="Resource" id="Resource_3lgnt"]
 script = ExtResource("3_nwmtm")
 station = "topping"
 action = "top"
 seconds = 1.5
+consumes = Dictionary[String, int]({
+"pancake_crisp": 1
+})
+produces = Dictionary[String, int]({
+"floss_top": 1
+})
 label = "加料"
 
-[sub_resource type="Resource" id="Resource_i4hl3"]
+[sub_resource type="Resource" id="Resource_587tl"]
 script = ExtResource("3_nwmtm")
-station = "packing"
-action = "pack"
+station = "roll"
+action = "roll"
 seconds = 2.5
 consumes = Dictionary[String, int]({
-"pancake": 1
+"floss_top": 1
 })
 produces = Dictionary[String, int]({
 "floss": 1
 })
-label = "卷饼装袋"
+label = "卷饼"
+put_down = true
 
 [sub_resource type="Resource" id="Resource_gex3d"]
 script = ExtResource("2_713ex")
@@ -284,89 +381,36 @@ price_parts = Dictionary[String, float]({
 "base": 22.0,
 "topping": 7.0
 })
-steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_87lyh"), SubResource("Resource_rabor"), SubResource("Resource_3p7hd"), SubResource("Resource_17s07"), SubResource("Resource_i4hl3")])
+steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_17s07"), SubResource("Resource_i4hl3"), SubResource("Resource_a5y5p"), SubResource("Resource_jj76k"), SubResource("Resource_3lgnt"), SubResource("Resource_587tl")])
 takeaway_process = false
 flavor_station = "topping"
 flavor_material = "floss"
 topping_count = 1
 
-[sub_resource type="Resource" id="Resource_a5y5p"]
+[sub_resource type="Resource" id="Resource_0kb6m"]
 script = ExtResource("3_nwmtm")
 station = "raw_ingredients"
 action = "fetch"
 seconds = 1.0
 produces = Dictionary[String, int]({
-"batter": 1
+"flour": 1
 })
-label = "拿面糊鸡蛋"
-
-[sub_resource type="Resource" id="Resource_jj76k"]
-script = ExtResource("3_nwmtm")
-station = "rear_equipment"
-action = "grill"
-seconds = 10.0
-consumes = Dictionary[String, int]({
-"batter": 1
-})
-produces = Dictionary[String, int]({
-"pancake": 1
-})
-label = "摊饼"
-
-[sub_resource type="Resource" id="Resource_3lgnt"]
-script = ExtResource("3_nwmtm")
-station = "fryer"
-action = "crisp"
-seconds = 0.5
-consumes = Dictionary[String, int]({
-"crisp": 1
-})
-label = "拿薄脆"
-
-[sub_resource type="Resource" id="Resource_587tl"]
-script = ExtResource("3_nwmtm")
-station = "topping"
-action = "top"
-seconds = 1.5
-label = "加料"
-
-[sub_resource type="Resource" id="Resource_0kb6m"]
-script = ExtResource("3_nwmtm")
-station = "packing"
-action = "pack"
-seconds = 2.5
-consumes = Dictionary[String, int]({
-"pancake": 1
-})
-produces = Dictionary[String, int]({
-"bacon": 1
-})
-label = "卷饼装袋"
-
-[sub_resource type="Resource" id="Resource_6x2r7"]
-script = ExtResource("2_713ex")
-id = "bacon"
-display_name = "培根煎饼果子"
-item = "bacon"
-price_parts = Dictionary[String, float]({
-"base": 22.0,
-"topping": 8.0
-})
-steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_a5y5p"), SubResource("Resource_jj76k"), SubResource("Resource_3lgnt"), SubResource("Resource_587tl"), SubResource("Resource_0kb6m")])
-takeaway_process = false
-flavor_station = "topping"
-flavor_material = "bacon"
-topping_count = 1
+label = "拿面粉鸡蛋"
 
 [sub_resource type="Resource" id="Resource_k5ieb"]
 script = ExtResource("3_nwmtm")
-station = "raw_ingredients"
-action = "fetch"
+station = "rear_equipment"
+action = "mix"
 seconds = 1.0
+consumes = Dictionary[String, int]({
+"flour": 1
+})
 produces = Dictionary[String, int]({
 "batter": 1
 })
-label = "拿面糊鸡蛋"
+label = "打面糊"
+fixed = true
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_os17r"]
 script = ExtResource("3_nwmtm")
@@ -380,6 +424,7 @@ produces = Dictionary[String, int]({
 "pancake": 1
 })
 label = "摊饼"
+into_machine = true
 
 [sub_resource type="Resource" id="Resource_cye4v"]
 script = ExtResource("3_nwmtm")
@@ -389,6 +434,9 @@ seconds = 0.5
 consumes = Dictionary[String, int]({
 "crisp": 1
 })
+produces = Dictionary[String, int]({
+"pancake_crisp": 1
+})
 label = "拿薄脆"
 
 [sub_resource type="Resource" id="Resource_dcnuq"]
@@ -396,21 +444,121 @@ script = ExtResource("3_nwmtm")
 station = "topping"
 action = "top"
 seconds = 1.5
+consumes = Dictionary[String, int]({
+"pancake_crisp": 1
+})
+produces = Dictionary[String, int]({
+"bacon_top": 1
+})
 label = "加料"
-repeat = 3
 
 [sub_resource type="Resource" id="Resource_5yb0s"]
 script = ExtResource("3_nwmtm")
-station = "packing"
-action = "pack"
+station = "roll"
+action = "roll"
 seconds = 2.5
 consumes = Dictionary[String, int]({
+"bacon_top": 1
+})
+produces = Dictionary[String, int]({
+"bacon": 1
+})
+label = "卷饼"
+put_down = true
+
+[sub_resource type="Resource" id="Resource_6x2r7"]
+script = ExtResource("2_713ex")
+id = "bacon"
+display_name = "培根煎饼果子"
+item = "bacon"
+price_parts = Dictionary[String, float]({
+"base": 22.0,
+"topping": 8.0
+})
+steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_0kb6m"), SubResource("Resource_k5ieb"), SubResource("Resource_os17r"), SubResource("Resource_cye4v"), SubResource("Resource_dcnuq"), SubResource("Resource_5yb0s")])
+takeaway_process = false
+flavor_station = "topping"
+flavor_material = "bacon"
+topping_count = 1
+
+[sub_resource type="Resource" id="Resource_60obm"]
+script = ExtResource("3_nwmtm")
+station = "raw_ingredients"
+action = "fetch"
+seconds = 1.0
+produces = Dictionary[String, int]({
+"flour": 1
+})
+label = "拿面粉鸡蛋"
+
+[sub_resource type="Resource" id="Resource_f5p8v"]
+script = ExtResource("3_nwmtm")
+station = "rear_equipment"
+action = "mix"
+seconds = 1.0
+consumes = Dictionary[String, int]({
+"flour": 1
+})
+produces = Dictionary[String, int]({
+"batter": 1
+})
+label = "打面糊"
+fixed = true
+into_machine = true
+
+[sub_resource type="Resource" id="Resource_umxff"]
+script = ExtResource("3_nwmtm")
+station = "rear_equipment"
+action = "grill"
+seconds = 10.0
+consumes = Dictionary[String, int]({
+"batter": 1
+})
+produces = Dictionary[String, int]({
 "pancake": 1
+})
+label = "摊饼"
+into_machine = true
+
+[sub_resource type="Resource" id="Resource_gu1b7"]
+script = ExtResource("3_nwmtm")
+station = "fryer"
+action = "crisp"
+seconds = 0.5
+consumes = Dictionary[String, int]({
+"crisp": 1
+})
+produces = Dictionary[String, int]({
+"pancake_crisp": 1
+})
+label = "拿薄脆"
+
+[sub_resource type="Resource" id="Resource_tah0t"]
+script = ExtResource("3_nwmtm")
+station = "topping"
+action = "top"
+seconds = 1.5
+consumes = Dictionary[String, int]({
+"pancake_crisp": 1
+})
+produces = Dictionary[String, int]({
+"family_top": 1
+})
+label = "加料"
+
+[sub_resource type="Resource" id="Resource_yi5lw"]
+script = ExtResource("3_nwmtm")
+station = "roll"
+action = "roll"
+seconds = 2.5
+consumes = Dictionary[String, int]({
+"family_top": 1
 })
 produces = Dictionary[String, int]({
 "family": 1
 })
-label = "卷饼装袋"
+label = "卷饼"
+put_down = true
 
 [sub_resource type="Resource" id="Resource_deb46"]
 script = ExtResource("2_713ex")
@@ -421,7 +569,7 @@ price_parts = Dictionary[String, float]({
 "base": 22.0,
 "topping": 18.0
 })
-steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_k5ieb"), SubResource("Resource_os17r"), SubResource("Resource_cye4v"), SubResource("Resource_dcnuq"), SubResource("Resource_5yb0s")])
+steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_60obm"), SubResource("Resource_f5p8v"), SubResource("Resource_umxff"), SubResource("Resource_gu1b7"), SubResource("Resource_tah0t"), SubResource("Resource_yi5lw")])
 takeaway_process = false
 flavor_station = "topping"
 flavor_material = "family"
@@ -522,7 +670,6 @@ addon_chance = 0.3
 dine_rule = "takeaway_only"
 taker = "follower"
 handoff = "single"
-pay_at = "on_take"
 price_rounding = "order_round"
 leave_queue = "after_pay"
 wait_area = "wait_seats"
@@ -572,8 +719,8 @@ shop_page_only = false
 skip_marks = Array[String](["opening", "hire", "done"])
 style = "card"
 title = "欢迎来到煎饼果子摊"
-text = "早点摊刚支起来，先卖豆浆，攒钱再开鏊子、油锅和加料台。
-员工会自己接单，从收钱一直做到递餐。"
+text = "早点摊刚支起来，先卖豆浆，攒钱再开鏊子、油锅、加料台和装袋。
+员工会自己接单，从接单一直做到递餐收钱。"
 confirm_label = "开始"
 cancel_label = "跳过引导"
 next = "opening"
@@ -650,6 +797,23 @@ params = {
 "stage": 1
 }
 
+[sub_resource type="Resource" id="Resource_x354x"]
+script = ExtResource("12_p70m1")
+id = "box_flour"
+when = Array[String](["box:flour", "box_affordable"])
+done_when = Array[String](["!box:flour", "!box_affordable"])
+cues = Array[Dictionary]([{
+"at": "ui:material:flour",
+"if": ["page:station:raw_ingredients"],
+"text": "解锁{box}箱，{machine}才有原料"
+}, {
+"go": "shop",
+"if": ["!page:shop"]
+}, {
+"at": "frame:raw_ingredients",
+"text": "{machine}要用{box}：去原料台解锁{box}箱"
+}])
+
 [sub_resource type="Resource" id="Resource_h5pau"]
 script = ExtResource("12_p70m1")
 id = "line_2"
@@ -690,6 +854,26 @@ params = {
 "stage": 3
 }
 
+[sub_resource type="Resource" id="Resource_tg2y0"]
+script = ExtResource("12_p70m1")
+id = "line_4"
+when = Array[String](["stage>=3", "stage<4", "affordable:bag"])
+done_when = Array[String](["stage>=4", "!affordable:bag"])
+cues = Array[Dictionary]([{
+"at": "ui:unlock",
+"if": ["page:station:bag"],
+"text": "点「解锁」开通{line}"
+}, {
+"go": "shop",
+"if": ["!page:shop"]
+}, {
+"at": "frame:bag",
+"text": "金币够了！开通{line}，客人可以要手提袋"
+}])
+params = {
+"stage": 4
+}
+
 [sub_resource type="Resource" id="Resource_u2yoc"]
 script = ExtResource("12_p70m1")
 id = "shop_done"
@@ -699,8 +883,10 @@ title = "完店了！"
 title_size = 56
 medal = "medal"
 stats = [["clock", "用时", "time"], ["coin", "总营业额", "revenue"]]
-text = "可以去「目标」点「结店」去奶茶店，也可以接着营业。"
-confirm_label = "接着营业"
+text = "可以去下一家店，也可以接着营业。"
+confirm_label = "去下一家店"
+cancel_label = "接着营业"
+confirm_action = "leave"
 
 [sub_resource type="Resource" id="Resource_psx6r"]
 script = ExtResource("12_p70m1")
@@ -741,23 +927,11 @@ cues = Array[Dictionary]([{
 }])
 skip_label = "知道了"
 
-[sub_resource type="Resource" id="Resource_60obm"]
-script = ExtResource("13_icdnm")
-id = "batter"
-display_name = "面糊鸡蛋"
-icon = ExtResource("14_3rjv3")
-
 [sub_resource type="Resource" id="Resource_fadod"]
 script = ExtResource("13_icdnm")
 id = "crisp"
 display_name = "薄脆"
 icon = ExtResource("15_2y8k5")
-
-[sub_resource type="Resource" id="Resource_f5p8v"]
-script = ExtResource("13_icdnm")
-id = "pancake"
-display_name = "煎饼"
-icon = ExtResource("16_f53vs")
 
 [sub_resource type="Resource" id="Resource_rhawp"]
 script = ExtResource("13_icdnm")
@@ -801,28 +975,104 @@ id = "family"
 display_name = "全家福"
 icon = ExtResource("16_f53vs")
 
-[sub_resource type="Resource" id="Resource_ldojk"]
+[sub_resource type="Resource" id="Resource_2dm8i"]
+script = ExtResource("13_icdnm")
+id = "flour"
+display_name = "面粉"
+icon = ExtResource("18_phbrp")
+
+[sub_resource type="Resource" id="Resource_aqu7x"]
+script = ExtResource("13_icdnm")
+id = "batter"
+display_name = "面糊"
+icon = ExtResource("18_phbrp")
+
+[sub_resource type="Resource" id="Resource_amww7"]
+script = ExtResource("13_icdnm")
+id = "pancake"
+display_name = "摊好的饼"
+icon = ExtResource("19_50a0c")
+
+[sub_resource type="Resource" id="Resource_ld46t"]
+script = ExtResource("13_icdnm")
+id = "pancake_crisp"
+display_name = "加了薄脆的饼"
+icon = ExtResource("20_n1vsr")
+
+[sub_resource type="Resource" id="Resource_jwnyh"]
+script = ExtResource("13_icdnm")
+id = "ham_top"
+display_name = "加了火腿的饼"
+icon = ExtResource("21_70k8p")
+
+[sub_resource type="Resource" id="Resource_agrpw"]
+script = ExtResource("13_icdnm")
+id = "floss_top"
+display_name = "加了肉松的饼"
+icon = ExtResource("22_5yr4h")
+
+[sub_resource type="Resource" id="Resource_reclk"]
+script = ExtResource("13_icdnm")
+id = "bacon_top"
+display_name = "加了培根的饼"
+icon = ExtResource("23_fwjhy")
+
+[sub_resource type="Resource" id="Resource_u2i5w"]
+script = ExtResource("13_icdnm")
+id = "family_top"
+display_name = "加了全家福的饼"
+icon = ExtResource("24_0u725")
+
+[sub_resource type="Resource" id="Resource_3lm1h"]
+script = ExtResource("13_icdnm")
+id = "bagged"
+display_name = "手提袋"
+icon = ExtResource("25_c0lsj")
+
+[sub_resource type="Resource" id="Resource_lpupo"]
 script = ExtResource("14_phbrp")
 nav = "grid"
-areas = Array[Rect2i]([Rect2i(4, 17, 40, 23)])
-obstacles = Array[Rect2]([Rect2(335, 600, 406, 135), Rect2(355, 337, 314, 104), Rect2(79, 430, 150, 298), Rect2(737, 439, 151, 294), Rect2(697, 340, 190, 100), Rect2(103, 652, 166, 150), Rect2(41, 795, 817, 180)])
-obstacle_stations = Array[String](["topping", "rear_equipment", "", "", "", "", ""])
+areas = Array[Rect2i]([Rect2i(4, 17, 40, 24)])
+obstacles = Array[Rect2]([Rect2(355, 337, 314, 104), Rect2(79, 430, 150, 298), Rect2(737, 439, 151, 294), Rect2(697, 340, 190, 100), Rect2(103, 652, 166, 150), Rect2(41, 822, 817, 153)])
+obstacle_stations = Array[String](["rear_equipment", "", "", "", "", ""])
 grid_size = Vector2i(47, 84)
 points = Dictionary[String, Vector2]({
+"bag": Vector2(515, 808),
+"batter_mixer": Vector2(590, 465),
 "crisps": Vector2(252, 626),
-"front_counter": Vector2(470, 776),
+"front_counter": Vector2(470, 808),
 "fryer": Vector2(272, 500),
 "home": Vector2(600, 758),
-"packing": Vector2(770, 752),
 "raw_ingredients": Vector2(690, 455),
 "rear_equipment": Vector2(420, 465),
+"roll": Vector2(425, 808),
 "soy_milk": Vector2(290, 720),
-"topping": Vector2(560, 562)
+"topping": Vector2(712, 590)
 })
 aliases = Dictionary[String, String]({
-"fryer.crisp": "crisps"
+"fryer.crisp": "crisps",
+"rear_equipment.mix": "batter_mixer"
 })
 spawn_point = "home"
+
+[sub_resource type="Resource" id="Resource_tu4gf"]
+script = ExtResource("3_nwmtm")
+action = "bag"
+seconds = 2.0
+produces = Dictionary[String, int]({
+"bagged": 1
+})
+label = "装袋"
+put_down = true
+
+[sub_resource type="Resource" id="Resource_43m6u"]
+script = ExtResource("27_kr8mi")
+id = "bag"
+display_name = "手提袋"
+station = "bag"
+share = 0.4
+price_mult = 1.25
+step = SubResource("Resource_tu4gf")
 
 [sub_resource type="Resource" id="Resource_aibho"]
 script = ExtResource("16_n1vsr")
@@ -998,7 +1248,7 @@ script = ExtResource("19_fwjhy")
 id = "stage2"
 display_name = "油锅"
 stations = Array[String](["fryer"])
-cost = 160
+cost = 130
 dish = "guozi"
 customer_interval = 6.0
 order_weights = Dictionary[String, float]({
@@ -1051,6 +1301,29 @@ queue_capacity = 6
 wait_seats = 9
 tasks = Array[ExtResource("20_0u725")]([SubResource("Resource_c0cwl"), SubResource("Resource_ns6l1")])
 
+[sub_resource type="Resource" id="Resource_alhme"]
+script = ExtResource("19_fwjhy")
+id = "stage4"
+display_name = "装袋"
+stations = Array[String](["bag"])
+cost = 300
+dish = "ham"
+unlock_note = "开放装袋：约 4 成客人要手提袋，每份贵 25%"
+customer_interval = 4.5
+order_weights = Dictionary[String, float]({
+"guozi": 0.2,
+"meat": 0.45,
+"plain": 0.1,
+"soy": 0.25
+})
+flavor_group = "meat"
+flavor_fallback = "guozi"
+staff_slots = Dictionary[String, int]({
+"": 4
+})
+queue_capacity = 6
+wait_seats = 9
+
 [sub_resource type="Resource" id="Resource_wcjly"]
 script = ExtResource("21_c0lsj")
 id = "front_counter"
@@ -1058,9 +1331,9 @@ display_name = "前台"
 block = "counter"
 params = {
 "facing": 0,
-"hand_seconds": 0.5,
+"hand_seconds": 0.6,
 "posts": 1,
-"take_seconds": 1.5,
+"take_seconds": 0.0,
 "unit": "份"
 }
 starts_unlocked = true
@@ -1269,20 +1542,38 @@ params = {
 }
 unlock_cost = 50
 tracks = Array[ExtResource("9_u2yoc")]([SubResource("Resource_ypisq")])
-description = "摊煎饼：一口鏊子同时只能一个人用"
+description = "先在打糊机打面糊（很快），再上鏊子摊饼；一口鏊子同时只给一个人用，升级只加快摊饼"
 icon = "res://art/pancake/icons/griddle.tres"
+
+[sub_resource type="Resource" id="Resource_p07o0"]
+script = ExtResource("9_u2yoc")
+id = "flour"
+display_name = "面粉鸡蛋"
+
+[sub_resource type="Resource" id="Resource_tu4dg"]
+script = ExtResource("22_kr8mi")
+id = "flour"
+display_name = "面粉鸡蛋"
+item = "flour"
+box_cost = 20
+box_station = "rear_equipment"
+track = SubResource("Resource_p07o0")
+icon = "res://art/pancake/icons/flour_box.png"
 
 [sub_resource type="Resource" id="Resource_e1t54"]
 script = ExtResource("21_c0lsj")
 id = "raw_ingredients"
-display_name = "面糊鸡蛋"
+display_name = "原料台"
 block = "supply"
 params = {
 "fetch_seconds": 1.0,
+"materials_label": "原料",
 "unit": "份"
 }
-companion_of = "rear_equipment"
-icon = "res://art/pancake/icons/batter.tres"
+starts_unlocked = true
+materials = Array[ExtResource("22_kr8mi")]([SubResource("Resource_tu4dg")])
+description = "面粉鸡蛋箱：开了鏊子以后单独买，买了才能摊饼"
+icon = "res://art/pancake/icons/flour_box.png"
 
 [sub_resource type="Resource" id="Resource_rspli"]
 script = ExtResource("23_yyiis")
@@ -1387,16 +1678,42 @@ params = {
 "unload_label": "捞薄脆",
 "unload_seconds": 2.0
 }
-unlock_cost = 160
+unlock_cost = 130
 tracks = Array[ExtResource("9_u2yoc")]([SubResource("Resource_fiqlo")])
 stock = Array[ExtResource("23_yyiis")]([SubResource("Resource_rspli")])
 description = "炸薄脆：一锅 4 份，下锅和捞出都要人"
 icon = "res://art/pancake/icons/fryer.tres"
 
+[sub_resource type="Resource" id="Resource_qrrre"]
+script = ExtResource("7_f53vs")
+kind = "price"
+dishes = Array[String](["ham"])
+op = "set"
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_vv3wv"]
+script = ExtResource("8_wn2x6")
+cost = 20
+effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_qrrre")])
+
+[sub_resource type="Resource" id="Resource_3hhgt"]
+script = ExtResource("7_f53vs")
+kind = "price"
+dishes = Array[String](["ham"])
+op = "set"
+value = 1.1025
+
+[sub_resource type="Resource" id="Resource_046v8"]
+script = ExtResource("8_wn2x6")
+cost = 35
+effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_3hhgt")])
+
 [sub_resource type="Resource" id="Resource_mvsvg"]
 script = ExtResource("9_u2yoc")
 id = "ham"
 display_name = "火腿煎饼果子"
+levels = Array[ExtResource("8_wn2x6")]([SubResource("Resource_vv3wv"), SubResource("Resource_046v8")])
+effect_label = "售价"
 
 [sub_resource type="Resource" id="Resource_v4oy5"]
 script = ExtResource("22_kr8mi")
@@ -1404,13 +1721,39 @@ id = "ham"
 display_name = "火腿煎饼果子"
 item = "ham"
 track = SubResource("Resource_mvsvg")
-icon = "res://art/pancake/icons/pancake_packet.tres"
+icon = "res://art/pancake/icons/ham.png"
+
+[sub_resource type="Resource" id="Resource_3k1ke"]
+script = ExtResource("7_f53vs")
+kind = "price"
+dishes = Array[String](["floss"])
+op = "set"
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_p8syq"]
+script = ExtResource("8_wn2x6")
+cost = 25
+effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_3k1ke")])
+
+[sub_resource type="Resource" id="Resource_vq8hv"]
+script = ExtResource("7_f53vs")
+kind = "price"
+dishes = Array[String](["floss"])
+op = "set"
+value = 1.1025
+
+[sub_resource type="Resource" id="Resource_01p2v"]
+script = ExtResource("8_wn2x6")
+cost = 45
+effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_vq8hv")])
 
 [sub_resource type="Resource" id="Resource_455mb"]
 script = ExtResource("9_u2yoc")
 id = "floss"
 display_name = "肉松煎饼果子"
+levels = Array[ExtResource("8_wn2x6")]([SubResource("Resource_p8syq"), SubResource("Resource_01p2v")])
 requires_level = 2
+effect_label = "售价"
 
 [sub_resource type="Resource" id="Resource_rl4qp"]
 script = ExtResource("22_kr8mi")
@@ -1418,13 +1761,39 @@ id = "floss"
 display_name = "肉松煎饼果子"
 item = "floss"
 track = SubResource("Resource_455mb")
-icon = "res://art/pancake/icons/pancake_packet.tres"
+icon = "res://art/pancake/icons/floss.png"
+
+[sub_resource type="Resource" id="Resource_66o12"]
+script = ExtResource("7_f53vs")
+kind = "price"
+dishes = Array[String](["bacon"])
+op = "set"
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_h3vio"]
+script = ExtResource("8_wn2x6")
+cost = 30
+effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_66o12")])
+
+[sub_resource type="Resource" id="Resource_1vw0r"]
+script = ExtResource("7_f53vs")
+kind = "price"
+dishes = Array[String](["bacon"])
+op = "set"
+value = 1.1025
+
+[sub_resource type="Resource" id="Resource_xmr3x"]
+script = ExtResource("8_wn2x6")
+cost = 55
+effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_1vw0r")])
 
 [sub_resource type="Resource" id="Resource_gplun"]
 script = ExtResource("9_u2yoc")
 id = "bacon"
 display_name = "培根煎饼果子"
+levels = Array[ExtResource("8_wn2x6")]([SubResource("Resource_h3vio"), SubResource("Resource_xmr3x")])
 requires_level = 3
+effect_label = "售价"
 
 [sub_resource type="Resource" id="Resource_xfb48"]
 script = ExtResource("22_kr8mi")
@@ -1432,13 +1801,39 @@ id = "bacon"
 display_name = "培根煎饼果子"
 item = "bacon"
 track = SubResource("Resource_gplun")
-icon = "res://art/pancake/icons/pancake_packet.tres"
+icon = "res://art/pancake/icons/bacon.png"
+
+[sub_resource type="Resource" id="Resource_x5b0d"]
+script = ExtResource("7_f53vs")
+kind = "price"
+dishes = Array[String](["family"])
+op = "set"
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_30c3w"]
+script = ExtResource("8_wn2x6")
+cost = 38
+effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_x5b0d")])
+
+[sub_resource type="Resource" id="Resource_rlj6y"]
+script = ExtResource("7_f53vs")
+kind = "price"
+dishes = Array[String](["family"])
+op = "set"
+value = 1.1025
+
+[sub_resource type="Resource" id="Resource_52ybr"]
+script = ExtResource("8_wn2x6")
+cost = 68
+effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_rlj6y")])
 
 [sub_resource type="Resource" id="Resource_6ip6a"]
 script = ExtResource("9_u2yoc")
 id = "family"
 display_name = "全家福"
+levels = Array[ExtResource("8_wn2x6")]([SubResource("Resource_30c3w"), SubResource("Resource_52ybr")])
 requires_level = 4
+effect_label = "售价"
 
 [sub_resource type="Resource" id="Resource_tv2em"]
 script = ExtResource("22_kr8mi")
@@ -1446,7 +1841,7 @@ id = "family"
 display_name = "全家福"
 item = "family"
 track = SubResource("Resource_6ip6a")
-icon = "res://art/pancake/icons/pancake_packet.tres"
+icon = "res://art/pancake/icons/family.png"
 
 [sub_resource type="Resource" id="Resource_3sqaa"]
 script = ExtResource("7_f53vs")
@@ -1462,7 +1857,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_gtej6"]
 script = ExtResource("8_wn2x6")
-cost = 60
+cost = 48
 effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_3sqaa"), SubResource("Resource_fbw8x")])
 
 [sub_resource type="Resource" id="Resource_cxm0h"]
@@ -1479,7 +1874,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_n7bqk"]
 script = ExtResource("8_wn2x6")
-cost = 93
+cost = 74
 effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_cxm0h"), SubResource("Resource_itbr3")])
 
 [sub_resource type="Resource" id="Resource_q646e"]
@@ -1496,7 +1891,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_13kgt"]
 script = ExtResource("8_wn2x6")
-cost = 145
+cost = 116
 effects = Array[ExtResource("7_f53vs")]([SubResource("Resource_q646e"), SubResource("Resource_14lfw")])
 
 [sub_resource type="Resource" id="Resource_anqe8"]
@@ -1571,13 +1966,13 @@ unlock_cost = 320
 materials = Array[ExtResource("22_kr8mi")]([SubResource("Resource_v4oy5"), SubResource("Resource_rl4qp"), SubResource("Resource_xfb48"), SubResource("Resource_tv2em")])
 tracks = Array[ExtResource("9_u2yoc")]([SubResource("Resource_musef")])
 price_dishes = Array[String](["ham", "floss", "bacon", "family"])
-description = "加火腿、肉松、培根：升级涨价，到级开新口味"
+description = "加火腿、肉松、培根：升级涨价，到级开新口味；每个口味还能单独升 2 级"
 icon = "res://art/pancake/icons/topping.tres"
 
-[sub_resource type="Resource" id="Resource_umxff"]
+[sub_resource type="Resource" id="Resource_qq2us"]
 script = ExtResource("21_c0lsj")
-id = "packing"
-display_name = "打包台"
+id = "roll"
+display_name = "卷饼"
 block = "combine"
 params = {
 "manual": true,
@@ -1585,38 +1980,42 @@ params = {
 "unit": "份"
 }
 starts_unlocked = true
-icon = "res://art/pancake/icons/packing.tres"
+description = "在柜台上把饼卷好，递给客人"
+icon = "res://art/pancake/icons/roll.png"
 
-[sub_resource type="Resource" id="Resource_gu1b7"]
+[sub_resource type="Resource" id="Resource_8qa82"]
 script = ExtResource("21_c0lsj")
-id = "packet_rack"
-display_name = "货架"
-block = "pickup"
+id = "bag"
+display_name = "装袋"
+block = "combine"
 params = {
-"decor": true,
-"unit": "份",
-"zones": {}
+"manual": true,
+"seconds": 2.0,
+"unit": "份"
 }
-starts_unlocked = true
+unlock_cost = 300
+description = "柜台上放手提袋和餐盒：约 4 成客人要装袋，这一份贵 25%"
+icon = "res://art/pancake/icons/bag.png"
 
 [resource]
 script = ExtResource("15_50a0c")
 id = "pancake"
 display_name = "煎饼果子摊"
 start_gold = 10
-items = Array[ExtResource("13_icdnm")]([SubResource("Resource_60obm"), SubResource("Resource_fadod"), SubResource("Resource_f5p8v"), SubResource("Resource_rhawp"), SubResource("Resource_bph1j"), SubResource("Resource_f7tu3"), SubResource("Resource_nkp5d"), SubResource("Resource_suyc0"), SubResource("Resource_vvdok"), SubResource("Resource_fj6u1")])
+items = Array[ExtResource("13_icdnm")]([SubResource("Resource_fadod"), SubResource("Resource_rhawp"), SubResource("Resource_bph1j"), SubResource("Resource_f7tu3"), SubResource("Resource_nkp5d"), SubResource("Resource_suyc0"), SubResource("Resource_vvdok"), SubResource("Resource_fj6u1"), SubResource("Resource_2dm8i"), SubResource("Resource_aqu7x"), SubResource("Resource_amww7"), SubResource("Resource_ld46t"), SubResource("Resource_jwnyh"), SubResource("Resource_agrpw"), SubResource("Resource_reclk"), SubResource("Resource_u2i5w"), SubResource("Resource_3lm1h")])
 dishes = Array[ExtResource("2_713ex")]([SubResource("Resource_pcxv7"), SubResource("Resource_4lafi"), SubResource("Resource_ctpuc"), SubResource("Resource_0heg1"), SubResource("Resource_gex3d"), SubResource("Resource_6x2r7"), SubResource("Resource_deb46")])
-stations = Array[ExtResource("21_c0lsj")]([SubResource("Resource_wcjly"), SubResource("Resource_1a1j3"), SubResource("Resource_mf2hd"), SubResource("Resource_e1t54"), SubResource("Resource_lynu0"), SubResource("Resource_uvl3f"), SubResource("Resource_umxff"), SubResource("Resource_gu1b7")])
-stages = Array[ExtResource("19_fwjhy")]([SubResource("Resource_mwrrk"), SubResource("Resource_n6xcw"), SubResource("Resource_wcptg"), SubResource("Resource_guusu")])
+stations = Array[ExtResource("21_c0lsj")]([SubResource("Resource_wcjly"), SubResource("Resource_1a1j3"), SubResource("Resource_mf2hd"), SubResource("Resource_e1t54"), SubResource("Resource_lynu0"), SubResource("Resource_uvl3f"), SubResource("Resource_qq2us"), SubResource("Resource_8qa82")])
+stages = Array[ExtResource("19_fwjhy")]([SubResource("Resource_mwrrk"), SubResource("Resource_n6xcw"), SubResource("Resource_wcptg"), SubResource("Resource_guusu"), SubResource("Resource_alhme")])
 fulfillment = SubResource("Resource_8o5ay")
 dispatch = SubResource("Resource_kcttd")
 flyer = SubResource("Resource_vlats")
 seat_groups = Array[ExtResource("16_n1vsr")]([SubResource("Resource_aibho")])
 staff = SubResource("Resource_q5hjk")
+order_options = Array[ExtResource("27_kr8mi")]([SubResource("Resource_43m6u")])
 goals = SubResource("Resource_wtmls")
-layout = SubResource("Resource_ldojk")
-guide = Array[ExtResource("12_p70m1")]([SubResource("Resource_3rjv3"), SubResource("Resource_2y8k5"), SubResource("Resource_f53vs"), SubResource("Resource_wn2x6"), SubResource("Resource_nqi46"), SubResource("Resource_h5pau"), SubResource("Resource_ow3tk"), SubResource("Resource_u2yoc"), SubResource("Resource_psx6r"), SubResource("Resource_alpd3"), SubResource("Resource_rbnse")])
-background_music = ExtResource("music_theme")
+layout = SubResource("Resource_lpupo")
+guide = Array[ExtResource("12_p70m1")]([SubResource("Resource_3rjv3"), SubResource("Resource_2y8k5"), SubResource("Resource_f53vs"), SubResource("Resource_wn2x6"), SubResource("Resource_nqi46"), SubResource("Resource_x354x"), SubResource("Resource_h5pau"), SubResource("Resource_ow3tk"), SubResource("Resource_tg2y0"), SubResource("Resource_u2yoc"), SubResource("Resource_psx6r"), SubResource("Resource_alpd3"), SubResource("Resource_rbnse")])
 scene_path = "res://presentation/shops/pancake/pancake_art.tscn"
-save_file = "shop_pancake.json"
+background_music = ExtResource("music_theme")
+save_file = "shop_pancake_v2.json"
 scale_anchor = "cup"

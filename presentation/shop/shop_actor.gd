@@ -129,7 +129,11 @@ func display(worker: Dictionary, clock: float) -> void:
 	if progress_bar.visible: progress_bar.value = done
 	var item: String = worker.get("carry_item", "")
 	var count: int = worker.get("carry_count", 0)
-	carried.visible = not item.is_empty() and count > 0
+	# 这一步把手上的东西放进机器里做了，手上就不画
+	var steps: Array = worker.get("steps", [])
+	var at: int = worker.get("step", 0)
+	var in_machine: bool = worker.get("phase", "") == "work" and at < steps.size() and (bool(steps[at].get("into_machine", false)) or bool(steps[at].get("put_down", false)))
+	carried.visible = not item.is_empty() and count > 0 and not in_machine
 	amount.visible = carried.visible and count > 1
 	amount.text = "×%d" % count
 	if carried.visible:
@@ -138,11 +142,13 @@ func display(worker: Dictionary, clock: float) -> void:
 		if texture == null: texture = load("res://art/reference/" + String(art.get("art", "pearl_tea")) + ".png")
 		carried.texture = texture
 		carried.modulate = art.get("tint", Color.WHITE)
-		carried.scale = Vector2.ONE * CUP_HEIGHT / texture.get_height()
+		# 按长边量：杯子还是 52 高，横着的饼、袋子不会比杯子宽一大截挡住脸
+		carried.scale = Vector2.ONE * CUP_HEIGHT / maxf(texture.get_height(), texture.get_width())
 		carried.position = Vector2(22, -78 + bob)
 		if frame_actor != null:
 			var facing: int = frame_actor.direction
-			var center := Vector2(0, -65) if facing in [0, 4] else Vector2(-29 if facing > 4 else 29, -69)
+			# 拿在胸前偏下；侧身时离开身子一点，不贴在脸上
+			var center := Vector2(0, -50) if facing in [0, 4] else Vector2(-40 if facing > 4 else 40, -54)
 			carried.position = center - texture.get_size() * carried.scale / 2.0
 			amount.position = center + Vector2(10, 10)
 			var behind: bool = facing in [3, 4, 5]

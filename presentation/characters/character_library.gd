@@ -67,7 +67,7 @@ static func actions(art: String) -> Array:
 
 
 static func frame_height(art: String) -> float:
-	return 228.0 if art == "rabbit" else 222.0 if art == "hamster" else 240.0
+	return 228.0 if art == "rabbit" else 250.0 if art == "hamster" else 240.0
 
 
 static func walk_speed(art: String) -> float:

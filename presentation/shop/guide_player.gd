@@ -166,8 +166,11 @@ func _play(step: SpecGuideStep) -> void:
 
 func _push_card(step: SpecGuideStep) -> void:
 	var buttons: Array = []
-	if not step.cancel_label.is_empty(): buttons.append({"label": step.cancel_label, "action": _skip})
-	buttons.append({"label": step.confirm_label, "primary": true, "action": _confirm})
+	if step.confirm_action == "leave" and not _view.can_leave():
+		buttons.append({"label": step.cancel_label if not step.cancel_label.is_empty() else step.confirm_label, "primary": true, "action": _skip})
+	else:
+		if not step.cancel_label.is_empty(): buttons.append({"label": step.cancel_label, "action": _skip})
+		buttons.append({"label": step.confirm_label, "primary": true, "action": _confirm})
 	var stats: Array = []
 	for row in step.stats: stats.append([row[0], row[1], _stat_value(String(row[2]))])
 	_hud.popups.push({"id": "guide:" + step.id, "title": _fill(step.title, step), "title_size": step.title_size,
@@ -193,6 +196,7 @@ func _confirm() -> void:
 	else:
 		_finish()
 	refresh(0.0)
+	if step.confirm_action == "leave": _view.open_summary()
 
 
 func _skip() -> void:

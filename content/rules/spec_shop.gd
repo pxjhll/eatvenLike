@@ -16,6 +16,8 @@ extends Resource
 @export var seat_groups: Array[SpecSeatGroup] = []
 @export var staff: SpecStaffRules
 @export var connections: Array[SpecConnection] = []
+## 订单附加选项（要手提袋之类）
+@export var order_options: Array[SpecOrderOption] = []
 @export var goals: SpecGoalRules
 ## 走位：站位、坐班位、可走区域（规则层寻路用）
 @export var layout: SpecLayout
