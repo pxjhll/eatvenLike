@@ -422,18 +422,21 @@ func _build_world_labels() -> void:
 		staff_tab.add_child(_staff_ring)
 
 
+## 所有店的解锁虚线框一样大，不跟机器大小走；以场景里 Frame 的中心为准
+const FRAME_SIZE := Vector2(140, 140)
+
+
 func _frame(rect: Rect2, action: Callable) -> Button:
 	var frame := UnlockFrame.new()
-	frame.position = rect.position
-	frame.size = rect.size
+	frame.size = FRAME_SIZE
+	frame.position = rect.get_center() - FRAME_SIZE / 2.0
 	frame.theme = ui.theme
 	frame.add_theme_font_size_override("font_size", 17)
 	frame.pressed.connect(action)
 	$Canvas/WorldLabels.add_child(frame)
-	# 按脚底前后排序的店：虚线框画在地上那一层，站在框前面的员工不被挡住
-	if _z_by_y and rect.has_area():
-		frame.z_as_relative = false
-		frame.z_index = int(rect.end.y)
+	# 虚线框画在所有场景美术和人物上面，不会被柜台、桌子挡住
+	frame.z_as_relative = false
+	frame.z_index = RenderingServer.CANVAS_ITEM_Z_MAX - 10
 	return frame
 
 
@@ -464,8 +467,7 @@ func _refresh_station_signs() -> void:
 			var table_index: int = rules.seat_total() / maxi(1, int(anchors.meta("Tables/" + group.id, "per_table", 2)))
 			frame.visible = rules.is_open() and rules.seat_cost() >= 0 and table_index < tables.size()
 			if not frame.visible: continue
-			frame.position = tables[table_index] + Vector2(-60, -78)
-			frame.size = Vector2(120, 72)
+			frame.position = tables[table_index] + Vector2(0, -42) - FRAME_SIZE / 2.0
 			frame.can_unlock = rules.seat_error().is_empty()
 			frame.text = _t("frame_seat", {"step": group.step, "cost": rules.seat_cost()})
 			frame.tooltip_text = _t("frame_seat_tip") + "\n" + rules.seat_error()
