@@ -469,7 +469,7 @@ metadata/figcraft_id = 33
 metadata/source_name = "filled_crisps_basket"
 
 [node name="N200_10 加料台（右边竖桌）" type="Node2D" parent="SceneClip"]
-transform = Transform2D(0.7, 0, 0, 0.7, 778, 468)
+transform = Transform2D(0.85, 0, 0, 0.85, 770, 460)
 metadata/figcraft_id = 200
 metadata/unlock_key = "topping"
 metadata/source_name = "加料台料盘"
@@ -483,7 +483,7 @@ metadata/layout_group = "tray:ham"
 metadata/unlock_rule = "flavor:ham"
 
 [node name="N202_tray_floss" type="Sprite2D" parent="SceneClip/N200_10 加料台（右边竖桌）"]
-position = Vector2(0, 72)
+position = Vector2(0, 68)
 texture = ExtResource("tray_floss")
 centered = false
 metadata/figcraft_id = 202
@@ -491,7 +491,7 @@ metadata/layout_group = "tray:floss"
 metadata/unlock_rule = "flavor:floss"
 
 [node name="N203_tray_bacon" type="Sprite2D" parent="SceneClip/N200_10 加料台（右边竖桌）"]
-position = Vector2(0, 144)
+position = Vector2(0, 136)
 texture = ExtResource("tray_bacon")
 centered = false
 metadata/figcraft_id = 203
@@ -499,7 +499,7 @@ metadata/layout_group = "tray:bacon"
 metadata/unlock_rule = "flavor:bacon"
 
 [node name="N204_tray_family" type="Sprite2D" parent="SceneClip/N200_10 加料台（右边竖桌）"]
-position = Vector2(0, 216)
+position = Vector2(0, 204)
 texture = ExtResource("tray_family")
 centered = false
 metadata/figcraft_id = 204
