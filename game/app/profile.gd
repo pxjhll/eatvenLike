@@ -173,7 +173,8 @@ func _validate(data: Dictionary) -> String:
 	# 缺失 version 的历史文件兼容为 v1；字符串、布尔、非整数版本均拒绝。
 	var version: Variant = data.get("version", VERSION)
 	if not _integer(version) or version != VERSION: return "跨店进度版本无效或不受支持"
-	if not data.get("shop", shop) is String or data.get("shop", shop) not in shops(): return "跨店进度店铺无效"
+	# 店铺 id 不认识（改名或删店）不算坏档：读入时退回第一家店，见 _apply。
+	if not data.get("shop", shop) is String: return "跨店进度店铺无效"
 	if not data.get("records", []) is Array: return "跨店进度结店记录无效"
 	for record in data.get("records", []):
 		if not record is Dictionary: return "跨店进度结店记录无效"
@@ -190,10 +191,26 @@ func _validate(data: Dictionary) -> String:
 	return ""
 
 
+## 结店纪录里排得最靠后的那家店的下一家（已经是最后一家就停在它）；没有纪录就是第一家。
+func _furthest_shop() -> String:
+	var ids := shops()
+	var at := -1
+	for record in records:
+		at = maxi(at, ids.find(String(record.get("shop", ""))))
+	if at < 0: return ids[0]
+	var nxt := next_shop(ids[at])
+	return nxt if nxt in ids else ids[at]
+
+
 func _apply(data: Dictionary) -> void:
 	shop = data.get("shop", shops()[0])
-	records = data.get("records", []).duplicate(true)
 	fresh_shop = data.get("fresh_shop", false)
+	records = data.get("records", []).duplicate(true)
+	if shop not in shops():
+		# 店改名或删掉了：退到结店纪录里打到的最远一家（它的下一家），不白玩；
+		# 不带开店标记，那家店有存档就接着玩，没有就从空店开始。
+		shop = _furthest_shop()
+		fresh_shop = false
 	city = data.get("city", CAMPAIGN.cities[0].id)
 	trophies = int(data.get("trophies", 0))
 	perk_levels = data.get("perk_levels", {}).duplicate(true)
