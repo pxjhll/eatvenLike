@@ -292,3 +292,51 @@ func test_single_steps_require_declared_actions_and_terminal_handoff() -> void:
 	data = base.duplicate(true)
 	data.roster[0].steps.pop_back()
 	_rejected(rules, data, "missing terminal handoff")
+
+func test_active_manual_work_requires_real_output_slot_without_processing_count() -> void:
+	var rules := ShopRules.new(TEA)
+	rules.gold = 10000000.0
+	while not rules.next_unlock().is_empty(): rules.unlock(rules.next_unlock())
+	for id in rules.boxes: rules.unlock_box(id)
+	for unused in 7: rules.hire()
+	for station in TEA.stations:
+		if station.block == "topping":
+			while rules.upgrade_error(station.id).is_empty(): rules.upgrade(station.id)
+	for worker in rules.roster:
+		if not worker.deployed: rules.deploy_worker(worker.id)
+	var snapshot := {}
+	var station_id := ""
+	for unused in 4000:
+		rules.step(0.1)
+		for worker in rules.workers:
+			if worker.phase == "work" and worker.job.get("kind", "") == "work":
+				snapshot = rules.to_dict()
+				station_id = worker.job.src
+				break
+		if not snapshot.is_empty(): break
+	check(not snapshot.is_empty(), "真实营业进入员工加料工序")
+	if snapshot.is_empty(): return
+	check_eq(snapshot.stations[station_id].processing, 0, "员工工序没有自动机 processing 计数")
+	var restored := ShopRules.new(TEA)
+	check_eq(restored.load_dict(snapshot), "", "合法员工工序存档可恢复")
+	var fallback := snapshot.duplicate(true)
+	fallback.stations[station_id].processing_item = ""
+	var fallback_rules := ShopRules.new(TEA)
+	check_eq(fallback_rules.load_dict(fallback), "", "空产出仍允许原来的输入槽回退")
+	var errors := preload("res://tests/error_counter.gd").new()
+	OS.add_logger(errors)
+	fallback_rules.run(20.0)
+	OS.remove_logger(errors)
+	check_eq(errors.take().size(), 0, "空产出回退完成工序不报错")
+	rules.run(20.0)
+	restored.run(20.0)
+	check(var_to_bytes(restored.to_dict()) == var_to_bytes(rules.to_dict()), "正常员工工序完成后精确续跑")
+	var invalid := snapshot.duplicate(true)
+	var wrong_item := ""
+	for item in TEA.items:
+		if not invalid.stations[station_id].output.has(item.id):
+			wrong_item = item.id
+			break
+	check(not wrong_item.is_empty(), "有合法物品不属于该设备产出")
+	invalid.stations[station_id].processing_item = wrong_item
+	_rejected(rules, invalid, "manual processing_item missing output slot")

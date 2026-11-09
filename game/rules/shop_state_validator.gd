@@ -292,6 +292,9 @@ func _station(id: String, row: Variant) -> String:
 	if row.progress < 0 or row.progress > 1: return "progress out of range"
 	if row.user != -1 and not _staff.has(row.user): return "user 员工引用无效"
 	if not row.processing_item.is_empty() and not _items.has(row.processing_item): return "processing_item 未知物品"
+	# Manual topping work consumes this output reference too, while processing
+	# remains zero. Validate every nonempty reference, not only automatic batches.
+	if not row.processing_item.is_empty() and not row.output.has(row.processing_item): return "processing_item 缺少产出槽"
 	if row.has("duration") and (not _number(row.duration) or row.duration < 0): return "duration 无效"
 	if row.processing > 0 and not row.phase in ["awaiting_take", "stir"] and row.get("duration", 0.0) <= 0: return "duration 活动加工时间无效"
 	if row.processing > 0 and _shop.station(id) != null and _shop.station(id).block != "batch_pot" and not row.output.has(row.processing_item): return "processing_item 缺少产出槽"
