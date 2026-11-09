@@ -38,6 +38,12 @@ func _backups(path: String) -> Array[String]:
 		if file.begins_with(path.get_file() + ".pre-content-"): result.append(path.get_base_dir().path_join(file))
 	return result
 
+func _quarantined(path: String, original: PackedByteArray) -> bool:
+	if FileAccess.file_exists(path) and FileAccess.get_file_as_bytes(path) == original: return false
+	for file in DirAccess.get_files_at(path.get_base_dir()):
+		if file.begins_with(path.get_file() + ".corrupt-") and FileAccess.get_file_as_bytes(path.get_base_dir().path_join(file)) == original: return true
+	return false
+
 func _with_optional_progress(mode: String) -> SpecShop:
 	var spec: SpecShop = TEA.duplicate(true)
 	if mode == "material":
@@ -59,7 +65,8 @@ func _with_optional_progress(mode: String) -> SpecShop:
 		spec.layout.points[station.id] = spec.layout.points.lemonade
 	return spec
 
-func test_legacy_removed_recorded_ids_protect_original_and_block_start_and_writes() -> void:
+func test_legacy_removed_recorded_ids_drop_only_removed_progress() -> void:
+	# 删了机器或升级轨不能让整家店白玩：只丢掉删掉的那部分，其余进度保留
 	for mode in ["staff", "material", "station"]:
 		var old_spec := _with_optional_progress(mode)
 		var changed: SpecShop = TEA.duplicate(true)
@@ -73,31 +80,27 @@ func test_legacy_removed_recorded_ids_protect_original_and_block_start_and_write
 		if mode == "station": check(old.station_unlocked("retired_station"), "removed station was unlocked")
 		else: check_eq(old.upgrade(key), "", mode + " track purchased")
 		var data := old.to_dict()
-		# The raw API intentionally keeps its permissive add/remove merge contract.
-		var raw := ShopRules.new(changed)
-		check_eq(raw.load_dict(data), "", mode + " raw restore still allows removed ID")
-		check(not raw.unlocked.has("retired_station") if mode == "station" else not raw.levels.has(key), mode + " raw merge omits removed ID")
 		var path := _path()
 		var original := _write(path, data, {}, 1)
 		var store := ShopSave.new(changed, path)
-		check_eq(store.save_game(ShopRules.new(changed)), ERR_UNAVAILABLE, mode + " direct save blocked")
-		store.load_game()
-		check_eq(store.load_error, ERR_UNAVAILABLE, mode + " load protected")
-		var profile := Profile.new(_path())
-		profile.shop = "tea"
-		var session := SESSION.new(profile, store)
-		check_eq(session.start(), ERR_UNAVAILABLE, mode + " startup blocked")
-		check(session.rules == null and not session.started, mode + " no playable candidate")
-		check_eq(session.save(), ERR_UNAVAILABLE, mode + " session save blocked")
+		var resumed := store.load_game()
+		check_eq(store.load_error, OK, mode + " load migrates")
+		check_eq(resumed.gold, old.gold, mode + " gold kept")
+		check(resumed.station_unlocked("lemonade"), mode + " other unlock kept")
+		check(not resumed.unlocked.has("retired_station") if mode == "station" else not resumed.levels.has(key), mode + " removed ID dropped")
+		check_eq(FileAccess.get_file_as_bytes(path), original, mode + " load is read only")
+		check_eq(store.save_game(resumed), OK, mode + " migrated save")
+		var backups := _backups(path)
+		check_eq(backups.size(), 1, mode + " original backed up before migration")
+		if not backups.is_empty(): check(FileAccess.get_file_as_bytes(backups[0]) == original, mode + " exact backup")
 		var fresh_profile := Profile.new(_path())
 		check_eq(fresh_profile.finish_shop({"shop": "pancake"}), OK, mode + " fresh marker seeded")
-		var profile_bytes := FileAccess.get_file_as_bytes(fresh_profile.path)
-		var fresh := SESSION.new(fresh_profile, ShopSave.new(changed, path))
-		check_eq(fresh.start(), ERR_UNAVAILABLE, mode + " fresh save blocked")
-		check(fresh_profile.fresh_shop and fresh.rules == null, mode + " fresh marker retained")
-		check(FileAccess.get_file_as_bytes(fresh_profile.path) == profile_bytes, mode + " profile unchanged")
-		check(FileAccess.get_file_as_bytes(path) == original, mode + " exact original retained")
-		check_eq(_backups(path).size(), 0, mode + " no migration backup")
+		var fresh_path := _path()
+		_write(fresh_path, data, {}, 1)
+		var fresh := SESSION.new(fresh_profile, ShopSave.new(changed, fresh_path))
+		check_eq(fresh.start(), OK, mode + " fresh start proceeds")
+		check(not fresh_profile.fresh_shop and fresh.rules != null and fresh.rules.clock == 0.0, mode + " fresh shop opened")
+		check_eq(_backups(fresh_path).size(), 1, mode + " fresh overwrite keeps a backup")
 
 func test_legacy_safe_additions_get_defaults_and_keep_recorded_ids() -> void:
 	for mode in ["material", "station"]:
@@ -120,7 +123,7 @@ func test_legacy_safe_additions_get_defaults_and_keep_recorded_ids() -> void:
 		check_eq(backups.size(), 1, mode + " migration backed up")
 		if not backups.is_empty(): check(FileAccess.get_file_as_bytes(backups[0]) == original, mode + " exact original backed up")
 
-func test_legacy_malformed_id_maps_remain_protected_without_runtime_errors() -> void:
+func test_legacy_malformed_id_maps_quarantine_without_runtime_errors() -> void:
 	for map in ShopRules.BY_DATA_ID:
 		for malformed in [null, [], 7, {7: true}]:
 			var path := _path()
@@ -128,13 +131,14 @@ func test_legacy_malformed_id_maps_remain_protected_without_runtime_errors() -> 
 			data[map] = malformed
 			var original := _write(path, data, {}, 1)
 			var store := ShopSave.new(TEA, path)
-			store.load_game()
-			check_eq(store.load_error, ERR_UNAVAILABLE, map + " malformed legacy protected")
-			check_eq(store.save_game(ShopRules.new(TEA)), ERR_UNAVAILABLE, map + " malformed legacy blocks save")
-			check(FileAccess.get_file_as_bytes(path) == original, map + " malformed original retained")
+			var rules := store.load_game()
+			check_eq(store.load_error, OK, map + " malformed legacy starts fresh")
+			check(rules != null and rules.clock == 0.0, map + " fresh rules")
+			check(_quarantined(path, original), map + " malformed original quarantined")
+			check_eq(store.save_game(ShopRules.new(TEA)), OK, map + " save proceeds after quarantine")
 
 func test_delete_reassesses_and_retains_protected_or_unreadable_files() -> void:
-	for mode in ["future", "structure", "unreadable"]:
+	for mode in ["future", "unreadable"]:
 		var path := _path()
 		var store := ShopSave.new(TEA, path)
 		check_eq(store.save_game(ShopRules.new(TEA)), OK, mode + " seed compatible save")
@@ -207,10 +211,11 @@ func test_numeric_update_preserves_recorded_state_and_same_content_is_exact() ->
 	check_eq(store.save_game(resumed), OK, "same metadata save")
 	check_eq(_backups(path).size(), 1, "no repeated migration backup")
 
-func test_incompatible_legacy_structure_and_future_protect_direct_save() -> void:
+func test_future_blocks_and_invalid_or_structural_changes_never_lock_the_shop() -> void:
 	for mode in ["legacy", "structure", "future_wrapper", "future_content", "changed_invalid"]:
 		var path := _path()
 		var data := ShopRules.new(TEA).to_dict()
+		data.gold = 2468.0
 		var metadata := CONTRACT.describe(TEA)
 		var version := 2
 		if mode == "legacy":
@@ -225,11 +230,22 @@ func test_incompatible_legacy_structure_and_future_protect_direct_save() -> void
 			data.rng = []
 		var original := _write(path, data, metadata, version)
 		var store := ShopSave.new(TEA, path)
-		check_eq(store.save_game(ShopRules.new(TEA)), ERR_UNAVAILABLE, mode + " direct save blocked")
-		store.load_game()
-		check_eq(store.get("load_error"), ERR_UNAVAILABLE, mode + " load blocked")
-		check_eq(FileAccess.get_file_as_bytes(path), original, mode + " original retained")
-		check_eq(_backups(path).size(), 0, mode + " no migration backup")
+		var rules := store.load_game()
+		if mode.begins_with("future"):
+			# 更高版本程序写的存档：停止写入，保护原文件
+			check_eq(store.get("load_error"), ERR_UNAVAILABLE, mode + " load blocked")
+			check_eq(store.save_game(ShopRules.new(TEA)), ERR_UNAVAILABLE, mode + " direct save blocked")
+			check_eq(FileAccess.get_file_as_bytes(path), original, mode + " original retained")
+		elif mode == "structure":
+			check_eq(store.get("load_error"), OK, mode + " structural change migrates")
+			check_eq(rules.gold, 2468.0, mode + " progress kept")
+			check_eq(store.save_game(rules), OK, mode + " migrated save")
+			check_eq(_backups(path).size(), 1, mode + " original backed up")
+		else:
+			check_eq(store.get("load_error"), OK, mode + " invalid state starts fresh")
+			check_eq(rules.clock, 0.0, mode + " fresh rules")
+			check(_quarantined(path, original), mode + " original quarantined")
+			check_eq(store.save_game(rules), OK, mode + " save proceeds")
 
 func test_external_replacement_is_reassessed_and_explicit_retry_reloads() -> void:
 	var path := _path()
@@ -239,13 +255,13 @@ func test_external_replacement_is_reassessed_and_explicit_retry_reloads() -> voi
 	var store := ShopSave.new(TEA, path)
 	var live := store.load_game()
 	var metadata := CONTRACT.describe(TEA)
-	metadata.structure = "a".repeat(64)
+	metadata.version = 99
 	var original := _write(path, data, metadata)
 	check_eq(store.save_game(live), ERR_UNAVAILABLE, "external replacement assessed")
 	var profile := Profile.new(_path())
 	profile.shop = "tea"
 	var session := SESSION.new(profile, store)
-	check_eq(session.start(), ERR_UNAVAILABLE, "incompatible startup blocked")
+	check_eq(session.start(), ERR_UNAVAILABLE, "future startup blocked")
 	check(session.rules == null and not session.started, "failed start no rules")
 	check(session.save() != OK, "failed start cannot save")
 	check_eq(FileAccess.get_file_as_bytes(path), original, "blocked start retained")
@@ -280,7 +296,7 @@ func test_fresh_intent_does_not_acknowledge_incompatible_shop() -> void:
 	var before := FileAccess.get_file_as_bytes(profile.path)
 	var path := _path()
 	var metadata := CONTRACT.describe(TEA)
-	metadata.structure = "a".repeat(64)
+	metadata.version = 99
 	var original := _write(path, ShopRules.new(TEA).to_dict(), metadata)
 	var session := SESSION.new(profile, ShopSave.new(TEA, path))
 	check_eq(session.start(), ERR_UNAVAILABLE, "fresh intent blocked")
@@ -288,17 +304,18 @@ func test_fresh_intent_does_not_acknowledge_incompatible_shop() -> void:
 	check_eq(FileAccess.get_file_as_bytes(path), original, "fresh intent preserves shop")
 	check_eq(FileAccess.get_file_as_bytes(profile.path), before, "fresh intent preserves profile")
 
-func test_renamed_shop_with_shared_save_path_is_protected() -> void:
+func test_renamed_shop_with_shared_save_path_quarantines_and_opens() -> void:
 	var path := _path()
 	var data := ShopRules.new(TEA).to_dict()
 	var original := _write(path, data, CONTRACT.describe(TEA))
 	var renamed: SpecShop = TEA.duplicate(true)
 	renamed.id = "renamed_tea"
 	var store := ShopSave.new(renamed, path)
-	check_eq(store.save_game(ShopRules.new(renamed)), ERR_UNAVAILABLE, "renamed shop direct save blocked")
-	store.load_game()
-	check_eq(store.get("load_error"), ERR_UNAVAILABLE, "renamed shop load blocked")
-	check(FileAccess.get_file_as_bytes(path) == original, "renamed shop preserves original")
+	var rules := store.load_game()
+	check_eq(store.get("load_error"), OK, "renamed shop opens")
+	check(rules != null and rules.shop.id == "renamed_tea", "renamed shop fresh rules")
+	check(_quarantined(path, original), "other shop save quarantined")
+	check_eq(store.save_game(rules), OK, "renamed shop saves")
 
 func test_outgoing_content_and_invalid_state_cannot_be_mislabeled() -> void:
 	var path := _path()
@@ -315,10 +332,15 @@ func test_outgoing_content_and_invalid_state_cannot_be_mislabeled() -> void:
 	check_eq(store.save_game(invalid), ERR_INVALID_DATA, "invalid outgoing state rejected")
 	check(FileAccess.get_file_as_bytes(path) == original, "invalid state preserves original")
 
-func test_real_topology_and_level_count_changes_block() -> void:
+func test_real_topology_and_level_count_changes_keep_progress() -> void:
+	# 挪布局点、删一级升级：进度保留，按新内容继续
 	for mode in ["geometry", "levels"]:
 		var path := _path()
-		var original := _write(path, ShopRules.new(TEA).to_dict(), CONTRACT.describe(TEA))
+		var old := ShopRules.new(TEA)
+		old.gold = 1357.0
+		old.unlock(old.next_unlock())
+		var gold := old.gold
+		var original := _write(path, old.to_dict(), CONTRACT.describe(TEA))
 		var changed: SpecShop = TEA.duplicate(true)
 		if mode == "geometry": changed.layout.points[changed.layout.points.keys()[0]] += Vector2(1, 0)
 		else:
@@ -327,10 +349,13 @@ func test_real_topology_and_level_count_changes_block() -> void:
 					station.tracks[0].levels.pop_back()
 					break
 		var store := ShopSave.new(changed, path)
-		store.load_game()
-		check_eq(store.get("load_error"), ERR_UNAVAILABLE, mode + " blocks")
-		check_eq(store.save_game(ShopRules.new(changed)), ERR_UNAVAILABLE, mode + " blocks save")
-		check(FileAccess.get_file_as_bytes(path) == original, mode + " retains bytes")
+		var resumed := store.load_game()
+		check_eq(store.get("load_error"), OK, mode + " loads")
+		check_eq(resumed.gold, gold, mode + " gold kept")
+		check_eq(resumed.unlocked, old.unlocked, mode + " unlocks kept")
+		check_eq(FileAccess.get_file_as_bytes(path), original, mode + " load read only")
+		check_eq(store.save_game(resumed), OK, mode + " saves")
+		check_eq(_backups(path).size(), 1, mode + " backup before migration")
 
 func test_missing_or_malformed_metadata_and_legacy_binary_corruption_quarantine() -> void:
 	for mode in ["missing", "hash", "legacy_binary"]:

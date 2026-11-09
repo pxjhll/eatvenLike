@@ -80,7 +80,8 @@ func _content_compatibility_retry() -> void:
 	suite.check_eq(store.save_game(previous), OK, "compatible shop prepared")
 	var compatible := FileAccess.get_file_as_string(store.path)
 	var payload: Dictionary = JSON.parse_string(compatible)
-	payload.content.structure = "a".repeat(64)
+	# 更高版本程序写的存档：停止写入、等修好重试（内容改版不会走到这里，见 test_content_save）
+	payload.content.version = 99
 	suite._write(store.path, JSON.stringify(payload))
 	var original := FileAccess.get_file_as_bytes(store.path)
 	var scene := _open(profile, store)

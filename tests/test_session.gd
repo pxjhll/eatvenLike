@@ -253,7 +253,7 @@ func test_finish_commits_once_and_blocks_all_old_session_writes() -> void:
 	check_eq(profile.records.size(), 1, "only one durable finish record")
 
 func test_finish_retains_protected_replacement_and_commits_profile_once() -> void:
-	for mode in ["future", "structure"]:
+	for mode in ["future", "future_content"]:
 		var profile := Profile.new(_path(mode + "-finish-profile"))
 		check_eq(profile.save(), OK, mode + " profile seeded")
 		var store := ShopSave.new(PANCAKE, _path(mode + "-finish-shop"))
@@ -262,7 +262,7 @@ func test_finish_retains_protected_replacement_and_commits_profile_once() -> voi
 		check_eq(session.save(), OK, mode + " active save")
 		var replacement: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(store.path))
 		if mode == "future": replacement.version = 99
-		else: replacement.content.structure = "a".repeat(64)
+		else: replacement.content.version = 99
 		_write(store.path, JSON.stringify(replacement))
 		var original := FileAccess.get_file_as_bytes(store.path)
 		check_eq(session.save(), ERR_UNAVAILABLE, mode + " replacement blocks save")
