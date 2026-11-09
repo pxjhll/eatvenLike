@@ -124,6 +124,7 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 		"options": _ids(shop.order_options, "order_options", errors), "events": _ids(shop.events, "events", errors),
 		"guides": _ids(shop.guide, "guide", errors), "kinds": {}, "zones": {"": true}, "materials": {}, "tracks": {}, "campaign": {},
 		"mode": shop.fulfillment.handoff if shop.fulfillment != null else "",
+		"zoned": shop.staff != null and not shop.staff.zones.is_empty(),
 	}
 	if campaign != null:
 		var cities := _ids(campaign.cities, "campaign.cities", errors, true)
@@ -138,7 +139,8 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 		_ref(shop.id, context.campaign, "id", errors)
 	if shop.staff != null:
 		context.kinds = _ids(shop.staff.kinds, "staff.kinds", errors, true)
-		for zone in shop.staff.zones: context.zones[zone] = true
+		for zone in shop.staff.zones:
+			if zone in ["front", "kitchen"]: context.zones[zone] = true
 	for i in shop.stations.size():
 		var station := shop.stations[i]
 		if station == null: continue
@@ -367,7 +369,7 @@ static func _stage(stage: SpecStage, p: String, c: Dictionary, errors: Array[Dic
 	if total <= 0: _error(errors, p + ".order_weights", "Menu needs a positive weight.")
 
 	for zone in stage.staff_slots:
-		_ref(zone, c.zones, p + ".staff_slots." + zone, errors)
+		_enum(zone, ["kitchen"] if c.zoned else [""], p + ".staff_slots." + zone, errors)
 		_number(stage.staff_slots[zone], p + ".staff_slots." + zone, errors)
 	_ids(stage.tasks, p + ".tasks", errors)
 	for i in stage.tasks.size():
@@ -382,6 +384,15 @@ static func _stage(stage: SpecStage, p: String, c: Dictionary, errors: Array[Dic
 static func _validate_staff(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
 	var staff := shop.staff
 	if staff == null: return
+	var seen_zones := {}
+	for i in staff.zones.size():
+		_enum(staff.zones[i], ["front", "kitchen"], "staff.zones[%d]" % i, errors)
+		if seen_zones.has(staff.zones[i]): _error(errors, "staff.zones[%d]" % i, "Duplicate zone.", "duplicate")
+		seen_zones[staff.zones[i]] = true
+	if not staff.zones.is_empty() and (staff.zones.size() != 2 or not seen_zones.has("front") or not seen_zones.has("kitchen")):
+		_error(errors, "staff.zones", "Use no zones or exactly front and kitchen.", "unsupported")
+	if staff.zones.is_empty() and staff.front_base_slots != 1:
+		_error(errors, "staff.front_base_slots", "Unzoned capacity uses stage slots; retain the default front base of 1.", "unsupported")
 	_enum(staff.hire_rule, ["fewest", "cycle"], "staff.hire_rule", errors)
 	for field in ["starting", "hire_pool", "hire_order"]:
 		for i in staff.get(field).size(): _ref(staff.get(field)[i], c.kinds, "staff.%s[%d]" % [field, i], errors)

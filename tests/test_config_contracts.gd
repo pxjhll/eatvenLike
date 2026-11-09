@@ -263,6 +263,7 @@ func test_single_rejects_reserved_recipe_actions_and_conveyor_declarations() -> 
 func _reject_before_io(shop: SpecShop) -> void:
 	for fresh in [false, true]:
 		var profile := Profile.new(_path("review-profile"))
+		if profile.shop != shop.id: check_eq(profile.select_shop(shop.id), OK, "select configured shop before probing startup")
 		profile.fresh_shop = fresh
 		profile.save()
 		var store := ShopSave.new(shop, _path("review-shop"))
@@ -436,3 +437,56 @@ func test_later_flavor_group_does_not_assume_a_preopened_stage_was_purchased() -
 	bad.stages[1].order_weights["later_flavors"] = 1
 	_bad(bad, "stages[1].flavor_fallback")
 	_reject_before_io(bad)
+
+func test_staff_regions_and_stage_slot_keys_reject_ignored_declarations_before_io() -> void:
+	var bad: SpecShop = TEA.duplicate(true)
+	bad.stages[0].staff_slots["front"] = 99
+	_bad(bad, "stages[0].staff_slots.front")
+	_reject_before_io(bad)
+	bad = TEA.duplicate(true)
+	bad.staff.zones.append("bar")
+	bad.stages[0].staff_slots["bar"] = 99
+	_bad(bad, "staff.zones[2]")
+	_bad(bad, "stages[0].staff_slots.bar")
+	_reject_before_io(bad)
+	bad = TEA.duplicate(true)
+	bad.stages[0].staff_slots[""] = 99
+	_bad(bad, "stages[0].staff_slots.")
+	_reject_before_io(bad)
+	bad = TEA.duplicate(true)
+	bad.staff.zones = ["front"]
+	_bad(bad, "staff.zones")
+	_reject_before_io(bad)
+	bad = PANCAKE.duplicate(true)
+	bad.stages[0].staff_slots["kitchen"] = 99
+	_bad(bad, "stages[0].staff_slots.kitchen")
+	_reject_before_io(bad)
+	bad = PANCAKE.duplicate(true)
+	bad.staff.front_base_slots = 99
+	_bad(bad, "staff.front_base_slots")
+	_reject_before_io(bad)
+
+func test_supported_staff_capacity_sources_change_real_session_limits() -> void:
+	var single: SpecShop = PANCAKE.duplicate(true)
+	single.stages[0].staff_slots[""] = 6
+	var profile := Profile.new(_path("unified-capacity-profile"))
+	var session := Session.new(profile, ShopSave.new(single, _path("unified-capacity-shop")))
+	check_eq(session.start(), OK, "unified capacity config starts")
+	if session.rules == null: return
+	check_eq(session.rules.unlock(single.goals.opening_station), "", "open actual unified shop")
+	check_eq(session.rules.staff_slots(), 6, "unzoned stage empty-key capacity changes actual limit")
+	var zoned: SpecShop = TEA.duplicate(true)
+	zoned.stages[0].staff_slots["kitchen"] = 4
+	zoned.staff.front_base_slots = 3
+	var event := _event_effect(zoned, SpecEffect.make("staff_slot", "add", 2, "front"))
+	profile = Profile.new(_path("zoned-capacity-profile"))
+	check_eq(profile.select_shop(zoned.id), OK, "select real zoned shop")
+	session = Session.new(profile, ShopSave.new(zoned, _path("zoned-capacity-shop")))
+	check_eq(session.start(), OK, "supported zoned capacity config starts")
+	if session.rules == null: return
+	check_eq(session.rules.kitchen_slots(), 4, "kitchen stage capacity changes actual limit")
+	check_eq(session.rules.front_slots(), 3, "front base capacity changes actual limit")
+	check_eq(session.rules.staff_slots(), 7, "total capacity uses implemented sources")
+	session.rules.trigger_event(event)
+	check_eq(session.rules.front_slots(), 5, "configured front modifier changes actual limit")
+	check_eq(session.rules.staff_slots(), 9, "total capacity includes front modifier")

@@ -142,7 +142,7 @@ func test_invalid_campaigns_fail_before_read_or_write() -> void:
 
 
 func test_custom_campaign_guards_future_corrupt_and_external_replacements() -> void:
-	for text in ['{"version":99,"shop":"noodle"}', '{broken', '{"version":1,"shop":"pancake"}', '{"version":1,"records":{}}']:
+	for text in ['{"version":99,"shop":"noodle"}', '{broken', '{"version":1,"shop":7}', '{"version":1,"records":{}}']:
 		for replacement in [false, true]:
 			var path := _path("guard")
 			var profile: RefCounted
@@ -167,3 +167,54 @@ func test_custom_campaign_guards_future_corrupt_and_external_replacements() -> v
 	check_eq(legacy.load_error, OK, "custom campaign accepts legacy v1 profile")
 	check_eq(legacy.save(), OK, "custom legacy profile commits current representation")
 	check_eq(_profile(legacy_path, NOODLE).trophies, 7, "custom legacy trophies stay durable")
+
+func test_unknown_shop_fallback_uses_furthest_injected_campaign_record_only() -> void:
+	var campaign := _sequence()
+	var cases := [
+		{"records": [], "expected": "noodle"},
+		{"records": [{"shop": "pancake"}, {"shop": "gone"}], "expected": "noodle"},
+		{"records": [{"shop": "planned_before"}], "expected": "noodle"},
+		{"records": [{"shop": "noodle"}, {"shop": "gone"}], "expected": "tea"},
+		{"records": [{"shop": "tea"}, {"shop": "noodle"}], "expected": "tea"},
+	]
+	for probe in cases:
+		var path := _path("unknown-injected")
+		var text := JSON.stringify({"version": 1, "shop": "pancake", "fresh_shop": true, "trophies": 9, "records": probe.records})
+		_write(path, text)
+		var profile := _profile(path, campaign)
+		check_eq(profile.load_error, OK, "foreign string shop ID is recoverable")
+		check_eq(profile.shop, probe.expected, "fallback follows injected playable sequence")
+		check_eq(profile.city, "test_first", "missing city defaults to injected campaign")
+		check(not profile.fresh_shop, "fallback never clears target shop save")
+		check_eq(profile.records, probe.records, "all historical records survive fallback")
+		check_eq(profile.trophies, 9, "trophies survive fallback")
+		check_eq(FileAccess.get_file_as_string(path), text, "reading fallback does not write profile")
+		check_eq(profile.save(), OK, "fallback is explicitly saveable")
+		var again := _profile(path, campaign)
+		check_eq(again.to_dict(), profile.to_dict(), "injected fallback persists and reloads exactly")
+
+func test_unknown_ids_do_not_bleed_between_fixture_and_default_campaigns() -> void:
+	var fixture_path := _path("foreign-default-records")
+	var records := [{"shop": "pancake"}, {"shop": "tea"}]
+	_write(fixture_path, JSON.stringify({"shop": "tea", "records": records, "trophies": 7, "fresh_shop": true}))
+	var fixture := _profile(fixture_path, NOODLE)
+	check_eq(fixture.load_error, OK, "default campaign IDs can recover under fixture campaign")
+	check_eq(fixture.shop, "noodle", "default records cannot choose a shop outside fixture")
+	check_eq(fixture.records, records, "foreign records are retained without driving selection")
+	check_eq(fixture.city, "test_noodle", "fixture fallback retains instance city")
+	check(not fixture.fresh_shop, "fixture fallback preserves any existing shop save")
+	check_eq(load("res://game/app/shop_session.gd").shop_for(fixture).id, "noodle", "resolved Session shop belongs to injected campaign")
+	var default_path := _path("foreign-fixture-records")
+	_write(default_path, '{"shop":"noodle","records":[{"shop":"noodle"}],"trophies":8,"fresh_shop":true}')
+	var production := Profile.new(default_path)
+	check_eq(production.load_error, OK, "fixture ID can recover under default campaign")
+	check_eq(production.shop, Profile.shops()[0], "fixture records cannot choose a production shop")
+	check_eq(production.city, "north", "production default city unchanged")
+	check_eq(production.trophies, 8, "production fallback preserves trophies")
+	check(not production.fresh_shop, "production fallback preserves target save")
+	check_eq(production.select_shop("noodle"), ERR_INVALID_PARAMETER, "explicit cross-campaign selection remains rejected")
+	check_eq(Profile.shops(), ["pancake", "tea"], "static default API stays unchanged")
+	_write(fixture_path, '{"shop":"noodle","fresh_shop":true,"records":[{"shop":"tea"}]}')
+	var known := _profile(fixture_path, NOODLE)
+	check_eq(known.shop, "noodle", "known shop does not invoke fallback")
+	check(known.fresh_shop, "known shop retains intentional fresh marker")
