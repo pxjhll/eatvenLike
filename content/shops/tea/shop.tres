@@ -386,8 +386,6 @@ base_scores = Dictionary[String, float]({
 })
 wait_bonus_per_second = 0.1
 wait_bonus_cap = 20.0
-shortage_per = 45.0
-shortage_cap = 90.0
 travel_penalty = 1.2
 throughput_weight = 18.0
 fatigue_weight = 0.18

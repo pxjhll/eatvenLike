@@ -2,7 +2,7 @@ extends RefCounted
 ## Explicit dependencies and destinations; only App opts into production services.
 
 const ProgressService := preload("res://game/app/progress_service.gd")
-const CAMPAIGN: SpecCampaign = preload("res://content/campaign/campaign.tres")
+const SpecValidator := preload("res://game/rules/shop_spec_validator.gd")
 const TUNING_PATH := "user://tuning.cfg"
 const RECORDING_PATH := "user://playlog.txt"
 
@@ -30,11 +30,13 @@ func _init(profile_: RefCounted, store_: ShopSave, rules_: ShopRules = null) -> 
 	rules = rules_
 
 
-static func shop_for(profile_: RefCounted) -> SpecShop:
-	if profile_ == null: return null
-	for city in CAMPAIGN.cities:
+static func shop_for(profile_: RefCounted, target_id: String = "") -> SpecShop:
+	if profile_ == null or profile_.campaign == null: return null
+	for city in profile_.campaign.cities:
+		if city == null: return null
 		for entry in city.shops:
-			if entry.id == profile_.shop and not entry.shop_path.is_empty():
+			if entry == null: return null
+			if entry.id == (profile_.shop if target_id.is_empty() else target_id) and not entry.shop_path.is_empty() and ResourceLoader.exists(entry.shop_path):
 				return load(entry.shop_path) as SpecShop
 	return null
 
@@ -45,6 +47,10 @@ func start() -> Error:
 	var error := _configuration_error()
 	if error != OK: return error
 	if profile.load_error != OK: return _fail(profile.load_error, profile.last_error)
+	var errors := SpecValidator.validate(store.shop, profile.campaign)
+	if rules != null and rules.shop != store.shop:
+		errors.append_array(SpecValidator.validate(rules.shop, profile.campaign))
+	if not errors.is_empty(): return _fail(ERR_INVALID_DATA, SpecValidator.summary(errors))
 	if rules == null:
 		if profile.fresh_shop and profile.shop == store.shop.id:
 			var result: Dictionary = _progress.initialize_fresh(profile, store)
@@ -108,7 +114,7 @@ func jump(target: String, guides: Array = []) -> Error:
 func _configuration_error() -> Error:
 	if profile == null or store == null or store.shop == null or store.path.strip_edges().is_empty():
 		return _fail(ERR_INVALID_PARAMETER, "Session requires explicit Profile and ShopSave dependencies.")
-	if rules != null and rules.shop.id != store.shop.id:
+	if rules != null and (rules.shop == null or rules.shop.id != store.shop.id):
 		return _fail(ERR_INVALID_PARAMETER, "Session rules and store must refer to the same shop.")
 	if profile.shop != store.shop.id:
 		return _fail(ERR_INVALID_PARAMETER, "Session profile and store must refer to the current shop.")

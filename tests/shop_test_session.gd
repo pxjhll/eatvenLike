@@ -3,14 +3,14 @@ extends RefCounted
 
 const Profile := preload("res://game/app/profile.gd")
 
-static func make(spec: SpecShop, namespace_: String, rules: ShopRules = null, store: ShopSave = null, profile: RefCounted = null) -> RefCounted:
+static func make(spec: SpecShop, namespace_: String, rules: ShopRules = null, store: ShopSave = null, profile: RefCounted = null, campaign: SpecCampaign = Profile.CAMPAIGN) -> RefCounted:
 	assert(not namespace_.strip_edges().is_empty(), "Test session needs an isolated namespace_")
 	var prefix := namespace_ if namespace_.begins_with("user://") or namespace_.is_absolute_path() else "user://session-tests/" + namespace_
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(prefix.get_base_dir()))
 	if profile == null:
 		var profile_path := prefix + "-profile.json"
 		var existed := FileAccess.file_exists(profile_path)
-		profile = Profile.new(profile_path)
+		profile = Profile.new(profile_path, campaign)
 		if not existed:
 			var result: Error = profile.select_shop(spec.id)
 			assert(result == OK, "Cannot initialize isolated profile")

@@ -8,6 +8,7 @@ const VERSION := 1
 const CAMPAIGN: SpecCampaign = preload("res://content/campaign/campaign.tres")
 
 var path := DEFAULT_PATH
+var campaign: SpecCampaign = CAMPAIGN
 var shop := ""
 var records: Array = []
 ## 刚从上一家店过来、新店还没开局（新店要从空店开始）。
@@ -34,14 +35,56 @@ static func shops() -> Array[String]:
 	return ids
 
 
-func _init(path_ := DEFAULT_PATH) -> void:
+func _init(path_ := DEFAULT_PATH, campaign_: SpecCampaign = CAMPAIGN) -> void:
 	path = path_
+	campaign = campaign_
 	_clear()
 	load_profile()
 
 
+func available_shops() -> Array[String]:
+	var ids: Array[String] = []
+	if not _campaign_error().is_empty(): return ids
+	for c in campaign.cities:
+		for entry in c.shops:
+			if not entry.shop_path.is_empty(): ids.append(entry.id)
+	return ids
+
+
 func next_shop(current: String) -> String:
-	return CAMPAIGN.next_shop(current)
+	if not _campaign_error().is_empty(): return ""
+	var found := false
+	for c in campaign.cities:
+		for entry in c.shops:
+			if found and not entry.shop_path.is_empty(): return entry.id
+			if entry.id == current: found = true
+	return ""
+
+
+func _campaign_error() -> String:
+	if campaign == null: return "Invalid campaign: missing resource"
+	if campaign.cities.is_empty(): return "Invalid campaign: no cities"
+	var city_ids: Dictionary = {}
+	var shop_ids: Dictionary = {}
+	var implemented := false
+	for c in campaign.cities:
+		if c == null: return "Invalid campaign: missing city"
+		if c.id.strip_edges().is_empty() or city_ids.has(c.id): return "Invalid campaign: invalid city id"
+		city_ids[c.id] = true
+		for entry in c.shops:
+			if entry == null: return "Invalid campaign: missing shop entry"
+			if entry.id.strip_edges().is_empty() or shop_ids.has(entry.id): return "Invalid campaign: invalid shop id"
+			shop_ids[entry.id] = true
+			if not entry.shop_path.is_empty(): implemented = true
+	if not implemented: return "Invalid campaign: no implemented shops"
+	return ""
+
+
+func _check_campaign() -> Error:
+	var message := _campaign_error()
+	if message.is_empty(): return OK
+	_block({"error": ERR_INVALID_DATA, "message": message})
+	return load_error
 
 
 ## 结店：记一行纪录，切到下一家店。
@@ -59,7 +102,7 @@ func finish_shop(record: Dictionary) -> Error:
 
 
 func select_shop(target: String) -> Error:
-	if target not in shops():
+	if target not in available_shops():
 		last_error = "切店失败：目标店铺不存在"
 		return ERR_INVALID_PARAMETER
 	var candidate := to_dict()
@@ -102,6 +145,8 @@ func _commit(candidate: Dictionary) -> Error:
 
 ## 新店清空文件之前也必须确认 Profile 可写，避免覆盖未识别的永久进度。
 func check_writable() -> Error:
+	var campaign_error := _check_campaign()
+	if campaign_error != OK: return campaign_error
 	if _write_blocked: return load_error
 	# 每次写前重读磁盘，保护程序启动后被替换的未来版本或坏文件。
 	var existing := _read_existing()
@@ -127,6 +172,8 @@ func _write_candidate(candidate: Dictionary) -> Error:
 
 
 func load_profile() -> Error:
+	var campaign_error := _check_campaign()
+	if campaign_error != OK: return campaign_error
 	var result := _read_existing()
 	if result.error != OK:
 		_block(result)
@@ -173,7 +220,7 @@ func _validate(data: Dictionary) -> String:
 	# 缺失 version 的历史文件兼容为 v1；字符串、布尔、非整数版本均拒绝。
 	var version: Variant = data.get("version", VERSION)
 	if not _integer(version) or version != VERSION: return "跨店进度版本无效或不受支持"
-	# 店铺 id 不认识（改名或删店）不算坏档：读入时退回第一家店，见 _apply。
+	# Unknown string IDs fall back within this instance campaign; see _apply.
 	if not data.get("shop", shop) is String: return "跨店进度店铺无效"
 	if not data.get("records", []) is Array: return "跨店进度结店记录无效"
 	for record in data.get("records", []):
@@ -193,7 +240,8 @@ func _validate(data: Dictionary) -> String:
 
 ## 结店纪录里排得最靠后的那家店的下一家（已经是最后一家就停在它）；没有纪录就是第一家。
 func _furthest_shop() -> String:
-	var ids := shops()
+	var ids := available_shops()
+	if ids.is_empty(): return ""
 	var at := -1
 	for record in records:
 		at = maxi(at, ids.find(String(record.get("shop", ""))))
@@ -203,15 +251,15 @@ func _furthest_shop() -> String:
 
 
 func _apply(data: Dictionary) -> void:
-	shop = data.get("shop", shops()[0])
+	shop = data.get("shop", available_shops()[0])
 	fresh_shop = data.get("fresh_shop", false)
 	records = data.get("records", []).duplicate(true)
-	if shop not in shops():
+	if shop not in available_shops():
 		# 店改名或删掉了：退到结店纪录里打到的最远一家（它的下一家），不白玩；
 		# 不带开店标记，那家店有存档就接着玩，没有就从空店开始。
 		shop = _furthest_shop()
 		fresh_shop = false
-	city = data.get("city", CAMPAIGN.cities[0].id)
+	city = data.get("city", campaign.cities[0].id)
 	trophies = int(data.get("trophies", 0))
 	perk_levels = data.get("perk_levels", {}).duplicate(true)
 	staff_kinds = data.get("staff_kinds", []).duplicate(true)
@@ -220,16 +268,19 @@ func _apply(data: Dictionary) -> void:
 
 ## 从第一家店重新玩（调试 / 试玩用）。
 func reset_all() -> Error:
-	var candidate := {"version": VERSION, "shop": shops()[0], "records": [], "fresh_shop": false,
-		"city": CAMPAIGN.cities[0].id, "trophies": 0, "perk_levels": {}, "staff_kinds": [], "events_seen": []}
+	var campaign_error := _check_campaign()
+	if campaign_error != OK: return campaign_error
+	var candidate := {"version": VERSION, "shop": available_shops()[0], "records": [], "fresh_shop": false,
+		"city": campaign.cities[0].id, "trophies": 0, "perk_levels": {}, "staff_kinds": [], "events_seen": []}
 	return _commit(candidate)
 
 
 func _clear() -> void:
-	shop = shops()[0]
+	var ids := available_shops()
+	shop = "" if ids.is_empty() else ids[0]
 	records = []
 	fresh_shop = false
-	city = CAMPAIGN.cities[0].id
+	city = "" if ids.is_empty() else campaign.cities[0].id
 	trophies = 0
 	perk_levels = {}
 	staff_kinds = []

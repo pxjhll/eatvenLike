@@ -35,7 +35,8 @@ func test_plays_from_opening_to_shop_complete() -> void:
 	var pot := {"batches": 0, "last": -1}
 	var watch := func() -> void:
 		for worker in rules.workers:
-			if worker.phase == "work" and worker.task_label == "舀汤" and worker.order >= 0:
+			if worker.phase == "work" and worker.order >= 0 and worker.step >= 0 and worker.step < worker.steps.size() \
+					and worker.steps[worker.step].action == "ladle" and worker.steps[worker.step].station == "pot":
 				broth_users[String(rules.customer(worker.order).get("kind", ""))] = true
 		var stock := int(rules.stations.pot.stock)
 		if pot.last >= 0 and stock > pot.last: pot.batches += 1
