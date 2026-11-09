@@ -1,4 +1,6 @@
 extends SceneTree
+
+const TestSession := preload("res://tests/shop_test_session.gd")
 ## 奶茶店跑在通用店铺场景里，用真实点按走一遍（旧 render_shop_ui / render_tea_business / render_tuning 搬过来）：
 ## 空店只画柠檬水台的虚线框，点框开解锁面板，开张、开煮茶机、在原料柜面板买茶叶箱；员工页招人直接上后厨；
 ## 点柜台买座位、发传单；机器面板升级、原料升级涨价；买传送带；手动存档再读档一模一样；
@@ -117,12 +119,12 @@ func _run() -> void:
 	_check(view.save_now(false) == OK, "存档")
 	var saved := _rules().to_dict()
 	view.free()
-	view = _open()
+	view = _open(null, true)
 	# 刚读进来、还没走一帧时比；调参倍率存在 tuning.cfg（和存档分开），不比
 	var loaded := _rules().to_dict()
 	var differing: Array = saved.keys().filter(func(k: String) -> bool: return k != "tune" and var_to_str(saved[k]) != var_to_str(loaded.get(k)))
 	_check(differing.is_empty(), "读档：整店状态和员工一模一样（不一样的：%s）" % [differing.map(func(k: String) -> String: return "%s %s→%s" % [k, saved[k], loaded.get(k)])])
-	_check(view.guide_enabled and view.recorder.enabled, "正式进店放引导、记试玩")
+	_check(view.guide_enabled and not view.recorder.enabled and not view.tuning.persist, "显式引导测试不录制、不持久化调参")
 	view.set_process(false)
 	view.free()
 	view = _open(ShopRules.new(TEA))
@@ -214,11 +216,11 @@ func _run() -> void:
 	quit(1 if failures else 0)
 
 
-## rules 给了就用它（测试场景：不放引导、不写试玩记录、调参不落盘）；不给就像正式进店一样从存档读
-func _open(rules: ShopRules = null) -> Node2D:
+## Explicit fixture services; a null rules argument reopens its isolated shop save.
+func _open(rules: ShopRules = null, guides := false) -> Node2D:
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	scene.rules = rules
-	scene.store = ShopSave.new(TEA, save_path)
+	scene.session = TestSession.make(TEA, save_path, rules, ShopSave.new(TEA, save_path))
+	scene.session.guide_enabled = guides
 	root.add_child(scene)
 	return scene
 

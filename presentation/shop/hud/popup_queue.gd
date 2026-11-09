@@ -72,6 +72,16 @@ func remove(id: String) -> void:
 	refresh()
 
 
+func clear() -> void:
+	queue.clear()
+	for child in _buttons.get_children():
+		for connection in child.pressed.get_connections():
+			child.pressed.disconnect(connection.callable)
+		_buttons.remove_child(child)
+		child.queue_free()
+	refresh()
+
+
 func has_card(id := "") -> bool:
 	if id.is_empty(): return not queue.is_empty()
 	return queue.any(func(card: Dictionary) -> bool: return card.get("id", "") == id)

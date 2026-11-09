@@ -1,4 +1,6 @@
 extends SceneTree
+
+const TestSession := preload("res://tests/shop_test_session.gd")
 ## 煎饼摊跑在通用店铺场景里（第 4 个 PR），用真实点按走一遍：
 ## 从跨店记录进店、引导（欢迎 → 点豆浆机开张 → 第一单 → 招第二个人 → 开张完成）、原画按开店进度显示、
 ## 人物按脚底前后遮挡、客人排队和坐坐垫、点柜台发传单、完店 → 结店总结 → 去奶茶店、读档接着开。
@@ -210,14 +212,14 @@ func _run() -> void:
 	# 进奶茶店：从空店开始
 	var tea_save := "user://shop-pancake-gui-tea-%d.json" % OS.get_process_id()
 	var tea: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	tea.profile = after
-	tea.store = ShopSave.new(load("res://content/shops/tea/shop.tres"), tea_save)
+	tea.session = TestSession.make(load("res://content/shops/tea/shop.tres"), tea_save, null, ShopSave.new(load("res://content/shops/tea/shop.tres"), tea_save), after)
+	tea.session.guide_enabled = true
 	root.add_child(tea)
 	await process_frame
 	tea.set_process(false)
 	_check(tea.rules.shop.id == "tea" and not tea.rules.is_open() and not after.fresh_shop, "奶茶店从空店开始")
 	tea.free()
-	view = _open(null, ShopRules.new(PANCAKE))
+	view = _open(null, ShopRules.new(PANCAKE), false)
 	await process_frame
 	view.set_process(false)
 	hud = view.ui
@@ -254,11 +256,10 @@ func _run() -> void:
 	quit(1 if failures else 0)
 
 
-func _open(profile: RefCounted, rules: ShopRules = null) -> Node2D:
+func _open(profile: RefCounted, rules: ShopRules = null, guides := true) -> Node2D:
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	scene.profile = profile
-	scene.rules = rules
-	scene.store = ShopSave.new(PANCAKE, save_path)
+	scene.session = TestSession.make(PANCAKE, save_path, rules, ShopSave.new(PANCAKE, save_path), profile)
+	scene.session.guide_enabled = guides
 	root.add_child(scene)
 	return scene
 

@@ -1,5 +1,7 @@
 extends "res://tests/test_case.gd"
 
+const TestSession := preload("res://tests/shop_test_session.gd")
+
 const Profile := preload("res://game/app/profile.gd")
 const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
 const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
@@ -92,9 +94,11 @@ func test_actual_scene_finish_failure_preserves_signals_and_shop_save() -> void:
 	var bytes := FileAccess.get_file_as_bytes(store.path)
 	profile.fail_write = true
 	var scene: Node2D = load("res://presentation/shop/shop_play.gd").new()
-	scene.profile = profile
-	scene.store = store
-	scene.rules = rules
+	scene.session = TestSession.make(PANCAKE, store.path, rules, store, profile)
+	check_eq(scene.session.start(), OK, "manual scene session starts")
+	scene.profile = scene.session.profile
+	scene.store = scene.session.store
+	scene.rules = scene.session.rules
 	scene.shop = PANCAKE
 	scene.view = ShopView.new(rules)
 	scene._toast = Label.new()
@@ -161,8 +165,7 @@ func test_startup_failure_blocks_play_and_autosave_until_retry() -> void:
 	var bytes := FileAccess.get_file_as_bytes(store.path)
 	store.fail_write = true
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	scene.profile = profile
-	scene.store = store
+	scene.session = TestSession.make(TEA, store.path, null, store, profile)
 	Engine.get_main_loop().root.add_child(scene)
 	if not scene.is_node_ready(): scene._ready()
 	check(profile.fresh_shop, "failed startup retains fresh marker")
@@ -214,9 +217,11 @@ func test_actual_scene_jump_requires_both_saves_before_signal() -> void:
 	var bytes := FileAccess.get_file_as_bytes(store.path)
 	var before := profile.to_dict()
 	var scene: Node2D = load("res://presentation/shop/shop_play.gd").new()
-	scene.profile = profile
-	scene.store = store
-	scene.rules = rules
+	scene.session = TestSession.make(PANCAKE, store.path, rules, store, profile)
+	check_eq(scene.session.start(), OK, "manual scene session starts")
+	scene.profile = scene.session.profile
+	scene.store = scene.session.store
+	scene.rules = scene.session.rules
 	scene.shop = PANCAKE
 	scene._toast = Label.new()
 	scene.change_scene_on_leave = false

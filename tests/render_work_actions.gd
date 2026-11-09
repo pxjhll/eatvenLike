@@ -1,4 +1,6 @@
 extends SceneTree
+
+const TestSession := preload("res://tests/shop_test_session.gd")
 ## Native game scene and embedded preview, using an isolated in-memory shop.
 const Library := preload("res://presentation/characters/character_library.gd")
 var failures := 0
@@ -28,8 +30,7 @@ func _run() -> void:
 	sim.seats[sim.dine_group().id] = 8
 	for seat in 8: sim.diners.append({"seat": seat, "dish": "lemonade", "left": 20.0})
 	sim.paused = true
-	view.rules = sim
-	view.store = ShopSave.new(tea, "user://work-actions-%d.json" % OS.get_process_id())
+	view.session = TestSession.make(tea, "work-actions-%d" % OS.get_process_id(), sim)
 	root.add_child(view)
 	await process_frame
 	view.set_process(false)

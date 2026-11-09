@@ -4,6 +4,7 @@ extends PanelContainer
 ## 有哪些行由店铺数据决定：有时间的机器各一行，名字是机器名 +“时间”（goals.texts 的 tune_<键> 可以改）。
 
 const FILE := "user://tuning.cfg"
+var file_path := FILE
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Icons := preload("res://presentation/ui/reference_icons.gd")
 const TUNE_MIN := 0.25
@@ -292,7 +293,7 @@ func _button(text: String) -> Button:
 
 func _load() -> void:
 	var config := ConfigFile.new()
-	if config.load(FILE) != OK: return
+	if config.load(file_path) != OK: return
 	for row in rows:
 		var value: Variant = config.get_value("tune", row[0], 1.0)
 		if (value is float or value is int) and is_finite(float(value)):
@@ -302,4 +303,4 @@ func _load() -> void:
 func _save() -> void:
 	var config := ConfigFile.new()
 	for row in rows: config.set_value("tune", row[0], game.rules.tuned(row[0]))
-	config.save(FILE)
+	config.save(file_path)

@@ -82,6 +82,7 @@ func write(entry: Dictionary) -> void:
 
 
 func text() -> String:
+	if not enabled: return ""
 	if not FileAccess.file_exists(file_path): return ""
 	return FileAccess.get_file_as_string(file_path)
 
@@ -92,6 +93,7 @@ func line_count() -> int:
 
 
 func clear() -> void:
+	if not enabled: return
 	if FileAccess.file_exists(file_path): DirAccess.remove_absolute(ProjectSettings.globalize_path(file_path))
 	setup(sim)
 
@@ -99,6 +101,7 @@ func clear() -> void:
 ## Saves a copy the player can find and send: a download in the web build, the Downloads folder
 ## (opened afterwards) on desktop, otherwise the documents folder or the game's own data folder.
 func export_file() -> String:
+	if not enabled: return "还没有录制内容"
 	var content := text()
 	if content.is_empty(): return "还没有录制内容"
 	var name := "eatvenlike-playlog-%s.txt" % Time.get_datetime_string_from_system().replace(":", "-")

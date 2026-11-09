@@ -70,6 +70,21 @@ func seen_list() -> Array:
 	return seen.keys()
 
 
+## Keep seen steps and playback preference; the next refresh selects from fresh rules.
+func restart() -> void:
+	active = ""
+	_blocking = false
+	_hole = Rect2()
+	_point = Vector2.INF
+	_time = 0.0
+	_angry_pending = false
+	_lost_seen = -1
+	_staff_at_start = 0
+	visible = false
+	if _bubble != null: _bubble.hide()
+	queue_redraw()
+
+
 func _step() -> SpecGuideStep:
 	return _steps.get(active)
 

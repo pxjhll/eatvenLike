@@ -3,10 +3,7 @@ extends Node2D
 ## 决定画面，美术场景里的 Anchors 决定位置；这里不写任何店名、机器名和坐标。
 ## 规则层 ShopRules 管全部状态和时间，界面只读 ShopView 快照、只发命令（§3.11）。
 ##
-## 打开方式：
-## - 正式游戏：读 App.profile.shop 那家店的数据和它的存档（ShopSave），放引导
-## - 只塞 store：读这个存档，放引导（测试读档用）
-## - 塞 rules：直接用这家店，不放引导（测试用；同时塞 store 才会存档）
+## Production uses App.create_session(); tests provide an explicit isolated session.
 
 const Actor := preload("res://presentation/shop/shop_actor.gd")
 const Dining := preload("res://presentation/shop/shop_dining.gd")
@@ -22,7 +19,6 @@ const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
 const CAMPAIGN: SpecCampaign = preload("res://content/campaign/campaign.tres")
 const Profile := preload("res://game/app/profile.gd")
-const ProgressService := preload("res://game/app/progress_service.gd")
 ## 竖屏铺满宽度；横屏最多少看 MIN_VISIBLE_WORLD 这么高的店面
 const MIN_VISIBLE_WORLD := 1100.0
 ## 界面按这个宽度排版（竖屏铺满宽度）；店面比它宽的店，店面另外缩放
@@ -30,12 +26,13 @@ const UI_WIDTH := 720.0
 const PAN_SLOP := 12.0
 const WALK_SPEED := 170.0
 
+var session: RefCounted
 var shop: SpecShop
 var rules: ShopRules
 var view: ShopView
 var anchors: ShopAnchors
 var store: ShopSave
-## 跨店记录（Profile）：默认用 App 的；测试可以塞一份临时的
+## Read aliases for HUD components, populated only from a successfully started session.
 var profile: RefCounted
 ## 结店后自己换到下一家店的场景（测试关掉，只听 shop_left）
 var change_scene_on_leave := true
@@ -95,35 +92,31 @@ var _world_factor := 1.0
 var _pan_press := Vector2.INF
 var _pan_last := Vector2.ZERO
 var _panning := false
-var _progress := ProgressService.new()
 var _startup_blocked := false
 var _startup_panel: Control
 var _transition_committed := false
 
 
 func _ready() -> void:
-	var guides_seen: Array = []
-	var app := get_node_or_null("/root/App") if is_inside_tree() else null
-	if profile == null and app != null: profile = app.profile
-	if profile != null and profile.load_error != OK:
-		_block_startup(profile.last_error)
+	if session == null:
+		if rules != null or store != null or profile != null:
+			_block_startup("Session required for injected dependencies")
+			return
+		var app := get_node_or_null("/root/App")
+		if app == null:
+			_block_startup("Session required")
+			return
+		session = app.create_session()
+	if session.start() != OK:
+		_block_startup(session.last_error)
 		return
-	if rules == null:
-		guide_enabled = true
-		if store == null: store = ShopSave.new(_profile_shop())
-		# 刚从上一家店结店过来：从空店开始（员工不带过来）
-		if profile != null and profile.fresh_shop and profile.shop == store.shop.id:
-			var result := _progress.initialize_fresh(profile, store)
-			if result.error != OK:
-				_block_startup(_progress.last_error)
-				return
-			rules = result.rules
-			_speed_factor = 1.0
-		else:
-			rules = store.load_game()
-			_speed_factor = store.loaded_speed
-			guides_seen = store.loaded_guides
-			if not store.last_error.is_empty(): save_status = store.last_error
+	rules = session.rules
+	store = session.store
+	profile = session.profile
+	guide_enabled = session.guide_enabled
+	_speed_factor = session.speed
+	var guides_seen: Array = session.guides_seen
+	if not String(session.last_error).is_empty(): save_status = session.last_error
 	_startup_blocked = false
 	set_process(true)
 	set_process_unhandled_input(true)
@@ -213,18 +206,10 @@ func _block_startup(message: String) -> void:
 
 func retry_startup() -> void:
 	if not _startup_blocked: return
-	if profile != null and profile.load_profile() != OK:
-		_block_startup(profile.last_error)
+	if session != null and session.profile != null and session.profile.load_profile() != OK:
+		_block_startup(session.profile.last_error)
 		return
 	_ready()
-
-
-func _profile_shop() -> SpecShop:
-	var id: String = profile.shop if profile != null and not String(profile.shop).is_empty() else ""
-	for city in CAMPAIGN.cities:
-		for entry in city.shops:
-			if not entry.shop_path.is_empty() and (id.is_empty() or entry.id == id): return load(entry.shop_path)
-	return null
 
 
 ## 界面上的提示句：店铺数据 goals.texts 里有就用，没有用这里的默认句
@@ -275,12 +260,24 @@ func _t(key: String, values := {}) -> String:
 
 
 func restart() -> void:
+	if session == null or _startup_blocked or _transition_committed: return
 	if is_instance_valid(_drag): _drag.cancel()
-	rules.reset()
-	if recorder != null: recorder.setup(rules)
-	ShopAudio.enter_shop(rules.events, shop.background_music)
+	session.speed = _speed_factor
+	session.guides_seen = guide.seen_list() if guide != null else []
+	if session.restart() != OK: return
+	ui.popups.clear()
+	guide.restart()
+	tuning.hide()
+	_autosave_elapsed = 0.0
+	_pan_press = Vector2.INF
+	_pan_last = Vector2.ZERO
+	_panning = false
+	_toast_left = 0.0
+	_toast.hide()
+	_hint_text = ""
 	_reset_visuals()
-	_show_toast(_t("restarted"))
+	if recorder != null: recorder.setup(rules)
+	ui.open_page("shop")
 	_refresh(0.0)
 	_fit()
 	save_now(false)
@@ -298,6 +295,11 @@ func _reset_visuals() -> void:
 	_customer_orders.clear()
 	_customer_entering.clear()
 	_known_seats.clear()
+	_seat_of.clear()
+	for sprite in _put_items.values(): sprite.free()
+	_put_items.clear()
+	for cup in _cups: cup.free()
+	_cups.clear()
 	_last_sold = rules.sold
 	_last_revenue = int(rules.revenue)
 	for pop in _pops: pop.label.free()
@@ -930,7 +932,8 @@ func _along(points: PackedVector2Array, progress: float) -> Vector2:
 
 func _build_tuning() -> void:
 	recorder = Recorder.new()
-	recorder.enabled = guide_enabled
+	recorder.enabled = session.recording_enabled
+	recorder.file_path = session.recording_path
 	recorder.setup(rules)
 	var shade := ColorRect.new()
 	shade.name = "TuningShade"
@@ -943,7 +946,8 @@ func _build_tuning() -> void:
 	shade.hide()
 	tuning = TuningPanel.new()
 	$Overlay/UI.add_child(tuning)
-	tuning.setup(self, guide_enabled)
+	tuning.file_path = session.tuning_path
+	tuning.setup(self, session.persist_tuning)
 	tuning.visibility_changed.connect(func() -> void: shade.visible = tuning.visible)
 	var button := Button.new()
 	button.name = "Tuning"
@@ -1009,9 +1013,9 @@ func leave_shop() -> void:
 	if not can_leave(): return
 	var record := view.summary()
 	record.erase("levels")
-	var result := _progress.finish_shop(profile, store, record)
+	var result: Error = session.finish(record)
 	if result != OK:
-		save_status = _progress.last_error
+		save_status = session.last_error
 		_show_toast(save_status)
 		return
 	_transition_committed = true
@@ -1033,9 +1037,10 @@ func jump_shop(offset: int) -> String:
 	if at < 0 or to < 0 or to >= ids.size() or profile == null:
 		_show_toast("已经是第一家店了" if offset < 0 else "已经是最后一家店了")
 		return ""
-	var result := _progress.jump_shop(profile, store, rules, ids[to], _speed_factor, guide.seen_list() if guide != null else [])
+	session.speed = _speed_factor
+	var result: Error = session.jump(ids[to], guide.seen_list() if guide != null else [])
 	if result != OK:
-		save_status = _progress.last_error
+		save_status = session.last_error
 		_show_toast(save_status)
 		return ""
 	_transition_committed = true
@@ -1137,10 +1142,10 @@ func buy_connection(id: String) -> void:
 
 
 func save_now(notify := true) -> Error:
-	if _startup_blocked or _transition_committed: return ERR_UNAVAILABLE
-	if store == null: return OK
-	var result := store.save_game(rules, _speed_factor, guide.seen_list() if guide != null else [])
-	save_status = "进度已保存" if result == OK else store.last_error
+	if session == null or not session.started or _startup_blocked or _transition_committed: return ERR_UNAVAILABLE
+	session.speed = _speed_factor
+	var result: Error = session.save(guide.seen_list() if guide != null else [])
+	save_status = "进度已保存" if result == OK else session.last_error
 	if notify: _show_toast(save_status)
 	return result
 
