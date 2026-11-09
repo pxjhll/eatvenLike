@@ -152,6 +152,22 @@ func _job_storage(worker: Dictionary) -> String:
 	if worker.job.is_empty(): return ""
 	var job: Dictionary = worker.job
 	var source := _shop.station(job.src)
+	var operation: bool = job.kind in ["work", "pot_start", "pot_take", "stir"]
+	# Supply bypasses stock accounting only for transport. It is never a machine.
+	if operation:
+		if source == null: return "job.src operation requires machine"
+		if job.kind == "work":
+			if source.block != "topping": return "job.kind requires topping"
+		elif source.block != "batch_pot": return "job.kind requires batch_pot"
+		if not worker.phase in ["walk_pickup", "work"]: return "job.phase incompatible with operation"
+		var active: Dictionary = _state.stations[job.src]
+		if not active.work_reserved: return "job.src missing work reservation"
+		if job.kind in ["pot_take", "stir"]:
+			var phase := "awaiting_take" if job.kind == "pot_take" else "stir"
+			if active.phase != phase or active.processing != job.count or not active.output.has(job.item): return "job.src invalid active pot state"
+		elif job.kind == "pot_start" and active.processing != 0: return "job.src pot already processing"
+	elif not worker.phase in ["walk_pickup", "pickup", "walk_dropoff", "dropoff"]: return "job.phase incompatible with transport"
+	if worker.walking != worker.phase.begins_with("walk_"): return "job.walking incompatible with phase"
 	if job.src == "shelf":
 		if not _state.shelf_stock.has(job.item): return "job.src 缺少物品"
 	elif source == null or source.block != "supply":
@@ -162,7 +178,7 @@ func _job_storage(worker: Dictionary) -> String:
 			var stock: Dictionary = station.input if job.kind in ["work", "pot_start"] else station.output
 			if not stock.has(job.item) or not station.reserved_out.has(job.item): return "job.src 缺少物品或预留"
 		if worker.phase == "work" and job.kind == "work" and station.get("duration", 0.0) <= 0: return "job.duration 无效"
-	if job.kind in ["work", "pot_start", "pot_take", "stir"]:
+	if operation:
 		if job.src != job.dst: return "job.dst 操作目标无效"
 	elif job.kind == "serve":
 		var destination := _shop.station(job.dst)
@@ -208,9 +224,14 @@ func _worker(w: Dictionary) -> String:
 		error = _shape(step, {"point": "", "action": "", "seconds": 0.0, "label": "", "station": ""}, "steps")
 		if not error.is_empty(): return error
 		if _shop.station(step.station) == null or not _point(step.point) or step.seconds < 0: return "steps 站点、路径或时间无效"
+		if not _step_action(step.station, step.action): return "steps.action incompatible with station"
 		for key in ["fixed", "into_machine", "put_down"]:
 			if step.has(key) and not step[key] is bool: return "steps." + key + " 类型不对"
 		if step.has("holds") and (not step.holds is String or (not step.holds.is_empty() and not _items.has(step.holds))): return "steps.holds 无效"
+	if not w.steps.is_empty():
+		if w.steps[0].action != "take" or w.steps[-1].action != "hand": return "steps missing take/hand boundary"
+		for index in w.steps.size():
+			if (index > 0 and w.steps[index].action == "take") or (index < w.steps.size() - 1 and w.steps[index].action == "hand"): return "steps misplaced take/hand"
 	if w.step < 0 or (not w.steps.is_empty() and w.step >= w.steps.size()): return "step out of range"
 	# The final handoff clears steps/order but intentionally leaves the last step index.
 	if w.order != -1 and (not _customers.has(w.order) or w.steps.is_empty()): return "order 活动顾客引用无效"
@@ -239,6 +260,18 @@ func _worker(w: Dictionary) -> String:
 	elif _shop.fulfillment.handoff != "single" and (w.walking or w.phase in ["work", "pickup", "dropoff", "walk_pickup", "walk_dropoff"]): return "job 活动工序缺少任务"
 	if _shop.fulfillment.handoff == "single" and w.phase == "work" and w.order == -1 and w.chore.is_empty(): return "work 缺少工序"
 	return ""
+
+
+func _step_action(station: String, action: String) -> bool:
+	if action in ["take", "hand"]: return _shop.station(station).block == "counter"
+	for dish in _shop.dishes:
+		for step in dish.steps:
+			if step.station == station and step.action == action: return true
+	for option in _shop.order_options:
+		if option.step == null: continue
+		var source: String = option.station if option.step.station.is_empty() else option.step.station
+		if source == station and option.step.action == action: return true
+	return false
 
 
 func _station(id: String, row: Variant) -> String:

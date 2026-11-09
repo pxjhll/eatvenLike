@@ -242,3 +242,53 @@ func test_active_job_and_belt_storage_references_must_exist() -> void:
 	data = base.duplicate(true)
 	data.belts[TEA.connections[0].id] = true
 	_rejected(rules, data, "传送带缺少时钟")
+
+func test_operation_jobs_require_matching_machine_and_worker_phase() -> void:
+	var rules := ShopRules.new(TEA)
+	rules.unlock(rules.next_unlock())
+	var base := rules.to_dict()
+	for kind in ["pot_take", "pot_start", "stir", "work"]:
+		var data := base.duplicate(true)
+		var worker: Dictionary = data.roster[0]
+		worker.job = {"kind": kind, "src": rules.supply_id, "dst": rules.supply_id, "item": TEA.items[0].id, "count": 1, "priority": 1.0, "belt": "", "order_id": -1}
+		worker.phase = "work"
+		worker.walking = false
+		worker.action_left = 0.0
+		worker.ticket = {}
+		_rejected(rules, data, kind + " cannot operate supply")
+	# A legal serve job cannot be dispatched through the machine-operation branch.
+	var data := base.duplicate(true)
+	data.roster[0].job = {"kind": "serve", "src": rules.supply_id, "dst": rules.counter_id, "item": base.orders[0].dish, "count": 1, "priority": 1.0, "belt": "", "order_id": base.orders[0].id}
+	data.roster[0].phase = "work"
+	_rejected(rules, data, "serve cannot use work phase")
+	# Phase/storage restrictions also apply to a genuine pot, not only wrong IDs.
+	for kind in ["pot_take", "stir"]:
+		data = base.duplicate(true)
+		var pot_id: String = rules.pots[0]
+		var pot: Dictionary = data.stations[pot_id]
+		pot.processing = 1
+		pot.duration = 1.0
+		pot.work_reserved = true
+		pot.phase = "awaiting_take" if kind == "pot_take" else "stir"
+		data.roster[0].job = {"kind": kind, "src": pot_id, "dst": pot_id, "item": pot.output.keys()[0], "count": 1, "priority": 1.0, "belt": "", "order_id": -1}
+		data.roster[0].phase = "work"
+		check_eq(ShopRules.new(TEA).load_dict(data), "", "合法批量锅工序可恢复 " + kind)
+		pot.phase = "idle"
+		_rejected(rules, data, kind + " requires matching pot phase")
+
+func test_single_steps_require_declared_actions_and_terminal_handoff() -> void:
+	var rules := ShopRules.new(PANCAKE)
+	rules.unlock(rules.next_unlock())
+	rules.run(3.0)
+	var base := rules.to_dict()
+	check(not base.roster[0].steps.is_empty(), "真实顾客生成活动工序")
+	if base.roster[0].steps.is_empty(): return
+	var data := base.duplicate(true)
+	data.roster[0].steps[0].action = "unknown_action"
+	_rejected(rules, data, "unknown single action")
+	data = base.duplicate(true)
+	data.roster[0].steps[0].station = rules.supply_id
+	_rejected(rules, data, "take action requires counter")
+	data = base.duplicate(true)
+	data.roster[0].steps.pop_back()
+	_rejected(rules, data, "missing terminal handoff")
