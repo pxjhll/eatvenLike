@@ -12,6 +12,7 @@ const InventoryAudit := preload("res://game/rules/inventory_audit.gd")
 const WorkerState := preload("res://game/rules/worker_state.gd")
 const Sales := preload("res://game/rules/rule_sales.gd")
 const Completion := preload("res://game/rules/fulfillment_completion.gd")
+const MachineProgress := preload("res://game/rules/machine_progress.gd")
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -1089,13 +1090,7 @@ func _stock(station: Dictionary) -> int:
 
 
 func _pause_for_stir(id: String, station: Dictionary, before: float) -> bool:
-	for point in shop.station(id).params.get("stir_points", []):
-		if before < point and station.progress >= point:
-			station.progress = point
-			station.remaining = station.duration * (1.0 - point)
-			station.phase = "stir"
-			return true
-	return false
+	return MachineProgress.pause_for_stir(station, before, shop.station(id).params.get("stir_points", []))
 
 
 func _update_machines() -> void:
@@ -1105,37 +1100,11 @@ func _update_machines() -> void:
 		var key := st.id
 		if not station_unlocked(key): continue
 		var station: Dictionary = stations[key]
-		if station.processing > 0 and not station.phase in ["awaiting_take", "stir"]:
-			var before: float = station.progress
-			station.remaining = maxf(0, station.remaining - STEP)
-			station.progress = 1.0 - station.remaining / station.duration
-			if st.block == "batch_pot" and _pause_for_stir(key, station, before): continue
-			if station.remaining <= 0.000001:
-				if st.block == "batch_pot": station.phase = "awaiting_take"
-				else:
-					station.output[station.processing_item] += station.processing
-					station.processing = 0
-					station.processing_item = ""
-					station.phase = "ready"
-				station.progress = 1.0
-		if station.processing == 0 and st.block != "batch_pot":
-			var input_item := ""
-			for item in station.input:
-				if station.input[item] > 0:
-					input_item = item
-					break
-			if not input_item.is_empty():
-				# 自动组合台一次做完全部；出餐口加工环节一次一杯
-				station.processing = 1 if st.block == "pickup" else station.input[input_item]
-				station.input[input_item] -= station.processing
-				station.processing_item = input_item if st.block == "pickup" else _auto_output(key)
-				station.duration = machine_seconds(key)
-				station.remaining = station.duration
-				station.progress = 0.0
-				station.phase = "working"
-			elif _stock(station) == 0:
-				station.phase = "idle"
-				station.progress = 0.0
+		var input_item := MachineProgress.advance_handoff(station, st.block, STEP,
+			st.params.get("stir_points", []) if st.block == "batch_pot" else [])
+		if not input_item.is_empty():
+			station.processing_item = input_item if st.block == "pickup" else _auto_output(key)
+			MachineProgress.begin_automatic(station, machine_seconds(key))
 
 
 func _auto_output(id: String) -> String:
@@ -1770,9 +1739,7 @@ func _tick_single() -> void:
 	for st in shop.stations:
 		if st.block != "batch_pot" or not station_unlocked(st.id): continue
 		var pot: Dictionary = stations[st.id]
-		if pot.phase == "cook":
-			pot.remaining -= STEP
-			if pot.remaining <= 0.0: pot.phase = "done"
+		MachineProgress.advance_single(pot, STEP)
 	for worker in workers: _staff_tick(worker)
 
 
