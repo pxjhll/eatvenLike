@@ -35,6 +35,23 @@ func setup(anchors_: ShopAnchors, group_: String, item_art: Callable, height: fl
 	_build_furniture()
 
 
+## A new run discards guests and pending movement while retaining the art and furniture.
+func reset() -> void:
+	var dynamic_nodes := {}
+	for node in _diners.values() + _cups.values():
+		if is_instance_valid(node): dynamic_nodes[node.get_instance_id()] = node
+	for walker in _walkers:
+		if is_instance_valid(walker.actor): dynamic_nodes[walker.actor.get_instance_id()] = walker.actor
+	_diners.clear()
+	_cups.clear()
+	_walkers.clear()
+	_arrivals.clear()
+	_exits.clear()
+	_available.clear()
+	_occupied.clear()
+	for node in dynamic_nodes.values(): node.free()
+
+
 func seats() -> Array[Vector2]:
 	return anchors.points("Seats/" + group)
 

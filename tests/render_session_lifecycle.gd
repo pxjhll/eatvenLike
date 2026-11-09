@@ -5,6 +5,8 @@ extends SceneTree
 const TestSession := preload("res://tests/shop_test_session.gd")
 const Suite := preload("res://tests/test_scene_session.gd")
 const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const Profile := preload("res://game/app/profile.gd")
 const DEFAULTS := ["user://profile.json", "user://tuning.cfg", "user://playlog.txt"]
 var suite := Suite.new()
 var errors := preload("res://tests/error_counter.gd").new()
@@ -160,6 +162,13 @@ func _run() -> void:
 	scene.free()
 	suite.check(app.get("_profile") == null, "explicit scene lifecycle never initializes App profile")
 	for path in DEFAULTS: suite.check_eq(FileAccess.get_file_as_bytes(path), sentinels[path], "production sentinel unchanged: " + path)
+	_test_dining_restart()
+	_test_production_profile_repair(app)
+	var warning_session := _fixture("-warning")
+	_write(warning_session.store.path, JSON.stringify({"format": ShopSave.FORMAT, "version": 99, "shop": "tea"}))
+	scene = _open(warning_session)
+	suite.check(not scene._startup_blocked and not String(scene.session.last_error).is_empty() and scene.save_status == scene.session.last_error, "successful startup retains a real shop-load warning")
+	scene.free()
 	_restore_defaults()
 	await process_frame
 	suite.cleanup()
@@ -168,6 +177,86 @@ func _run() -> void:
 	for failure in suite.failures: print("FAIL: " + failure)
 	print("SESSION LIFECYCLE: %d failures" % suite.failures.size())
 	quit(0 if suite.failures.is_empty() else 1)
+
+func _test_dining_restart() -> void:
+	var scene := _open(_fixture("-dining", ShopRules.new(TEA)))
+	var dining: Node2D = scene._dining
+	var furniture: Array = dining._chairs.duplicate()
+	furniture.append_array(dining._tables)
+	var anchors: ShopAnchors = dining.anchors
+	_open_until_dining(scene)
+	suite.check(not dining._diners.is_empty(), "real business generates a seated dining customer")
+	dining.queue_exit(scene.anchors.point("Entrance") + Vector2(50, 50), "rabbit", "lemonade")
+	scene._refresh(0.0)
+	suite.check(dining.walking_count() > 0, "dining owns an active exit walker before restart")
+	var old_nodes: Array = dining._diners.values()
+	old_nodes.append_array(dining._cups.values())
+	for walker in dining._walkers: old_nodes.append(walker.actor)
+	var old_ids: Array = old_nodes.map(func(node: Node) -> int: return node.get_instance_id())
+	dining.queue_arrival(0, scene.anchors.point("Entrance"), "rabbit")
+	dining.queue_exit(scene.anchors.point("Entrance"), "rabbit", "lemonade")
+	scene.restart()
+	suite.check(dining._diners.is_empty() and dining._cups.is_empty() and dining._walkers.is_empty(), "restart discards dining actors cups and walkers")
+	suite.check(dining._arrivals.is_empty() and dining._exits.is_empty() and dining.occupied_seats().is_empty(), "restart clears pending dining movements and occupied seats")
+	suite.check(old_nodes.all(func(node: Variant) -> bool: return not is_instance_valid(node)), "restart immediately frees prior dining actors and cups")
+	suite.check(dining.anchors == anchors and furniture.all(func(node: Node) -> bool: return is_instance_valid(node) and node.get_parent() == dining), "restart preserves dining anchors and static furniture")
+	scene._refresh(0.25)
+	suite.check(dining.walking_count() == 0, "old arrivals and exits cannot create actors on next refresh")
+	_open_until_dining(scene)
+	suite.check(not dining._diners.is_empty(), "new session still creates its first dining guests")
+	for actor in dining._diners.values(): suite.check(actor.get_instance_id() not in old_ids, "new diner never reuses an old actor")
+	scene.free()
+
+func _open_until_dining(scene: Node2D) -> void:
+	scene.rules.unlock("lemonade")
+	scene.rules.gold = 10000.0
+	scene.rules.hire()
+	for unused in 2400:
+		scene._process(0.25)
+		if not scene._dining._diners.is_empty(): return
+
+func _test_production_profile_repair(app: Node) -> void:
+	var original_profile: RefCounted = app.get("_profile")
+	var profile_path := prefix + "-repair-profile.json"
+	suite.paths.append(profile_path)
+	_write(profile_path, '{"version":99,"shop":"tea"}')
+	var damaged_profile := Profile.new(profile_path)
+	app.profile = damaged_profile
+	var pancake_store := ShopSave.new(PANCAKE)
+	var tea_store := ShopSave.new(TEA)
+	for store in [pancake_store, tea_store]:
+		originals[store.path] = FileAccess.get_file_as_bytes(store.path) if FileAccess.file_exists(store.path) else null
+		var saved := ShopRules.new(store.shop)
+		saved.gold = 1234.0 if store.shop == PANCAKE else 4321.0
+		suite.check_eq(store.save_game(saved), OK, "production retry fixture saves isolated shop")
+	var unrelated_bytes := FileAccess.get_file_as_bytes(pancake_store.path)
+	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
+	root.add_child(scene)
+	var original_store: ShopSave = scene.session.store
+	suite.check(scene._startup_blocked and scene.rules == null and original_store.shop == PANCAKE, "future profile blocks production startup with fallback shop dependency")
+	_write(profile_path, '{"version":1,"shop":"tea"}')
+	scene.retry_startup()
+	scene.set_process(false)
+	suite.check(not scene._startup_blocked and scene.rules != null, "production retry starts after backup selects another shop")
+	suite.check_eq(scene.save_status, "自动存档已开启", "successful repaired-profile retry clears stale failure status")
+	if scene.rules != null:
+		suite.check(scene.rules.shop == TEA and scene.session.profile == damaged_profile, "production retry uses repaired profile and selected shop")
+		suite.check(scene.store.path == tea_store.path and scene.store != original_store and scene.rules.gold == 4321.0, "production retry reassembles store and restores selected shop bytes")
+		suite.check(not scene.has_node("Overlay/ProgressRetry"), "successful repaired-profile retry removes blocker")
+	scene._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	scene.free()
+	suite.check_eq(FileAccess.get_file_as_bytes(pancake_store.path), unrelated_bytes, "repaired production retry and exit preserve unrelated shop bytes")
+	app.profile = original_profile
+	# Explicit callers retain responsibility for dependency identity; retry must not replace a fault store.
+	_write(profile_path, '{"version":99,"shop":"tea"}')
+	var explicit_profile := Profile.new(profile_path)
+	var fault_store := preload("res://tests/test_profile_safety.gd").FailingStore.new(PANCAKE, prefix + "-repair-explicit.json")
+	fault_store.fail_write = true
+	scene = _open(TestSession.make(PANCAKE, prefix + "-repair-explicit", null, fault_store, explicit_profile))
+	_write(profile_path, '{"version":1,"shop":"tea"}')
+	scene.retry_startup()
+	suite.check(scene._startup_blocked and scene.rules == null and scene.session.store == fault_store, "explicit repaired mismatch stays blocked and retains injected fault store")
+	scene.free()
 
 func _restore_defaults() -> void:
 	for path in originals:

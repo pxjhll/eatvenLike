@@ -95,6 +95,7 @@ var _panning := false
 var _startup_blocked := false
 var _startup_panel: Control
 var _transition_committed := false
+var _production_session: RefCounted
 
 
 func _ready() -> void:
@@ -107,6 +108,7 @@ func _ready() -> void:
 			_block_startup("Session required")
 			return
 		session = app.create_session()
+		_production_session = session
 	if session.start() != OK:
 		_block_startup(session.last_error)
 		return
@@ -116,7 +118,7 @@ func _ready() -> void:
 	guide_enabled = session.guide_enabled
 	_speed_factor = session.speed
 	var guides_seen: Array = session.guides_seen
-	if not String(session.last_error).is_empty(): save_status = session.last_error
+	save_status = session.last_error if not String(session.last_error).is_empty() else "自动存档已开启"
 	_startup_blocked = false
 	set_process(true)
 	set_process_unhandled_input(true)
@@ -209,6 +211,11 @@ func retry_startup() -> void:
 	if session != null and session.profile != null and session.profile.load_profile() != OK:
 		_block_startup(session.profile.last_error)
 		return
+	# Profile repair may select a different shop than the initial production fallback.
+	# Explicit callers retain their supplied dependencies, including fault stores.
+	if _production_session != null and session == _production_session and session.store.shop.id != session.profile.shop:
+		session = get_node("/root/App").create_session()
+		_production_session = session
 	_ready()
 
 
@@ -285,6 +292,7 @@ func restart() -> void:
 
 func _reset_visuals() -> void:
 	ui.show_selection = false
+	if _dining != null: _dining.reset()
 	var roster := all_staff()
 	selected_worker = int(roster[0].id) if not roster.is_empty() else -1
 	for actor in _actors.values(): actor.free()
