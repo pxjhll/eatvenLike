@@ -14,10 +14,14 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 		if not type_name in TYPES: return null
 		if structural and type_name in ["SpecEffect", "SpecUpgradeLevel"]: return null
 		var out := {"type": type_name}
+		if structural and type_name == "SpecMaterial": out["has_box"] = value.box_cost > 0
+		if structural and type_name == "SpecStation":
+			if value.block == "pickup": out["process_role"] = value.params.has("process_seconds")
+			if value.block == "hand": out["locks_user"] = int(value.params.get("users", 0)) > 0
 		for prop in value.get_property_list():
 			var key: String = prop.name
 			if not (int(prop.usage) & PROPERTY_USAGE_SCRIPT_VARIABLE) or not (int(prop.usage) & PROPERTY_USAGE_STORAGE): continue
-			if key in PRESENTATION: continue
+			if key in PRESENTATION or (type_name == "SpecStaffKind" and key == "role"): continue
 			if structural and key in ["effects", "base_effects", "stats"]: continue
 			if structural and type_name == "SpecUpgradeTrack" and key == "levels":
 				out[key] = value.levels.size()
@@ -26,14 +30,14 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 			if type_name == "SpecStation" and key == "params":
 				item = item.duplicate(true)
 				for parameter in item.keys():
-					if String(parameter).ends_with("_label") or (structural and (item[parameter] is int or item[parameter] is float)): item.erase(parameter)
+					if parameter == "unit" or String(parameter).ends_with("_label") or (structural and (item[parameter] is int or item[parameter] is float)): item.erase(parameter)
 			if type_name == "SpecEvent" and key == "choices":
 				item = item.duplicate(true)
 				for choice in item: choice.erase("label")
 			if structural and type_name == "SpecSeatGroup" and key == "costs":
 				out[key] = item.size()
 				continue
-			var identity_number: bool = (type_name == "SpecSeatGroup" and key in ["start", "step", "steps"]) or (type_name == "SpecStep" and key in ["repeat", "consumes", "produces"]) or (type_name == "SpecUpgradeTrack" and key == "requires_level")
+			var identity_number: bool = (type_name == "SpecSeatGroup" and key in ["start", "step", "steps"]) or (type_name == "SpecStep" and key in ["repeat", "consumes", "produces"]) or (type_name == "SpecUpgradeTrack" and key == "requires_level") or (type_name == "SpecConnection" and key == "stage")
 			if structural and not geometry and type_name != "SpecLayout" and not identity_number and (item is int or item is float): continue
 			out[key] = _project(item, structural, geometry or type_name == "SpecLayout" or identity_number)
 		return out

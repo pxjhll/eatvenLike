@@ -178,3 +178,68 @@ func test_active_automatic_duration_survives_refresh() -> void:
 	check_eq(resumed.stations[active_id], saved.stations[active_id], "recorded automatic timing and stock exact")
 	resumed.step(0.1)
 	check(resumed.stations[active_id].remaining <= saved.stations[active_id].remaining, "recorded automatic work advances")
+
+func test_connection_stage_binding_is_structural() -> void:
+	var before: SpecShop = TEA.duplicate(true)
+	check(not before.connections.is_empty(), "connection fixture populated")
+	if before.connections.is_empty(): return
+	var after: SpecShop = before.duplicate(true)
+	after.connections[0].stage += 1
+	var old := CONTRACT.describe(before)
+	var changed := CONTRACT.describe(after)
+	check(changed.gameplay != old.gameplay, "connection stage affects gameplay")
+	check(changed.structure != old.structure, "connection stage is progression structure")
+
+func test_staff_role_and_station_unit_are_presentation() -> void:
+	var before: SpecShop = TEA.duplicate(true)
+	var base := CONTRACT.describe(before)
+	var after: SpecShop = before.duplicate(true)
+	after.staff.kinds[0].role = "New role caption"
+	check_eq(CONTRACT.describe(after), base, "staff role caption ignored")
+	after = before.duplicate(true)
+	after.stations[0].params["unit"] = "New quantity caption"
+	check_eq(CONTRACT.describe(after), base, "station quantity caption ignored")
+
+func test_numeric_topology_boundary_predicates() -> void:
+	var before: SpecShop = TEA.duplicate(true)
+	var material_station: SpecStation
+	for station in before.stations:
+		if not station.materials.is_empty():
+			material_station = station
+			break
+	check(material_station != null, "material fixture")
+	if material_station == null: return
+	material_station.materials[0].box_cost = 1
+	var base := CONTRACT.describe(before)
+	var after: SpecShop = before.duplicate(true)
+	after.station(material_station.id).materials[0].box_cost = 2
+	check_eq(CONTRACT.describe(after).structure, base.structure, "box price magnitude rebalanceable")
+	after.station(material_station.id).materials[0].box_cost = 0
+	check(CONTRACT.describe(after).structure != base.structure, "box existence structural")
+	before = TEA.duplicate(true)
+	var pickup: SpecStation
+	for station in before.stations:
+		if station.block == "pickup": pickup = station
+	check(pickup != null, "pickup fixture")
+	if pickup == null: return
+	pickup.params.erase("process_seconds")
+	base = CONTRACT.describe(before)
+	after = before.duplicate(true)
+	after.station(pickup.id).params["process_seconds"] = 1.0
+	check(CONTRACT.describe(after).structure != base.structure, "pickup process role presence structural")
+	base = CONTRACT.describe(after)
+	after.station(pickup.id).params["process_seconds"] = 2.0
+	check_eq(CONTRACT.describe(after).structure, base.structure, "pickup duration magnitude rebalanceable")
+	before = PANCAKE.duplicate(true)
+	var hand: SpecStation
+	for station in before.stations:
+		if station.block == "hand": hand = station
+	check(hand != null, "hand fixture")
+	if hand == null: return
+	hand.params["users"] = 1
+	base = CONTRACT.describe(before)
+	after = before.duplicate(true)
+	after.station(hand.id).params["users"] = 2
+	check_eq(CONTRACT.describe(after).structure, base.structure, "positive hand users magnitude rebalanceable")
+	after.station(hand.id).params["users"] = 0
+	check(CONTRACT.describe(after).structure != base.structure, "hand locking predicate structural")
