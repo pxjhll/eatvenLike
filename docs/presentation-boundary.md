@@ -44,3 +44,35 @@ seat → staff → machine priority, first queued customer / oldest order select
 machine fallbacks. Lost-customer history (`_lost_seen`) remains guide UI bookkeeping.
 Existing ShopView status/message and numeric APIs remain compatible. Projections copy
 only the requested runtime containers; they do not serialize or rebuild the game.
+
+Presentation consumers use the boundary as follows:
+
+- `shop_play.execute_command()` is a thin forwarding entry to its session; menu pause,
+  tuning sliders/reset/config load, all business buttons and drag placement go through
+  it. Slider commands request `snap: true`; valid finite config numbers request
+  `snap: false`. A rejected write returns before tuning labels, recording or config
+  persistence. Loading settings never records or writes the config/shop save. Changed
+  slider writes retain existing tune-log behavior; pause retains existing save timing.
+- Each root `_refresh()` captures one detached render frame and passes it to actors,
+  cups, customers and dining in their existing order. Direct calls to the retained
+  visual helpers obtain a fresh optional snapshot. `all_staff()` returns a fresh
+  roster; drag hits/ghosts, staff cards and guide staffing use small fresh projections.
+  No persistent frame cache exists.
+- Art groups ask `art_visible()` and guides ask `guide_snapshot()` while retaining UI
+  lost-customer history. Navigation/drop geometry uses value-only view queries.
+  Recorder stores a `ShopView`, reads activity/progress projections, and keeps existing
+  JSON fields, aggregation and 60-second cadence. Its `setup()` also accepts Rules for
+  existing headless callers, immediately wrapping it in a view instead of retaining
+  a simulation alias. The tuning marker and customer caption use actual public queue
+  and interval values for both fulfillment modes.
+
+`tests/test_presentation_boundary.gd` combines real detached-row/art behavior with a
+supplementary narrow source guard. The guard follows Rules/sim/typed/simple aliases,
+rejecting runtime container/live-row/private/navigation access and direct writes or
+command dispatch. Public scalar queries, immutable shop definitions and event-bus
+subscription remain allowed; it is not a GDScript security sandbox.
+`tests/render_presentation_boundary.gd` exercises real production scenes with an
+isolated owner spy, real mouse button clicks/body drag input, configuration and recording
+services, retained/fresh frames, hire/restart/save roundtrip, and unavailable/closed
+sessions. Runtime errors fail the runner; its internal timeout is 25 seconds and CI
+bounds it at 30 seconds under disposable `session-lifecycle-userdata`.

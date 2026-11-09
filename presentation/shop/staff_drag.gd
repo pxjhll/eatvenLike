@@ -28,12 +28,8 @@ func setup(view: Node2D) -> void:
 	z_index = 80
 
 
-func _rules() -> ShopRules:
-	return _view.rules
-
-
 func _input(event: InputEvent) -> void:
-	if not is_instance_valid(_view) or _view.rules == null or not _rules().shop.staff.can_drag:
+	if not is_instance_valid(_view) or _view.rules == null or not _view.rules.shop.staff.can_drag:
 		return
 	# 压暗的引导只让指着的那个按钮通过，不能拖人
 	if _view.guide != null and _view.guide.freezes():
@@ -83,7 +79,7 @@ func _press_body(screen: Vector2) -> void:
 	if point.y < band.x or point.y >= band.y: return
 	var found := -1
 	var depth := -INF
-	for worker in _rules().workers:
+	for worker in _view.view.deployed_snapshot():
 		if Rect2(worker.pos + Vector2(-50, -130), Vector2(100, 145)).has_point(point) and worker.pos.y >= depth:
 			found = int(worker.id)
 			depth = worker.pos.y
@@ -144,7 +140,7 @@ func _update_ghost() -> void:
 	worker.task_label = _status_text(status) if not CommandResult.is_ok(status) else _view.view.text("drop_" + String(target.get("post", "")), {},
 		"坐班" + _view.view.station_name(String(target.post)) if not String(target.get("post", "")).is_empty() else "恢复流动")
 	_ghost.task_text = func(w: Dictionary) -> String: return String(w.task_label)
-	_ghost.display(worker, _rules().clock)
+	_ghost.display(worker, _view.rules.clock)
 	# 松手会怎样也写在顶上，手指挡不住
 	var hint: String = ("松手：" + worker.task_label) if CommandResult.is_ok(status) else worker.task_label
 	if hint != _hint:
@@ -160,7 +156,7 @@ func _target_status() -> Dictionary:
 	if target.get("kind", "invalid") == "invalid":
 		return CommandResult.failure(CommandResult.UI_DROP_REJECTED, {"reason": target.get("reason", "blocked_ground")})
 	var post: String = target.get("post", "")
-	var rules := _rules()
+	var rules: ShopRules = _view.rules
 	if not post.is_empty():
 		if not rules.station_unlocked(post): return CommandResult.failure(CommandResult.STATION_REQUIRED, {"station": post})
 		if rules.post_owner(post, worker_id) != -1:
@@ -174,20 +170,20 @@ func _drop_target(screen: Vector2) -> Dictionary:
 	if _view.ui.blocks_world(screen) or _view.tuning_covers(screen): return {"kind": "invalid", "reason": "ui_overlay"}
 	var point := _world(screen)
 	var anchors: ShopAnchors = _view.anchors
-	var rules := _rules()
+	var rules: ShopRules = _view.rules
 	for name in _drop_names():
 		var path := "Drops/" + name
 		var post := String(anchors.meta(path, "post", ""))
-		var stand: Vector2 = anchors.meta(path, "point", rules.nav.post(post))
+		var stand: Vector2 = anchors.meta(path, "point", _view.view.post_point(post))
 		var near: bool = anchors.meta(path, "point", null) != null and point.distance_to(stand) < 30
 		if not anchors.rect(path).has_point(point) and not near: continue
 		var reason := String(anchors.meta(path, "invalid", ""))
 		if not reason.is_empty(): return {"kind": "invalid", "reason": reason}
-		return {"kind": "post", "post": post, "point": rules.nav.post(post)}
+		return {"kind": "post", "post": post, "point": _view.view.post_point(post)}
 	var cell := rules.shop.layout.cell
 	var snapped := (Vector2(floorf(point.x / cell), floorf(point.y / cell)) + Vector2(0.5, 0.5)) * cell
-	if not rules.nav.walkable(snapped, snapped): return {"kind": "invalid", "reason": "blocked_ground"}
-	if not rules.nav.walkable(snapped, rules.nav.point(rules.counter_id)): return {"kind": "invalid", "reason": "unreachable"}
+	if not _view.view.walkable(snapped, snapped): return {"kind": "invalid", "reason": "blocked_ground"}
+	if not _view.view.walkable(snapped, _view.view.navigation_point(rules.counter_id)): return {"kind": "invalid", "reason": "unreachable"}
 	return {"kind": "mobile", "post": "", "point": snapped}
 
 
@@ -205,7 +201,7 @@ func _release(screen: Vector2) -> void:
 	_pointer = _world(screen)
 	target = _drop_target(screen)
 	var status := _target_status()
-	if CommandResult.is_ok(status): status = _rules().execute_command("place_worker", {"id": worker_id, "post": target.post, "point": target.point})
+	if CommandResult.is_ok(status): status = _view.execute_command("place_worker", {"id": worker_id, "post": target.post, "point": target.point})
 	if CommandResult.is_ok(status):
 		var post: String = target.post
 		var message: String = _view.view.text("placed_" + post, {}, "已安排到" + _view.view.station_name(post) + "坐班" if not post.is_empty() else "已恢复流动")
@@ -241,7 +237,7 @@ func _notification(what: int) -> void:
 
 
 func _worker() -> Dictionary:
-	return _rules().worker_by_id(worker_id)
+	return _view.view.worker_snapshot(worker_id)
 
 
 func _world(screen: Vector2) -> Vector2:
@@ -260,7 +256,7 @@ func _status_text(status: Dictionary) -> String:
 func _draw() -> void:
 	if not dragging: return
 	var anchors: ShopAnchors = _view.anchors
-	var rules := _rules()
+	var rules: ShopRules = _view.rules
 	for name in _drop_names():
 		var path := "Drops/" + name
 		if not anchors.meta(path, "show", false): continue

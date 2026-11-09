@@ -9,7 +9,7 @@ extends RefCounted
 ##   wait_seats:<N>      至少有 N 个等位座（买来的，或阶段直接给的）
 ## 另外，带 follows 标记（指向另一个节点）的阴影、文字跟着那个节点显示。
 
-static func refresh(art: Node2D, sim: RefCounted) -> void:
+static func refresh(art: Node2D, view: ShopView) -> void:
 	var visibility := {}
 	var followers: Array[CanvasItem] = []
 	for node in art.find_children("*", "CanvasItem", true, false):
@@ -18,22 +18,7 @@ static func refresh(art: Node2D, sim: RefCounted) -> void:
 		var group: String = node.get_meta("layout_group")
 		if not visibility.has(group):
 			var rule: String = node.get_meta("unlock_rule", "always")
-			if rule == "always" or not sim.has_method("station_unlocked"):
-				visibility[group] = true
-			elif rule.begins_with("belt:"):
-				# A conveyor shows once bought (old sims without belts never show it).
-				visibility[group] = "belts" in sim and sim.belts.has(rule.trim_prefix("belt:"))
-			elif rule == "ingredient_box":
-				visibility[group] = sim.boxes.values().has(true)
-			elif rule.begins_with("box:"):
-				visibility[group] = bool(sim.boxes.get(rule.trim_prefix("box:"), false))
-			elif rule.begins_with("flavor:"):
-				var dish: Variant = sim.shop.dish(rule.trim_prefix("flavor:"))
-				visibility[group] = dish != null and sim.flavor_open(dish)
-			elif rule.begins_with("wait_seats:"):
-				visibility[group] = sim.has_method("wait_seats") and sim.wait_seats() >= int(rule.get_slice(":", 1))
-			else:
-				visibility[group] = sim.station_unlocked(rule)
+			visibility[group] = view.art_visible(rule)
 		node.visible = visibility[group]
 	for node in followers:
 		var owner: Variant = node.get_meta("follows")

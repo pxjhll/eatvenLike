@@ -57,6 +57,10 @@ jobs:
         env:
           XDG_DATA_HOME: ${{ runner.temp }}/session-lifecycle-userdata/command-ui
         run: timeout 30s ./godot --headless --path . -s tests/render_command_contracts.gd
+      - name: Presentation writes belong to live sessions and reads stay detached
+        env:
+          XDG_DATA_HOME: ${{ runner.temp }}/session-lifecycle-userdata/presentation-boundary
+        run: timeout 30s ./godot --headless --path . -s tests/render_presentation_boundary.gd
       - name: Generic shop audio integration
         run: timeout 30s ./godot --headless --path . -s tests/render_shop_audio.gd
       - name: Animated character frame and gameplay regression

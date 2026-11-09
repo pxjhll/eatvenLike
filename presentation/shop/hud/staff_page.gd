@@ -191,7 +191,7 @@ func staff_name(worker: Dictionary, roster: Array) -> String:
 
 
 func has_staff_room() -> bool:
-	return _view.rules.workers.size() < _view.rules.staff_slots()
+	return _view.view.deployed_count() < _view.rules.staff_slots()
 
 
 ## 员工页有能买的（员工页签上的红 ↑）
@@ -253,7 +253,7 @@ func refresh() -> void:
 	hire_button.text = "暂无空位" if not room else "招募 · %d 金币" % rules.hire_cost()
 	var next_kind := rules.next_hire_kind()
 	_recruit_portrait.texture = _hud.portrait_texture(next_kind)
-	var kind := rules._kind(next_kind)
+	var kind := view.staff_kind(next_kind)
 	_recruit_label.text = "%s · %s" % [Characters.NAMES.get(next_kind, kind.display_name), kind.role] + ("\n招来直接上岗" if room else "\n解锁新设备后有更多空位")
 	selection.visible = _hud.show_selection and _hud.page == "shop"
 	selection.get_node("Row/Avatar").texture = _hud.portrait_texture(String(selected.kind))
