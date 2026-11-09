@@ -209,12 +209,12 @@ func track_row(key: String) -> Dictionary:
 	var per := "基准每" + String(timing.unit)
 	var preview := price_preview(key)
 	var batch_now := rules.pot_batch(id) if st.block == "batch_pot" else 0
-	var batch_next: int = rules.preview(key, func() -> int: return rules.pot_batch(id)) if cost >= 0 and st.block == "batch_pot" else batch_now
+	var batch_next: int = rules.preview(key, func(query: RefCounted) -> int: return query.pot_batch(id)) if cost >= 0 and st.block == "batch_pot" else batch_now
 	var slots_now := rules.process_slots(id) if st.block == "pickup" else 0
-	var slots_next: int = rules.preview(key, func() -> int: return rules.process_slots(id)) if cost >= 0 and st.block == "pickup" else slots_now
+	var slots_next: int = rules.preview(key, func(query: RefCounted) -> int: return query.process_slots(id)) if cost >= 0 and st.block == "pickup" else slots_now
 	var timed := st.block in ["batch_pot", "pickup"] or kinds.has("speed") or kinds.has("duration")
 	var s_now := seconds(id)
-	var s_next: float = rules.preview(key, func() -> float: return seconds(id)) if cost >= 0 else s_now
+	var s_next: float = rules.preview(key, func(query: RefCounted) -> float: return query.station_timing(id).seconds) if cost >= 0 else s_now
 	# 两格对比：加杯 > 加位 > 涨价 > 提速
 	if cost >= 0:
 		if batch_next > batch_now:
@@ -341,9 +341,9 @@ func price_preview(key: String) -> Dictionary:
 			if e.kind == "price" and e.op == "mul": mult *= e.value
 			if e.kind == "price" and not e.price_part.is_empty(): partial = true
 	var now := rules.dish_price(sample)
-	var next: float = rules.preview(key, func() -> float: return rules.dish_price(sample)) if level <= t.levels.size() else -1.0
+	var next: float = rules.preview(key, func(query: RefCounted) -> float: return query.dish_price(sample)) if level <= t.levels.size() else -1.0
 	var quote_now := rules.dish_quote(sample)
-	var quote_next: Dictionary = rules.preview(key, func() -> Dictionary: return rules.dish_quote(sample)) if level <= t.levels.size() else quote_now
+	var quote_next: Dictionary = rules.preview(key, func(query: RefCounted) -> Dictionary: return query.dish_quote(sample)) if level <= t.levels.size() else quote_now
 	var names: Array = []
 	for d in shop.dishes:
 		if d.id in scope: names.append(d.display_name)
@@ -381,7 +381,7 @@ func material_row(st: SpecStation, m: SpecMaterial) -> Dictionary:
 	elif dish != null:
 		row.effect = quote_text(rules.dish_quote(dish.id))
 		if row.cost >= 0:
-			row.effect += " → " + quote_text(rules.preview(key, func() -> Dictionary: return rules.dish_quote(dish.id)))
+			row.effect += " → " + quote_text(rules.preview(key, func(query: RefCounted) -> Dictionary: return query.dish_quote(dish.id)))
 	return row
 
 
@@ -404,8 +404,8 @@ func flyer() -> Dictionary:
 	var next_customers := rules.flyer_customers()
 	var next_cooldown := rules.flyer_cooldown()
 	if cost >= 0:
-		next_customers = rules.preview("flyer", func() -> int: return rules.flyer_customers())
-		next_cooldown = rules.preview("flyer", func() -> float: return rules.flyer_cooldown())
+		next_customers = rules.preview("flyer", func(query: RefCounted) -> int: return query.flyer_customers())
+		next_cooldown = rules.preview("flyer", func(query: RefCounted) -> float: return query.flyer_cooldown())
 	return {"level": rules.level("flyer"), "customers": rules.flyer_customers(), "cooldown": rules.flyer_cooldown(),
 		"seconds": shop.flyer.wave_seconds, "wait": wait, "wave": rules.flyer_wave, "pending": rules.flyer_left if single else rules.flyer_pending,
 		"error": rules.flyer_error(), "queue_full": rules.queue_size() >= rules.queue_capacity(),
