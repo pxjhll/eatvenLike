@@ -244,7 +244,7 @@ static func _station(s: SpecStation, p: String, c: Dictionary, errors: Array[Dic
 		_ref(m.item, c.items, at + ".item", errors)
 		_ref(m.box_station, c.stations, at + ".box_station", errors, true)
 		_number(m.box_cost, at + ".box_cost", errors)
-		if m.track != null: _track(m.track, at + ".track", c, errors, s.id)
+		if m.track != null: _track(m.track, at + ".track", c, errors, s.id, "material")
 	for i in s.stock.size():
 		var stock := s.stock[i]
 		if stock == null: continue
@@ -280,34 +280,45 @@ static func _dish(d: SpecDish, p: String, c: Dictionary, errors: Array[Dictionar
 	elif not d.flavor_material.is_empty(): _error(errors, p + ".flavor_station", "A flavor station is required.")
 	_number(d.topping_count, p + ".topping_count", errors)
 
-static func _tracks(tracks: Array, p: String, c: Dictionary, errors: Array[Dictionary], target := "") -> void:
+static func _tracks(tracks: Array, p: String, c: Dictionary, errors: Array[Dictionary], target := "", attachment := "station") -> void:
 	_ids(tracks, p, errors, false, p == "staff.tracks")
 	for i in tracks.size():
-		if tracks[i] != null: _track(tracks[i], p + "[%d]" % i, c, errors, target)
+		if tracks[i] != null:
+			var default_target: String = tracks[i].id if attachment == "staff" else target
+			_track(tracks[i], p + "[%d]" % i, c, errors, default_target, attachment)
 
-static func _track(track: SpecUpgradeTrack, p: String, c: Dictionary, errors: Array[Dictionary], target := "") -> void:
+static func _track(track: SpecUpgradeTrack, p: String, c: Dictionary, errors: Array[Dictionary], target := "", attachment := "station") -> void:
 	_number(track.requires_level, p + ".requires_level", errors, 0, true)
 	for id in track.preview_dishes: _ref(id, c.dishes, p + ".preview_dishes", errors)
-	_effects(track.base_effects, p + ".base_effects", c, errors, target)
+	_effects(track.base_effects, p + ".base_effects", c, errors, target, attachment + "_base")
 	for i in track.levels.size():
 		var level := track.levels[i]
 		if level == null: continue
 		_number(level.cost, p + ".levels[%d].cost" % i, errors)
-		_effects(level.effects, p + ".levels[%d].effects" % i, c, errors, target)
+		_effects(level.effects, p + ".levels[%d].effects" % i, c, errors, target, attachment + "_level")
 
-static func _effects(effects: Array, p: String, c: Dictionary, errors: Array[Dictionary], target := "") -> void:
+static func _effects(effects: Array, p: String, c: Dictionary, errors: Array[Dictionary], target := "", attachment := "event") -> void:
 	for i in effects.size():
 		var e: SpecEffect = effects[i]
 		if e == null: continue
 		var at := p + "[%d]" % i
 		_enum(e.kind, SpecEffect.KINDS, at + ".kind", errors)
+		var upgrade := attachment != "event"
+		if upgrade and e.kind in SpecEffect.ONE_SHOT:
+			_error(errors, at + ".kind", "Upgrade tracks do not execute one-shot effects.", "unsupported")
+		if e.kind in ["seats", "unlock_recipe", "shop_news"]:
+			_error(errors, at + ".kind", "This effect has no implemented gameplay consumer.", "unsupported")
+		if e.kind == "open_flavor" and attachment != "station_level":
+			_error(errors, at + ".kind", "open_flavor is a station upgrade label only, not a gameplay effect.", "unsupported")
 		_enum(e.op, ["mul", "add", "set"], at + ".op", errors)
 		_number(e.value, at + ".value", errors, -INF)
 		if e.kind in ["speed", "duration", "flow", "walk", "work", "patience"] and e.op != "add": _number(e.value, at + ".value", errors, 0, true)
 		if e.kind in ["batch", "process_slots", "carry"] and e.op == "set": _number(e.value, at + ".value", errors, 0, true)
-		var id := e.target if not e.target.is_empty() else target
+		var id := e.target if not e.target.is_empty() else ("" if e.kind == "price" else target)
 		match e.kind:
-			"speed", "duration", "batch", "process_slots", "price": _ref(id, c.stations, at + ".target", errors, true)
+			"speed", "duration", "batch", "process_slots": _ref(id, c.stations, at + ".target", errors, true)
+			"price", "flow", "flyer_customers", "flyer_cooldown", "event_chance", "patience", "grant_gold", "customer_wave":
+				if not id.is_empty(): _error(errors, at + ".target", "This effect requires the global empty target.", "unsupported")
 			"open_flavor":
 				if not c.materials.has(e.target): _ref(e.target, c.dishes, at + ".target", errors)
 			"seats": _ref(e.target, c.seats, at + ".target", errors)
@@ -315,18 +326,30 @@ static func _effects(effects: Array, p: String, c: Dictionary, errors: Array[Dic
 			"unlock_recipe": _ref(e.target, c.dishes, at + ".target", errors)
 			"shop_news":
 				if not c.campaign.is_empty(): _ref(e.target, c.campaign, at + ".target", errors)
-			"staff_slot": _ref(e.target, c.zones, at + ".target", errors)
+			"staff_slot":
+				if not c.zones.has("front") or id not in ["", "front"]:
+					_error(errors, at + ".target", "Staff slot effects only change the zoned front capacity.", "unsupported")
 			"walk", "work", "carry", "luck":
-				if not e.target.is_empty() and not c.zones.has(e.target) and not c.kinds.has(e.target) and not e.target.is_valid_int(): _error(errors, at + ".target", "Unknown staff scope.")
+				if not _staff_target(id, c): _error(errors, at + ".target", "Use an empty target, active zone, or canonical staff:N ID.", "unsupported")
+		if e.kind != "price":
+			if not e.dishes.is_empty(): _error(errors, at + ".dishes", "Dish scopes are only supported by price effects.", "unsupported")
+			if not e.price_part.is_empty(): _error(errors, at + ".price_part", "Price parts are only supported by price effects.", "unsupported")
 		for dish in e.dishes: _ref(dish, c.dishes, at + ".dishes", errors)
 		if not e.price_part.is_empty():
 			var matches := false
 			var scope: Array = e.dishes
-			if scope.is_empty() and c.stations.has(id): scope = c.stations[id].price_dishes
+			if scope.is_empty() and upgrade and c.stations.has(target): scope = c.stations[target].price_dishes
 			if scope.is_empty(): scope = c.dishes.keys()
 			for dish in scope:
 				if c.dishes.has(dish) and c.dishes[dish].price_parts.has(e.price_part): matches = true
 			if not matches: _error(errors, at + ".price_part", "Price part is absent from the affected dishes.", "reference")
+
+static func _staff_target(id: String, c: Dictionary) -> bool:
+	if id.is_empty(): return true
+	if id in ["front", "kitchen"] and c.zones.has(id): return true
+	if not id.begins_with("staff:"): return false
+	var suffix := id.trim_prefix("staff:")
+	return suffix.is_valid_int() and int(suffix) > 0 and str(int(suffix)) == suffix
 
 static func _stage(stage: SpecStage, p: String, c: Dictionary, errors: Array[Dictionary]) -> void:
 	if stage.stations.is_empty(): _error(errors, p + ".stations", "Each stage needs an unlock station.")
@@ -373,7 +396,7 @@ static func _validate_staff(shop: SpecShop, c: Dictionary, errors: Array[Diction
 	for i in staff.hire_costs.size(): _number(staff.hire_costs[i], "staff.hire_costs[%d]" % i, errors)
 	_ref(staff.starting_post, c.stations, "staff.starting_post", errors, true)
 	if c.stations.has(staff.starting_post) and not c.stations[staff.starting_post].seatable and c.stations[staff.starting_post].block != "counter": _error(errors, "staff.starting_post", "Starting post must be seatable.")
-	_tracks(staff.tracks, "staff.tracks", c, errors)
+	_tracks(staff.tracks, "staff.tracks", c, errors, "", "staff")
 
 static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
 	if c.mode == "single" and not shop.connections.is_empty():
@@ -382,7 +405,7 @@ static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dic
 		_number(shop.flyer.wave_seconds, "flyer.wave_seconds", errors)
 		_number(shop.flyer.gap, "flyer.gap", errors)
 		_enum(shop.flyer.when_full, ["wait_outside", "lost"], "flyer.when_full", errors)
-		if shop.flyer.track != null: _track(shop.flyer.track, "flyer.track", c, errors)
+		if shop.flyer.track != null: _track(shop.flyer.track, "flyer.track", c, errors, "", "flyer")
 	if shop.goals != null:
 		_ref(shop.goals.opening_station, c.stations, "goals.opening_station", errors)
 		for key in shop.goals.order: _enum(key, ["open", "box", "stage", "tasks"], "goals.order", errors)
@@ -506,16 +529,20 @@ static func _validate_graph(shop: SpecShop, c: Dictionary, errors: Array[Diction
 				_error(errors, "stations[%d]" % i, "Handoff processing stations need a recipe output.", "unreachable")
 	var pickups := 0
 	var available := {}
+	var initial := {}
 	for id in c.stations:
 		var station: SpecStation = c.stations[id]
 		if station.block == "counter": counters += 1
 		if station.block == "pickup" and station.params.has("process_seconds"): pickups += 1
-		if station.starts_unlocked: available[id] = true
+		if station.starts_unlocked:
+			available[id] = true
+			initial[id] = true
 	if counters != 1: _error(errors, "stations", "Exactly one counter station is required.")
 	if pickups > 1: _error(errors, "stations", "Only one processing pickup station is supported.")
 	if shop.fulfillment != null and shop.fulfillment.handoff == "handoff":
 		for id in c.dishes:
 			if not c.dishes[id].front and pickups != 1: _error(errors, "stations", "Handoff kitchen recipes require a processing pickup station.")
+	var guaranteed := initial.duplicate()
 	for i in shop.stages.size():
 		var stage := shop.stages[i]
 		if stage == null: continue
@@ -523,18 +550,15 @@ static func _validate_graph(shop: SpecShop, c: Dictionary, errors: Array[Diction
 		for unused in c.stations.size():
 			for id in c.stations:
 				if available.has(c.stations[id].companion_of): available[id] = true
+		if i > 0: _stage_unlocks(stage, c, guaranteed)
 		if not stage.flavor_group.is_empty() and stage.order_weights.has(stage.flavor_group) and stage.flavor_fallback.is_empty():
 			var has_flavor := false
+			# Stage zero can be queried before opening. Later stages are selected by unlock().
+			var earliest: Dictionary = initial if i == 0 else guaranteed
 			for id in c.dishes:
 				var dish: SpecDish = c.dishes[id]
 				if dish.flavor_station.is_empty() or dish.topping_count <= 0: continue
-				var ready: bool = available.has(dish.flavor_station)
-				for step in dish.steps:
-					if step == null or not available.has(step.station): ready = false
-				if c.stations.has(dish.flavor_station):
-					for material in c.stations[dish.flavor_station].materials:
-						if material != null and material.id == dish.flavor_material and (material.track == null or material.track.requires_level > 1): ready = false
-				if ready: has_flavor = true
+				if _flavor_ready(dish, c, earliest): has_flavor = true
 			if not has_flavor: _error(errors, "stages[%d].flavor_fallback" % i, "Flavor groups need a fallback unless a flavor is already available.", "unreachable")
 		var has_recipe := false
 		for id in stage.order_weights:
@@ -546,5 +570,39 @@ static func _validate_graph(shop: SpecShop, c: Dictionary, errors: Array[Diction
 				if step == null or not available.has(step.station): ready = false
 			if ready: has_recipe = true
 		if not has_recipe: _error(errors, "stages[%d].order_weights" % i, "Stage needs a weighted recipe whose stations can be unlocked by this stage.", "unreachable")
+		# If the opening station starts unlocked, stage zero is never purchased.
+		if i == 0 and shop.goals != null and not initial.has(shop.goals.opening_station):
+			_stage_unlocks(stage, c, guaranteed)
 	for id in c.stations:
 		if not available.has(id): _error(errors, "stations." + id, "Station is neither initially available nor reachable through a stage/companion.", "unreachable")
+
+static func _stage_unlocks(stage: SpecStage, c: Dictionary, available: Dictionary) -> void:
+	for id in stage.stations:
+		available[id] = true
+		for station in c.stations.values():
+			if station.companion_of == id: available[station.id] = true
+
+## A fallback may be omitted only when a flavor is usable without purchases or hiring.
+## This mirrors the necessary dish_open gates, not eventual unlockability/balance.
+static func _flavor_ready(dish: SpecDish, c: Dictionary, available: Dictionary) -> bool:
+	if c.mode == "handoff" and not dish.front: return false
+	if not c.stations.has(dish.flavor_station) or not available.has(dish.flavor_station): return false
+	for material in c.stations[dish.flavor_station].materials:
+		if material != null and material.id == dish.flavor_material and (material.track == null or material.track.requires_level > 1): return false
+	var boxed_items := {}
+	for station in c.stations.values():
+		if station.block != "supply": continue
+		for material in station.materials:
+			if material != null and material.box_cost > 0: boxed_items[material.item] = true
+		break # ShopRules uses the first supply station.
+	for step in dish.steps:
+		if step == null or not c.stations.has(step.station): return false
+		var station: SpecStation = c.stations[step.station]
+		if station.block == "pickup": continue
+		if not available.has(station.companion_of if not station.companion_of.is_empty() else station.id): return false
+		for item in step.consumes:
+			if boxed_items.has(item): return false
+		if station.block == "supply":
+			for item in step.produces:
+				if boxed_items.has(item): return false
+	return true

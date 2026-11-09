@@ -259,3 +259,180 @@ func test_single_rejects_reserved_recipe_actions_and_conveyor_declarations() -> 
 	connection.to = bad.stations[1].id
 	bad.connections.append(connection)
 	_bad(bad, "connections")
+
+func _reject_before_io(shop: SpecShop) -> void:
+	for fresh in [false, true]:
+		var profile := Profile.new(_path("review-profile"))
+		profile.fresh_shop = fresh
+		profile.save()
+		var store := ShopSave.new(shop, _path("review-shop"))
+		var file := FileAccess.open(store.path, FileAccess.WRITE)
+		file.store_string("original shop bytes must not be interpreted")
+		file.close()
+		var original := FileAccess.get_file_as_bytes(store.path)
+		var profile_bytes := FileAccess.get_file_as_bytes(profile.path)
+		var state: Dictionary = profile.to_dict()
+		var session := Session.new(profile, store)
+		check(session.start() != OK, "review defect blocked before save IO")
+		check(FileAccess.file_exists(store.path), "no quarantine")
+		if FileAccess.file_exists(store.path): check(FileAccess.get_file_as_bytes(store.path) == original, "old store bytes unchanged")
+		check(FileAccess.get_file_as_bytes(profile.path) == profile_bytes, "old profile bytes unchanged")
+		check_eq(profile.to_dict(), state, "profile memory unchanged")
+		check(not session.started and session.rules == null, "no playable runtime exposed")
+
+func _event_effect(shop: SpecShop, effect: SpecEffect) -> SpecEvent:
+	var event := SpecEvent.new()
+	event.id = "contract_probe"
+	event.trigger = "sale"
+	event.effects.append(effect)
+	shop.events.append(event)
+	return event
+
+func test_flavor_group_cannot_assume_listed_stations_mean_an_available_dish() -> void:
+	var bad: SpecShop = PANCAKE.duplicate(true)
+	bad.stages[0].flavor_group = "probe_flavors"
+	bad.stages[0].flavor_fallback = ""
+	bad.stages[0].order_weights["probe_flavors"] = 1.0
+	for dish in bad.dishes:
+		if dish.flavor_station.is_empty() or dish.topping_count <= 0: continue
+		if dish.flavor_station not in bad.stages[0].stations: bad.stages[0].stations.append(dish.flavor_station)
+		for step in dish.steps:
+			if step.station not in bad.stages[0].stations: bad.stages[0].stations.append(step.station)
+		for material in bad.station(dish.flavor_station).materials: material.track.requires_level = 1
+	_bad(bad, "stages[0].flavor_fallback")
+	_reject_before_io(bad)
+	bad.stages[0].flavor_fallback = bad.stages[0].dish
+	var v := _validator()
+	check_eq(v.validate(bad), [], "explicit fallback repairs opening menu")
+	var rules := ShopRules.new(bad)
+	rules.unlock(bad.goals.opening_station)
+	check(not rules.order_weights().is_empty(), "repaired opening menu evaluates without nil access")
+
+func test_effect_attachment_and_scope_match_real_consumers() -> void:
+	for kind in ["grant_gold", "unlock_recipe"]:
+		var bad: SpecShop = PANCAKE.duplicate(true)
+		var effect := SpecEffect.make(kind, "add", 777.0, bad.dishes[0].id if kind == "unlock_recipe" else "")
+		bad.stations[1].tracks[0].base_effects.append(effect)
+		_bad(bad, "stations[1].tracks[0].base_effects[%d].kind" % (bad.stations[1].tracks[0].base_effects.size() - 1))
+		_reject_before_io(bad)
+	var bad: SpecShop = PANCAKE.duplicate(true)
+	_event_effect(bad, SpecEffect.make("price", "mul", 3.0, bad.stations[1].id))
+	_bad(bad, "events[%d].effects[0].target" % (bad.events.size() - 1))
+	_reject_before_io(bad)
+	var good: SpecShop = PANCAKE.duplicate(true)
+	var price := SpecEffect.make("price", "mul", 3.0)
+	price.dishes = [good.dishes[0].id]
+	var event := _event_effect(good, price)
+	event.effects.append(SpecEffect.make("grant_gold", "add", 777.0))
+	var v := _validator()
+	check_eq(v.validate(good), [], "event global/dish price and gold effects supported")
+	var rules := ShopRules.new(good)
+	var before_price := rules.raw_price(good.dishes[0].id)
+	var other_price := rules.raw_price(good.dishes[1].id)
+	var gold := rules.gold
+	rules.trigger_event(event)
+	check_eq(rules.raw_price(good.dishes[0].id), before_price * 3.0, "declared event changes actual dish price")
+	check_eq(rules.raw_price(good.dishes[1].id), other_price, "dish selector limits actual effect")
+	check_eq(rules.gold, gold + 777.0, "event one-shot actually grants gold")
+
+func test_staff_effect_selectors_use_canonical_runtime_worker_ids() -> void:
+	var v := _validator()
+	for target in [PANCAKE.staff.kinds[0].id, "1", "staff:01", "staff:+1", "staff:0", "staff:-1", "staff:1.0", "staff:"]:
+		var bad: SpecShop = PANCAKE.duplicate(true)
+		_event_effect(bad, SpecEffect.make("walk", "mul", 3.0, target))
+		_bad(bad, "events[%d].effects[0].target" % (bad.events.size() - 1))
+		_reject_before_io(bad)
+	for target in ["", "staff:1"]:
+		var good: SpecShop = PANCAKE.duplicate(true)
+		var event := _event_effect(good, SpecEffect.make("walk", "mul", 3.0, target))
+		check_eq(v.validate(good), [], "supported staff selector " + target)
+		var rules := ShopRules.new(good)
+		var before := rules.walk_speed(rules.workers[0])
+		rules.trigger_event(event)
+		check_eq(rules.walk_speed(rules.workers[0]), before * 3.0, "supported selector changes real walk speed")
+	var tea: SpecShop = TEA.duplicate(true)
+	var event := _event_effect(tea, SpecEffect.make("work", "mul", 2.0, "front"))
+	check_eq(v.validate(tea), [], "zone selector supported")
+	var rules := ShopRules.new(tea)
+	var before := rules.skill(rules.workers[0])
+	rules.trigger_event(event)
+	check_eq(rules.skill(rules.workers[0]), before * 2.0, "zone effect changes actual worker skill")
+
+func test_effect_context_restrictions_cover_every_upgrade_attachment() -> void:
+	var bad: SpecShop = PANCAKE.duplicate(true)
+	var material_station := -1
+	for i in bad.stations.size():
+		if not bad.stations[i].materials.is_empty():
+			material_station = i
+			break
+	check(material_station >= 0, "fixture contains material upgrade context")
+	var tracks := [
+		[bad.stations[1].tracks[0], "stations[1].tracks[0]"],
+		[bad.stations[material_station].materials[0].track, "stations[%d].materials[0].track" % material_station],
+		[bad.staff.tracks[0], "staff.tracks[0]"],
+		[bad.flyer.track, "flyer.track"],
+	]
+	for pair in tracks:
+		var track: SpecUpgradeTrack = pair[0]
+		var path: String = pair[1]
+		track.base_effects.append(SpecEffect.make("grant_gold", "add", 777))
+		var level := SpecUpgradeLevel.new()
+		level.effects.append(SpecEffect.make("unlock_recipe", "add", 1, bad.dishes[0].id))
+		track.levels.append(level)
+		_bad(bad, path + ".base_effects[%d].kind" % (track.base_effects.size() - 1))
+		_bad(bad, path + ".levels[%d].effects[0].kind" % (track.levels.size() - 1))
+	_reject_before_io(bad)
+	for kind in ["open_flavor", "seats", "unlock_recipe", "shop_news"]:
+		bad = PANCAKE.duplicate(true)
+		_event_effect(bad, SpecEffect.make(kind, "add", 1))
+		_bad(bad, "events[%d].effects[0].kind" % (bad.events.size() - 1))
+
+func test_valid_event_choice_and_implicit_staff_track_target_are_effective() -> void:
+	var v := _validator()
+	var good: SpecShop = PANCAKE.duplicate(true)
+	var event := _event_effect(good, SpecEffect.make("grant_gold", "add", 200))
+	event.choices = [{"label": "Accept", "cost": 5}]
+	event.effects.append(SpecEffect.make("walk", "mul", 2.0, "staff:1"))
+	check_eq(v.validate(good), [], "choice event with one-shot and ongoing effect is valid")
+	var profile := Profile.new(_path("valid-choice-profile"))
+	var session := Session.new(profile, ShopSave.new(good, _path("valid-choice-shop")))
+	check_eq(session.start(), OK, "configured choice event passes actual Session startup")
+	var rules: ShopRules = session.rules
+	if rules == null: return
+	var before_gold := rules.gold
+	var before_walk := rules.walk_speed(rules.workers[0])
+	rules.trigger_event(event)
+	check_eq(rules.gold, before_gold, "choice defers one-shot until accepted")
+	check_eq(rules.walk_speed(rules.workers[0]), before_walk, "choice defers ongoing modifier until accepted")
+	check_eq(rules.answer_event(0), "", "actual configured choice accepts")
+	check_eq(rules.gold, before_gold - 5 + 200, "choice cost and grant are both effective")
+	check_eq(rules.walk_speed(rules.workers[0]), before_walk * 2.0, "choice applies ongoing staff modifier")
+	var tea: SpecShop = TEA.duplicate(true)
+	var track: SpecUpgradeTrack = null
+	for candidate in tea.staff.tracks:
+		if candidate.id == "front": track = candidate
+	check(track != null, "fixture has zoned staff upgrade")
+	if track == null: return
+	track.base_effects.append(SpecEffect.make("work", "mul", 2.0))
+	check_eq(v.validate(tea), [], "staff track inherits its actual zone target")
+	var baseline := ShopRules.new(TEA)
+	var modified := ShopRules.new(tea)
+	check_eq(modified.skill(modified.workers[0]), baseline.skill(baseline.workers[0]) * 2.0, "implicit staff track zone changes actual skill")
+
+func test_later_flavor_group_does_not_assume_a_preopened_stage_was_purchased() -> void:
+	var bad: SpecShop = PANCAKE.duplicate(true)
+	bad.station(bad.goals.opening_station).starts_unlocked = true
+	var later_station: String = bad.stages[1].stations[0]
+	for dish in bad.dishes:
+		if dish.flavor_station.is_empty() or dish.topping_count <= 0: continue
+		for step in dish.steps:
+			if step.station != later_station and step.station not in bad.stages[0].stations: bad.stages[0].stations.append(step.station)
+	for station in bad.stations:
+		for material in station.materials:
+			material.box_cost = 0
+			material.track.requires_level = 1
+	bad.stages[1].flavor_group = "later_flavors"
+	bad.stages[1].flavor_fallback = ""
+	bad.stages[1].order_weights["later_flavors"] = 1
+	_bad(bad, "stages[1].flavor_fallback")
+	_reject_before_io(bad)

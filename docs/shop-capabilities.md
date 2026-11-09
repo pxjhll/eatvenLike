@@ -61,9 +61,23 @@ Fixed single arrivals use the configured interval, quantized by the existing 0.1
 
 Changing unused fields is rejected, not advertised as tuning. The normalization removes Tea's unused shortage values and Pancake's unused scores/resume/seated overrides. It changes no effective economic or timing value.
 
+## Effect attachment and target contract
+
+The validator checks where an effect is attached, including station, material, staff and flyer upgrade base/level effects, and immediate or choice-based event effects. Membership in `SpecEffect.KINDS` alone does not mean that every context executes that effect.
+
+- Upgrade tracks refresh continuous modifiers; they never execute one-shot effects. `grant_gold`, `customer_wave`, and `unlock_staff_kind` are supported in events, including after a choice is accepted, and are rejected in upgrade tracks.
+- `seats` has no modifier consumer. `unlock_recipe` and `shop_news` currently emit signals without implementing the declared gameplay change. These kinds are rejected in configured effects.
+- `open_flavor` is allowed only as a station upgrade level's presentation label. It is not an event effect or an automatic unlock, and is not consumed from material/staff/flyer tracks or base effects. Actual material availability uses `requires_level`.
+- `price` requires an empty target. Select dishes with `dishes` and optionally `price_part`; a station target is never queried by `raw_price`. A station/material track with no explicit dish scope inherits that station's `price_dishes`.
+- Global consumers (`flow`, flyer counts/cooldowns, `event_chance`, `patience`, event gold and customer waves) require an empty effective target. For non-price upgrade effects, an omitted target inherits the station ID, staff track zone ID, or the flyer's empty global target, exactly as `_refresh_track` does.
+- Staff attribute modifiers (`walk`, `work`, `carry`, `luck`) accept global empty targets, active `front`/`kitchen` zones, or canonical positive worker IDs such as `staff:1`. Kind IDs, bare numbers, zero/negative IDs, padded digits and alternate spellings do not match the runtime and are rejected. Future worker IDs may be declared before that worker is recruited. Staff-slot modifiers affect only the zoned front capacity, using the global or `front` target.
+- Machine modifiers use an existing station target or the global empty target. Dish scopes and price-part selectors are reserved for price effects; adding them to another kind would suppress its runtime match.
+
 ## Data validation boundary
 
 The validator checks required nested resources, nonempty primary collections, collection-local IDs, null entries, finite numeric/vector/rectangle data, numeric domains, station block parameters, recipe/station/item references, upgrade effects and targets, stage menus/tasks/slots, staff recruitment, seats, flyers, connections, order options, event choices, guide structures, and layout aliases and grid shapes. Required stations must be reachable through initial availability, stage unlocks or companions. Single recipes/options cannot declare take or hand actions because the engine inserts them; conveyor declarations require handoff. Each stage needs at least one weighted recipe that can be produced by its available station graph. Handoff processing machines need defined outputs, and non-front recipes need a kitchen chain.
+
+A weighted flavor group needs a valid fallback unless a flavor can be proven available at the earliest menu evaluation. Stage zero can be queried before opening; listing stations there does not prove they are initially unlocked. Later stages use their actual atomic unlock members and direct companions; if the opening station starts unlocked, the stage-zero purchase is not assumed. The proof also checks unpaid supply boxes, material level gates and the need for kitchen staff. It never assumes future purchases or hiring. The third fixture's later-stage flavors require neither material slots nor unpaid boxes, so its existing configuration remains valid.
 
 Metadata stays extensible: guide/event condition vocabulary and display text are not parsed as arbitrary unknown machine parameters. Recognized station UI parameters include `facing`, `panel_title`, `frame_title`, `materials_label`, `unit`, and `slot_label`. Existing `dine_per_dish` and manual-operation declarations are retained as compatibility metadata; the Fulfillment/Dispatch tables are the exhaustive policy matrix in this change.
 
