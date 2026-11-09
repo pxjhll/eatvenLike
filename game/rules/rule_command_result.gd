@@ -4,6 +4,7 @@ extends RefCounted
 const OK := "ok"
 const UNKNOWN_COMMAND := "unknown_command"
 const INVALID_ARGUMENT := "invalid_argument"
+const SESSION_UNAVAILABLE := "session_unavailable"
 const UNKNOWN_STATION := "unknown_station"
 const STATION_ALREADY_UNLOCKED := "station_already_unlocked"
 const STATION_NOT_UNLOCKABLE := "station_not_unlockable"
@@ -39,6 +40,7 @@ const CONNECTION_ALREADY_BUILT := "connection_already_built"
 const UI_DROP_REJECTED := "ui_drop_rejected"
 
 const SCHEMAS := {
+	"set_paused": {"paused": TYPE_BOOL}, "set_tuning": {"key": TYPE_STRING, "value": TYPE_FLOAT, "snap": TYPE_BOOL},
 	"unlock": {"id": TYPE_STRING}, "unlock_box": {"material": TYPE_STRING}, "upgrade": {"key": TYPE_STRING},
 	"buy_seat": {}, "send_flyers": {}, "hire": {}, "deploy_worker": {"id": TYPE_INT, "post": TYPE_STRING},
 	"place_worker": {"id": TYPE_INT, "post": TYPE_STRING, "point": TYPE_VECTOR2},
@@ -60,11 +62,14 @@ static func validate(command: String, arguments: Dictionary) -> Dictionary:
 	for argument in arguments:
 		if not schema.has(argument): return failure(INVALID_ARGUMENT, {"command": command, "argument": str(argument)})
 	for argument in schema:
-		var optional: bool = (command == "deploy_worker" and argument == "post") or (command == "place_worker" and argument == "point")
+		var optional: bool = (command == "deploy_worker" and argument == "post") or (command == "place_worker" and argument == "point") or (command == "set_tuning" and argument == "snap")
 		if not arguments.has(argument):
 			if optional: continue
 			return failure(INVALID_ARGUMENT, {"command": command, "argument": argument})
-		if typeof(arguments[argument]) != schema[argument]: return failure(INVALID_ARGUMENT, {"command": command, "argument": argument})
+		if command == "set_tuning" and argument == "value":
+			if typeof(arguments[argument]) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(arguments[argument])):
+				return failure(INVALID_ARGUMENT, {"command": command, "argument": argument})
+		elif typeof(arguments[argument]) != schema[argument]: return failure(INVALID_ARGUMENT, {"command": command, "argument": argument})
 	if command == "place_worker" and arguments.has("point"):
 		var point: Vector2 = arguments.point
 		if point != Vector2.INF and not point.is_finite(): return failure(INVALID_ARGUMENT, {"command": command, "argument": "point"})

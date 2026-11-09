@@ -10,6 +10,7 @@ var message_formatter: Callable
 
 const CommandResult := preload("res://game/rules/rule_command_result.gd")
 const CommandText := preload("res://content/ui/rule_command_text.gd")
+const Numbers := preload("res://game/rules/rule_numbers.gd")
 
 ## 升级效果 → 面板上“这一级做什么”的分类
 const KIND_TEXT := {"capacity": "产能升级", "price": "售价升级", "menu": "开新口味", "both": "产能售价升级"}
@@ -25,6 +26,145 @@ func _init(rules_: ShopRules, message_formatter_: Callable = Callable()) -> void
 func command_message(status: Dictionary) -> String:
 	if message_formatter.is_valid(): return str(message_formatter.call(status.duplicate(true), shop))
 	return CommandText.format(status, shop)
+
+
+# ---------- Detached presentation reads ----------
+
+## One caller-owned frame, in the simulation's existing iteration order.
+func render_snapshot() -> Dictionary:
+	return {"clock": rules.clock, "gold": rules.gold, "revenue": rules.revenue, "sold": rules.sold,
+		"lost": rules.lost, "paused": rules.paused, "stage_index": rules.stage_index,
+		"completed_at": rules.completed_at, "shelf_count": rules.shelf_count,
+		"workers": rules.workers, "roster": rules.roster, "stations": rules.stations,
+		"shelf_stock": rules.shelf_stock, "orders": rules.orders, "customers": rules.customers,
+		"queue": rules.queue, "diners": rules.diners, "belts": rules.belts,
+		"belt_items": rules.belt_items, "seats": rules.seats,
+		"stage_queue_capacity": rules.current_stage().queue_capacity}.duplicate(true)
+
+
+func roster_snapshot() -> Array:
+	return rules.roster.duplicate(true)
+
+
+func deployed_snapshot() -> Array:
+	return rules.workers.duplicate(true)
+
+
+func worker_snapshot(id: int) -> Dictionary:
+	return rules.worker_by_id(id).duplicate(true)
+
+
+func customer_snapshot(id: int) -> Dictionary:
+	return rules.customer(id).duplicate(true)
+
+
+func deployed_count() -> int:
+	return rules.workers.size()
+
+
+func is_deployed(id: int) -> bool:
+	var worker := rules.worker_by_id(id)
+	return not worker.is_empty() and bool(worker.deployed)
+
+
+func progress_snapshot() -> Dictionary:
+	return {"levels": rules.levels.duplicate(true), "tune": rules.tune.duplicate(true)}
+
+
+func activity_snapshot() -> Dictionary:
+	var idle := 0
+	for worker in rules.workers:
+		if rules.worker_idle(worker): idle += 1
+	var working := {}
+	for id in rules.pots + rules.autos: working[id] = rules.machine_working(id)
+	return {"clock": rules.clock, "stage_index": rules.stage_index, "gold": rules.gold,
+		"revenue": rules.revenue, "sold": rules.sold, "lost": rules.lost,
+		"queue": rules.queue_size(), "queue_capacity": rules.queue_capacity(), "angry_count": rules.angry_count(),
+		"staff_count": rules.workers.size(), "idle_count": idle, "machine_working": working,
+		"seat_count": rules.seat_count(), "seats_used": rules.seats_used(), "customer_interval": rules.customer_interval()}
+
+
+## Lost-customer bookkeeping belongs to the guide; only current rule facts live here.
+func guide_snapshot() -> Dictionary:
+	var group := rules.buy_group()
+	return {"lost": rules.lost, "staff_count": rules.workers.size(),
+		"seats_owned": int(rules.seats.get(group.id, 0)) if group != null else 0,
+		"any_angry": rules.angry_count() > 0, "angry_cause": _guide_angry_cause(), "slow_machine": _guide_slow_machine()}
+
+
+func _guide_angry_cause() -> String:
+	if shop.fulfillment.handoff == "single":
+		var group := rules.buy_group()
+		if group != null and group.purpose == "wait" and rules.seat_cost() >= 0 and int(rules.seats.get(group.id, 0)) < rules.seat_cap(group): return "seats"
+		if rules.workers.size() < rules.staff_slots(): return "staff"
+		return "machine"
+	var angry: Array = rules.orders.filter(func(order: Dictionary) -> bool: return rules.order_mood(order) >= 2)
+	if angry.is_empty(): return ""
+	var dine_in: bool = angry.any(func(order: Dictionary) -> bool: return not order.get("takeaway", false))
+	if dine_in and rules.dine_group() != null and rules.free_seats() <= 0 and rules.seat_cost() >= 0: return "seats"
+	if rules.workers.size() < rules.staff_slots(): return "staff"
+	return "machine"
+
+
+func _guide_slow_machine() -> String:
+	if shop.fulfillment.handoff == "single":
+		var dish := ""
+		for id in rules.queue:
+			dish = String(rules.customer(id).get("kind", ""))
+			break
+		if dish.is_empty() and not rules.dish_ids.is_empty(): dish = rules.dish_ids[0]
+		var definition := shop.dish(dish)
+		if definition != null:
+			for step in definition.steps:
+				var station := shop.station(step.station)
+				if station != null and not station.tracks.is_empty() and rules.station_unlocked(station.id): return station.id
+		return rules.counter_id
+	var oldest: Dictionary = {}
+	for order in rules.orders:
+		if oldest.is_empty() or order.wait > oldest.wait: oldest = order
+	var dish: String = oldest.get("dish", rules.dish_ids[0] if not rules.dish_ids.is_empty() else "")
+	var chain: Array = rules.chains.get(dish, [])
+	if not chain.is_empty() and not shop.dish(dish).front: return chain[0]
+	var definition := shop.dish(dish)
+	if definition != null:
+		for step in definition.steps:
+			var station := shop.station(step.station)
+			if station != null and station.block != "counter": return station.id
+	return rules.counter_id
+
+
+func staff_kind(id: String) -> Dictionary:
+	var kind := rules._kind(id)
+	return {"id": kind.id, "display_name": kind.display_name, "role": kind.role,
+		"description": kind.description, "stats": kind.stats.duplicate(true)}
+
+
+func art_visible(rule: String) -> bool:
+	if rule == "always": return true
+	if rule.begins_with("belt:"): return rules.belts.has(rule.trim_prefix("belt:"))
+	if rule == "ingredient_box": return rules.boxes.values().has(true)
+	if rule.begins_with("box:"): return bool(rules.boxes.get(rule.trim_prefix("box:"), false))
+	if rule.begins_with("flavor:"):
+		var dish := shop.dish(rule.trim_prefix("flavor:"))
+		return dish != null and rules.flavor_open(dish)
+	if rule.begins_with("wait_seats:"): return rules.wait_seats() >= int(rule.get_slice(":", 1))
+	return rules.station_unlocked(rule)
+
+
+func post_point(id: String) -> Vector2:
+	return rules.nav.post(id)
+
+
+func navigation_point(id: String) -> Vector2:
+	return rules.nav.point(id)
+
+
+func walkable(point: Vector2, from: Vector2) -> bool:
+	return rules.nav.walkable(point, from)
+
+
+func tuning_limits() -> Dictionary:
+	return Numbers.tuning_limits()
 
 
 # ---------- 名字与文案 ----------

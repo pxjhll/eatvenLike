@@ -3,6 +3,7 @@ extends RefCounted
 
 const ProgressService := preload("res://game/app/progress_service.gd")
 const SpecValidator := preload("res://game/rules/shop_spec_validator.gd")
+const CommandResult := preload("res://game/rules/rule_command_result.gd")
 const TUNING_PATH := "user://tuning.cfg"
 const RECORDING_PATH := "user://playlog.txt"
 
@@ -78,6 +79,13 @@ func restart() -> Error:
 	last_error = ""
 	restarted.emit()
 	return OK
+
+
+## Presentation writes belong to the active session; successful commands retain diagnostics.
+func execute_command(command: String, arguments: Dictionary = {}) -> Dictionary:
+	if _active_error() != OK:
+		return CommandResult.failure(CommandResult.SESSION_UNAVAILABLE, {"command": command})
+	return rules.execute_command(command, arguments)
 
 
 func save(guides: Array = []) -> Error:
