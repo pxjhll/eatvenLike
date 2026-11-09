@@ -9,6 +9,7 @@ const CommandText := preload("res://content/ui/rule_command_text.gd")
 const StateValidator := preload("res://game/rules/shop_state_validator.gd")
 const Inventory := preload("res://game/rules/rule_inventory.gd")
 const InventoryAudit := preload("res://game/rules/inventory_audit.gd")
+const WorkerState := preload("res://game/rules/worker_state.gd")
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -869,17 +870,12 @@ func _new_worker(kind_id: String, id := -1) -> Dictionary:
 	var kind := _kind(kind_id)
 	var worker_id := id if id > 0 else _next_staff
 	_next_staff = maxi(_next_staff, worker_id + 1)
-	return {"id": worker_id, "kind": kind_id, "name": kind.display_name, "stats": kind.stats.duplicate(),
-		"pos": nav.point(shop.layout.spawn_point), "walking": false, "phase": "idle", "task_label": "idle",
-		"carry_item": "", "carry_count": 0, "fatigue": 0.0, "completed": 0, "job": {}, "ticket": {},
-		"post": "", "path": PackedVector2Array(), "path_index": 0, "action_left": 0.0, "deployed": false, "source": "",
-		# single 模式
-		"target": "", "timer": 0.0, "order": -1, "steps": [], "step": 0, "chore": ""}
+	return WorkerState.create(worker_id, kind_id, kind.display_name, kind.stats,
+		nav.point(shop.layout.spawn_point))
 
 
 func _seat_at(worker: Dictionary, post: String) -> void:
-	worker.post = post
-	worker.pos = nav.post(post)
+	WorkerState.place(worker, post, nav.post(post))
 
 
 func side_of(worker: Dictionary) -> String:
@@ -1036,16 +1032,7 @@ func _cancel_job(worker: Dictionary) -> void:
 		if job.kind == "serve":
 			for order in orders:
 				if order.id == job.order_id: order.reserved = false
-	worker.job = {}
-	worker.ticket = {}
-	worker.carry_count = 0
-	worker.carry_item = ""
-	worker.phase = "idle"
-	worker.task_label = "idle"
-	worker.walking = false
-	worker.path = PackedVector2Array()
-	worker.path_index = 0
-	worker.action_left = 0.0
+	WorkerState.cancel_assignment(worker)
 
 
 ## Evaluate a next-level snapshot without borrowing any live mutable data.
@@ -1259,10 +1246,7 @@ func _reserve(worker: Dictionary, job: Dictionary) -> void:
 
 
 func _walk(worker: Dictionary, destination: Vector2, phase: String) -> void:
-	worker.path = nav.path(worker.pos, destination)
-	worker.path_index = 1 if worker.path.size() > 1 else 0
-	worker.phase = phase
-	worker.walking = true
+	WorkerState.begin_walk(worker, nav.path(worker.pos, destination), phase)
 
 
 func _take(job: Dictionary) -> void:
@@ -1298,33 +1282,20 @@ func _action_duration(job: Dictionary, worker: Dictionary) -> float:
 func _update_worker(worker: Dictionary) -> void:
 	var job: Dictionary = worker.job
 	if worker.walking:
-		var distance: float = walk_speed(worker) * STEP
-		while distance > 0 and worker.path_index < worker.path.size():
-			var target: Vector2 = worker.path[worker.path_index]
-			var gap: float = worker.pos.distance_to(target)
-			if gap <= distance + 0.00001:
-				worker.pos = target
-				distance -= gap
-				worker.path_index += 1
-			else:
-				worker.pos = worker.pos.move_toward(target, distance)
-				distance = 0
-		if worker.path_index < worker.path.size(): return
-		worker.walking = false
+		if not WorkerState.advance_walk(worker, walk_speed(worker) * STEP): return
 		if worker.phase == "walk_pickup":
-			worker.phase = "work" if _is_operation(job) else "pickup"
-			worker.action_left = _action_duration(job, worker)
+			WorkerState.enter_handoff_action(worker, "work" if _is_operation(job) else "pickup",
+				_action_duration(job, worker))
 			if job.kind == "work":
 				stations[job.src].phase = "working"
 				stations[job.src].duration = worker.action_left
 		else:
-			worker.phase = "dropoff"
-			worker.action_left = shop.dispatch.hop_seconds / skill(worker)
+			WorkerState.enter_handoff_action(worker, "dropoff", shop.dispatch.hop_seconds / skill(worker))
 		return
-	worker.action_left = maxf(0, worker.action_left - STEP)
+	var action_done := WorkerState.tick_handoff_action(worker, STEP)
 	if worker.phase == "work" and job.kind == "work":
 		stations[job.src].progress = 1.0 - worker.action_left / stations[job.src].duration
-	if worker.action_left > 0.000001: return
+	if not action_done: return
 	match worker.phase:
 		"pickup":
 			_take(job)
@@ -1394,13 +1365,7 @@ func _finish(worker: Dictionary) -> void:
 			elif job.src == at: done = true
 		ticket.wait = 0.0
 		if done: worker.ticket = {}
-	worker.completed += 1
-	worker.carry_count = 0
-	worker.carry_item = ""
-	worker.job = {}
-	worker.phase = "idle"
-	worker.task_label = "idle"
-	worker.walking = false
+	WorkerState.finish_handoff(worker)
 
 
 func _manual(id: String) -> bool:
@@ -1896,8 +1861,7 @@ func _staff_tick(s: Dictionary) -> void:
 		_walk_single(s)
 		return
 	if s.phase == "work":
-		s.timer -= STEP
-		if s.timer > 0.0: return
+		if not WorkerState.tick_single_work(s, STEP): return
 		_finish_work_single(s)
 	_decide_single(s)
 
@@ -1906,21 +1870,8 @@ func _staff_tick(s: Dictionary) -> void:
 func _walk_single(s: Dictionary) -> void:
 	# 旧存档读进来时没有路线：现算一条
 	if s.path.is_empty():
-		s.path = nav.path(s.pos, nav.point(s.target))
-		s.path_index = 1 if s.path.size() > 1 else 0
-	var move: float = walk_speed(s) * STEP
-	while move > 0.0 and s.path_index < s.path.size():
-		var target: Vector2 = s.path[s.path_index]
-		var gap: float = s.pos.distance_to(target)
-		if gap <= move + 0.00001:
-			s.pos = target
-			move -= gap
-			s.path_index += 1
-		else:
-			s.pos = s.pos.move_toward(target, move)
-			move = 0.0
-	if s.path_index < s.path.size(): return
-	s.walking = false
+		WorkerState.assign_path(s, nav.path(s.pos, nav.point(s.target)))
+	if not WorkerState.advance_walk(s, walk_speed(s) * STEP): return
 	_arrived_single(s)
 
 
@@ -1929,20 +1880,14 @@ func _go(s: Dictionary, point: String, label: String) -> void:
 	s.task_label = label
 	var goal := nav.point(point)
 	if s.pos.distance_to(goal) < 1.0:
-		s.walking = false
+		WorkerState.arrive(s)
 		_arrived_single(s)
 	else:
-		s.path = nav.path(s.pos, goal)
-		s.path_index = 1 if s.path.size() > 1 else 0
-		s.walking = true
-		s.phase = "walk"
+		WorkerState.begin_walk(s, nav.path(s.pos, goal), "walk")
 
 
 func _work_single(s: Dictionary, seconds: float) -> void:
-	s.phase = "work"
-	s.timer = seconds
-	# 只给界面画进度条
-	s.duration = seconds
+	WorkerState.begin_single_work(s, seconds)
 
 
 func _decide_single(s: Dictionary) -> void:
@@ -1954,8 +1899,7 @@ func _decide_single(s: Dictionary) -> void:
 	if _find_job_single(s): return
 	var home := shop.staff.home_anchor
 	if s.target != home and _crowded(s): _go(s, home, "待命")
-	s.phase = "walk" if s.walking else "idle"
-	s.task_label = "待命"
+	WorkerState.standby_single(s)
 
 
 func _crowded(s: Dictionary) -> bool:
@@ -1970,10 +1914,7 @@ func _find_job_single(s: Dictionary) -> bool:
 	var c := customer(queue[0])
 	if c.claimed: return false
 	c.claimed = true
-	s.order = c.id
-	s.steps = _order_steps(c)
-	s.step = 0
-	s.walking = false
+	WorkerState.claim_single_order(s, c.id, _order_steps(c))
 	_go(s, s.steps[0].point, s.steps[0].label)
 	return true
 
@@ -2004,24 +1945,21 @@ func _arrived_single(s: Dictionary) -> void:
 		_work_single(s, float(params.get("load_seconds" if parts[0] == "load" else "unload_seconds", 0.0)))
 		return
 	if s.order < 0:
-		s.phase = "idle"
-		s.task_label = "待命"
+		WorkerState.standby_single(s)
 		return
 	var st: Dictionary = s.steps[s.step]
 	var station := shop.station(st.station)
 	if station.block == "hand" and int(station.params.get("users", 0)) > 0:
 		var busy: Dictionary = stations[st.station]
 		if busy.user != -1 and busy.user != s.id:
-			s.phase = "wait"
-			s.task_label = "等" + station.display_name
+			WorkerState.wait_single(s, "等" + station.display_name)
 			return
 		busy.user = s.id
 		_work_single(s, manual_operation_seconds(st.station, st.seconds, s, st.get("fixed", false)))
 	elif station.block == "batch_pot":
 		var pot: Dictionary = stations[st.station]
 		if pot.stock < 1:
-			s.phase = "wait"
-			s.task_label = "等" + (_item_name(station.stock[0].item) if not station.stock.is_empty() else station.display_name)
+			WorkerState.wait_single(s, "等" + (_item_name(station.stock[0].item) if not station.stock.is_empty() else station.display_name))
 			_try_pot_chore(s, true)
 			return
 		pot.stock -= 1
@@ -2032,7 +1970,7 @@ func _arrived_single(s: Dictionary) -> void:
 
 
 func _finish_work_single(s: Dictionary) -> void:
-	s.phase = "idle"
+	WorkerState.finish_single_work(s)
 	if not s.chore.is_empty():
 		var parts: PackedStringArray = s.chore.split(":")
 		var pot: Dictionary = stations[parts[1]]
@@ -2071,10 +2009,7 @@ func _finish_work_single(s: Dictionary) -> void:
 				sold_by_dish[f.addon_dish] = int(sold_by_dish[f.addon_dish]) + 1
 				sold += 1
 			events.emit("sale", {"dish": c.kind, "income": c.paid})
-			s.order = -1
-			s.steps = []
-			s.carry_item = ""
-			s.carry_count = 0
+			WorkerState.finish_single_order(s)
 			return
 		_:
 			var station := shop.station(st.station)
@@ -2627,8 +2562,7 @@ func _commit_place_worker(id: int, post: String, point := Vector2.INF) -> void:
 		workers.append(worker)
 		events.emit("deployed", {"id": id})
 	_cancel_job(worker)
-	worker.post = post
-	worker.pos = nav.post(post) if not post.is_empty() else (worker.pos if point == Vector2.INF else point)
+	WorkerState.place(worker, post, nav.post(post) if not post.is_empty() else (worker.pos if point == Vector2.INF else point))
 	events.emit("placed", {"id": id, "post": post})
 
 
