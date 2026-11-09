@@ -461,10 +461,28 @@ func test_staff_regions_and_stage_slot_keys_reject_ignored_declarations_before_i
 	bad.stages[0].staff_slots["kitchen"] = 99
 	_bad(bad, "stages[0].staff_slots.kitchen")
 	_reject_before_io(bad)
-	bad = PANCAKE.duplicate(true)
-	bad.staff.front_base_slots = 99
-	_bad(bad, "staff.front_base_slots")
-	_reject_before_io(bad)
+
+func test_unzoned_front_base_capacity_controls_actual_counter_placement() -> void:
+	for capacity in [1, 2]:
+		var shop: SpecShop = PANCAKE.duplicate(true)
+		shop.staff.can_drag = true
+		shop.staff.front_base_slots = capacity
+		shop.stages[0].staff_slots[""] = 2
+		var profile := Profile.new(_path("counter-capacity-profile"))
+		var session := Session.new(profile, ShopSave.new(shop, _path("counter-capacity-shop")))
+		check_eq(session.start(), OK, "effective unzoned counter capacity passes Session schema gate")
+		var rules: ShopRules = session.rules
+		if rules == null: continue
+		check_eq(rules.unlock(shop.goals.opening_station), "", "open configured unzoned shop")
+		rules.gold = 10000
+		check_eq(rules.hire(), "", "hire a second worker within unified capacity")
+		check_eq(rules.staff_slots(), 2, "unified stage capacity remains independent of counter posts")
+		check_eq(rules.workers.size(), 2, "two workers available for real placement")
+		check_eq(rules.place_worker(rules.workers[0].id, rules.counter_id), "", "first counter placement succeeds")
+		var second := rules.place_worker(rules.workers[1].id, rules.counter_id)
+		check(second.is_empty() if capacity == 2 else not second.is_empty(), "second placement follows configured counter capacity")
+		var owners := rules.workers.filter(func(worker): return worker.post == rules.counter_id)
+		check_eq(owners.size(), capacity, "actual counter occupants match the configured front capacity")
 
 func test_supported_staff_capacity_sources_change_real_session_limits() -> void:
 	var single: SpecShop = PANCAKE.duplicate(true)

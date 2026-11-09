@@ -391,8 +391,6 @@ static func _validate_staff(shop: SpecShop, c: Dictionary, errors: Array[Diction
 		seen_zones[staff.zones[i]] = true
 	if not staff.zones.is_empty() and (staff.zones.size() != 2 or not seen_zones.has("front") or not seen_zones.has("kitchen")):
 		_error(errors, "staff.zones", "Use no zones or exactly front and kitchen.", "unsupported")
-	if staff.zones.is_empty() and staff.front_base_slots != 1:
-		_error(errors, "staff.front_base_slots", "Unzoned capacity uses stage slots; retain the default front base of 1.", "unsupported")
 	_enum(staff.hire_rule, ["fewest", "cycle"], "staff.hire_rule", errors)
 	for field in ["starting", "hire_pool", "hire_order"]:
 		for i in staff.get(field).size(): _ref(staff.get(field)[i], c.kinds, "staff.%s[%d]" % [field, i], errors)
