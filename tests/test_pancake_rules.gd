@@ -44,6 +44,25 @@ func test_flour_box_is_its_own_buy_after_the_griddle() -> void:
 	check(rules.dish_open("plain"), "买了面粉箱就能卖原味煎饼")
 
 
+func test_flavor_orders_require_the_flour_box_including_the_fallback() -> void:
+	var rules := ShopRules.new(PANCAKE)
+	rules.gold = 99999
+	for id in ["soy_milk", "rear_equipment", "fryer", "topping"]:
+		check_eq(rules.unlock(id), "", "开放" + id)
+	check(not rules.dish_open("ham"), "没有面粉箱不能制作火腿煎饼")
+	var weights := rules.order_weights()
+	check(not weights.has("ham"), "未开放的口味不能被点单")
+	check(not weights.has("guozi"), "口味组的回退菜也必须满足原料要求")
+	for id in weights: check(rules.dish_open(id), "点单菜单只包含已开放的菜：" + id)
+	rules.run(120.0)
+	check(int(rules.sold_by_dish.soy) > 0, "没买面粉时仍然能卖豆浆")
+	check_eq(int(rules.sold_by_dish.ham), 0, "不能绕过面粉箱卖火腿煎饼")
+	check_eq(rules.unlock_box("flour"), "", "购买面粉箱")
+	check(rules.order_weights().has("ham"), "买到面粉后口味正常进入菜单")
+	rules.run(240.0)
+	check(int(rules.sold_by_dish.ham) > 0, "买到原料后正常制作销售火腿煎饼")
+
+
 func _open_all(rules: ShopRules) -> void:
 	rules.gold = 99999
 	for id in ["soy_milk", "rear_equipment", "fryer", "topping"]: check_eq(rules.unlock(id), "", "开放" + id)
@@ -266,3 +285,34 @@ func test_generic_queries_answer_for_the_single_handoff_shop() -> void:
 	check_eq(rules.waiting_customers().size(), rules.queue.size(), "等餐的客人 = 排着的队")
 	check(rules.angry_count() > 0, "等久了算等急了")
 	check(is_equal_approx(rules.customer_interval(), rules.current_stage().customer_interval), "客流间隔按阶段")
+
+
+func test_playlog_setup_starts_a_full_new_sampling_interval() -> void:
+	var Recorder := preload("res://presentation/shop/shop_recorder.gd")
+	var rules := ShopRules.new(_only("soy"))
+	var recorder = Recorder.new()
+	recorder.file_path = "user://test_playlog_setup_%d.txt" % OS.get_process_id()
+	if FileAccess.file_exists(recorder.file_path): DirAccess.remove_absolute(recorder.file_path)
+	recorder.setup(rules)
+	rules.unlock("soy_milk")
+	for i in 300:
+		rules.step(0.25)
+		recorder.tick(0.25)
+	check(rules.sold > 0, "重开之前有营业记录")
+	rules.reset()
+	recorder.setup(rules)
+	var lines: int = recorder.line_count()
+	for i in 239:
+		rules.step(0.25)
+		recorder.tick(0.25)
+	check_eq(recorder.line_count(), lines, "新会话要满 60 秒才采样，不沿用上次的计时")
+	rules.step(0.25)
+	recorder.tick(0.25)
+	check_eq(recorder.line_count(), lines + 1, "新会话满一分钟记录一行")
+	var rows: PackedStringArray = recorder.text().split("\n", false)
+	var row: Dictionary = JSON.parse_string(rows[rows.size() - 1])
+	check_eq(int(row.t), 60, "新会话第一行采样时间是 60 秒")
+	check_eq(float(row.income), 0.0, "新会话没有负收入")
+	check_eq(int(row.cups), 0, "新会话没有负销量")
+	check_eq(int(row.lost), 0, "新会话没有负流失")
+	DirAccess.remove_absolute(recorder.file_path)

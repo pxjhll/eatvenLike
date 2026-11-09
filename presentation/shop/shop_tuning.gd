@@ -69,7 +69,7 @@ func _rows() -> Array:
 	var rules: ShopRules = game.rules
 	var out: Array = HEAD_ROWS.duplicate() if rules.dine_group() != null else [HEAD_ROWS[1]]
 	for st in rules.shop.stations:
-		if st.block in ["counter", "supply", "pickup"]: continue
+		if st.block in ["counter", "supply", "pickup"] or game.view.seconds(st.id) <= 0.0: continue
 		out.append([st.id, game.view.text("tune_" + st.id, {}, game.view.station_name(st.id) + "时间")])
 	out.append_array(TAIL_ROWS)
 	return out
@@ -84,9 +84,9 @@ func _now(key: String) -> String:
 		"walk", "work": return ""
 		"price":
 			var dish: SpecDish = rules.shop.dishes[mini(1, rules.shop.dishes.size() - 1)]
-			return "%s %s 金币" % [dish.display_name, game.view.price_text(rules.dish_price(dish.id))]
+			return "%s · %s" % [dish.display_name, game.view.quote_text(rules.dish_quote(dish.id))]
 	if rules.shop.station(key) != null:
-		return ("%.0f 秒一锅" if key in rules.pots else "%.1f 秒一杯") % rules.machine_seconds(key)
+		return game.view.timing_text(key)
 	return ""
 
 
@@ -174,7 +174,7 @@ func _build() -> void:
 		value.add_theme_stylebox_override("normal", value_style)
 		line.add_child(value)
 		_values[key] = value
-	var explanation := _label("改动从下一杯、下一位客人开始生效；不影响存档。", 18)
+	var explanation := _label("基准操作不含员工加成和行走；从下一次操作生效。", 18)
 	explanation.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(explanation)
 	_log_info = _label("", 16)

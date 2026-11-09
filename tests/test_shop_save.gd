@@ -96,3 +96,31 @@ func test_save_of_another_shop_is_rejected() -> void:
 
 func test_each_shop_has_its_own_file() -> void:
 	check(ShopSave.path_for("tea") != ShopSave.path_for("pancake"), "按店铺 id 分文件")
+
+
+func test_configured_save_file_leaves_the_legacy_file_untouched() -> void:
+	var shop: SpecShop = PANCAKE.duplicate(true)
+	shop.id = "test_shop_save_%d" % OS.get_process_id()
+	shop.save_file = "test_shop_save.json.v2"
+	var legacy_path := ShopSave.path_for(shop.id)
+	var configured_path := "user://" + shop.save_file
+	var old_rules := ShopRules.new(shop)
+	old_rules.run(5.0)
+	check_eq(ShopSave.new(shop, legacy_path).save_game(old_rules), OK, "准备旧路径下的存档")
+	var legacy_text := FileAccess.get_file_as_string(legacy_path)
+	var store := ShopSave.new(shop)
+	check_eq(store.path, configured_path, "使用店铺配置的新文件名")
+	var loaded := store.load_game()
+	check_eq(loaded.clock, 0.0, "新文件不存在时从空店开始，不读旧路径")
+	check_eq(store.save_game(loaded), OK, "新店存入新路径")
+	check(FileAccess.file_exists(configured_path), "配置的存档文件已写入")
+	check_eq(FileAccess.get_file_as_string(legacy_path), legacy_text, "旧存档保留原样")
+	for path in [legacy_path, configured_path]:
+		if FileAccess.file_exists(path): DirAccess.remove_absolute(path)
+
+
+func test_save_path_supports_an_override_and_an_empty_configuration() -> void:
+	check_eq(ShopSave.new(PANCAKE, PATH).path, PATH, "显式传入的测试路径优先")
+	var shop: SpecShop = PANCAKE.duplicate(true)
+	shop.save_file = ""
+	check_eq(ShopSave.new(shop).path, ShopSave.path_for(shop.id), "没有配置文件名时仍按店铺 id 存档")

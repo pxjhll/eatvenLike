@@ -182,6 +182,11 @@ func load_dict(data: Dictionary) -> String:
 	event_rng.seed = int(data.event_rng[0])
 	event_rng.state = int(data.event_rng[1])
 	mods.entries = data.mods.duplicate(true)
+	# Older single-order saves did not capture the active pot's duration.
+	for id in pots:
+		var pot: Dictionary = stations[id]
+		if pot.phase == "cook" and float(pot.get("duration", 0.0)) <= 0.0:
+			pot.duration = maxf(float(pot.remaining), pot_seconds(id))
 	events.log = data.log.duplicate(true)
 	events.clock = clock
 	pending_events = []
@@ -455,6 +460,14 @@ func dish_price(dish_id: String) -> float:
 	return snappedf(raw_price(dish_id), 0.1) if shop.fulfillment.price_rounding == "dish_tenth_carry" else raw_price(dish_id)
 
 
+## Calculated dish amount and settlement policy. Solo payment excludes options/addons.
+func dish_quote(dish_id: String) -> Dictionary:
+	var quote := {"calculated": dish_price(dish_id), "policy": shop.fulfillment.price_rounding}
+	if shop.fulfillment.price_rounding != "dish_tenth_carry":
+		quote.solo_payment = order_price_single({"kind": dish_id, "addon": false, "options": []})
+	return quote
+
+
 func flavor_open(dish: SpecDish) -> bool:
 	if dish.flavor_station.is_empty(): return true
 	var st := shop.station(dish.flavor_station)
@@ -614,8 +627,8 @@ func order_weights() -> Dictionary:
 		var open: Array = []
 		for d in shop.dishes:
 			if d.flavor_station == "" or d.topping_count <= 0: continue
-			if flavor_open(d): open.append(d.id)
-		if open.is_empty(): result[stage.flavor_fallback] = float(result.get(stage.flavor_fallback, 0.0)) + share
+			if dish_open(d.id): open.append(d.id)
+		if open.is_empty() and dish_open(stage.flavor_fallback): result[stage.flavor_fallback] = float(result.get(stage.flavor_fallback, 0.0)) + share
 		for id in open: result[id] = share / open.size()
 	return result
 
@@ -900,6 +913,27 @@ func carry(worker: Dictionary) -> int:
 	return int(stat(worker, "carry"))
 
 
+func effective_worker_stats(worker: Dictionary) -> Dictionary:
+	return {"walk": walk_speed(worker), "work": skill(worker), "carry": carry(worker)}
+
+
+## Normalize bars against this worker's region at full cultivation, with current tuning/buffs.
+func worker_stat_limits(worker: Dictionary) -> Dictionary:
+	var current := effective_worker_stats(worker)
+	var key := "staff/" + side_of(worker)
+	var track := track_of(key)
+	if track == null: return current
+	var saved_level: int = levels[key]
+	var saved_entries := mods.entries.duplicate()
+	levels[key] = track.levels.size()
+	_refresh_key(key)
+	var limit := effective_worker_stats(worker)
+	levels[key] = saved_level
+	mods.entries = saved_entries
+	for stat_name in current: limit[stat_name] = maxf(float(current[stat_name]), float(limit[stat_name]))
+	return limit
+
+
 func front_slots() -> int:
 	return int(mods.value("staff_slot", float(shop.staff.front_base_slots), "front"))
 
@@ -1139,6 +1173,40 @@ func _refresh_key(key: String) -> void:
 
 
 # ---------- 机器 ----------
+
+## Worker omitted means operation skill 1. Fixed ignores machine upgrades only.
+## A pot's manual pickup never inherits its automatic cooking upgrades.
+func manual_operation_seconds(id: String, base_seconds: float, worker: Dictionary = {}, fixed := false) -> float:
+	var station := shop.station(id)
+	var machine := 1.0 if fixed or station.block == "batch_pot" else duration_mult(id) / speed(id)
+	return base_seconds * machine * tuned(id) / (skill(worker) if not worker.is_empty() else 1.0)
+
+
+## Baseline operation, not a complete order; automatic machines retain batch semantics.
+func station_timing(id: String) -> Dictionary:
+	var station := shop.station(id)
+	if station == null: return {}
+	if station.block == "batch_pot" or (shop.fulfillment.handoff != "single" and station.block in ["combine", "pickup"] and not station.params.get("manual", false)):
+		return {"seconds": machine_seconds(id), "base_seconds": float(station.params.get("cook_seconds", station.params.get("seconds", station.params.get("process_seconds", 0.0)))),
+			"unit": "cooking_batch" if station.block == "batch_pot" else "batch" if station.block == "combine" else "item", "automatic": true}
+	var base := float(station.params.get("seconds", station.params.get("fetch_seconds", 0.0)))
+	var fixed := false
+	if shop.fulfillment.handoff == "single":
+		# The first non-fixed recipe action is the station's representative operation.
+		var found := false
+		for dish in shop.dishes:
+			for step in dish.steps:
+				if step.station == id and not step.fixed and not found:
+					base = step.seconds * step.repeat
+					fixed = step.fixed
+					found = true
+		for option in shop.order_options:
+			if not found and option.step != null and (option.step.station == id or (option.step.station.is_empty() and option.station == id)):
+				base = option.step.seconds * option.step.repeat
+				fixed = option.step.fixed
+				found = true
+	return {"seconds": manual_operation_seconds(id, base, {}, fixed), "base_seconds": base, "unit": "operation", "automatic": false}
+
 
 func pot_seconds(id: String) -> float:
 	var st := shop.station(id)
@@ -1392,12 +1460,12 @@ func _action_duration(job: Dictionary, worker: Dictionary) -> float:
 		var total := 0.0
 		for s in shop.dish(job.item).steps:
 			var st := shop.station(s.station)
-			total += st.params.get("seconds", s.seconds) / speed(s.station) * tuned(s.station)
-		return total / skill(worker)
+			total += manual_operation_seconds(s.station, st.params.get("seconds", s.seconds), worker, s.fixed)
+		return total
 	match job.kind:
 		"work":
 			var st := shop.station(job.src)
-			return float(st.params.get("seconds", 0.0)) * job.count / skill(worker) / speed(job.src) * tuned(job.src)
+			return manual_operation_seconds(job.src, float(st.params.get("seconds", 0.0)) * job.count, worker)
 		"stir": return float(shop.station(job.src).params.get("stir_seconds", 1.0)) / skill(worker)
 		"load": return hop / skill(worker) / speed(supply_id)
 	return hop / skill(worker)
@@ -2171,8 +2239,7 @@ func _arrived_single(s: Dictionary) -> void:
 			s.task_label = "等" + station.display_name
 			return
 		busy.user = s.id
-		var machine: float = 1.0 if st.get("fixed", false) else duration_mult(st.station) / speed(st.station)
-		_work_single(s, st.seconds * machine / skill(s))
+		_work_single(s, manual_operation_seconds(st.station, st.seconds, s, st.get("fixed", false)))
 	elif station.block == "batch_pot":
 		var pot: Dictionary = stations[st.station]
 		if pot.stock < 1:
@@ -2181,9 +2248,9 @@ func _arrived_single(s: Dictionary) -> void:
 			_try_pot_chore(s, true)
 			return
 		pot.stock -= 1
-		_work_single(s, st.seconds / skill(s))
+		_work_single(s, manual_operation_seconds(st.station, st.seconds, s, st.get("fixed", false)))
 	else:
-		_work_single(s, st.seconds / skill(s))
+		_work_single(s, manual_operation_seconds(st.station, st.seconds, s, st.get("fixed", false)))
 	s.task_label = st.label
 
 
@@ -2195,7 +2262,8 @@ func _finish_work_single(s: Dictionary) -> void:
 		var st := shop.station(parts[1])
 		if parts[0] == "load":
 			pot.phase = "cook"
-			pot.remaining = pot_seconds(parts[1])
+			pot.duration = pot_seconds(parts[1])
+			pot.remaining = pot.duration
 		else:
 			pot.stock = mini(st.stock[0].cap, pot.stock + pot_batch(parts[1]))
 			pot.phase = "idle"

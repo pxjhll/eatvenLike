@@ -19,6 +19,7 @@ var _session := ""
 
 func setup(shop_sim: ShopRules) -> void:
 	sim = shop_sim
+	_clock = 0.0
 	_last_revenue = sim.revenue
 	_last_sold = sim.sold
 	_last_lost = sim.lost
