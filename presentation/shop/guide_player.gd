@@ -275,9 +275,9 @@ func _holds(condition: String) -> bool:
 		"waiting": return not _waiting().is_empty()
 		"can_hire": return rules.hire_cost() >= 0 and rules.gold >= rules.hire_cost()
 		"can_staff": return not _waiting().is_empty() or (rules.hire_cost() >= 0 and rules.gold >= rules.hire_cost())
-		"affordable": return rules.unlock_error(arg).is_empty()
+		"affordable": return rules.command_status("unlock", {"id": arg}).code == "ok"
 		"box": return rules.pending_box() == arg
-		"box_affordable": return not rules.pending_box().is_empty() and rules.box_error(rules.pending_box()).is_empty()
+		"box_affordable": return not rules.pending_box().is_empty() and rules.command_status("unlock_box", {"material": rules.pending_box()}).code == "ok"
 		"no_box": return rules.pending_box().is_empty()
 		"kitchen_staff": return rules.kitchen_staff() == int(arg)
 		"room": return rules.workers.size() < rules.staff_slots()

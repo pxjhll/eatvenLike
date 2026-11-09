@@ -53,6 +53,10 @@ jobs:
         env:
           XDG_DATA_HOME: ${{ runner.temp }}/session-lifecycle-userdata
         run: timeout 30s ./godot --headless --path . -s tests/render_session_lifecycle.gd
+      - name: Command statuses keep localized real-scene interaction and persistence stable
+        env:
+          XDG_DATA_HOME: ${{ runner.temp }}/session-lifecycle-userdata/command-ui
+        run: timeout 30s ./godot --headless --path . -s tests/render_command_contracts.gd
       - name: Generic shop audio integration
         run: timeout 30s ./godot --headless --path . -s tests/render_shop_audio.gd
       - name: Animated character frame and gameplay regression

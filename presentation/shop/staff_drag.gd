@@ -1,7 +1,8 @@
 extends Node2D
 ## 拖员工换岗位（通用）：落点规则读场景锚点 Anchors/Drops（按顺序判断的矩形：meta post = 落到哪个岗位、
-## point = 站在哪、invalid = 不能放的原因、show = 拖的时候画出来）；放得下放不下由规则层 placement_error 说了算。
+## point = 站在哪、invalid = 不能放的原因、show = 拖的时候画出来）；放得下放不下由规则层 command_status 说了算。
 
+const CommandResult := preload("res://game/rules/rule_command_result.gd")
 const Actor := preload("res://presentation/shop/shop_actor.gd")
 const ERROR_TEXTS := {
 	"automatic_station": "自动机器无需坐班", "invalid_post": "请拖到人工工位",
@@ -137,15 +138,15 @@ func _update_ghost() -> void:
 	worker.walking = false
 	worker.phase = "idle"
 	worker.job = {}
-	var error := _target_error()
+	var status := _target_status()
 	# 预览真正落脚的位置（包括吸到工位上）
-	if error.is_empty(): worker.pos = target.point
-	worker.task_label = _error_text(error) if not error.is_empty() else _view.view.text("drop_" + String(target.get("post", "")), {},
+	if CommandResult.is_ok(status): worker.pos = target.point
+	worker.task_label = _status_text(status) if not CommandResult.is_ok(status) else _view.view.text("drop_" + String(target.get("post", "")), {},
 		"坐班" + _view.view.station_name(String(target.post)) if not String(target.get("post", "")).is_empty() else "恢复流动")
 	_ghost.task_text = func(w: Dictionary) -> String: return String(w.task_label)
 	_ghost.display(worker, _rules().clock)
 	# 松手会怎样也写在顶上，手指挡不住
-	var hint: String = ("松手：" + worker.task_label) if error.is_empty() else worker.task_label
+	var hint: String = ("松手：" + worker.task_label) if CommandResult.is_ok(status) else worker.task_label
 	if hint != _hint:
 		_hint = hint
 		_view._show_toast(hint)
@@ -155,16 +156,17 @@ func _process(_delta: float) -> void:
 	if dragging: _update_ghost()
 
 
-func _target_error() -> String:
-	if target.get("kind", "invalid") == "invalid": return target.get("reason", "blocked_ground")
+func _target_status() -> Dictionary:
+	if target.get("kind", "invalid") == "invalid":
+		return CommandResult.failure(CommandResult.UI_DROP_REJECTED, {"reason": target.get("reason", "blocked_ground")})
 	var post: String = target.get("post", "")
 	var rules := _rules()
 	if not post.is_empty():
-		if not rules.station_unlocked(post): return "请先解锁设备"
+		if not rules.station_unlocked(post): return CommandResult.failure(CommandResult.STATION_REQUIRED, {"station": post})
 		if rules.post_owner(post, worker_id) != -1:
-			if post == rules.counter_id: return _view.view.text("front_full", {"count": rules.front_slots()}, "前台最多 {count} 位，前台升级可以加前台位")
-			return "occupied_post"
-	return rules.placement_error(worker_id, post, target.point)
+			if post == rules.counter_id: return CommandResult.failure(CommandResult.FRONT_FULL, {"count": rules.front_slots(), "ui_hint": "front_full"})
+			return CommandResult.failure(CommandResult.POST_OCCUPIED)
+	return rules.command_status("place_worker", {"id": worker_id, "post": post, "point": target.point})
 
 
 ## 按 Drops 的顺序找第一块盖住手指的；都不是就看是不是能站的空地
@@ -202,9 +204,9 @@ func _release(screen: Vector2) -> void:
 		return
 	_pointer = _world(screen)
 	target = _drop_target(screen)
-	var error := _target_error()
-	if error.is_empty(): error = _rules().place_worker(worker_id, target.post, target.point)
-	if error.is_empty():
+	var status := _target_status()
+	if CommandResult.is_ok(status): status = _rules().execute_command("place_worker", {"id": worker_id, "post": target.post, "point": target.point})
+	if CommandResult.is_ok(status):
 		var post: String = target.post
 		var message: String = _view.view.text("placed_" + post, {}, "已安排到" + _view.view.station_name(post) + "坐班" if not post.is_empty() else "已恢复流动")
 		# 玩家怎么排都行；只在没人搬东西的时候提醒一句
@@ -212,7 +214,7 @@ func _release(screen: Vector2) -> void:
 		_view._show_toast(message)
 		_view.save_now(false)
 	else:
-		_view._show_toast(_error_text(error))
+		_view._show_toast(_status_text(status))
 	cancel()
 	_view._refresh(0.0)
 	get_viewport().set_input_as_handled()
@@ -246,8 +248,13 @@ func _world(screen: Vector2) -> Vector2:
 	return _view.get_node("Canvas").get_global_transform_with_canvas().affine_inverse() * screen
 
 
-func _error_text(error: String) -> String:
-	return ERROR_TEXTS.get(error, "拖放位置无效" if "_" in error else error)
+func _status_text(status: Dictionary) -> String:
+	if status.code == CommandResult.UI_DROP_REJECTED:
+		return ERROR_TEXTS.get(status.params.reason, "拖放位置无效")
+	if status.code == CommandResult.FRONT_FULL and status.params.get("ui_hint") == "front_full":
+		return _view.view.text("front_full", status.params, "前台最多 {count} 位，前台升级可以加前台位")
+	if status.code == CommandResult.POST_OCCUPIED: return ERROR_TEXTS.occupied_post
+	return _view.view.command_message(status)
 
 
 func _draw() -> void:
@@ -264,5 +271,5 @@ func _draw() -> void:
 		draw_rect(rect, Color(color, 0.18))
 		draw_rect(rect, color, false, 4)
 		draw_circle(anchors.meta(path, "point", rect.get_center()), 25, Color(color, 0.4))
-	var valid := _target_error().is_empty()
+	var valid := CommandResult.is_ok(_target_status())
 	draw_circle(_pointer, 18, Color(0.37, 0.7, 0.3, 0.5) if valid else Color(0.85, 0.25, 0.2, 0.5))

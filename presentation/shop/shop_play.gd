@@ -447,9 +447,9 @@ func _refresh_events() -> void:
 
 
 func answer_event(choice: int, id: String) -> void:
-	var error := rules.answer_event(choice)
-	if not error.is_empty():
-		_show_toast(error)
+	var status := rules.execute_command("answer_event", {"choice": choice})
+	if status.code != "ok":
+		_show_toast(view.command_message(status))
 		return
 	ui.popups.remove("event:" + id)
 	save_now(false)
@@ -582,9 +582,9 @@ func _refresh_station_signs() -> void:
 				if candidate.id == connection_id: row = candidate
 			frame.visible = not row.is_empty() and row.available and not row.owned
 			if not frame.visible: continue
-			frame.can_unlock = String(row.error).is_empty()
+			frame.can_unlock = row.status.code == "ok"
 			frame.text = _t("frame_connection", {"cost": row.cost})
-			frame.tooltip_text = String(anchors.meta("Connections/" + connection_id, "note", row.name)) + "\n" + String(row.error)
+			frame.tooltip_text = String(anchors.meta("Connections/" + connection_id, "note", row.name)) + "\n" + view.command_message(row.status)
 			continue
 		if id == "seat":
 			# 下一张要买的桌子：桌子上方一个虚线框（开张以后）
@@ -594,16 +594,16 @@ func _refresh_station_signs() -> void:
 			frame.visible = rules.is_open() and rules.seat_cost() >= 0 and table_index < tables.size()
 			if not frame.visible: continue
 			frame.position = tables[table_index] + Vector2(0, -42) - FRAME_SIZE / 2.0
-			frame.can_unlock = rules.seat_error().is_empty()
+			frame.can_unlock = rules.command_status("buy_seat").code == "ok"
 			frame.text = _t("frame_seat", {"step": group.step, "cost": rules.seat_cost()})
-			frame.tooltip_text = _t("frame_seat_tip") + "\n" + rules.seat_error()
+			frame.tooltip_text = _t("frame_seat_tip") + "\n" + view.command_message(rules.command_status("buy_seat"))
 			continue
 		if id == rules.supply_id:
 			# 原料柜的框：最新那台机器要用的原料箱
 			frame.visible = not box.is_empty()
 			if box.is_empty(): continue
 			var m := shop.station(rules.supply_id).material(box)
-			frame.can_unlock = rules.box_error(box).is_empty()
+			frame.can_unlock = rules.command_status("unlock_box", {"material": box}).code == "ok"
 			frame.text = _t("frame_box", {"name": m.display_name, "cost": m.box_cost})
 			frame.tooltip_text = _t("frame_box_tip", {"machine": view.station_name(m.box_station)})
 			continue
@@ -611,7 +611,7 @@ func _refresh_station_signs() -> void:
 		if card.is_empty(): continue
 		frame.visible = not card.unlocked and int(card.stage) == next_stage
 		if not frame.visible: continue
-		frame.can_unlock = String(card.unlock.error).is_empty()
+		frame.can_unlock = card.unlock.status.code == "ok"
 		frame.tooltip_text = String(card.description) + "\n" + String(card.unlock.error)
 		var st := shop.station(id)
 		var title: String = card.unlock.title if st.params.get("frame_title", "") == "stage" else view.station_name(id)
@@ -1085,10 +1085,10 @@ func hire_worker() -> void:
 		_show_toast(_t("no_room"))
 		return
 	var gold_before := rules.gold
-	if rules.hire().is_empty():
+	if rules.execute_command("hire").code == "ok":
 		_bought("hire", gold_before)
 		selected_worker = int(all_staff().back().id)
-		var deployed := staff_is_deployed(selected_worker) or rules.deploy_worker(selected_worker).is_empty()
+		var deployed: bool = staff_is_deployed(selected_worker) or (rules.execute_command("deploy_worker", {"id": selected_worker}).code == "ok")
 		_show_toast(_t("hired_deployed") if deployed else _t("hired_roster"))
 		save_now(false)
 	_refresh(0.0)
@@ -1097,10 +1097,10 @@ func hire_worker() -> void:
 func buy_staff_upgrade(side: String) -> void:
 	var info := view.staff_track(side)
 	var gold_before := rules.gold
-	var error := rules.upgrade("staff/" + side)
-	if error.is_empty(): _bought("staff_%s/%s" % [side, info.name], gold_before)
-	_show_toast(error if not error.is_empty() else _t("staff_upgraded", {"side": info.title, "name": info.name}))
-	if error.is_empty(): save_now(false)
+	var status := rules.execute_command("upgrade", {"key": "staff/" + side})
+	if status.code == "ok": _bought("staff_%s/%s" % [side, info.name], gold_before)
+	_show_toast(view.command_message(status) if status.code != "ok" else _t("staff_upgraded", {"side": info.title, "name": info.name}))
+	if status.code == "ok": save_now(false)
 	_refresh(0.0)
 
 
@@ -1122,11 +1122,11 @@ func staff_is_deployed(id: int) -> bool:
 
 func toggle_deployment() -> void:
 	var returning := staff_is_deployed(selected_worker)
-	var error := rules.recall_worker(selected_worker) if returning else rules.deploy_worker(selected_worker)
-	var message: String = error if not error.is_empty() else _t("recalled") if returning else _t("deployed")
-	if error.is_empty() and returning and carrier_warning(): message = _t("no_carrier")
+	var status := rules.execute_command("recall_worker" if returning else "deploy_worker", {"id": selected_worker})
+	var message: String = view.command_message(status) if status.code != "ok" else _t("recalled") if returning else _t("deployed")
+	if status.code == "ok" and returning and carrier_warning(): message = _t("no_carrier")
 	_show_toast(message)
-	if error.is_empty(): save_now(false)
+	if status.code == "ok": save_now(false)
 	_refresh(0)
 
 
@@ -1136,18 +1136,18 @@ func carrier_warning() -> bool:
 
 
 func station_action(action: String, station: String, material := "") -> void:
-	var error := ""
+	var status := {"code": "unknown_command", "params": {"command": action}}
 	var gold_before := rules.gold
 	match action:
-		"unlock": error = rules.unlock(station)
-		"upgrade": error = rules.upgrade(station)
-		"material": error = rules.upgrade(station + "/" + material)
-		"box": error = rules.unlock_box(material)
-		"seat": error = rules.buy_seat()
-		"flyers": error = rules.send_flyers()
-		"flyer_upgrade": error = rules.upgrade("flyer")
-	_show_toast(error if not error.is_empty() else _t("done_" + action) if DEFAULT_TEXTS.has("done_" + action) else _t("done_upgrade"))
-	if error.is_empty():
+		"unlock": status = rules.execute_command("unlock", {"id": station})
+		"upgrade": status = rules.execute_command("upgrade", {"key": station})
+		"material": status = rules.execute_command("upgrade", {"key": station + "/" + material})
+		"box": status = rules.execute_command("unlock_box", {"material": material})
+		"seat": status = rules.execute_command("buy_seat")
+		"flyers": status = rules.execute_command("send_flyers")
+		"flyer_upgrade": status = rules.execute_command("upgrade", {"key": "flyer"})
+	_show_toast(view.command_message(status) if status.code != "ok" else _t("done_" + action) if DEFAULT_TEXTS.has("done_" + action) else _t("done_upgrade"))
+	if status.code == "ok":
 		var key := station + ("/" + material if not material.is_empty() else "")
 		_bought("%s %s Lv%d" % [action, key, rules.level(key) if rules.track_of(key) != null else 0], gold_before)
 		save_now(false)
@@ -1156,9 +1156,9 @@ func station_action(action: String, station: String, material := "") -> void:
 
 func buy_connection(id: String) -> void:
 	var before := rules.gold
-	var error := rules.buy_connection(id)
-	if not error.is_empty():
-		_show_toast(error)
+	var status := rules.execute_command("buy_connection", {"id": id})
+	if status.code != "ok":
+		_show_toast(view.command_message(status))
 		return
 	_bought("belt " + id, before)
 	_show_toast(_t("connection_bought", {"note": String(anchors.meta("Connections/" + id, "note", "")).get_slice("，", 0)}))

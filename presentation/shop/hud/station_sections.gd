@@ -1,6 +1,7 @@
 extends RefCounted
 ## 机器面板的各段（station_page 的默认组件）。每段：setup(page) 搭界面，refresh(card) 按 ShopView 快照刷新。
 
+const CommandResult := preload("res://game/rules/rule_command_result.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 
 
@@ -49,7 +50,7 @@ class TrackSection extends VBoxContainer:
 			upgrade_button.disabled = true
 		else:
 			upgrade_button.text = ("升星" if row.star_next else "升级") + " · %d 金币" % int(row.cost)
-			upgrade_button.disabled = not String(row.error).is_empty()
+			upgrade_button.disabled = not CommandResult.is_ok(row.status)
 
 
 ## 堂食座位
@@ -89,7 +90,7 @@ class SeatsSection extends PanelContainer:
 		else:
 			effect.text = "加 %d 个座位 · 现在 %d 位客人在座" % [int(seats.step), seats.used]
 		button.text = "%d 金币" % int(seats.cost)
-		button.disabled = not String(seats.error).is_empty()
+		button.disabled = not CommandResult.is_ok(seats.status)
 
 
 ## 发传单 + 传单升级
@@ -144,7 +145,7 @@ class FlyerSection extends PanelContainer:
 				effect.text = "不花钱 · 招来 %d 位客人，间隔 %d 秒%s" % [int(f.customers), int(f.cooldown), hint]
 			if coming > 0: effect.text += " · 上一批还有 %d 位没到" % coming
 			button.text = "发传单"
-		button.disabled = not String(f.error).is_empty()
+		button.disabled = not CommandResult.is_ok(f.status)
 		# 没有升级轨的传单不显示升级那一行
 		upgrade_line.visible = f.get("upgradable", true)
 		if not upgrade_line.visible: return
@@ -157,7 +158,7 @@ class FlyerSection extends PanelContainer:
 			return
 		upgrade_effect.text = "一次 %d → %d 位客人，间隔 %d → %d 秒" % [int(f.customers), int(f.next_customers), int(f.cooldown), int(f.next_cooldown)]
 		upgrade_button.text = "%d 金币" % cost
-		upgrade_button.disabled = not String(f.upgrade_error).is_empty()
+		upgrade_button.disabled = not CommandResult.is_ok(f.upgrade_status)
 
 
 ## 物料（原料箱、口味、水果）：每行一个升级 / 解锁键
@@ -214,7 +215,7 @@ class MaterialsSection extends VBoxContainer:
 				"box", "box_closed":
 					nodes.name.text = row.name + "箱"
 					nodes.effect.text = row.effect
-					button.disabled = not String(row.error).is_empty()
+					button.disabled = not CommandResult.is_ok(row.status)
 					if row.state == "box_closed":
 						nodes.card.modulate.a = 0.6
 						button.text = "未开放"
@@ -231,7 +232,7 @@ class MaterialsSection extends VBoxContainer:
 					nodes.name.text = "%s Lv%d" % [row.name, int(row.level)]
 					nodes.effect.text = row.effect
 					button.text = "满级" if int(row.cost) < 0 else "升级 · %d 金币" % int(row.cost)
-					button.disabled = int(row.cost) < 0 or not String(row.error).is_empty()
+					button.disabled = int(row.cost) < 0 or not CommandResult.is_ok(row.status)
 
 	func _pressed(material: String) -> void:
 		page.view_node().station_action("box" if _box_rows.has(material) else "material", page.station_id, material)
@@ -282,7 +283,7 @@ class UnlockSection extends VBoxContainer:
 		members.visible = line.size() > 1
 		var error := String(info.error)
 		var cost := int(info.cost)
-		if error.is_empty(): unlock_button.text = "解锁 · %d 金币" % cost
-		elif error.begins_with("金币不足"): unlock_button.text = "金币不足 · %d 金币" % cost
+		if CommandResult.is_ok(info.status): unlock_button.text = "解锁 · %d 金币" % cost
+		elif info.status.code == CommandResult.INSUFFICIENT_GOLD: unlock_button.text = "金币不足 · %d 金币" % cost
 		else: unlock_button.text = error
-		unlock_button.disabled = not error.is_empty()
+		unlock_button.disabled = not CommandResult.is_ok(info.status)

@@ -1808,8 +1808,9 @@ func connection_rows() -> Array:
 	var rows: Array = []
 	for c in shop.connections:
 		if not c.enabled: continue
+		var status := command_status("buy_connection", {"id": c.id})
 		rows.append({"id": c.id, "name": c.display_name, "from": c.from, "to": c.to, "cost": c.cost, "owned": belts.has(c.id),
-			"status": command_status("buy_connection", {"id": c.id}), "error": connection_error(c.id), "available": is_open() and stage_index >= c.stage})
+			"status": status, "error": CommandText.format(status, shop), "available": is_open() and stage_index >= c.stage})
 	return rows
 
 
