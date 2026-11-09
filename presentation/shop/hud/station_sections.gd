@@ -264,9 +264,10 @@ class UnlockSection extends VBoxContainer:
 		var info: Dictionary = card.unlock
 		var line: Array = info.members if int(card.stage) > 0 else []
 		icon.texture = page.Icons.texture(String(card.icon))
-		if not String(info.note).is_empty(): summary.text = String(info.note)
+		if not String(info.note).is_empty(): summary.text = "基础说明：" + String(info.note)
 		elif line.is_empty(): summary.text = String(info.description)
-		else: summary.text = "一次开放 %d 台机器，开始卖%s（售价 %d）" % [line.size(), info.dish, int(info.dish_price)]
+		else: summary.text = "一次开放 %d 台机器，开始卖%s" % [line.size(), info.dish]
+		if not info.quote.is_empty(): summary.text += "\n%s · %s" % [info.dish, page.view_node().view.quote_text(info.quote)]
 		if str(line) != _members:
 			for child in members.get_children(): child.free()
 			for member in line:

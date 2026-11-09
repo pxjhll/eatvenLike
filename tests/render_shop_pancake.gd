@@ -208,6 +208,33 @@ func _run() -> void:
 	tea.set_process(false)
 	_check(tea.rules.shop.id == "tea" and not tea.rules.is_open() and not after.fresh_shop, "奶茶店从空店开始")
 	tea.free()
+	view = _open(null, ShopRules.new(PANCAKE))
+	await process_frame
+	view.set_process(false)
+	hud = view.ui
+	guide = view.guide
+	guide.enabled = false
+	_check(not view.tuning.persist, "数值回归调参不写真实玩家配置")
+	_rules().unlocked.soy_milk = true
+	# 数值契约：培养后的实际属性与可见员工卡一致，所有人工设备调参都显示基准操作。
+	_rules().gold = 99999
+	_rules().upgrade("staff/")
+	await _click(hud.tab("staff"))
+	var staff_page: Control = hud.page_node("staff")
+	_check(staff_page._numbers.walk.text == str(int(_rules().walk_speed(_rules().workers[0]))), "培养后可见移速等于执行移速")
+	_check(staff_page._levels[0].text.contains("1/"), "员工卡显示店内培养进度")
+	_rules().tune.work = 1.25
+	view._refresh(0)
+	_check(staff_page._numbers.work.text == "1.25", "可见操作倍率保留两位有效小数")
+	view.tuning.toggle()
+	view.tuning.set_value("rear_equipment", 3.0)
+	_check(view.tuning._nows.rear_equipment.text.contains("30.0") and view.tuning._nows.rear_equipment.text.contains("基准"), "调参可见实际人工基准秒数")
+	_check(view.tuning._sliders.has("roll") and view.tuning._sliders.has("bag"), "卷饼和打包有可用时间滑杆")
+	view.tuning.reset_all()
+	view.tuning.toggle()
+	await _click(hud.tab("shop"))
+
+	view.free()
 	for path in [save_path, profile_path, tea_save]:
 		if FileAccess.file_exists(path): DirAccess.remove_absolute(path)
 	for error in errors.take():
@@ -218,9 +245,10 @@ func _run() -> void:
 	quit(1 if failures else 0)
 
 
-func _open(profile: RefCounted) -> Node2D:
+func _open(profile: RefCounted, rules: ShopRules = null) -> Node2D:
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
 	scene.profile = profile
+	scene.rules = rules
 	scene.store = ShopSave.new(PANCAKE, save_path)
 	root.add_child(scene)
 	return scene

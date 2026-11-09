@@ -6,7 +6,6 @@ const Icons := preload("res://presentation/ui/reference_icons.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
 ## 属性条按满培养能到的最大值来画
-const STAT_MAX := {"walk": 220.0, "carry": 6.0, "work": 3.0}
 const STATS := [["walk", "移速"], ["carry", "搬量"], ["work", "操作"]]
 
 var always_refresh := true
@@ -139,6 +138,7 @@ func _rebuild() -> void:
 		_titles.append(label)
 		var level := Label.new()
 		level.add_theme_font_size_override("font_size", 17)
+		level.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		level.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		body.add_child(level)
 		_levels.append(level)
@@ -219,7 +219,7 @@ func refresh() -> void:
 		var is_selected: bool = int(worker.id) == _view.selected_worker
 		var status := _status(worker)
 		_titles[i].text = staff_name(worker, roster)
-		_levels[i].text = "Lv%d" % int(worker.get("level", 1))
+		_levels[i].text = view.worker_card(worker).cultivation
 		_hud.pill(_tags[i], status[0], status[1], status[2])
 		_portraits[i].modulate = Color.WHITE if _view.staff_is_deployed(int(worker.id)) else Color(1, 1, 1, 0.55)
 		if _styled != _view.selected_worker:
@@ -235,10 +235,10 @@ func refresh() -> void:
 	_hud.pill(_selected_role, card.role, "ead4b2", "583e2d")
 	_selected_doing.text = "正在：" + card.task if card.deployed else "在名册中待派遣"
 	for stat in _bars:
-		_bars[stat].value = clampf(float(card.stats.get(stat, 0.0)) / STAT_MAX[stat], 0.04, 1.0)
-	_numbers.walk.text = str(int(card.stats.get("walk", 0.0)))
+		_bars[stat].value = clampf(float(card.stats.get(stat, 0.0)) / maxf(0.001, float(card.stat_limits[stat])), 0.04, 1.0)
+	_numbers.walk.text = view.stat_text(float(card.stats.get("walk", 0.0)))
 	_numbers.carry.text = str(int(card.stats.get("carry", 0.0)))
-	_numbers.work.text = "%.1f" % float(card.stats.get("work", 0.0))
+	_numbers.work.text = view.stat_text(float(card.stats.get("work", 0.0)))
 	deploy_button.visible = rules.shop.staff.can_drag
 	deploy_button.text = "收回到名册" if card.deployed else "派到店内"
 	for zone in upgrade_buttons:
@@ -256,7 +256,7 @@ func refresh() -> void:
 	_recruit_label.text = "%s · %s" % [Characters.NAMES.get(next_kind, kind.display_name), kind.role] + ("\n招来直接上岗" if room else "\n解锁新设备后有更多空位")
 	selection.visible = _hud.show_selection and _hud.page == "shop"
 	selection.get_node("Row/Avatar").texture = _hud.portrait_texture(String(selected.kind))
-	selection.get_node("Row/Summary").text = "%s · Lv%d\n%s" % [staff_name(selected, roster), int(selected.get("level", 1)), card.task]
+	selection.get_node("Row/Summary").text = "%s · %s\n%s" % [staff_name(selected, roster), card.cultivation, card.task]
 	if _hud.page == "staff":
 		var slots := view.slots()
 		_hud.set_subtitle(view.text("staff_slots" if slots.has("front") else "staff_slots_all", slots, "店内 %d / %d" % [slots.used, slots.all]))
