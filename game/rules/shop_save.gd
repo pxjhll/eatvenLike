@@ -47,12 +47,12 @@ func load_game() -> ShopRules:
 	if not result.get("error", "").is_empty():
 		last_error = result.error
 		if result.get("future", false): _write_blocked = true
-		else: _backup_corrupt()
+		elif _backup_corrupt() != OK: _write_blocked = true
 		return rules
 	var error := rules.load_dict(result.state)
 	if not error.is_empty():
 		last_error = "店铺存档状态无效：" + error
-		_backup_corrupt()
+		if _backup_corrupt() != OK: _write_blocked = true
 		return ShopRules.new(shop)
 	loaded_speed = result.speed
 	loaded_guides = result.guides
@@ -65,7 +65,7 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 		last_error = "存档失败：店铺状态或播放速度无效"
 		return ERR_INVALID_PARAMETER
 	if _write_blocked:
-		last_error = "存档版本高于当前程序，已停止写入以保留原文件"
+		last_error = "存档不能写入，已停止写入以保留原文件"
 		return ERR_UNAVAILABLE
 	var state := rules.to_dict()
 	var existing := _read_existing()
@@ -73,11 +73,18 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 		_write_blocked = true
 		last_error = existing.error
 		return ERR_UNAVAILABLE
+	# A caller may save without loading first (new-shop initialization, retry).
+	# Correct encoding/hash is not evidence that the previous business state is safe.
+	if not existing.get("missing", false) and existing.get("error", "").is_empty():
+		var semantic_error := ShopRules.new(shop).load_dict(existing.state)
+		if not semantic_error.is_empty(): existing.error = "店铺存档状态无效：" + semantic_error
 	if not existing.get("missing", false) and not existing.get("error", "").is_empty():
 		# 旧格式或坏档：先改名留底再写新的
 		last_error = existing.error
 		var backup_error := _backup_corrupt()
-		if backup_error != OK: return backup_error
+		if backup_error != OK:
+			_write_blocked = true
+			return backup_error
 	var bytes := var_to_bytes(state)
 	var payload := {"format": FORMAT, "version": VERSION, "shop": shop.id, "speed": speed,
 		"state": Marshalls.raw_to_base64(bytes), "state_sha256": bytes.hex_encode().sha256_text()}
@@ -218,5 +225,6 @@ func _backup_corrupt() -> Error:
 		backup = "%s.corrupt-%d-%d-%d" % [path, int(Time.get_unix_time_from_system()), Time.get_ticks_usec(), suffix]
 	var error := DirAccess.rename_absolute(path, backup)
 	if error != OK:
+		_write_blocked = true
 		last_error += "；原文件备份失败：%s" % error_string(error)
 	return error

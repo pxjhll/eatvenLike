@@ -1,5 +1,6 @@
 class_name ShopRules
 extends RefCounted
+const StateValidator := preload("res://game/rules/shop_state_validator.gd")
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -148,18 +149,30 @@ static func _plain(v: Variant) -> Variant:
 	return v
 
 
-## 读档：先按店铺数据重开，再把存下的状态盖上去。返回错误说明（空 = 成功）。
+## Validate and fully restore off to the side before replacing any live object.
 func load_dict(data: Dictionary) -> String:
-	if String(data.get("shop", "")) != shop.id: return "不是这家店的存档"
-	# 先全部查一遍再动手：坏存档不能改到正在玩的店
-	for key in STATE_KEYS:
-		if not data.has(key): return "缺少 " + key
-		var v: Variant = data[key]
-		var current: Variant = get(key)
-		if typeof(current) != typeof(v) and not (current is float and v is int): return "%s 类型不对" % key
-	for key in ["workers", "rng", "event_rng", "mods", "log", "pending_events"]:
-		if not data.get(key) is Array: return "缺少 " + key
-	reset()
+	var candidate := ShopRules.new(shop)
+	# Definitions registered by campaign/session code are data, not saved objects.
+	candidate.event_defs = event_defs.duplicate()
+	var error := StateValidator.new().validate(data, candidate.to_dict(), shop, chains, candidate.event_defs)
+	if not error.is_empty(): return error
+	candidate._restore_validated(data)
+	for key in STATE_KEYS: set(key, candidate.get(key))
+	workers = candidate.workers
+	nav = candidate.nav
+	rng = candidate.rng
+	event_rng = candidate.event_rng
+	mods = candidate.mods
+	events = candidate.events
+	event_defs = candidate.event_defs
+	pending_events = candidate.pending_events
+	# The candidate's bound listener must not outlive its temporary rules object.
+	events.off("*", candidate._on_broadcast)
+	events.on("*", _on_broadcast)
+	return ""
+
+
+func _restore_validated(data: Dictionary) -> void:
 	for key in STATE_KEYS:
 		var v: Variant = data[key]
 		var current: Variant = get(key)
@@ -193,7 +206,6 @@ func load_dict(data: Dictionary) -> String:
 	for id in data.pending_events:
 		for ev in event_defs:
 			if ev.id == id: pending_events.append(ev)
-	return ""
 
 
 func _derive_roles() -> void:

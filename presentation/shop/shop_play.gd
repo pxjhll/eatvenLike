@@ -22,6 +22,7 @@ const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
 const CAMPAIGN: SpecCampaign = preload("res://content/campaign/campaign.tres")
 const Profile := preload("res://game/app/profile.gd")
+const ProgressService := preload("res://game/app/progress_service.gd")
 ## 竖屏铺满宽度；横屏最多少看 MIN_VISIBLE_WORLD 这么高的店面
 const MIN_VISIBLE_WORLD := 1100.0
 ## 界面按这个宽度排版（竖屏铺满宽度）；店面比它宽的店，店面另外缩放
@@ -94,25 +95,43 @@ var _world_factor := 1.0
 var _pan_press := Vector2.INF
 var _pan_last := Vector2.ZERO
 var _panning := false
+var _progress := ProgressService.new()
+var _startup_blocked := false
+var _startup_panel: Control
+var _transition_committed := false
 
 
 func _ready() -> void:
 	var guides_seen: Array = []
-	var app := get_node_or_null("/root/App")
+	var app := get_node_or_null("/root/App") if is_inside_tree() else null
 	if profile == null and app != null: profile = app.profile
+	if profile != null and profile.load_error != OK:
+		_block_startup(profile.last_error)
+		return
 	if rules == null:
 		guide_enabled = true
 		if store == null: store = ShopSave.new(_profile_shop())
-		rules = store.load_game()
-		_speed_factor = store.loaded_speed
-		guides_seen = store.loaded_guides
-		if not store.last_error.is_empty(): save_status = store.last_error
 		# 刚从上一家店结店过来：从空店开始（员工不带过来）
 		if profile != null and profile.fresh_shop and profile.shop == store.shop.id:
-			rules = ShopRules.new(store.shop)
-			profile.fresh_shop = false
-			profile.save()
-			store.save_game(rules, _speed_factor, guides_seen)
+			var result := _progress.initialize_fresh(profile, store)
+			if result.error != OK:
+				_block_startup(_progress.last_error)
+				return
+			rules = result.rules
+			_speed_factor = 1.0
+		else:
+			rules = store.load_game()
+			_speed_factor = store.loaded_speed
+			guides_seen = store.loaded_guides
+			if not store.last_error.is_empty(): save_status = store.last_error
+	_startup_blocked = false
+	set_process(true)
+	set_process_unhandled_input(true)
+	if _startup_panel != null:
+		_startup_panel.free()
+		_startup_panel = null
+	$Canvas.show()
+	$Overlay/UI/HUD.show()
 	shop = rules.shop
 	ShopAudio.enter_shop(rules.events, shop.background_music)
 	view = ShopView.new(rules)
@@ -156,6 +175,48 @@ func _ready() -> void:
 	_fit()
 	_show_toast(view.goal().text)
 	if carrier_warning(): _show_toast(_t("no_carrier"))
+
+
+func _block_startup(message: String) -> void:
+	_startup_blocked = true
+	set_process(false)
+	set_process_unhandled_input(false)
+	rules = null
+	save_status = message
+	$Canvas.hide()
+	$Overlay/UI/HUD.hide()
+	if _startup_panel != null: _startup_panel.free()
+	var panel := PanelContainer.new()
+	panel.name = "ProgressRetry"
+	panel.theme = ReferenceTheme.make_theme()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	$Overlay.add_child(panel)
+	_startup_panel = panel
+	var margin := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 24)
+	panel.add_child(margin)
+	var column := VBoxContainer.new()
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
+	margin.add_child(column)
+	var label := Label.new()
+	label.text = "进度保存失败，暂时无法开店。\n" + message
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size.y = 100
+	column.add_child(label)
+	var retry := Button.new()
+	retry.text = "重试"
+	retry.custom_minimum_size.y = 56
+	retry.pressed.connect(retry_startup)
+	column.add_child(retry)
+
+
+func retry_startup() -> void:
+	if not _startup_blocked: return
+	if profile != null and profile.load_profile() != OK:
+		_block_startup(profile.last_error)
+		return
+	_ready()
 
 
 func _profile_shop() -> SpecShop:
@@ -251,7 +312,7 @@ func frozen() -> bool:
 
 
 func _process(delta: float) -> void:
-	if rules == null: return
+	if rules == null or _startup_blocked or _transition_committed: return
 	if not frozen():
 		var before := rules.clock
 		rules.step(minf(delta, 0.25) * _speed_factor)
@@ -918,7 +979,7 @@ func next_shop() -> SpecShop:
 
 
 func can_leave() -> bool:
-	return rules.completed_at >= 0.0 and profile != null and next_shop() != null
+	return not _startup_blocked and not _transition_committed and rules != null and rules.completed_at >= 0.0 and profile != null and profile.shop == shop.id and next_shop() != null
 
 
 ## 结店总结卡：第一下“去下一家”只提醒什么都不保留，第二下才走
@@ -948,8 +1009,12 @@ func leave_shop() -> void:
 	if not can_leave(): return
 	var record := view.summary()
 	record.erase("levels")
-	profile.finish_shop(record)
-	if store != null: store.delete()
+	var result := _progress.finish_shop(profile, store, record)
+	if result != OK:
+		save_status = _progress.last_error
+		_show_toast(save_status)
+		return
+	_transition_committed = true
 	store = null
 	shop_left.emit(String(profile.shop))
 	if not change_scene_on_leave: return
@@ -961,16 +1026,19 @@ func leave_shop() -> void:
 ## 调参用：直接跳到关卡表里的上一家（-1）/ 下一家（+1）店。先存好这家店，那家店有存档就接着玩，没有就从空店开始。
 ## 返回跳到的店 id（到头了返回空）。
 func jump_shop(offset: int) -> String:
+	if _startup_blocked or _transition_committed or rules == null: return ""
 	var ids := Profile.shops()
 	var at := ids.find(rules.shop.id)
 	var to := at + offset
 	if at < 0 or to < 0 or to >= ids.size() or profile == null:
 		_show_toast("已经是第一家店了" if offset < 0 else "已经是最后一家店了")
 		return ""
-	save_now(false)
-	profile.shop = ids[to]
-	profile.fresh_shop = false
-	profile.save()
+	var result := _progress.jump_shop(profile, store, rules, ids[to], _speed_factor, guide.seen_list() if guide != null else [])
+	if result != OK:
+		save_status = _progress.last_error
+		_show_toast(save_status)
+		return ""
+	_transition_committed = true
 	shop_left.emit(ids[to])
 	if change_scene_on_leave:
 		rules = null
@@ -1069,6 +1137,7 @@ func buy_connection(id: String) -> void:
 
 
 func save_now(notify := true) -> Error:
+	if _startup_blocked or _transition_committed: return ERR_UNAVAILABLE
 	if store == null: return OK
 	var result := store.save_game(rules, _speed_factor, guide.seen_list() if guide != null else [])
 	save_status = "进度已保存" if result == OK else store.last_error
@@ -1135,6 +1204,7 @@ func reveal_world(rect: Rect2) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _startup_blocked or _transition_committed: return
 	# 触屏只处理一次：它模拟出来的鼠标按下会先打开面板，再被新出现的遮罩关掉
 	if event is InputEventMouse and event.device == InputEvent.DEVICE_ID_EMULATION: return
 	if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
