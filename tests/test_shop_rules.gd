@@ -119,7 +119,7 @@ func test_preview_keeps_event_set_on_top() -> void:
 	rules.apply_effect("event", "big_pot", batch, 60.0)
 	check_eq(rules.pot_batch("boil"), 9, "奇遇把一锅设成 9 杯")
 	var order: Array = rules.mods.entries.duplicate()
-	var next: int = rules.preview(key, func() -> int: return rules.pot_batch("boil"))
+	var next: int = rules.preview(key, func(query: RefCounted) -> int: return query.pot_batch("boil"))
 	check_eq(next, 9, "预览下一级时奇遇仍盖过升级")
 	check_eq(rules.pot_batch("boil"), 9, "预览完奇遇仍然生效")
 	check(rules.mods.entries == order, "预览完加成栈原样放回")

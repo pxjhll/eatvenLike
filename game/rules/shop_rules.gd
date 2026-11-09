@@ -1,5 +1,8 @@
 class_name ShopRules
 extends RefCounted
+const Numbers := preload("res://game/rules/rule_numbers.gd")
+const Upgrades := preload("res://game/rules/upgrade_modifiers.gd")
+const QueryContext := preload("res://game/rules/rule_query_context.gd")
 const StateValidator := preload("res://game/rules/shop_state_validator.gd")
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
@@ -406,59 +409,15 @@ func _refresh_all_modifiers() -> void:
 
 ## 一条升级轨在 level 级时的全部效果折成加成：同种效果、同一对象、同一范围合成一条。
 func _refresh_track(st: SpecStation, t: SpecUpgradeTrack, key: String, level: int, default_target: String) -> void:
-	## 重算后放回原来的位置：升级条目不挪到栈尾，奇遇等后加的 set 照样盖过升级
-	var at: int = mods.entries.size()
-	for index in mods.entries.size():
-		if mods.entries[index].source == "upgrade" and mods.entries[index].source_id == key:
-			at = index
-			break
-	mods.remove("upgrade", key)
-	var kept: int = mods.entries.size()
-	var groups := {}
-	var effects: Array[SpecEffect] = []
-	effects.append_array(t.base_effects)
-	for index in mini(level - 1, t.levels.size()): effects.append_array(t.levels[index].effects)
-	for e in effects:
-		if e.one_shot() or e.kind == "open_flavor": continue
-		var dishes: Array = e.dishes
-		if dishes.is_empty() and e.kind == "price" and st != null: dishes = st.price_dishes
-		var target: String = e.target if not e.target.is_empty() else ("" if e.kind == "price" else default_target)
-		var group_key := "%s|%s|%s|%s" % [e.kind, target, ",".join(dishes), e.price_part]
-		if not groups.has(group_key):
-			groups[group_key] = {"kind": e.kind, "target": target, "dishes": dishes, "part": e.price_part,
-				"value": 0.0 if e.kind in SET_KINDS or e.kind in ADD_KINDS else 1.0, "set": false}
-		var g: Dictionary = groups[group_key]
-		match e.op:
-			"set":
-				g.value = e.value
-				g.set = true
-			"add": g.value += e.value
-			_: g.value *= e.value
-	for g in groups.values():
-		var op := "mul"
-		if g.kind in SET_KINDS: op = "set"
-		elif g.kind in ADD_KINDS: op = "add"
-		mods.add("upgrade", key, g.kind, op, g.value, g.target, g.dishes, g.part)
-	var added: Array = mods.entries.slice(kept)
-	mods.entries = mods.entries.slice(0, at) + added + mods.entries.slice(at, kept)
+	Upgrades.refresh_track(mods, st, t, key, level, default_target)
 
 
 func track_of(key: String) -> SpecUpgradeTrack:
-	if key == "flyer": return shop.flyer.track
-	if key.begins_with("staff/"):
-		for t in shop.staff.tracks:
-			if "staff/" + t.id == key: return t
-		return null
-	var parts := key.split("/")
-	var st := shop.station(parts[0])
-	if st == null: return null
-	if parts.size() == 1: return st.track("level") if not st.tracks.is_empty() else null
-	var m := st.material(parts[1])
-	return m.track if m != null else null
+	return Upgrades.track_of(shop, key)
 
 
 func tuned(key: String) -> float:
-	return clampf(float(tune.get(key, 1.0)), 0.25, 3.0)
+	return Numbers.tuned(tune, key)
 
 
 # ---------- 查询 ----------
@@ -472,19 +431,19 @@ func level(id: String) -> int:
 
 
 func speed(id: String) -> float:
-	return mods.value("speed", 1.0, id)
+	return Numbers.speed(mods, id)
 
 
 func duration_mult(id: String) -> float:
-	return mods.value("duration", 1.0, id)
+	return Numbers.duration_mult(mods, id)
 
 
 func pot_batch(id: String) -> int:
-	return int(mods.value("batch", float(shop.station(id).params.get("batch", 3)), id))
+	return Numbers.pot_batch(shop, mods, id)
 
 
 func process_slots(id: String) -> int:
-	return int(mods.value("process_slots", float(shop.station(id).params.get("process_slots", 1)), id))
+	return Numbers.process_slots(shop, mods, id)
 
 
 func stars(id: String) -> int:
@@ -494,23 +453,16 @@ func stars(id: String) -> int:
 
 ## 一道菜现在的售价（保留 1 位小数前的原值）：每部分价格 × 作用在这部分上的所有加成。
 func raw_price(dish_id: String) -> float:
-	var dish := shop.dish(dish_id)
-	var total := 0.0
-	for part in dish.price_parts:
-		total += dish.price_parts[part] * mods.value("price", 1.0, "", dish_id) * mods.value("price", 1.0, "", dish_id, part)
-	return total * tuned("price")
+	return Numbers.raw_price(shop, mods, tune, dish_id)
 
 
 func dish_price(dish_id: String) -> float:
-	return snappedf(raw_price(dish_id), 0.1) if shop.fulfillment.price_rounding == "dish_tenth_carry" else raw_price(dish_id)
+	return Numbers.dish_price(shop, mods, tune, dish_id)
 
 
 ## Calculated dish amount and settlement policy. Solo payment excludes options/addons.
 func dish_quote(dish_id: String) -> Dictionary:
-	var quote := {"calculated": dish_price(dish_id), "policy": shop.fulfillment.price_rounding}
-	if shop.fulfillment.price_rounding != "dish_tenth_carry":
-		quote.solo_payment = order_price_single({"kind": dish_id, "addon": false, "options": []})
-	return quote
+	return Numbers.dish_quote(shop, mods, tune, dish_id)
 
 
 func flavor_open(dish: SpecDish) -> bool:
@@ -930,36 +882,27 @@ func _seat_at(worker: Dictionary, post: String) -> void:
 
 
 func side_of(worker: Dictionary) -> String:
-	if shop.staff.zones.is_empty(): return ""
-	return "front" if worker.post == counter_id else "kitchen"
+	return Numbers.side_of(shop, worker)
 
 
 func stat(worker: Dictionary, name: String) -> float:
-	var base: float = float(worker.stats.get(name, 1.0))
-	var side := side_of(worker)
-	var seated := 1.0
-	if name in ["walk", "work"] and worker.post in seatables: seated = shop.station(worker.post).seated_bonus
-	var value := mods.value(name, base, side, "", "", "staff:%d" % worker.id)
-	if name == "walk": return value * seated * tuned("walk")
-	if name == "work": return value * seated * tuned("work")
-	return value
+	return Numbers.stat(shop, mods, tune, worker, name)
 
 
 func walk_speed(worker: Dictionary) -> float:
-	return stat(worker, "walk")
+	return Numbers.walk_speed(shop, mods, tune, worker)
 
 
 func skill(worker: Dictionary) -> float:
-	return stat(worker, "work")
+	return Numbers.skill(shop, mods, tune, worker)
 
 
 func carry(worker: Dictionary) -> int:
-	if worker.get("courier", false): return 1
-	return int(stat(worker, "carry"))
+	return Numbers.carry(shop, mods, tune, worker)
 
 
 func effective_worker_stats(worker: Dictionary) -> Dictionary:
-	return {"walk": walk_speed(worker), "work": skill(worker), "carry": carry(worker)}
+	return Numbers.effective_worker_stats(shop, mods, tune, worker)
 
 
 ## Normalize bars against this worker's region at full cultivation, with current tuning/buffs.
@@ -968,13 +911,7 @@ func worker_stat_limits(worker: Dictionary) -> Dictionary:
 	var key := "staff/" + side_of(worker)
 	var track := track_of(key)
 	if track == null: return current
-	var saved_level: int = levels[key]
-	var saved_entries := mods.entries.duplicate()
-	levels[key] = track.levels.size()
-	_refresh_key(key)
-	var limit := effective_worker_stats(worker)
-	levels[key] = saved_level
-	mods.entries = saved_entries
+	var limit: Dictionary = query_context({key: track.levels.size()}).effective_worker_stats(worker)
 	for stat_name in current: limit[stat_name] = maxf(float(current[stat_name]), float(limit[stat_name]))
 	return limit
 
@@ -1194,27 +1131,19 @@ func _cancel_job(worker: Dictionary) -> void:
 	worker.action_left = 0.0
 
 
-## 预览：把某条升级轨临时加一级，算完 fn 再还原（面板“当前 → 下一级”用）。
-func preview(key: String, fn: Callable) -> Variant:
-	if track_of(key) == null: return fn.call()
-	## 预览完原样放回加成栈（同一批条目、同样的顺序和剩余时间）：重算会把升级条目挪到最后，
-	## 让升级的 set 盖过奇遇的 set
-	var saved: Array = mods.entries.duplicate()
-	levels[key] = int(levels[key]) + 1
-	_refresh_key(key)
-	var result: Variant = fn.call()
-	levels[key] = int(levels[key]) - 1
-	mods.entries = saved
-	return result
+## Evaluate a next-level snapshot without borrowing any live mutable data.
+func preview(key: String, evaluator: Callable) -> Variant:
+	var overrides := {}
+	if track_of(key) != null: overrides[key] = int(levels[key]) + 1
+	return evaluator.call(query_context(overrides))
+
+
+func query_context(level_overrides: Dictionary = {}) -> RefCounted:
+	return QueryContext.new(shop, levels, mods, tune, level_overrides)
 
 
 func _refresh_key(key: String) -> void:
-	var t := track_of(key)
-	if key.begins_with("staff/"): _refresh_track(null, t, key, int(levels[key]) + 1, key.get_slice("/", 1))
-	elif key == "flyer": _refresh_track(null, t, key, levels[key], "")
-	else:
-		var st := shop.station(key.get_slice("/", 0))
-		_refresh_track(st, t, key, levels[key], st.id)
+	Upgrades.refresh_key(shop, levels, mods, key)
 
 
 # ---------- 机器 ----------
@@ -1222,51 +1151,20 @@ func _refresh_key(key: String) -> void:
 ## Worker omitted means operation skill 1. Fixed ignores machine upgrades only.
 ## A pot's manual pickup never inherits its automatic cooking upgrades.
 func manual_operation_seconds(id: String, base_seconds: float, worker: Dictionary = {}, fixed := false) -> float:
-	var station := shop.station(id)
-	var machine := 1.0 if fixed or station.block == "batch_pot" else duration_mult(id) / speed(id)
-	return base_seconds * machine * tuned(id) / (skill(worker) if not worker.is_empty() else 1.0)
+	return Numbers.manual_operation_seconds(shop, mods, tune, id, base_seconds, worker, fixed)
 
 
 ## Baseline operation, not a complete order; automatic machines retain batch semantics.
 func station_timing(id: String) -> Dictionary:
-	var station := shop.station(id)
-	if station == null: return {}
-	if station.block == "batch_pot" or (shop.fulfillment.handoff != "single" and station.block in ["combine", "pickup"] and not station.params.get("manual", false)):
-		return {"seconds": machine_seconds(id), "base_seconds": float(station.params.get("cook_seconds", station.params.get("seconds", station.params.get("process_seconds", 0.0)))),
-			"unit": "cooking_batch" if station.block == "batch_pot" else "batch" if station.block == "combine" else "item", "automatic": true}
-	var base := float(station.params.get("seconds", station.params.get("fetch_seconds", 0.0)))
-	var fixed := false
-	if shop.fulfillment.handoff == "single":
-		# The first non-fixed recipe action is the station's representative operation.
-		var found := false
-		for dish in shop.dishes:
-			for step in dish.steps:
-				if step.station == id and not step.fixed and not found:
-					base = step.seconds * step.repeat
-					fixed = step.fixed
-					found = true
-		for option in shop.order_options:
-			if not found and option.step != null and (option.step.station == id or (option.step.station.is_empty() and option.station == id)):
-				base = option.step.seconds * option.step.repeat
-				fixed = option.step.fixed
-				found = true
-	return {"seconds": manual_operation_seconds(id, base, {}, fixed), "base_seconds": base, "unit": "operation", "automatic": false}
+	return Numbers.station_timing(shop, mods, tune, id)
 
 
 func pot_seconds(id: String) -> float:
-	var st := shop.station(id)
-	var seconds := float(st.params.get("cook_seconds", 0.0))
-	return seconds * duration_mult(id) / speed(id) * tuned(id)
+	return Numbers.pot_seconds(shop, mods, tune, id)
 
 
 func machine_seconds(id: String) -> float:
-	var st := shop.station(id)
-	match st.block:
-		"batch_pot": return pot_seconds(id)
-		"combine": return float(st.params.get("seconds", 0.0)) * duration_mult(id) / speed(id) * tuned(id)
-		"pickup":
-			return float(st.params.get("process_seconds", 0.0)) / speed(id) / process_slots(id) * tuned(id)
-	return 0.0
+	return Numbers.machine_seconds(shop, mods, tune, id)
 
 
 func _stock(station: Dictionary) -> int:
@@ -2362,14 +2260,7 @@ func _item_name(id: String) -> String:
 
 
 func order_price_single(c: Dictionary) -> int:
-	var f := shop.fulfillment
-	# 点的那份（只点豆浆时就是豆浆）乘订单选项的倍数；搭配的那杯豆浆不乘
-	var total := raw_price(c.kind)
-	for id in c.get("options", []):
-		var option := _option(String(id))
-		if option != null: total *= option.price_mult
-	if c.addon and c.kind != f.addon_dish: total += raw_price(f.addon_dish)
-	return int(round(total))
+	return Numbers.order_price_single(shop, mods, tune, c)
 
 
 # =====================================================================
@@ -2512,11 +2403,11 @@ func buy_seat() -> String:
 
 
 func flyer_customers() -> int:
-	return int(mods.value("flyer_customers", 0.0))
+	return Numbers.flyer_customers(mods)
 
 
 func flyer_cooldown() -> float:
-	return mods.value("flyer_cooldown", 0.0)
+	return Numbers.flyer_cooldown(mods)
 
 
 func flyer_error() -> String:
