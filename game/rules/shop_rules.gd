@@ -8,6 +8,7 @@ const CommandResult := preload("res://game/rules/rule_command_result.gd")
 const CommandText := preload("res://content/ui/rule_command_text.gd")
 const StateValidator := preload("res://game/rules/shop_state_validator.gd")
 const Inventory := preload("res://game/rules/rule_inventory.gd")
+const InventoryAudit := preload("res://game/rules/inventory_audit.gd")
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -1234,6 +1235,11 @@ func _destination_point(job: Dictionary) -> Vector2:
 	if _is_operation(job): return _source_point(job)
 	if job.dst == RACK: return nav.point(SHELF)
 	return nav.point(job.dst)
+
+
+func inventory_diagnostics() -> Array:
+	return InventoryAudit.inspect(_inventory, workers, belt_items, orders,
+		shop.fulfillment.handoff, supply_id, counter_id)
 
 
 func _reserve(worker: Dictionary, job: Dictionary) -> void:
