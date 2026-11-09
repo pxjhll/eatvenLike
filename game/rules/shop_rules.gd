@@ -3,6 +3,8 @@ extends RefCounted
 const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Upgrades := preload("res://game/rules/upgrade_modifiers.gd")
 const QueryContext := preload("res://game/rules/rule_query_context.gd")
+const CommandResult := preload("res://game/rules/rule_command_result.gd")
+const CommandText := preload("res://content/ui/rule_command_text.gd")
 const StateValidator := preload("res://game/rules/shop_state_validator.gd")
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
@@ -977,28 +979,12 @@ func next_hire_kind() -> String:
 
 
 func hire_error() -> String:
-	var cost := hire_cost()
-	if cost < 0: return "没有可招的人了"
-	if shop.staff.zones.is_empty() and workers.size() >= staff_slots(): return "人手已满"
-	if gold < cost: return "金币不足，需要 %d" % cost
-	return ""
+	return CommandText.format(command_status("hire", {}), shop)
 
 
 ## 招人：分区的店招进名册（再派岗），不分区的店直接上岗。
 func hire() -> String:
-	var error := hire_error()
-	if not error.is_empty(): return error
-	gold -= hire_cost()
-	var kind := next_hire_kind()
-	var worker := _new_worker(kind, _hire_id(kind))
-	worker.source = "招募"
-	roster.append(worker)
-	if shop.staff.zones.is_empty():
-		worker.deployed = true
-		worker.pos = nav.point(shop.staff.home_anchor)
-		workers.append(worker)
-	events.emit("hired", {"id": worker.id, "kind": kind})
-	return ""
+	return CommandText.format(execute_command("hire", {}), shop)
 
 
 ## 名册 id：分区的店按种类顺序给（同种第二位往后排），不分区的店按招人顺序。
@@ -1013,79 +999,26 @@ func _hire_id(kind: String) -> int:
 
 
 func role_room(post: String, exclude_id := -1) -> String:
-	var front := post == counter_id
-	var count := 0
-	for worker in workers:
-		if worker.id != exclude_id and (worker.post == counter_id) == front: count += 1
-	if front:
-		return "前台最多 %d 位" % front_slots() if count >= front_slots() else ""
-	if count >= kitchen_slots(): return "后厨最多 %d 位员工" % kitchen_slots()
-	return ""
+	return CommandText.format(_role_room_status(post, exclude_id), shop)
 
 
 func deploy_worker(id: int, post := "") -> String:
-	var worker := worker_by_id(id)
-	if worker.is_empty(): return "未拥有这位员工"
-	if worker.deployed: return ""
-	if post.is_empty() and not role_room("").is_empty() and role_room(counter_id).is_empty(): post = counter_id
-	if not post.is_empty() and post != counter_id:
-		if not post in seatables: return "这里不能坐班"
-		if post_owner(post, id) != -1: return "这里已经有人了"
-	var error := role_room(post, id)
-	if not error.is_empty(): return error
-	worker.deployed = true
-	workers.append(worker)
-	if not post.is_empty(): _seat_at(worker, post)
-	events.emit("deployed", {"id": id})
-	return ""
+	return CommandText.format(execute_command("deploy_worker", {"id": id, "post": post}), shop)
 
 
 ## 拖人（§3.5）：post 空 = 去 point 那块空地流动；post = 坐班机器或柜台。只检查、不改状态。
 func placement_error(id: int, post: String, point := Vector2.INF) -> String:
-	if not shop.staff.can_drag: return "这家店不能调岗"
-	var worker := worker_by_id(id)
-	if worker.is_empty(): return "未拥有这位员工"
-	if not post.is_empty():
-		if post != counter_id and not post in seatables: return "无效岗位"
-		if not station_unlocked(post): return "请先解锁设备"
-		if post != counter_id and post_owner(post, id) != -1: return "岗位已有员工"
-	var front := post == counter_id
-	if not worker.deployed or front != (worker.post == counter_id):
-		var room := role_room(post, id)
-		if not room.is_empty(): return room
-	if front and post_owner(counter_id, id) != -1: return "岗位已有员工"
-	var target: Vector2 = nav.post(post) if not post.is_empty() else (worker.pos if point == Vector2.INF else point)
-	if not nav.walkable(target, nav.point(counter_id)): return "无法放置在这里"
-	return ""
+	return CommandText.format(command_status("place_worker", {"id": id, "post": post, "point": point}), shop)
 
 
 ## 派到某处：没上岗的先上岗，再换到这个岗位 / 这块空地。
 func place_worker(id: int, post: String, point := Vector2.INF) -> String:
-	var error := placement_error(id, post, point)
-	if not error.is_empty(): return error
-	var worker := worker_by_id(id)
-	if not worker.deployed:
-		worker.deployed = true
-		workers.append(worker)
-		events.emit("deployed", {"id": id})
-	_cancel_job(worker)
-	worker.post = post
-	worker.pos = nav.post(post) if not post.is_empty() else (worker.pos if point == Vector2.INF else point)
-	events.emit("placed", {"id": id, "post": post})
-	return ""
+	return CommandText.format(execute_command("place_worker", {"id": id, "post": post, "point": point}), shop)
 
 
 ## 收回名册：手上的活放下，东西留在原处。
 func recall_worker(id: int) -> String:
-	var worker := worker_by_id(id)
-	if worker.is_empty(): return "未拥有这位员工"
-	if not worker.deployed: return "员工已在待派遣名册"
-	_cancel_job(worker)
-	worker.post = ""
-	worker.deployed = false
-	workers.erase(worker)
-	events.emit("recalled", {"id": id})
-	return ""
+	return CommandText.format(execute_command("recall_worker", {"id": id}), shop)
 
 
 ## 后厨有人、但都坐在机器上：没人在机器之间搬东西。
@@ -1876,28 +1809,16 @@ func connection_rows() -> Array:
 	for c in shop.connections:
 		if not c.enabled: continue
 		rows.append({"id": c.id, "name": c.display_name, "from": c.from, "to": c.to, "cost": c.cost, "owned": belts.has(c.id),
-			"error": connection_error(c.id), "available": is_open() and stage_index >= c.stage})
+			"status": command_status("buy_connection", {"id": c.id}), "error": connection_error(c.id), "available": is_open() and stage_index >= c.stage})
 	return rows
 
 
 func connection_error(id: String) -> String:
-	var c := _connection(id)
-	if c == null or not c.enabled: return "未知传送带"
-	if belts.has(id): return "这里已经装了传送带"
-	if not is_open() or stage_index < c.stage: return "请先解锁" + shop.stages[c.stage].display_name
-	if gold < c.cost: return "金币不足，需要 %d" % c.cost
-	return ""
+	return CommandText.format(command_status("buy_connection", {"id": id}), shop)
 
 
 func buy_connection(id: String) -> String:
-	var error := connection_error(id)
-	if not error.is_empty(): return error
-	var c := _connection(id)
-	gold -= c.cost
-	belts[id] = true
-	belt_clock[id] = 0.0
-	events.emit("connection", {"id": id})
-	return ""
+	return CommandText.format(execute_command("buy_connection", {"id": id}), shop)
 
 
 func _belted(source: String, destination: String) -> bool:
@@ -2273,39 +2194,11 @@ func next_stage_cost() -> int:
 
 
 func unlock_error(id: String) -> String:
-	var st := shop.station(id)
-	if st == null: return "未知设备"
-	if station_unlocked(id): return "设备已经解锁"
-	var stage := shop.stage_of(id)
-	if stage < 0: return "这台设备不能单独解锁"
-	if stage > 0 and not is_open(): return "请先开张"
-	var target := stage if stage > 0 else 0
-	if stage > 0 and stage > stage_index + 1: return "请先解锁" + shop.stages[stage - 1].display_name
-	if stage == 0 and is_open(): return "设备已经解锁"
-	var cost := shop.stages[target].cost
-	if gold < cost: return "金币不足，需要 %d" % cost
-	return ""
+	return CommandText.format(command_status("unlock", {"id": id}), shop)
 
 
 func unlock(id: String) -> String:
-	var error := unlock_error(id)
-	if not error.is_empty(): return error
-	var stage := shop.stage_of(id)
-	gold -= shop.stages[stage].cost
-	for key in shop.stages[stage].stations:
-		unlocked[key] = true
-		for st in shop.stations:
-			if st.companion_of == key: unlocked[st.id] = true
-		for rule in shop.station(key).stock:
-			stations[key].stock = rule.start
-	stage_index = maxi(stage_index, stage)
-	nav.set_open(unlocked)
-	if shop.fulfillment.handoff == "single":
-		if id == shop.goals.opening_station: _next_customer = shop.fulfillment.first_customer_delay
-	elif orders.is_empty():
-		for unused in shop.fulfillment.opening_customers: _add_order()
-	events.emit("unlocked", {"station": id, "stage": stage})
-	return ""
+	return CommandText.format(execute_command("unlock", {"id": id}), shop)
 
 
 func next_unlock() -> String:
@@ -2315,22 +2208,11 @@ func next_unlock() -> String:
 
 
 func box_error(material: String) -> String:
-	var st := shop.station(supply_id)
-	var m := st.material(material) if st != null else null
-	if m == null or not boxes.has(material): return "未知原料箱"
-	if boxes[material]: return "原料箱已经解锁"
-	if not station_unlocked(m.box_station): return "请先解锁" + shop.station(m.box_station).display_name
-	if gold < m.box_cost: return "金币不足，需要 %d" % m.box_cost
-	return ""
+	return CommandText.format(command_status("unlock_box", {"material": material}), shop)
 
 
 func unlock_box(material: String) -> String:
-	var error := box_error(material)
-	if not error.is_empty(): return error
-	gold -= shop.station(supply_id).material(material).box_cost
-	boxes[material] = true
-	events.emit("box", {"material": material})
-	return ""
+	return CommandText.format(execute_command("unlock_box", {"material": material}), shop)
 
 
 func pending_box() -> String:
@@ -2350,29 +2232,11 @@ func upgrade_cost(key: String) -> int:
 
 
 func upgrade_error(key: String) -> String:
-	var t := track_of(key)
-	if t == null or t.levels.is_empty(): return "无需升级"
-	var parts := key.split("/")
-	if not key.begins_with("staff/") and key != "flyer":
-		if not station_unlocked(parts[0]) and shop.station(parts[0]).companion_of.is_empty(): return "请先解锁设备"
-		if parts.size() > 1:
-			if boxes.has(parts[1]) and not boxes[parts[1]]: return "请先解锁原料箱"
-			if level(parts[0]) < t.requires_level: return "设备需升到 Lv%d" % t.requires_level
-	if key == "flyer" and not is_open(): return "请先开张"
-	var cost := upgrade_cost(key)
-	if cost < 0: return "已满级"
-	if gold < cost: return "金币不足，需要 %d" % cost
-	return ""
+	return CommandText.format(command_status("upgrade", {"key": key}), shop)
 
 
 func upgrade(key: String) -> String:
-	var error := upgrade_error(key)
-	if not error.is_empty(): return error
-	gold -= upgrade_cost(key)
-	levels[key] = int(levels[key]) + 1
-	_refresh_key(key)
-	events.emit("upgraded", {"key": key, "level": levels[key]})
-	return ""
+	return CommandText.format(execute_command("upgrade", {"key": key}), shop)
 
 
 ## 下一次买座位的价格；-1 = 全部买完
@@ -2384,22 +2248,11 @@ func seat_cost() -> int:
 
 
 func seat_error() -> String:
-	if not is_open(): return "请先开张"
-	if seat_cost() < 0: return "座位已满"
-	var g := buy_group()
-	if int(seats.get(g.id, 0)) + _seat_step(g) > seat_cap(g): return "下一阶段开放更多座位"
-	if gold < seat_cost(): return "金币不足，需要 %d" % seat_cost()
-	return ""
+	return CommandText.format(command_status("buy_seat", {}), shop)
 
 
 func buy_seat() -> String:
-	var error := seat_error()
-	if not error.is_empty(): return error
-	gold -= seat_cost()
-	var g := buy_group()
-	seats[g.id] = int(seats.get(g.id, 0)) + _seat_step(g)
-	events.emit("seat", {})
-	return ""
+	return CommandText.format(execute_command("buy_seat", {}), shop)
 
 
 func flyer_customers() -> int:
@@ -2411,29 +2264,11 @@ func flyer_cooldown() -> float:
 
 
 func flyer_error() -> String:
-	if not is_open(): return "请先开张"
-	if shop.fulfillment.handoff == "single":
-		if flyer_ready_at - clock > 0.0: return "传单还要等 %d 秒才能再发" % ceili(flyer_ready_at - clock)
-		return ""
-	if flyer_wave > 0.0: return "传单正在起效，还有 %d 秒" % ceili(flyer_wave)
-	if flyer_wait > 0.0: return "传单还要等 %d 秒才能再发" % ceili(flyer_wait)
-	return ""
+	return CommandText.format(command_status("send_flyers", {}), shop)
 
 
 func send_flyers() -> String:
-	var error := flyer_error()
-	if not error.is_empty(): return error
-	if shop.fulfillment.handoff == "single":
-		flyer_left += flyer_customers()
-		flyer_timer = 0.0
-		flyer_ready_at = clock + flyer_cooldown()
-	else:
-		flyer_wave = shop.flyer.wave_seconds
-		flyer_wait = flyer_cooldown()
-		flyer_pending += flyer_customers()
-		flyer_clock = 0.0
-	events.emit("flyer", {})
-	return ""
+	return CommandText.format(execute_command("send_flyers", {}), shop)
 
 
 ## 来一波客人（一次性效果 customer_wave）：按传单的入场方式进店。
@@ -2545,17 +2380,7 @@ func trigger_event(ev: SpecEvent) -> void:
 
 ## 玩家在卡片上选了第 choice 个选项。选项 {"label", "cost", "accept": true/false}；accept 为 false = 拒绝。
 func answer_event(choice: int) -> String:
-	if pending_events.is_empty(): return "现在没有卡片"
-	var ev: SpecEvent = pending_events[0]
-	if choice < 0 or choice >= ev.choices.size(): return "没有这一项"
-	var option: Dictionary = ev.choices[choice]
-	var cost := int(option.get("cost", 0))
-	if gold < cost: return "金币不足，需要 %d" % cost
-	pending_events.pop_front()
-	gold -= cost
-	if bool(option.get("accept", true)): _apply_event(ev)
-	events.emit("event_answered", {"id": ev.id, "choice": choice})
-	return ""
+	return CommandText.format(execute_command("answer_event", {"choice": choice}), shop)
 
 
 func _apply_event(ev: SpecEvent) -> void:
@@ -2597,3 +2422,294 @@ func shop_complete() -> bool:
 
 func total_sold() -> int:
 	return sold
+
+
+## Read-only command validation. Only the stable code determines validity.
+func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
+	var validation := CommandResult.validate(command, arguments)
+	if not CommandResult.is_ok(validation): return validation
+	var params := arguments.duplicate(true)
+	params.command = command
+	var code := CommandResult.OK
+	match command:
+		"unlock":
+			var id: String = arguments.id
+			var st := shop.station(id)
+			if st == null: code = CommandResult.UNKNOWN_STATION
+			elif station_unlocked(id): code = CommandResult.STATION_ALREADY_UNLOCKED
+			else:
+				var stage := shop.stage_of(id)
+				if stage < 0: code = CommandResult.STATION_NOT_UNLOCKABLE
+				elif stage > 0 and not is_open(): code = CommandResult.SHOP_NOT_OPEN
+				elif stage > 0 and stage > stage_index + 1:
+					code = CommandResult.STAGE_REQUIRED
+					params.stage = stage - 1
+				elif stage == 0 and is_open(): code = CommandResult.STATION_ALREADY_UNLOCKED
+				elif gold < shop.stages[maxi(stage, 0)].cost:
+					code = CommandResult.INSUFFICIENT_GOLD
+					params.required = shop.stages[maxi(stage, 0)].cost
+		"unlock_box":
+			var st := shop.station(supply_id)
+			var material: SpecMaterial = st.material(arguments.material) if st != null else null
+			if material == null or not boxes.has(arguments.material): code = CommandResult.UNKNOWN_BOX
+			elif boxes[arguments.material]: code = CommandResult.BOX_ALREADY_UNLOCKED
+			elif not station_unlocked(material.box_station):
+				code = CommandResult.STATION_REQUIRED
+				params.station = material.box_station
+			elif gold < material.box_cost:
+				code = CommandResult.INSUFFICIENT_GOLD
+				params.required = material.box_cost
+		"upgrade":
+			var key: String = arguments.key
+			var track := track_of(key)
+			if track == null or track.levels.is_empty() or not levels.has(key): code = CommandResult.NO_UPGRADE
+			else:
+				var parts := key.split("/")
+				if not key.begins_with("staff/") and key != "flyer":
+					if not station_unlocked(parts[0]) and shop.station(parts[0]).companion_of.is_empty():
+						code = CommandResult.STATION_REQUIRED
+						params.station = parts[0]
+					elif parts.size() > 1:
+						if boxes.has(parts[1]) and not boxes[parts[1]]:
+							code = CommandResult.BOX_REQUIRED
+							params.material = parts[1]
+						elif level(parts[0]) < track.requires_level:
+							code = CommandResult.STATION_LEVEL_REQUIRED
+							params.station = parts[0]
+							params.required_level = track.requires_level
+				if code == CommandResult.OK:
+					if key == "flyer" and not is_open(): code = CommandResult.SHOP_NOT_OPEN
+					else:
+						var cost := upgrade_cost(key)
+						if cost < 0: code = CommandResult.MAX_LEVEL
+						elif gold < cost:
+							code = CommandResult.INSUFFICIENT_GOLD
+							params.required = cost
+		"buy_seat":
+			if not is_open(): code = CommandResult.SHOP_NOT_OPEN
+			elif seat_cost() < 0: code = CommandResult.SEATS_FULL
+			else:
+				var group := buy_group()
+				if int(seats.get(group.id, 0)) + _seat_step(group) > seat_cap(group): code = CommandResult.SEAT_STAGE_REQUIRED
+				elif gold < seat_cost():
+					code = CommandResult.INSUFFICIENT_GOLD
+					params.required = seat_cost()
+		"send_flyers":
+			if not is_open(): code = CommandResult.SHOP_NOT_OPEN
+			elif shop.fulfillment.handoff == "single":
+				if flyer_ready_at - clock > 0.0:
+					code = CommandResult.FLYER_COOLDOWN
+					params.seconds = ceili(flyer_ready_at - clock)
+			elif flyer_wave > 0.0:
+				code = CommandResult.FLYER_ACTIVE
+				params.seconds = ceili(flyer_wave)
+			elif flyer_wait > 0.0:
+				code = CommandResult.FLYER_COOLDOWN
+				params.seconds = ceili(flyer_wait)
+		"hire":
+			var cost := hire_cost()
+			if cost < 0: code = CommandResult.HIRE_EXHAUSTED
+			elif shop.staff.zones.is_empty() and workers.size() >= staff_slots():
+				code = CommandResult.STAFF_FULL
+				params.count = staff_slots()
+			elif gold < cost:
+				code = CommandResult.INSUFFICIENT_GOLD
+				params.required = cost
+		"deploy_worker":
+			var worker := worker_by_id(arguments.id)
+			var post: String = arguments.get("post", "")
+			params.post = post
+			if worker.is_empty(): code = CommandResult.UNKNOWN_WORKER
+			elif not worker.deployed:
+				if post.is_empty() and not CommandResult.is_ok(_role_room_status("")) and CommandResult.is_ok(_role_room_status(counter_id)):
+					post = counter_id
+					params.post = post
+				if not post.is_empty() and post != counter_id:
+					if not post in seatables: code = CommandResult.NOT_SEATABLE
+					elif post_owner(post, arguments.id) != -1: code = CommandResult.POST_OCCUPIED
+				if code == CommandResult.OK:
+					var room := _role_room_status(post, arguments.id)
+					code = room.code
+					params.merge(room.params)
+		"place_worker":
+			return _placement_status(arguments.id, arguments.post, arguments.get("point", Vector2.INF))
+		"recall_worker":
+			var worker := worker_by_id(arguments.id)
+			if worker.is_empty(): code = CommandResult.UNKNOWN_WORKER
+			elif not worker.deployed: code = CommandResult.WORKER_ALREADY_WAITING
+		"buy_connection":
+			var connection := _connection(arguments.id)
+			if connection == null or not connection.enabled: code = CommandResult.UNKNOWN_CONNECTION
+			elif belts.has(arguments.id): code = CommandResult.CONNECTION_ALREADY_BUILT
+			elif not is_open() or stage_index < connection.stage:
+				code = CommandResult.STAGE_REQUIRED
+				params.stage = connection.stage
+			elif gold < connection.cost:
+				code = CommandResult.INSUFFICIENT_GOLD
+				params.required = connection.cost
+		"answer_event":
+			if pending_events.is_empty(): code = CommandResult.EVENT_MISSING
+			else:
+				var event: SpecEvent = pending_events[0]
+				if arguments.choice < 0 or arguments.choice >= event.choices.size(): code = CommandResult.INVALID_EVENT_CHOICE
+				else:
+					var cost := int(event.choices[arguments.choice].get("cost", 0))
+					if gold < cost:
+						code = CommandResult.INSUFFICIENT_GOLD
+						params.required = cost
+	return CommandResult.failure(code, params)
+
+
+func _role_room_status(post: String, exclude_id := -1) -> Dictionary:
+	var front := post == counter_id
+	var count := 0
+	for worker in workers:
+		if worker.id != exclude_id and (worker.post == counter_id) == front: count += 1
+	if front and count >= front_slots(): return CommandResult.failure(CommandResult.FRONT_FULL, {"count": front_slots()})
+	if not front and count >= kitchen_slots(): return CommandResult.failure(CommandResult.KITCHEN_FULL, {"count": kitchen_slots()})
+	return CommandResult.success()
+
+
+func _placement_status(id: int, post: String, point: Vector2) -> Dictionary:
+	var params := {"command": "place_worker", "id": id, "post": post}
+	if not shop.staff.can_drag: return CommandResult.failure(CommandResult.REASSIGNMENT_DISABLED, params)
+	var worker := worker_by_id(id)
+	if worker.is_empty(): return CommandResult.failure(CommandResult.UNKNOWN_WORKER, params)
+	if not post.is_empty():
+		if post != counter_id and not post in seatables: return CommandResult.failure(CommandResult.INVALID_POST, params)
+		if not station_unlocked(post):
+			params.station = post
+			return CommandResult.failure(CommandResult.STATION_REQUIRED, params)
+		if post != counter_id and post_owner(post, id) != -1: return CommandResult.failure(CommandResult.POST_OCCUPIED, params)
+	var front := post == counter_id
+	if not worker.deployed or front != (worker.post == counter_id):
+		var room := _role_room_status(post, id)
+		if not CommandResult.is_ok(room):
+			params.merge(room.params)
+			return CommandResult.failure(room.code, params)
+	if front and post_owner(counter_id, id) != -1: return CommandResult.failure(CommandResult.POST_OCCUPIED, params)
+	var target: Vector2 = nav.post(post) if not post.is_empty() else (worker.pos if point == Vector2.INF else point)
+	if not nav.walkable(target, nav.point(counter_id)): return CommandResult.failure(CommandResult.POSITION_UNREACHABLE, params)
+	return CommandResult.success(params)
+
+
+## A successful check is committed once; no String adapter participates.
+func execute_command(command: String, arguments: Dictionary = {}) -> Dictionary:
+	var status := command_status(command, arguments)
+	if not CommandResult.is_ok(status): return status
+	match command:
+		"unlock": _commit_unlock(arguments.id)
+		"unlock_box": _commit_unlock_box(arguments.material)
+		"upgrade": _commit_upgrade(arguments.key)
+		"buy_seat": _commit_buy_seat()
+		"send_flyers": _commit_send_flyers()
+		"hire": _commit_hire()
+		"deploy_worker":
+			var worker := worker_by_id(arguments.id)
+			if not worker.deployed:
+				worker.deployed = true
+				workers.append(worker)
+				if not String(status.params.post).is_empty(): _seat_at(worker, status.params.post)
+				events.emit("deployed", {"id": arguments.id})
+		"place_worker": _commit_place_worker(arguments.id, arguments.post, arguments.get("point", Vector2.INF))
+		"recall_worker":
+			var worker := worker_by_id(arguments.id)
+			_cancel_job(worker)
+			worker.post = ""
+			worker.deployed = false
+			workers.erase(worker)
+			events.emit("recalled", {"id": arguments.id})
+		"buy_connection": _commit_buy_connection(arguments.id)
+		"answer_event":
+			var event: SpecEvent = pending_events.pop_front()
+			var option: Dictionary = event.choices[arguments.choice]
+			gold -= int(option.get("cost", 0))
+			if bool(option.get("accept", true)): _apply_event(event)
+			events.emit("event_answered", {"id": event.id, "choice": arguments.choice})
+	return status
+
+
+# Canonical commits are reached only after command_status succeeds.
+
+func _commit_unlock(id: String) -> void:
+	var stage := shop.stage_of(id)
+	gold -= shop.stages[stage].cost
+	for key in shop.stages[stage].stations:
+		unlocked[key] = true
+		for st in shop.stations:
+			if st.companion_of == key: unlocked[st.id] = true
+		for rule in shop.station(key).stock:
+			stations[key].stock = rule.start
+	stage_index = maxi(stage_index, stage)
+	nav.set_open(unlocked)
+	if shop.fulfillment.handoff == "single":
+		if id == shop.goals.opening_station: _next_customer = shop.fulfillment.first_customer_delay
+	elif orders.is_empty():
+		for unused in shop.fulfillment.opening_customers: _add_order()
+	events.emit("unlocked", {"station": id, "stage": stage})
+
+
+func _commit_unlock_box(material: String) -> void:
+	gold -= shop.station(supply_id).material(material).box_cost
+	boxes[material] = true
+	events.emit("box", {"material": material})
+
+
+func _commit_upgrade(key: String) -> void:
+	gold -= upgrade_cost(key)
+	levels[key] = int(levels[key]) + 1
+	_refresh_key(key)
+	events.emit("upgraded", {"key": key, "level": levels[key]})
+
+
+func _commit_buy_seat() -> void:
+	gold -= seat_cost()
+	var g := buy_group()
+	seats[g.id] = int(seats.get(g.id, 0)) + _seat_step(g)
+	events.emit("seat", {})
+
+
+func _commit_send_flyers() -> void:
+	if shop.fulfillment.handoff == "single":
+		flyer_left += flyer_customers()
+		flyer_timer = 0.0
+		flyer_ready_at = clock + flyer_cooldown()
+	else:
+		flyer_wave = shop.flyer.wave_seconds
+		flyer_wait = flyer_cooldown()
+		flyer_pending += flyer_customers()
+		flyer_clock = 0.0
+	events.emit("flyer", {})
+
+
+func _commit_hire() -> void:
+	gold -= hire_cost()
+	var kind := next_hire_kind()
+	var worker := _new_worker(kind, _hire_id(kind))
+	worker.source = "招募"
+	roster.append(worker)
+	if shop.staff.zones.is_empty():
+		worker.deployed = true
+		worker.pos = nav.point(shop.staff.home_anchor)
+		workers.append(worker)
+	events.emit("hired", {"id": worker.id, "kind": kind})
+
+
+func _commit_place_worker(id: int, post: String, point := Vector2.INF) -> void:
+	var worker := worker_by_id(id)
+	if not worker.deployed:
+		worker.deployed = true
+		workers.append(worker)
+		events.emit("deployed", {"id": id})
+	_cancel_job(worker)
+	worker.post = post
+	worker.pos = nav.post(post) if not post.is_empty() else (worker.pos if point == Vector2.INF else point)
+	events.emit("placed", {"id": id, "post": post})
+
+
+func _commit_buy_connection(id: String) -> void:
+	var c := _connection(id)
+	gold -= c.cost
+	belts[id] = true
+	belt_clock[id] = 0.0
+	events.emit("connection", {"id": id})
