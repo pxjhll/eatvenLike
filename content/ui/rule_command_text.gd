@@ -3,6 +3,7 @@ extends RefCounted
 
 const TEMPLATES := {
 	"ok": "", "unknown_command": "未知操作", "invalid_argument": "无效参数",
+	"session_unavailable": "当前无法操作",
 	"unknown_station": "未知设备", "station_already_unlocked": "设备已经解锁",
 	"station_not_unlockable": "这台设备不能单独解锁", "shop_not_open": "请先开张",
 	"stage_required": "请先解锁{stage_name}", "insufficient_gold": "金币不足，需要 {required}",

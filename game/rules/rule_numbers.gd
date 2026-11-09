@@ -1,9 +1,19 @@
 extends RefCounted
 ## Numeric formulas shared by live rules and detached query snapshots.
 
+const TUNING_MIN := 0.25
+const TUNING_MAX := 3.0
+const TUNING_STEP := 0.05
+
+static func tuning_limits() -> Dictionary:
+	return {"min": TUNING_MIN, "max": TUNING_MAX, "step": TUNING_STEP}
+
+static func normalize_tuning(value: float, snap := false) -> float:
+	return clampf(snappedf(value, TUNING_STEP) if snap else value, TUNING_MIN, TUNING_MAX)
+
 
 static func tuned(tune: Dictionary, key: String) -> float:
-	return clampf(float(tune.get(key, 1.0)), 0.25, 3.0)
+	return normalize_tuning(float(tune.get(key, 1.0)))
 
 
 static func speed(mods: RuleModifiers, id: String) -> float:

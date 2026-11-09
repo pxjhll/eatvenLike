@@ -22,7 +22,7 @@ func setup(view: Node2D, hud: Control) -> void:
 	_hud = hud
 	add_theme_constant_override("separation", 12)
 	_item("角色预览", "hat", func() -> void: hud.page_node("characters").select("rabbit"); hud.open_page("characters"))
-	pause_button = _item("暂停营业", "pause", func() -> void: view.rules.paused = not view.rules.paused; hud.refresh())
+	pause_button = _item("暂停营业", "pause", func() -> void: view.execute_command("set_paused", {"paused": not view.rules.paused}); hud.refresh())
 	save_button = _item("保存进度", "save", func() -> void: view.save_now())
 	var audio_controls := AudioControls.new()
 	audio_controls.name = "AudioControls"

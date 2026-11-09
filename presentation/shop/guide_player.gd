@@ -132,7 +132,7 @@ func _opening_done() -> bool:
 
 func _start(id: String) -> void:
 	active = id
-	_staff_at_start = _view.rules.workers.size()
+	_staff_at_start = _view.view.deployed_count()
 	var step := _step()
 	if step.style == "card":
 		_hud.open_page("shop")
@@ -280,9 +280,9 @@ func _holds(condition: String) -> bool:
 		"box_affordable": return not rules.pending_box().is_empty() and rules.command_status("unlock_box", {"material": rules.pending_box()}).code == "ok"
 		"no_box": return rules.pending_box().is_empty()
 		"kitchen_staff": return rules.kitchen_staff() == int(arg)
-		"room": return rules.workers.size() < rules.staff_slots()
+		"room": return _view.view.deployed_count() < rules.staff_slots()
 		"complete": return rules.shop_complete()
-		"hired": return rules.workers.size() > _staff_at_start
+		"hired": return _view.view.deployed_count() > _staff_at_start
 		"angry": return _angry_cause() == arg
 	return false
 
@@ -290,7 +290,7 @@ func _holds(condition: String) -> bool:
 func _number(name: String) -> float:
 	var rules: ShopRules = _view.rules
 	match name:
-		"staff": return rules.workers.size()
+		"staff": return _view.view.deployed_count()
 		"opening": return mini(2, rules.staff_slots())
 		"stage": return rules.stage_index
 		"kitchen_staff": return rules.kitchen_staff()
@@ -302,65 +302,25 @@ func _waiting() -> Array:
 
 
 func _any_angry() -> bool:
+	var snapshot: Dictionary = _view.view.guide_snapshot()
 	if _single():
-		var lost: int = _view.rules.lost
+		var lost: int = snapshot.lost
 		var more := _lost_seen >= 0 and lost > _lost_seen
 		_lost_seen = lost
 		if more: return true
-		for id in _view.rules.queue:
-			if _view.rules.order_mood(_view.rules.customer(id)) >= 2: return true
-		return false
-	for order in _view.rules.orders:
-		if _view.rules.order_mood(order) >= 2: return true
-	return false
+	return snapshot.any_angry
 
 
-## 客人为什么等急了，按玩家会先修的顺序：堂食坐满 → 还有空岗位 → 做这杯的机器
 func _angry_cause() -> String:
-	var rules: ShopRules = _view.rules
-	if _single():
-		var g := rules.buy_group()
-		if g != null and g.purpose == "wait" and rules.seat_cost() >= 0 and int(rules.seats.get(g.id, 0)) < rules.seat_cap(g): return "seats"
-		if rules.workers.size() < rules.staff_slots(): return "staff"
-		return "machine"
-	var angry: Array = rules.orders.filter(func(order: Dictionary) -> bool: return rules.order_mood(order) >= 2)
-	if angry.is_empty(): return ""
-	var dine_in: bool = angry.any(func(order: Dictionary) -> bool: return not order.get("takeaway", false))
-	if dine_in and rules.dine_group() != null and rules.free_seats() <= 0 and rules.seat_cost() >= 0: return "seats"
-	if rules.workers.size() < rules.staff_slots(): return "staff"
-	return "machine"
+	return _view.view.guide_snapshot().angry_cause
 
 
-## 等得最久的那杯是哪台机器做的：前厅饮品 = 它自己的机器，后厨饮品 = 工序链上第一台
 func _single() -> bool:
-	return _view.rules.shop.fulfillment.handoff == "single"
+	return _view.shop.fulfillment.handoff == "single"
 
 
 func _slow_machine() -> String:
-	var rules: ShopRules = _view.rules
-	if _single():
-		# 排得最久的客人点的菜：工序里第一台能升级的机器
-		var dish := ""
-		for id in rules.queue:
-			dish = String(rules.customer(id).get("kind", ""))
-			break
-		if dish.is_empty() and not rules.dish_ids.is_empty(): dish = rules.dish_ids[0]
-		var d := rules.shop.dish(dish)
-		if d != null:
-			for step in d.steps:
-				var st := rules.shop.station(step.station)
-				if st != null and not st.tracks.is_empty() and rules.station_unlocked(st.id): return st.id
-		return rules.counter_id
-	var oldest: Dictionary = {}
-	for order in rules.orders:
-		if oldest.is_empty() or order.wait > oldest.wait: oldest = order
-	var dish: String = oldest.get("dish", rules.dish_ids[0] if not rules.dish_ids.is_empty() else "")
-	var chain: Array = rules.chains.get(dish, [])
-	if not chain.is_empty() and not rules.shop.dish(dish).front: return chain[0]
-	for s in rules.shop.dish(dish).steps:
-		var st := rules.shop.station(s.station)
-		if st != null and st.block != "counter": return st.id
-	return rules.counter_id
+	return _view.view.guide_snapshot().slow_machine
 
 
 func _fill(text: String, step: SpecGuideStep) -> String:

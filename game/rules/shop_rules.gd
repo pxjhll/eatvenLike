@@ -2433,6 +2433,16 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 	params.command = command
 	var code := CommandResult.OK
 	match command:
+		"set_paused":
+			params.previous = paused
+			params.value = arguments.paused
+			params.changed = paused != arguments.paused
+		"set_tuning":
+			if arguments.key not in ["seat", "customer", "walk", "work", "price"] and shop.station(arguments.key) == null:
+				return CommandResult.failure(CommandResult.INVALID_ARGUMENT, {"command": command, "argument": "key"})
+			params.previous = tuned(arguments.key)
+			params.value = Numbers.normalize_tuning(float(arguments.value), arguments.get("snap", false))
+			params.changed = not is_equal_approx(params.previous, params.value)
 		"unlock":
 			var id: String = arguments.id
 			var st := shop.station(id)
@@ -2599,6 +2609,8 @@ func execute_command(command: String, arguments: Dictionary = {}) -> Dictionary:
 	var status := command_status(command, arguments)
 	if not CommandResult.is_ok(status): return status
 	match command:
+		"set_paused": paused = status.params.value
+		"set_tuning": tune[arguments.key] = status.params.value
 		"unlock": _commit_unlock(arguments.id)
 		"unlock_box": _commit_unlock_box(arguments.material)
 		"upgrade": _commit_upgrade(arguments.key)

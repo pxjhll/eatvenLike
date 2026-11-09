@@ -7,12 +7,9 @@ const FILE := "user://tuning.cfg"
 var file_path := FILE
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Icons := preload("res://presentation/ui/reference_icons.gd")
-const TUNE_MIN := 0.25
-const TUNE_MAX := 3.0
 ## 机器行前面和后面的固定行：[键, 名字]
 const HEAD_ROWS := [["seat", "用餐时间"], ["customer", "来客间隔"]]
 const TAIL_ROWS := [["walk", "员工走路速度"], ["work", "员工干活速度"], ["price", "售价"]]
-const STEP := 0.05
 
 var game: Node
 ## [键, 名字]：开面板时按店铺数据算出来
@@ -45,10 +42,11 @@ func toggle() -> void:
 
 
 func set_value(key: String, value: float) -> void:
-	var before: float = game.rules.tuned(key)
-	game.rules.tune[key] = clampf(snappedf(value, STEP), TUNE_MIN, TUNE_MAX)
-	if not is_equal_approx(before, game.rules.tune[key]) and game.recorder != null: game.recorder.log_tune(key, game.rules.tune[key])
-	if _sliders.has(key) and not is_equal_approx(_sliders[key].value, game.rules.tune[key]): _sliders[key].set_value_no_signal(game.rules.tune[key])
+	var status: Dictionary = game.execute_command("set_tuning", {"key": key, "value": value, "snap": true})
+	if status.code != "ok": return
+	var normalized: float = status.params.value
+	if status.params.changed and game.recorder != null: game.recorder.log_tune(key, normalized)
+	if _sliders.has(key) and not is_equal_approx(_sliders[key].value, normalized): _sliders[key].set_value_no_signal(normalized)
 	refresh()
 	if persist: _save()
 
@@ -81,7 +79,7 @@ func _now(key: String) -> String:
 	var rules: ShopRules = game.rules
 	match key:
 		"seat": return "%.0f 秒" % rules.seat_seconds()
-		"customer": return "%.1f 秒一位" % rules._order_interval()
+		"customer": return "%.1f 秒一位" % rules.customer_interval()
 		"walk", "work": return ""
 		"price":
 			var dish: SpecDish = rules.shop.dishes[mini(1, rules.shop.dishes.size() - 1)]
@@ -153,11 +151,12 @@ func _build() -> void:
 		now_label.modulate = Color(1, 1, 1, 0.75)
 		name_box.add_child(now_label)
 		_nows[key] = now_label
+		var limits: Dictionary = game.view.tuning_limits()
 		var slider := HSlider.new()
 		slider.name = "Slider_" + key
-		slider.min_value = TUNE_MIN
-		slider.max_value = TUNE_MAX
-		slider.step = STEP
+		slider.min_value = limits.min
+		slider.max_value = limits.max
+		slider.step = limits.step
 		slider.value = game.rules.tuned(key)
 		slider.custom_minimum_size = Vector2(150, 29)
 		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -245,7 +244,7 @@ func fit_to_size(available: Vector2) -> void:
 
 func _mark() -> void:
 	if game.recorder == null: return
-	game.recorder.write({"t": int(game.rules.clock), "mark": true, "stage": game.rules.stage_index, "gold": game.rules.gold, "queue": game.rules.orders.size()})
+	game.recorder.write({"t": int(game.rules.clock), "mark": true, "stage": game.rules.stage_index, "gold": game.rules.gold, "queue": game.rules.queue_size()})
 	game._show_toast("已标出，录制里会看到这个时间点")
 	refresh()
 
@@ -297,7 +296,7 @@ func _load() -> void:
 	for row in rows:
 		var value: Variant = config.get_value("tune", row[0], 1.0)
 		if (value is float or value is int) and is_finite(float(value)):
-			game.rules.tune[row[0]] = clampf(float(value), TUNE_MIN, TUNE_MAX)
+			game.execute_command("set_tuning", {"key": String(row[0]), "value": value, "snap": false})
 
 
 func _save() -> void:

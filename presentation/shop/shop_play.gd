@@ -300,7 +300,7 @@ func restart() -> void:
 	_toast.hide()
 	_hint_text = ""
 	_reset_visuals()
-	if recorder != null: recorder.setup(rules)
+	if recorder != null: recorder.setup(view)
 	ui.open_page("shop")
 	_refresh(0.0)
 	_fit()
@@ -360,10 +360,11 @@ func _process(delta: float) -> void:
 
 
 func _refresh(delta: float) -> void:
+	var frame := view.render_snapshot()
 	_refresh_events()
 	ui.refresh()
 	var deployed := {}
-	for worker in rules.workers: deployed[int(worker.id)] = true
+	for worker in frame.workers: deployed[int(worker.id)] = true
 	for id in _actors.keys():
 		if not deployed.has(int(id)):
 			_actors[id].free()
@@ -371,15 +372,15 @@ func _refresh(delta: float) -> void:
 	for id in anchors.children("Connections"):
 		var art_name := String(anchors.meta("Connections/" + id, "art", ""))
 		var belt := art.find_child(art_name, true, false) if not art_name.is_empty() else null
-		if belt != null and belt.get_meta("art_layer", "") == "belts": belt.visible = rules.belts.has(id)
-	for worker in rules.workers:
+		if belt != null and belt.get_meta("art_layer", "") == "belts": belt.visible = frame.belts.has(id)
+	for worker in frame.workers:
 		if not _actors.has(worker.id):
 			var actor := _actor(String(worker.kind), _staff_height)
 			_sortables.add_child(actor)
 			_actors[worker.id] = actor
 		var actor: Node2D = _actors[worker.id]
 		actor.selected = ui.show_selection and int(worker.id) == selected_worker
-		actor.display(worker, rules.clock)
+		actor.display(worker, frame.clock)
 		if _z_by_y: actor.z_index = int(actor.position.y)
 		actor.task.visible = ui.show_selection and int(worker.id) == selected_worker and ui.page == "shop"
 		_show_put_down(worker)
@@ -396,7 +397,7 @@ func _refresh(delta: float) -> void:
 		_badges[id].visible = open and not working and not need.is_empty()
 		_badges[id].tooltip_text = "%s · 输入 %d · 加工 %d · 输出 %d" % [view.station_name(id), status.get("input", 0), status.get("processing", 0), status.get("output", 0)]
 	if _shelf != null:
-		_shelf.text = _t("chip_shelf", {"count": rules.shelf_count, "limit": rules.shelf_capacity()})
+		_shelf.text = _t("chip_shelf", {"count": frame.shelf_count, "limit": rules.shelf_capacity()})
 	if _seats != null and rules.dine_group() != null:
 		var seats := view.seats()
 		_seats.text = _t("chip_seats", {"used": seats.used, "total": seats.total})
@@ -404,21 +405,21 @@ func _refresh(delta: float) -> void:
 	_refresh_station_signs()
 	for post in _post_labels:
 		var owner := -1
-		for worker in rules.workers:
+		for worker in frame.workers:
 			if worker.get("post", "") == post:
 				owner = int(worker.id)
 				_post_labels[post].text = _t("chip_post_counter") if post == rules.counter_id else _t("chip_post")
 		_post_labels[post].visible = owner != -1
-	var staffing_warning := _staffing_warning()
+	var staffing_warning := _staffing_warning(frame.workers)
 	if not staffing_warning.is_empty() and _toast_left <= 0: _toast.text = staffing_warning
-	var moving := 0.0 if rules.paused or frozen() else delta
-	_update_cups()
-	_update_customers(moving)
+	var moving := 0.0 if frame.paused or frozen() else delta
+	_update_cups(frame)
+	_update_customers(moving, frame)
 	if _dining != null:
-		_dining.refresh(rules.seat_total(), rules.diners, _font, rules.clock, moving)
-	if rules.sold > _last_sold: _pop_income(int(rules.revenue) - _last_revenue)
-	_last_sold = rules.sold
-	_last_revenue = int(rules.revenue)
+		_dining.refresh(rules.seat_total(), frame.diners, _font, frame.clock, moving)
+	if frame.sold > _last_sold: _pop_income(int(frame.revenue) - _last_revenue)
+	_last_sold = frame.sold
+	_last_revenue = int(frame.revenue)
 
 
 func _actor(kind: String, height := 128.0) -> Node2D:
@@ -447,7 +448,7 @@ func _refresh_events() -> void:
 
 
 func answer_event(choice: int, id: String) -> void:
-	var status := rules.execute_command("answer_event", {"choice": choice})
+	var status := execute_command("answer_event", {"choice": choice})
 	if status.code != "ok":
 		_show_toast(view.command_message(status))
 		return
@@ -461,7 +462,7 @@ func answer_event(choice: int, id: String) -> void:
 func _build_world_labels() -> void:
 	var parent: Node = $Canvas/WorldLabels
 	for id in anchors.children("Stations"):
-		if not anchors.has("Stations/%s/Badge" % id) or not rules.stations.has(id): continue
+		if not anchors.has("Stations/%s/Badge" % id) or shop.station(id) == null: continue
 		var point := anchors.point("Stations/%s/Badge" % id)
 		var bar := ProgressBar.new()
 		bar.position = point
@@ -616,7 +617,7 @@ func _refresh_station_signs() -> void:
 		var st := shop.station(id)
 		var title: String = card.unlock.title if st.params.get("frame_title", "") == "stage" else view.station_name(id)
 		frame.text = _t("frame_unlock", {"title": title, "cost": card.unlock.cost})
-	ArtGroups.refresh(art, rules)
+	ArtGroups.refresh(art, view)
 	for id in _upgrade_marks:
 		var frame: Button = _station_buttons.get(id)
 		_upgrade_marks[id].visible = view.can_buy(id) and not (frame != null and frame.visible)
@@ -701,23 +702,24 @@ func _update_pops(delta: float) -> void:
 
 # ---------- 杯子、客人 ----------
 
-func _update_cups() -> void:
+func _update_cups(frame: Dictionary = {}) -> void:
+	if frame.is_empty(): frame = view.render_snapshot()
 	var draws := []
 	var shelf_points := anchors.points("Shelf/shelf")
 	var shelf_items: Array = []
-	for dish in rules.shelf_stock:
-		for unused in mini(int(rules.shelf_stock[dish]), shelf_points.size() - shelf_items.size()): shelf_items.append(dish)
+	for dish in frame.shelf_stock:
+		for unused in mini(int(frame.shelf_stock[dish]), shelf_points.size() - shelf_items.size()): shelf_items.append(dish)
 	for i in shelf_items.size():
 		draws.append({"pos": shelf_points[i], "item": shelf_items[i], "host": String(anchors.meta("Shelf/shelf", "host", ""))})
 	# 封好口的外带杯在货架另一格等前台来取
 	var rack_points := anchors.points("Shelf/rack")
-	if rules.stations.has(rules.RACK) and not rack_points.is_empty():
+	if frame.stations.has(rules.RACK) and not rack_points.is_empty():
 		var sealed: Array = []
-		for dish in rules.stations[rules.RACK].output:
-			for unused in mini(int(rules.stations[rules.RACK].output[dish]), rack_points.size() - sealed.size()): sealed.append(dish)
+		for dish in frame.stations[rules.RACK].output:
+			for unused in mini(int(frame.stations[rules.RACK].output[dish]), rack_points.size() - sealed.size()): sealed.append(dish)
 		for i in sealed.size():
 			draws.append({"pos": rack_points[i], "item": sealed[i], "host": String(anchors.meta("Shelf/rack", "host", ""))})
-	for belt in rules.belt_items:
+	for belt in frame.belt_items:
 		var route := PackedVector2Array(anchors.points("Connections/%s/Path" % belt.route))
 		if route.size() < 2: continue
 		var point := _along(route, float(belt.progress))
@@ -727,9 +729,9 @@ func _update_cups() -> void:
 	# 做好等人取的：一只杯子摆在机器旁边（数量看机器上的牌）
 	for id in anchors.children("Stations"):
 		var path := "Stations/%s/Buffer" % id
-		if not anchors.has(path) or not rules.stations.has(id): continue
-		for item in rules.stations[id].output:
-			if int(rules.stations[id].output[item]) > 0:
+		if not anchors.has(path) or not frame.stations.has(id): continue
+		for item in frame.stations[id].output:
+			if int(frame.stations[id].output[item]) > 0:
 				draws.append({"pos": anchors.point(path), "item": item, "host": String(anchors.meta(path, "host", ""))})
 				break
 	while _cups.size() < draws.size():
@@ -755,9 +757,10 @@ func _update_cups() -> void:
 		if _z_by_y: sprite.z_index = int(sort_y)
 
 
-func _update_customers(delta: float) -> void:
+func _update_customers(delta: float, frame: Dictionary = {}) -> void:
+	if frame.is_empty(): frame = view.render_snapshot()
 	if shop.fulfillment.handoff == "single":
-		_update_customers_single(delta)
+		_update_customers_single(delta, frame)
 		return
 	var active := {}
 	var queue := anchors.points("Queue")
@@ -767,7 +770,7 @@ func _update_customers(delta: float) -> void:
 	var pickup := anchors.point("Counter/Pickup", queue[0] if not queue.is_empty() else entrance)
 	# 客人从门口进来、走过道、在柜台前排队；有座位的先坐下，递杯时走到柜台一头取
 	var standing := 0
-	for order: Dictionary in rules.orders:
+	for order: Dictionary in frame.orders:
 		var seat := int(order.get("seat", -1))
 		var i := standing
 		if seat < 0:
@@ -794,12 +797,12 @@ func _update_customers(delta: float) -> void:
 		if seat >= 0 and not order.reserved and point.distance_to(goal) <= 1:
 			pose.seated = true
 			pose.facing = int(anchors.meta("Seats/%s/%d" % [rules.dine_group().id, seat], "facing", 2))
-		_customers[order.id].display(pose, rules.clock)
+		_customers[order.id].display(pose, frame.clock)
 		_customers[order.id].z_index = 1 if pose.get("seated", false) else 0
 		if pose.get("seated", false): _customers[order.id].position.y -= 14.0
 	# 拿到餐的客人离开队伍：堂食的走去分到的座位，其余的出门
 	var seats_now := {}
-	for diner in rules.diners: seats_now[int(diner.seat)] = true
+	for diner in frame.diners: seats_now[int(diner.seat)] = true
 	var new_seats: Array = seats_now.keys().filter(func(seat: int) -> bool: return not _known_seats.has(seat))
 	new_seats.sort()
 	_known_seats = seats_now
@@ -850,25 +853,26 @@ static func _queue_spot(queue: Array, slot: int) -> Vector2:
 	return last + step * float(slot - queue.size() + 1)
 
 
-func _update_customers_single(delta: float) -> void:
+func _update_customers_single(delta: float, frame: Dictionary = {}) -> void:
+	if frame.is_empty(): frame = view.render_snapshot()
 	var queue := anchors.points("Queue")
 	var entrance := anchors.point("Entrance", Vector2(_world_size.x / 2.0, _world_size.y))
 	var waiting := anchors.points("Waiting")
 	var group := _wait_group()
 	var seats := anchors.points("Seats/" + group) if not group.is_empty() else []
 	var free_seats := mini(rules.wait_seats(), seats.size())
-	var standing := rules.current_stage().queue_capacity
+	var standing: int = frame.stage_queue_capacity
 	var spots := {}
 	var aside := 0
 	# 坐下的客人记住自己那个坐垫，直到拿到餐离开都不换位置
 	var present := {}
-	for c: Dictionary in rules.customers:
+	for c: Dictionary in frame.customers:
 		if c.state in ["queue", "paid"]: present[c.id] = true
 	for id in _seat_of.keys():
 		if not present.has(id) or int(_seat_of[id]) >= free_seats: _seat_of.erase(id)
 	# 场景里没有等候区（Waiting）的店：点完单没坐垫的客人留在柜台前排着，排在还没点单的人前面
 	var in_line := 0
-	for c: Dictionary in rules.customers:
+	for c: Dictionary in frame.customers:
 		if c.state != "paid": continue
 		var seat := _take_seat(c.id, free_seats)
 		if seat >= 0:
@@ -880,8 +884,8 @@ func _update_customers_single(delta: float) -> void:
 			spots[c.id] = [_queue_spot(queue, in_line), false]
 			in_line += 1
 	var line := 0
-	for i in rules.queue.size():
-		var id: int = rules.queue[i]
+	for i in frame.queue.size():
+		var id: int = frame.queue[i]
 		var seated := _seat_of.has(id)
 		if not seated and (i < standing or _seat_of.size() >= free_seats) and not queue.is_empty():
 			spots[id] = [_queue_spot(queue, line + in_line), false]
@@ -890,7 +894,7 @@ func _update_customers_single(delta: float) -> void:
 		var seat := _take_seat(id, free_seats)
 		if seat >= 0: spots[id] = [seats[seat], true]
 	var patience: float = shop.fulfillment.leave_after
-	for c: Dictionary in rules.customers:
+	for c: Dictionary in frame.customers:
 		if not spots.has(c.id): continue
 		if not _customers.has(c.id):
 			var actor := _actor(Characters.customer_art(int(c.id)), _customer_height)
@@ -911,7 +915,7 @@ func _update_customers_single(delta: float) -> void:
 			actor.show_order(String(c.kind), -1.0, rules.order_mood(c))
 		else:
 			actor.show_order(String(c.kind), -1.0)
-		actor.display({"pos": point, "walking": not arrived, "seated": spots[c.id][1] and arrived, "phase": "idle", "task_label": ""}, rules.clock)
+		actor.display({"pos": point, "walking": not arrived, "seated": spots[c.id][1] and arrived, "phase": "idle", "task_label": ""}, frame.clock)
 		if _z_by_y: actor.z_index = int(actor.position.y)
 	# 不在规则层里的客人：走到出口（场景没放 Exit 就回门口）再消失
 	var exit := anchors.point("Exit", entrance)
@@ -921,7 +925,7 @@ func _update_customers_single(delta: float) -> void:
 		actor.show_order("", -1.0)
 		var point: Vector2 = Vector2(_customer_positions[id]).move_toward(exit, delta * _customer_speed)
 		_customer_positions[id] = point
-		actor.display({"pos": point, "walking": true, "phase": "idle", "task_label": ""}, rules.clock)
+		actor.display({"pos": point, "walking": true, "phase": "idle", "task_label": ""}, frame.clock)
 		if _z_by_y: actor.z_index = int(actor.position.y)
 		if point.distance_to(exit) <= 4.0:
 			actor.free()
@@ -961,7 +965,7 @@ func _build_tuning() -> void:
 	recorder = Recorder.new()
 	recorder.enabled = session.recording_enabled
 	recorder.file_path = session.recording_path
-	recorder.setup(rules)
+	recorder.setup(view)
 	var shade := ColorRect.new()
 	shade.name = "TuningShade"
 	shade.color = Color(0.12, 0.09, 0.065, 0.34)
@@ -1085,10 +1089,10 @@ func hire_worker() -> void:
 		_show_toast(_t("no_room"))
 		return
 	var gold_before := rules.gold
-	if rules.execute_command("hire").code == "ok":
+	if execute_command("hire").code == "ok":
 		_bought("hire", gold_before)
 		selected_worker = int(all_staff().back().id)
-		var deployed: bool = staff_is_deployed(selected_worker) or (rules.execute_command("deploy_worker", {"id": selected_worker}).code == "ok")
+		var deployed: bool = staff_is_deployed(selected_worker) or (execute_command("deploy_worker", {"id": selected_worker}).code == "ok")
 		_show_toast(_t("hired_deployed") if deployed else _t("hired_roster"))
 		save_now(false)
 	_refresh(0.0)
@@ -1097,7 +1101,7 @@ func hire_worker() -> void:
 func buy_staff_upgrade(side: String) -> void:
 	var info := view.staff_track(side)
 	var gold_before := rules.gold
-	var status := rules.execute_command("upgrade", {"key": "staff/" + side})
+	var status := execute_command("upgrade", {"key": "staff/" + side})
 	if status.code == "ok": _bought("staff_%s/%s" % [side, info.name], gold_before)
 	_show_toast(view.command_message(status) if status.code != "ok" else _t("staff_upgraded", {"side": info.title, "name": info.name}))
 	if status.code == "ok": save_now(false)
@@ -1111,18 +1115,22 @@ func select_worker(id: int, from_card := false) -> void:
 
 
 func all_staff() -> Array:
-	return rules.roster
+	return view.roster_snapshot()
 
 
 func staff_is_deployed(id: int) -> bool:
-	for worker in rules.workers:
-		if int(worker.id) == id: return true
-	return false
+	return view.is_deployed(id)
+
+
+func execute_command(command: String, arguments: Dictionary = {}) -> Dictionary:
+	if session == null:
+		return {"code": "session_unavailable", "params": {"command": command}}
+	return session.execute_command(command, arguments)
 
 
 func toggle_deployment() -> void:
 	var returning := staff_is_deployed(selected_worker)
-	var status := rules.execute_command("recall_worker" if returning else "deploy_worker", {"id": selected_worker})
+	var status := execute_command("recall_worker" if returning else "deploy_worker", {"id": selected_worker})
 	var message: String = view.command_message(status) if status.code != "ok" else _t("recalled") if returning else _t("deployed")
 	if status.code == "ok" and returning and carrier_warning(): message = _t("no_carrier")
 	_show_toast(message)
@@ -1139,13 +1147,13 @@ func station_action(action: String, station: String, material := "") -> void:
 	var status := {"code": "unknown_command", "params": {"command": action}}
 	var gold_before := rules.gold
 	match action:
-		"unlock": status = rules.execute_command("unlock", {"id": station})
-		"upgrade": status = rules.execute_command("upgrade", {"key": station})
-		"material": status = rules.execute_command("upgrade", {"key": station + "/" + material})
-		"box": status = rules.execute_command("unlock_box", {"material": material})
-		"seat": status = rules.execute_command("buy_seat")
-		"flyers": status = rules.execute_command("send_flyers")
-		"flyer_upgrade": status = rules.execute_command("upgrade", {"key": "flyer"})
+		"unlock": status = execute_command("unlock", {"id": station})
+		"upgrade": status = execute_command("upgrade", {"key": station})
+		"material": status = execute_command("upgrade", {"key": station + "/" + material})
+		"box": status = execute_command("unlock_box", {"material": material})
+		"seat": status = execute_command("buy_seat")
+		"flyers": status = execute_command("send_flyers")
+		"flyer_upgrade": status = execute_command("upgrade", {"key": "flyer"})
 	_show_toast(view.command_message(status) if status.code != "ok" else _t("done_" + action) if DEFAULT_TEXTS.has("done_" + action) else _t("done_upgrade"))
 	if status.code == "ok":
 		var key := station + ("/" + material if not material.is_empty() else "")
@@ -1156,7 +1164,7 @@ func station_action(action: String, station: String, material := "") -> void:
 
 func buy_connection(id: String) -> void:
 	var before := rules.gold
-	var status := rules.execute_command("buy_connection", {"id": id})
+	var status := execute_command("buy_connection", {"id": id})
 	if status.code != "ok":
 		_show_toast(view.command_message(status))
 		return
@@ -1181,10 +1189,11 @@ func _show_toast(text: String) -> void:
 	_toast.visible = true
 
 
-func _staffing_warning() -> String:
-	if rules.workers.is_empty(): return _t("no_staff")
+func _staffing_warning(workers: Array = []) -> String:
+	if workers.is_empty(): workers = view.deployed_snapshot()
+	if workers.is_empty(): return _t("no_staff")
 	if shop.staff.zones.is_empty(): return ""
-	for worker in rules.workers:
+	for worker in workers:
 		if String(worker.get("post", "")).is_empty(): return ""
 	var kitchen_open := false
 	for st in shop.stations:
