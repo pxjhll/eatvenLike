@@ -59,7 +59,9 @@ func start() -> Error:
 			speed = 1.0
 			guides_seen = []
 		else:
-			rules = store.load_game()
+			var candidate := store.load_game()
+			if store.load_error != OK: return _fail(store.load_error, store.last_error)
+			rules = candidate
 			speed = store.loaded_speed
 			guides_seen = store.loaded_guides.duplicate()
 	started = true

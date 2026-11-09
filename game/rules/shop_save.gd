@@ -2,11 +2,12 @@ class_name ShopSave
 extends RefCounted
 ## 通用店内存档（规格 §3.12）：文件名由 SpecShop.save_file 指定，留空时用 user://shop_<店铺 id>.json。
 ## 存 ShopRules 的整店状态；店铺流程不兼容时可以更换文件名，旧档保留原样。
-## 跨店的东西（开到第几家、结店纪录、永久加成）在 Profile 里，不在这里。旧格式存档作废，读到当没有。
-## 文件：{format, version, shop, speed, guides, state(base64 二进制), state_sha256}；读写都先校验，坏档改名留底。
+## 跨店的东西（开到第几家、结店纪录、永久加成）在 Profile 里，不在这里。
+## Version 2 adds content fingerprints; valid legacy version 1 refreshes current numeric definitions.
 
 const FORMAT := "shop_rules"
-const VERSION := 1
+const VERSION := 2
+const ContentContract := preload("res://game/rules/shop_content_contract.gd")
 
 var shop: SpecShop
 var path: String
@@ -15,6 +16,7 @@ var loaded_speed := 1.0
 var loaded_guides: Array = []
 var last_error := ""
 var _write_blocked := false
+var load_error: Error = OK
 
 
 static func path_for(shop_id: String) -> String:
@@ -36,64 +38,93 @@ func delete() -> void:
 	if exists(): DirAccess.remove_absolute(path)
 
 
-## 读档；没有或读不了就给一家新开的店（last_error 说明原因）。
+## Callers must check load_error before adopting the returned candidate.
 func load_game() -> ShopRules:
 	last_error = ""
+	load_error = OK
+	# Only an explicit load/retry clears the failed-quarantine seal.
+	_write_blocked = false
 	loaded_speed = 1.0
 	loaded_guides = []
-	var rules := ShopRules.new(shop)
-	var result := _read_existing()
-	if result.get("missing", false): return rules
+	var result := _assess_existing()
+	if result.get("missing", false): return ShopRules.new(shop)
 	if not result.get("error", "").is_empty():
 		last_error = result.error
-		if result.get("future", false): _write_blocked = true
-		elif _backup_corrupt() != OK: _write_blocked = true
-		return rules
-	var error := rules.load_dict(result.state)
-	if not error.is_empty():
-		last_error = "店铺存档状态无效：" + error
-		if _backup_corrupt() != OK: _write_blocked = true
+		if result.get("protected", false): load_error = ERR_UNAVAILABLE
+		else:
+			load_error = _backup_corrupt()
+			if load_error != OK: _write_blocked = true
 		return ShopRules.new(shop)
 	loaded_speed = result.speed
 	loaded_guides = result.guides
-	return rules
+	return result.rules
 
 
 func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 	last_error = ""
-	if rules == null or rules.shop.id != shop.id or not is_finite(speed) or speed <= 0.0:
-		last_error = "存档失败：店铺状态或播放速度无效"
+	if rules == null or rules.shop == null or rules.shop.id != shop.id or not is_finite(speed) or speed <= 0.0:
+		last_error = "Invalid shop state or playback speed."
 		return ERR_INVALID_PARAMETER
-	if _write_blocked:
-		last_error = "存档不能写入，已停止写入以保留原文件"
-		return ERR_UNAVAILABLE
+	var content := ContentContract.describe(shop)
+	if ContentContract.describe(rules.shop) != content:
+		last_error = "Rules and store content differ; reload current content before saving."
+		return ERR_INVALID_PARAMETER
 	var state := rules.to_dict()
-	var existing := _read_existing()
-	if existing.get("future", false):
-		_write_blocked = true
-		last_error = existing.error
+	var state_error := ShopRules.new(shop).load_dict(state)
+	if not state_error.is_empty():
+		last_error = "Invalid outgoing shop state: " + state_error
+		return ERR_INVALID_DATA
+	if _write_blocked:
+		last_error = "Save blocked after failed quarantine; repair the file and retry loading."
 		return ERR_UNAVAILABLE
-	# A caller may save without loading first (new-shop initialization, retry).
-	# Correct encoding/hash is not evidence that the previous business state is safe.
-	if not existing.get("missing", false) and existing.get("error", "").is_empty():
-		var semantic_error := ShopRules.new(shop).load_dict(existing.state)
-		if not semantic_error.is_empty(): existing.error = "店铺存档状态无效：" + semantic_error
-	if not existing.get("missing", false) and not existing.get("error", "").is_empty():
-		# 旧格式或坏档：先改名留底再写新的
+	# Every write, including fresh intent, assesses the file currently on disk.
+	var existing := _assess_existing()
+	if not existing.get("error", "").is_empty():
 		last_error = existing.error
-		var backup_error := _backup_corrupt()
-		if backup_error != OK:
+		if existing.get("protected", false): return ERR_UNAVAILABLE
+		var quarantine_error := _backup_corrupt()
+		if quarantine_error != OK:
 			_write_blocked = true
+			return quarantine_error
+	elif existing.get("refresh", false):
+		var backup_error := _backup_before_content_update()
+		if backup_error != OK:
+			last_error = "Cannot back up previous content save: %s" % error_string(backup_error)
 			return backup_error
 	var bytes := var_to_bytes(state)
-	var payload := {"format": FORMAT, "version": VERSION, "shop": shop.id, "speed": speed,
+	var payload := {"format": FORMAT, "version": VERSION, "shop": shop.id, "content": content, "speed": speed,
 		"state": Marshalls.raw_to_base64(bytes), "state_sha256": bytes.hex_encode().sha256_text()}
 	if not guides.is_empty(): payload.guides = guides.map(func(id: Variant) -> String: return str(id))
 	var error := SaveService.new(path).save(payload)
 	if error != OK:
-		last_error = "存档写入失败：%s" % error_string(error)
+		last_error = "Save write failed: %s" % error_string(error)
 		return error
 	last_error = ""
+	return OK
+
+
+func _assess_existing() -> Dictionary:
+	var result := _read_existing()
+	if result.get("missing", false) or not result.get("error", "").is_empty(): return result
+	var candidate := ShopRules.new(shop)
+	var error := candidate.load_dict(result.state, result.refresh)
+	if not error.is_empty():
+		return {"error": "Invalid shop state: " + error, "protected": result.refresh}
+	result.rules = candidate
+	return result
+
+
+func _backup_before_content_update() -> Error:
+	# Copy, never move: an unsuccessful migration must leave the original live.
+	var backup := "%s.pre-content-%d-%d" % [path, int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
+	var suffix := 0
+	while FileAccess.file_exists(backup):
+		suffix += 1
+		backup += "-%d" % suffix
+	var error := DirAccess.copy_absolute(path, backup)
+	if error != OK: return error
+	# Verify the durable copy before authorizing replacement.
+	if FileAccess.get_file_as_bytes(path) != FileAccess.get_file_as_bytes(backup): return ERR_FILE_CORRUPT
 	return OK
 
 
@@ -107,14 +138,32 @@ func _read_existing() -> Dictionary:
 	if json.parse(text) != OK or not json.data is Dictionary:
 		return {"error": "店铺存档 JSON 无法解析"}
 	var wrapper: Dictionary = json.data
-	if wrapper.get("format") != FORMAT or wrapper.get("shop") != shop.id:
+	if wrapper.get("format") != FORMAT:
 		return {"error": "店铺存档格式无效"}
+	var saved_shop: Variant = wrapper.get("shop")
+	if not saved_shop is String or saved_shop.is_empty(): return {"error": "Invalid saved shop ID."}
+	if saved_shop != shop.id:
+		return {"error": "Incompatible saved shop ID; original save retained.", "protected": true}
 	var version: Variant = wrapper.get("version")
 	if (not version is int and not version is float) or not is_finite(float(version)) or float(version) != floor(float(version)):
 		return {"error": "店铺存档版本无效"}
 	if version > VERSION:
-		return {"error": "存档版本高于当前程序，已停止写入以保留原文件", "future": true}
-	if version != VERSION: return {"error": "店铺存档版本不受支持"}
+		return {"error": "存档版本高于当前程序，已停止写入以保留原文件", "protected": true}
+	if version != 1 and version != VERSION: return {"error": "Unsupported shop save version."}
+	var refresh: bool = version == 1
+	if version == VERSION:
+		var content: Variant = wrapper.get("content")
+		if not content is Dictionary: return {"error": "Missing content metadata."}
+		var content_version: Variant = content.get("version")
+		if not (content_version is int or content_version is float) or not is_finite(float(content_version)) or float(content_version) != floor(float(content_version)):
+			return {"error": "Invalid content metadata version."}
+		if content_version > 1: return {"error": "Future content version; original save retained.", "protected": true}
+		if content_version != 1 or not _valid_hash(content.get("gameplay")) or not _valid_hash(content.get("structure")):
+			return {"error": "Invalid content metadata."}
+		var current := ContentContract.describe(shop)
+		if content.structure != current.structure:
+			return {"error": "Incompatible shop content; original save retained. Restore compatible content and retry.", "protected": true}
+		refresh = content.gameplay != current.gameplay
 	var speed := _read_speed(wrapper.get("speed"))
 	if not is_finite(speed) or speed <= 0.0: return {"error": "店铺存档播放速度无效"}
 	var encoded: Variant = wrapper.get("state")
@@ -141,7 +190,14 @@ func _read_existing() -> Dictionary:
 	if raw_guides is Array:
 		for id in raw_guides:
 			if id is String: guides.append(id)
-	return {"state": state, "speed": speed, "guides": guides}
+	return {"state": state, "speed": speed, "guides": guides, "refresh": refresh}
+
+
+func _valid_hash(value: Variant) -> bool:
+	if not value is String or value.length() != 64: return false
+	for character in value:
+		if not character in "0123456789abcdef": return false
+	return true
 
 
 func _read_speed(value: Variant) -> float:

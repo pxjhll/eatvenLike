@@ -23,7 +23,7 @@ func _path() -> String:
 func _write_payload(path: String, data: Dictionary) -> String:
 	var bytes := var_to_bytes(data)
 	var text := JSON.stringify({"format": ShopSave.FORMAT, "version": ShopSave.VERSION, "shop": data.shop,
-		"speed": 1.0, "state": Marshalls.raw_to_base64(bytes), "state_sha256": bytes.hex_encode().sha256_text()})
+		"content": preload("res://game/rules/shop_content_contract.gd").describe(TEA), "speed": 1.0, "state": Marshalls.raw_to_base64(bytes), "state_sha256": bytes.hex_encode().sha256_text()})
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	file.store_string(text)
 	file.close()
