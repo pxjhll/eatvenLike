@@ -142,6 +142,10 @@ func test_nested_mutation_and_retained_plans_are_detached_from_definitions() -> 
 	var retained := roles.duplicate(true)
 	var rows: Array = planner.single_steps(shop, "c1", order)
 	var original_rows := rows.duplicate(true)
+	var retained_roles: Dictionary = planner.derive(shop)
+	var retained_rows: Array = planner.single_steps(shop, "c1", order)
+	var retained_roles_expected := retained_roles.duplicate(true)
+	var retained_rows_expected := retained_rows.duplicate(true)
 	roles.chains.main.append("mutation")
 	roles.station_input["pot"] = "mutation"
 	roles.pots.clear()
@@ -153,10 +157,14 @@ func test_nested_mutation_and_retained_plans_are_detached_from_definitions() -> 
 	shop.dishes[0].steps[0].label = "changed definition"
 	shop.dishes[0].steps[0].produces["third"] = 1
 	shop.stations[5].id = "new-pot"
-	check_eq(original_rows[2].label, "cook label", "retained row does not follow later resource edits")
-	check_eq(retained.pots, ["pot"], "retained roles do not follow later resource edits")
-	check_eq(planner.single_steps(shop, "c1", order)[2].label, "changed definition", "new planning observes current definition")
-	check_eq(planner.derive(shop).pots, ["new-pot"], "derive is not cached")
+	var updated_rows: Array = planner.single_steps(shop, "c1", order)
+	var updated_roles: Dictionary = planner.derive(shop)
+	check_eq(updated_rows[2].label, "changed definition", "new planning observes current definition")
+	check_eq(updated_roles.pots, ["new-pot"], "derive is not cached")
+	check(updated_rows != retained_rows_expected, "definition edit changes the new step plan")
+	check(updated_roles != retained_roles_expected, "definition edit changes the new role plan")
+	check_eq(retained_rows, retained_rows_expected, "retained returned rows remain completely unchanged after definition edits and later planning")
+	check_eq(retained_roles, retained_roles_expected, "retained returned roles remain completely unchanged after definition edits and later planning")
 	check(not _has_object(original_rows), "rows contain no Objects")
 
 func test_all_three_shops_planning_leaves_live_state_rng_events_and_inputs_unchanged() -> void:

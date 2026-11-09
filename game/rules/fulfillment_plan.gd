@@ -96,4 +96,3 @@ static func _option(shop: SpecShop, id: String) -> SpecOrderOption:
 	for option in shop.order_options:
 		if option.id == id: return option
 	return null
-
