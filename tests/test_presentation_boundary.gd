@@ -78,3 +78,31 @@ func test_art_groups_follow_current_model_without_live_runtime_access() -> void:
 	check_eq(shadow.visible, station.is_visible_in_tree(), "follower tracks owner visibility in current tree")
 	art.free()
 
+
+func test_recorder_logs_effective_legacy_tuning_without_rewriting_saved_values() -> void:
+	var rules := ShopRules.new(TEA)
+	var saved := rules.to_dict()
+	saved.tune = {"walk": 9.0, "price": 0.01, "work": 1.0, "legacy_knob": 4.5}
+	check_eq(rules.load_dict(saved), "", "finite legacy tuning remains loadable")
+	check_eq(rules.tune.walk, 9.0, "loader retains raw legacy saved value")
+	check_eq(rules.tuned("walk"), 3.0, "legacy gameplay uses effective maximum")
+	var before := var_to_bytes(rules.to_dict())
+	var recorder := preload("res://presentation/shop/shop_recorder.gd").new()
+	recorder.file_path = "user://boundary-legacy-recorder-%d-%d.txt" % [OS.get_process_id(), Time.get_ticks_usec()]
+	recorder.setup(ShopView.new(rules))
+	var entries: PackedStringArray = recorder.text().split("\n", false)
+	check_eq(entries.size(), 1, "setup records one real JSON session row")
+	if not entries.is_empty():
+		var entry: Dictionary = JSON.parse_string(entries[0])
+		check_eq(entry.tune, {"walk": 3.0, "price": 0.25, "legacy_knob": 3.0}, "recording uses effective bounds for valid and legacy keys, omitting default values")
+	check(var_to_bytes(rules.to_dict()) == before, "recording normalization never rewrites saved tuning or gameplay state")
+	# Fresh later samples must normalize new raw values instead of retaining setup data.
+	rules.tune.walk = -7.0
+	recorder.sample()
+	entries = recorder.text().split("\n", false)
+	check_eq(entries.size(), 2, "sample appends one real JSON row")
+	if entries.size() == 2:
+		var entry: Dictionary = JSON.parse_string(entries[1])
+		check_eq(entry.tune, {"walk": 0.25, "price": 0.25, "legacy_knob": 3.0}, "sample reads fresh effective tuning from detached progress")
+	check_eq(rules.tune.walk, -7.0, "sample leaves original raw legacy value unchanged")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(recorder.file_path))

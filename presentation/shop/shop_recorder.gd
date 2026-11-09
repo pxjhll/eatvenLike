@@ -2,6 +2,7 @@ extends RefCounted
 ## 试玩记录（通用）：每 60 秒店内时间一行 JSON（金币、杯数、走掉的客人、排队、人手、调参、等级），每次购买和调参也记一行，
 ## 追加到 user://playlog.txt，方便把一局复制出来分析。和店内存档分开。
 
+const Numbers := preload("res://game/rules/rule_numbers.gd")
 const FILE := "user://playlog.txt"
 ## Tests point this elsewhere so they never touch a real playtest log.
 var file_path := FILE
@@ -133,7 +134,8 @@ func _tune() -> Dictionary:
 	var result := {}
 	var tune: Dictionary = view.progress_snapshot().tune
 	for key in tune:
-		if not is_equal_approx(float(tune[key]), 1.0): result[key] = tune[key]
+		var value := Numbers.tuned(tune, key)
+		if not is_equal_approx(value, 1.0): result[key] = value
 	return result
 
 
