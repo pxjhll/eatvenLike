@@ -123,6 +123,7 @@ func _run() -> void:
 	suite.check(not rules.paused and rules.clock == 0.0 and rules.sold == 0, "restart resumes fresh business")
 	suite.check(not scene._drag.dragging and scene._drag.worker_id == -1 and scene._drag._ghost == null, "restart cancels drag before replacing actors")
 	suite.check(not scene.ui.popups.has_card() and scene.ui.page == "shop" and not scene.ui.show_selection, "restart clears popup and selection and returns to shop")
+	suite.check(scene._toast.visible and scene._toast_left > 0.0, "restart shows the restarted toast")
 	old_button.pressed.emit()
 	suite.check(callbacks.is_empty(), "detached old popup button cannot execute stale action")
 	suite.check(not scene.tuning.visible and not scene.get_node("Overlay/UI/TuningShade").visible, "restart removes tuning shade")

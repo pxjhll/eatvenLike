@@ -288,6 +288,8 @@ func restart() -> void:
 	_refresh(0.0)
 	_fit()
 	save_now(false)
+	# 旧提示已在上面清掉，这里给玩家一句重开成功的反馈
+	_show_toast(_t("restarted"))
 
 
 func _reset_visuals() -> void:
