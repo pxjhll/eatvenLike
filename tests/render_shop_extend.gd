@@ -101,8 +101,9 @@ func _run() -> void:
 	var reopened: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
 	reopened.session = TestSession.make(TEA, save_path, null, ShopSave.new(TEA, save_path))
 	root.add_child(reopened)
-	await process_frame
+	# _ready 开启自动推进；先停住再等界面帧，比较存档瞬间的状态。
 	reopened.set_process(false)
+	await process_frame
 	_check(is_equal_approx(reopened.rules.clock, rules.clock) and reopened.rules.sold == rules.sold, "读档回到同一时刻")
 	for unused in 40: reopened._process(0.25)
 	reopened.restart()

@@ -63,12 +63,57 @@ func _run() -> void:
 	suite.check(scene.rules.clock == 0.0, "retry starts an empty shop")
 	scene.free()
 	await process_frame
+	await _content_compatibility_retry()
 	suite.cleanup()
 	for error in errors.take(): suite.failures.append("runtime error: " + error)
 	OS.remove_logger(errors)
 	for failure in suite.failures: print("FAIL: " + failure)
 	print("Startup/retry live checks: %d failures" % suite.failures.size())
 	quit(0 if suite.failures.is_empty() else 1)
+
+func _content_compatibility_retry() -> void:
+	var profile := Profile.new(suite._path("content-profile"))
+	suite.check_eq(profile.select_shop("tea"), OK, "compatible profile prepared")
+	var store := ShopSave.new(TEA, suite._path("content-shop"))
+	var previous := ShopRules.new(TEA)
+	previous.gold = 6789.0
+	suite.check_eq(store.save_game(previous), OK, "compatible shop prepared")
+	var compatible := FileAccess.get_file_as_string(store.path)
+	var payload: Dictionary = JSON.parse_string(compatible)
+	# 更高版本程序写的存档：停止写入、等修好重试（内容改版不会走到这里，见 test_content_save）
+	payload.content.version = 99
+	suite._write(store.path, JSON.stringify(payload))
+	var original := FileAccess.get_file_as_bytes(store.path)
+	var scene := _open(profile, store)
+	await process_frame
+	suite.check(scene.rules == null and scene.session.rules == null, "incompatible scene and session expose no rules")
+	suite.check(not scene.is_processing() and not scene.session.started, "incompatible business is stopped")
+	suite.check(scene.get_node("Overlay/ProgressRetry").visible, "incompatible blocker is visible")
+	suite.check(not scene.session.last_error.is_empty(), "incompatible blocker explains error")
+	scene._process(11.0)
+	suite.check(scene.save_now(false) != OK, "incompatible autosave cannot write")
+	scene._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	scene._notification(Node.NOTIFICATION_APPLICATION_PAUSED)
+	suite.check(FileAccess.get_file_as_bytes(store.path) == original, "blocked autosave and focus preserve file")
+	scene.free()
+	await process_frame
+	suite.check(FileAccess.get_file_as_bytes(store.path) == original, "blocked scene exit preserves incompatible bytes")
+	# Repair and retry the very same scene and store, without replacing dependencies.
+	scene = _open(profile, store)
+	await process_frame
+	var same_session: RefCounted = scene.session
+	suite._write(store.path, compatible)
+	scene.retry_startup()
+	suite.check(scene.session == same_session, "retry reuses explicit session")
+	suite.check(scene.rules != null and scene.session.started, "repair retry restores rules")
+	suite.check(scene.is_processing(), "repair retry resumes processing")
+	suite.check(not scene.has_node("Overlay/ProgressRetry"), "repair retry removes blocker")
+	if scene.rules != null:
+		suite.check_eq(scene.rules.gold, 6789.0, "repair retry restores saved gold")
+		suite.check_eq(scene.save_now(false), OK, "repair retry permits save")
+	scene.set_process(false)
+	scene.free()
+	await process_frame
 
 func _open(profile: RefCounted, store: ShopSave) -> Node2D:
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()

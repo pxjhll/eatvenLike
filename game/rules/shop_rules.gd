@@ -150,13 +150,14 @@ static func _plain(v: Variant) -> Variant:
 
 
 ## Validate and fully restore off to the side before replacing any live object.
-func load_dict(data: Dictionary) -> String:
+func load_dict(data: Dictionary, refresh_content: bool = false) -> String:
 	var candidate := ShopRules.new(shop)
 	# Definitions registered by campaign/session code are data, not saved objects.
 	candidate.event_defs = event_defs.duplicate()
 	var error := StateValidator.new().validate(data, candidate.to_dict(), shop, chains, candidate.event_defs)
 	if not error.is_empty(): return error
 	candidate._restore_validated(data)
+	if refresh_content: candidate._refresh_content_values()
 	for key in STATE_KEYS: set(key, candidate.get(key))
 	workers = candidate.workers
 	nav = candidate.nav
@@ -207,6 +208,37 @@ func _restore_validated(data: Dictionary) -> void:
 	for id in data.pending_events:
 		for ev in event_defs:
 			if ev.id == id: pending_events.append(ev)
+
+
+## Refresh only definition caches. Jobs, timers, stock and event effects stay recorded.
+func _refresh_content_values() -> void:
+	var previous := mods.entries.duplicate(true)
+	mods.entries = []
+	_refresh_all_modifiers()
+	var fresh := mods.entries
+	var groups := {}
+	for entry in fresh:
+		if not groups.has(entry.source_id): groups[entry.source_id] = []
+		groups[entry.source_id].append(entry)
+	var old_sources := {}
+	for entry in previous:
+		if entry.source == "upgrade": old_sources[entry.source_id] = true
+	var rebuilt: Array = []
+	# A formerly empty source has no old position: put it before all retained events.
+	for entry in fresh:
+		if not old_sources.has(entry.source_id): rebuilt.append(entry)
+	var inserted := {}
+	for entry in previous:
+		if entry.source != "upgrade":
+			rebuilt.append(entry)
+		elif not inserted.has(entry.source_id):
+			inserted[entry.source_id] = true
+			rebuilt.append_array(groups.get(entry.source_id, []))
+	mods.entries = rebuilt
+	for worker in roster: worker.stats = _kind(worker.kind).stats.duplicate(true)
+	var defaults := ShopRules.new(shop)
+	for id in stations:
+		stations[id].capacity = defaults.stations[id].capacity
 
 
 func _derive_roles() -> void:
