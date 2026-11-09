@@ -1,0 +1,18 @@
+# Content updates and saved progress
+
+Approved policy: preserve gold, staff, levels and business progress; adopt current numeric definitions. Preserve active work's recorded timing and all non-upgrade effects, including remaining duration. If safe restoration is impossible, retain the original file and block business startup with a retryable error.
+
+## Scope and contract
+
+- Add deterministic gameplay and structural fingerprints. Gameplay fingerprints exclude presentation fields, resource paths/UIDs and audio; dictionary insertion order is irrelevant. Structural fingerprints capture modes, IDs, recipe routes, storage item keys, stage order and navigation geometry. Numeric balance values, prices, timings, staff base stats and upgrade effect definitions can change. Track IDs and level counts remain structural. Conservatively block changed topology rather than guessing a migration.
+- Keep the existing raw `ShopRules.load_dict(data)` API and exact same-content continuation. Add an optional `refresh_content: bool = false`; refresh runs on a candidate only after validation. Regenerate upgrade-derived modifiers from saved levels and current definitions without replaying one-shot rewards. Preserve ordering against non-upgrade entries, including event `set` effects. Removed upgrade sources disappear, newly effect-bearing sources precede retained non-upgrade effects. Refresh worker base stats from their current kind and cached station capacity from current definitions, preserving every progress/job/timer/RNG/log field and shared worker/roster identity.
+- New wrapper version 2 stores `content: {version: 1, gameplay: <sha256>, structure: <sha256>}`. Read version 1 as legacy: validate against current data, refresh definition-derived values if valid; otherwise protect it as incompatible. Unknown future wrapper/content versions are never overwritten.
+- Version 2 same-content semantic failures retain the corruption quarantine behavior. Missing/malformed v2 metadata is corruption. Changed structural fingerprints, or semantic failure during numeric/legacy migration, are compatibility failures: no rename, delete or overwrite.
+- Successful compatible migration is read-only until a normal save. Before that save replaces the old payload, copy its exact original bytes into a durable sibling `.pre-content-*` backup; failure to back up blocks saving. Re-evaluate the existing file before every write, including direct save/fresh initialization and external replacement. Keep atomic SaveService writes.
+- Expose `ShopSave.load_error: Error` (OK for missing/loaded/recovered-corrupt, unavailable for blocked compatibility/future/failed quarantine). Session startup adopts rules only after this succeeds. Failure leaves rules null, started false and saves disabled; retry re-reads the file after repair. Fresh intent continues through the same guarded save path.
+
+## Validation
+
+Reproduce old modifier and worker-stat retention before implementation. Cover changed prices, upgrade effects, capacities, active manual and automatic timing, temporary/permanent event effects, RNG/log preservation, aliasing, one-shot non-replay, same-content byte-exact resume, legacy upgrade, incompatible topology, invalid legacy, future versions, direct save/fresh intent, external replacement, backup failure, failed atomic write and retry. Existing corruption, added/removed raw-state IDs, business baselines and session/scene tests must remain green. Engine processes use disposable APPDATA with a `session-lifecycle-userdata` component; production user data must remain byte-identical.
+
+Deferred: query purity, structured command errors, general module splitting.
