@@ -10,6 +10,7 @@ const StateValidator := preload("res://game/rules/shop_state_validator.gd")
 const Inventory := preload("res://game/rules/rule_inventory.gd")
 const InventoryAudit := preload("res://game/rules/inventory_audit.gd")
 const WorkerState := preload("res://game/rules/worker_state.gd")
+const Sales := preload("res://game/rules/rule_sales.gd")
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -35,10 +36,19 @@ var rng := RandomNumberGenerator.new()
 
 # ---------- 店铺状态 ----------
 var clock := 0.0
-var gold := 0.0
-var revenue := 0.0
-var sold := 0
-var sold_by_dish: Dictionary = {}
+var _sales := Sales.new()
+var gold: float:
+	get: return _sales.gold
+	set(value): _sales.gold = value
+var revenue: float:
+	get: return _sales.revenue
+	set(value): _sales.revenue = value
+var sold: int:
+	get: return _sales.sold
+	set(value): _sales.sold = value
+var sold_by_dish: Dictionary:
+	get: return _sales.sold_by_dish
+	set(value): _sales.sold_by_dish = value
 var lost := 0
 var stage_index := 0
 var unlocked: Dictionary = {}
@@ -99,7 +109,9 @@ var _accumulator := 0.0
 var _order_clock := 0.0
 var _next_order := 1
 var _next_staff := 1
-var _sale_carry := 0.0
+var _sale_carry: float:
+	get: return _sales.sale_carry
+	set(value): _sales.sale_carry = value
 var _next_customer := 0.0
 var _courier := false
 
@@ -1377,14 +1389,8 @@ func _record_sale(job: Dictionary) -> void:
 		var seat := int(_order_by_id(job.order_id).get("seat", -1))
 		if seat < 0: seat = _first_open_seat()
 		diners.append({"seat": seat, "dish": job.item, "left": seat_seconds()})
-	sold += job.count
-	sold_by_dish[job.item] += job.count
-	var earned: float = dish_price(job.item) * job.count + _sale_carry
-	var income: int = floori(earned + 0.0001)
-	_sale_carry = maxf(0.0, earned - income)
-	gold += income
-	revenue += income
-	events.emit("sale", {"dish": job.item, "count": job.count, "income": income})
+	_sales.count_handoff(job.item, job.count)
+	events.emit("sale", _sales.credit_handoff(job, dish_price(job.item)))
 
 
 # ---------- 调度（§3.6） ----------
@@ -1991,24 +1997,9 @@ func _finish_work_single(s: Dictionary) -> void:
 		"take":
 			# 接了单客人就离队去等（state 仍叫 paid）；钱在 pay_at 说的时候进账
 			queue.erase(c.id)
-			var paid := order_price_single(c)
-			if shop.fulfillment.pay_at == "on_take":
-				gold += paid
-				revenue += paid
-			c.paid = paid
-			c.state = "paid"
+			_sales.accept_single(c, order_price_single(c), shop.fulfillment.pay_at == "on_take")
 		"hand":
-			if shop.fulfillment.pay_at != "on_take":
-				gold += c.paid
-				revenue += c.paid
-			c.state = "leaving"
-			sold_by_dish[c.kind] = int(sold_by_dish[c.kind]) + 1
-			sold += 1
-			var f := shop.fulfillment
-			if c.addon and c.kind != f.addon_dish:
-				sold_by_dish[f.addon_dish] = int(sold_by_dish[f.addon_dish]) + 1
-				sold += 1
-			events.emit("sale", {"dish": c.kind, "income": c.paid})
+			events.emit("sale", _sales.complete_single(c, shop.fulfillment.addon_dish, shop.fulfillment.pay_at == "on_take"))
 			WorkerState.finish_single_order(s)
 			return
 		_:
