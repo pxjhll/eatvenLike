@@ -11,6 +11,7 @@ const Inventory := preload("res://game/rules/rule_inventory.gd")
 const InventoryAudit := preload("res://game/rules/inventory_audit.gd")
 const WorkerState := preload("res://game/rules/worker_state.gd")
 const Sales := preload("res://game/rules/rule_sales.gd")
+const Completion := preload("res://game/rules/fulfillment_completion.gd")
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -1316,28 +1317,8 @@ func _update_worker(worker: Dictionary) -> void:
 			_walk(worker, _destination_point(job), "walk_dropoff")
 		"work":
 			var station: Dictionary = stations[job.src]
-			match job.kind:
-				"pot_start":
-					_take(job)
-					station.processing = job.count
-					station.duration = pot_seconds(job.src)
-					station.remaining = station.duration
-					station.progress = 0.0
-					station.phase = "heating"
-				"stir":
-					station.phase = "heating"
-				"pot_take":
-					var out: String = station.output.keys()[0]
-					station.output[out] += station.processing
-					station.processing = 0
-					station.phase = "ready"
-					station.progress = 1.0
-				_:
-					_take(job)
-					_complete_topping(job.src, station, job)
-					station.phase = "ready"
-					station.progress = 1.0
-			station.work_reserved = false
+			if Completion.consumes_handoff_source(job): _take(job)
+			Completion.complete_handoff_work(station, job, pot_seconds(job.src) if job.kind == "pot_start" else 0.0)
 			_finish(worker)
 		"dropoff":
 			if job.kind == "serve":
@@ -1351,12 +1332,8 @@ func _update_worker(worker: Dictionary) -> void:
 			_finish(worker)
 
 
-func _complete_topping(id: String, station: Dictionary, job: Dictionary) -> void:
-	if not station.processing_item.is_empty():
-		station.output[station.processing_item] += job.count
-		station.processing_item = ""
-		return
-	station.input[job.item] += job.count
+func _complete_topping(_id: String, station: Dictionary, job: Dictionary) -> void:
+	Completion.complete_topping(station, job)
 
 
 func _finish(worker: Dictionary) -> void:
@@ -1980,16 +1957,10 @@ func _finish_work_single(s: Dictionary) -> void:
 	if not s.chore.is_empty():
 		var parts: PackedStringArray = s.chore.split(":")
 		var pot: Dictionary = stations[parts[1]]
-		var st := shop.station(parts[1])
 		if parts[0] == "load":
-			pot.phase = "cook"
-			pot.duration = pot_seconds(parts[1])
-			pot.remaining = pot.duration
+			Completion.complete_single_chore(s, pot, true, pot_seconds(parts[1]), 0, 0)
 		else:
-			pot.stock = mini(st.stock[0].cap, pot.stock + pot_batch(parts[1]))
-			pot.phase = "idle"
-		pot.user = -1
-		s.chore = ""
+			Completion.complete_single_chore(s, pot, false, 0.0, pot_batch(parts[1]), shop.station(parts[1]).stock[0].cap)
 		return
 	var c := customer(s.order)
 	var st: Dictionary = s.steps[s.step]
@@ -1998,19 +1969,14 @@ func _finish_work_single(s: Dictionary) -> void:
 			# 接了单客人就离队去等（state 仍叫 paid）；钱在 pay_at 说的时候进账
 			queue.erase(c.id)
 			_sales.accept_single(c, order_price_single(c), shop.fulfillment.pay_at == "on_take")
+			Completion.advance_single_step(s, {}, false)
 		"hand":
 			events.emit("sale", _sales.complete_single(c, shop.fulfillment.addon_dish, shop.fulfillment.pay_at == "on_take"))
 			WorkerState.finish_single_order(s)
 			return
 		_:
 			var station := shop.station(st.station)
-			# 同一台机器接着做下一步（比如先打糊再摊饼）就不放手
-			var next_same: bool = s.step + 1 < s.steps.size() and String(s.steps[s.step + 1].station) == String(st.station)
-			if station.block == "hand" and int(station.params.get("users", 0)) > 0 and not next_same: stations[st.station].user = -1
-			if not String(st.get("holds", "")).is_empty():
-				s.carry_item = st.holds
-				s.carry_count = 1
-	s.step += 1
+			Completion.advance_single_step(s, stations[st.station], station.block == "hand" and int(station.params.get("users", 0)) > 0)
 
 
 func _item_name(id: String) -> String:
