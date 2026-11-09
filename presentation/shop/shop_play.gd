@@ -17,8 +17,8 @@ const DefaultHud := preload("res://presentation/shop/hud/default_hud.gd")
 const ArtGroups := preload("res://presentation/shop/art_groups.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
-const CAMPAIGN: SpecCampaign = preload("res://content/campaign/campaign.tres")
-const Profile := preload("res://game/app/profile.gd")
+const Schema := preload("res://game/rules/shop_spec_validator.gd")
+const SceneContract := preload("res://presentation/shop/shop_scene_contract.gd")
 ## 竖屏铺满宽度；横屏最多少看 MIN_VISIBLE_WORLD 这么高的店面
 const MIN_VISIBLE_WORLD := 1100.0
 ## 界面按这个宽度排版（竖屏铺满宽度）；店面比它宽的店，店面另外缩放
@@ -109,7 +109,24 @@ func _ready() -> void:
 			return
 		session = app.create_session()
 		_production_session = session
+	# Authoring errors must never be interpreted as corrupt player progress.
+	# Prepare exactly one candidate before Session is allowed to load or replace a save.
+	var spec: SpecShop = session.store.shop if session.store != null else null
+	var campaign: SpecCampaign = session.profile.campaign if session.profile != null else null
+	var errors: Array = Schema.validate(spec, campaign)
+	if session.rules != null and session.rules.shop != spec:
+		errors.append_array(Schema.validate(session.rules.shop, campaign))
+	if not errors.is_empty():
+		_block_startup(Schema.summary(errors))
+		return
+	if session.rules != null: spec = session.rules.shop
+	var prepared := SceneContract.prepare(spec)
+	if not prepared.errors.is_empty():
+		_block_startup(Schema.summary(prepared.errors))
+		return
+	var candidate: Node2D = prepared.art
 	if session.start() != OK:
+		candidate.free()
 		_block_startup(session.last_error)
 		return
 	rules = session.rules
@@ -132,7 +149,7 @@ func _ready() -> void:
 	view = ShopView.new(rules)
 	DisplayServer.window_set_title(shop.display_name)
 	_font = load("res://art/ui/graybox_font.ttf")
-	art = load(shop.scene_path).instantiate()
+	art = candidate
 	art.name = "ShopArt"
 	$Canvas.add_child(art)
 	$Canvas.move_child(art, 0)
@@ -213,7 +230,7 @@ func retry_startup() -> void:
 		return
 	# Profile repair may select a different shop than the initial production fallback.
 	# Explicit callers retain their supplied dependencies, including fault stores.
-	if _production_session != null and session == _production_session and session.store.shop.id != session.profile.shop:
+	if _production_session != null and session == _production_session and (session.store == null or session.store.shop == null or session.store.shop.id != session.profile.shop):
 		session = get_node("/root/App").create_session()
 		_production_session = session
 	_ready()
@@ -985,11 +1002,9 @@ func _bought(what: String, gold_before: float) -> void:
 
 ## 关卡表里的下一家店（已做好数据的）；没有就是 null
 func next_shop() -> SpecShop:
-	var id := CAMPAIGN.next_shop(shop.id)
-	for city in CAMPAIGN.cities:
-		for entry in city.shops:
-			if entry.id == id and not entry.shop_path.is_empty(): return load(entry.shop_path)
-	return null
+	if profile == null: return null
+	var id: String = profile.next_shop(shop.id)
+	return session.shop_for(profile, id) if not id.is_empty() else null
 
 
 func can_leave() -> bool:
@@ -1041,7 +1056,7 @@ func leave_shop() -> void:
 ## 返回跳到的店 id（到头了返回空）。
 func jump_shop(offset: int) -> String:
 	if _startup_blocked or _transition_committed or rules == null: return ""
-	var ids := Profile.shops()
+	var ids: Array[String] = profile.available_shops() if profile != null else []
 	var at := ids.find(rules.shop.id)
 	var to := at + offset
 	if at < 0 or to < 0 or to >= ids.size() or profile == null:

@@ -24,6 +24,8 @@ jobs:
         run: ./godot --headless --path . --import
       - name: Run tests
         run: timeout 240s ./godot --headless --path . -s tests/run_all.gd
+      - name: Shop data and scene authoring contracts (production and third fixture)
+        run: timeout 30s ./godot --headless --path . -s tools/validate_shops.gd
       - name: Shop layouts match the art scenes
         run: timeout 60s ./godot --headless --path . -s tools/sync_shop_layouts.gd -- --check
       - name: Pancake baseline matches the shop data (re-record with tests/baselines/record_rules.gd)
@@ -37,6 +39,8 @@ jobs:
           diff /tmp/scenes-source.txt /tmp/scenes-export.txt
       - name: Generic shop scene - tea shop real-click regression (taps, panels, save, menu, restart, tuning)
         run: timeout 60s ./godot --headless --path . -s tests/render_shop_tea.gd
+      - name: Third shop full session and invalid authoring startup regression
+        run: timeout 60s ./godot --headless --path . -s tests/render_shop_noodle.gd
       - name: Generic shop scene - data-driven tutorial real-click regression
         run: timeout 45s ./godot --headless --path . -s tests/render_shop_guide.gd
       - name: Generic shop scene - HUD extension acceptance and save round trip

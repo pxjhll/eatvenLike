@@ -577,14 +577,8 @@ topping_count = 3
 
 [sub_resource type="Resource" id="Resource_kcttd"]
 script = ExtResource("4_vmv0o")
-base_scores = Dictionary[String, float]({
-"chore": 100.0,
-"take": 50.0
-})
 merge = "fixed"
-resume_from_stock = false
 chores_first = true
-leave_seated_segments = false
 
 [sub_resource type="Resource" id="Resource_n0sxs"]
 script = ExtResource("7_f53vs")
@@ -671,7 +665,7 @@ dine_rule = "takeaway_only"
 taker = "follower"
 handoff = "single"
 price_rounding = "order_round"
-leave_queue = "after_pay"
+leave_queue = "after_take"
 wait_area = "wait_seats"
 mood_seconds = Array[float]([15.0, 30.0])
 leave_who = "queued_unclaimed"

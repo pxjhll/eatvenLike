@@ -32,12 +32,12 @@ seconds = 1.0
 produces = Dictionary[String, int]({
 "barley_tea": 1
 })
-label = "倒茶"
+label = "Pour tea"
 
 [sub_resource type="Resource" id="Resource_cmgeb"]
 script = ExtResource("2_r6qah")
 id = "barley_tea"
-display_name = "大麦茶"
+display_name = "Barley tea"
 item = "barley_tea"
 price_parts = Dictionary[String, float]({
 "base": 4.0
@@ -53,7 +53,7 @@ seconds = 1.0
 produces = Dictionary[String, int]({
 "dough": 1
 })
-label = "拿面团"
+label = "Fetch dough"
 
 [sub_resource type="Resource" id="Resource_jcyrv"]
 script = ExtResource("3_brqqh")
@@ -66,7 +66,7 @@ consumes = Dictionary[String, int]({
 produces = Dictionary[String, int]({
 "noodle": 1
 })
-label = "拉面"
+label = "Noodles"
 
 [sub_resource type="Resource" id="Resource_gc3c6"]
 script = ExtResource("3_brqqh")
@@ -79,12 +79,12 @@ consumes = Dictionary[String, int]({
 produces = Dictionary[String, int]({
 "dry_noodle": 1
 })
-label = "装碗"
+label = "Bowl"
 
 [sub_resource type="Resource" id="Resource_ct6jy"]
 script = ExtResource("2_r6qah")
 id = "dry_noodle"
-display_name = "拌面"
+display_name = "Dry noodles"
 item = "dry_noodle"
 price_parts = Dictionary[String, float]({
 "base": 12.0
@@ -100,7 +100,7 @@ seconds = 0.5
 consumes = Dictionary[String, int]({
 "broth": 1
 })
-label = "舀汤"
+label = "Ladle broth"
 
 [sub_resource type="Resource" id="Resource_hyulf"]
 script = ExtResource("3_brqqh")
@@ -113,12 +113,12 @@ consumes = Dictionary[String, int]({
 produces = Dictionary[String, int]({
 "clear_noodle": 1
 })
-label = "装碗"
+label = "Bowl"
 
 [sub_resource type="Resource" id="Resource_hhluj"]
 script = ExtResource("2_r6qah")
 id = "clear_noodle"
-display_name = "清汤面"
+display_name = "Clear noodles"
 item = "clear_noodle"
 price_parts = Dictionary[String, float]({
 "base": 16.0
@@ -131,7 +131,7 @@ script = ExtResource("3_brqqh")
 station = "toppings"
 action = "top"
 seconds = 1.0
-label = "加牛肉"
+label = "Add beef"
 
 [sub_resource type="Resource" id="Resource_5scjp"]
 script = ExtResource("3_brqqh")
@@ -144,12 +144,12 @@ consumes = Dictionary[String, int]({
 produces = Dictionary[String, int]({
 "beef_noodle": 1
 })
-label = "装碗"
+label = "Bowl"
 
 [sub_resource type="Resource" id="Resource_m14ek"]
 script = ExtResource("2_r6qah")
 id = "beef_noodle"
-display_name = "牛肉面"
+display_name = "Beef noodles"
 item = "beef_noodle"
 price_parts = Dictionary[String, float]({
 "base": 16.0,
@@ -166,7 +166,7 @@ script = ExtResource("3_brqqh")
 station = "toppings"
 action = "top"
 seconds = 1.0
-label = "加鸡蛋"
+label = "Add egg"
 
 [sub_resource type="Resource" id="Resource_dleci"]
 script = ExtResource("3_brqqh")
@@ -179,12 +179,12 @@ consumes = Dictionary[String, int]({
 produces = Dictionary[String, int]({
 "egg_noodle": 1
 })
-label = "装碗"
+label = "Bowl"
 
 [sub_resource type="Resource" id="Resource_xlisc"]
 script = ExtResource("2_r6qah")
 id = "egg_noodle"
-display_name = "鸡蛋面"
+display_name = "Egg noodles"
 item = "egg_noodle"
 price_parts = Dictionary[String, float]({
 "base": 16.0,
@@ -198,10 +198,6 @@ topping_count = 1
 
 [sub_resource type="Resource" id="Resource_w3jlq"]
 script = ExtResource("4_ciqxk")
-base_scores = Dictionary[String, float]({
-"chore": 100.0,
-"take": 50.0
-})
 merge = "fixed"
 chores_first = true
 
@@ -220,7 +216,7 @@ value = 90.0
 [sub_resource type="Resource" id="Resource_swp4x"]
 script = ExtResource("9_w6a7l")
 id = "flyer"
-display_name = "传单"
+display_name = "Flyers"
 base_effects = Array[ExtResource("7_jiah4")]([SubResource("Resource_217or"), SubResource("Resource_k3pq2")])
 
 [sub_resource type="Resource" id="Resource_5c3wa"]
@@ -238,7 +234,7 @@ taker = "follower"
 handoff = "single"
 pay_at = "on_take"
 price_rounding = "order_round"
-leave_queue = "after_pay"
+leave_queue = "after_take"
 wait_area = "wait_seats"
 leave_after = 50.0
 leave_who = "queued_unclaimed"
@@ -248,15 +244,15 @@ first_customer_delay = 1.0
 [sub_resource type="Resource" id="Resource_8jsal"]
 script = ExtResource("11_0b5v6")
 texts = Dictionary[String, String]({
-"done": "测试面馆的任务都完成了",
-"hint_machine": "{drink}做不过来：升级{name}",
-"hint_machine_fix": "升级{name}",
-"hint_pot": "骨汤供不上：升级{name}",
-"hint_pot_fix": "升级{name}",
-"hint_staff": "人手不够：多招一位",
-"hint_staff_fix": "招人",
-"open": "支付 {cost} 金币开{name}，开始营业",
-"stage": "支付 {cost} 金币开{name}",
+"done": "All noodle shop tasks complete",
+"hint_machine": "Upgrade {name} for {drink}",
+"hint_machine_fix": "Upgrade {name}",
+"hint_pot": "Upgrade {name} for broth",
+"hint_pot_fix": "Upgrade {name}",
+"hint_staff": "Hire another worker",
+"hint_staff_fix": "Hire",
+"open": "Open {name} for {cost} coins",
+"stage": "Open {name} for {cost} coins",
 "task": "{name}"
 })
 opening_station = "urn"
@@ -267,42 +263,42 @@ rating_lost_share = 0.2
 [sub_resource type="Resource" id="Resource_h2nxf"]
 script = ExtResource("13_nge4a")
 id = "dough"
-display_name = "面团"
+display_name = "Dough"
 
 [sub_resource type="Resource" id="Resource_vslvi"]
 script = ExtResource("13_nge4a")
 id = "noodle"
-display_name = "拉面"
+display_name = "Noodles"
 
 [sub_resource type="Resource" id="Resource_b4pxc"]
 script = ExtResource("13_nge4a")
 id = "broth"
-display_name = "骨汤"
+display_name = "Broth"
 
 [sub_resource type="Resource" id="Resource_yhfv2"]
 script = ExtResource("13_nge4a")
 id = "barley_tea"
-display_name = "大麦茶"
+display_name = "Barley tea"
 
 [sub_resource type="Resource" id="Resource_yd0b1"]
 script = ExtResource("13_nge4a")
 id = "dry_noodle"
-display_name = "拌面"
+display_name = "Dry noodles"
 
 [sub_resource type="Resource" id="Resource_2n4dy"]
 script = ExtResource("13_nge4a")
 id = "clear_noodle"
-display_name = "清汤面"
+display_name = "Clear noodles"
 
 [sub_resource type="Resource" id="Resource_w8vmk"]
 script = ExtResource("13_nge4a")
 id = "beef_noodle"
-display_name = "牛肉面"
+display_name = "Beef noodles"
 
 [sub_resource type="Resource" id="Resource_hvsum"]
 script = ExtResource("13_nge4a")
 id = "egg_noodle"
-display_name = "鸡蛋面"
+display_name = "Egg noodles"
 
 [sub_resource type="Resource" id="Resource_tk2dx"]
 script = ExtResource("14_127uj")
@@ -326,7 +322,7 @@ purpose = "wait"
 [sub_resource type="Resource" id="Resource_htd3y"]
 script = ExtResource("17_02s3q")
 id = "sheep"
-display_name = "小羊"
+display_name = "Sheep"
 stats = Dictionary[String, float]({
 "carry": 1.0,
 "walk": 180.0,
@@ -336,7 +332,7 @@ stats = Dictionary[String, float]({
 [sub_resource type="Resource" id="Resource_7bdag"]
 script = ExtResource("17_02s3q")
 id = "dog"
-display_name = "小狗"
+display_name = "Dog"
 stats = Dictionary[String, float]({
 "carry": 1.0,
 "walk": 180.0,
@@ -346,7 +342,7 @@ stats = Dictionary[String, float]({
 [sub_resource type="Resource" id="Resource_ulyuh"]
 script = ExtResource("17_02s3q")
 id = "hamster"
-display_name = "仓鼠"
+display_name = "Hamster"
 stats = Dictionary[String, float]({
 "carry": 1.0,
 "walk": 180.0,
@@ -419,7 +415,7 @@ wait_seats = 4
 [sub_resource type="Resource" id="Resource_0uprp"]
 script = ExtResource("20_vwdiv")
 id = "clear20"
-display_name = "卖出 20 碗清汤面"
+display_name = "Sell 20 clear noodles"
 target = "clear_noodle"
 amount = 20.0
 
@@ -427,14 +423,14 @@ amount = 20.0
 script = ExtResource("20_vwdiv")
 condition = "flavor_open"
 id = "egg"
-display_name = "开出鸡蛋面"
+display_name = "Unlock egg noodles"
 target = "egg_noodle"
 amount = 1.0
 
 [sub_resource type="Resource" id="Resource_tshvw"]
 script = ExtResource("20_vwdiv")
 id = "beef10"
-display_name = "卖出 10 碗牛肉面"
+display_name = "Sell 10 beef noodles"
 target = "beef_noodle"
 amount = 10.0
 
@@ -462,13 +458,13 @@ tasks = Array[ExtResource("20_vwdiv")]([SubResource("Resource_0uprp"), SubResour
 [sub_resource type="Resource" id="Resource_s8n7g"]
 script = ExtResource("21_xpotm")
 id = "counter"
-display_name = "柜台"
+display_name = "Counter"
 block = "counter"
 params = {
 "hand_seconds": 0.5,
 "posts": 1,
 "take_seconds": 1.0,
-"unit": "碗"
+"unit": "bowl"
 }
 starts_unlocked = true
 
@@ -505,17 +501,17 @@ effects = Array[ExtResource("7_jiah4")]([SubResource("Resource_q8lvm")])
 [sub_resource type="Resource" id="Resource_qyuby"]
 script = ExtResource("9_w6a7l")
 id = "level"
-display_name = "等级"
+display_name = "Level"
 levels = Array[ExtResource("8_an44t")]([SubResource("Resource_f7u63"), SubResource("Resource_rc0hh"), SubResource("Resource_l8ofx")])
 
 [sub_resource type="Resource" id="Resource_a656k"]
 script = ExtResource("21_xpotm")
 id = "urn"
-display_name = "茶桶"
+display_name = "Tea urn"
 block = "dispenser"
 params = {
 "seconds": 1.0,
-"unit": "杯"
+"unit": "cup"
 }
 unlock_cost = 10
 tracks = Array[ExtResource("9_w6a7l")]([SubResource("Resource_qyuby")])
@@ -524,11 +520,11 @@ price_dishes = Array[String](["barley_tea"])
 [sub_resource type="Resource" id="Resource_6eghk"]
 script = ExtResource("21_xpotm")
 id = "flour"
-display_name = "面粉缸"
+display_name = "Flour bin"
 block = "supply"
 params = {
 "fetch_seconds": 1.0,
-"unit": "份"
+"unit": "portion"
 }
 companion_of = "board"
 
@@ -565,17 +561,17 @@ effects = Array[ExtResource("7_jiah4")]([SubResource("Resource_yibod")])
 [sub_resource type="Resource" id="Resource_s55mr"]
 script = ExtResource("9_w6a7l")
 id = "level"
-display_name = "等级"
+display_name = "Level"
 levels = Array[ExtResource("8_an44t")]([SubResource("Resource_tk6fy"), SubResource("Resource_2dlcb"), SubResource("Resource_ko05g")])
 
 [sub_resource type="Resource" id="Resource_bwert"]
 script = ExtResource("21_xpotm")
 id = "board"
-display_name = "拉面台"
+display_name = "Noodle board"
 block = "hand"
 params = {
 "seconds": 6.0,
-"unit": "碗",
+"unit": "bowl",
 "users": 1
 }
 unlock_cost = 40
@@ -611,24 +607,24 @@ effects = Array[ExtResource("7_jiah4")]([SubResource("Resource_sa5u1")])
 [sub_resource type="Resource" id="Resource_2t72x"]
 script = ExtResource("9_w6a7l")
 id = "level"
-display_name = "等级"
+display_name = "Level"
 levels = Array[ExtResource("8_an44t")]([SubResource("Resource_qgh7u"), SubResource("Resource_yroiv")])
 
 [sub_resource type="Resource" id="Resource_5yu5l"]
 script = ExtResource("21_xpotm")
 id = "pot"
-display_name = "骨汤锅"
+display_name = "Broth pot"
 block = "batch_pot"
 params = {
 "batch": 6,
 "cook_seconds": 20.0,
 "fetch_seconds": 0.5,
-"load_label": "加水下骨头",
+"load_label": "Load broth",
 "load_seconds": 1.5,
 "manual_load": true,
 "manual_unload": true,
-"unit": "碗",
-"unload_label": "盛汤",
+"unit": "bowl",
+"unload_label": "Collect broth",
 "unload_seconds": 1.5
 }
 unlock_cost = 120
@@ -664,17 +660,17 @@ effects = Array[ExtResource("7_jiah4")]([SubResource("Resource_a14ut")])
 [sub_resource type="Resource" id="Resource_mqmg4"]
 script = ExtResource("9_w6a7l")
 id = "level"
-display_name = "等级"
+display_name = "Level"
 levels = Array[ExtResource("8_an44t")]([SubResource("Resource_wi0sl"), SubResource("Resource_acoth")])
 
 [sub_resource type="Resource" id="Resource_j6ncc"]
 script = ExtResource("21_xpotm")
 id = "toppings"
-display_name = "浇头台"
+display_name = "Toppings"
 block = "topping"
 params = {
 "seconds": 1.0,
-"unit": "碗",
+"unit": "bowl",
 "users": 0
 }
 unlock_cost = 240
@@ -684,19 +680,32 @@ price_dishes = Array[String](["beef_noodle", "egg_noodle"])
 [sub_resource type="Resource" id="Resource_au3p4"]
 script = ExtResource("21_xpotm")
 id = "bowl"
-display_name = "装碗台"
+display_name = "Bowl bench"
 block = "combine"
 params = {
 "manual": true,
 "seconds": 1.5,
-"unit": "碗"
+"unit": "bowl"
 }
 starts_unlocked = true
+
+[sub_resource type="Resource" id="NoodleOpeningGuide"]
+script = ExtResource("12_ab3nw")
+id = "opening"
+done_when = Array[String](["open"])
+shop_page_only = false
+cues = Array[Dictionary]([{
+"at": "frame:urn",
+"if": ["!open", "page:shop"],
+"pause": false,
+"text": "Tap the tea urn to open the shop."
+}])
+skip_label = "Later"
 
 [resource]
 script = ExtResource("15_hkr0j")
 id = "noodle"
-display_name = "测试面馆"
+display_name = "Noodle Test Shop"
 start_gold = 10
 random_seed = 7
 items = Array[ExtResource("13_nge4a")]([SubResource("Resource_h2nxf"), SubResource("Resource_vslvi"), SubResource("Resource_b4pxc"), SubResource("Resource_yhfv2"), SubResource("Resource_yd0b1"), SubResource("Resource_2n4dy"), SubResource("Resource_w8vmk"), SubResource("Resource_hvsum")])
@@ -710,4 +719,6 @@ seat_groups = Array[ExtResource("16_d61ju")]([SubResource("Resource_rtpdj")])
 staff = SubResource("Resource_xh1l1")
 goals = SubResource("Resource_8jsal")
 layout = SubResource("Resource_tk2dx")
+guide = Array[ExtResource("12_ab3nw")]([SubResource("NoodleOpeningGuide")])
+scene_path = "res://tests/fixtures/noodle/shop_scene.tscn"
 save_file = "shop_noodle_test.json"

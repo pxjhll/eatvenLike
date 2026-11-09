@@ -3,6 +3,16 @@ extends "res://tests/test_case.gd"
 
 const FONT := "res://art/ui/graybox_font.ttf"
 
+func test_third_shop_fixture_text_has_glyphs() -> void:
+	var font: FontFile = load(FONT)
+	var literal := RegEx.create_from_string("\"([^\"\\\\]*)\"")
+	for path in ["res://tests/fixtures/noodle/shop.tres", "res://tests/fixtures/noodle/shop_scene.tscn", "res://tests/fixtures/noodle/campaign.tres"]:
+		for line in FileAccess.get_file_as_string(path).split("\n"):
+			if line.begins_with("["): continue
+			for match_ in literal.search_all(line):
+				var text: String = match_.get_string(1)
+				check(_missing(font, text).is_empty(), "%s missing glyphs: %s" % [path, _missing(font, text)])
+
 
 func test_content_names_have_glyphs() -> void:
 	var font: FontFile = load(FONT)

@@ -1,0 +1,496 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://presentation/shop/anchor_rect.gd" id="rect"]
+[ext_resource type="FontFile" path="res://art/ui/graybox_font.ttf" id="font"]
+
+[node name="NoodleGraybox" type="Node2D"]
+
+[node name="Ground" type="Polygon2D" parent="."]
+position = Vector2(0, 0)
+polygon = PackedVector2Array(0, 0, 720, 0, 720, 1200, 0, 1200)
+color = Color(0.83, 0.85, 0.81, 1)
+
+[node name="Room" type="Polygon2D" parent="."]
+position = Vector2(35, 245)
+polygon = PackedVector2Array(0, 0, 650, 0, 650, 500, 0, 500)
+color = Color(0.93, 0.92, 0.87, 1)
+
+[node name="Header" type="Polygon2D" parent="."]
+position = Vector2(35, 175)
+polygon = PackedVector2Array(0, 0, 650, 0, 650, 65, 0, 65)
+color = Color(0.66, 0.74, 0.70, 1)
+
+[node name="Title" type="Label" parent="."]
+offset_left = 100.0
+offset_top = 188.0
+offset_right = 620.0
+offset_bottom = 230.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.17, 0.22, 0.23, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 30
+text = "NOODLE TEST KITCHEN"
+horizontal_alignment = 1
+
+[node name="Caption" type="Label" parent="."]
+offset_left = 80.0
+offset_top = 245.0
+offset_right = 640.0
+offset_bottom = 287.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.17, 0.22, 0.23, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 18
+text = "GRAYBOX / INDEPENDENT SHOP FIXTURE"
+horizontal_alignment = 1
+
+[node name="CounterBody" type="Polygon2D" parent="."]
+position = Vector2(290, 715)
+polygon = PackedVector2Array(0, 0, 170, 0, 170, 45, 0, 45)
+color = Color(0.45, 0.55, 0.55, 1)
+
+[node name="CounterLabel" type="Label" parent="."]
+offset_left = 295.0
+offset_top = 720.0
+offset_right = 455.0
+offset_bottom = 762.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.17, 0.22, 0.23, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 20
+text = "COUNTER"
+horizontal_alignment = 1
+
+[node name="QueueLabel" type="Label" parent="."]
+offset_left = 330.0
+offset_top = 810.0
+offset_right = 480.0
+offset_bottom = 852.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.17, 0.22, 0.23, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 18
+text = "QUEUE"
+horizontal_alignment = 1
+
+[node name="WaitingLabel" type="Label" parent="."]
+offset_left = 40.0
+offset_top = 840.0
+offset_right = 240.0
+offset_bottom = 882.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.17, 0.22, 0.23, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 18
+text = "WAITING"
+horizontal_alignment = 1
+
+[node name="Sortables" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="urn" type="Node2D" parent="."]
+metadata/layout_group = "urn"
+metadata/unlock_rule = "urn"
+
+[node name="Body" type="Polygon2D" parent="urn"]
+position = Vector2(142, 570)
+polygon = PackedVector2Array(0, 0, 116, 0, 116, 76, 0, 76)
+color = Color(0.59, 0.66, 0.62, 1)
+
+[node name="Top" type="Polygon2D" parent="urn"]
+position = Vector2(142, 560)
+polygon = PackedVector2Array(0, 0, 116, 0, 116, 16, 0, 16)
+color = Color(0.77, 0.80, 0.73, 1)
+
+[node name="Label" type="Label" parent="urn"]
+offset_left = 142.0
+offset_top = 578.0
+offset_right = 258.0
+offset_bottom = 620.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.17, 0.22, 0.23, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 18
+text = "TEA URN"
+horizontal_alignment = 1
+
+[node name="flour" type="Node2D" parent="."]
+metadata/layout_group = "flour"
+metadata/unlock_rule = "flour"
+
+[node name="Body" type="Polygon2D" parent="flour"]
+position = Vector2(502, 310)
+polygon = PackedVector2Array(0, 0, 116, 0, 116, 76, 0, 76)
+color = Color(0.59, 0.66, 0.62, 1)
+
+[node name="Top" type="Polygon2D" parent="flour"]
+position = Vector2(502, 300)
+polygon = PackedVector2Array(0, 0, 116, 0, 116, 16, 0, 16)
+color = Color(0.77, 0.80, 0.73, 1)
+
+[node name="Label" type="Label" parent="flour"]
+offset_left = 502.0
+offset_top = 318.0
+offset_right = 618.0
+offset_bottom = 360.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.17, 0.22, 0.23, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 18
+text = "FLOUR"
+horizontal_alignment = 1
+
+[node name="board" type="Node2D" parent="."]
+metadata/layout_group = "board"
+metadata/unlock_rule = "board"
+
+[node name="Body" type="Polygon2D" parent="board"]
+position = Vector2(362, 310)
+polygon = PackedVector2Array(0, 0, 116, 0, 116, 76, 0, 76)
+color = Color(0.59, 0.66, 0.62, 1)
+
+[node name="Top" type="Polygon2D" parent="board"]
+position = Vector2(362, 300)
+polygon = PackedVector2Array(0, 0, 116, 0, 116, 16, 0, 16)
+color = Color(0.77, 0.80, 0.73, 1)
+
+[node name="Label" type="Label" parent="board"]
+offset_left = 362.0
+offset_top = 318.0
+offset_right = 478.0
+offset_bottom = 360.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.17, 0.22, 0.23, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 18
+text = "NOODLES"
+horizontal_alignment = 1
+
+[node name="pot" type="Node2D" parent="."]
+metadata/layout_group = "pot"
+metadata/unlock_rule = "pot"
+
+[node name="Body" type="Polygon2D" parent="pot"]
+position = Vector2(202, 350)
+polygon = PackedVector2Array(0, 0, 116, 0, 116, 76, 0, 76)
+color = Color(0.59, 0.66, 0.62, 1)
+
+[node name="Top" type="Polygon2D" parent="pot"]
+position = Vector2(202, 340)
+polygon = PackedVector2Array(0, 0, 116, 0, 116, 16, 0, 16)
+color = Color(0.77, 0.80, 0.73, 1)
+
+[node name="Label" type="Label" parent="pot"]
+offset_left = 202.0
+offset_top = 358.0
+offset_right = 318.0
+offset_bottom = 400.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.17, 0.22, 0.23, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 18
+text = "BROTH"
+horizontal_alignment = 1
+
+[node name="toppings" type="Node2D" parent="."]
+metadata/layout_group = "toppings"
+metadata/unlock_rule = "toppings"
+
+[node name="Body" type="Polygon2D" parent="toppings"]
+position = Vector2(442, 430)
+polygon = PackedVector2Array(0, 0, 116, 0, 116, 76, 0, 76)
+color = Color(0.59, 0.66, 0.62, 1)
+
+[node name="Top" type="Polygon2D" parent="toppings"]
+position = Vector2(442, 420)
+polygon = PackedVector2Array(0, 0, 116, 0, 116, 16, 0, 16)
+color = Color(0.77, 0.80, 0.73, 1)
+
+[node name="Label" type="Label" parent="toppings"]
+offset_left = 442.0
+offset_top = 438.0
+offset_right = 558.0
+offset_bottom = 480.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.17, 0.22, 0.23, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 18
+text = "TOPPINGS"
+horizontal_alignment = 1
+
+[node name="bowl" type="Node2D" parent="."]
+metadata/layout_group = "bowl"
+metadata/unlock_rule = "bowl"
+
+[node name="Body" type="Polygon2D" parent="bowl"]
+position = Vector2(542, 510)
+polygon = PackedVector2Array(0, 0, 116, 0, 116, 76, 0, 76)
+color = Color(0.59, 0.66, 0.62, 1)
+
+[node name="Top" type="Polygon2D" parent="bowl"]
+position = Vector2(542, 500)
+polygon = PackedVector2Array(0, 0, 116, 0, 116, 16, 0, 16)
+color = Color(0.77, 0.80, 0.73, 1)
+
+[node name="Label" type="Label" parent="bowl"]
+offset_left = 542.0
+offset_top = 518.0
+offset_right = 658.0
+offset_bottom = 560.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.17, 0.22, 0.23, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 18
+text = "BOWLS"
+horizontal_alignment = 1
+
+[node name="Bench0" type="Node2D" parent="."]
+metadata/layout_group = "bench0"
+metadata/unlock_rule = "wait_seats:1"
+
+[node name="Seat" type="Polygon2D" parent="Bench0"]
+position = Vector2(53, 905)
+polygon = PackedVector2Array(0, 0, 64, 0, 64, 26, 0, 26)
+color = Color(0.55, 0.62, 0.59, 1)
+
+[node name="Bench1" type="Node2D" parent="."]
+metadata/layout_group = "bench1"
+metadata/unlock_rule = "wait_seats:2"
+
+[node name="Seat" type="Polygon2D" parent="Bench1"]
+position = Vector2(158, 905)
+polygon = PackedVector2Array(0, 0, 64, 0, 64, 26, 0, 26)
+color = Color(0.55, 0.62, 0.59, 1)
+
+[node name="Bench2" type="Node2D" parent="."]
+metadata/layout_group = "bench2"
+metadata/unlock_rule = "wait_seats:3"
+
+[node name="Seat" type="Polygon2D" parent="Bench2"]
+position = Vector2(53, 990)
+polygon = PackedVector2Array(0, 0, 64, 0, 64, 26, 0, 26)
+color = Color(0.55, 0.62, 0.59, 1)
+
+[node name="Bench3" type="Node2D" parent="."]
+metadata/layout_group = "bench3"
+metadata/unlock_rule = "wait_seats:4"
+
+[node name="Seat" type="Polygon2D" parent="Bench3"]
+position = Vector2(158, 990)
+polygon = PackedVector2Array(0, 0, 64, 0, 64, 26, 0, 26)
+color = Color(0.55, 0.62, 0.59, 1)
+
+[node name="Bench4" type="Node2D" parent="."]
+metadata/layout_group = "bench4"
+metadata/unlock_rule = "wait_seats:5"
+
+[node name="Seat" type="Polygon2D" parent="Bench4"]
+position = Vector2(53, 1075)
+polygon = PackedVector2Array(0, 0, 64, 0, 64, 26, 0, 26)
+color = Color(0.55, 0.62, 0.59, 1)
+
+[node name="Bench5" type="Node2D" parent="."]
+metadata/layout_group = "bench5"
+metadata/unlock_rule = "wait_seats:6"
+
+[node name="Seat" type="Polygon2D" parent="Bench5"]
+position = Vector2(158, 1075)
+polygon = PackedVector2Array(0, 0, 64, 0, 64, 26, 0, 26)
+color = Color(0.55, 0.62, 0.59, 1)
+
+[node name="Anchors" type="Node2D" parent="."]
+metadata/world_size = Vector2(720, 1200)
+metadata/customer_height = 92.0
+metadata/staff_height = 105.0
+metadata/customer_speed = 170.0
+
+[node name="Stations" type="Node2D" parent="Anchors"]
+
+[node name="urn" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/urn"]
+position = Vector2(142, 560)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/urn"]
+position = Vector2(142, 560)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Badge" type="Marker2D" parent="Anchors/Stations/urn"]
+position = Vector2(150, 550)
+
+[node name="flour" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/flour"]
+position = Vector2(502, 300)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/flour"]
+position = Vector2(502, 300)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Badge" type="Marker2D" parent="Anchors/Stations/flour"]
+position = Vector2(510, 290)
+
+[node name="board" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/board"]
+position = Vector2(362, 300)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/board"]
+position = Vector2(362, 300)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Badge" type="Marker2D" parent="Anchors/Stations/board"]
+position = Vector2(370, 290)
+
+[node name="pot" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/pot"]
+position = Vector2(202, 340)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/pot"]
+position = Vector2(202, 340)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Badge" type="Marker2D" parent="Anchors/Stations/pot"]
+position = Vector2(210, 330)
+
+[node name="toppings" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/toppings"]
+position = Vector2(442, 420)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/toppings"]
+position = Vector2(442, 420)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Badge" type="Marker2D" parent="Anchors/Stations/toppings"]
+position = Vector2(450, 410)
+
+[node name="bowl" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/bowl"]
+position = Vector2(542, 500)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/bowl"]
+position = Vector2(542, 500)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Badge" type="Marker2D" parent="Anchors/Stations/bowl"]
+position = Vector2(550, 490)
+
+[node name="counter" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/counter"]
+position = Vector2(302, 580)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/counter"]
+position = Vector2(302, 580)
+script = ExtResource("rect")
+size = Vector2(116, 95)
+
+[node name="Badge" type="Marker2D" parent="Anchors/Stations/counter"]
+position = Vector2(310, 570)
+
+[node name="Counter" type="Node2D" parent="Anchors"]
+
+[node name="Sale" type="Marker2D" parent="Anchors/Counter"]
+position = Vector2(360, 700)
+
+[node name="Pickup" type="Marker2D" parent="Anchors/Counter"]
+position = Vector2(360, 800)
+
+[node name="Queue" type="Node2D" parent="Anchors"]
+
+[node name="0" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(390, 825)
+
+[node name="1" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(390, 890)
+
+[node name="2" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(390, 955)
+
+[node name="3" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(390, 1020)
+
+[node name="4" type="Marker2D" parent="Anchors/Queue"]
+position = Vector2(390, 1085)
+
+[node name="Seats" type="Node2D" parent="Anchors"]
+
+[node name="bench" type="Node2D" parent="Anchors/Seats"]
+
+[node name="0" type="Marker2D" parent="Anchors/Seats/bench"]
+position = Vector2(85, 920)
+
+[node name="1" type="Marker2D" parent="Anchors/Seats/bench"]
+position = Vector2(190, 920)
+
+[node name="2" type="Marker2D" parent="Anchors/Seats/bench"]
+position = Vector2(85, 1005)
+
+[node name="3" type="Marker2D" parent="Anchors/Seats/bench"]
+position = Vector2(190, 1005)
+
+[node name="4" type="Marker2D" parent="Anchors/Seats/bench"]
+position = Vector2(85, 1090)
+
+[node name="5" type="Marker2D" parent="Anchors/Seats/bench"]
+position = Vector2(190, 1090)
+
+[node name="Entrance" type="Marker2D" parent="Anchors"]
+position = Vector2(390, 1200)
+
+[node name="Exit" type="Marker2D" parent="Anchors"]
+position = Vector2(650, 1200)
+
+[node name="Nav" type="Node2D" parent="Anchors"]
+metadata/nav = "straight"
+metadata/cell = 20.0
+metadata/grid_size = Vector2i(0, 0)
+
+[node name="Points" type="Node2D" parent="Anchors/Nav"]
+
+[node name="board" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(420, 420)
+
+[node name="bowl" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(600, 620)
+
+[node name="counter" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(360, 700)
+
+[node name="flour" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(560, 420)
+
+[node name="home" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(480, 640)
+
+[node name="pot" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(260, 460)
+
+[node name="toppings" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(500, 540)
+
+[node name="urn" type="Marker2D" parent="Anchors/Nav/Points"]
+position = Vector2(200, 680)

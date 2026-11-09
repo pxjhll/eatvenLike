@@ -2041,7 +2041,7 @@ func _arrivals_single() -> void:
 			_spawn_single()
 	if _next_customer <= 0.0:
 		var interval := customer_interval()
-		_next_customer = -log(1.0 - rng.randf() * 0.999) * interval
+		_next_customer = interval if shop.fulfillment.arrival == "fixed" else -log(1.0 - rng.randf() * 0.999) * interval
 		_spawn_single()
 
 

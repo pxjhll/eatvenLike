@@ -14,7 +14,8 @@ var profile: RefCounted:
 
 
 func create_session() -> RefCounted:
-	var session := Session.new(profile, ShopSave.new(Session.shop_for(profile)))
+	var shop := Session.shop_for(profile)
+	var session := Session.new(profile, ShopSave.new(shop) if shop != null else null)
 	session.guide_enabled = true
 	session.persist_tuning = true
 	session.recording_enabled = true
