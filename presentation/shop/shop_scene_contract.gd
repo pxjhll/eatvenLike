@@ -101,6 +101,21 @@ static func validate(shop: SpecShop, art: Node) -> Array[Dictionary]:
 		_points(anchors, "Lanes", 1, errors)
 		for path in ["Aisle", "Entrance"]:
 			if not anchors.node(path) is Node2D: _error(errors, "required", "Anchors." + path, "Dining routes require this point.")
+		# The installed component renders the first dine group, as dine_group()
+		# does. Its cup renderer directly indexes table[seat / per_table].
+		for group in shop.seat_groups:
+			if group == null or group.purpose != "dine": continue
+			var capacity := group.start
+			if group.steps.is_empty():
+				capacity += group.step * group.costs.size()
+			else:
+				for amount in group.steps: capacity += amount
+			var path := "Tables/" + group.id
+			var per_table: Variant = anchors.meta(path, "per_table", 2)
+			# _scan reports malformed metadata; never convert/divide it first.
+			if _positive_number(per_table) and float(per_table) == floorf(float(per_table)):
+				_points(anchors, path, ceili(float(capacity) / float(per_table)), errors)
+			break
 	# Nav is optional for straight layouts. When authored, it must describe the
 	# same coordinates the rules use; the runtime must not silently replace data.
 	if errors.is_empty() and anchors.has("Nav") and shop.layout != null:

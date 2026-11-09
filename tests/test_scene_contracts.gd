@@ -74,6 +74,33 @@ func test_prepare_rejects_missing_and_non_scene_resources_without_runtime_errors
 		check(result.art == null and not result.errors.is_empty(), "bad resource yields structured error without candidate")
 		check_eq(result.errors[0].path, "scene_path", "resource error identifies scene_path")
 
+func test_dining_tables_cover_declared_seat_capacity_only_with_dining_component() -> void:
+	var contract: Script = load(CONTRACT)
+	for path in ["Anchors/Tables/dine", "Anchors/Tables/dine/3"]:
+		var art: Node = load(TEA.scene_path).instantiate()
+		art.get_node(path).free()
+		var errors: Array = contract.validate(TEA, art)
+		check(errors.any(func(e: Dictionary) -> bool: return e.path == "Anchors.Tables/dine"), "missing or insufficient dining tables identify their path")
+		art.free()
+	# Five possible seats require three tables at two seats per table. Stage
+	# wait seats and the fallback step must not replace explicit purchase steps.
+	var spec: SpecShop = TEA.duplicate(true)
+	spec.seat_groups[0].start = 1
+	spec.seat_groups[0].costs.assign([10, 20])
+	spec.seat_groups[0].steps.assign([2, 2])
+	spec.seat_groups[0].step = 7
+	var art: Node = load(TEA.scene_path).instantiate()
+	art.get_node("Anchors/Tables/dine/3").free()
+	check_eq(contract.validate(spec, art), [], "three tables hold five declared seats including final partial table")
+	art.get_node("Anchors/Tables/dine/2").free()
+	check(not contract.validate(spec, art).is_empty(), "two tables cannot hold five declared seats")
+	art.get_node("Anchors/Tables/dine").set_meta("per_table", 3)
+	check_eq(contract.validate(spec, art), [], "validated per_table changes required table capacity")
+	art.get_node("Anchors/Tables/dine").free()
+	art.get_node("Sortables/DiningArea").free()
+	check_eq(contract.validate(spec, art), [], "tables remain optional when no dining component consumes them")
+	art.free()
+
 func test_preparation_frees_rejected_candidates() -> void:
 	var contract: Script = load(CONTRACT)
 	var path := "user://bad-art-%d.tscn" % OS.get_process_id()

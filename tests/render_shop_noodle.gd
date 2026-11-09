@@ -22,7 +22,7 @@ func _initialize() -> void:
 func _run() -> void:
 	root.size = Vector2i(720, 1280)
 	root.get_node("ShopAudio")._can_play = false
-	for defect in ["missing", "resource_type", "root_type", "anchors", "tap", "metadata", "duplicate", "reference", "number", "combination"]:
+	for defect in ["missing", "resource_type", "root_type", "anchors", "tap", "metadata", "duplicate", "reference", "number", "combination", "tables_missing", "tables_short", "tables_invalid_per_table"]:
 		await _invalid_startup_preserves_progress(defect)
 	_session_failure_disposes_candidate()
 	await _third_shop_business()
@@ -62,6 +62,9 @@ func _invalid_startup_preserves_progress(defect: String) -> void:
 			if defect == "anchors": art.get_node("Anchors").free()
 			if defect == "tap": art.get_node("Anchors/Stations/lemonade/Tap").free()
 			if defect == "metadata": art.get_node("Anchors").set_meta("world_size", Vector2(NAN, 100))
+			if defect == "tables_missing": art.get_node("Anchors/Tables/dine").free()
+			if defect == "tables_short": art.get_node("Anchors/Tables/dine/3").free()
+			if defect == "tables_invalid_per_table": art.get_node("Anchors/Tables/dine").set_meta("per_table", 0.5)
 			var packed := PackedScene.new()
 			_check(packed.pack(art) == OK, "pack malformed scene " + defect)
 			art.free()
