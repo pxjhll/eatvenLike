@@ -13,7 +13,12 @@ var clock := 0.0
 
 func on(name: String, listener: Callable) -> void:
 	if not _listeners.has(name): _listeners[name] = []
-	_listeners[name].append(listener)
+	if not _listeners[name].has(listener): _listeners[name].append(listener)
+
+
+func clear_history() -> void:
+	log.clear()
+	clock = 0.0
 
 
 func off(name: String, listener: Callable) -> void:

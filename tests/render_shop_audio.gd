@@ -1,5 +1,7 @@
 extends SceneTree
-## Audio integration through the generic shop scene, including replacement of its event bus.
+
+const TestSession := preload("res://tests/shop_test_session.gd")
+## Audio integration through the generic shop scene, including stable subscriptions across restart.
 
 const SHOP := "res://presentation/shop/shop_play.tscn"
 const FIRST: SpecShop = preload("res://content/shops/pancake/shop.tres")
@@ -20,7 +22,7 @@ func _check(ok: bool, label: String) -> void:
 
 func _open(spec: SpecShop) -> Node2D:
 	var scene: Node2D = load(SHOP).instantiate()
-	scene.rules = ShopRules.new(spec)
+	scene.session = TestSession.make(spec, "audio-%d-%s" % [OS.get_process_id(), spec.id], ShopRules.new(spec))
 	root.add_child(scene)
 	scene.set_process(false)
 	return scene
@@ -57,10 +59,11 @@ func _run() -> void:
 	previous.emit("sale")
 	_check(not sale.playing, "Repeated sale is throttled")
 	scene.restart()
-	_check(scene.rules.events != previous, "Restart replaces RuleEvents")
+	_check(scene.rules.events == previous, "Restart keeps RuleEvents and subscriptions")
+	# Audio throttles against wall-clock milliseconds; the startup frame can consume a scene timer.
+	while Time.get_ticks_msec() - audio._last_sale_ms < audio.SALE_INTERVAL_MS:
+		await process_frame
 	previous.emit("sale")
-	_check(not sale.playing, "Old rules bus is disconnected after restart")
-	scene.rules.events.emit("sale")
 	_check(sale.playing, "Restarted rules still trigger sale audio")
 	scene.station_action("unlock", scene.shop.goals.opening_station)
 	_check(unlock.playing, "Successful station action plays through the unlock event")

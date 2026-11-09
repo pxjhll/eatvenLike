@@ -1,4 +1,6 @@
 extends SceneTree
+
+const TestSession := preload("res://tests/shop_test_session.gd")
 ## Isolated live startup/retry regression. Run with an isolated APPDATA.
 ## Optional -- --screenshot=absolute.png exports the blocked startup at 480x800.
 
@@ -70,7 +72,6 @@ func _run() -> void:
 
 func _open(profile: RefCounted, store: ShopSave) -> Node2D:
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	scene.profile = profile
-	scene.store = store
+	scene.session = TestSession.make(TEA, store.path, null, store, profile)
 	root.add_child(scene)
 	return scene

@@ -163,11 +163,12 @@ func load_dict(data: Dictionary) -> String:
 	rng = candidate.rng
 	event_rng = candidate.event_rng
 	mods = candidate.mods
-	events = candidate.events
+	# Keep the live bus and its subscribers; only adopt the validated history.
+	candidate.events.off("*", candidate._on_broadcast)
+	events.log = candidate.events.log
+	events.clock = candidate.events.clock
 	event_defs = candidate.event_defs
 	pending_events = candidate.pending_events
-	# The candidate's bound listener must not outlive its temporary rules object.
-	events.off("*", candidate._on_broadcast)
 	events.on("*", _on_broadcast)
 	return ""
 
@@ -256,7 +257,7 @@ func reset(seed := -1) -> void:
 	_next_staff = 1
 	rng.seed = shop.random_seed if seed < 0 else seed
 	mods = RuleModifiers.new()
-	events = RuleEvents.new()
+	events.clear_history()
 	unlocked = {}
 	levels = {}
 	boxes = {}

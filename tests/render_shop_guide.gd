@@ -1,4 +1,6 @@
 extends SceneTree
+
+const TestSession := preload("res://tests/shop_test_session.gd")
 ## 通用店铺场景里的奶茶店引导（数据驱动，§6.3），用真实点按走一遍：欢迎卡、柠檬水、第一杯、开店上手卡、
 ## 后面的开线、原料箱、后厨招人、客人等急、加料线以后的多招人；重开游戏记得看过哪些。
 ## 和旧场景的 render_guide.gd 一一对应（旧场景删掉时这个留下）。
@@ -27,8 +29,7 @@ func _run() -> void:
 	root.size = Vector2i(720, 1280)
 	if FileAccess.file_exists(save_path): DirAccess.remove_absolute(save_path)
 	view = load("res://presentation/shop/shop_play.tscn").instantiate()
-	view.rules = ShopRules.new(TEA)
-	view.store = ShopSave.new(TEA, save_path)
+	view.session = TestSession.make(TEA, save_path, ShopRules.new(TEA), ShopSave.new(TEA, save_path))
 	root.add_child(view)
 	await process_frame
 	view.set_process(false)
@@ -138,7 +139,8 @@ func _run() -> void:
 	await _click(hud.tab("shop"))
 	view.free()
 	var reopened: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	reopened.store = ShopSave.new(TEA, save_path)
+	reopened.session = TestSession.make(TEA, save_path, null, ShopSave.new(TEA, save_path))
+	reopened.session.guide_enabled = true
 	await _reopen(reopened)
 	_check(reopened.guide.active.is_empty() and reopened.guide.seen.has("lost_machine"), "重开游戏记得看过的引导")
 	reopened.free()
@@ -148,7 +150,8 @@ func _run() -> void:
 	old_save.deploy_worker(old_save.roster[1].id)
 	ShopSave.new(TEA, save_path).save_game(old_save, 1.0, [])
 	var veteran: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	veteran.store = ShopSave.new(TEA, save_path)
+	veteran.session = TestSession.make(TEA, save_path, null, ShopSave.new(TEA, save_path))
+	veteran.session.guide_enabled = true
 	await _reopen(veteran)
 	_check(veteran.guide.active.is_empty() and veteran.guide.seen.has("opening"), "已经开过张的存档跳过开场")
 	veteran.free()
@@ -161,7 +164,7 @@ func _run() -> void:
 	quit(1 if failures else 0)
 
 
-## 只塞存档进场景：场景自己读档、放引导
+## Explicit session reopens the isolated save and enables only the tutorial.
 func _reopen(scene: Node2D) -> void:
 	root.add_child(scene)
 	await process_frame

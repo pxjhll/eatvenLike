@@ -1,4 +1,6 @@
 extends SceneTree
+
+const TestSession := preload("res://tests/shop_test_session.gd")
 ## 扩展验收（规格 §6.2.1）：不改 HUD 核心，从外面加一个页签和它的页面、弹一张奇遇卡、显示一个进行中加成的图标，
 ## 都要能看见、能点；另外新场景能整局跑下去不报错（读档、存档、重开都走一遍）。
 
@@ -18,8 +20,7 @@ func _initialize() -> void:
 func _run() -> void:
 	root.size = Vector2i(720, 1280)
 	view = load("res://presentation/shop/shop_play.tscn").instantiate()
-	view.rules = ShopRules.new(TEA)
-	view.store = ShopSave.new(TEA, save_path)
+	view.session = TestSession.make(TEA, save_path, ShopRules.new(TEA), ShopSave.new(TEA, save_path))
 	root.add_child(view)
 	await process_frame
 	view.set_process(false)
@@ -98,7 +99,7 @@ func _run() -> void:
 	_check(rules.sold > 0, "新场景能接着卖")
 	_check(view.save_now(false) == OK, "存档成功")
 	var reopened: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	reopened.store = ShopSave.new(TEA, save_path)
+	reopened.session = TestSession.make(TEA, save_path, null, ShopSave.new(TEA, save_path))
 	root.add_child(reopened)
 	await process_frame
 	reopened.set_process(false)
