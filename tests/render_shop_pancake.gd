@@ -30,6 +30,9 @@ func _stall(id: int) -> CanvasItem:
 
 
 func _run() -> void:
+	create_timer(45.0).timeout.connect(func() -> void:
+		print("SHOP PANCAKE GUI: timed out before completing checks")
+		quit(1))
 	root.size = Vector2i(720, 1280)
 	for path in [save_path, profile_path]:
 		if FileAccess.file_exists(path): DirAccess.remove_absolute(path)
@@ -155,9 +158,15 @@ func _run() -> void:
 	_check(view.jump_shop(-1) == "", "第一家店没有上一家")
 	_check(view.jump_shop(1) == "tea" and view.profile.shop == "tea" and not view.profile.fresh_shop, "跳到下一家奶茶店")
 	_check(FileAccess.file_exists(save_path), "跳店前存好煎饼摊")
-	view.profile.shop = "pancake"
-	view.profile.save()
-	view.change_scene_on_leave = true
+	_check(view.profile.select_shop("pancake") == OK, "通过跨店提交切回煎饼摊")
+	# 接受跳店后的场景已经结束其会话；从刚持久化的 Profile 重开，继续验证结店。
+	view.free()
+	view = _open(Profile.new(profile_path))
+	await process_frame
+	view.set_process(false)
+	hud = view.ui
+	guide = view.guide
+	guide.refresh(0)
 
 	# 完店：弹完店卡，目标页出“结店”，总结卡第一下只提醒，第二下去奶茶店
 	_rules().gold = 99999
