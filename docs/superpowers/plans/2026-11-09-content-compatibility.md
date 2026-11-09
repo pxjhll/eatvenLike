@@ -25,13 +25,14 @@ Work in `D:/Tes/eatventure` on `codex/content-save-compatibility`; no worktrees.
 
 ### Task 2: Guarded store migration and retryable session startup
 
-**Files:** Modify `game/rules/shop_save.gd`, `game/app/shop_session.gd`, `tests/test_state_validation.gd`, `tests/run_all.gd`; create `tests/test_content_save.gd`; extend `tests/test_session.gd` or `tests/test_scene_session.gd` if needed. Add `docs/content-save-compatibility.md`.
+**Files:** Modify `game/rules/shop_save.gd`, `game/app/shop_session.gd`, `tests/test_state_validation.gd`, `tests/run_all.gd`, `tests/render_progress_retry.gd`; create `tests/test_content_save.gd`; extend `tests/test_session.gd` or `tests/test_scene_session.gd` if needed. Add `docs/content-save-compatibility.md`.
 
 **Interfaces:** Consume Task 1 describe/load_dict contracts. Produce wrapper VERSION=2 accepting legacy v1; `ShopSave.load_error: Error`; overridable `_backup_before_content_update() -> Error` for failure injection. Backups are exact original sibling copies `.pre-content-*`, never a move. Session.start checks load_error before adopting candidate.
 
 - [ ] Write failing tests for v1 valid refresh/invalid protection, changed numeric effects/prices/stats/capacity preservation, same-content exactness, topology/level shrink protection, future version/content protection, invalid same-content state quarantine, direct saves/fresh intent protection, file replaced between load/save, backup failure, failed save/retry and no mutation at load time. Use metadata from contract in existing state corruption fixtures so tests continue to target current format semantic corruption.
 - [ ] Capture failing assertions using focused runner/error_counter. Implement parsing metadata/version classification, common before-load/write assessment, candidate refresh and exact-byte copy before migration overwrite. If saving fails after backup, original remains intact and retry works; detect external replacement each time. Legacy validation failure is incompatible. Current-format malformed data or same-content semantic failure remains corruption. Future errors block.
 - [ ] Gate Session.start: hold returned candidate locally, on store.load_error != OK keep rules null and started false; retry must actually reload repaired file. Check direct save guard covers ProgressService.initialize_fresh without changing profile on failure.
+- [ ] Extend the real-scene retry runner with an incompatible-content file: verify the visible blocker, scene/session rules null, processing stopped, autosave/focus/exit preserve original bytes; repair by restoring a compatible file and invoke retry on the same scene, then verify saved gold and resumed play. Keep every path isolated and runtime errors fatal.
 - [ ] Run focused tests and full `tests/run_all.gd`, keeping runtime error_counter enabled. Document supported rebalance changes, conservative topology rejection, backup naming/retention and retry behavior. Report evidence to `.superpowers/sdd/2026-11-09-content-compatibility/task-2-report.md`. Do not commit; parent commits and requests review.
 
 ## Final integration
