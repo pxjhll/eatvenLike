@@ -26,6 +26,8 @@ Stable codes: `ok`, `unknown_command`, `invalid_argument`, `unknown_station`, `s
 
 Parameter names: gold errors use `required`; stage dependencies use `stage` (current stage index); station dependencies use `station`; box dependencies use `material`; machine level requirements use `station` and `required_level`; capacity errors use `count`; flyer active/cooldown use `seconds`; worker errors use `id`; invalid requests use `argument` and `command`. Add target IDs as useful. Checker ordering and command no-op behavior remain exactly current: e.g. deploying an already-deployed worker succeeds without emitting another event. Auto deployment chooses the same post as before; successful check metadata can carry resolved `post` for execution.
 
+Connection-specific codes are `unknown_connection` (missing or disabled) and `connection_already_built`, both carrying `id`. They preserve the existing distinct failures without treating a connection as a station or an argument-type error.
+
 ## Presentation and compatibility
 
 Business checks/commits return codes directly and never classify human text. Central message templates/formatting live in `content/ui/rule_command_text.gd`, a neutral content dependency usable by both UI read models and compatibility tools. It formats code+params with optional SpecShop name resolution and per-code template overrides. It must preserve current Chinese messages, including command-specific occupied-post wording. No domain import of presentation scripts.
