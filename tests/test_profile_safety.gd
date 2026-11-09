@@ -83,6 +83,28 @@ func test_missing_version_compatibility_and_external_replacement() -> void:
 	check_eq(profile.to_dict(), before, "failed reset does not mutate memory")
 	check_eq(FileAccess.get_file_as_string(path), future, "external future bytes preserved")
 
+func test_unknown_shop_id_falls_back_to_first_shop() -> void:
+	# 改名或删掉的店不能把存档卡死在重试界面：和旧版一样退回第一家店，其余进度保留
+	var path := _path("unknown_shop")
+	_write(path, '{"version":1,"shop":"removed_shop","fresh_shop":true,"trophies":5,"records":[{"seconds":2.0}]}')
+	var profile := Profile.new(path)
+	check_eq(profile.load_error, OK, "unknown shop id does not block startup")
+	check_eq(profile.shop, Profile.shops()[0], "no finished shop: falls back to the first shop")
+	check_eq(profile.fresh_shop, false, "fallback does not wipe the first shop's save")
+	check_eq(profile.trophies, 5, "other progress kept")
+	check_eq(profile.records.size(), 1, "records kept")
+	check_eq(profile.save(), OK, "fallback profile can save")
+	check_eq(Profile.new(path).shop, Profile.shops()[0], "fallback persisted")
+	# 打过的店不白玩：退到结店纪录里最远那家的下一家
+	var ids := Profile.shops()
+	_write(path, JSON.stringify({"version": 1, "shop": "removed_shop", "records": [{"shop": ids[0]}, {"shop": "gone"}]}))
+	check_eq(Profile.new(path).shop, ids[1] if ids.size() > 1 else ids[0], "falls back to the shop after the furthest finished one")
+	_write(path, JSON.stringify({"version": 1, "shop": "removed_shop", "records": [{"shop": ids[ids.size() - 1]}, {"shop": ids[0]}]}))
+	check_eq(Profile.new(path).shop, ids[ids.size() - 1], "furthest finished shop wins; last shop stays")
+	_write(path, '{"version":1,"shop":7}')
+	check(Profile.new(path).load_error != OK, "non-string shop id is still invalid")
+
+
 func test_actual_scene_finish_failure_preserves_signals_and_shop_save() -> void:
 	var profile := FailingProfile.new(_path("scene-profile"))
 	profile.save()
