@@ -149,7 +149,16 @@ func _run() -> void:
 	await _click(hud.page_node("menu").pause_button)
 	_check(not _rules().paused, "再按一下继续营业")
 
-	# 重开：先确认，取消什么都不变，确认才重开
+	# 重开：先确认，取消什么都不变，确认才清掉店内员工和培养；试玩记录另起一局
+	_rules().gold = 1000.0
+	_check(_rules().hire() == "" and _rules().upgrade("staff/front") == "", "重开前招募员工并购买培养")
+	var record_path := "user://shop-tea-gui-recorder-%d.txt" % OS.get_process_id()
+	if FileAccess.file_exists(record_path): DirAccess.remove_absolute(record_path)
+	view.recorder.file_path = record_path
+	view.recorder.enabled = true
+	view.recorder.setup(_rules())
+	_run_until(func() -> bool: return false, 90.0)
+	_check(_rules().sold > 0, "重开之前已营业并录下收入")
 	var before := _rules().to_dict()
 	await _click(hud.page_node("menu").restart_button)
 	_check(hud.page == "restart", "重新开始先问一句")
@@ -158,6 +167,22 @@ func _run() -> void:
 	hud.open_page("restart")
 	await _click(hud.page_node("restart").confirm_button)
 	_check(not _rules().is_open() and int(_rules().gold) == 50 and hud.page == "shop", "确认以后重开成空店，回到店铺")
+	_check(_rules().roster.size() == 1 and _rules().level("staff/front") == 0, "重开清掉店内招募员工和培养等级")
+	var reset_save: ShopRules = view.store.load_game()
+	_check(reset_save.roster.size() == 1 and reset_save.level("staff/front") == 0, "重开结果已保存")
+	var reset_rows: PackedStringArray = view.recorder.text().split("\n", false)
+	var last_row: Dictionary = JSON.parse_string(reset_rows[reset_rows.size() - 1])
+	_check(last_row.has("session") and int(last_row.t) == 0, "重开记录新的会话起点")
+	var line_count: int = view.recorder.line_count()
+	_run_until(func() -> bool: return false, 59.75)
+	_check(view.recorder.line_count() == line_count, "重开后不足一分钟不采样")
+	view._process(0.25)
+	reset_rows = view.recorder.text().split("\n", false)
+	last_row = JSON.parse_string(reset_rows[reset_rows.size() - 1])
+	_check(view.recorder.line_count() == line_count + 1 and int(last_row.t) == 60, "重开后第一条采样在一分钟")
+	_check(float(last_row.get("income", -1)) == 0.0 and int(last_row.get("cups", -1)) == 0 and int(last_row.get("lost", -1)) == 0, "重开后采样没有沿用上一局的收入、销量和流失")
+	view.recorder.enabled = false
+	DirAccess.remove_absolute(record_path)
 
 	# 调参面板：菜单底下的按钮打开，滑杆改得动规则层，还原、收起
 	var panel: PanelContainer = view.tuning

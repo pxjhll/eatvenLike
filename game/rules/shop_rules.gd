@@ -614,8 +614,8 @@ func order_weights() -> Dictionary:
 		var open: Array = []
 		for d in shop.dishes:
 			if d.flavor_station == "" or d.topping_count <= 0: continue
-			if flavor_open(d): open.append(d.id)
-		if open.is_empty(): result[stage.flavor_fallback] = float(result.get(stage.flavor_fallback, 0.0)) + share
+			if dish_open(d.id): open.append(d.id)
+		if open.is_empty() and dish_open(stage.flavor_fallback): result[stage.flavor_fallback] = float(result.get(stage.flavor_fallback, 0.0)) + share
 		for id in open: result[id] = share / open.size()
 	return result
 

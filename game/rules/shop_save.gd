@@ -1,6 +1,7 @@
 class_name ShopSave
 extends RefCounted
-## 通用店内存档（规格 §3.12）：每家店一个文件 user://shop_<店铺 id>.json，存 ShopRules 的整店状态。
+## 通用店内存档（规格 §3.12）：文件名由 SpecShop.save_file 指定，留空时用 user://shop_<店铺 id>.json。
+## 存 ShopRules 的整店状态；店铺流程不兼容时可以更换文件名，旧档保留原样。
 ## 跨店的东西（开到第几家、结店纪录、永久加成）在 Profile 里，不在这里。旧格式存档作废，读到当没有。
 ## 文件：{format, version, shop, speed, guides, state(base64 二进制), state_sha256}；读写都先校验，坏档改名留底。
 
@@ -22,7 +23,9 @@ static func path_for(shop_id: String) -> String:
 
 func _init(shop_: SpecShop, path_ := "") -> void:
 	shop = shop_
-	path = path_ if not path_.is_empty() else path_for(shop.id)
+	path = path_
+	if path.is_empty():
+		path = "user://".path_join(shop.save_file) if not shop.save_file.is_empty() else path_for(shop.id)
 
 
 func exists() -> bool:

@@ -216,6 +216,7 @@ func _t(key: String, values := {}) -> String:
 func restart() -> void:
 	if is_instance_valid(_drag): _drag.cancel()
 	rules.reset()
+	if recorder != null: recorder.setup(rules)
 	ShopAudio.enter_shop(rules.events, shop.background_music)
 	_reset_visuals()
 	_show_toast(_t("restarted"))

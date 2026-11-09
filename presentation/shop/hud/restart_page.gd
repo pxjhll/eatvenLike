@@ -11,7 +11,7 @@ func setup(view: Node2D, hud: Control) -> void:
 	add_theme_constant_override("separation", 22)
 	hud._text(self, "重新开始这家店？", 36).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(HSeparator.new())
-	hud._text(self, "金币、设备与营业进度将重置\n已拥有伙伴和培养等级会保留", 25).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hud._text(self, "金币、设备、店内招募员工与培养等级将重置\n只保留初始员工，跨店记录不受影响", 25).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var actions: HBoxContainer = hud._row(self, 22)
 	cancel_button = hud._action(actions, "继续经营", hud.open_page.bind("menu"))
 	confirm_button = hud._action(actions, "确认重新开始", func() -> void: view.restart(); hud.open_page("shop"))
