@@ -7,6 +7,14 @@ definitions; no migration writes occur during loading.
 Version 1 has no original content fingerprints, so compatibility can only be
 assessed by validating its saved state against current definitions. Historical
 geometry or mode changes that leave no invalid saved references cannot be detected.
+Before refreshing, the storage envelope also checks every saved key in the
+`BY_DATA_ID` maps against the current default maps. Removed recorded IDs are
+incompatible, including purchased staff/material track levels and unlocked
+stations. The original bytes stay in place and startup, direct saves, and fresh
+shop initialization are blocked. Additions remain compatible when all recorded
+IDs survive; new IDs receive current defaults. This stricter envelope policy
+does not change the raw `ShopRules.load_dict(data)` contract: raw restores still
+merge current IDs, supply defaults for additions, and omit removed IDs.
 
 Compatible numeric updates preserve gold, staff, upgrade levels, business progress,
 RNG state, event history, and recorded jobs and timers. They adopt current prices,
@@ -33,6 +41,14 @@ Invalid legacy business state is protected as incompatible. Malformed envelopes,
 binary corruption, malformed v2 metadata and invalid same-content business state
 retain the existing `.corrupt-*` quarantine behavior. Failed quarantine blocks
 subsequent blind saves; an explicit load/retry reassesses the repaired file.
+
+Deletion also reassesses the current on-disk file. Incompatible, future, and
+unreadable replacements are retained without quarantine or deletion, including
+when an active session has already refused to save over them. Finishing still
+commits the profile first, once; retaining a file during postcommit cleanup does
+not report a retryable finish failure. A successful finish seals the old session
+against further saves and repeated finishes. Compatible saves can be cleaned up
+normally, and a missing file requires no cleanup.
 
 Outgoing rules must use the store's gameplay definitions (equivalent deep copies
 are accepted), and their state must pass semantic validation. This prevents old

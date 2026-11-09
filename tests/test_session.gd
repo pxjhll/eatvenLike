@@ -252,6 +252,33 @@ func test_finish_commits_once_and_blocks_all_old_session_writes() -> void:
 	check(not FileAccess.file_exists(store.path), "sealed session cannot recreate old shop save")
 	check_eq(profile.records.size(), 1, "only one durable finish record")
 
+func test_finish_retains_protected_replacement_and_commits_profile_once() -> void:
+	for mode in ["future", "structure"]:
+		var profile := Profile.new(_path(mode + "-finish-profile"))
+		check_eq(profile.save(), OK, mode + " profile seeded")
+		var store := ShopSave.new(PANCAKE, _path(mode + "-finish-shop"))
+		var session := _session(profile, store)
+		check_eq(session.start(), OK, mode + " session starts")
+		check_eq(session.save(), OK, mode + " active save")
+		var replacement: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(store.path))
+		if mode == "future": replacement.version = 99
+		else: replacement.content.structure = "a".repeat(64)
+		_write(store.path, JSON.stringify(replacement))
+		var original := FileAccess.get_file_as_bytes(store.path)
+		check_eq(session.save(), ERR_UNAVAILABLE, mode + " replacement blocks save")
+		check_eq(session.finish({"shop": "pancake", "seconds": 1.25}), OK, mode + " profile committed despite retained cleanup")
+		check(session.transition_committed, mode + " finish seals session")
+		check(FileAccess.file_exists(store.path), mode + " finish retains protected replacement")
+		if FileAccess.file_exists(store.path): check(FileAccess.get_file_as_bytes(store.path) == original, mode + " finish retains exact bytes")
+		var persisted := Profile.new(profile.path)
+		check_eq(persisted.shop, "tea", mode + " profile advanced durably")
+		check_eq(persisted.records.size(), 1, mode + " one durable finish record")
+		check_eq(persisted.records[0].seconds, 1.25, mode + " finish record retained")
+		check(session.finish({"shop": "pancake"}) != OK, mode + " finish cannot replay")
+		check(session.save() != OK and session.restart() != OK and session.start() != OK, mode + " old session cannot mutate")
+		check_eq(Profile.new(profile.path).records.size(), 1, mode + " retry cannot duplicate durable records")
+		if FileAccess.file_exists(store.path): check(FileAccess.get_file_as_bytes(store.path) == original, mode + " sealed session retains replacement")
+
 func test_jump_requires_both_commits_and_seals_successful_session() -> void:
 	var profile := FailingProfile.new(_path("jump-profile"))
 	profile.save()

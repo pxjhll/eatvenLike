@@ -35,7 +35,16 @@ func exists() -> bool:
 
 
 func delete() -> void:
-	if exists(): DirAccess.remove_absolute(path)
+	last_error = ""
+	# Finish cleanup runs after the profile commit. Retain unsafe replacements
+	# without making that committed transition retryable.
+	var existing := _assess_existing()
+	if existing.get("missing", false): return
+	if not existing.get("error", "").is_empty():
+		last_error = "Shop save cleanup skipped: " + existing.error
+		return
+	var error := DirAccess.remove_absolute(path)
+	if error != OK: last_error = "Shop save cleanup failed: %s" % error_string(error)
 
 
 ## Callers must check load_error before adopting the returned candidate.
@@ -107,11 +116,28 @@ func _assess_existing() -> Dictionary:
 	var result := _read_existing()
 	if result.get("missing", false) or not result.get("error", "").is_empty(): return result
 	var candidate := ShopRules.new(shop)
-	var error := candidate.load_dict(result.state, result.refresh)
+	var error := _migration_id_error(result.state, candidate.to_dict()) if result.refresh else ""
+	if error.is_empty(): error = candidate.load_dict(result.state, result.refresh)
 	if not error.is_empty():
 		return {"error": "Invalid shop state: " + error, "protected": result.refresh}
 	result.rules = candidate
 	return result
+
+
+func _migration_id_error(state: Dictionary, defaults: Dictionary) -> String:
+	# Raw restore deliberately drops removed IDs. The storage envelope must
+	# preserve every recorded ID before authorizing a migration or fresh write.
+	for key in ShopRules.BY_DATA_ID:
+		var recorded: Variant = state.get(key)
+		var current: Variant = defaults.get(key)
+		if not recorded is Dictionary or not current is Dictionary:
+			return "Invalid migration ID map: " + key
+		for id in recorded:
+			if not id is String and not id is StringName:
+				return "Invalid migration ID in map: " + key
+			if not current.has(id):
+				return "Saved ID %s.%s is absent from current content; original save retained." % [key, id]
+	return ""
 
 
 func _backup_before_content_update() -> Error:

@@ -4,6 +4,7 @@ const TEA = preload("res://content/shops/tea/shop.tres")
 const CONTRACT = preload("res://game/rules/shop_content_contract.gd")
 const SESSION = preload("res://game/app/shop_session.gd")
 const Profile = preload("res://game/app/profile.gd")
+const SpecValidator = preload("res://game/rules/shop_spec_validator.gd")
 var paths: Array[String] = []
 
 class BackupFailure extends ShopSave:
@@ -36,6 +37,118 @@ func _backups(path: String) -> Array[String]:
 	for file in DirAccess.get_files_at(path.get_base_dir()):
 		if file.begins_with(path.get_file() + ".pre-content-"): result.append(path.get_base_dir().path_join(file))
 	return result
+
+func _with_optional_progress(mode: String) -> SpecShop:
+	var spec: SpecShop = TEA.duplicate(true)
+	if mode == "material":
+		var material := SpecMaterial.new()
+		material.id = "retired_material"
+		material.item = "tea_leaf"
+		material.track = SpecUpgradeTrack.new()
+		material.track.id = "retired_material"
+		var level := SpecUpgradeLevel.new()
+		level.cost = 1
+		material.track.levels.append(level)
+		spec.station("supply").materials.append(material)
+	elif mode == "station":
+		var station := SpecStation.new()
+		station.id = "retired_station"
+		station.block = "dispenser"
+		station.companion_of = "lemonade"
+		spec.stations.append(station)
+		spec.layout.points[station.id] = spec.layout.points.lemonade
+	return spec
+
+func test_legacy_removed_recorded_ids_protect_original_and_block_start_and_writes() -> void:
+	for mode in ["staff", "material", "station"]:
+		var old_spec := _with_optional_progress(mode)
+		var changed: SpecShop = TEA.duplicate(true)
+		if mode == "staff": changed.staff.tracks.remove_at(0)
+		check(SpecValidator.validate(old_spec, Profile.CAMPAIGN).is_empty(), mode + " original content valid")
+		check(SpecValidator.validate(changed, Profile.CAMPAIGN).is_empty(), mode + " changed content valid")
+		var old := ShopRules.new(old_spec)
+		old.unlock("lemonade")
+		old.gold = 100000.0
+		var key := "staff/front" if mode == "staff" else "supply/retired_material"
+		if mode == "station": check(old.station_unlocked("retired_station"), "removed station was unlocked")
+		else: check_eq(old.upgrade(key), "", mode + " track purchased")
+		var data := old.to_dict()
+		# The raw API intentionally keeps its permissive add/remove merge contract.
+		var raw := ShopRules.new(changed)
+		check_eq(raw.load_dict(data), "", mode + " raw restore still allows removed ID")
+		check(not raw.unlocked.has("retired_station") if mode == "station" else not raw.levels.has(key), mode + " raw merge omits removed ID")
+		var path := _path()
+		var original := _write(path, data, {}, 1)
+		var store := ShopSave.new(changed, path)
+		check_eq(store.save_game(ShopRules.new(changed)), ERR_UNAVAILABLE, mode + " direct save blocked")
+		store.load_game()
+		check_eq(store.load_error, ERR_UNAVAILABLE, mode + " load protected")
+		var profile := Profile.new(_path())
+		profile.shop = "tea"
+		var session := SESSION.new(profile, store)
+		check_eq(session.start(), ERR_UNAVAILABLE, mode + " startup blocked")
+		check(session.rules == null and not session.started, mode + " no playable candidate")
+		check_eq(session.save(), ERR_UNAVAILABLE, mode + " session save blocked")
+		var fresh_profile := Profile.new(_path())
+		check_eq(fresh_profile.finish_shop({"shop": "pancake"}), OK, mode + " fresh marker seeded")
+		var profile_bytes := FileAccess.get_file_as_bytes(fresh_profile.path)
+		var fresh := SESSION.new(fresh_profile, ShopSave.new(changed, path))
+		check_eq(fresh.start(), ERR_UNAVAILABLE, mode + " fresh save blocked")
+		check(fresh_profile.fresh_shop and fresh.rules == null, mode + " fresh marker retained")
+		check(FileAccess.get_file_as_bytes(fresh_profile.path) == profile_bytes, mode + " profile unchanged")
+		check(FileAccess.get_file_as_bytes(path) == original, mode + " exact original retained")
+		check_eq(_backups(path).size(), 0, mode + " no migration backup")
+
+func test_legacy_safe_additions_get_defaults_and_keep_recorded_ids() -> void:
+	for mode in ["material", "station"]:
+		var path := _path()
+		var old := ShopRules.new(TEA)
+		old.gold = 4321.0
+		var data := old.to_dict()
+		var original := _write(path, data, {}, 1)
+		var changed := _with_optional_progress(mode)
+		var store := ShopSave.new(changed, path)
+		var resumed := store.load_game()
+		check_eq(store.load_error, OK, mode + " safe addition loads")
+		check_eq(resumed.gold, 4321.0, mode + " progress retained")
+		for map in ShopRules.BY_DATA_ID:
+			for id in data[map]: check(resumed.to_dict()[map].has(id), mode + " recorded ID retained: " + map + "." + str(id))
+		if mode == "material": check_eq(resumed.levels["supply/retired_material"], 1, "new material gets default level")
+		else: check_eq(resumed.unlocked.retired_station, false, "new station gets locked default")
+		check_eq(store.save_game(resumed), OK, mode + " safe addition saves")
+		var backups := _backups(path)
+		check_eq(backups.size(), 1, mode + " migration backed up")
+		if not backups.is_empty(): check(FileAccess.get_file_as_bytes(backups[0]) == original, mode + " exact original backed up")
+
+func test_legacy_malformed_id_maps_remain_protected_without_runtime_errors() -> void:
+	for map in ShopRules.BY_DATA_ID:
+		for malformed in [null, [], 7, {7: true}]:
+			var path := _path()
+			var data := ShopRules.new(TEA).to_dict()
+			data[map] = malformed
+			var original := _write(path, data, {}, 1)
+			var store := ShopSave.new(TEA, path)
+			store.load_game()
+			check_eq(store.load_error, ERR_UNAVAILABLE, map + " malformed legacy protected")
+			check_eq(store.save_game(ShopRules.new(TEA)), ERR_UNAVAILABLE, map + " malformed legacy blocks save")
+			check(FileAccess.get_file_as_bytes(path) == original, map + " malformed original retained")
+
+func test_delete_reassesses_and_retains_protected_or_unreadable_files() -> void:
+	for mode in ["future", "structure", "unreadable"]:
+		var path := _path()
+		var store := ShopSave.new(TEA, path)
+		check_eq(store.save_game(ShopRules.new(TEA)), OK, mode + " seed compatible save")
+		var metadata := CONTRACT.describe(TEA)
+		if mode == "structure": metadata.structure = "a".repeat(64)
+		_write(path, ShopRules.new(TEA).to_dict(), metadata, 99 if mode == "future" else 2)
+		if mode == "unreadable":
+			var file := FileAccess.open(path, FileAccess.WRITE)
+			file.store_string("{unreadable-replacement")
+			file.close()
+		var original := FileAccess.get_file_as_bytes(path)
+		store.delete()
+		check(FileAccess.file_exists(path), mode + " delete retains replacement")
+		if FileAccess.file_exists(path): check(FileAccess.get_file_as_bytes(path) == original, mode + " delete keeps exact bytes")
 
 func test_legacy_refresh_is_read_only_until_exact_backup_and_save() -> void:
 	var path := _path()
