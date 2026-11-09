@@ -39,7 +39,7 @@ func test_script_strings_have_glyphs() -> void:
 	# 表现层文案和命令的拒绝理由都会显示在界面上
 	var default_font: FontFile = load(FONT)
 	var literal := RegEx.create_from_string("\"([^\"\\\\]*)\"")
-	for folder in ["res://presentation", "res://game"]:
+	for folder in ["res://presentation", "res://game", "res://content/ui"]:
 		for path in _scripts(folder):
 			var font: FontFile = default_font
 			var source := FileAccess.get_file_as_string(path)

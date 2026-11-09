@@ -6,15 +6,25 @@ extends RefCounted
 
 var rules: ShopRules
 var shop: SpecShop
+var message_formatter: Callable
+
+const CommandResult := preload("res://game/rules/rule_command_result.gd")
+const CommandText := preload("res://content/ui/rule_command_text.gd")
 
 ## 升级效果 → 面板上“这一级做什么”的分类
 const KIND_TEXT := {"capacity": "产能升级", "price": "售价升级", "menu": "开新口味", "both": "产能售价升级"}
 const CAPACITY_KINDS := ["speed", "duration", "batch", "process_slots"]
 
 
-func _init(rules_: ShopRules) -> void:
+func _init(rules_: ShopRules, message_formatter_: Callable = Callable()) -> void:
 	rules = rules_
 	shop = rules.shop
+	message_formatter = message_formatter_
+
+
+func command_message(status: Dictionary) -> String:
+	if message_formatter.is_valid(): return str(message_formatter.call(status.duplicate(true), shop))
+	return CommandText.format(status, shop)
 
 
 # ---------- 名字与文案 ----------
@@ -177,7 +187,8 @@ func _unlock_section(id: String, stage: int) -> Dictionary:
 		if stage > 0: title = def.display_name
 		for key in def.stations: members.append(station_name(key))
 	var d := shop.dish(dish)
-	return {"cost": cost, "error": rules.unlock_error(id), "title": title, "members": members, "note": note,
+	var status := rules.command_status("unlock", {"id": id})
+	return {"cost": cost, "status": status, "error": command_message(status), "title": title, "members": members, "note": note,
 		"dish": dish_name(dish) if not dish.is_empty() else "", "dish_price": rules.dish_price(dish) if d != null else 0.0,
 		"quote": rules.dish_quote(dish) if d != null else {},
 		"description": "基础说明：" + shop.station(id).description, "frame": stage >= 0 and stage == next_stage()}
@@ -190,8 +201,9 @@ func track_row(key: String) -> Dictionary:
 	var id := key.get_slice("/", 0)
 	var level := rules.level(key) if not key.begins_with("staff/") else int(rules.levels[key]) + 1
 	var cost := rules.upgrade_cost(key)
+	var status := rules.command_status("upgrade", {"key": key})
 	var row := {"key": key, "title": t.display_name, "label": t.effect_label, "level": level, "max": t.max_level(),
-		"cost": cost, "error": rules.upgrade_error(key), "star_next": false, "kind": "", "now": "Lv.%d" % level,
+		"cost": cost, "status": status, "error": command_message(status), "star_next": false, "kind": "", "now": "Lv.%d" % level,
 		"next": "满级" if cost < 0 else "Lv.%d" % (level + 1), "effect": ""}
 	if cost >= 0: row.star_next = t.levels[level - 1].star
 	var next_effects: Array = t.levels[level - 1].effects if cost >= 0 else []
@@ -359,16 +371,18 @@ func price_preview(key: String) -> Dictionary:
 func material_row(st: SpecStation, m: SpecMaterial) -> Dictionary:
 	var key := st.id + "/" + m.id
 	var level := rules.level(key)
+	var status := rules.command_status("upgrade", {"key": key})
 	var row := {"id": m.id, "key": key, "name": m.display_name, "icon": m.icon if not m.icon.is_empty() else m.id,
-		"level": level, "cost": rules.upgrade_cost(key), "error": rules.upgrade_error(key), "state": "open",
+		"level": level, "cost": rules.upgrade_cost(key), "status": status, "error": command_message(status), "state": "open",
 		"requires": m.track.requires_level, "effect": ""}
 	if rules.boxes.has(m.id) and not rules.boxes[m.id]:
 		row.state = "box"
 		row.cost = m.box_cost
-		row.error = rules.box_error(m.id)
+		row.status = rules.command_status("unlock_box", {"material": m.id})
+		row.error = command_message(row.status)
 		row.box_station = station_name(m.box_station)
-		row.effect = ("解锁%s后开放" if row.error.begins_with("请先解锁") else "解锁后%s才有原料") % row.box_station
-		if row.error.begins_with("请先解锁"): row.state = "box_closed"
+		row.effect = ("解锁%s后开放" if row.status.code == CommandResult.STATION_REQUIRED else "解锁后%s才有原料") % row.box_station
+		if row.status.code == CommandResult.STATION_REQUIRED: row.state = "box_closed"
 		return row
 	if rules.level(st.id) < m.track.requires_level:
 		row.state = "closed"
@@ -392,9 +406,10 @@ func seats() -> Dictionary:
 	var full := g.start + (ShopRules._sum(g.steps) if not g.steps.is_empty() else g.step * g.costs.size())
 	var used := rules.seats_used()
 	var next := rules._seat_step(g) if rules.seat_cost() >= 0 else 0
+	var status := rules.command_status("buy_seat", {})
 	return {"total": total, "max": full, "cap": rules.seat_cap(g), "used": used, "step": next, "purpose": g.purpose,
 		"title": text("seats_title_" + g.purpose, {}, "堂食座位" if dine else "等位坐垫"),
-		"cost": rules.seat_cost(), "error": rules.seat_error()}
+		"cost": rules.seat_cost(), "status": status, "error": command_message(status)}
 
 
 func flyer() -> Dictionary:
@@ -406,25 +421,27 @@ func flyer() -> Dictionary:
 	if cost >= 0:
 		next_customers = rules.preview("flyer", func(query: RefCounted) -> int: return query.flyer_customers())
 		next_cooldown = rules.preview("flyer", func(query: RefCounted) -> float: return query.flyer_cooldown())
+	var status := rules.command_status("send_flyers")
+	var upgrade_status := rules.command_status("upgrade", {"key": "flyer"})
 	return {"level": rules.level("flyer"), "customers": rules.flyer_customers(), "cooldown": rules.flyer_cooldown(),
 		"seconds": shop.flyer.wave_seconds, "wait": wait, "wave": rules.flyer_wave, "pending": rules.flyer_left if single else rules.flyer_pending,
-		"error": rules.flyer_error(), "queue_full": rules.queue_size() >= rules.queue_capacity(),
+		"status": status, "error": command_message(status), "queue_full": rules.queue_size() >= rules.queue_capacity(),
 		"upgradable": shop.flyer.track != null and not shop.flyer.track.levels.is_empty(), "gap": shop.flyer.gap,
-		"upgrade_cost": cost, "upgrade_error": rules.upgrade_error("flyer"), "next_customers": next_customers, "next_cooldown": next_cooldown}
+		"upgrade_cost": cost, "upgrade_status": upgrade_status, "upgrade_error": command_message(upgrade_status), "next_customers": next_customers, "next_cooldown": next_cooldown}
 
 
 ## 现在能在这台机器的面板里花钱（红 ↑）
 func can_buy(id: String) -> bool:
 	if not rules.station_unlocked(id): return false
-	if rules.track_of(id) != null and rules.upgrade_error(id).is_empty(): return true
+	if rules.track_of(id) != null and CommandResult.is_ok(rules.command_status("upgrade", {"key": id})): return true
 	if id == rules.counter_id:
-		if rules.buy_group() != null and rules.seat_error().is_empty(): return true
-		if shop.flyer != null and rules.upgrade_error("flyer").is_empty(): return true
+		if rules.buy_group() != null and CommandResult.is_ok(rules.command_status("buy_seat", {})): return true
+		if shop.flyer != null and CommandResult.is_ok(rules.command_status("upgrade", {"key": "flyer"})): return true
 		# 传单只在队伍还有空的时候提示
-		if shop.flyer != null and rules.flyer_error().is_empty() and rules.queue_size() * 2 < rules.queue_capacity(): return true
+		if shop.flyer != null and CommandResult.is_ok(rules.command_status("send_flyers", {})) and rules.queue_size() * 2 < rules.queue_capacity(): return true
 	var st := shop.station(id)
 	for m in st.materials:
-		if rules.upgrade_error(id + "/" + m.id).is_empty(): return true
+		if CommandResult.is_ok(rules.command_status("upgrade", {"key": id + "/" + m.id})): return true
 	return false
 
 
@@ -458,7 +475,8 @@ func machine_status(id: String) -> Dictionary:
 func hire() -> Dictionary:
 	var kind := rules.next_hire_kind()
 	var k := rules._kind(kind)
-	return {"cost": rules.hire_cost(), "error": rules.hire_error(), "kind": kind, "name": k.display_name,
+	var status := rules.command_status("hire", {})
+	return {"cost": rules.hire_cost(), "status": status, "error": command_message(status), "kind": kind, "name": k.display_name,
 		"room": rules.workers.size() < rules.staff_slots()}
 
 
@@ -472,8 +490,9 @@ func staff_track(side: String) -> Dictionary:
 	for index in t.levels.size():
 		rows.append({"name": effect_name(t.levels[index].effects), "cost": t.levels[index].cost, "bought": index < bought})
 	var cost := rules.upgrade_cost(key)
+	var status := rules.command_status("upgrade", {"key": key})
 	return {"side": side, "title": t.display_name, "bought": bought, "total": t.levels.size(), "rows": rows, "cost": cost,
-		"error": rules.upgrade_error(key) if cost >= 0 else "已全部升级", "name": rows[bought].name if bought < rows.size() else ""}
+		"status": status, "error": command_message(status) if cost >= 0 else "已全部升级", "name": rows[bought].name if bought < rows.size() else ""}
 
 
 ## 一级效果的一句话（员工升级列表用）

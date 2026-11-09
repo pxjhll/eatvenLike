@@ -197,10 +197,10 @@ func has_staff_room() -> bool:
 ## 员工页有能买的（员工页签上的红 ↑）
 func affordable() -> bool:
 	var rules: ShopRules = _view.rules
-	if rules.hire_cost() >= 0 and rules.gold >= rules.hire_cost() and has_staff_room(): return true
+	if rules.command_status("hire").code == "ok" and has_staff_room(): return true
 	for zone in upgrade_buttons:
 		var info: Dictionary = _view.view.staff_track(zone)
-		if not info.is_empty() and int(info.cost) >= 0 and rules.gold >= int(info.cost): return true
+		if not info.is_empty() and info.status.code == "ok": return true
 	return false
 
 
@@ -241,14 +241,15 @@ func refresh() -> void:
 	_numbers.work.text = view.stat_text(float(card.stats.get("work", 0.0)))
 	deploy_button.visible = rules.shop.staff.can_drag
 	deploy_button.text = "收回到名册" if card.deployed else "派到店内"
+	deploy_button.disabled = rules.command_status("recall_worker" if card.deployed else "deploy_worker", {"id": int(selected.id)}).code != "ok"
 	for zone in upgrade_buttons:
 		var button: Button = upgrade_buttons[zone]
 		var info: Dictionary = view.staff_track(zone)
 		if info.is_empty(): continue
 		button.text = ("%s升级已买完" % info.title) if int(info.cost) < 0 else "%s %d/%d · %d 金币\n%s" % [info.title, int(info.bought) + 1, int(info.total), int(info.cost), info.name]
-		button.disabled = int(info.cost) < 0 or rules.gold < int(info.cost)
+		button.disabled = info.status.code != "ok"
 	var room := has_staff_room()
-	hire_button.disabled = rules.hire_cost() < 0 or rules.gold < rules.hire_cost() or not room
+	hire_button.disabled = rules.command_status("hire").code != "ok" or not room
 	hire_button.text = "暂无空位" if not room else "招募 · %d 金币" % rules.hire_cost()
 	var next_kind := rules.next_hire_kind()
 	_recruit_portrait.texture = _hud.portrait_texture(next_kind)
