@@ -7,6 +7,8 @@ const QueryContext := preload("res://game/rules/rule_query_context.gd")
 const CommandResult := preload("res://game/rules/rule_command_result.gd")
 const CommandText := preload("res://content/ui/rule_command_text.gd")
 const StateValidator := preload("res://game/rules/shop_state_validator.gd")
+const Inventory := preload("res://game/rules/rule_inventory.gd")
+const InventoryAudit := preload("res://game/rules/inventory_audit.gd")
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -18,8 +20,8 @@ const STEP := 0.1
 const SUPPLY := "supply"
 ## 规则层自己的两个交接位置：出餐口的堂食区（货架）和外带区（外带架）。店铺数据里的传送带用这两个名字指它们，
 ## 所以机器 id 不能叫这两个名字（test_shop_specs 查）
-const SHELF := "shelf"
-const RACK := "rack"
+const SHELF := Inventory.SHELF
+const RACK := Inventory.RACK
 const PLACES := [SHELF, RACK]
 const COUNTER := "counter"
 const UNLIMITED := 999
@@ -48,12 +50,25 @@ var paused := false
 var tune: Dictionary = {}
 
 # ---------- 运行时 ----------
-var stations: Dictionary = {}
-var shelf_stock: Dictionary = {}
-var shelf_count := 0
-var shelf_reserved_in := 0
-var shelf_reserved_out := 0
-var generated := 0
+var _inventory := Inventory.new()
+var stations: Dictionary:
+	get: return _inventory.stations
+	set(value): _inventory.stations = value
+var shelf_stock: Dictionary:
+	get: return _inventory.shelf_stock
+	set(value): _inventory.shelf_stock = value
+var shelf_count: int:
+	get: return _inventory.shelf_count
+	set(value): _inventory.shelf_count = value
+var shelf_reserved_in: int:
+	get: return _inventory.shelf_reserved_in
+	set(value): _inventory.shelf_reserved_in = value
+var shelf_reserved_out: int:
+	get: return _inventory.shelf_reserved_out
+	set(value): _inventory.shelf_reserved_out = value
+var generated: int:
+	get: return _inventory.generated
+	set(value): _inventory.generated = value
 var orders: Array = []
 var diners: Array = []
 var workers: Array = []
@@ -1016,26 +1031,11 @@ func no_kitchen_carrier() -> bool:
 func _cancel_job(worker: Dictionary) -> void:
 	var job: Dictionary = worker.job
 	if not job.is_empty():
-		if worker.carry_count > 0:
-			if job.src == supply_id: generated -= worker.carry_count
-			elif job.src == SHELF:
-				shelf_count += worker.carry_count
-				shelf_stock[job.item] = int(shelf_stock.get(job.item, 0)) + worker.carry_count
-			else:
-				var stock: Dictionary = stations[job.src].input if job.kind in ["work", "pot_start"] else stations[job.src].output
-				stock[job.item] = int(stock.get(job.item, 0)) + worker.carry_count
-		elif not job.kind in ["pot_take", "stir"]:
-			if job.src == SHELF: shelf_reserved_out -= job.count
-			elif job.src != supply_id: stations[job.src].reserved_out[job.item] = int(stations[job.src].reserved_out.get(job.item, 0)) - job.count
-		if _is_operation(job):
-			stations[job.src].work_reserved = false
-			if shop.station(job.src).block == "topping": stations[job.src].processing_item = ""
-		elif job.dst == SHELF: shelf_reserved_in -= job.count
-		elif job.dst != counter_id and stations.has(job.dst): stations[job.dst].reserved_in -= job.count
+		var clear_processing_item: bool = _is_operation(job) and shop.station(job.src).block == "topping"
+		_inventory.cancel(job, worker.carry_count, supply_id, counter_id, clear_processing_item)
 		if job.kind == "serve":
 			for order in orders:
 				if order.id == job.order_id: order.reserved = false
-		if stations.has(job.src): _refresh_after_pickup(stations[job.src])
 	worker.job = {}
 	worker.ticket = {}
 	worker.carry_count = 0
@@ -1085,10 +1085,7 @@ func machine_seconds(id: String) -> float:
 
 
 func _stock(station: Dictionary) -> int:
-	var count: int = station.processing
-	for value in station.input.values(): count += value
-	for value in station.output.values(): count += value
-	return count
+	return Inventory.stock(station)
 
 
 func _pause_for_stir(id: String, station: Dictionary, before: float) -> bool:
@@ -1224,7 +1221,7 @@ func _candidate(kind: String, source: String, destination: String, item: String,
 
 
 func _is_operation(job: Dictionary) -> bool:
-	return job.kind in ["work", "pot_start", "pot_take", "stir"]
+	return Inventory.is_operation(job)
 
 
 func _source_point(job: Dictionary) -> Vector2:
@@ -1240,25 +1237,18 @@ func _destination_point(job: Dictionary) -> Vector2:
 	return nav.point(job.dst)
 
 
+func inventory_diagnostics() -> Array:
+	return InventoryAudit.inspect(_inventory, workers, belt_items, orders,
+		shop.fulfillment.handoff, supply_id, counter_id)
+
+
 func _reserve(worker: Dictionary, job: Dictionary) -> void:
 	var ticket: Dictionary = job.get("ticket", {})
 	job.erase("ticket")
 	if job.kind == "work" and shop.station(job.src).block == "topping":
 		var flavor: String = ticket.get("dish", worker.ticket.get("dish", ""))
 		stations[job.src].processing_item = flavor if not flavor.is_empty() else _seated_flavor(job.src)
-	if job.kind in ["pot_take", "stir"]:
-		pass
-	elif job.src == SHELF:
-		shelf_reserved_out += job.count
-	elif job.src != supply_id:
-		var station: Dictionary = stations[job.src]
-		station.reserved_out[job.item] = int(station.reserved_out.get(job.item, 0)) + job.count
-	if _is_operation(job):
-		stations[job.src].work_reserved = true
-	elif job.dst == SHELF:
-		shelf_reserved_in += job.count
-	elif job.dst != counter_id:
-		stations[job.dst].reserved_in += job.count
+	_inventory.reserve(job, supply_id, counter_id)
 	if job.kind == "serve":
 		for order in orders:
 			if order.id == job.order_id: order.reserved = true
@@ -1276,42 +1266,16 @@ func _walk(worker: Dictionary, destination: Vector2, phase: String) -> void:
 
 
 func _take(job: Dictionary) -> void:
-	if job.src == SHELF:
-		shelf_stock[job.item] -= job.count
-	if job.src == supply_id:
-		generated += job.count
-	elif job.src == SHELF:
-		shelf_count -= job.count
-		shelf_reserved_out -= job.count
-	else:
-		var station: Dictionary = stations[job.src]
-		var stock: Dictionary = station.input if job.kind in ["work", "pot_start"] else station.output
-		stock[job.item] -= job.count
-		station.reserved_out[job.item] -= job.count
-		_refresh_after_pickup(station)
+	_inventory.take(job, supply_id)
 
 
 func _refresh_after_pickup(station: Dictionary) -> void:
-	if station.processing > 0 or (station.work_reserved and station.phase == "working"): return
-	var ready := false
-	for count in station.output.values(): ready = ready or count > 0
-	station.phase = "ready" if ready else "idle"
-	station.progress = 1.0 if ready else 0.0
+	Inventory.refresh_after_pickup(station)
 
 
 func _deliver(destination: String, item: String, count: int) -> void:
-	if destination == RACK:
-		stations[RACK].output[item] += count
-		stations[RACK].reserved_in -= count
-		return
-	if destination == SHELF:
-		shelf_stock[_cup(item)] += count
-		shelf_count += count
-		shelf_reserved_in -= count
-		return
-	var cup := _cup(item) if destination == pickup_id else item
-	stations[destination].input[cup] += count
-	stations[destination].reserved_in -= count
+	var key := _cup(item) if destination in [SHELF, pickup_id] else item
+	_inventory.deliver(destination, key, count)
 
 
 func _action_duration(job: Dictionary, worker: Dictionary) -> float:
@@ -1837,10 +1801,7 @@ func _run_belts() -> void:
 			if job.is_empty() or job.src != c.from or job.dst != c.to: continue
 			if best.is_empty() or job.priority > best.priority: best = job
 		if best.is_empty(): continue
-		if best.src == SHELF: shelf_reserved_out += best.count
-		elif best.src != supply_id: stations[best.src].reserved_out[best.item] = int(stations[best.src].reserved_out.get(best.item, 0)) + best.count
-		if best.dst == SHELF: shelf_reserved_in += best.count
-		else: stations[best.dst].reserved_in += best.count
+		_inventory.reserve(best, supply_id, counter_id)
 		_take(best)
 		belt_items.append({"route": id, "item": best.item, "count": best.count, "progress": 0.0, "duration": c.seconds, "dst": best.dst})
 		belt_clock[id] = c.interval
