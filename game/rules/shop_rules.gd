@@ -13,6 +13,7 @@ const WorkerState := preload("res://game/rules/worker_state.gd")
 const Sales := preload("res://game/rules/rule_sales.gd")
 const Completion := preload("res://game/rules/fulfillment_completion.gd")
 const MachineProgress := preload("res://game/rules/machine_progress.gd")
+const DispatchPolicy := preload("res://game/rules/dispatch_policy.gd")
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -1180,9 +1181,9 @@ func _available(source: String, item: String) -> int:
 
 
 func _candidate(kind: String, source: String, destination: String, item: String, worker: Dictionary, priority: float, belt := "") -> Dictionary:
-	var count: int = mini(carry(worker), mini(_available(source, item), _free(destination)))
-	if count <= 0: return {}
-	var job := {"kind": kind, "src": source, "dst": destination, "item": item, "count": count, "priority": priority, "belt": belt, "order_id": -1}
+	var job := DispatchPolicy.transport_candidate(kind, source, destination, item,
+		carry(worker), _available(source, item), _free(destination), priority, belt)
+	if job.is_empty(): return {}
 	if destination == SHELF:
 		job.count = mini(job.count, _shelf_item_free(_cup(item)))
 		if job.count <= 0: return {}
@@ -1348,9 +1349,7 @@ func _score(name: String) -> float:
 func _allocate() -> void:
 	var d := shop.dispatch
 	for unused in workers.size():
-		var best_worker: Dictionary = {}
-		var best_job: Dictionary = {}
-		var best_score := -INF
+		var best := {"score": -INF, "worker": {}, "job": {}}
 		for worker in workers:
 			if worker.phase != "idle": continue
 			for job in _jobs(worker):
@@ -1360,14 +1359,10 @@ func _allocate() -> void:
 				if to_source.is_empty() or to_target.is_empty(): continue
 				var travel: float = (RuleNav.length(to_source) + RuleNav.length(to_target)) / walk_speed(worker)
 				var work_time: float = _action_duration(job, worker) if job.kind == "work" else 2.0 * d.hop_seconds / skill(worker)
-				var throughput: float = float(job.count) / maxf(0.1, travel + work_time)
-				var score: float = (job.priority + throughput * d.throughput_weight - travel * d.travel_penalty) * (1.0 - worker.fatigue * d.fatigue_weight)
-				if score > best_score:
-					best_score = score
-					best_worker = worker
-					best_job = job
-		if best_job.is_empty(): break
-		_reserve(best_worker, best_job)
+				DispatchPolicy.consider(best, worker, job,
+					DispatchPolicy.score(d, worker, job, travel, work_time))
+		if best.job.is_empty(): break
+		_reserve(best.worker, best.job)
 
 
 func _jobs(worker: Dictionary) -> Array:
@@ -1417,10 +1412,7 @@ func _jobs(worker: Dictionary) -> Array:
 		var serve := _candidate("serve", source, counter_id, order.dish, worker, _score("serve"))
 		if serve.is_empty(): continue
 		if standing_dine_in: seats_left -= 1
-		serve.count = 1
-		serve.order_id = order.id
-		serve.pour = pour
-		serve.priority += minf(shop.dispatch.wait_bonus_cap, order.wait * shop.dispatch.wait_bonus_per_second)
+		DispatchPolicy.serve_candidate(serve, order, pour, shop.dispatch)
 		result.append(serve)
 	return result
 
@@ -1605,9 +1597,7 @@ func _start_stage(dish: String, count: int) -> Dictionary:
 
 
 func _exact(job: Dictionary, count: int) -> Dictionary:
-	if job.is_empty() or job.count < count: return {}
-	job.count = count
-	return job
+	return DispatchPolicy.exact_count(job, count)
 
 
 func _final_job(source: String, item: String, dish: String, count: int, worker: Dictionary) -> Dictionary:
@@ -1645,10 +1635,9 @@ func _new_ticket_job(worker: Dictionary, pot_jobs: Array) -> Dictionary:
 	var ticket := {"dish": dish, "count": count, "at": start.at, "phase": start.phase, "wait": 0.0}
 	var job := _ticket_job(worker, ticket)
 	if job.is_empty() and start.at == 0 and start.phase == "carry":
-		for option in pot_jobs:
-			if not option.is_empty() and (job.is_empty() or option.priority > job.priority): job = option.duplicate()
+		job = DispatchPolicy.fallback_pot_choice(pot_jobs)
 	if job.is_empty(): return {}
-	job.priority = _score("follow") + minf(shop.dispatch.wait_bonus_cap, open[0].wait * shop.dispatch.wait_bonus_per_second)
+	job.priority = _score("follow") + DispatchPolicy.wait_bonus(shop.dispatch, open[0].wait)
 	job["ticket"] = ticket
 	return job
 
@@ -1713,10 +1702,7 @@ func _run_belts() -> void:
 		var options: Array = []
 		_append_pack_jobs(courier, options)
 		_courier = false
-		var best: Dictionary = {}
-		for job in options:
-			if job.is_empty() or job.src != c.from or job.dst != c.to: continue
-			if best.is_empty() or job.priority > best.priority: best = job
+		var best := DispatchPolicy.route_choice(options, c.from, c.to)
 		if best.is_empty(): continue
 		_inventory.reserve(best, supply_id, counter_id)
 		_take(best)
