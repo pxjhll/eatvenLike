@@ -10,6 +10,8 @@ const StateValidator := preload("res://game/rules/shop_state_validator.gd")
 const Inventory := preload("res://game/rules/rule_inventory.gd")
 const InventoryAudit := preload("res://game/rules/inventory_audit.gd")
 const WorkerState := preload("res://game/rules/worker_state.gd")
+const Sales := preload("res://game/rules/rule_sales.gd")
+const Completion := preload("res://game/rules/fulfillment_completion.gd")
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -35,10 +37,19 @@ var rng := RandomNumberGenerator.new()
 
 # ---------- 店铺状态 ----------
 var clock := 0.0
-var gold := 0.0
-var revenue := 0.0
-var sold := 0
-var sold_by_dish: Dictionary = {}
+var _sales := Sales.new()
+var gold: float:
+	get: return _sales.gold
+	set(value): _sales.gold = value
+var revenue: float:
+	get: return _sales.revenue
+	set(value): _sales.revenue = value
+var sold: int:
+	get: return _sales.sold
+	set(value): _sales.sold = value
+var sold_by_dish: Dictionary:
+	get: return _sales.sold_by_dish
+	set(value): _sales.sold_by_dish = value
 var lost := 0
 var stage_index := 0
 var unlocked: Dictionary = {}
@@ -99,7 +110,9 @@ var _accumulator := 0.0
 var _order_clock := 0.0
 var _next_order := 1
 var _next_staff := 1
-var _sale_carry := 0.0
+var _sale_carry: float:
+	get: return _sales.sale_carry
+	set(value): _sales.sale_carry = value
 var _next_customer := 0.0
 var _courier := false
 
@@ -1304,28 +1317,8 @@ func _update_worker(worker: Dictionary) -> void:
 			_walk(worker, _destination_point(job), "walk_dropoff")
 		"work":
 			var station: Dictionary = stations[job.src]
-			match job.kind:
-				"pot_start":
-					_take(job)
-					station.processing = job.count
-					station.duration = pot_seconds(job.src)
-					station.remaining = station.duration
-					station.progress = 0.0
-					station.phase = "heating"
-				"stir":
-					station.phase = "heating"
-				"pot_take":
-					var out: String = station.output.keys()[0]
-					station.output[out] += station.processing
-					station.processing = 0
-					station.phase = "ready"
-					station.progress = 1.0
-				_:
-					_take(job)
-					_complete_topping(job.src, station, job)
-					station.phase = "ready"
-					station.progress = 1.0
-			station.work_reserved = false
+			if Completion.consumes_handoff_source(job): _take(job)
+			Completion.complete_handoff_work(station, job, pot_seconds(job.src) if job.kind == "pot_start" else 0.0)
 			_finish(worker)
 		"dropoff":
 			if job.kind == "serve":
@@ -1339,12 +1332,8 @@ func _update_worker(worker: Dictionary) -> void:
 			_finish(worker)
 
 
-func _complete_topping(id: String, station: Dictionary, job: Dictionary) -> void:
-	if not station.processing_item.is_empty():
-		station.output[station.processing_item] += job.count
-		station.processing_item = ""
-		return
-	station.input[job.item] += job.count
+func _complete_topping(_id: String, station: Dictionary, job: Dictionary) -> void:
+	Completion.complete_topping(station, job)
 
 
 func _finish(worker: Dictionary) -> void:
@@ -1377,14 +1366,8 @@ func _record_sale(job: Dictionary) -> void:
 		var seat := int(_order_by_id(job.order_id).get("seat", -1))
 		if seat < 0: seat = _first_open_seat()
 		diners.append({"seat": seat, "dish": job.item, "left": seat_seconds()})
-	sold += job.count
-	sold_by_dish[job.item] += job.count
-	var earned: float = dish_price(job.item) * job.count + _sale_carry
-	var income: int = floori(earned + 0.0001)
-	_sale_carry = maxf(0.0, earned - income)
-	gold += income
-	revenue += income
-	events.emit("sale", {"dish": job.item, "count": job.count, "income": income})
+	_sales.count_handoff(job.item, job.count)
+	events.emit("sale", _sales.credit_handoff(job, dish_price(job.item)))
 
 
 # ---------- 调度（§3.6） ----------
@@ -1974,16 +1957,10 @@ func _finish_work_single(s: Dictionary) -> void:
 	if not s.chore.is_empty():
 		var parts: PackedStringArray = s.chore.split(":")
 		var pot: Dictionary = stations[parts[1]]
-		var st := shop.station(parts[1])
 		if parts[0] == "load":
-			pot.phase = "cook"
-			pot.duration = pot_seconds(parts[1])
-			pot.remaining = pot.duration
+			Completion.complete_single_chore(s, pot, true, pot_seconds(parts[1]), 0, 0)
 		else:
-			pot.stock = mini(st.stock[0].cap, pot.stock + pot_batch(parts[1]))
-			pot.phase = "idle"
-		pot.user = -1
-		s.chore = ""
+			Completion.complete_single_chore(s, pot, false, 0.0, pot_batch(parts[1]), shop.station(parts[1]).stock[0].cap)
 		return
 	var c := customer(s.order)
 	var st: Dictionary = s.steps[s.step]
@@ -1991,35 +1968,15 @@ func _finish_work_single(s: Dictionary) -> void:
 		"take":
 			# 接了单客人就离队去等（state 仍叫 paid）；钱在 pay_at 说的时候进账
 			queue.erase(c.id)
-			var paid := order_price_single(c)
-			if shop.fulfillment.pay_at == "on_take":
-				gold += paid
-				revenue += paid
-			c.paid = paid
-			c.state = "paid"
+			_sales.accept_single(c, order_price_single(c), shop.fulfillment.pay_at == "on_take")
+			Completion.advance_single_step(s, {}, false)
 		"hand":
-			if shop.fulfillment.pay_at != "on_take":
-				gold += c.paid
-				revenue += c.paid
-			c.state = "leaving"
-			sold_by_dish[c.kind] = int(sold_by_dish[c.kind]) + 1
-			sold += 1
-			var f := shop.fulfillment
-			if c.addon and c.kind != f.addon_dish:
-				sold_by_dish[f.addon_dish] = int(sold_by_dish[f.addon_dish]) + 1
-				sold += 1
-			events.emit("sale", {"dish": c.kind, "income": c.paid})
+			events.emit("sale", _sales.complete_single(c, shop.fulfillment.addon_dish, shop.fulfillment.pay_at == "on_take"))
 			WorkerState.finish_single_order(s)
 			return
 		_:
 			var station := shop.station(st.station)
-			# 同一台机器接着做下一步（比如先打糊再摊饼）就不放手
-			var next_same: bool = s.step + 1 < s.steps.size() and String(s.steps[s.step + 1].station) == String(st.station)
-			if station.block == "hand" and int(station.params.get("users", 0)) > 0 and not next_same: stations[st.station].user = -1
-			if not String(st.get("holds", "")).is_empty():
-				s.carry_item = st.holds
-				s.carry_count = 1
-	s.step += 1
+			Completion.advance_single_step(s, stations[st.station], station.block == "hand" and int(station.params.get("users", 0)) > 0)
 
 
 func _item_name(id: String) -> String:
