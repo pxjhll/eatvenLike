@@ -242,3 +242,22 @@ func test_reset_clears_single_mode_customers() -> void:
 	check_eq(rules.queue.size(), 0, "重开后没有排队的人")
 	check_eq(rules.customers.size(), 0, "重开后没有顾客")
 	check_eq(rules.arrivals(), 0, "来客计数归零")
+
+
+## 容器字段和账本共用同一个对象（规则层热路径直接读字段）：新建、跑一会、重开、读档以后都不能分家
+func test_container_fields_stay_shared_with_their_ledgers() -> void:
+	for shop in [TEA, PANCAKE]:
+		var rules := ShopRules.new(shop)
+		rules.gold = 9999
+		rules.unlock(rules.next_unlock())
+		rules.run(60.0)
+		var saved := rules.to_dict()
+		for stage in ["new", "reset", "load"]:
+			if stage == "reset": rules.reset()
+			if stage == "load": check_eq(rules.load_dict(saved), "", "%s 读档" % shop.id)
+			var pairs := {"stations": rules._inventory.stations, "shelf_stock": rules._inventory.shelf_stock,
+				"sold_by_dish": rules._sales.sold_by_dish, "orders": rules._orders_state.orders, "diners": rules._orders_state.diners,
+				"order_ramp": rules._orders_state.order_ramp, "customers": rules._orders_state.customers, "queue": rules._orders_state.queue}
+			for key in pairs: check(is_same(rules.get(key), pairs[key]), "%s %s 以后 %s 和账本是同一个对象" % [shop.id, stage, key])
+		rules.run(30.0)
+		check(rules.inventory_diagnostics().is_empty(), "%s 读档后接着跑，库存账对得上" % shop.id)

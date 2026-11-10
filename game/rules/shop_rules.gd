@@ -40,6 +40,8 @@ var rng := RandomNumberGenerator.new()
 
 # ---------- 店铺状态 ----------
 var clock := 0.0
+## 容器字段（stations、orders……）和各自的账本共用同一个对象：读直接读字段（热路径不走 getter），
+## 整个换掉时 setter 同步给账本。账本自己从不替换这些容器，只改里面的内容。数值字段仍然转给账本。
 var _sales := Sales.new()
 var _orders_state := OrderState.new()
 var gold: float:
@@ -51,9 +53,10 @@ var revenue: float:
 var sold: int:
 	get: return _sales.sold
 	set(value): _sales.sold = value
-var sold_by_dish: Dictionary:
-	get: return _sales.sold_by_dish
-	set(value): _sales.sold_by_dish = value
+var sold_by_dish: Dictionary = _sales.sold_by_dish:
+	set(value):
+		sold_by_dish = value
+		_sales.sold_by_dish = value
 var lost: int:
 	get: return _orders_state.lost
 	set(value): _orders_state.lost = value
@@ -69,12 +72,14 @@ var tune: Dictionary = {}
 
 # ---------- 运行时 ----------
 var _inventory := Inventory.new()
-var stations: Dictionary:
-	get: return _inventory.stations
-	set(value): _inventory.stations = value
-var shelf_stock: Dictionary:
-	get: return _inventory.shelf_stock
-	set(value): _inventory.shelf_stock = value
+var stations: Dictionary = _inventory.stations:
+	set(value):
+		stations = value
+		_inventory.stations = value
+var shelf_stock: Dictionary = _inventory.shelf_stock:
+	set(value):
+		shelf_stock = value
+		_inventory.shelf_stock = value
 var shelf_count: int:
 	get: return _inventory.shelf_count
 	set(value): _inventory.shelf_count = value
@@ -87,12 +92,14 @@ var shelf_reserved_out: int:
 var generated: int:
 	get: return _inventory.generated
 	set(value): _inventory.generated = value
-var orders: Array:
-	get: return _orders_state.orders
-	set(value): _orders_state.orders = value
-var diners: Array:
-	get: return _orders_state.diners
-	set(value): _orders_state.diners = value
+var orders: Array = _orders_state.orders:
+	set(value):
+		orders = value
+		_orders_state.orders = value
+var diners: Array = _orders_state.diners:
+	set(value):
+		diners = value
+		_orders_state.diners = value
 var workers: Array = []
 var roster: Array = []
 ## 本局可招的员工种类：开局 = 店铺数据里的，店长回访等效果往里加（不改店铺数据本身）
@@ -107,9 +114,10 @@ var event_rng := RandomNumberGenerator.new()
 var belts: Dictionary = {}
 var belt_clock: Dictionary = {}
 var belt_items: Array = []
-var order_ramp: Dictionary:
-	get: return _orders_state.order_ramp
-	set(value): _orders_state.order_ramp = value
+var order_ramp: Dictionary = _orders_state.order_ramp:
+	set(value):
+		order_ramp = value
+		_orders_state.order_ramp = value
 var flyer_wave := 0.0
 var flyer_wait := 0.0
 var flyer_clock := 0.0
@@ -1713,12 +1721,14 @@ func _run_belts() -> void:
 # 交接方式 single：一人从收钱跟到递餐（煎饼摊）
 # =====================================================================
 
-var customers: Array:
-	get: return _orders_state.customers
-	set(value): _orders_state.customers = value
-var queue: Array:
-	get: return _orders_state.queue
-	set(value): _orders_state.queue = value
+var customers: Array = _orders_state.customers:
+	set(value):
+		customers = value
+		_orders_state.customers = value
+var queue: Array = _orders_state.queue:
+	set(value):
+		queue = value
+		_orders_state.queue = value
 var _next_customer_id: int:
 	get: return _orders_state.next_customer_id
 	set(value): _orders_state.next_customer_id = value
