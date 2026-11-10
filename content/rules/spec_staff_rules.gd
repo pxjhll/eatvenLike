@@ -6,6 +6,8 @@ extends Resource
 ## 开局员工（种类 id 列表），第一位坐在哪
 @export var starting: Array[String] = []
 @export var starting_post: String = ""
+## 每位开局员工各自的岗位（和 starting 一一对应；空字符串 = 流动）。没写就都用 starting_post
+@export var starting_posts: Array[String] = []
 ## 这家店起始可招募的种类（店长回访等效果往里加，§6.3）
 @export var hire_pool: Array[String] = []
 ## 招人顺序：fewest = 名册里最少的种类优先，同数按 hire_pool 顺序；cycle = 按 hire_order 轮流

@@ -145,6 +145,113 @@ func validate(data: Dictionary, defaults: Dictionary, shop: SpecShop, chains: Di
 		if not _routes.has(row.route) or not _items.has(row.item) or row.count <= 0 or row.duration <= 0 or row.progress < 0 or row.progress > 1: return "belt_items 状态无效"
 		if row.dst != _routes[row.route].to or not _destination(row.dst): return "belt_items 目标无效"
 		if not _delivery_slot(row.dst, row.item): return "belt_items 缺少目标物品"
+	return _serve(data)
+
+
+## 送桌店（serve）的运行状态：引用都指向现有的顾客 / 订单 / 份 / 实物 / 员工，实物在合法位置，预留和手上的活对得上。
+func _serve(data: Dictionary) -> String:
+	var s: Variant = data.serve
+	var error := _shape(s, {"guests": [], "orders": [], "units": [], "goods": [], "jobs": {}, "next_id": 0, "served": 0, "orders_done": 0, "items_sold": 0}, "serve")
+	if not error.is_empty(): return error
+	var serving: bool = _shop.fulfillment.handoff == "serve"
+	if not serving:
+		for key in ["guests", "orders", "units", "goods", "jobs"]:
+			if not s[key].is_empty(): return "serve 只属于送桌店"
+		return ""
+	for key in ["next_id", "served", "orders_done", "items_sold"]:
+		if s[key] < 0: return "serve." + key + " 不能为负"
+	var ids := {}
+	var guests := {}
+	var orders := {}
+	var units := {}
+	var goods := {}
+	var seats := {}
+	for g in s.guests:
+		error = _shape(g, {"id": 0, "state": "", "wait": 0.0, "seat": 0, "order": 0, "claimed": 0, "walk_left": 0.0, "walk_total": 0.0, "eat_left": 0.0}, "serve.guests")
+		if not error.is_empty(): return error
+		if not g.state in ["queue", "to_seat", "seated", "eating"] or g.wait < 0 or g.walk_left < 0 or g.eat_left < 0: return "serve.guests 状态无效"
+		if g.seat >= 0:
+			if seats.has(g.seat): return "serve.guests 座位重复"
+			seats[g.seat] = true
+		elif g.state != "queue": return "serve.guests 缺少座位"
+		guests[g.id] = g
+		ids[g.id] = true
+	for o in s.orders:
+		error = _shape(o, {"id": 0, "guest": 0, "seat": 0, "lines": [], "paid": false}, "serve.orders")
+		if not error.is_empty(): return error
+		if not guests.has(o.guest) or guests[o.guest].order != o.id or guests[o.guest].seat != o.seat or o.lines.is_empty(): return "serve.orders 引用无效"
+		for line in o.lines:
+			error = _shape(line, {"dish": "", "qty": 0, "delivered": 0}, "serve.orders.lines")
+			if not error.is_empty(): return error
+			if _shop.dish(line.dish) == null or line.qty < 1 or line.delivered < 0 or line.delivered > line.qty: return "serve.orders.lines 无效"
+		orders[o.id] = o
+		ids[o.id] = true
+	for g in s.guests:
+		if g.state != "queue" and (not orders.has(g.order) or orders[g.order].guest != g.id): return "serve.guests.order 引用无效"
+	for u in s.units:
+		error = _shape(u, {"id": 0, "order": 0, "line": 0, "dish": "", "done": [], "wait": 0.0}, "serve.units")
+		if not error.is_empty(): return error
+		if not orders.has(u.order) or u.line < 0 or u.line >= orders[u.order].lines.size() or orders[u.order].lines[u.line].dish != u.dish: return "serve.units 引用无效"
+		for step in u.done:
+			if not step is int or step < 0 or step >= _shop.dish(u.dish).steps.size(): return "serve.units.done 无效"
+		units[u.id] = u
+		ids[u.id] = true
+	for g in s.goods:
+		error = _shape(g, {"id": 0, "item": "", "at": "", "owner": 0, "res": 0}, "serve.goods")
+		if not error.is_empty(): return error
+		if not _items.has(g.item) or (g.owner != -1 and not units.has(g.owner)): return "serve.goods 物品或 owner 无效"
+		if g.res != -1 and not _staff.has(g.res): return "serve.goods 预留员工无效"
+		if g.at.begins_with("hand:"):
+			if g.res != int(g.at.substr(5)) or not _staff.has(g.res): return "serve.goods 拿在手上的必须是本人预留"
+		elif g.at.begins_with("seat:"):
+			if g.owner == -1: return "serve.goods seat goods need an owner"
+		elif not _state.stations.has(g.at): return "serve.goods 位置无效"
+		goods[g.id] = g
+		ids[g.id] = true
+	for id in ids:
+		if id < 1 or id >= s.next_id: return "serve id out of range"
+	if ids.size() != s.guests.size() + s.orders.size() + s.units.size() + s.goods.size(): return "serve id 重复"
+	for key in s.jobs:
+		if not key is String or not key.is_valid_int() or not _staff.has(int(key)): return "serve.jobs 员工引用无效"
+		var job: Variant = s.jobs[key]
+		error = _shape(job, {"kind": "", "unit": 0, "step": 0, "item": "", "good": 0, "from": "", "to": "", "guest": 0, "stage": ""}, "serve.jobs")
+		if not error.is_empty(): return error
+		if not job.kind in ["take", "work", "carry", "pass", "serve", "home"]: return "serve.jobs.kind 无效"
+		if job.kind in ["work", "carry", "pass", "serve"] and not units.has(job.unit): return "serve.jobs.unit 无效"
+		if job.kind == "take" and not guests.has(job.guest): return "serve.jobs.guest 无效"
+		if job.good != -1 and (not goods.has(job.good) or goods[job.good].res != int(key)): return "serve.jobs.good 预留不一致"
+		var worker: Dictionary = _staff[int(key)]
+		if not worker.deployed: return "serve.jobs 员工未上岗"
+		var stages: Array = ["go_from", "pick", "go_to", "drop"]
+		if job.kind in ["take", "work"]: stages = ["go_from", "work"]
+		elif job.kind == "home": stages = ["home"]
+		if not job.stage in stages: return "serve.jobs.stage 无效"
+		var walking: bool = job.stage in ["go_from", "go_to", "home"]
+		if worker.walking != walking or worker.phase != ("walk" if walking else "work"): return "serve.jobs 员工阶段不一致"
+		if job.kind != "home" and _shop.station(job.from) == null: return "serve.jobs.from 无效"
+		if job.kind == "serve":
+			if job.to != "seat:" + str(orders[units[job.unit].order].seat): return "serve.jobs.to 座位无效"
+		elif _shop.station(job.to) == null: return "serve.jobs.to 无效"
+		if job.kind in ["carry", "pass", "serve"]:
+			var carrying: bool = job.stage in ["go_to", "drop"]
+			if not _items.has(job.item): return "serve.jobs.item 无效"
+			if job.good == -1:
+				if carrying or _shop.station(job.from).block != "supply": return "serve.jobs.good 缺少搬运物品"
+			else:
+				var good: Dictionary = goods[job.good]
+				if good.item != job.item or (good.owner != job.unit and (carrying or good.owner != -1)): return "serve.jobs.good 物品或 owner 无效"
+				if good.at != ("hand:" + key if carrying else job.from): return "serve.jobs.good 位置不一致"
+			if carrying and (worker.carry_count != 1 or worker.carry_item != job.item): return "serve.jobs 员工手持物品不一致"
+		if job.kind == "work":
+			var u: Dictionary = units[job.unit]
+			var steps: Array = _shop.dish(u.dish).steps
+			if job.step < 0 or job.step >= steps.size() or job.step in u.done: return "serve.jobs.step 无效"
+			var step: SpecStep = steps[job.step]
+			if not _shop.station(step.station).block in ["hand", "combine"]: return "serve.jobs.step 不是加工工序"
+			if job.from != step.station or job.to != step.station or _state.stations[step.station].user != int(key): return "serve.jobs 工序机器不一致"
+	for id in goods:
+		var g: Dictionary = goods[id]
+		if g.res != -1 and (not s.jobs.has(str(g.res)) or s.jobs[str(g.res)].good != id): return "serve.goods 预留没有对应的活"
 	return ""
 
 
@@ -257,7 +364,7 @@ func _worker(w: Dictionary) -> String:
 		if job.has("pour"):
 			if not job.pour is String: return "job.pour 类型不对"
 			if not job.pour.is_empty() and (not _point(job.pour) or _shop.dish(job.item) == null): return "job.pour 无效"
-	elif _shop.fulfillment.handoff != "single" and (w.walking or w.phase in ["work", "pickup", "dropoff", "walk_pickup", "walk_dropoff"]): return "job 活动工序缺少任务"
+	elif _shop.fulfillment.handoff == "handoff" and (w.walking or w.phase in ["work", "pickup", "dropoff", "walk_pickup", "walk_dropoff"]): return "job 活动工序缺少任务"
 	if _shop.fulfillment.handoff == "single" and w.phase == "work" and w.order == -1 and w.chore.is_empty(): return "work 缺少工序"
 	return ""
 

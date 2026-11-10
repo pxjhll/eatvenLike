@@ -11,6 +11,7 @@ static func _reserved(value: Variant) -> Dictionary:
 	return {"status": "reserved", "default": value}
 
 static func capabilities(mode: String) -> Dictionary:
+	if mode == "serve": return _serve_capabilities()
 	if mode not in ["single", "handoff"]: return {}
 	var single := mode == "single"
 	var f := {
@@ -33,6 +34,7 @@ static func capabilities(mode: String) -> Dictionary:
 		"ramp_orders": _reserved(0) if single else _supported(),
 		"opening_customers": _reserved(0) if single else _supported(),
 		"first_customer_delay": _supported() if single else _reserved(0.0),
+		"customer_walk": _reserved(0.0),
 	}
 	var d := {
 		"base_scores": _reserved({}) if single else _supported(),
@@ -45,6 +47,30 @@ static func capabilities(mode: String) -> Dictionary:
 	for key in ["wait_bonus_per_second", "wait_bonus_cap", "travel_penalty", "throughput_weight", "fatigue_weight", "fatigue_gain", "fatigue_recover", "hop_seconds", "ticket_give_up"]:
 		d[key] = _reserved(0.0) if single else _supported()
 	return {"fulfillment": f, "dispatch": d}
+
+## serve（§10 草案，首轮原型）：前厅接单分座 → 后厨按配方依赖合流 → 出餐口 → 前厅送到座位 → 就座且整单送齐开吃。
+## 每趟端 1 件、不合送；整单送齐时一次结账；附加菜（例汤）作为订单第二条明细。
+static func _serve_capabilities() -> Dictionary:
+	var f := {
+		"handoff": _fixed(["serve"]), "taker": _fixed(["front"]), "dine_rule": _fixed(["seat_wait"]),
+		"pay_at": _fixed(["on_deliver"]), "price_rounding": _fixed(["dish_tenth_carry"]), "leave_queue": _fixed(["after_take"]),
+		"wait_area": _fixed([""]), "leave_who": _supported(["none", "queued_unclaimed"]), "arrival": _supported(["fixed", "exponential"]),
+		"mood_seconds": _supported(), "addon_dish": _supported(), "addon_chance": _supported(), "addon_first": _reserved(true),
+		"takeaway_station": _reserved(""), "seated_patience": _reserved(1.0), "leave_after": _supported(),
+		"ramp_start": _reserved(1.0), "ramp_orders": _reserved(0), "opening_customers": _reserved(0),
+		"first_customer_delay": _supported(), "customer_walk": _supported(),
+	}
+	var d := {
+		"base_scores": _supported(), "merge": _fixed(["fixed"]), "merge_cap": _fixed([1]), "resume_from_stock": _reserved(true),
+		"help_while_waiting": _fixed([true]), "leave_seated_segments": _fixed([true]), "chores_first": _reserved(false),
+		"shortage_bonus": _reserved(0.0), "shortage_per": _reserved(0.0), "shortage_cap": _reserved(0.0),
+		"wait_bonus_per_second": _supported(), "wait_bonus_cap": _supported(), "travel_penalty": _supported(), "hop_seconds": _supported(),
+		"throughput_weight": _reserved(0.0), "fatigue_weight": _reserved(0.0), "fatigue_gain": _reserved(0.0), "fatigue_recover": _reserved(0.0),
+		"ticket_give_up": _reserved(0.0),
+	}
+	return {"fulfillment": f, "dispatch": d}
+
+const SERVE_SCORES := ["take", "serve", "carry", "work", "pass"]
 
 static func summary(errors: Array) -> String:
 	var lines: PackedStringArray = []
@@ -188,7 +214,8 @@ static func _validate_policies(shop: SpecShop, c: Dictionary, errors: Array[Dict
 	_ref(f.takeaway_station, c.stations, "fulfillment.takeaway_station", errors, true)
 	if f.addon_chance > 0 and f.addon_dish.is_empty(): _error(errors, "fulfillment.addon_dish", "An addon dish is required when chance is positive.")
 	for key in ["addon_chance", "ramp_start"]: _number(f.get(key), "fulfillment." + key, errors, 0, false, 1)
-	for key in ["seated_patience", "leave_after", "ramp_orders", "opening_customers", "first_customer_delay"]: _number(f.get(key), "fulfillment." + key, errors)
+	for key in ["seated_patience", "leave_after", "ramp_orders", "opening_customers", "first_customer_delay", "customer_walk"]: _number(f.get(key), "fulfillment." + key, errors)
+	if f.handoff == "serve" and f.customer_walk <= 0.0: _error(errors, "fulfillment.customer_walk", "Serve fulfillment needs a positive customer walking speed.")
 	if not f.mood_seconds.is_empty() and f.mood_seconds.size() != 2: _error(errors, "fulfillment.mood_seconds", "Use zero or two mood thresholds.")
 	for i in f.mood_seconds.size():
 		_number(f.mood_seconds[i], "fulfillment.mood_seconds[%d]" % i, errors)
@@ -197,7 +224,8 @@ static func _validate_policies(shop: SpecShop, c: Dictionary, errors: Array[Dict
 		for prop in shop.dispatch.get_property_list():
 			if (int(prop.usage) & PROPERTY_USAGE_SCRIPT_VARIABLE) and prop.type == TYPE_FLOAT: _number(shop.dispatch.get(prop.name), "dispatch." + prop.name, errors)
 		for key in shop.dispatch.base_scores:
-			_enum(key, ["chore", "follow", "follow_step", "load", "load_short", "pot_short_bonus", "serve", "stir", "to_process", "to_rack", "topping"], "dispatch.base_scores." + key, errors)
+			var keys: Array = SERVE_SCORES if f.handoff == "serve" else ["chore", "follow", "follow_step", "load", "load_short", "pot_short_bonus", "serve", "stir", "to_process", "to_rack", "topping"]
+			_enum(key, keys, "dispatch.base_scores." + key, errors)
 			_number(shop.dispatch.base_scores[key], "dispatch.base_scores." + key, errors, -INF)
 		_number(shop.dispatch.fatigue_weight, "dispatch.fatigue_weight", errors, 0, false, 1)
 
@@ -404,11 +432,16 @@ static func _validate_staff(shop: SpecShop, c: Dictionary, errors: Array[Diction
 	for field in ["hire_cost_base", "hire_cost_step", "front_base_slots"]: _number(staff.get(field), "staff." + field, errors)
 	for i in staff.hire_costs.size(): _number(staff.hire_costs[i], "staff.hire_costs[%d]" % i, errors)
 	_ref(staff.starting_post, c.stations, "staff.starting_post", errors, true)
+	if not staff.starting_posts.is_empty() and staff.starting_posts.size() != staff.starting.size(): _error(errors, "staff.starting_posts", "Starting posts must match starting workers one to one.")
+	for i in staff.starting_posts.size():
+		var post := staff.starting_posts[i]
+		_ref(post, c.stations, "staff.starting_posts[%d]" % i, errors, true)
+		if c.stations.has(post) and not c.stations[post].seatable and c.stations[post].block != "counter": _error(errors, "staff.starting_posts[%d]" % i, "Starting post must be seatable.")
 	if c.stations.has(staff.starting_post) and not c.stations[staff.starting_post].seatable and c.stations[staff.starting_post].block != "counter": _error(errors, "staff.starting_post", "Starting post must be seatable.")
 	_tracks(staff.tracks, "staff.tracks", c, errors, "", "staff")
 
 static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
-	if c.mode == "single" and not shop.connections.is_empty():
+	if c.mode in ["single", "serve"] and not shop.connections.is_empty():
 		_error(errors, "connections", "Conveyor dispatch requires handoff fulfillment.", "unsupported")
 	if shop.flyer != null:
 		_number(shop.flyer.wave_seconds, "flyer.wave_seconds", errors)
@@ -584,6 +617,62 @@ static func _validate_graph(shop: SpecShop, c: Dictionary, errors: Array[Diction
 			_stage_unlocks(stage, c, guaranteed)
 	for id in c.stations:
 		if not available.has(id): _error(errors, "stations." + id, "Station is neither initially available nor reachable through a stage/companion.", "unreachable")
+	if c.mode == "serve": _validate_serve(shop, c, errors)
+
+
+## serve 模式能执行的配方形状（§10.5：不支持的组合明确拒绝）：
+## 原料箱 / 自动批量锅只当来源；手工台、要人的组合台是工序；每道菜最后做出 dish.item；有出餐口、堂食座位组和每个座位的站位。
+static func _validate_serve(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
+	var pickups := 0
+	for id in c.stations:
+		var st: SpecStation = c.stations[id]
+		var p: String = "stations." + id
+		match st.block:
+			"pickup": pickups += 1
+			"batch_pot":
+				if bool(st.params.get("manual_load", false)) or bool(st.params.get("manual_unload", false)) or st.params.has("stir_points"):
+					_error(errors, p, "Serve fulfillment supports automatic batch pots only.", "unsupported")
+			"combine":
+				if not bool(st.params.get("manual", false)): _error(errors, p, "Serve fulfillment supports staffed combine stations only.", "unsupported")
+			"topping", "dispenser":
+				_error(errors, p, "Serve fulfillment does not support this block yet.", "unsupported")
+		if st.zone == "front" and st.block != "counter": _error(errors, p, "Serve fulfillment has no front production yet.", "unsupported")
+	if pickups != 1: _error(errors, "stations", "Serve fulfillment needs exactly one pickup station.")
+	var dine: SpecSeatGroup = null
+	for g in shop.seat_groups:
+		if g != null and g.purpose == "dine" and dine == null: dine = g
+		elif g != null: _error(errors, "seat_groups." + g.id, "Serve fulfillment supports one dine seat group.", "unsupported")
+	if dine == null: _error(errors, "seat_groups", "Serve fulfillment needs a dine seat group.")
+	elif shop.layout != null:
+		var most := dine.start + (_sum(dine.steps) if not dine.steps.is_empty() else dine.step * dine.costs.size())
+		for n in most:
+			if not shop.layout.points.has("%s/%d" % [dine.id, n]): _error(errors, "layout.points", "Seat %s/%d needs a point." % [dine.id, n], "reference")
+	for dish in shop.dishes:
+		if dish == null: continue
+		var p: String = "dishes." + dish.id
+		if dish.front: _error(errors, p + ".front", "Serve fulfillment has no front recipes yet.", "unsupported")
+		var made := {}
+		var final := false
+		for i in dish.steps.size():
+			var s := dish.steps[i]
+			if s == null or not c.stations.has(s.station): continue
+			var st: SpecStation = c.stations[s.station]
+			if st.block in ["supply", "batch_pot"]:
+				if not s.consumes.is_empty() or s.produces.size() != 1: _error(errors, "%s.steps[%d]" % [p, i], "Source steps produce exactly one item and consume nothing.", "unsupported")
+			elif st.block in ["hand", "combine"]:
+				for item in s.consumes:
+					if not made.has(item): _error(errors, "%s.steps[%d].consumes.%s" % [p, i, item], "Inputs must be produced by an earlier step.", "unreachable")
+			else: _error(errors, "%s.steps[%d]" % [p, i], "Serve recipes use supply, batch_pot, hand and combine steps.", "unsupported")
+			for item in s.produces:
+				made[item] = true
+				if item == dish.item: final = true
+		if not final: _error(errors, p + ".item", "A step must produce the dish item.", "unreachable")
+
+
+static func _sum(values: Array) -> int:
+	var total := 0
+	for v in values: total += int(v)
+	return total
 
 static func _stage_unlocks(stage: SpecStage, c: Dictionary, available: Dictionary) -> void:
 	for id in stage.stations:

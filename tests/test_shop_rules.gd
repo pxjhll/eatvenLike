@@ -195,7 +195,7 @@ func _scripts(dir: String) -> Array:
 
 func test_generic_code_has_no_shop_specific_names() -> void:
 	var names := {}
-	for shop: SpecShop in [TEA, PANCAKE, preload("res://tests/fixtures/noodle/shop.tres")]:
+	for shop: SpecShop in [TEA, PANCAKE, preload("res://tests/fixtures/noodle/shop.tres"), preload("res://content/shops/stirfry/shop.tres")]:
 		names[shop.id] = shop.id
 		for st in shop.stations:
 			names[st.id] = shop.id

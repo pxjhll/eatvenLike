@@ -15,6 +15,7 @@ const OrderState := preload("res://game/rules/rule_orders.gd")
 const Completion := preload("res://game/rules/fulfillment_completion.gd")
 const MachineProgress := preload("res://game/rules/machine_progress.gd")
 const DispatchPolicy := preload("res://game/rules/dispatch_policy.gd")
+const ServeFlow := preload("res://game/rules/serve_flow.gd")
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -118,6 +119,8 @@ var flyer_ready_at := 0.0
 var flyer_left := 0
 var flyer_timer := 0.0
 var seats: Dictionary = {}
+## 交接方式 serve 的全部运行状态（顾客、订单明细、每份餐、实物、员工手上的活），见 serve_flow.gd
+var serve: Dictionary = {}
 var _accumulator := 0.0
 var _order_clock: float:
 	get: return _orders_state.order_clock
@@ -166,7 +169,7 @@ const STATE_KEYS := ["clock", "gold", "revenue", "sold", "sold_by_dish", "lost",
 	"generated", "orders", "diners", "roster", "hire_pool", "event_ready_at", "events_seen", "belts", "belt_clock",
 	"belt_items", "order_ramp", "flyer_wave", "flyer_wait", "flyer_clock", "flyer_pending", "flyer_ready_at", "flyer_left",
 	"flyer_timer", "seats", "_accumulator", "_order_clock", "_next_order", "_next_staff", "_sale_carry", "_next_customer",
-	"_courier", "customers", "queue", "_next_customer_id", "full_seconds", "pot_busy", "side_idle"]
+	"_courier", "customers", "queue", "_next_customer_id", "full_seconds", "pot_busy", "side_idle", "serve"]
 
 
 ## 这些状态按店铺数据里的 id（机器、原料、菜、座位组）存：读档时只认数据里现在有的 id，缺的补开局默认值（§3.12）
@@ -205,6 +208,10 @@ static func _plain(v: Variant) -> Variant:
 ## Validate and fully restore off to the side before replacing any live object.
 func load_dict(data: Dictionary, refresh_content: bool = false) -> String:
 	var candidate := ShopRules.new(shop)
+	# Saves written before the serve mode existed carry no serve state.
+	if not data.has("serve"):
+		data = data.duplicate()
+		data.serve = ServeFlow.empty_state()
 	# Definitions registered by campaign/session code are data, not saved objects.
 	candidate.event_defs = event_defs.duplicate()
 	var error := StateValidator.new().validate(data, candidate.to_dict(), shop, chains, candidate.event_defs)
@@ -383,13 +390,19 @@ func reset(seed := -1) -> void:
 	side_idle = {}
 	for ev in shop.events: add_event(ev)
 	events.on("*", _on_broadcast)
-	for kind in shop.staff.starting:
-		var worker := _new_worker(kind)
+	serve = ServeFlow.empty_state()
+	if _serving():
+		for st in shop.stations:
+			if station_unlocked(st.id): ServeFlow.seed_stock(self, st.id)
+	for index in shop.staff.starting.size():
+		var worker := _new_worker(shop.staff.starting[index])
 		worker.deployed = true
 		worker.source = "初始"
 		roster.append(worker)
 		workers.append(worker)
-		if not shop.staff.starting_post.is_empty(): _seat_at(worker, shop.staff.starting_post)
+		# 每位开局员工可以有自己的岗位（starting_posts，空 = 流动），没写就都用 starting_post
+		var post: String = shop.staff.starting_posts[index] if index < shop.staff.starting_posts.size() else shop.staff.starting_post
+		if not post.is_empty(): _seat_at(worker, post)
 
 
 func _build_stations() -> void:
@@ -544,6 +557,16 @@ func is_open() -> bool:
 	return station_unlocked(shop.goals.opening_station)
 
 
+## 交接方式 serve：前厅接单分座、后厨按配方合流、送餐到座（§10）
+func _serving() -> bool:
+	return shop.fulfillment.handoff == "serve"
+
+
+## 顾客先排队、再被员工接走的店（一人跟单、送桌）：客流按“下一位多久到”计时，传单逐个放人
+func _queued_arrivals() -> bool:
+	return shop.fulfillment.handoff in ["single", "serve"]
+
+
 func current_stage() -> SpecStage:
 	return shop.stages[stage_index]
 
@@ -572,8 +595,10 @@ func _tick() -> void:
 	# 整秒 / 整分钟广播：按时间触发的奇遇听这两个
 	if int(round(clock * 10.0)) % 10 == 0: events.emit("tick_second", {"time": clock})
 	if int(round(clock * 10.0)) % 600 == 0: events.emit("tick_minute", {"time": clock})
-	if shop.fulfillment.handoff == "single": _tick_single()
-	else: _tick_handoff()
+	match shop.fulfillment.handoff:
+		"single": _tick_single()
+		"serve": ServeFlow.tick(self, STEP)
+		_: _tick_handoff()
 	_track_bottleneck()
 	if completed_at < 0.0 and shop_complete():
 		completed_at = clock
@@ -658,17 +683,19 @@ func order_weights() -> Dictionary:
 
 func queue_capacity() -> int:
 	if shop.fulfillment.handoff == "single": return current_stage().queue_capacity + wait_seats()
+	if _serving(): return current_stage().queue_capacity
 	return current_stage().queue_capacity + seated_orders()
 
 
 ## 排队人数（站位 + 等位）
 func queue_size() -> int:
+	if _serving(): return ServeFlow.queue_size(self)
 	return queue.size() if shop.fulfillment.handoff == "single" else orders.size()
 
 
 ## 开张以来进店的人数
 func arrivals() -> int:
-	return (_next_customer_id if shop.fulfillment.handoff == "single" else _next_order) - 1
+	return (_next_customer_id if _queued_arrivals() else _next_order) - 1
 
 
 func _pick_dish(weights: Dictionary) -> String:
@@ -830,6 +857,7 @@ func order_mood(order: Dictionary) -> int:
 
 ## 还在等餐的客人：一人跟单的店是排着队的客人，跟单+递杯的店是订单
 func waiting_customers() -> Array:
+	if _serving(): return serve.guests.filter(func(g: Dictionary) -> bool: return g.state != "eating")
 	if shop.fulfillment.handoff != "single": return orders
 	var out: Array = []
 	for id in queue:
@@ -855,7 +883,7 @@ func worker_idle(worker: Dictionary) -> bool:
 func machine_working(id: String) -> bool:
 	if not station_unlocked(id): return false
 	var station: Dictionary = stations[id]
-	if shop.fulfillment.handoff == "single": return station.phase == "cook"
+	if _queued_arrivals(): return station.phase == "cook"
 	return int(station.processing) > 0 and station.phase != "awaiting_take"
 
 
@@ -870,6 +898,7 @@ func seat_count() -> int:
 func seats_used() -> int:
 	var g := buy_group()
 	if g == null: return 0
+	if g.purpose == "dine" and _serving(): return ServeFlow.seats_taken(self).size()
 	if g.purpose == "dine": return diners.size() + seated_orders()
 	var paid := 0
 	for c in customers:
@@ -972,15 +1001,20 @@ func worker_by_id(id: int) -> Dictionary:
 func hire_cost() -> int:
 	var rules := shop.staff
 	if not rules.hire_costs.is_empty():
-		var n := roster.size() - 1
+		var n := _hires()
 		return rules.hire_costs[n] if n < rules.hire_costs.size() else -1
-	return rules.hire_cost_base + maxi(0, roster.size() - 1) * rules.hire_cost_step
+	return rules.hire_cost_base + maxi(0, _hires()) * rules.hire_cost_step
+
+
+## 已经招了几位（名册里减去开局员工）：第 n 次招人按 hire_costs[n] 收钱
+func _hires() -> int:
+	return roster.size() - shop.staff.starting.size()
 
 
 func next_hire_kind() -> String:
 	var rules := shop.staff
 	if rules.hire_rule == "cycle":
-		return rules.hire_order[(roster.size() - 1) % rules.hire_order.size()]
+		return rules.hire_order[_hires() % rules.hire_order.size()]
 	var best: String = hire_pool[0]
 	var fewest := -1
 	for kind in hire_pool:
@@ -1044,6 +1078,9 @@ func no_kitchen_carrier() -> bool:
 
 ## 放下手上的活：预留全部释放，拿在手上的东西放回原处，跟的单留给别人接（§3.6 预留与回收）。
 func _cancel_job(worker: Dictionary) -> void:
+	if _serving():
+		ServeFlow.cancel(self, worker)
+		return
 	var job: Dictionary = worker.job
 	if not job.is_empty():
 		var clear_processing_item: bool = _is_operation(job) and shop.station(job.src).block == "topping"
@@ -2023,7 +2060,7 @@ func send_flyers() -> String:
 
 ## 来一波客人（一次性效果 customer_wave）：按传单的入场方式进店。
 func customer_wave(count: int) -> void:
-	if shop.fulfillment.handoff == "single":
+	if _queued_arrivals():
 		flyer_left += count
 	else:
 		flyer_pending += count
@@ -2058,12 +2095,12 @@ const HINT_SMOOTH := 0.1 / 20.0
 
 
 func _track_bottleneck() -> void:
-	var standing := queue_size() - (seated_orders() if shop.fulfillment.handoff != "single" else 0)
+	var standing := queue_size() - (seated_orders() if not _queued_arrivals() else 0)
 	full_seconds = full_seconds + STEP if is_open() and standing >= current_stage().queue_capacity else 0.0
 	for id in pots:
 		var pot: Dictionary = stations[id]
 		var busy := 0.0
-		if shop.fulfillment.handoff == "single": busy = 1.0 if pot.phase == "cook" else 0.0
+		if _queued_arrivals(): busy = 1.0 if pot.phase == "cook" else 0.0
 		elif int(pot.processing) > 0 and pot.phase != "awaiting_take": busy = 1.0
 		pot_busy[id] = lerpf(float(pot_busy.get(id, 0.0)), busy, HINT_SMOOTH)
 	var idle := {}
@@ -2256,7 +2293,7 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 					params.required = seat_cost()
 		"send_flyers":
 			if not is_open(): code = CommandResult.SHOP_NOT_OPEN
-			elif shop.fulfillment.handoff == "single":
+			elif _queued_arrivals():
 				if flyer_ready_at - clock > 0.0:
 					code = CommandResult.FLYER_COOLDOWN
 					params.seconds = ceili(flyer_ready_at - clock)
@@ -2395,6 +2432,7 @@ func execute_command(command: String, arguments: Dictionary = {}) -> Dictionary:
 
 func _commit_unlock(id: String) -> void:
 	var stage := shop.stage_of(id)
+	var previously_unlocked := unlocked.duplicate() if _serving() else {}
 	gold -= shop.stages[stage].cost
 	for key in shop.stages[stage].stations:
 		unlocked[key] = true
@@ -2404,7 +2442,10 @@ func _commit_unlock(id: String) -> void:
 			stations[key].stock = rule.start
 	stage_index = maxi(stage_index, stage)
 	nav.set_open(unlocked)
-	if shop.fulfillment.handoff == "single":
+	if _serving():
+		for st in shop.stations:
+			if station_unlocked(st.id) and not previously_unlocked.get(st.id, false): ServeFlow.seed_stock(self, st.id)
+	if _queued_arrivals():
 		if id == shop.goals.opening_station: _next_customer = shop.fulfillment.first_customer_delay
 	elif orders.is_empty():
 		for unused in shop.fulfillment.opening_customers: _add_order()
@@ -2432,7 +2473,7 @@ func _commit_buy_seat() -> void:
 
 
 func _commit_send_flyers() -> void:
-	if shop.fulfillment.handoff == "single":
+	if _queued_arrivals():
 		flyer_left += flyer_customers()
 		flyer_timer = 0.0
 		flyer_ready_at = clock + flyer_cooldown()

@@ -25,6 +25,7 @@ const SUITES := [
 	preload("res://tests/test_tea_rules.gd"),
 	preload("res://tests/test_pancake_rules.gd"),
 	preload("res://tests/test_noodle_shop.gd"),
+	preload("res://tests/test_stirfry_serve.gd"),
 	preload("res://tests/test_shop_specs.gd"),
 	preload("res://tests/test_config_contracts.gd"),
 	preload("res://tests/test_profile_campaign.gd"),

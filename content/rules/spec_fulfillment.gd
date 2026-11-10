@@ -17,7 +17,8 @@ extends Resource
 ## 谁接单：front = 前厅员工；follower = 空闲员工领队首、未被认领的顾客，一人到底
 ## Fixed: single=follower; handoff=front.
 @export var taker: String = "front"
-## 交接：handoff = 后厨放出餐口、前厅递；single = 一人从收钱跟到递餐
+## 交接：handoff = 后厨放出餐口、前厅递；single = 一人从收钱跟到递餐；
+## serve = 前厅接单分座、后厨按配方合流放出餐口、前厅送到座位，就座且整单送齐才开吃（规格 §10，v1.1 草案）
 @export var handoff: String = "handoff"
 ## 收款时机：on_take（接单收钱）/ on_deliver（交付时）
 ## single supports both; handoff requires on_deliver.
@@ -40,6 +41,8 @@ extends Resource
 @export var ramp_orders: int = 0
 ## single: fixed (no interval RNG draw) or exponential. handoff: fixed only.
 @export var arrival: String = "fixed"
+## 送桌店（handoff = serve）：顾客从柜台走到座位的速度（像素/秒）。其他交接方式不用，保持 0
+@export var customer_walk: float = 0.0
 ## 开张后头几位：开张瞬间来几位、第一位隔几秒
 @export var opening_customers: int = 0
 @export var first_customer_delay: float = 0.0
