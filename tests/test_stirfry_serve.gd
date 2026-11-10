@@ -262,3 +262,15 @@ func test_helper_relieves_the_opening_bottleneck() -> void:
 	check(duo.serve.served > solo.serve.served, "有帮厨 10 分钟服务 %d 人，没有 %d 人" % [duo.serve.served, solo.serve.served])
 	check(solo.lost > 0, "只有一个厨师时有人等不及走掉（%d）" % solo.lost)
 	check_eq(_consistent(duo), "", "两人后厨状态自洽")
+
+
+## 电饭柜升级到每锅份数超过库存上限后，饭盆空了照样开锅（不会停产）
+func test_rice_cooker_keeps_cooking_after_batch_exceeds_capacity() -> void:
+	var rules := _open()
+	rules.gold = 100000.0
+	while rules.upgrade_cost("rice_cooker") >= 0: check_eq(rules.upgrade("rice_cooker"), "", "升级电饭柜")
+	check(rules.pot_batch("rice_cooker") > ServeFlow.pot_cap(STIRFRY, "rice_cooker"), "每锅 %d 份，超过上限 %d" % [rules.pot_batch("rice_cooker"), ServeFlow.pot_cap(STIRFRY, "rice_cooker")])
+	var start := rules.sold
+	rules.run(600.0)
+	check(int(rules.stations.rice_cooker.processing) > 0 or int(ServeFlow.stock(rules, "rice_cooker").available) > 0 or rules.sold - start > 8, "饭盆空了照样开锅")
+	check(rules.sold - start > 8, "十分钟里卖出的份数超过开局那 8 份米饭（%d）" % (rules.sold - start))

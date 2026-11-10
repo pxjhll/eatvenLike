@@ -212,7 +212,9 @@ static func _pots(rules: ShopRules, dt: float) -> void:
 				rules.events.emit("pot_done", {"station": st.id})
 		if pot.phase == "idle":
 			var batch := rules.pot_batch(st.id)
-			if goods_at(rules, st.id, item).size() + batch <= pot_cap(rules.shop, st.id):
+			# 放得下一整锅才开；饭盆空了总能开（升级后每锅份数可能超过库存上限，不能因此停产）
+			var have := goods_at(rules, st.id, item).size()
+			if have == 0 or have + batch <= pot_cap(rules.shop, st.id):
 				pot.phase = "cook"
 				pot.processing = batch
 				pot.processing_item = item
