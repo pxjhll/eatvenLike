@@ -2432,6 +2432,7 @@ func execute_command(command: String, arguments: Dictionary = {}) -> Dictionary:
 
 func _commit_unlock(id: String) -> void:
 	var stage := shop.stage_of(id)
+	var previously_unlocked := unlocked.duplicate() if _serving() else {}
 	gold -= shop.stages[stage].cost
 	for key in shop.stages[stage].stations:
 		unlocked[key] = true
@@ -2443,7 +2444,7 @@ func _commit_unlock(id: String) -> void:
 	nav.set_open(unlocked)
 	if _serving():
 		for st in shop.stations:
-			if station_unlocked(st.id): ServeFlow.seed_stock(self, st.id)
+			if station_unlocked(st.id) and not previously_unlocked.get(st.id, false): ServeFlow.seed_stock(self, st.id)
 	if _queued_arrivals():
 		if id == shop.goals.opening_station: _next_customer = shop.fulfillment.first_customer_delay
 	elif orders.is_empty():

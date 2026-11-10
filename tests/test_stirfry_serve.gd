@@ -274,3 +274,165 @@ func test_rice_cooker_keeps_cooking_after_batch_exceeds_capacity() -> void:
 	rules.run(600.0)
 	check(int(rules.stations.rice_cooker.processing) > 0 or int(ServeFlow.stock(rules, "rice_cooker").available) > 0 or rules.sold - start > 8, "饭盆空了照样开锅")
 	check(rules.sold - start > 8, "十分钟里卖出的份数超过开局那 8 份米饭（%d）" % (rules.sold - start))
+
+
+func _working_state(rules: ShopRules) -> Dictionary:
+	while rules.clock < 120.0:
+		rules.step(0.1)
+		for job in rules.serve.jobs.values():
+			if job.kind == "work" and job.stage == "work": return rules.to_dict()
+	check(false, "应能推进到正在加工的状态")
+	return rules.to_dict()
+
+
+func test_invalid_serve_jobs_are_rejected_without_changing_live_state() -> void:
+	var rules := _open()
+	var base := _working_state(rules)
+	check_eq(_consistent(rules), "", "正常工作状态能读档")
+	var key := ""
+	for id in base.serve.jobs:
+		if base.serve.jobs[id].kind == "work": key = id
+	if key.is_empty(): return
+	var cases := [
+		["step", -1], ["step", 999], ["step", 0],
+		["stage", "unknown"], ["stage", "pick"],
+		["from", "missing"], ["to", "missing"], ["from", "pantry"],
+	]
+	for entry in cases:
+		var invalid := base.duplicate(true)
+		invalid.serve.jobs[key][entry[0]] = entry[1]
+		check(not rules.load_dict(invalid).is_empty(), "拒绝任务 %s=%s" % entry)
+		check(rules.to_dict() == base, "拒绝后保留原状态")
+	var sleeping := base.duplicate(true)
+	sleeping.serve.jobs[key].stage = "go_from"
+	check(not rules.load_dict(sleeping).is_empty(), "拒绝走路阶段和员工状态不匹配的任务")
+	check(rules.to_dict() == base, "阶段不匹配不改变原状态")
+
+
+func test_serve_guest_cannot_reference_a_missing_order_or_wrong_seat() -> void:
+	var rules := _open()
+	var base := _working_state(rules)
+	var missing := base.duplicate(true)
+	missing.serve.orders.clear()
+	missing.serve.units.clear()
+	missing.serve.goods.clear()
+	missing.serve.jobs.clear()
+	for st in missing.stations.values(): st.user = -1
+	for w in missing.roster:
+		w.walking = false
+		w.phase = "idle"
+		w.carry_item = ""
+		w.carry_count = 0
+	check(not rules.load_dict(missing).is_empty(), "拒绝已分座顾客引用不存在的订单")
+	var wrong := base.duplicate(true)
+	wrong.serve.orders[0].seat += 1
+	check(not rules.load_dict(wrong).is_empty(), "拒绝顾客和订单座位不一致")
+	check(rules.to_dict() == base, "无效引用不改变原状态")
+
+
+func test_unlock_seeds_only_new_stations_and_keeps_existing_rice() -> void:
+	var shop := _shop_copy()
+	var wok: SpecStation = shop.station("wok_a").duplicate(true)
+	wok.id = "other_wok"
+	shop.stations.append(wok)
+	shop.layout.points[wok.id] = Vector2(600, 400)
+	var pot: SpecStation = shop.station("rice_cooker").duplicate(true)
+	pot.id = "other_pot"
+	pot.companion_of = wok.id
+	pot.stock[0].start = 2
+	shop.stations.append(pot)
+	shop.layout.points[pot.id] = Vector2(600, 450)
+	var stage: SpecStage = shop.stages[0].duplicate(true)
+	stage.id = "second"
+	stage.stations.assign([wok.id])
+	stage.tasks.clear()
+	shop.stages[0].tasks.clear()
+	shop.stages.append(stage)
+	check_eq(Validator.summary(Validator.validate(shop)), "", "两阶段数据合法")
+	var rules := _open(shop)
+	check_eq(int(ServeFlow.stock(rules, "rice_cooker").available), 4, "首台锅获得开局库存")
+	while rules.clock < 120.0:
+		rules.step(0.1)
+		var stock := ServeFlow.stock(rules, "rice_cooker")
+		if int(stock.available) + int(stock.reserved) < 4: break
+	var before: Array = rules.serve.goods.duplicate(true)
+	var old_stock := ServeFlow.stock(rules, "rice_cooker")
+	check_eq(int(old_stock.available) + int(old_stock.reserved), 3, "已取走一份米饭")
+	check_eq(rules.unlock(wok.id), "", "解锁下一阶段")
+	check_eq(ServeFlow.stock(rules, "rice_cooker"), old_stock, "旧锅库存和在制保持不变")
+	check_eq(int(ServeFlow.stock(rules, pot.id).available), 2, "仅新锅得到自己的初始库存")
+	for good in before: check(good in rules.serve.goods, "已有实物及预留保持不变")
+	check_eq(rules.serve.goods.size(), before.size() + 2, "只生成新锅的两份初始库存")
+	check_eq(_consistent(rules), "", "解锁后状态能存读档")
+
+
+func test_delivery_callbacks_capture_resumable_settled_orders() -> void:
+	var rules := _open()
+	var snapshots: Array = []
+	var listener := func(message: Dictionary) -> void:
+		if message.name in ["delivered", "sale", "eat_start"]:
+			snapshots.append({"name": message.name, "order": rules.serve.orders[0].id, "state": rules.to_dict()})
+	rules.events.on("*", listener)
+	while rules.clock < 180.0 and snapshots.size() < 3: rules.step(0.1)
+	rules.events.off("*", listener)
+	check_eq(snapshots.map(func(s: Dictionary) -> String: return s.name), ["delivered", "sale", "eat_start"], "保留送达、结账、开吃的广播顺序")
+	for snapshot in snapshots:
+		var resumed := ShopRules.new(STIRFRY)
+		var error := resumed.load_dict(snapshot.state)
+		check_eq(error, "", snapshot.name + " 回调状态可以读档")
+		if not error.is_empty(): continue
+		var order := ServeFlow.order(resumed, int(snapshot.order))
+		check(bool(order.paid), snapshot.name + " 回调前已结账")
+		check_eq(resumed.gold, 12.0, "第一单只收一次钱")
+		check_eq(String(ServeFlow.guest(resumed, int(order.guest)).state), "eating", "回调前已完成开吃状态")
+		var manager := _manager(resumed)
+		check(ServeFlow.job_of(resumed, manager).is_empty(), "已送达的任务已清除")
+		resumed.recall_worker(manager.id)
+		resumed.run(90.0)
+		check(ServeFlow.order(resumed, int(snapshot.order)).is_empty(), "读档后正常吃完离店")
+		check_eq(resumed.gold, 12.0, "继续运行不会漏收或重复结账")
+
+
+func test_active_serve_job_stages_and_work_callbacks_remain_loadable() -> void:
+	var rules := _open()
+	var seen := {}
+	var callbacks := {}
+	var listener := func(message: Dictionary) -> void:
+		if message.name in ["order_taken", "made"]:
+			callbacks[message.name] = true
+			check_eq(_consistent(rules), "", message.name + " 回调没有残留的已完成任务")
+	rules.events.on("*", listener)
+	while rules.clock < 120.0:
+		rules.step(0.1)
+		for job in rules.serve.jobs.values():
+			var key: String = job.kind + ":" + job.stage
+			if seen.has(key): continue
+			seen[key] = true
+			check_eq(_consistent(rules), "", key + " 正常状态可读档")
+	rules.events.off("*", listener)
+	for kind in ["take", "work", "carry", "pass", "serve"]:
+		check(seen.keys().any(func(key: String) -> bool: return key.begins_with(kind + ":")), "覆盖 " + kind + " 任务")
+	check(callbacks.has("order_taken") and callbacks.has("made"), "覆盖接单和加工回调")
+
+
+func test_serve_transport_jobs_require_the_goods_the_worker_is_carrying() -> void:
+	var rules := _open()
+	var chef := _chef(rules)
+	while rules.clock < 120.0:
+		rules.step(0.1)
+		var job := ServeFlow.job_of(rules, chef)
+		if not job.is_empty() and job.kind == "carry" and job.stage == "go_to": break
+	var base := rules.to_dict()
+	var key := str(chef.id)
+	check_eq(_consistent(rules), "", "正常搬运状态能读档")
+	for field in ["good", "item"]:
+		var invalid := base.duplicate(true)
+		invalid.serve.jobs[key][field] = -1 if field == "good" else "rice"
+		if field == "good":
+			invalid.serve.goods = invalid.serve.goods.filter(func(g: Dictionary) -> bool: return g.at != "hand:" + key)
+		check(not rules.load_dict(invalid).is_empty(), "拒绝搬运任务的 " + field + " 不一致")
+	var dropped := base.duplicate(true)
+	for good in dropped.serve.goods:
+		if good.at == "hand:" + key: good.at = "pantry"
+	check(not rules.load_dict(dropped).is_empty(), "送往目标的物品必须确实在员工手里")
+	check(rules.to_dict() == base, "无效搬运任务不改变原状态")

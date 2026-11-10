@@ -265,12 +265,17 @@ static func _guests(rules: ShopRules, dt: float) -> void:
 
 ## 用餐开始条件（§10.4，本模式固定）：已就座 + 订单全部明细送达
 static func _maybe_eat(rules: ShopRules, g: Dictionary) -> void:
-	if g.state != "seated": return
+	if _start_eating(rules, g): rules.events.emit("eat_start", {"guest": g.id, "seat": g.seat})
+
+
+## Commit eating before delivery broadcasts so a callback snapshot can resume independently.
+static func _start_eating(rules: ShopRules, g: Dictionary) -> bool:
+	if g.state != "seated": return false
 	var o := order(rules, int(g.order))
-	if o.is_empty() or not order_complete(o): return
+	if o.is_empty() or not order_complete(o): return false
 	g.state = "eating"
 	g.eat_left = rules.seat_seconds()
-	rules.events.emit("eat_start", {"guest": g.id, "seat": g.seat})
+	return true
 
 
 static func _leave(rules: ShopRules, g: Dictionary) -> void:
@@ -396,15 +401,14 @@ static func _dropped(rules: ShopRules, worker: Dictionary, job: Dictionary) -> v
 	good.res = -1
 	worker.carry_item = ""
 	worker.carry_count = 0
-	if job.kind == "serve": _delivered(rules, int(job.unit))
 	_end(rules, worker)
+	if job.kind == "serve": _delivered(rules, int(job.unit))
 
 
 static func _worked(rules: ShopRules, worker: Dictionary, job: Dictionary) -> void:
 	var s := rules.serve
 	if job.kind == "take":
 		_taken(rules, worker, job)
-		_end(rules, worker)
 		return
 	var u := unit(rules, int(job.unit))
 	var step: SpecStep = rules.shop.dish(String(u.dish)).steps[int(job.step)]
@@ -418,8 +422,8 @@ static func _worked(rules: ShopRules, worker: Dictionary, job: Dictionary) -> vo
 		for unused in int(step.produces[item]): _birth(rules, item, step.station, int(u.id))
 	u.done.append(int(job.step))
 	rules.stations[step.station].user = -1
-	rules.events.emit("made", {"station": step.station, "dish": u.dish, "unit": u.id})
 	_end(rules, worker)
+	rules.events.emit("made", {"station": step.station, "dish": u.dish, "unit": u.id})
 
 
 ## 接单（§10.1）：顾客 → 订单（明细列表）→ 每份餐一个 unit；顾客拿着座位号走过去
@@ -441,6 +445,7 @@ static func _taken(rules: ShopRules, worker: Dictionary, job: Dictionary) -> voi
 	var speed := maxf(1.0, f.customer_walk)
 	g.walk_total = RuleNav.length(rules.nav.path(rules.nav.point(rules.counter_id), _point(rules, SEAT + str(g.seat)))) / speed
 	g.walk_left = g.walk_total
+	_end(rules, worker)
 	rules.events.emit("order_taken", {"guest": g.id, "order": o.id, "seat": g.seat})
 
 
@@ -453,19 +458,25 @@ static func _delivered(rules: ShopRules, unit_id: int) -> void:
 	line.delivered = int(line.delivered) + 1
 	rules._sales.count_handoff(String(u.dish), 1)
 	s.items_sold = int(s.items_sold) + 1
+	var sale := {}
+	if not bool(o.paid) and order_complete(o):
+		o.paid = true
+		var total := 0.0
+		var count := 0
+		for l in o.lines:
+			total += rules.dish_price(String(l.dish)) * int(l.qty)
+			count += int(l.qty)
+		sale = rules._sales.credit_order(total)
+		sale.dish = o.lines[0].dish
+		sale.count = count
+		s.served = int(s.served) + 1
+		s.orders_done = int(s.orders_done) + 1
+	var g := guest(rules, int(o.guest))
+	var started := _start_eating(rules, g)
+	# All delivery state is committed before listeners may save, load or reassign staff.
 	rules.events.emit("delivered", {"dish": u.dish, "order": o.id})
-	if bool(o.paid) or not order_complete(o): return
-	o.paid = true
-	var total := 0.0
-	var count := 0
-	for l in o.lines:
-		total += rules.dish_price(String(l.dish)) * int(l.qty)
-		count += int(l.qty)
-	var sale: Dictionary = rules._sales.credit_order(total)
-	s.served = int(s.served) + 1
-	s.orders_done = int(s.orders_done) + 1
-	rules.events.emit("sale", {"dish": o.lines[0].dish, "count": count, "income": sale.income})
-	_maybe_eat(rules, guest(rules, int(o.guest)))
+	if not sale.is_empty(): rules.events.emit("sale", sale)
+	if started: rules.events.emit("eat_start", {"guest": g.id, "seat": g.seat})
 
 
 static func _end(rules: ShopRules, worker: Dictionary) -> void:
