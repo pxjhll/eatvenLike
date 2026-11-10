@@ -11,6 +11,7 @@ const Inventory := preload("res://game/rules/rule_inventory.gd")
 const InventoryAudit := preload("res://game/rules/inventory_audit.gd")
 const WorkerState := preload("res://game/rules/worker_state.gd")
 const Sales := preload("res://game/rules/rule_sales.gd")
+const OrderState := preload("res://game/rules/rule_orders.gd")
 const Completion := preload("res://game/rules/fulfillment_completion.gd")
 const MachineProgress := preload("res://game/rules/machine_progress.gd")
 const DispatchPolicy := preload("res://game/rules/dispatch_policy.gd")
@@ -40,6 +41,7 @@ var rng := RandomNumberGenerator.new()
 # ---------- 店铺状态 ----------
 var clock := 0.0
 var _sales := Sales.new()
+var _orders_state := OrderState.new()
 var gold: float:
 	get: return _sales.gold
 	set(value): _sales.gold = value
@@ -52,7 +54,9 @@ var sold: int:
 var sold_by_dish: Dictionary:
 	get: return _sales.sold_by_dish
 	set(value): _sales.sold_by_dish = value
-var lost := 0
+var lost: int:
+	get: return _orders_state.lost
+	set(value): _orders_state.lost = value
 var stage_index := 0
 var unlocked: Dictionary = {}
 ## 升级轨等级："机器id" = 机器主轨；"机器id/物料id" = 物料槽；"staff/front"、"flyer"、"seat/<组>"
@@ -83,8 +87,12 @@ var shelf_reserved_out: int:
 var generated: int:
 	get: return _inventory.generated
 	set(value): _inventory.generated = value
-var orders: Array = []
-var diners: Array = []
+var orders: Array:
+	get: return _orders_state.orders
+	set(value): _orders_state.orders = value
+var diners: Array:
+	get: return _orders_state.diners
+	set(value): _orders_state.diners = value
 var workers: Array = []
 var roster: Array = []
 ## 本局可招的员工种类：开局 = 店铺数据里的，店长回访等效果往里加（不改店铺数据本身）
@@ -99,7 +107,9 @@ var event_rng := RandomNumberGenerator.new()
 var belts: Dictionary = {}
 var belt_clock: Dictionary = {}
 var belt_items: Array = []
-var order_ramp: Dictionary = {}
+var order_ramp: Dictionary:
+	get: return _orders_state.order_ramp
+	set(value): _orders_state.order_ramp = value
 var flyer_wave := 0.0
 var flyer_wait := 0.0
 var flyer_clock := 0.0
@@ -109,13 +119,19 @@ var flyer_left := 0
 var flyer_timer := 0.0
 var seats: Dictionary = {}
 var _accumulator := 0.0
-var _order_clock := 0.0
-var _next_order := 1
+var _order_clock: float:
+	get: return _orders_state.order_clock
+	set(value): _orders_state.order_clock = value
+var _next_order: int:
+	get: return _orders_state.next_order
+	set(value): _orders_state.next_order = value
 var _next_staff := 1
 var _sale_carry: float:
 	get: return _sales.sale_carry
 	set(value): _sales.sale_carry = value
-var _next_customer := 0.0
+var _next_customer: float:
+	get: return _orders_state.next_customer
+	set(value): _orders_state.next_customer = value
 var _courier := false
 
 # ---------- 从数据推出来的角色（按积木类型，不按 id） ----------
@@ -572,8 +588,7 @@ func _tick_handoff() -> void:
 	_drop_stuck_tickets()
 	flyer_wait = maxf(0.0, flyer_wait - STEP)
 	_flyer_entry_wave()
-	_order_clock += STEP
-	for order in orders: order.wait += STEP
+	_orders_state.advance_handoff(STEP)
 	if is_open() and _order_clock >= _order_interval():
 		_order_clock = 0.0
 		if orders.size() < queue_capacity(): _add_order()
@@ -587,15 +602,9 @@ func _tick_handoff() -> void:
 			_update_worker(worker)
 	_allocate()
 	_run_belts()
-	for index in range(diners.size() - 1, -1, -1):
-		diners[index].left -= STEP
-		if diners[index].left <= 0.000001: diners.remove_at(index)
+	_orders_state.advance_diners(STEP)
 	if not shop.fulfillment.takeaway_station.is_empty() and station_unlocked(shop.fulfillment.takeaway_station):
-		var free := free_seats()
-		for order in orders:
-			if order.reserved or order.takeaway or order.seat >= 0: continue
-			if free > 0: free -= 1
-			else: order.takeaway = true
+		_orders_state.overflow_to_takeaway(free_seats())
 
 
 # ---------- 客流 ----------
@@ -689,10 +698,7 @@ func _add_order() -> void:
 		var spare := _spare_seats()
 		seat = _first_open_seat() if spare > 0 else -1
 		takeaway = takeaway_open and spare <= 0
-	for dish in weights: order_ramp[dish] = mini(int(order_ramp.get(dish, 0)) + 1, shop.fulfillment.ramp_orders)
-	if takeaway_open: order_ramp.takeaway = mini(int(order_ramp.get("takeaway", 0)) + 1, shop.fulfillment.ramp_orders)
-	orders.append({"id": _next_order, "wait": 0.0, "reserved": false, "dish": selected, "takeaway": takeaway, "seat": seat})
-	_next_order += 1
+	_orders_state.admit_handoff(selected, seat, takeaway, weights, shop.fulfillment.ramp_orders, takeaway_open)
 	events.emit("arrived", {"dish": selected})
 
 
@@ -802,9 +808,7 @@ func _first_open_seat() -> int:
 
 
 func _order_by_id(id: int) -> Dictionary:
-	for order in orders:
-		if order.id == id: return order
-	return {}
+	return _orders_state.handoff_order(id)
 
 
 func _to_go(job: Dictionary) -> bool:
@@ -1045,8 +1049,7 @@ func _cancel_job(worker: Dictionary) -> void:
 		var clear_processing_item: bool = _is_operation(job) and shop.station(job.src).block == "topping"
 		_inventory.cancel(job, worker.carry_count, supply_id, counter_id, clear_processing_item)
 		if job.kind == "serve":
-			for order in orders:
-				if order.id == job.order_id: order.reserved = false
+			_orders_state.set_handoff_reserved(job.order_id, false)
 	WorkerState.cancel_assignment(worker)
 
 
@@ -1220,8 +1223,7 @@ func _reserve(worker: Dictionary, job: Dictionary) -> void:
 		stations[job.src].processing_item = flavor if not flavor.is_empty() else _seated_flavor(job.src)
 	_inventory.reserve(job, supply_id, counter_id)
 	if job.kind == "serve":
-		for order in orders:
-			if order.id == job.order_id: order.reserved = true
+		_orders_state.set_handoff_reserved(job.order_id, true)
 	worker.job = job
 	worker.task_label = job.kind
 	_walk(worker, _source_point(job), "walk_pickup")
@@ -1293,10 +1295,7 @@ func _update_worker(worker: Dictionary) -> void:
 		"dropoff":
 			if job.kind == "serve":
 				_record_sale(job)
-				for index in orders.size():
-					if orders[index].id == job.order_id:
-						orders.remove_at(index)
-						break
+				_orders_state.remove_handoff(job.order_id)
 			else:
 				_deliver(job.dst, job.item, job.count)
 			_finish(worker)
@@ -1335,7 +1334,7 @@ func _record_sale(job: Dictionary) -> void:
 	if not _to_go(job):
 		var seat := int(_order_by_id(job.order_id).get("seat", -1))
 		if seat < 0: seat = _first_open_seat()
-		diners.append({"seat": seat, "dish": job.item, "left": seat_seconds()})
+		_orders_state.add_diner(seat, job.item, seat_seconds())
 	_sales.count_handoff(job.item, job.count)
 	events.emit("sale", _sales.credit_handoff(job, dish_price(job.item)))
 
@@ -1714,9 +1713,15 @@ func _run_belts() -> void:
 # 交接方式 single：一人从收钱跟到递餐（煎饼摊）
 # =====================================================================
 
-var customers: Array = []
-var queue: Array = []
-var _next_customer_id := 1
+var customers: Array:
+	get: return _orders_state.customers
+	set(value): _orders_state.customers = value
+var queue: Array:
+	get: return _orders_state.queue
+	set(value): _orders_state.queue = value
+var _next_customer_id: int:
+	get: return _orders_state.next_customer_id
+	set(value): _orders_state.next_customer_id = value
 
 
 func _tick_single() -> void:
@@ -1745,17 +1750,13 @@ func _arrivals_single() -> void:
 
 func _spawn_single() -> void:
 	if queue.size() >= queue_capacity():
-		lost += 1
+		_orders_state.reject_single()
 		events.emit("lost", {})
 		return
 	var kind := _pick_dish(order_weights())
 	var f := shop.fulfillment
 	var addon: bool = kind == f.addon_dish or (not f.addon_dish.is_empty() and rng.randf() < f.addon_chance)
-	var c := {"id": _next_customer_id, "kind": kind, "addon": addon, "state": "queue", "wait": 0.0, "claimed": false, "paid": 0,
-		"options": _roll_options()}
-	_next_customer_id += 1
-	customers.append(c)
-	queue.append(c.id)
+	_orders_state.admit_single(kind, addon, _roll_options())
 	events.emit("arrived", {"dish": kind})
 
 
@@ -1771,20 +1772,13 @@ func _roll_options() -> Array:
 func _customers_single() -> void:
 	var patience := shop.fulfillment.leave_after * mods.value("patience", 1.0)
 	for c in customers.duplicate():
-		if c.state == "queue":
-			c.wait += STEP
-			if patience > 0.0 and c.wait > patience and not c.claimed:
-				c.state = "leaving"
-				queue.erase(c.id)
-				lost += 1
-				events.emit("lost", {})
-		if c.state == "leaving": customers.erase(c)
+		if _orders_state.advance_single_customer(c, STEP, patience):
+			events.emit("lost", {})
+		_orders_state.remove_leaving_single(c)
 
 
 func customer(id: int) -> Dictionary:
-	for c in customers:
-		if c.id == id: return c
-	return {}
+	return _orders_state.single_customer(id)
 
 
 func _order_steps(c: Dictionary) -> Array:
@@ -1846,10 +1840,8 @@ func _crowded(s: Dictionary) -> bool:
 
 func _find_job_single(s: Dictionary) -> bool:
 	if shop.dispatch.chores_first and _try_pot_chore(s, false): return true
-	if queue.is_empty(): return false
-	var c := customer(queue[0])
-	if c.claimed: return false
-	c.claimed = true
+	var c := _orders_state.claim_single()
+	if c.is_empty(): return false
 	WorkerState.claim_single_order(s, c.id, _order_steps(c))
 	_go(s, s.steps[0].point, s.steps[0].label)
 	return true
@@ -1920,7 +1912,7 @@ func _finish_work_single(s: Dictionary) -> void:
 	match st.action:
 		"take":
 			# 接了单客人就离队去等（state 仍叫 paid）；钱在 pay_at 说的时候进账
-			queue.erase(c.id)
+			_orders_state.dequeue_single(c.id)
 			_sales.accept_single(c, order_price_single(c), shop.fulfillment.pay_at == "on_take")
 			Completion.advance_single_step(s, {}, false)
 		"hand":

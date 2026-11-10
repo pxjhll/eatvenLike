@@ -1,4 +1,5 @@
 extends RefCounted
+const OrderState := preload("res://game/rules/rule_orders.gd")
 ## Owns sales counters and settlement arithmetic. Rules sequences external effects.
 
 var gold := 0.0
@@ -23,14 +24,13 @@ func accept_single(customer: Dictionary, quoted_price: int, pay_on_take: bool) -
 	if pay_on_take:
 		gold += quoted_price
 		revenue += quoted_price
-	customer.paid = quoted_price
-	customer.state = "paid"
+	OrderState.accept_single(customer, quoted_price)
 
 func complete_single(customer: Dictionary, addon_dish: String, pay_on_take: bool) -> Dictionary:
 	if not pay_on_take:
 		gold += customer.paid
 		revenue += customer.paid
-	customer.state = "leaving"
+	OrderState.leave_single(customer)
 	sold_by_dish[customer.kind] = int(sold_by_dish[customer.kind]) + 1
 	sold += 1
 	if customer.addon and customer.kind != addon_dish:
