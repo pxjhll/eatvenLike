@@ -11,6 +11,7 @@ var message_formatter: Callable
 const CommandResult := preload("res://game/rules/rule_command_result.gd")
 const CommandText := preload("res://content/ui/rule_command_text.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
+const Production := preload("res://game/rules/production_plan.gd")
 
 ## 升级效果 → 面板上“这一级做什么”的分类
 const KIND_TEXT := {"capacity": "产能升级", "price": "售价升级", "menu": "开新口味", "both": "产能售价升级"}
@@ -42,6 +43,12 @@ func render_snapshot() -> Dictionary:
 		"stage_queue_capacity": rules.current_stage().queue_capacity}
 	if rules.movement_enabled(): frame.movement = rules.movement
 	frame = frame.duplicate(true)
+	if shop.fulfillment.flow_version==1:
+		frame.flow = {"version":1,"delivery_batch":shop.fulfillment.delivery_batch,"bundles":{}}
+		for key in rules.serve.jobs:
+			var job: Dictionary = rules.serve.jobs[key]
+			if job.kind!="bundle": continue
+			frame.flow.bundles[key] = {"order":job.order,"goods":job.goods.duplicate(true),"capacity":job.capacity,"held":rules.worker_by_id(int(key)).carry_count}
 	if shop.dispatch.action_version==1:
 		frame.actions = {}
 		for worker: Dictionary in frame.workers:
@@ -59,6 +66,10 @@ func render_snapshot() -> Dictionary:
 
 func roster_snapshot() -> Array:
 	return rules.roster.duplicate(true)
+
+func production_snapshot(dish_id: String) -> Dictionary:
+	if shop.fulfillment.flow_version!=1: return {}
+	return Production.compile(shop,dish_id)
 
 
 func deployed_snapshot() -> Array:

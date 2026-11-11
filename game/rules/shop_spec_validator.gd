@@ -1,4 +1,5 @@
 extends RefCounted
+const Production := preload("res://game/rules/production_plan.gd")
 ## Pure configuration contract. No resources are loaded and no runtime rules are built.
 
 static func _supported(values: Array = []) -> Dictionary:
@@ -15,6 +16,7 @@ static func capabilities(mode: String) -> Dictionary:
 	if mode not in ["single", "handoff"]: return {}
 	var single := mode == "single"
 	var f := {
+		"flow_version":_reserved(0),"delivery_batch":_reserved("item"),"delivery_points":_reserved({}),
 		"handoff": _fixed([mode]), "taker": _fixed(["follower" if single else "front"]),
 		"dine_rule": _fixed(["takeaway_only" if single else "seat_first"]),
 		"pay_at": _supported(["on_take", "on_deliver"]) if single else _fixed(["on_deliver"]),
@@ -54,6 +56,7 @@ static func capabilities(mode: String) -> Dictionary:
 ## 每趟端 1 件、不合送；整单送齐时一次结账；附加菜（例汤）作为订单第二条明细。
 static func _serve_capabilities() -> Dictionary:
 	var f := {
+		"flow_version":_supported([0,1]),"delivery_batch":_supported(["item","order"]),"delivery_points":_supported(),
 		"handoff": _fixed(["serve"]), "taker": _fixed(["front"]), "dine_rule": _supported(["seat_wait", "self_pickup"]),
 		"pay_at": _fixed(["on_deliver"]), "price_rounding": _fixed(["dish_tenth_carry"]), "leave_queue": _fixed(["after_take"]),
 		"wait_area": _fixed([""]), "leave_who": _supported(["none", "queued_unclaimed"]), "arrival": _supported(["fixed", "exponential"]),
@@ -199,6 +202,14 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 static func _validate_policies(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
 	if shop.fulfillment == null: return
 	var f := shop.fulfillment
+	if f.flow_version==0 and (f.delivery_batch!="item" or not f.delivery_points.is_empty()): _error(errors,"fulfillment.flow_version","Delivery extensions require flow version 1.")
+	if f.delivery_batch=="order" and (f.handoff!="serve" or f.dine_rule!="seat_wait" or shop.dispatch==null or shop.dispatch.action_version!=1 or shop.layout==null or shop.layout.motion_version!=1):
+		_error(errors,"fulfillment.delivery_batch","Order delivery requires serve/seat_wait with shared motion and actions.")
+	if not f.delivery_points.is_empty() and f.delivery_batch!="order": _error(errors,"fulfillment.delivery_points","Multiple collection ports require order delivery.")
+	for dish in f.delivery_points:
+		_ref(dish,c.dishes,"fulfillment.delivery_points."+dish,errors)
+		var point: String = f.delivery_points[dish]
+		if not c.stations.has(point) or c.stations[point].block!="pickup": _error(errors,"fulfillment.delivery_points."+dish,"Collection point must be a pickup station.")
 	var matrix := capabilities(f.handoff)
 	if matrix.is_empty():
 		_error(errors, "fulfillment.handoff", "Unsupported fulfillment mode.", "unsupported")
@@ -678,7 +689,7 @@ static func _validate_serve(shop: SpecShop, c: Dictionary, errors: Array[Diction
 			"topping", "dispenser":
 				_error(errors, p, "Serve fulfillment does not support this block yet.", "unsupported")
 		if st.zone == "front" and st.block != "counter": _error(errors, p, "Serve fulfillment has no front production yet.", "unsupported")
-	if pickups != 1: _error(errors, "stations", "Serve fulfillment needs exactly one pickup station.")
+	if pickups<1 or (shop.fulfillment.flow_version==0 and pickups!=1): _error(errors, "stations", "Serve fulfillment needs exactly one pickup station unless flow version 1 is enabled.")
 	var dine: SpecSeatGroup = null
 	for g in shop.seat_groups:
 		if g != null and g.purpose == "dine" and dine == null: dine = g
@@ -691,6 +702,8 @@ static func _validate_serve(shop: SpecShop, c: Dictionary, errors: Array[Diction
 	for dish in shop.dishes:
 		if dish == null: continue
 		var p: String = "dishes." + dish.id
+		if shop.fulfillment.flow_version==1:
+			for error: Dictionary in Production.compile(shop,dish.id).errors: _error(errors,p+"."+error.path,error.message,error.code)
 		if dish.front: _error(errors, p + ".front", "Serve fulfillment has no front recipes yet.", "unsupported")
 		var made := {}
 		var final := false
@@ -702,7 +715,7 @@ static func _validate_serve(shop: SpecShop, c: Dictionary, errors: Array[Diction
 				if not s.consumes.is_empty() or s.produces.size() != 1: _error(errors, "%s.steps[%d]" % [p, i], "Source steps produce exactly one item and consume nothing.", "unsupported")
 			elif st.block in ["hand", "combine"]:
 				for item in s.consumes:
-					if not made.has(item): _error(errors, "%s.steps[%d].consumes.%s" % [p, i, item], "Inputs must be produced by an earlier step.", "unreachable")
+					if shop.fulfillment.flow_version==0 and not made.has(item): _error(errors, "%s.steps[%d].consumes.%s" % [p, i, item], "Inputs must be produced by an earlier step.", "unreachable")
 			else: _error(errors, "%s.steps[%d]" % [p, i], "Serve recipes use supply, batch_pot, hand and combine steps.", "unsupported")
 			for item in s.produces:
 				made[item] = true

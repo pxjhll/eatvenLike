@@ -3,6 +3,7 @@ extends RefCounted
 ## job projections. Missing action records are legacy adoption, never a replay.
 const Actions := preload("res://game/rules/rule_actions.gd")
 const Context := preload("res://game/rules/serve_action_context.gd")
+const FlowValidator := preload("res://game/rules/flow_validator.gd")
 
 static func validate(data: Dictionary, shop: SpecShop) -> String:
 	for worker: Dictionary in data.roster:
@@ -12,6 +13,10 @@ static func validate(data: Dictionary, shop: SpecShop) -> String:
 		if not error.is_empty(): return "roster[%d].%s"%[worker.id,error]
 		var program: Dictionary = worker.action
 		var job: Dictionary = data.serve.jobs.get(str(worker.id),{})
+		if job.get("kind","")=="bundle":
+			error = FlowValidator.bundle(data,shop,worker,job)
+			if not error.is_empty(): return error
+			continue
 		if job.is_empty() or program.status not in Actions.ACTIVE: return "action has no active business lease"
 		if program.lease!=Context.binding(worker,job): return "action lease differs from assignment"
 		var actual: Array = []

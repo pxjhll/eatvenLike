@@ -56,6 +56,10 @@ jobs:
         env:
           XDG_DATA_HOME: ${{ runner.temp }}/actor-actions-userdata
         run: timeout 30s ./godot --headless --path . -s tests/render_actor_actions.gd
+      - name: Production and delivery composition - multi-item character poses and atomic sale
+        env:
+          XDG_DATA_HOME: ${{ runner.temp }}/flow-composition-userdata
+        run: timeout 30s ./godot --headless --path . -s tests/render_flow_composition.gd
       - name: Generic shop scene - data-driven tutorial real-click regression
         run: timeout 45s ./godot --headless --path . -s tests/render_shop_guide.gd
       - name: Generic shop scene - HUD extension acceptance and save round trip

@@ -17,6 +17,9 @@ const WorkerState := preload("res://game/rules/worker_state.gd")
 const CustomerMovement := preload("res://game/rules/customer_movement.gd")
 const Actions := preload("res://game/rules/rule_actions.gd")
 const ActionContext := preload("res://game/rules/serve_action_context.gd")
+const Production := preload("res://game/rules/production_plan.gd")
+const Bundle := preload("res://game/rules/bundle_delivery.gd")
+const BundleContext := preload("res://game/rules/bundle_action_context.gd")
 const SHARED := -1
 const SOURCE_BLOCKS := ["supply", "batch_pot"]
 const WORK_BLOCKS := ["hand", "combine"]
@@ -34,26 +37,21 @@ static func empty_state() -> Dictionary:
 # =====================================================================
 
 static func work_steps(shop: SpecShop, dish_id: String) -> Array[int]:
-	var out: Array[int] = []
-	var dish := shop.dish(dish_id)
-	for i in dish.steps.size():
-		var st := shop.station(dish.steps[i].station)
-		if st != null and st.block in WORK_BLOCKS: out.append(i)
-	return out
+	return Production.work_steps(shop,dish_id)
 
 
 ## 这道菜里谁做出 item（同一道菜里只认第一步）
 static func producer(shop: SpecShop, dish_id: String, item: String) -> int:
-	var dish := shop.dish(dish_id)
-	for i in dish.steps.size():
-		if dish.steps[i].produces.has(item): return i
-	return -1
+	return Production.producer(shop,dish_id,item)
 
 
 static func pickup_of(shop: SpecShop) -> String:
 	for st in shop.stations:
 		if st.block == "pickup": return st.id
 	return ""
+
+static func pickup_for(shop: SpecShop, dish_id: String) -> String:
+	return Bundle.source_port(shop,dish_id)
 
 
 static func seat_point(shop: SpecShop, seat: int) -> String:
@@ -386,7 +384,7 @@ static func _work(rules: ShopRules, worker: Dictionary, dt: float) -> void:
 		worker.phase = "idle"
 		return
 	if rules.shop.dispatch.action_version==1:
-		var context := _action_context(rules)
+		var context := _bundle_context(rules) if job.kind=="bundle" else _action_context(rules)
 		if not worker.has("action"): context.restore(worker)
 		Actions.tick(worker,dt,context)
 		return
@@ -504,7 +502,11 @@ static func _taken(rules: ShopRules, worker: Dictionary, job: Dictionary) -> voi
 	s.orders.append(o)
 	for i in lines.size():
 		for unused in int(lines[i].qty):
-			s.units.append({"id": _next(rules), "order": o.id, "line": i, "dish": lines[i].dish, "done": [], "wait": 0.0})
+			var unit := {"id": _next(rules), "order": o.id, "line": i, "dish": lines[i].dish, "done": [], "wait": 0.0}
+			if f.flow_version==1:
+				unit.flow_version = 1
+				unit.recipe_signature = Production.compile(rules.shop,String(unit.dish)).signature
+			s.units.append(unit)
 	g.order = o.id
 	g.claimed = -1
 	var speed := maxf(1.0, f.customer_walk)
@@ -576,6 +578,10 @@ static func _good(rules: ShopRules, id: int) -> Dictionary:
 
 ## 放下手上的活（调岗、收回名册）：预留全部释放；手上的东西放回拿的地方，仍归原来那份餐（§10.3 取消释放）
 static func cancel(rules: ShopRules, worker: Dictionary) -> void:
+	var job := job_of(rules,worker)
+	if job.get("kind","")=="bundle":
+		if not worker.has("action") or not Actions.cancel(worker,_bundle_context(rules)): Bundle.cancel(rules,worker,job,load("res://game/rules/serve_flow.gd"))
+		return
 	if worker.has("action") and Actions.cancel(worker,_action_context(rules)): return
 	_cancel_assignment(rules,worker)
 
@@ -650,6 +656,11 @@ static func _job(kind: String, unit_id: int, step: int, item: String, good: int,
 static func _claim(rules: ShopRules, worker: Dictionary, c: Dictionary) -> void:
 	var job := c.duplicate()
 	rules.serve.jobs[str(worker.id)] = job
+	if job.kind=="bundle":
+		var context := _bundle_context(rules)
+		var error := Actions.start(worker,context.plan(job),context)
+		if not error.is_empty(): rules.serve.jobs.erase(str(worker.id))
+		return
 	if int(job.good) != -1: _good(rules, int(job.good)).res = worker.id
 	if job.kind == "take":
 		var g := guest(rules, int(job.guest))
@@ -669,11 +680,20 @@ static func _claim(rules: ShopRules, worker: Dictionary, c: Dictionary) -> void:
 static func _action_context(rules: ShopRules) -> RefCounted:
 	return ActionContext.new(rules,load("res://game/rules/serve_flow.gd"))
 
+static func _bundle_context(rules: ShopRules) -> RefCounted:
+	return BundleContext.new(rules,load("res://game/rules/serve_flow.gd"))
+
 
 static func restore_actions(rules: ShopRules) -> void:
 	var context := _action_context(rules)
 	for worker: Dictionary in rules.workers:
 		if not job_of(rules,worker).is_empty() and not worker.has("action"): context.restore(worker)
+
+static func restore_flow(rules: ShopRules) -> void:
+	for unit: Dictionary in rules.serve.units:
+		if not unit.has("flow_version") and not unit.has("recipe_signature"):
+			unit.flow_version = 1
+			unit.recipe_signature = Production.compile(rules.shop,String(unit.dish)).signature
 
 
 ## 这个员工现在能接的所有活（只读）
@@ -693,7 +713,8 @@ static func candidates(rules: ShopRules, worker: Dictionary) -> Array:
 			out.append(_scored(rules, worker, _job("take", -1, -1, "", -1, rules.counter_id, rules.counter_id, int(g.id)), "take", float(g.wait), "接单"))
 			break
 		var pickup := pickup_of(shop)
-		for good in ([] if self_pickup(shop) else rules.serve.goods):
+		if Bundle.enabled(shop): out.append_array(Bundle.candidates(rules,worker,load("res://game/rules/serve_flow.gd")))
+		for good in ([] if self_pickup(shop) or Bundle.enabled(shop) else rules.serve.goods):
 			if good.at != pickup or int(good.res) != -1 or int(good.owner) == SHARED: continue
 			var u := unit(rules, int(good.owner))
 			if u.is_empty() or String(rules.shop.dish(String(u.dish)).item) != String(good.item): continue
@@ -731,7 +752,7 @@ static func _unit_jobs(rules: ShopRules, worker: Dictionary, r: String, u: Dicti
 	var shop := rules.shop
 	var dish := shop.dish(String(u.dish))
 	var flowing := r in ["kitchen", "any"]
-	var pickup := pickup_of(shop)
+	var pickup := pickup_for(shop,dish.id)
 	var all_done := true
 	for i in work_steps(shop, dish.id):
 		if i in u.done: continue
@@ -739,10 +760,7 @@ static func _unit_jobs(rules: ShopRules, worker: Dictionary, r: String, u: Dicti
 		var s := dish.steps[i]
 		var station: Dictionary = rules.stations[s.station]
 		# 前面的工序还没做完（浇头没炒好）就不往这台送别的料：按单合流，不提前囤货（§10.3）
-		var blocked := false
-		for item in s.consumes:
-			var p := producer(shop, dish.id, item)
-			if p >= 0 and p in work_steps(shop, dish.id) and not p in u.done: blocked = true
+		var blocked := Production.blocked_inputs(shop,dish.id,i,u.done)
 		if blocked: continue
 		var ready := true
 		for item in s.consumes:
@@ -760,6 +778,7 @@ static func _unit_jobs(rules: ShopRules, worker: Dictionary, r: String, u: Dicti
 		if flowing and rules.post_owner(s.station) != -1: continue
 		out.append(_scored(rules, worker, _job("work", int(u.id), i, "", -1, s.station, s.station), "work", float(u.wait), s.label))
 	if not flowing or not all_done: return
+	if shop.fulfillment.flow_version == 1 and not rules.station_unlocked(pickup): return
 	if int(claimed.get("carry|%d|%s|%s" % [u.id, dish.item, pickup], 0)) > 0: return
 	for good in rules.serve.goods:
 		if int(good.owner) == int(u.id) and good.item == dish.item:
@@ -780,6 +799,13 @@ static func _carry_in(rules: ShopRules, worker: Dictionary, u: Dictionary, item:
 	for good in rules.serve.goods:
 		if int(good.owner) != int(u.id) or good.item != item or int(good.res) != -1: continue
 		if good.at == to or String(good.at).begins_with(HAND) or String(good.at).begins_with(SEAT): continue
+		if shop.fulfillment.flow_version==1:
+			var need := Production.pending_input(shop,String(u.dish),u.done,String(good.at),item)
+			var allocated := false
+			var here := goods_at(rules,String(good.at),item,int(u.id),true)
+			for index in mini(need,here.size()):
+				if here[index].id==good.id: allocated = true; break
+			if allocated: continue
 		return _scored(rules, worker, _job("carry", int(u.id), -1, item, int(good.id), String(good.at), to), "carry", float(u.wait), "搬")
 	var p := producer(shop, String(u.dish), item)
 	if p < 0: return {}

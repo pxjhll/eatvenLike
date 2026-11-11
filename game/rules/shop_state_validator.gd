@@ -1,6 +1,7 @@
 extends RefCounted
 const MovementValidator := preload("res://game/rules/movement_validator.gd")
 const ActionValidator := preload("res://game/rules/action_validator.gd")
+const FlowValidator := preload("res://game/rules/flow_validator.gd")
 ## Read-only save validation. Defaults describe the current data IDs; historical
 ## orphan top-level IDs are ignored exactly as in the restore merge.
 
@@ -149,6 +150,8 @@ func validate(data: Dictionary, defaults: Dictionary, shop: SpecShop, chains: Di
 		if not _delivery_slot(row.dst, row.item): return "belt_items 缺少目标物品"
 	error = _serve(data)
 	if not error.is_empty(): return error
+	error = FlowValidator.units(data,shop)
+	if not error.is_empty(): return error
 	error = MovementValidator.validate(data,shop)
 	if not error.is_empty(): return error
 	return ActionValidator.validate(data,shop)
@@ -222,6 +225,10 @@ func _serve(data: Dictionary) -> String:
 		var job: Variant = s.jobs[key]
 		error = _shape(job, {"kind": "", "unit": 0, "step": 0, "item": "", "good": 0, "from": "", "to": "", "guest": 0, "stage": ""}, "serve.jobs")
 		if not error.is_empty(): return error
+		if job.kind=="bundle":
+			error = FlowValidator.bundle(data,_shop,_staff[int(key)],job)
+			if not error.is_empty(): return error
+			continue
 		if not job.kind in ["take", "work", "carry", "pass", "serve", "home"]: return "serve.jobs.kind 无效"
 		if job.kind in ["work", "carry", "pass", "serve"] and not units.has(job.unit): return "serve.jobs.unit 无效"
 		if job.kind == "take" and not guests.has(job.guest): return "serve.jobs.guest 无效"
@@ -257,7 +264,12 @@ func _serve(data: Dictionary) -> String:
 			if job.from != step.station or job.to != step.station or _state.stations[step.station].user != int(key): return "serve.jobs 工序机器不一致"
 	for id in goods:
 		var g: Dictionary = goods[id]
-		if g.res != -1 and (not s.jobs.has(str(g.res)) or s.jobs[str(g.res)].good != id): return "serve.goods 预留没有对应的活"
+		if g.res != -1:
+			if not s.jobs.has(str(g.res)): return "serve.goods 预留没有对应的活"
+			var job: Dictionary = s.jobs[str(g.res)]
+			if job.kind=="bundle":
+				if not job.goods.any(func(entry: Dictionary) -> bool: return entry.id==id): return "bundle reserved item has no job reference"
+			elif job.good!=id: return "serve.goods 预留没有对应的活"
 	return ""
 
 

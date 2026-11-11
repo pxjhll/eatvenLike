@@ -232,6 +232,7 @@ func load_dict(data: Dictionary, refresh_content: bool = false) -> String:
 			for worker in candidate.workers:
 				if worker.walking and not worker.has("motion"): candidate._rebuild_move(worker)
 	if refresh_content: candidate._refresh_content_values()
+	if shop.fulfillment.flow_version==1: ServeFlow.restore_flow(candidate)
 	if shop.dispatch.action_version==1: ServeFlow.restore_actions(candidate)
 	for key in STATE_KEYS: set(key, candidate.get(key))
 	workers = candidate.workers

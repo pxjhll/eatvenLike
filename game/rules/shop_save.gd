@@ -8,6 +8,7 @@ extends RefCounted
 const FORMAT := "shop_rules"
 const VERSION := 2
 const ContentContract := preload("res://game/rules/shop_content_contract.gd")
+const FlowValidator := preload("res://game/rules/flow_validator.gd")
 
 var shop: SpecShop
 var path: String
@@ -209,6 +210,9 @@ func _read_existing() -> Dictionary:
 	# bytes_to_var deliberately excludes objects; never use bytes_to_var_with_objects.
 	var state: Variant = bytes_to_var(bytes)
 	if not state is Dictionary: return {"error": "店铺存档状态必须是字典"}
+	if not FlowValidator.protected_file_error(state,shop).is_empty():
+		return {"error":"存档流程版本与当前配置不同，已停止写入以保留原文件","protected":true}
+	if FlowValidator.needs_adoption(state,shop): refresh = true
 	if state.get("movement") is Dictionary:
 		var protocol: Variant = state.movement.get("version")
 		if ((protocol is int or protocol is float) and protocol>1) or shop.layout.motion_version!=1:

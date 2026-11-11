@@ -34,7 +34,19 @@ The context's `reserve` returns `{error, lease}` atomically. The lease reference
 
 Programs contain only data and keep a versioned cursor/status. Cursors commit before synchronous effects broadcast events. Future versions cannot overwrite an existing file; legacy active jobs rebuild from their recorded stage and remaining time, with an original-file backup before replacement. `ShopView.render_snapshot().actions` publishes detached per-worker summaries; presentation code must never commit action effects.
 
-See [composable-actor-actions.md](qa/composable-actor-actions.md), `tests/fixtures/action_context.gd` for a small real inventory context, and `serve_action_context.gd` for a production-rule adapter. Run `tests/render_actor_actions.gd` in addition to the shared movement and ordinary shop regressions. Multi-input recipe joins and delivery composition are covered by T07, rather than added as a new scripting language here.
+See [composable-actor-actions.md](qa/composable-actor-actions.md), `tests/fixtures/action_context.gd` for a small real inventory context, and `serve_action_context.gd` for a production-rule adapter. Run `tests/render_actor_actions.gd` in addition to the shared movement and ordinary shop regressions.
+
+## Production dependencies and order delivery
+
+`fulfillment.flow_version = 0` preserves existing recipes, delivery and content fingerprints. Version 1 currently supports `serve`. `production_plan.gd` compiles existing `SpecStep.consumes/produces` into a dependency graph; `unit.done` and the original goods ledger remain authoritative. Independent work steps can run concurrently and a join waits for every producer, regardless of their order in the recipe array. Each item needs one producer; cycles, missing inputs, insufficient work output, surplus unused work output and final quantities other than one fail validation. Supply and batch-pot steps remain reusable sources.
+
+`delivery_batch = "item"` retains individual delivery. `"order"` requires `serve`, `seat_wait`, `dispatch.action_version = 1` and `layout.motion_version = 1`. Optional `delivery_points` maps dish IDs to pickup station IDs and requires order delivery. Unmapped dishes use the first pickup station. Author every pickup's spatial port; a locked pickup cannot receive finished goods. Multiple pickup stations require flow version 1.
+
+An order job reserves all outstanding finished goods atomically after they reach their collection ports. Employee capacity must cover the entire outstanding order. Missing food or insufficient capacity waits; it does not partially reserve or split the order. The reserved capacity remains valid if a temporary bonus expires. The composed actions collect each real good, then deliver the whole bundle at the customer's seat. Payment and eating state commit before events are announced. Cancellation returns held IDs to their individual collection ports and releases every reservation. The sprite uses the first held item and the existing quantity indicator; each item keeps its own ledger identity.
+
+New active units save a version and recipe signature. The signature includes item, step order, station, action and input/output counts, excluding durations. Changing an active recipe's indexed identity protects its original save from overwrite. Legacy units without signatures can adopt the current recipe only when original step indices retain their meaning; the first replacement preserves a verified original-file backup. This is not a step-remapping migration. Future flow/bundle versions are protected as well.
+
+Use `tests/fixtures/flow_shop.gd` for controlled parallel and two-port examples. `ShopView.production_snapshot(dish_id)` and `render_snapshot().flow` return detached definition and delivery summaries. Run `tests/test_flow_composition.gd` through the normal suite and `tests/render_flow_composition.gd` for real character carrying and event snapshots. See [production-and-delivery-composition.md](qa/production-and-delivery-composition.md). Production shops remain on their legacy settings until the separate migration tasks.
 
 ## Art contract
 
