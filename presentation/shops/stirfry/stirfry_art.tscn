@@ -217,6 +217,8 @@ scale = Vector2(0.44695258, 0.44695258)
 texture = ExtResource("wok_meat_vegetables")
 centered = false
 metadata/asset_id = "wok_meat_vegetables"
+metadata/layout_group = "station:wok_b"
+metadata/unlock_rule = "wok_b"
 
 [node name="Steamer" type="Node2D" parent="Sortables" unique_id=1007222597]
 position = Vector2(671, 281.2027)
