@@ -2,6 +2,10 @@
 
 A shop needs rule data, a campaign entry and an independent art scene. `ShopRules` remains a pure simulation; normal application sessions and the authoring CLI enforce the configuration boundary. Supported fulfillment/dispatch settings and reserved fields are listed in [shop-capabilities.md](shop-capabilities.md).
 
+Use the [shop intake form](templates/shop-intake.md) to map an approved concept to unique assets, modules, recipe/station IDs and spatial ports. The [staff intake form](templates/staff-intake.md) covers shared attributes and existing action resources. [The stir-fry mapping](art/stirfry-module-map.md) is a filled production example. `tests/fixtures/onboarding/` is a saved, independently loadable module shop with a new hamster employee definition; it does not need a generator or a production campaign edit.
+
+Before delivery, run `python tools/check_shops.py --engine <Godot> --profile headless` and the `web` profile. Local checks, CI and Pages builds consume the same manifest, including existing lifecycle/retry/presentation tests. See [unified acceptance](qa/modular-shop-acceptance.md) and [the current rhythm baseline](qa/shared-shop-rhythm.md). A selected `--only` run does not replace the full gate.
+
 ## Data and campaign
 
 1. Create a `SpecShop` resource containing its items, dishes, stations, stages, staff, layout, goals, fulfillment, dispatch and auxiliary rules. Keep IDs stable and unique within each collection, and resolve references inside the shop.

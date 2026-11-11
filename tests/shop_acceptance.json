@@ -1,0 +1,306 @@
+{
+  "version": 1,
+  "jobs": [
+    {
+      "id": "runner_contract",
+      "kind": "python",
+      "profile": "headless",
+      "script": "tests/test_check_shops.py",
+      "args": [],
+      "timeout": 30,
+      "success": "^OK$"
+    },
+    {
+      "id": "rules",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/run_all.gd",
+      "args": [],
+      "timeout": 240,
+      "success": "\\d+ 个用例，0 个失败"
+    },
+    {
+      "id": "authoring",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tools/validate_shops.gd",
+      "args": [],
+      "timeout": 45,
+      "success": "SHOP VALIDATION: \\d+ shops, passed"
+    },
+    {
+      "id": "layout",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tools/sync_shop_layouts.gd",
+      "args": [
+        "--check"
+      ],
+      "timeout": 60,
+      "success": "一致 res://"
+    },
+    {
+      "id": "legacy_economy",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/baselines/record_rules.gd",
+      "args": [
+        "--check"
+      ],
+      "timeout": 120,
+      "success": "一致 res://"
+    },
+    {
+      "id": "shop_tea",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_shop_tea.gd",
+      "args": [],
+      "timeout": 60,
+      "success": "SHOP TEA GUI:.*\\b0 failures"
+    },
+    {
+      "id": "shop_noodle",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_shop_noodle.gd",
+      "args": [],
+      "timeout": 60,
+      "success": "SHOP NOODLE GUI:.*\\b0 failures"
+    },
+    {
+      "id": "shop_stirfry",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_shop_stirfry.gd",
+      "args": [],
+      "timeout": 60,
+      "success": "SHOP STIRFRY GUI:.*\\b0 failures"
+    },
+    {
+      "id": "actor_presentation",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_actor_presentation.gd",
+      "args": [],
+      "timeout": 60,
+      "success": "ACTOR PRESENTATION GUI:.*\\b0 failures"
+    },
+    {
+      "id": "shared_movement",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_shared_movement.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "SHARED MOVEMENT GUI:.*\\b0 failures"
+    },
+    {
+      "id": "actor_actions",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_actor_actions.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "ACTOR ACTION GUI:.*\\b0 failures"
+    },
+    {
+      "id": "flow_composition",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_flow_composition.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "FLOW COMPOSITION GUI:.*\\b0 failures"
+    },
+    {
+      "id": "scene_modules",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_scene_modules.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "SCENE MODULE GUI:.*\\b0 failures"
+    },
+    {
+      "id": "stirfry_migration",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_stirfry_migration.gd",
+      "args": [],
+      "timeout": 45,
+      "success": "STIRFRY MIGRATION GUI:.*\\b0 failures"
+    },
+    {
+      "id": "first_shops_migration",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_first_shops_migration.gd",
+      "args": [],
+      "timeout": 60,
+      "success": "FIRST SHOPS MIGRATION GUI:.*\\b0 failures"
+    },
+    {
+      "id": "shop_onboarding",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_shop_onboarding.gd",
+      "args": [],
+      "timeout": 45,
+      "success": "SHOP ONBOARDING GUI:.*\\b0 failures"
+    },
+    {
+      "id": "shop_guide",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_shop_guide.gd",
+      "args": [],
+      "timeout": 45,
+      "success": "SHOP GUIDE GUI:.*\\b0 failures"
+    },
+    {
+      "id": "shop_extend",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_shop_extend.gd",
+      "args": [],
+      "timeout": 60,
+      "success": "SHOP EXTEND:.*\\b0 failures"
+    },
+    {
+      "id": "shop_pancake",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_shop_pancake.gd",
+      "args": [],
+      "timeout": 60,
+      "success": "SHOP PANCAKE GUI:.*\\b0 failures"
+    },
+    {
+      "id": "progress_retry",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_progress_retry.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "Startup/retry live checks:.*\\b0 failures"
+    },
+    {
+      "id": "session_lifecycle",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_session_lifecycle.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "SESSION LIFECYCLE:.*\\b0 failures"
+    },
+    {
+      "id": "command_contracts",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_command_contracts.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "COMMAND UI:.*\\b0 failures"
+    },
+    {
+      "id": "presentation_boundary",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_presentation_boundary.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "PRESENTATION BOUNDARY:.*\\b0 failures"
+    },
+    {
+      "id": "shop_audio",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_shop_audio.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "SHOP AUDIO:.*\\b0 failures"
+    },
+    {
+      "id": "rabbit_frame_atlas",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/test_rabbit_frame_atlas.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "RABBIT FRAME ATLAS:.*\\b0 failures"
+    },
+    {
+      "id": "rabbit_game_visuals",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/test_rabbit_game_visuals.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "RABBIT GAME VISUALS:.*\\b0 failures"
+    },
+    {
+      "id": "gray_cat_atlas",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/test_gray_cat_atlas.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "GRAY CAT ATLAS:.*\\b0 failures"
+    },
+    {
+      "id": "gray_cat_game",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/test_gray_cat_game.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "GRAY CAT GAME:.*\\b0 failures"
+    },
+    {
+      "id": "work_action_atlases",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/test_work_action_atlases.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "WORK ATLAS:.*\\b0 failures"
+    },
+    {
+      "id": "work_actions",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/test_work_actions.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "WORK ACTIONS:.*\\b0 failures"
+    },
+    {
+      "id": "work_actions_ui",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_work_actions.gd",
+      "args": [],
+      "timeout": 45,
+      "success": "WORK ACTIONS GUI: 0 failures"
+    },
+    {
+      "id": "shared_rhythm",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tools/shop_rhythm.gd",
+      "args": [
+        "--check=res://tests/baselines/shared_shop_rhythm.json",
+        "--output={res_output}/shared-rhythm.json"
+      ],
+      "timeout": 120,
+      "success": "SHOP RHYTHM: 0 failures"
+    },
+    {
+      "id": "web_pack",
+      "kind": "web",
+      "profile": "web",
+      "timeout": 180
+    }
+  ]
+}

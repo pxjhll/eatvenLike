@@ -23,7 +23,7 @@
 
 ## 顺序与状态
 
-状态：T01–T03已完成，见docs/qa/tea-modularity-baseline.md。T04已完成，见docs/qa/shared-actor-presentation.md。T05公共能力与三类业务夹具已完成，见docs/qa/shared-movement.md；T06生命周期与首个真实业务适配已完成，见docs/qa/composable-actor-actions.md。T07生产依赖与整单交付能力已完成，见docs/qa/production-and-delivery-composition.md。T08模块、完整空间导出与灰盒样板已完成，见docs/qa/editable-scene-modules.md。T09正式第三店共享接入与旧档采用已在本地完成，见docs/qa/stirfry-shared-template.md。T10前两店运动/动作适配、完整空间、旧档和三店一致性已在本地完成，见docs/qa/first-shops-shared-template.md。T11–T12尚未开始。
+状态：T01–T03已完成，见docs/qa/tea-modularity-baseline.md。T04已完成，见docs/qa/shared-actor-presentation.md。T05公共能力与三类业务夹具已完成，见docs/qa/shared-movement.md；T06生命周期与首个真实业务适配已完成，见docs/qa/composable-actor-actions.md。T07生产依赖与整单交付能力已完成，见docs/qa/production-and-delivery-composition.md。T08模块、完整空间导出与灰盒样板已完成，见docs/qa/editable-scene-modules.md。T09正式第三店共享接入与旧档采用已在本地完成，见docs/qa/stirfry-shared-template.md。T10前两店运动/动作适配、完整空间、旧档和三店一致性已在本地完成，见docs/qa/first-shops-shared-template.md。T11制作模板、持久化演示店/员工以及T12统一验收/网页导出/节奏基线已完成，见docs/qa/modular-shop-acceptance.md。
 
 | 阶段 | 任务 | 优先级 | 依赖 | 交付与独立验收 |
 |---|---|---|---|---|
@@ -65,7 +65,7 @@
 - [x] C完成：新能力夹具只增加数据或实现新增能力；未启用它的旧流程无变化。
 - [x] D完成：移动工位实例时占地、端口、交互区一并移动；界面可显示空间错误。
 - [x] E完成：第三店和煎饼摊引用统一底座，旧档迁移受控，行为调整记录清楚。
-- [ ] F完成：拿到原画能按规范列清资产与模块；新增普通员工和演示店无需改公共控制代码。
+- [x] F完成：拿到原画能按规范列清资产与模块；新增普通员工和演示店无需改公共控制代码。
 
 ## 范围控制
 
@@ -79,7 +79,7 @@ T07选择真实业务的最小扩展夹具，覆盖组合与合流的兼容契�
 - [x] T02：六种共享员工资源已提取，奶茶内容与轨迹不变。
 - [x] T03：旧档加载/续跑/重存与基础属性刷新验证完成，A阶段交付。
 
-下一个待执行任务：T11，固化原画接入和新增员工模板。T06提交7eaab3c、T07提交87cb87f均已按授权推送；T08本轮提交b108937，未推送；T09、T10保留在工作区，未自动提交。
+T01–T12本路线已完成。T08的b108937、T09/T10的4950456、生命周期测试修正afa22d1均已按用户后续授权推送；T11/T12改动保留本地，本轮未自动提交。新能力和新玩家经济标定按具体需求另行安排，不通过改基础速度追平旧指标。
 
 - [x] T04：共享角色表现配置、原生单位换算、三店同视口角色尺度及原奶茶画面对照通过。
 - [x] T05：运动协议v1、规则顾客、权限/脚底占地、阻路恢复、存档与纯快照显示通过；保留legacy正式店供后续迁移。
@@ -101,3 +101,6 @@ T10接口前置：第三店已采用共享定义，dog/sheep已全局登记；st
 - [x] T10：奶茶handoff/煎饼single接入共享运动和动作；62个原状态、材料补偿与订单续做、原字节备份/保护通过；481项规则、377/379项会话/窗口检查通过。两店原美术零像素差异，统一属性后的节奏单独记录。
 
 T11接口前置：三个业务模式的动作1均要求运动1，单人跟单按当前step/chore执行；锅内取料的stock_taken标识负责一次性补偿，召回保留已付订单与步骤。MovementAdoption支持三模式首次旧协议采用，普通v1不随布局编辑重定位。根Nav支持Customers/Seats与Waiting接近点，旧继承/程序美术可保留层级；新增制作优先ShopTemplate功能模块。演示新增店与员工只增加数据和资源，完整使用校验、空间导出、真实会话及存档边界。
+
+- [x] T11：新增独立持久化module_demo店和全局hamster员工，复用已有模块、动画和配方；3项业务/取消/续档测试、25项界面及26项窗口检查通过。原画/资产/模块映射、店铺与员工制作入场表完成。
+- [x] T12：本地/CI/Pages共用32入口headless+1入口web清单；487项规则及全部入口通过，网页包15,721,580字节、导出节点一致。三店seed42/600秒/双员工当前节奏基线独立冻结，未改变正式经济和角色基础值。

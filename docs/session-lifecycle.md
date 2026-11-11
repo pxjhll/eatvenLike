@@ -29,6 +29,8 @@ Local checks after changes to shared customer rendering or restart must include 
 - `tests/render_command_contracts.gd`: real scene commands and persistence.
 - `tests/render_presentation_boundary.gd`: scene writes and detached reads.
 
+The full `tools/check_shops.py --profile headless --engine <Godot>` gate now includes all four entries through `tests/shop_acceptance.json`, using the same list locally, in CI and in Pages builds. Use `--only session_lifecycle` for a focused rerun, not as a replacement for full acceptance.
+
 Run each with isolated user data, matching the CI entry points. For example:
 
 ```powershell

@@ -7,8 +7,10 @@ on:
 
 jobs:
   headless:
-    timeout-minutes: 5
+    timeout-minutes: 15
     runs-on: ubuntu-latest
+    env:
+      XDG_DATA_HOME: ${{ runner.temp }}/shop-acceptance-userdata
     steps:
       - uses: actions/checkout@v4
       - name: Download Godot 4.7
@@ -22,87 +24,10 @@ jobs:
           mv Godot_v4.7-stable_linux.x86_64 godot
       - name: Import (build class cache)
         run: ./godot --headless --path . --import
-      - name: Run tests
-        run: timeout 240s ./godot --headless --path . -s tests/run_all.gd
-      - name: Shop data and scene authoring contracts (production and third fixture)
-        run: timeout 30s ./godot --headless --path . -s tools/validate_shops.gd
-      - name: Shop layouts match the art scenes
-        run: timeout 60s ./godot --headless --path . -s tools/sync_shop_layouts.gd -- --check
-      - name: Frozen v0 pancake economy remains reproducible
-        run: timeout 120s ./godot --headless --path . -s tests/baselines/record_rules.gd -- --check
-      - name: Exported pack keeps every shop scene node (web build converts scenes to binary)
-        run: |
-          timeout 60s ./godot --headless --path . -s "$PWD/tests/dump_shop_scenes.gd" -- /tmp/scenes-source.txt
-          mkdir -p build && touch build/.gdignore
-          timeout 180s ./godot --headless --path . --export-pack Web build/check.pck
-          # Cloudflare Pages 单个文件上限 25 MiB；网页包超了整次发布会失败，这里提前拦下
-          size=$(stat -c %s build/check.pck); echo "check.pck: $((size / 1024)) KiB"
-          test "$size" -lt $((24 * 1024 * 1024)) || { echo "导出包超过 24 MiB，Cloudflare 会拒收"; exit 1; }
-          timeout 60s ./godot --headless --main-pack build/check.pck -s "$PWD/tests/dump_shop_scenes.gd" -- /tmp/scenes-export.txt
-          diff /tmp/scenes-source.txt /tmp/scenes-export.txt
-      - name: Generic shop scene - tea shop real-click regression (taps, panels, save, menu, restart, tuning)
-        run: timeout 60s ./godot --headless --path . -s tests/render_shop_tea.gd
-      - name: Third shop full session and invalid authoring startup regression
-        run: timeout 60s ./godot --headless --path . -s tests/render_shop_noodle.gd
-      - name: Serve shop scene - stir-fry guests, pickup window and seats in the real UI
-        run: timeout 60s ./godot --headless --path . -s tests/render_shop_stirfry.gd
-      - name: Shared actor presentation - three shops and two window sizes
-        run: timeout 60s ./godot --headless --path . -s tests/render_actor_presentation.gd
-      - name: Shared movement - authoritative customer poses across business modes
-        env:
-          XDG_DATA_HOME: ${{ runner.temp }}/shared-movement-userdata
-        run: timeout 30s ./godot --headless --path . -s tests/render_shared_movement.gd
-      - name: Composable actor actions - real movement, carrying, work and wait poses
-        env:
-          XDG_DATA_HOME: ${{ runner.temp }}/actor-actions-userdata
-        run: timeout 30s ./godot --headless --path . -s tests/render_actor_actions.gd
-      - name: Production and delivery composition - multi-item character poses and atomic sale
-        env:
-          XDG_DATA_HOME: ${{ runner.temp }}/flow-composition-userdata
-        run: timeout 30s ./godot --headless --path . -s tests/render_flow_composition.gd
-      - name: Editable scene modules - moved ports, world input and session restore
-        env:
-          XDG_DATA_HOME: ${{ runner.temp }}/scene-modules-userdata
-        run: timeout 30s ./godot --headless --path . -s tests/render_scene_modules.gd
-      - name: Formal third shop - legacy adoption, shared movement and real speed controls
-        env:
-          XDG_DATA_HOME: ${{ runner.temp }}/stirfry-migration-userdata
-        run: timeout 45s ./godot --headless --path . -s tests/render_stirfry_migration.gd
-      - name: First shops shared-template migration - legacy files, arrivals, pause and speed
-        env:
-          XDG_DATA_HOME: ${{ runner.temp }}/first-shops-migration-userdata
-        run: timeout 60s ./godot --headless --path . -s tests/render_first_shops_migration.gd
-      - name: Generic shop scene - data-driven tutorial real-click regression
-        run: timeout 45s ./godot --headless --path . -s tests/render_shop_guide.gd
-      - name: Generic shop scene - HUD extension acceptance and save round trip
-        run: timeout 60s ./godot --headless --path . -s tests/render_shop_extend.gd
-      - name: Generic shop scene - pancake stall (guide, art, summary, next shop) real-click regression
-        run: timeout 60s ./godot --headless --path . -s tests/render_shop_pancake.gd
-      - name: Progress startup failures retain saves and retry safely
-        run: timeout 30s ./godot --headless --path . -s tests/render_progress_retry.gd
-      - name: Explicit sessions isolate services and reset the live scene safely
-        env:
-          XDG_DATA_HOME: ${{ runner.temp }}/session-lifecycle-userdata
-        run: timeout 30s ./godot --headless --path . -s tests/render_session_lifecycle.gd
-      - name: Command statuses keep localized real-scene interaction and persistence stable
-        env:
-          XDG_DATA_HOME: ${{ runner.temp }}/session-lifecycle-userdata/command-ui
-        run: timeout 30s ./godot --headless --path . -s tests/render_command_contracts.gd
-      - name: Presentation writes belong to live sessions and reads stay detached
-        env:
-          XDG_DATA_HOME: ${{ runner.temp }}/session-lifecycle-userdata/presentation-boundary
-        run: timeout 30s ./godot --headless --path . -s tests/render_presentation_boundary.gd
-      - name: Generic shop audio integration
-        run: timeout 30s ./godot --headless --path . -s tests/render_shop_audio.gd
-      - name: Animated character frame and gameplay regression
-        run: |
-          timeout 30s ./godot --headless --path . -s tests/test_rabbit_frame_atlas.gd
-          timeout 30s ./godot --headless --path . -s tests/test_rabbit_game_visuals.gd
-          timeout 30s ./godot --headless --path . -s tests/test_gray_cat_atlas.gd
-          timeout 30s ./godot --headless --path . -s tests/test_gray_cat_game.gd
-          timeout 30s ./godot --headless --path . -s tests/test_work_action_atlases.gd
-          timeout 30s ./godot --headless --path . -s tests/test_work_actions.gd
-          timeout 30s ./godot --headless --path . -s tests/render_work_actions.gd
+      - name: Unified shop acceptance (same manifest as local)
+        run: python3 tools/check_shops.py --engine ./godot --profile headless --output _work/ci/headless
+      - name: Web pack size and exported scene identity
+        run: python3 tools/check_shops.py --engine ./godot --profile web --output _work/ci/web
       # 真窗口 QA 要装 xvfb、跑好几分钟，只在合进 main 时跑，PR 上靠本地跑（省 Actions 分钟数）
       - name: Shop window render and screenshot QA
         if: github.event_name == 'push'
@@ -111,8 +36,10 @@ jobs:
           sudo apt-get install -y xvfb libgl1-mesa-dri
           timeout 180s xvfb-run -a ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_work_actions.gd
       - uses: actions/upload-artifact@v4
-        if: always() && github.event_name == 'push'
+        if: always()
         with:
-          name: shop-qa
-          path: .godot/work_actions_capture/*.png
+          name: shop-acceptance
+          path: |
+            _work/ci/
+            .godot/work_actions_capture/*.png
           include-hidden-files: true
