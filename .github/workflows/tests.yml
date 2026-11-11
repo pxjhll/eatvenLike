@@ -35,6 +35,9 @@ jobs:
           timeout 60s ./godot --headless --path . -s "$PWD/tests/dump_shop_scenes.gd" -- /tmp/scenes-source.txt
           mkdir -p build && touch build/.gdignore
           timeout 180s ./godot --headless --path . --export-pack Web build/check.pck
+          # Cloudflare Pages 单个文件上限 25 MiB；网页包超了整次发布会失败，这里提前拦下
+          size=$(stat -c %s build/check.pck); echo "check.pck: $((size / 1024)) KiB"
+          test "$size" -lt $((24 * 1024 * 1024)) || { echo "导出包超过 24 MiB，Cloudflare 会拒收"; exit 1; }
           timeout 60s ./godot --headless --main-pack build/check.pck -s "$PWD/tests/dump_shop_scenes.gd" -- /tmp/scenes-export.txt
           diff /tmp/scenes-source.txt /tmp/scenes-export.txt
       - name: Generic shop scene - tea shop real-click regression (taps, panels, save, menu, restart, tuning)
