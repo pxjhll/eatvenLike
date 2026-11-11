@@ -1,7 +1,7 @@
 name: bot-temp
 on:
   push:
-    branches: [claude/project-thread-hc0jxv]
+    branches: [claude/project-thread-hc0jxv-bot]
 jobs:
   bot:
     timeout-minutes: 20
@@ -17,4 +17,4 @@ jobs:
           unzip -q godot.zip
           mv Godot_v4.7-stable_linux.x86_64 godot
       - run: ./godot --headless --path . --import
-      - run: timeout 900s ./godot --headless --path . -s tools/_bot/stirfry_pace.gd -- save+more,save+more+t20,save+more6+t15
+      - run: timeout 900s ./godot --headless --path . -s tools/_bot/stirfry_pace.gd -- save+more6+t15+walk2,save+more6+t15+carry2,save+more6+t15+work15

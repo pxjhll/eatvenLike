@@ -26,6 +26,9 @@ func make_shop(m: String) -> SpecShop:
 				s.staff.hire_costs.assign([60, 120, 200, 300])
 				if part == "more6":
 					s.staff.hire_costs.assign([60, 120, 160, 220])
+			"walk2": for k in s.staff.kinds: k.stats["walk"] = 360.0
+			"carry2": for k in s.staff.kinds: k.stats["carry"] = 2.0
+			"work15": for k in s.staff.kinds: k.stats["work"] = 1.5
 			"t20": for st in s.stages: for t in st.tasks: if t.amount == 30: t.amount = 20
 			"t15": for st in s.stages: for t in st.tasks: if t.amount >= 25 and t.target != "soup": t.amount = 15 if t.amount == 30 else 20
 	return s
