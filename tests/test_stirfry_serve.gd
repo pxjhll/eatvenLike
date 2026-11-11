@@ -5,6 +5,7 @@ extends "res://tests/test_case.gd"
 const STIRFRY: SpecShop = preload("res://content/shops/stirfry/shop.tres")
 const ServeFlow := preload("res://game/rules/serve_flow.gd")
 const Validator := preload("res://game/rules/shop_spec_validator.gd")
+const SceneContract := preload("res://presentation/shop/shop_scene_contract.gd")
 
 
 func _open(shop: SpecShop = STIRFRY) -> ShopRules:
@@ -552,3 +553,27 @@ func test_self_pickup_callbacks_capture_resumable_settled_orders() -> void:
 		resumed.run(150.0)
 		check(ServeFlow.order(resumed, int(snapshot.order)).is_empty(), snapshot.name + " 读档后客人坐下吃完离店")
 		check(resumed.gold >= 12.0 and int(resumed.serve.served) >= 1, "继续运行不会漏收")
+
+
+## 美术场景（Codex 出的小炒饭馆原画拼装）过场景契约，且锚点和规则层走位是同一份坐标
+func test_art_scene_passes_the_contract_and_matches_the_layout() -> void:
+	check(ResourceLoader.exists(STIRFRY.scene_path), "店铺数据指向美术场景")
+	var art: Node = load(STIRFRY.scene_path).instantiate()
+	var errors := SceneContract.validate(STIRFRY, art)
+	check(errors.is_empty(), "场景契约通过：%s" % str(errors))
+	var anchors := ShopAnchors.new(art.get_node("Anchors"))
+	var layout := STIRFRY.layout
+	for n in 16:
+		var key := "table/%d" % n
+		check_eq(anchors.point("Seats/table/%d" % n), layout.points[key], "座位 %d 和走位一致" % n)
+	for post in layout.posts:
+		check_eq(anchors.point("Stations/%s/PostPoint" % post), layout.posts[post], post + " 坐班点一致")
+		check(anchors.rect("Stations/%s/Post" % post).has_point(layout.posts[post]), post + " 坐班点在坐班区里")
+	check_eq(anchors.point("Entrance"), layout.points["door"], "门口一致")
+	var world: Vector2 = art.get_node("Anchors").get_meta("world_size")
+	for key in layout.points:
+		check(Rect2(Vector2.ZERO, world).has_point(layout.points[key]), key + " 在场景范围内")
+	for st in STIRFRY.stations:
+		var tap := anchors.rect("Stations/%s/Tap" % st.id)
+		check(tap.has_area(), st.display_name + " 有点按区")
+	art.free()

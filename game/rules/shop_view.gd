@@ -38,7 +38,7 @@ func render_snapshot() -> Dictionary:
 		"workers": rules.workers, "roster": rules.roster, "stations": rules.stations,
 		"shelf_stock": rules.shelf_stock, "orders": rules.orders, "customers": rules.customers,
 		"queue": rules.queue, "diners": rules.diners, "belts": rules.belts,
-		"belt_items": rules.belt_items, "seats": rules.seats,
+		"belt_items": rules.belt_items, "seats": rules.seats, "serve": rules.serve,
 		"stage_queue_capacity": rules.current_stage().queue_capacity}.duplicate(true)
 
 
@@ -148,6 +148,7 @@ func art_visible(rule: String) -> bool:
 		var dish := shop.dish(rule.trim_prefix("flavor:"))
 		return dish != null and rules.flavor_open(dish)
 	if rule.begins_with("wait_seats:"): return rules.wait_seats() >= int(rule.get_slice(":", 1))
+	if rule.begins_with("dine_seats:"): return rules.seat_total() >= int(rule.get_slice(":", 1))
 	return rules.station_unlocked(rule)
 
 

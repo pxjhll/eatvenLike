@@ -7,6 +7,7 @@ extends RefCounted
 ##   box:<原料 id>       买了这个原料箱
 ##   flavor:<菜 id>      这道口味菜开了（加料台上的料盘）
 ##   wait_seats:<N>      至少有 N 个等位座（买来的，或阶段直接给的）
+##   dine_seats:<N>      至少有 N 个堂食座（没挂堂食组件的场景，桌椅按买到的座位数摆出来）
 ## 另外，带 follows 标记（指向另一个节点）的阴影、文字跟着那个节点显示。
 
 static func refresh(art: Node2D, view: ShopView) -> void:

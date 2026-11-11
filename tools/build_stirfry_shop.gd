@@ -1,5 +1,5 @@
 extends SceneTree
-## 小炒饭馆最小原型（Notion《小炒饭馆｜设计稿 v0.3》§8，规格 §10 草案）的店铺数据。还没进关卡表、没有美术，只给规则层和灰盒看。
+## 小炒饭馆最小原型（Notion《小炒饭馆｜设计稿 v0.3》§8，规格 §10 草案）的店铺数据。还没进关卡表；美术场景已有，灰盒观察器拿它当底图。
 ## 两个人开店：流动厨师（取料、炒浇头、取饭合盘、送出餐口）+ 店长（接单分座、送桌）；一道番茄炒蛋盖饭。
 ## 数值取 numbers-sim/stirfry_sim.py 的 fix5（v0.3 定数）。写出 content/shops/stirfry/shop.tres：
 ##   godot --headless --path . -s tools/build_stirfry_shop.gd
@@ -198,15 +198,19 @@ static func build() -> SpecShop:
 		"hint_machine": "{drink}做不过来：升级{name}", "hint_machine_fix": "升级{name}", "hint_staff": "人手不够：多招一位", "hint_staff_fix": "招人"}
 	shop.goals = goals
 
-	# 竖屏 720×1280：上面后厨、中间柜台和出餐口、下面 8 张双人桌（开局 3 张 6 座，最多 16 座）。直线走。
+	# 走位按美术场景 presentation/shops/stirfry/stirfry_art.tscn（887×1774）：上面后厨、中间柜台和出餐口、
+	# 下面 8 张双人桌（两列四排，开局 3 张 6 座，最多 16 座）。直线走。场景 Anchors/Nav 里摆着同一份点，测试核对两边一致。
 	var layout := SpecLayout.new()
-	var points: Dictionary[String, Vector2] = {"counter": Vector2(160, 600), "pantry": Vector2(110, 250), "rice_cooker": Vector2(560, 250),
-		"wok_a": Vector2(310, 230), "plating": Vector2(450, 400), "window": Vector2(360, 540), "home": Vector2(320, 360), "door": Vector2(40, 640)}
+	var points: Dictionary[String, Vector2] = {"counter": Vector2(215, 755), "pantry": Vector2(200, 660), "rice_cooker": Vector2(790, 480),
+		"wok_a": Vector2(450, 340), "plating": Vector2(720, 650), "window": Vector2(640, 755), "home": Vector2(450, 560), "door": Vector2(443, 1740)}
+	var rows := [1050, 1233, 1423, 1611]
+	var seat_x := [[121, 320], [574, 772]]
 	for n in 16:
 		var table := n / 2
-		points["table/%d" % n] = Vector2(170 + (table % 4) * 140 + (n % 2) * 56, 820 + (table / 4) * 200)
+		points["table/%d" % n] = Vector2(seat_x[table % 2][n % 2], rows[table / 2])
 	layout.points = points
-	layout.posts = {"counter": Vector2(160, 580), "wok_a": Vector2(310, 210)}
+	layout.posts = {"counter": Vector2(215, 750), "wok_a": Vector2(450, 335)}
 	layout.spawn_point = "home"
 	shop.layout = layout
+	shop.scene_path = "res://presentation/shops/stirfry/stirfry_art.tscn"
 	return shop
