@@ -51,3 +51,24 @@ func stage_of(station_id: String) -> int:
 	for index in stages.size():
 		if station_id in stages[index].stations: return index
 	return -1
+
+
+## 这一阶段在哪台机器上买：开机器的阶段是它的第一台机器，配方阶段是卖配方的那台
+func sold_at(index: int) -> String:
+	var stage := stages[index]
+	return stage.stations[0] if not stage.stations.is_empty() else stage.recipe_at
+
+
+## 配方阶段：在这台机器上卖、菜是 dish_id 的阶段序号；dish_id 留空 = 这台机器上的所有配方阶段
+func recipe_stages(station_id: String) -> Array[int]:
+	var out: Array[int] = []
+	for index in stages.size():
+		if stages[index].stations.is_empty() and stages[index].recipe_at == station_id: out.append(index)
+	return out
+
+
+## 这道菜要靠哪个配方阶段才上菜单（-1 = 不靠配方）
+func recipe_stage_of(dish_id: String) -> int:
+	for index in stages.size():
+		if stages[index].stations.is_empty() and not stages[index].recipe_at.is_empty() and stages[index].dish == dish_id: return index
+	return -1

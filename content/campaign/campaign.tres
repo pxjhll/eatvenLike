@@ -20,6 +20,13 @@ display_name = "奶茶店"
 shop_path = "res://content/shops/tea/shop.tres"
 target_minutes = 30.0
 
+[sub_resource type="Resource" id="Resource_stirfry"]
+script = ExtResource("4_bxkky")
+id = "stirfry"
+display_name = "小炒饭馆"
+shop_path = "res://content/shops/stirfry/shop.tres"
+target_minutes = 40.0
+
 [sub_resource type="Resource" id="Resource_nsryi"]
 script = ExtResource("4_bxkky")
 id = "bakery"
@@ -31,7 +38,7 @@ script = ExtResource("1_aiwn6")
 id = "north"
 display_name = "北方"
 theme = "北方风味"
-shops = Array[ExtResource("4_bxkky")]([SubResource("Resource_m5lp5"), SubResource("Resource_kvt4n"), SubResource("Resource_nsryi")])
+shops = Array[ExtResource("4_bxkky")]([SubResource("Resource_m5lp5"), SubResource("Resource_kvt4n"), SubResource("Resource_stirfry"), SubResource("Resource_nsryi")])
 
 [resource]
 script = ExtResource("5_bi5kk")

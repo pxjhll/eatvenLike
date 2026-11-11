@@ -253,6 +253,7 @@ const DEFAULT_TEXTS := {
 	"side_kitchen": "后厨",
 	"done_unlock": "设备已解锁。",
 	"done_box": "原料箱已解锁。",
+	"done_recipe": "学会了新配方，已上菜单。",
 	"done_seat": "加了两个座位。",
 	"done_flyers": "传单发出去了。",
 	"done_flyer_upgrade": "传单升级了。",
@@ -1268,7 +1269,7 @@ func station_action(action: String, station: String, material := "") -> void:
 	var status := {"code": "unknown_command", "params": {"command": action}}
 	var gold_before := rules.gold
 	match action:
-		"unlock": status = execute_command("unlock", {"id": station})
+		"unlock", "recipe": status = execute_command("unlock", {"id": station})
 		"upgrade": status = execute_command("upgrade", {"key": station})
 		"material": status = execute_command("upgrade", {"key": station + "/" + material})
 		"box": status = execute_command("unlock_box", {"material": material})

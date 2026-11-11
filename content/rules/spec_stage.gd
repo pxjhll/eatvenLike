@@ -6,6 +6,8 @@ extends Resource
 @export var display_name: String = ""
 ## 这一阶段新开的机器（一起解锁）
 @export var stations: Array[String] = []
+## 配方阶段：不开新机器，在这台（已开的）机器面板的配方栏里买，买了 dish 才上菜单。和 stations 二选一。
+@export var recipe_at: String = ""
 @export var cost: int = 0
 ## 新上菜单的主打菜（解锁卡上显示）
 @export var dish: String = ""
