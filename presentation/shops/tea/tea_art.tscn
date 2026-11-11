@@ -16,6 +16,7 @@ script = ExtResource("dining")
 [node name="Anchors" type="Node2D" parent="."]
 metadata/world_size = Vector2(720, 1500)
 metadata/top_margin = 50.0
+metadata/module_version = 1
 
 [node name="Stations" type="Node2D" parent="Anchors"]
 
@@ -395,6 +396,10 @@ position = Vector2(360, 1226)
 metadata/nav = "grid"
 metadata/cell = 20.0
 metadata/grid_size = Vector2i(36, 75)
+metadata/motion_version = 1
+metadata/motion_units = 1.0
+metadata/spawn_point = "counter"
+metadata/aliases = {}
 
 [node name="Areas" type="Node2D" parent="Anchors/Nav"]
 
@@ -456,24 +461,24 @@ script = ExtResource("anchor")
 size = Vector2(365, 105)
 
 [node name="9" type="Node2D" parent="Anchors/Nav/Obstacles"]
-position = Vector2(81, 1083.5)
+position = Vector2(131, 1115)
 script = ExtResource("anchor")
-size = Vector2(220, 120)
+size = Vector2(120, 80)
 
 [node name="10" type="Node2D" parent="Anchors/Nav/Obstacles"]
-position = Vector2(420, 1083.5)
+position = Vector2(470, 1115)
 script = ExtResource("anchor")
-size = Vector2(220, 120)
+size = Vector2(120, 80)
 
 [node name="11" type="Node2D" parent="Anchors/Nav/Obstacles"]
-position = Vector2(82, 1280.5)
+position = Vector2(132, 1312)
 script = ExtResource("anchor")
-size = Vector2(220, 120)
+size = Vector2(120, 80)
 
 [node name="12" type="Node2D" parent="Anchors/Nav/Obstacles"]
-position = Vector2(418, 1280.5)
+position = Vector2(468, 1312)
 script = ExtResource("anchor")
-size = Vector2(220, 120)
+size = Vector2(120, 80)
 
 [node name="Points" type="Node2D" parent="Anchors/Nav"]
 
@@ -527,3 +532,60 @@ position = Vector2(410, 730)
 position = Vector2(370, 720)
 script = ExtResource("anchor")
 size = Vector2(130, 120)
+
+[node name="Access" type="Node2D" parent="Anchors/Nav"]
+
+[node name="staff" type="Node2D" parent="Anchors/Nav/Access"]
+
+[node name="0" type="Node2D" parent="Anchors/Nav/Access/staff"]
+position = Vector2(40, 260)
+script = ExtResource("anchor")
+size = Vector2(640, 500)
+
+[node name="customer" type="Node2D" parent="Anchors/Nav/Access"]
+
+[node name="0" type="Node2D" parent="Anchors/Nav/Access/customer"]
+position = Vector2(40, 880)
+script = ExtResource("anchor")
+size = Vector2(640, 540)
+
+[node name="Customers" type="Node2D" parent="Anchors/Nav"]
+
+[node name="Points" type="Node2D" parent="Anchors/Nav/Customers"]
+
+[node name="entrance" type="Node2D" parent="Anchors/Nav/Customers/Points"]
+position = Vector2(360, 1390)
+
+[node name="exit" type="Node2D" parent="Anchors/Nav/Customers/Points"]
+position = Vector2(380, 1390)
+
+[node name="pickup" type="Node2D" parent="Anchors/Nav/Customers/Points"]
+position = Vector2(635, 925)
+
+[node name="Seats" type="Node2D" parent="Anchors/Nav/Customers"]
+
+[node name="dine" type="Node2D" parent="Anchors/Nav/Customers/Seats"]
+
+[node name="0" type="Node2D" parent="Anchors/Nav/Customers/Seats/dine"]
+position = Vector2(85, 1143.0834)
+
+[node name="1" type="Node2D" parent="Anchors/Nav/Customers/Seats/dine"]
+position = Vector2(296, 1143.0834)
+
+[node name="2" type="Node2D" parent="Anchors/Nav/Customers/Seats/dine"]
+position = Vector2(424, 1143.0834)
+
+[node name="3" type="Node2D" parent="Anchors/Nav/Customers/Seats/dine"]
+position = Vector2(635, 1143.0834)
+
+[node name="4" type="Node2D" parent="Anchors/Nav/Customers/Seats/dine"]
+position = Vector2(86, 1340.0834)
+
+[node name="5" type="Node2D" parent="Anchors/Nav/Customers/Seats/dine"]
+position = Vector2(297, 1340.0834)
+
+[node name="6" type="Node2D" parent="Anchors/Nav/Customers/Seats/dine"]
+position = Vector2(422, 1340.0834)
+
+[node name="7" type="Node2D" parent="Anchors/Nav/Customers/Seats/dine"]
+position = Vector2(633, 1340.0834)

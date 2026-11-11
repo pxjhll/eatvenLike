@@ -89,11 +89,19 @@ static func collect(root: Node) -> Dictionary:
 		match module.module_kind:
 			"station","counter":
 				if not _id(module.station_id): error(result.errors,"module_station",id,"Station binding must be a stable identifier.")
-				_required(module,["Anchors/Station/Tap","Anchors/Station/Frame","Nav/Work"],result.errors)
+				_required(module,["Anchors/Station/Tap","Nav/Work"],result.errors)
 				_bind(result,module,"Anchors/Station","Stations/"+module.station_id)
 				_bind(result,module,"Anchors/Drop","Drops/"+id)
 				if module.has_node("Anchors/Drop"): result.metadata["Drops/"+id] = {"post":module.station_id}
 				if module.module_kind=="counter": _bind(result,module,"Anchors/Counter","Counter")
+				for slot in module.station_slots:
+					var station: String = module.station_slots[slot]
+					if not _id(slot) or not _id(station): error(result.errors,"module_station",id,"Slot and station bindings must be stable identifiers.")
+					_required(module,["Anchors/Slots/"+slot+"/Tap","Nav/Slots/"+slot+"/Work"],result.errors)
+					_bind(result,module,"Anchors/Slots/"+slot,"Stations/"+station)
+					var drop: String = "Anchors/SlotDrops/"+slot
+					_bind(result,module,drop,"Drops/"+id+"_"+slot)
+					if module.has_node(NodePath(drop)): _metadata(result,"Drops/"+id+"_"+slot,"post",station)
 			"table":
 				if not _id(module.seat_group) or module.first_seat<0 or module.table_index<0 or module.seat_purpose not in ["dine","wait"]: error(result.errors,"module_seats",id,"Seat group, indices and purpose must be valid.")
 				_required(module,["Anchors/Table","Anchors/Seats","Nav/Seats"],result.errors)

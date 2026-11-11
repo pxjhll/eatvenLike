@@ -383,10 +383,12 @@ func test_missing_or_malformed_metadata_and_legacy_binary_corruption_quarantine(
 
 
 func test_shared_staff_original_shop_files_resume_exactly() -> void:
-	var capture: Script = load("res://tests/baselines/capture_tea_modularity.gd")
+	# Exact v0 continuation remains pinned; v1 adoption is covered separately.
+	var original_tea: SpecShop = load("res://tests/fixtures/legacy_shops/tea.tres")
+	var capture: Script = load("res://tests/fixtures/legacy_shops/capture_tea.gd")
 	var fixture_root := "res://tests/fixtures/tea_modularity/"
 	var expected: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(fixture_root+"continuations.json"))
-	var metadata := CONTRACT.describe(TEA)
+	var metadata := CONTRACT.describe(original_tea)
 	check_eq(metadata.gameplay,expected.content.gameplay,"Shared definitions retain original gameplay fingerprint")
 	check_eq(metadata.structure,expected.content.structure,"Shared definitions retain original structure fingerprint")
 	for name in ["unopened","active"]:
@@ -395,7 +397,7 @@ func test_shared_staff_original_shop_files_resume_exactly() -> void:
 		var file := FileAccess.open(path,FileAccess.WRITE)
 		file.store_buffer(original)
 		file.close()
-		var store := ShopSave.new(TEA,path)
+		var store := ShopSave.new(original_tea,path)
 		var resumed := store.load_game()
 		check_eq(store.load_error,OK,name+" original file is accepted")
 		check(store.last_error.is_empty(),name+" loads without recovery or migration")
@@ -413,7 +415,7 @@ func test_shared_staff_original_shop_files_resume_exactly() -> void:
 		var finished: String = capture.digest(resumed.to_dict())
 		check_eq(store.save_game(resumed,store.loaded_speed,store.loaded_guides),OK,name+" can re-save")
 		check_eq(_backups(path).size(),0,name+" equivalent resource extraction needs no content migration")
-		var reopened := ShopSave.new(TEA,path)
+		var reopened := ShopSave.new(original_tea,path)
 		var after := reopened.load_game()
 		check_eq(reopened.load_error,OK,name+" reopens after save")
 		check_eq(capture.digest(after.to_dict()),finished,name+" re-saved complete state retained")

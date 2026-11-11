@@ -1,8 +1,9 @@
 extends "res://tests/test_case.gd"
+## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
 const MODULE := "res://game/rules/rule_sales.gd"
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
 
 # This fixture observes query boundaries without installing callbacks in the owner.
 class QuoteRules extends ShopRules:

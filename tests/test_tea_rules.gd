@@ -1,10 +1,11 @@
 extends "res://tests/test_case.gd"
+## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 ## 奶茶店玩法跑在通用规则层上（旧 tea_shop_sim / tea_playtest_sim 的行为用例搬过来）：开店顺序、原料箱、招人和名册、
 ## 前台后厨分工、后厨名额、坐班与调岗、收回员工时放下手上的东西、各台升级效果、售价和星级、小数售价累计、
 ## 顾客不走只变脸、队伍上限、堂食和外带、封口位与外带架、传送带、传单、跟单与合单、手打柠檬茶、瓶颈提示、星级任务完店。
 ## 整店节奏由 test_shop_rules 的整店回放对照基准，界面数字由 test_shop_view 对照基准。
 
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
 const LINES := ["boil", "seal", "mix", "press", "topping"]
 
 

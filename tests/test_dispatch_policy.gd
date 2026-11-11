@@ -1,7 +1,8 @@
 extends "res://tests/test_case.gd"
+## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
 const MODULE := "res://game/rules/dispatch_policy.gd"
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
 
 # Instrument real queries without replacing their values or swallowing errors.
 class QueryRules extends ShopRules:

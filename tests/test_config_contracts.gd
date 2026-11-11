@@ -33,7 +33,7 @@ func test_invalid_configuration_never_reads_quarantines_or_overwrites_shop() -> 
 		var profile := Profile.new(_path("profile"))
 		profile.fresh_shop = fresh
 		profile.save()
-		var bad: SpecShop = PANCAKE.duplicate(true)
+		var bad: SpecShop = PANCAKE.copy_for_editing()
 		bad.dispatch.shortage_per = 23.0
 		var store := ShopSave.new(bad, _path("shop"))
 		var file := FileAccess.open(store.path, FileAccess.WRITE)
@@ -54,34 +54,34 @@ func test_required_resources_references_and_numbers_are_rejected_without_runtime
 	var v := _validator()
 	if v == null: return
 	check(not v.validate(null).is_empty(), "null shop rejected")
-	var bad: SpecShop = PANCAKE.duplicate(true)
+	var bad: SpecShop = PANCAKE.copy_for_editing()
 	bad.staff = null
 	_bad(bad, "staff")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.dishes.append(null)
 	_bad(bad, "dishes[%d]" % (bad.dishes.size() - 1))
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.stations[1].id = bad.stations[0].id
 	_bad(bad, "stations[1].id")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.dishes[0].steps[0].station = "missing"
 	_bad(bad, "dishes[0].steps[0].station")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.stages[0].customer_interval = NAN
 	_bad(bad, "stages[0].customer_interval")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.stations[0].params["unknown_machine_knob"] = 5
 	_bad(bad, "stations[0].params.unknown_machine_knob")
 
 func test_mode_contract_rejects_ignored_and_misleading_declarations() -> void:
-	var bad: SpecShop = TEA.duplicate(true)
+	var bad: SpecShop = TEA.copy_for_editing()
 	bad.fulfillment.arrival = "exponential"
 	_bad(bad, "fulfillment.arrival")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.fulfillment.pay_at = "on_deliver"
 	bad.fulfillment.leave_queue = "after_pay"
 	_bad(bad, "fulfillment.leave_queue")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.dispatch.base_scores = {"take": 100.0}
 	_bad(bad, "dispatch.base_scores")
 
@@ -94,7 +94,7 @@ func _arrival_times(rules: ShopRules) -> Array:
 func test_single_fixed_and_exponential_arrivals_are_real_and_resume_exactly() -> void:
 	var histories: Array = []
 	for policy in ["fixed", "exponential"]:
-		var shop: SpecShop = PANCAKE.duplicate(true)
+		var shop: SpecShop = PANCAKE.copy_for_editing()
 		shop.fulfillment.arrival = policy
 		shop.fulfillment.leave_after = 0.0
 		shop.stages[0].queue_capacity = 1000
@@ -131,7 +131,7 @@ func test_production_and_third_fixture_are_accepted_and_every_policy_field_is_de
 
 func test_fixed_arrival_does_not_consume_an_interval_random_draw() -> void:
 	for policy in ["fixed", "exponential"]:
-		var shop: SpecShop = PANCAKE.duplicate(true)
+		var shop: SpecShop = PANCAKE.copy_for_editing()
 		shop.fulfillment.arrival = policy
 		shop.fulfillment.addon_dish = ""
 		shop.fulfillment.addon_chance = 0.0
@@ -149,32 +149,32 @@ func test_fixed_arrival_does_not_consume_an_interval_random_draw() -> void:
 		check_eq(rules.rng.state, expected.state, "only exponential draws an arrival interval")
 
 func test_nested_shapes_ranges_and_unreachable_stages_are_rejected() -> void:
-	var bad: SpecShop = PANCAKE.duplicate(true)
+	var bad: SpecShop = PANCAKE.copy_for_editing()
 	bad.stations[1].tracks[0].levels.append(null)
 	_bad(bad, "stations[1].tracks[0].levels[%d]" % (bad.stations[1].tracks[0].levels.size() - 1))
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.staff.hire_rule = "cycle"
 	bad.staff.hire_order.clear()
 	_bad(bad, "staff.hire_order")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.layout.aliases[bad.stations[0].id] = "missing"
 	_bad(bad, "layout.aliases." + bad.stations[0].id)
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.stages[0].stations.clear()
 	_bad(bad, "stages[0].order_weights")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.stations[0].params["take_seconds"] = "slow"
 	_bad(bad, "stations[0].params.take_seconds")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.staff.kinds[0].stats["walk"] = 0.0
 	_bad(bad, "staff.kinds[0].stats.walk")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.guide[0].cues = [{"if": [12]}]
 	_bad(bad, "guide[0].cues[0].if[0]")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.stations[1].tracks[0].levels[0].effects[0].target = "missing"
 	_bad(bad, "stations[1].tracks[0].levels[0].effects[0].target")
-	bad = TEA.duplicate(true)
+	bad = TEA.copy_for_editing()
 	bad.dispatch.base_scores["ignored_key"] = 10.0
 	_bad(bad, "dispatch.base_scores.ignored_key")
 
@@ -194,21 +194,21 @@ func test_unresolved_app_shop_and_invalid_campaign_entries_are_safe() -> void:
 
 func test_unsafe_recipe_and_presentation_nested_shapes_fail_before_session_io() -> void:
 	var variants: Array[SpecShop] = []
-	var bad: SpecShop = PANCAKE.duplicate(true)
+	var bad: SpecShop = PANCAKE.copy_for_editing()
 	bad.stages[1].stations.clear()
 	_bad(bad, "stages[1].stations")
 	variants.append(bad)
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.guide[0].rows = [["icon"]]
 	_bad(bad, "guide[0].rows[0]")
 	variants.append(bad)
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.stations[0] = null
 	variants.append(bad)
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.dishes[0].steps[0].station = "missing"
 	variants.append(bad)
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.stages[0].customer_interval = INF
 	variants.append(bad)
 	for shop in variants:
@@ -225,34 +225,34 @@ func test_unsafe_recipe_and_presentation_nested_shapes_fail_before_session_io() 
 		check(FileAccess.file_exists(store.path), "existing file remains in place")
 		if FileAccess.file_exists(store.path): check(FileAccess.get_file_as_bytes(store.path) == original, "original bytes remain")
 		check(profile.fresh_shop and session.rules == null, "no fresh acknowledgement or rules")
-	bad = TEA.duplicate(true)
+	bad = TEA.copy_for_editing()
 	for dish in bad.dishes:
 		for step in dish.steps:
 			if bad.station(step.station).block == "batch_pot": step.produces.clear()
 	_bad(bad, "stations[3]")
 
 func test_flavor_fallback_and_guide_references_cannot_hide_runtime_errors() -> void:
-	var bad: SpecShop = PANCAKE.duplicate(true)
+	var bad: SpecShop = PANCAKE.copy_for_editing()
 	bad.stages[0].flavor_group = "unavailable_flavors"
 	bad.stages[0].flavor_fallback = ""
 	bad.stages[0].order_weights["unavailable_flavors"] = 1.0
 	_bad(bad, "stages[0].flavor_fallback")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.guide[0].cues = [{"at": "station:missing"}]
 	_bad(bad, "guide[0].cues[0].at")
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.stations[1].tracks[0].levels[0].effects[0].price_part = "missing"
 	_bad(bad, "stations[1].tracks[0].levels[0].effects[0].price_part")
 
 func test_single_rejects_reserved_recipe_actions_and_conveyor_declarations() -> void:
 	for action in ["take", "hand"]:
-		var bad: SpecShop = PANCAKE.duplicate(true)
+		var bad: SpecShop = PANCAKE.copy_for_editing()
 		bad.dishes[0].steps[0].action = action
 		_bad(bad, "dishes[0].steps[0].action")
-		bad = PANCAKE.duplicate(true)
+		bad = PANCAKE.copy_for_editing()
 		bad.order_options[0].step.action = action
 		_bad(bad, "order_options[0].step.action")
-	var bad: SpecShop = PANCAKE.duplicate(true)
+	var bad: SpecShop = PANCAKE.copy_for_editing()
 	var connection := SpecConnection.new()
 	connection.id = "unsupported_belt"
 	connection.from = bad.stations[0].id
@@ -290,7 +290,7 @@ func _event_effect(shop: SpecShop, effect: SpecEffect) -> SpecEvent:
 	return event
 
 func test_flavor_group_cannot_assume_listed_stations_mean_an_available_dish() -> void:
-	var bad: SpecShop = PANCAKE.duplicate(true)
+	var bad: SpecShop = PANCAKE.copy_for_editing()
 	bad.stages[0].flavor_group = "probe_flavors"
 	bad.stages[0].flavor_fallback = ""
 	bad.stages[0].order_weights["probe_flavors"] = 1.0
@@ -311,16 +311,16 @@ func test_flavor_group_cannot_assume_listed_stations_mean_an_available_dish() ->
 
 func test_effect_attachment_and_scope_match_real_consumers() -> void:
 	for kind in ["grant_gold", "unlock_recipe"]:
-		var bad: SpecShop = PANCAKE.duplicate(true)
+		var bad: SpecShop = PANCAKE.copy_for_editing()
 		var effect := SpecEffect.make(kind, "add", 777.0, bad.dishes[0].id if kind == "unlock_recipe" else "")
 		bad.stations[1].tracks[0].base_effects.append(effect)
 		_bad(bad, "stations[1].tracks[0].base_effects[%d].kind" % (bad.stations[1].tracks[0].base_effects.size() - 1))
 		_reject_before_io(bad)
-	var bad: SpecShop = PANCAKE.duplicate(true)
+	var bad: SpecShop = PANCAKE.copy_for_editing()
 	_event_effect(bad, SpecEffect.make("price", "mul", 3.0, bad.stations[1].id))
 	_bad(bad, "events[%d].effects[0].target" % (bad.events.size() - 1))
 	_reject_before_io(bad)
-	var good: SpecShop = PANCAKE.duplicate(true)
+	var good: SpecShop = PANCAKE.copy_for_editing()
 	var price := SpecEffect.make("price", "mul", 3.0)
 	price.dishes = [good.dishes[0].id]
 	var event := _event_effect(good, price)
@@ -339,19 +339,19 @@ func test_effect_attachment_and_scope_match_real_consumers() -> void:
 func test_staff_effect_selectors_use_canonical_runtime_worker_ids() -> void:
 	var v := _validator()
 	for target in [PANCAKE.staff.kinds[0].id, "1", "staff:01", "staff:+1", "staff:0", "staff:-1", "staff:1.0", "staff:"]:
-		var bad: SpecShop = PANCAKE.duplicate(true)
+		var bad: SpecShop = PANCAKE.copy_for_editing()
 		_event_effect(bad, SpecEffect.make("walk", "mul", 3.0, target))
 		_bad(bad, "events[%d].effects[0].target" % (bad.events.size() - 1))
 		_reject_before_io(bad)
 	for target in ["", "staff:1"]:
-		var good: SpecShop = PANCAKE.duplicate(true)
+		var good: SpecShop = PANCAKE.copy_for_editing()
 		var event := _event_effect(good, SpecEffect.make("walk", "mul", 3.0, target))
 		check_eq(v.validate(good), [], "supported staff selector " + target)
 		var rules := ShopRules.new(good)
 		var before := rules.walk_speed(rules.workers[0])
 		rules.trigger_event(event)
-		check_eq(rules.walk_speed(rules.workers[0]), before * 3.0, "supported selector changes real walk speed")
-	var tea: SpecShop = TEA.duplicate(true)
+		check(is_equal_approx(rules.walk_speed(rules.workers[0]), before * 3.0), "supported selector changes real walk speed after native density conversion")
+	var tea: SpecShop = TEA.copy_for_editing()
 	var event := _event_effect(tea, SpecEffect.make("work", "mul", 2.0, "front"))
 	check_eq(v.validate(tea), [], "zone selector supported")
 	var rules := ShopRules.new(tea)
@@ -360,7 +360,7 @@ func test_staff_effect_selectors_use_canonical_runtime_worker_ids() -> void:
 	check_eq(rules.skill(rules.workers[0]), before * 2.0, "zone effect changes actual worker skill")
 
 func test_effect_context_restrictions_cover_every_upgrade_attachment() -> void:
-	var bad: SpecShop = PANCAKE.duplicate(true)
+	var bad: SpecShop = PANCAKE.copy_for_editing()
 	var material_station := -1
 	for i in bad.stations.size():
 		if not bad.stations[i].materials.is_empty():
@@ -384,13 +384,13 @@ func test_effect_context_restrictions_cover_every_upgrade_attachment() -> void:
 		_bad(bad, path + ".levels[%d].effects[0].kind" % (track.levels.size() - 1))
 	_reject_before_io(bad)
 	for kind in ["open_flavor", "seats", "unlock_recipe", "shop_news"]:
-		bad = PANCAKE.duplicate(true)
+		bad = PANCAKE.copy_for_editing()
 		_event_effect(bad, SpecEffect.make(kind, "add", 1))
 		_bad(bad, "events[%d].effects[0].kind" % (bad.events.size() - 1))
 
 func test_valid_event_choice_and_implicit_staff_track_target_are_effective() -> void:
 	var v := _validator()
-	var good: SpecShop = PANCAKE.duplicate(true)
+	var good: SpecShop = PANCAKE.copy_for_editing()
 	var event := _event_effect(good, SpecEffect.make("grant_gold", "add", 200))
 	event.choices = [{"label": "Accept", "cost": 5}]
 	event.effects.append(SpecEffect.make("walk", "mul", 2.0, "staff:1"))
@@ -408,7 +408,7 @@ func test_valid_event_choice_and_implicit_staff_track_target_are_effective() -> 
 	check_eq(rules.answer_event(0), "", "actual configured choice accepts")
 	check_eq(rules.gold, before_gold - 5 + 200, "choice cost and grant are both effective")
 	check_eq(rules.walk_speed(rules.workers[0]), before_walk * 2.0, "choice applies ongoing staff modifier")
-	var tea: SpecShop = TEA.duplicate(true)
+	var tea: SpecShop = TEA.copy_for_editing()
 	var track: SpecUpgradeTrack = null
 	for candidate in tea.staff.tracks:
 		if candidate.id == "front": track = candidate
@@ -421,7 +421,7 @@ func test_valid_event_choice_and_implicit_staff_track_target_are_effective() -> 
 	check_eq(modified.skill(modified.workers[0]), baseline.skill(baseline.workers[0]) * 2.0, "implicit staff track zone changes actual skill")
 
 func test_later_flavor_group_does_not_assume_a_preopened_stage_was_purchased() -> void:
-	var bad: SpecShop = PANCAKE.duplicate(true)
+	var bad: SpecShop = PANCAKE.copy_for_editing()
 	bad.station(bad.goals.opening_station).starts_unlocked = true
 	var later_station: String = bad.stages[1].stations[0]
 	for dish in bad.dishes:
@@ -439,32 +439,32 @@ func test_later_flavor_group_does_not_assume_a_preopened_stage_was_purchased() -
 	_reject_before_io(bad)
 
 func test_staff_regions_and_stage_slot_keys_reject_ignored_declarations_before_io() -> void:
-	var bad: SpecShop = TEA.duplicate(true)
+	var bad: SpecShop = TEA.copy_for_editing()
 	bad.stages[0].staff_slots["front"] = 99
 	_bad(bad, "stages[0].staff_slots.front")
 	_reject_before_io(bad)
-	bad = TEA.duplicate(true)
+	bad = TEA.copy_for_editing()
 	bad.staff.zones.append("bar")
 	bad.stages[0].staff_slots["bar"] = 99
 	_bad(bad, "staff.zones[2]")
 	_bad(bad, "stages[0].staff_slots.bar")
 	_reject_before_io(bad)
-	bad = TEA.duplicate(true)
+	bad = TEA.copy_for_editing()
 	bad.stages[0].staff_slots[""] = 99
 	_bad(bad, "stages[0].staff_slots.")
 	_reject_before_io(bad)
-	bad = TEA.duplicate(true)
+	bad = TEA.copy_for_editing()
 	bad.staff.zones = ["front"]
 	_bad(bad, "staff.zones")
 	_reject_before_io(bad)
-	bad = PANCAKE.duplicate(true)
+	bad = PANCAKE.copy_for_editing()
 	bad.stages[0].staff_slots["kitchen"] = 99
 	_bad(bad, "stages[0].staff_slots.kitchen")
 	_reject_before_io(bad)
 
 func test_unzoned_front_base_capacity_controls_actual_counter_placement() -> void:
 	for capacity in [1, 2]:
-		var shop: SpecShop = PANCAKE.duplicate(true)
+		var shop: SpecShop = PANCAKE.copy_for_editing()
 		shop.staff.can_drag = true
 		shop.staff.front_base_slots = capacity
 		shop.stages[0].staff_slots[""] = 2
@@ -485,7 +485,7 @@ func test_unzoned_front_base_capacity_controls_actual_counter_placement() -> voi
 		check_eq(owners.size(), capacity, "actual counter occupants match the configured front capacity")
 
 func test_supported_staff_capacity_sources_change_real_session_limits() -> void:
-	var single: SpecShop = PANCAKE.duplicate(true)
+	var single: SpecShop = PANCAKE.copy_for_editing()
 	single.stages[0].staff_slots[""] = 6
 	var profile := Profile.new(_path("unified-capacity-profile"))
 	var session := Session.new(profile, ShopSave.new(single, _path("unified-capacity-shop")))
@@ -493,7 +493,7 @@ func test_supported_staff_capacity_sources_change_real_session_limits() -> void:
 	if session.rules == null: return
 	check_eq(session.rules.unlock(single.goals.opening_station), "", "open actual unified shop")
 	check_eq(session.rules.staff_slots(), 6, "unzoned stage empty-key capacity changes actual limit")
-	var zoned: SpecShop = TEA.duplicate(true)
+	var zoned: SpecShop = TEA.copy_for_editing()
 	zoned.stages[0].staff_slots["kitchen"] = 4
 	zoned.staff.front_base_slots = 3
 	var event := _event_effect(zoned, SpecEffect.make("staff_slot", "add", 2, "front"))

@@ -3,7 +3,9 @@ extends "res://tests/test_case.gd"
 ## 原型阶段的用例（Notion《小炒饭馆｜设计稿 v0.3》§8）用小炒饭馆数据改回送桌（seat_wait）跑，测通用的送桌路径；
 ## 正式的小炒饭馆是客人自取（self_pickup），在后面的用例里测。
 
-const DATA: SpecShop = preload("res://content/shops/stirfry/shop.tres")
+## Original timing/phase tests remain an explicit legacy compatibility suite.
+const DATA: SpecShop = preload("res://tests/fixtures/stirfry_modularity/legacy_shop.tres")
+const FORMAL: SpecShop = preload("res://content/shops/stirfry/shop.tres")
 ## 送桌版的小炒饭馆数据（前厅送餐到座位）
 var STIRFRY: SpecShop = _seat_wait(DATA)
 
@@ -53,6 +55,7 @@ func _shop_copy() -> SpecShop:
 
 
 func test_data_passes_the_capability_contract() -> void:
+	check_eq(Validator.summary(Validator.validate(FORMAL)), "", "正式共享版本数据过配置校验")
 	check_eq(Validator.summary(Validator.validate(DATA)), "", "小炒饭馆数据过配置校验")
 	check_eq(Validator.summary(Validator.validate(STIRFRY)), "", "送桌版也过配置校验")
 	check_eq(DATA.fulfillment.dine_rule, "self_pickup", "小炒饭馆是客人自取")
@@ -568,23 +571,26 @@ func test_self_pickup_callbacks_capture_resumable_settled_orders() -> void:
 
 ## 美术场景（Codex 出的小炒饭馆原画拼装）过场景契约，且锚点和规则层走位是同一份坐标
 func test_art_scene_passes_the_contract_and_matches_the_layout() -> void:
-	check(ResourceLoader.exists(STIRFRY.scene_path), "店铺数据指向美术场景")
-	var art: Node = load(STIRFRY.scene_path).instantiate()
-	var errors := SceneContract.validate(STIRFRY, art)
+	check(ResourceLoader.exists(FORMAL.scene_path), "店铺数据指向美术场景")
+	var art: Node = load(FORMAL.scene_path).instantiate()
+	var errors := SceneContract.validate(FORMAL, art)
 	check(errors.is_empty(), "场景契约通过：%s" % str(errors))
 	var anchors := ShopAnchors.new(art.get_node("Anchors"))
-	var layout := STIRFRY.layout
+	var layout := FORMAL.layout
 	for n in 16:
 		var key := "table/%d" % n
-		check_eq(anchors.point("Seats/table/%d" % n), layout.points[key], "座位 %d 和走位一致" % n)
+		check_eq(anchors.point("Seats/table/%d" % n), DATA.layout.points[key], "座位 %d 保留原美术坐姿点" % n)
+		check_eq(layout.points[key],layout.customer_points["seat:"+key],"员工送餐点与顾客接近点一致")
+		check_eq(layout.points[key],DATA.layout.points[key]+Vector2(0,-40),"接近点与坐姿点显式分离")
 	for post in layout.posts:
 		check_eq(anchors.point("Stations/%s/PostPoint" % post), layout.posts[post], post + " 坐班点一致")
 		check(anchors.rect("Stations/%s/Post" % post).has_point(layout.posts[post]), post + " 坐班点在坐班区里")
-	check_eq(anchors.point("Entrance"), layout.points["door"], "门口一致")
+	check_eq(anchors.point("Entrance"),DATA.layout.points["door"],"门口美术锚点保持不变")
+	check_eq(layout.points["door"],layout.customer_points.entrance,"员工和顾客共用合法门口端口")
 	var world: Vector2 = art.get_node("Anchors").get_meta("world_size")
 	for key in layout.points:
 		check(Rect2(Vector2.ZERO, world).has_point(layout.points[key]), key + " 在场景范围内")
-	for st in STIRFRY.stations:
+	for st in FORMAL.stations:
 		var tap := anchors.rect("Stations/%s/Tap" % st.id)
 		check(tap.has_area(), st.display_name + " 有点按区")
 	art.free()

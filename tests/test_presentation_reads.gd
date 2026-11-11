@@ -125,7 +125,14 @@ func test_render_and_small_projections_detach_every_nested_container_in_three_sh
 		var event_rng_state := rules.event_rng.state
 		var frame: Dictionary = view.call("render_snapshot")
 		for key in ["clock", "gold", "revenue", "sold", "lost", "paused", "stage_index", "completed_at", "shelf_count", "workers", "roster", "stations", "shelf_stock", "orders", "customers", "queue", "diners", "belts", "belt_items", "seats"]:
-			check_eq(frame[key], rules.get(key), definition.id + " frame field " + key)
+			var expected: Variant = rules.get(key)
+			if key=="workers" and rules.movement_enabled():
+				expected = expected.duplicate(true)
+				for row: Dictionary in expected:
+					if not row.deployed: continue
+					row.speed = rules.walk_speed(row)/definition.layout.motion_units
+					row.walking = row.walking and not row.path.is_empty()
+			check_eq(frame[key], expected, definition.id + " frame field " + key)
 		check_eq(frame.stage_queue_capacity, rules.current_stage().queue_capacity, "stage capacity excludes waiting seats")
 		check_eq(frame.workers.map(func(row: Dictionary) -> int: return row.id), rules.workers.map(func(row: Dictionary) -> int: return row.id), "visual iteration order")
 		check(not is_same(frame.workers[0], worker), "worker detached")

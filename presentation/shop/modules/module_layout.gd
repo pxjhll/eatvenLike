@@ -55,6 +55,13 @@ static func _points(nav: Node, path: String, out: Dictionary, art: Node, errors:
 		if node is Node2D: _put(out,String(node.name),_offset(node,art),errors)
 		else: _error(errors,path,"Ports must be Node2D.")
 
+static func _pickup_ports(nav: Node, path: String, data: SpecLayout, art: Node, errors: Array) -> void:
+	var children := _children(nav,path)
+	for index in children.size():
+		var node: Node = nav.get_node_or_null(NodePath(path+"/"+str(index)))
+		if not node is Node2D: _error(errors,path,"Pickup waiting ports must be contiguous numeric points from zero."); continue
+		_put(data.customer_points,"pickup:%d"%index,_offset(node,art),errors)
+
 static func _geometry(data: SpecLayout, errors: Array) -> void:
 	for profile in ["staff","customer"]:
 		if not data.actor_areas.has(profile) or data.actor_areas[profile].is_empty(): _error(errors,"Nav.Access."+profile,"An explicit permission area is required.")
@@ -76,9 +83,11 @@ static func _geometry(data: SpecLayout, errors: Array) -> void:
 		for key in ports:
 			if not nav.can_stand(ports[key],"staff") or nav.path(start,ports[key],"staff").is_empty(): _error(errors,"Nav.Points."+key,"Staff port must be clear and reachable with all footprints active.")
 	var entrance: Vector2 = data.customer_points.entrance
-	var customer: Array = data.customer_points.values()+data.customer_queue
-	for at: Vector2 in customer:
-		if not nav.can_stand(at,"customer") or nav.path(entrance,at,"customer").is_empty(): _error(errors,"Nav.Customers","Customer port must be clear and reachable within customer access.")
+	var customer := data.customer_points.duplicate()
+	for index in data.customer_queue.size(): customer["queue:%d"%index] = data.customer_queue[index]
+	for key in customer:
+		var at: Vector2 = customer[key]
+		if not nav.can_stand(at,"customer") or nav.path(entrance,at,"customer").is_empty(): _error(errors,"Nav.Customers."+key,"Customer port must be clear and reachable within customer access.")
 
 static func compile(root: Node, base: SpecLayout, scan: Dictionary) -> Dictionary:
 	var errors: Array = []
@@ -115,6 +124,14 @@ static func compile(root: Node, base: SpecLayout, scan: Dictionary) -> Dictionar
 	_points(nav,"Points",data.points,art,errors)
 	_points(nav,"Posts",data.posts,art,errors)
 	_points(nav,"Customers/Points",data.customer_points,art,errors)
+	_pickup_ports(nav,"Customers/Pickup",data,art,errors)
+	for pair in [["Seats","seat:"],["Waiting","wait:"]]:
+		for group in _children(nav,"Customers/"+pair[0]):
+			for seat in group.get_children():
+				if not seat is Node2D or not String(seat.name).is_valid_int() or int(String(seat.name))<0:
+					_error(errors,"Nav.Customers."+pair[0],"Seat approaches require nonnegative numeric names.")
+					continue
+				_put(data.customer_points,pair[1]+String(group.name)+"/"+String(seat.name),_offset(seat,art),errors)
 	for module in scan.modules:
 		var local: Node = module.get_node_or_null("Nav")
 		if local==null: continue
@@ -123,10 +140,15 @@ static func compile(root: Node, base: SpecLayout, scan: Dictionary) -> Dictionar
 		_points(local,"Points",data.points,art,errors)
 		_points(local,"Posts",data.posts,art,errors)
 		_points(local,"Customers",data.customer_points,art,errors)
+		_pickup_ports(local,"Pickup",data,art,errors)
 		if module.module_kind in ["station","counter"]:
 			for pair in [["Work",data.points],["Post",data.posts]]:
 				var node: Node = local.get_node_or_null(NodePath(pair[0]))
 				if node is Node2D: _put(pair[1],module.station_id,_offset(node,art),errors)
+			for slot in module.station_slots:
+				for pair in [["Work",data.points],["Post",data.posts]]:
+					var node: Node = local.get_node_or_null(NodePath("Slots/"+slot+"/"+pair[0]))
+					if node is Node2D: _put(pair[1],module.station_slots[slot],_offset(node,art),errors)
 		elif module.module_kind=="table":
 			for node in _children(local,"Seats"):
 				if not String(node.name).is_valid_int() or int(String(node.name))<0: _error(errors,module.module_id,"Seat ports require nonnegative numeric names."); continue

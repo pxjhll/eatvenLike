@@ -4,14 +4,21 @@ extends RefCounted
 const Actions := preload("res://game/rules/rule_actions.gd")
 const Context := preload("res://game/rules/serve_action_context.gd")
 const FlowValidator := preload("res://game/rules/flow_validator.gd")
+const Handoff := preload("res://game/rules/handoff_action_context.gd")
+const Single := preload("res://game/rules/single_action_context.gd")
 
 static func validate(data: Dictionary, shop: SpecShop) -> String:
 	for worker: Dictionary in data.roster:
 		if not worker.has("action"): continue
-		if shop.dispatch.action_version!=1 or shop.fulfillment.handoff!="serve": return "action requires an enabled adapter"
+		if shop.dispatch.action_version!=1: return "action requires an enabled adapter"
 		var error := Actions.validate(worker.action)
 		if not error.is_empty(): return "roster[%d].%s"%[worker.id,error]
 		var program: Dictionary = worker.action
+		if program.status not in Actions.ACTIVE: return "action has no active business lease"
+		if shop.fulfillment.handoff in ["handoff","single"]:
+			error = Handoff.validate(worker) if shop.fulfillment.handoff=="handoff" else Single.validate(worker,shop,data.stations)
+			if not error.is_empty(): return error
+			continue
 		var job: Dictionary = data.serve.jobs.get(str(worker.id),{})
 		if job.get("kind","")=="bundle":
 			error = FlowValidator.bundle(data,shop,worker,job)

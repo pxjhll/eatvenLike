@@ -1,7 +1,7 @@
 extends SceneTree
 ## Import and gameplay contract for the gray-cat employee, on the shared shop rules.
 
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
 var failures := 0
 
 func _initialize() -> void:

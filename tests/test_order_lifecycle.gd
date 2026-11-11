@@ -1,8 +1,9 @@
 extends "res://tests/test_case.gd"
+## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
 const MODULE := "res://game/rules/rule_orders.gd"
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
 const FORWARDS := {"orders": "orders", "diners": "diners", "customers": "customers", "queue": "queue", "lost": "lost", "_next_order": "next_order", "_next_customer_id": "next_customer_id", "_order_clock": "order_clock", "_next_customer": "next_customer", "order_ramp": "order_ramp"}
 const KEYS := ["clock", "gold", "revenue", "sold", "sold_by_dish", "lost", "stage_index", "unlocked", "levels", "boxes", "completed_at", "paused", "tune", "stations", "shelf_stock", "shelf_count", "shelf_reserved_in", "shelf_reserved_out", "generated", "orders", "diners", "roster", "hire_pool", "event_ready_at", "events_seen", "belts", "belt_clock", "belt_items", "order_ramp", "flyer_wave", "flyer_wait", "flyer_clock", "flyer_pending", "flyer_ready_at", "flyer_left", "flyer_timer", "seats", "_accumulator", "_order_clock", "_next_order", "_next_staff", "_sale_carry", "_next_customer", "_courier", "customers", "queue", "_next_customer_id", "full_seconds", "pot_busy", "side_idle", "serve"]
 

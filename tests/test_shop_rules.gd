@@ -1,9 +1,10 @@
 extends "res://tests/test_case.gd"
+## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 ## 通用规则层 ShopRules（规格 §3、§7）：整店回归对旧模拟基准、加成栈、事件总线、奇遇与扩展点、干净检查。
 
 const Replay := preload("res://tests/baselines/replay_rules.gd")
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
 
 
 func _baseline(id: String) -> Dictionary:

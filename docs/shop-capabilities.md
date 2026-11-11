@@ -4,6 +4,8 @@
 
 Session startup validates both the store definition and a separately injected rules definition before loading/quarantining a save or acknowledging `fresh_shop`. Scene startup additionally checks art before Session startup. Pure ShopRules remains usable directly by rule tests; callers of that low-level API are responsible for validating configuration.
 
+`dispatch.action_version` supports 0/1 in all three modes. Version 1 requires shared movement (`layout.motion_version = 1`); each adapter retains its own existing fulfillment policies. Serve-only flow and order-bundle delivery remain restricted to serve. The three formal shops use movement/actions 1 and flow 0; version-0 behavioral baselines use frozen shop fixtures.
+
 ## Fulfillment: every exported field
 
 S = supported behavior; F = mode policy, reject other declarations; R = unused in this mode, retain the stated resource default.

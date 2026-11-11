@@ -51,8 +51,8 @@ func _business(rule: String) -> void:
 	scene._process(0.25)
 	# 双灶：灶台和左锅开张就有，右锅（炒锅B）买了才摆上
 	var stove: Node2D = scene.art.get_node("Sortables/Wok")
-	_check(stove.get_node("Stove").is_visible_in_tree() and stove.get_node("WokLeft").is_visible_in_tree(), rule + ": 开张后灶台和炒锅A 都在")
-	_check(not stove.get_node("WokRight").is_visible_in_tree(), rule + ": 没买炒锅B 时右边没锅")
+	_check(stove.get_node("Visual/Stove").is_visible_in_tree() and stove.get_node("Visual/WokLeft").is_visible_in_tree(), rule + ": 开张后灶台和炒锅A 都在")
+	_check(not stove.get_node("Visual/Slots/right/WokRight").is_visible_in_tree(), rule + ": 没买炒锅B 时右边没锅")
 	# 桌椅跟着买到的座位数摆：开局 6 座 = 前 3 张桌；买一座多出第 4 张桌的左椅
 	var dining: Node2D = scene.art.get_node("Sortables/Dining")
 	var start_seats: int = scene.rules.seat_total()
@@ -63,7 +63,7 @@ func _business(rule: String) -> void:
 	scene._process(0.25)
 	var next_table := dining.get_node("Table%02d" % (start_seats / 2 + 1))
 	_check(next_table.is_visible_in_tree(), rule + ": 买座位后多摆一张桌")
-	_check(not (next_table.get_node("ChairRight") as CanvasItem).visible or scene.rules.seat_total() % 2 == 0, rule + ": 单数座位只摆一把椅子")
+	_check(not (next_table.get_node("Visual/Seats/1") as CanvasItem).visible or scene.rules.seat_total() % 2 == 0, rule + ": 单数座位只摆一把椅子")
 	scene.rules.gold = 0.0
 	var pickup_id := ServeFlow.pickup_of(spec)
 	var window: Vector2 = spec.layout.points[pickup_id]
@@ -74,10 +74,11 @@ func _business(rule: String) -> void:
 		scene._process(0.25)
 		for g: Dictionary in scene.rules.serve.guests:
 			var id := int(g.id)
-			if not scene._customers.has(id):
+			var key: Variant = "guest:%d"%id if spec.layout.motion_version==1 else id
+			if not scene._customers.has(key):
 				every_guest_drawn = false
 				continue
-			var pos: Vector2 = scene._customer_positions[id]
+			var pos: Vector2 = scene._customers[key].position
 			var seat: Vector2 = scene.anchors.point("Seats/" + ServeFlow.seat_point(spec, int(g.seat))) if int(g.seat) >= 0 else Vector2.INF
 			if g.state == "await" and pos.distance_to(window) < 260.0: seen.await_at_window = true
 			if g.state == "eating" and float(g.eat_left) < scene.rules.seat_seconds() - 15.0 and pos.distance_to(seat) <= 2.0: seen.eating_at_seat = true
@@ -102,7 +103,7 @@ func _business(rule: String) -> void:
 		scene.rules.unlock(scene.rules.next_unlock())
 	_check(scene.rules.unlock("wok_b").is_empty(), rule + ": 买炒锅B")
 	scene._process(0.25)
-	_check(stove.get_node("WokRight").is_visible_in_tree(), rule + ": 买了炒锅B 右锅摆上")
+	_check(stove.get_node("Visual/Slots/right/WokRight").is_visible_in_tree(), rule + ": 买了炒锅B 右锅摆上")
 	_check(scene.save_now(false) == OK, rule + ": 能存档")
 	scene.free()
 

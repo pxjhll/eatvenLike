@@ -1,8 +1,9 @@
 extends "res://tests/test_case.gd"
+## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 ## Literal local ledgers: recipes and employee execution stay in ShopRules.
 
 const PATH := "res://game/rules/rule_inventory.gd"
-const TEA := preload("res://content/shops/tea/shop.tres")
+const TEA := preload("res://tests/fixtures/legacy_shops/tea.tres")
 
 func _owner() -> Variant:
 	if not ResourceLoader.exists(PATH):

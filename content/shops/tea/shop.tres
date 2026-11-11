@@ -1,6 +1,5 @@
 [gd_resource type="Resource" script_class="SpecShop" format=3]
 
-[ext_resource type="AudioStream" path="res://art/audio/milk_tea_afternoon.ogg" id="music_theme"]
 [ext_resource type="Script" path="res://content/rules/spec_connection.gd" id="1_tjgba"]
 [ext_resource type="Script" path="res://content/rules/spec_dish.gd" id="2_ctjwf"]
 [ext_resource type="Script" path="res://content/rules/spec_step.gd" id="3_xwcms"]
@@ -17,6 +16,7 @@
 [ext_resource type="Script" path="res://content/rules/spec_layout.gd" id="14_8dy82"]
 [ext_resource type="Script" path="res://content/rules/spec_shop.gd" id="15_3rult"]
 [ext_resource type="Script" path="res://content/rules/spec_seat_group.gd" id="16_35x7t"]
+[ext_resource type="Script" path="res://content/rules/spec_order_option.gd" id="16_g4hkj"]
 [ext_resource type="Script" path="res://content/rules/spec_staff_kind.gd" id="17_mx6tq"]
 [ext_resource type="Script" path="res://content/rules/spec_staff_rules.gd" id="18_tdcmu"]
 [ext_resource type="Script" path="res://content/rules/spec_stage.gd" id="19_a4xei"]
@@ -24,13 +24,13 @@
 [ext_resource type="Script" path="res://content/rules/spec_station.gd" id="21_6l0ld"]
 [ext_resource type="Script" path="res://content/rules/spec_material.gd" id="22_snoov"]
 [ext_resource type="Script" path="res://content/rules/spec_stock_rule.gd" id="23_xb1gn"]
-
-[ext_resource type="Resource" path="res://content/characters/staff/cat.tres" id="staff_cat"]
-[ext_resource type="Resource" path="res://content/characters/staff/raccoon.tres" id="staff_raccoon"]
-[ext_resource type="Resource" path="res://content/characters/staff/fox.tres" id="staff_fox"]
-[ext_resource type="Resource" path="res://content/characters/staff/rabbit.tres" id="staff_rabbit"]
-[ext_resource type="Resource" path="res://content/characters/staff/gray_cat.tres" id="staff_gray_cat"]
+[ext_resource type="AudioStream" path="res://art/audio/milk_tea_afternoon.ogg" id="music_theme"]
 [ext_resource type="Resource" path="res://content/characters/staff/bear.tres" id="staff_bear"]
+[ext_resource type="Resource" path="res://content/characters/staff/cat.tres" id="staff_cat"]
+[ext_resource type="Resource" path="res://content/characters/staff/fox.tres" id="staff_fox"]
+[ext_resource type="Resource" path="res://content/characters/staff/gray_cat.tres" id="staff_gray_cat"]
+[ext_resource type="Resource" path="res://content/characters/staff/rabbit.tres" id="staff_rabbit"]
+[ext_resource type="Resource" path="res://content/characters/staff/raccoon.tres" id="staff_raccoon"]
 
 [sub_resource type="Resource" id="Resource_m1tbq"]
 script = ExtResource("1_tjgba")
@@ -378,6 +378,7 @@ flavor_material = "lemon"
 
 [sub_resource type="Resource" id="Resource_gxbws"]
 script = ExtResource("4_l0xyq")
+action_version = 1
 base_scores = Dictionary[String, float]({
 "chore": 55.0,
 "follow": 90.0,
@@ -931,11 +932,12 @@ display_name = "柠檬茶"
 art = "fruit_tea"
 tint = Color(0.9490196, 0.7019608, 0.41568628, 1)
 
-[sub_resource type="Resource" id="Resource_45mrc"]
+[sub_resource type="Resource" id="Resource_x4rom"]
 script = ExtResource("14_8dy82")
 nav = "grid"
 areas = Array[Rect2i]([Rect2i(2, 13, 32, 22), Rect2i(2, 35, 32, 36)])
-obstacles = Array[Rect2]([Rect2(23, 269, 122, 348), Rect2(267, 235, 290, 70), Rect2(22, 220, 235, 75), Rect2(590, 367, 72, 213), Rect2(560, 205, 132, 185), Rect2(522, 530, 178, 154), Rect2(32, 595, 122, 185), Rect2(32, 709, 291, 148), Rect2(323, 752, 365, 105), Rect2(81, 1083.5, 220, 120), Rect2(420, 1083.5, 220, 120), Rect2(82, 1280.5, 220, 120), Rect2(418, 1280.5, 220, 120)])
+obstacles = Array[Rect2]([Rect2(23, 269, 122, 348), Rect2(267, 235, 290, 70), Rect2(22, 220, 235, 75), Rect2(590, 367, 72, 213), Rect2(560, 205, 132, 185), Rect2(522, 530, 178, 154), Rect2(32, 595, 122, 185), Rect2(32, 709, 291, 148), Rect2(323, 752, 365, 105), Rect2(131, 1115, 120, 80), Rect2(470, 1115, 120, 80), Rect2(132, 1312, 120, 80), Rect2(468, 1312, 120, 80)])
+obstacle_stations = Array[String](["", "", "", "", "", "", "", "", "", "", "", "", ""])
 grid_size = Vector2i(36, 75)
 points = Dictionary[String, Vector2]({
 "belt_in": Vector2(530, 430),
@@ -955,6 +957,25 @@ posts = Dictionary[String, Vector2]({
 "counter": Vector2(410, 730),
 "topping": Vector2(190, 410)
 })
+motion_version = 1
+actor_areas = {
+"customer": [Rect2i(2, 44, 32, 27)],
+"staff": [Rect2i(2, 13, 32, 25)]
+}
+customer_points = Dictionary[String, Vector2]({
+"entrance": Vector2(360, 1390),
+"exit": Vector2(380, 1390),
+"pickup": Vector2(635, 925),
+"seat:dine/0": Vector2(85, 1143.0834),
+"seat:dine/1": Vector2(296, 1143.0834),
+"seat:dine/2": Vector2(424, 1143.0834),
+"seat:dine/3": Vector2(635, 1143.0834),
+"seat:dine/4": Vector2(86, 1340.0834),
+"seat:dine/5": Vector2(297, 1340.0834),
+"seat:dine/6": Vector2(422, 1340.0834),
+"seat:dine/7": Vector2(633, 1340.0834)
+})
+customer_queue = Array[Vector2]([Vector2(530, 925), Vector2(425, 925), Vector2(320, 925), Vector2(215, 925), Vector2(530, 1012), Vector2(425, 1012), Vector2(320, 1012), Vector2(215, 1012)])
 
 [sub_resource type="Resource" id="Resource_poakd"]
 script = ExtResource("16_35x7t")
@@ -2331,10 +2352,10 @@ seat_groups = Array[ExtResource("16_35x7t")]([SubResource("Resource_poakd")])
 staff = SubResource("Resource_8p4c6")
 connections = Array[ExtResource("1_tjgba")]([SubResource("Resource_m1tbq"), SubResource("Resource_q0qcx"), SubResource("Resource_jp4pd"), SubResource("Resource_6bvuk"), SubResource("Resource_bc3ge"), SubResource("Resource_gjupt"), SubResource("Resource_gd06f")])
 goals = SubResource("Resource_ufdpv")
-layout = SubResource("Resource_45mrc")
+layout = SubResource("Resource_x4rom")
 guide = Array[ExtResource("12_anqca")]([SubResource("Resource_4p3jx"), SubResource("Resource_1wmsa"), SubResource("Resource_ho7ym"), SubResource("Resource_tsvuk"), SubResource("Resource_njies"), SubResource("Resource_nwen5"), SubResource("Resource_pkfa0"), SubResource("Resource_h2bkm"), SubResource("Resource_4lrgi"), SubResource("Resource_ifvmf"), SubResource("Resource_m6brp"), SubResource("Resource_j7ryq"), SubResource("Resource_l8d5n"), SubResource("Resource_tb00n"), SubResource("Resource_wx7ac"), SubResource("Resource_fm6n5")])
 flavor_flow = 0.12
-background_music = ExtResource("music_theme")
 scene_path = "res://presentation/shops/tea/tea_art.tscn"
+background_music = ExtResource("music_theme")
 save_file = "shop_tea.json"
 scale_anchor = "cup"

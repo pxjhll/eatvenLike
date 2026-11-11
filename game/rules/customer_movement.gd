@@ -99,7 +99,7 @@ static func _serve(rules: ShopRules, active: Dictionary, migrate: bool) -> void:
 			line += 1
 		elif guest.state in ["to_pickup","await"]:
 			target = "pickup:%d"%waiting
-			goal = port(rules,"pickup")+Vector2((waiting%4-1.5)*48,int(waiting/4)*40)*rules.shop.layout.motion_units
+			goal = rules.shop.layout.customer_points.get(target,port(rules,"pickup")+Vector2((waiting%4-1.5)*48,int(waiting/4)*40)*rules.shop.layout.motion_units)
 			waiting += 1
 		else:
 			target = seat_target(rules,int(guest.seat))
@@ -143,9 +143,14 @@ static func _single(rules: ShopRules, active: Dictionary, migrate: bool) -> void
 		else: in_line += 1
 		if queued: queue_index += 1
 		for worker: Dictionary in rules.workers:
-			if worker.order==id and not worker.steps.is_empty() and worker.step<worker.steps.size() and worker.steps[worker.step].action=="hand":
-				target = "pickup"
-				goal = port(rules,"pickup")
+			if worker.order==id and not worker.steps.is_empty() and worker.step<worker.steps.size():
+				var action: String = worker.steps[worker.step].action
+				if action=="hand":
+					target = "pickup"
+					goal = port(rules,"pickup")
+				elif action=="take" and rules.shop.dispatch.action_version==1:
+					target = "queue:0"
+					goal = queue_point(rules,0)
 		var data := customer.duplicate()
 		data.seat = seat
 		_request(rules,active,"customer:%d"%id,id,target,goal,data,seat>=0 and target.begins_with("wait:"),migrate)
@@ -176,4 +181,9 @@ static func handoff_sale(rules: ShopRules, order_id: int, seat: int) -> void:
 	if seat>=0 and rows.has(key):
 		rows["diner:%d"%seat] = rows[key]
 		rows.erase(key)
+	sync(rules)
+
+static func single_sale(rules: ShopRules, id: int, dish: String) -> void:
+	var row: Dictionary = _rows(rules).get("customer:%d"%id,{})
+	if not row.is_empty(): row.carry_item = dish
 	sync(rules)

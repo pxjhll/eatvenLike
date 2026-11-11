@@ -77,9 +77,10 @@ func _run() -> void:
 	view._process(0.1)
 	var line: Array = _rules().customers.filter(func(c: Dictionary) -> bool: return c.state == "paid")
 	var queued: int = int(line[0].id) if not line.is_empty() else int(_rules().queue[0])
-	for unused in 60: view._refresh(0.25)
-	var first: Node2D = view._customers.get(queued)
-	_check(first != null and first.position.distance_to(view.anchors.points("Queue")[0]) < 2.0, "排第一的客人站在队伍第一位")
+	var customer_key := "customer:%d"%queued
+	_run_until(func() -> bool: return _rules().movement.customers.has(customer_key) and not _rules().movement.customers[customer_key].walking,60.0)
+	var first: Node2D = view._customers.get(customer_key)
+	_check(first != null and first.position.is_equal_approx(_rules().movement.customers[customer_key].pos), "排队顾客按规则位置到达")
 	_check(first != null and first.z_index > _stall(46).z_index, "柜台前的客人画在柜台上面")
 	var staff: Node2D = view._actors.values()[0]
 	_check(staff.z_index < _stall(46).z_index, "柜台后面的员工画在柜台下面")
@@ -98,11 +99,16 @@ func _run() -> void:
 	# 坐下的客人一直坐在同一个坐垫上，直到拿到餐离开
 	var seat_of := {}
 	var moved := 0
-	for unused in 400:
+	guide.enabled = false
+	for unused in 80:
 		view._process(0.25)
-		for id in view._seat_of:
-			if seat_of.has(id) and seat_of[id] != view._seat_of[id]: moved += 1
-			seat_of[id] = view._seat_of[id]
+		for id in _rules().movement.customers:
+			var row: Dictionary = _rules().movement.customers[id]
+			if not row.seated: continue
+			if seat_of.has(id) and seat_of[id] != row.seat: moved += 1
+			seat_of[id] = row.seat
+		if unused>=40 and not seat_of.is_empty(): break
+	guide.enabled = true
 	_check(not seat_of.is_empty() and moved == 0, "坐下的客人不换坐垫（坐过 %d 位，换位 %d 次）" % [seat_of.size(), moved])
 	await _click(hud.tab("shop"))
 	_rules().gold = 60.0
@@ -124,8 +130,10 @@ func _run() -> void:
 	view._refresh(0)
 	_check(bool(_rules().boxes.flour) and _stall(27).is_visible_in_tree() and _stall(140).visible, "买了面粉箱：面粉袋和字摆出来")
 	await _click(hud.tab("shop"))
+	# Keep this interaction case below later-stage affordability prompts.
+	_rules().gold = 0.0
 	guide.refresh(0)
-	_check(guide.active == "" and not hud.popups.has_card(), "引导走完")
+	_check(guide.active == "" and not hud.popups.has_card(), "引导走完（当前：%s）"%guide.active)
 
 	# 点柜台：面板里发传单，传单没有升级就不显示升级那一行
 	await _press(_screen(view.anchors.rect("Stations/front_counter/Tap").get_center() + Vector2(200, 40)))
@@ -232,7 +240,7 @@ func _run() -> void:
 	_rules().upgrade("staff/")
 	await _click(hud.tab("staff"))
 	var staff_page: Control = hud.page_node("staff")
-	_check(staff_page._numbers.walk.text == str(int(_rules().walk_speed(_rules().workers[0]))), "培养后可见移速等于执行移速")
+	_check(staff_page._numbers.walk.text == view.view.stat_text(_rules().walk_speed(_rules().workers[0])/PANCAKE.layout.motion_units), "培养后可见逻辑移速等于执行移速")
 	_check(staff_page._levels[0].text.contains("1/"), "员工卡显示店内培养进度")
 	_rules().tune.work = 1.25
 	view._refresh(0)

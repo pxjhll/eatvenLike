@@ -7,7 +7,8 @@ extends SceneTree
 ## --check：重录一遍和已存的比，不一致退出码 1。
 
 const Replay := preload("res://tests/baselines/replay_rules.gd")
-const SHOP: SpecShop = preload("res://content/shops/pancake/shop.tres")
+## Historical v0 economy; formal v1 rhythm is reported separately.
+const SHOP: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
 const MINUTES := 30.0
 
 

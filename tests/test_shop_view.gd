@@ -3,7 +3,7 @@ extends "res://tests/test_case.gd"
 ## 界面读到的目标、瓶颈提示、机器面板数字（解锁、等级、升级价、售价预览、原料箱）都一样。
 
 const Replay := preload("res://tests/baselines/replay_rules.gd")
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
 
 
 ## 和录基准时同一种记法
@@ -75,7 +75,7 @@ func test_buffs_list_timed_modifiers() -> void:
 
 
 func test_item_art_uses_item_icon_when_no_scene_art() -> void:
-	var pancake: SpecShop = load("res://content/shops/pancake/shop.tres")
+	var pancake: SpecShop = load("res://tests/fixtures/legacy_shops/pancake.tres")
 	var view := ShopView.new(ShopRules.new(pancake))
 	for item in pancake.items:
 		if not item.art.is_empty() or item.icon == null: continue

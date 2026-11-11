@@ -26,7 +26,7 @@ Editable scene modules now export customer ports and permission areas alongside 
 
 ## Composable actor actions
 
-`dispatch.action_version = 0` preserves legacy execution. The first version-1 adapter supports `serve` with `layout.motion_version = 1`; unsupported combinations fail preflight. Production shop migration remains separate. `rule_actions.gd` owns only the lifecycle of a sequential plan; recipe dependencies remain in the existing fulfillment rules.
+`dispatch.action_version = 0` preserves legacy execution. Version 1 supports `serve`, `handoff` and `single`, and requires `layout.motion_version = 1`. All three formal shops use it. `rule_actions.gd` owns only the lifecycle of a sequential plan; recipe dependencies remain in the existing fulfillment rules.
 
 An action step is `{kind, target, seconds, label, data}`. The six registered kinds are `move`, `pickup`, `operate`, `transport`, `drop`, `wait`. `ActionContext` owns the meaning of ports and durations; the serve adapter calculates operation/pick/drop durations from existing rules on entry, while explicit waits use their `seconds`. `ready` must be read-only and is checked before entry and each tick. A blocked action retains its remaining time and reservations. Each tick commits at most one action, including zero-duration actions.
 
@@ -35,6 +35,8 @@ The context's `reserve` returns `{error, lease}` atomically. The lease reference
 Programs contain only data and keep a versioned cursor/status. Cursors commit before synchronous effects broadcast events. Future versions cannot overwrite an existing file; legacy active jobs rebuild from their recorded stage and remaining time, with an original-file backup before replacement. `ShopView.render_snapshot().actions` publishes detached per-worker summaries; presentation code must never commit action effects.
 
 See [composable-actor-actions.md](qa/composable-actor-actions.md), `tests/fixtures/action_context.gd` for a small real inventory context, and `serve_action_context.gd` for a production-rule adapter. Run `tests/render_actor_actions.gd` in addition to the shared movement and ordinary shop regressions.
+
+`handoff_action_context.gd` binds the existing inventory job. `single_action_context.gd` binds one current order step or pot chore. Single batch pickup records whether stock was taken; recall returns unfinished material, releases stations and retains paid order progress for redeployment. Keep operation durations in the original business functions. Clear completed actions and business claims before broadcasting a sale. These adapters do not provide a new recipe language or enable serve-only flow policies on single/handoff.
 
 ## Production dependencies and order delivery
 
@@ -58,7 +60,15 @@ The read-only `ShopAnchors` projection exposes existing paths to the generic ren
 
 Run `tools/sync_shop_layouts.gd -- --shop=<resource>` to export one explicit shop, and append `--check` for a byte-preserving comparison. `--campaign=<resource>` selects a custom campaign instead; empty targets or conflicting options fail. All candidates are validated before any are written. The full field comparison includes motion settings, actor permissions, customer ports/queue, aliases and spawn point. The runtime consumes the saved `SpecLayout`; it never silently repairs it from art.
 
-See [the module authoring guide](../presentation/shop/modules/README.md) and [T08 QA](qa/editable-scene-modules.md). `tests/fixtures/module_shop.gd` is an independent full assembly using copies of existing content; `tests/render_scene_modules.gd` exercises real world input, rendering, sales and session restore. Formal shop migration and live-save relocation are separate tasks.
+See [the module authoring guide](../presentation/shop/modules/README.md) and [T08 QA](qa/editable-scene-modules.md). `tests/fixtures/module_shop.gd` is an independent full assembly using copies of existing content; `tests/render_scene_modules.gd` exercises real world input, rendering, sales and session restore. Formal rollout is staged; arbitrary live-save relocation is a separate capability.
+
+The formal `stirfry` shop now demonstrates the shared template. It references global employee definitions, enables shared movement/actions and preserves its original self-pickup/flow-0 policy. Shared furniture uses `station_slots`: local `Anchors/Slots/<slot>` and `Nav/Slots/<slot>/Work` bind additional station IDs without copying a stove or counter. `Visual/Slots/<slot>` follows that station's unlock state; a fixed base can live in `FixedVisual`. Independent purchase stages require Frames; non-purchasable companion ports can omit them.
+
+Self-pickup modules can author `Nav/Pickup/0...` (or root `Nav/Customers/Pickup/0...`) for explicit `customer_points["pickup:<index>"]`. These are ordered, reachable approach ports covering maximum seat capacity. Existing definitions without these points retain their old scatter behavior. Staff may use the side passage while the customer permission region excludes the kitchen.
+
+`movement_adoption.gd` handles the first legacy save without movement state for all three business modes. It preserves business identity, reservations, goods and remaining timers, retargets current ports, and relocates invalid legacy positions to the nearest reachable grid center. Already-running hand actions adopt their current port. The generated state is validated again. Before first replacement, `ShopSave` verifies an original-file backup; unavailable adoption geometry protects the original file instead of clearing progress. Existing v1 files are not automatically relocated for arbitrary later layout edits.
+
+See [T09 QA](qa/stirfry-shared-template.md) and [T10 QA and rhythm comparison](qa/first-shops-shared-template.md). Run `tests/render_stirfry_migration.gd` and `tests/render_first_shops_migration.gd` for real old-file startup, pause, 1/2/4 speed controls, save and reopen. Recipe/policy tests using frozen legacy definitions remain separate from formal shared behavior tests. Tea/pancake keep their existing inherited/procedural art hierarchy and use complete root Nav exports; new shops should begin with the reusable module template.
 
 ## Art contract
 

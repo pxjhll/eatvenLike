@@ -192,7 +192,9 @@ func test_action_configuration_requires_supported_business_and_shared_motion() -
 	for mode in ["single","handoff"]:
 		var unsupported := ShopFixture.definition(mode)
 		unsupported.dispatch.action_version = 1
-		check(validator.validate(unsupported).any(func(e: Dictionary) -> bool: return e.path=="dispatch.action_version"),"unsupported adapter must be explicit: "+mode)
+		check_eq(validator.validate(unsupported),[],"business adapter supports shared movement: "+mode)
+		unsupported.layout.motion_version = 0
+		check(validator.validate(unsupported).any(func(e: Dictionary) -> bool: return e.path=="dispatch.action_version"),"business adapter requires shared movement: "+mode)
 	shop.layout.motion_version = 1
 	shop.dispatch.action_version = 2
 	check(validator.validate(shop).any(func(e: Dictionary) -> bool: return e.path=="dispatch.action_version"),"future action configuration is rejected")

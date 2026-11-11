@@ -4,6 +4,8 @@ extends Node2D
 @export var module_id: String = ""
 @export_enum("station", "counter", "table", "entrance", "space") var module_kind: String = "station"
 @export var station_id: String = ""
+## Additional functional ports on one shared furniture assembly.
+@export var station_slots: Dictionary[String,String] = {}
 @export var seat_group: String = "dine"
 @export var first_seat: int = 0
 @export var table_index: int = 0
@@ -20,3 +22,6 @@ func refresh_visual(view: ShopView) -> void:
 		if seats!=null:
 			for child in seats.get_children():
 				if child is CanvasItem and String(child.name).is_valid_int(): child.visible = first_seat+int(String(child.name))<count
+	for slot in station_slots:
+		var part := visual.get_node_or_null(NodePath("Slots/"+slot)) as CanvasItem
+		if part!=null: part.visible = view.art_visible(station_slots[slot])

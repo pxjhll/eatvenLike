@@ -50,6 +50,8 @@ static func validate(shop: SpecShop, art: Node) -> Array[Dictionary]:
 			if local!=null: _scan(local,local,errors)
 		if module.module_kind in ["station","counter"] and shop.station(module.station_id)==null:
 			_error(errors,"module_reference",module.module_id,"Module station binding must resolve in this shop.")
+		for station in module.station_slots.values():
+			if shop.station(station)==null: _error(errors,"module_reference",module.module_id,"Module slot station binding must resolve in this shop.")
 		if module.module_kind=="table":
 			var matches := shop.seat_groups.filter(func(group: SpecSeatGroup) -> bool: return group!=null and group.id==module.seat_group)
 			if matches.is_empty() or matches[0].purpose!=module.seat_purpose: _error(errors,"module_reference",module.module_id,"Module seat group and purpose must resolve in this shop.")
@@ -110,6 +112,9 @@ static func validate(shop: SpecShop, art: Node) -> Array[Dictionary]:
 			for stage in shop.stages:
 				if stage != null: count = maxi(count, stage.wait_seats)
 		if count > 0: _points(anchors, "Seats/" + group.id, count, errors)
+		if shop.fulfillment!=null and shop.fulfillment.dine_rule=="self_pickup" and shop.layout!=null and shop.layout.customer_points.has("pickup:0"):
+			for index in count:
+				if not shop.layout.customer_points.has("pickup:%d"%index): _error(errors,"required","layout.customer_points","Authored pickup slots must cover declared seat capacity.")
 	for connection in shop.connections:
 		if connection == null or not connection.enabled: continue
 		_rect(anchors, "Connections/" + connection.id + "/Frame", errors)

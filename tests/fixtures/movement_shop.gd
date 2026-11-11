@@ -1,8 +1,9 @@
 extends RefCounted
 ## Controlled geometry on the real three business modes; never edits shared resources.
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
-const SINGLE: SpecShop = preload("res://content/shops/pancake/shop.tres")
-const SERVE: SpecShop = preload("res://content/shops/stirfry/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
+const SINGLE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
+## Keep controlled protocol fixtures independent of production shop migrations.
+const SERVE: SpecShop = preload("res://tests/fixtures/stirfry_modularity/legacy_shop.tres")
 
 static func definition(mode := "serve", units := 1.0) -> SpecShop:
 	var source: SpecShop = {"serve":SERVE,"single":SINGLE,"handoff":TEA}[mode]
@@ -17,6 +18,7 @@ static func definition(mode := "serve", units := 1.0) -> SpecShop:
 	data.set("actor_areas",{"staff":[Rect2i(0,0,32,32)],"customer":[Rect2i(0,0,32,32)]})
 	data.customer_queue.assign([Vector2(100,500)*units,Vector2(100,560)*units])
 	data.spawn_point = source.layout.spawn_point
+	data.aliases = source.layout.aliases.duplicate()
 	var ports: Dictionary[String,Vector2] = {"entrance":Vector2(100,1100)*units,"exit":Vector2(60,1100)*units,"pickup":Vector2(300,500)*units}
 	for index in shop.stations.size():
 		var id := shop.stations[index].id
@@ -24,6 +26,8 @@ static func definition(mode := "serve", units := 1.0) -> SpecShop:
 		data.posts[id] = data.points[id]
 	if not data.points.has(shop.staff.home_anchor): data.points[shop.staff.home_anchor] = Vector2(300,300)*units
 	if not data.points.has(data.spawn_point): data.points[data.spawn_point] = Vector2(300,300)*units
+	for point in source.layout.points:
+		if not data.points.has(point): data.points[point] = Vector2(400,300)*units
 	for group in shop.seat_groups:
 		var count := group.start+group.step*group.costs.size()
 		if not group.steps.is_empty():

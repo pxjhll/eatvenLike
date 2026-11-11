@@ -47,11 +47,35 @@ seats_per_table默认2，同时向现有餐盘显示导出per_table。first_seat
 
 工位Visual随已有station解锁显示。灰盒桌子预先摆放，Visual/Seats中的单把椅子按已购数量显示；整套家具占地始终预留。当前没有按购座数量动态撤销占地的语法，不能把隐藏的椅子空间当作开放通道。需要整桌随购买撤销碰撞的正式场景，应在迁移任务中明确扩展，不套用station ID绕过校验。
 
+### 一件家具承载多个工位
+
+双灶、共用柜台等组合使用主station_id加station_slots字典，键为本地槽位名，值为附属station ID。例如双灶配置{"right":"wok_b"}，柜台配置{"pickup":"window"}。局部层次为：
+
+```text
+Module/
+  Visual/Slots/right/       附属功能美术，按对应station解锁
+  FixedVisual/             不随功能解锁隐藏的底座（可选）
+  Anchors/Station/          主工位锚点
+  Anchors/Slots/right/      附属工位的Tap、Frame、Post等
+  Anchors/SlotDrops/right   附属岗位落点（可选）
+  Nav/Work                 主工作点
+  Nav/Slots/right/Work     附属工作点
+  Nav/Slots/right/Post     附属坐班点（可选）
+```
+
+Frame在该工位有独立阶段购买时必需，其他附属功能可只提供Tap和Work；完整要求由SpecShop与SceneContract共同校验。主体Visual按主工位解锁，附属美术还受附属工位状态控制，因此该结构用于主设备开放后再开放附属位的组合。主设备底座只配置一次占地，必要时用metadata/station指定解锁引用；固定底座的占地设置空station。保持一件完整家具，不用嵌套模块复制主体。
+
+### 自取等待端口
+
+模块Nav/Pickup/0…或根Anchors/Nav/Customers/Pickup/0…导出customer_points[pickup:<序号>]。编号从0连续，端口须通过同一占地/权限检查。自取店使用显式端口时要覆盖最大座位容量，避免等待顾客被旧的固定偏移排进桌子。没有显式端口的旧夹具保留原散布。正式第三店的16个等待点和柜台放餐/顾客取餐点可直接作为样例。
+
 ## 根空间与校验
 
 Anchors.metadata/module_version=1显式启用模块投影，根位置为原点。Anchors/Nav需要nav="grid"、cell、grid_size、motion_version=1、motion_units；出生点spawn_point默认counter，aliases默认空。motion_units必须等于world_size.x/720。模板使用720×1200、cell40、18×30格和home出生点。
 
 根Nav沿用旧Areas/Obstacles/Points/Posts，新增Access和Customers/Points。模块区域与根区域相加，完整导出清除旧layout中的同类数据，避免留下已删除模块的端口。aliases、spawn_point、版本、密度、权限、顾客端口和队列与原员工字段一起比较。
+
+保留继承或程序家具的原场景可只使用完整根Nav，不必为接入重排图像层级。根Customers/Seats/<group>/<n>导出seat:<group>/<n>，Customers/Waiting/<group>/<n>导出wait:<group>/<n>；这些仍是规则接近点，原Seats坐姿锚点保持独立。正式奶茶、煎饼为此接法的样例，第三店为完整家具模块样例。新制场景优先使用ShopTemplate与功能模块。
 
 同名实物端口只允许一个所有者；多个模块可以向同一个只读组提供不同子节点。所有模块和空间坐标父链要求有限平移；占地和区域须在网格内。脚底半径沿用12逻辑单位。导出校验所有占地打开时员工从出生点到各端口、顾客从入口到各端口/队列的可达性；这提供保守的全部建成布局检查，不模拟经济阶段或角色之间的避让。
 
@@ -66,4 +90,4 @@ tests/fixtures/module_shop.gd使用已有主菜、例汤和员工配置的副本
 & $engine --headless --path 'D:/Tes/eatventure' -s tests/render_scene_modules.gd
 ```
 
-本轮不更改正式三店布局，也不把制作时移动模块解释为运行中搬迁旧档角色。T09继续用这些端口和模块迁移第三店。正式美术仍先遵守docs/art/scene-art-production-rules.md，核对已有资产并在FigCraft确认。
+T08灰盒不替换正式美术；T09已用现有图像和世界变换接入正式第三店，见docs/qa/stirfry-shared-template.md。首次采用旧协议的兼容处理由规则负责，不能把制作时移动模块解释为运行中任意搬迁角色。正式美术仍先遵守docs/art/scene-art-production-rules.md，核对已有资产并在FigCraft确认。

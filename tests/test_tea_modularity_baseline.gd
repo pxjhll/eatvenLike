@@ -2,7 +2,7 @@ extends "res://tests/test_case.gd"
 
 const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
 const BASELINE := "res://tests/baselines/tea_modularity.json"
-const CAPTURE := "res://tests/baselines/capture_tea_modularity.gd"
+const CAPTURE := "res://tests/fixtures/legacy_shops/capture_tea.gd"
 const EXPECTED := {
 	"cat": {"walk":112.0,"work":1.0,"carry":2.0},
 	"raccoon": {"walk":88.0,"work":1.0,"carry":3.0},

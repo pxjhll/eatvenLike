@@ -18,6 +18,10 @@ const DispatchPolicy := preload("res://game/rules/dispatch_policy.gd")
 const ServeFlow := preload("res://game/rules/serve_flow.gd")
 const Movement := preload("res://game/rules/rule_movement.gd")
 const CustomerMovement := preload("res://game/rules/customer_movement.gd")
+const MovementAdoption := preload("res://game/rules/movement_adoption.gd")
+const Actions := preload("res://game/rules/rule_actions.gd")
+const HandoffContext := preload("res://game/rules/handoff_action_context.gd")
+const SingleContext := preload("res://game/rules/single_action_context.gd")
 var movement: Dictionary = {}
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
@@ -228,12 +232,23 @@ func load_dict(data: Dictionary, refresh_content: bool = false) -> String:
 	if movement_enabled():
 		candidate.movement = data.movement.duplicate(true)
 		if rebuild_motion:
+			error = MovementAdoption.workers(candidate)
+			if not error.is_empty(): return error
 			CustomerMovement.sync(candidate,true)
-			for worker in candidate.workers:
-				if worker.walking and not worker.has("motion"): candidate._rebuild_move(worker)
 	if refresh_content: candidate._refresh_content_values()
 	if shop.fulfillment.flow_version==1: ServeFlow.restore_flow(candidate)
-	if shop.dispatch.action_version==1: ServeFlow.restore_actions(candidate)
+	if shop.dispatch.action_version==1:
+		match shop.fulfillment.handoff:
+			"serve": ServeFlow.restore_actions(candidate)
+			"handoff":
+				for worker: Dictionary in candidate.workers:
+					if not worker.job.is_empty() and not worker.has("action"): HandoffContext.new(candidate).restore(worker)
+			"single":
+				for worker: Dictionary in candidate.workers:
+					if not worker.has("action") and (worker.walking or worker.phase=="work" or not worker.chore.is_empty() or worker.order>=0): SingleContext.new(candidate).restore(worker)
+	if rebuild_motion:
+		error = StateValidator.new().validate(candidate.to_dict(),ShopRules.new(shop).to_dict(),shop,candidate.chains,candidate.event_defs)
+		if not error.is_empty(): return "movement adoption: "+error
 	for key in STATE_KEYS: set(key, candidate.get(key))
 	workers = candidate.workers
 	movement = candidate.movement
@@ -1147,6 +1162,15 @@ func _cancel_job(worker: Dictionary) -> void:
 	if _serving():
 		ServeFlow.cancel(self, worker)
 		return
+	if shop.dispatch.action_version==1:
+		if shop.fulfillment.handoff=="single":
+			if not Actions.cancel(worker,SingleContext.new(self)): SingleContext.new(self).cancel(worker,{})
+			return
+		if Actions.cancel(worker,HandoffContext.new(self)): return
+	_cancel_handoff_assignment(worker)
+
+
+func _cancel_handoff_assignment(worker: Dictionary) -> void:
 	var job: Dictionary = worker.job
 	if not job.is_empty():
 		var clear_processing_item: bool = _is_operation(job) and shop.station(job.src).block == "topping"
@@ -1329,8 +1353,10 @@ func _reserve(worker: Dictionary, job: Dictionary) -> void:
 		_orders_state.set_handoff_reserved(job.order_id, true)
 	worker.job = job
 	worker.task_label = job.kind
-	_walk(worker, _source_point(job), "walk_pickup")
 	if not ticket.is_empty(): worker.ticket = ticket
+	if shop.dispatch.action_version==1:
+		Actions.start(worker,HandoffContext.plan(job),HandoffContext.new(self))
+	else: _walk(worker, _source_point(job), "walk_pickup")
 	if movement_enabled(): CustomerMovement.sync(self)
 
 
@@ -1369,6 +1395,9 @@ func _action_duration(job: Dictionary, worker: Dictionary) -> float:
 
 
 func _update_worker(worker: Dictionary) -> void:
+	if shop.dispatch.action_version==1:
+		Actions.tick(worker,STEP,HandoffContext.new(self))
+		return
 	var job: Dictionary = worker.job
 	if worker.walking:
 		if not advance_move(worker,STEP): return
@@ -1898,6 +1927,16 @@ func _order_steps(c: Dictionary) -> Array:
 
 
 func _staff_tick(s: Dictionary) -> void:
+	if shop.dispatch.action_version==1:
+		if s.has("action"):
+			Actions.tick(s,STEP,SingleContext.new(self))
+			if s.get("action",{}).get("reason","")=="material unavailable":
+				var pending: Dictionary = s.action
+				s.erase("action")
+				WorkerState.wait_single(s,"等待原料")
+				if not _try_pot_chore(s,true): s.action = pending
+		if not s.has("action"): _decide_single(s)
+		return
 	if s.walking:
 		if s.target == shop.staff.home_anchor and s.order < 0 and s.chore.is_empty() and _find_job_single(s): return
 		_walk_single(s)
@@ -1920,6 +1959,9 @@ func _walk_single(s: Dictionary) -> void:
 func _go(s: Dictionary, point: String, label: String) -> void:
 	s.target = point
 	s.task_label = label
+	if shop.dispatch.action_version==1:
+		Actions.start(s,SingleContext.plan(s,shop),SingleContext.new(self))
+		return
 	var goal := nav.point(point)
 	if s.pos.distance_to(goal) < 1.0 and not movement_enabled():
 		WorkerState.arrive(s)
@@ -2033,6 +2075,12 @@ func _finish_work_single(s: Dictionary) -> void:
 			Completion.advance_single_step(s, {}, false)
 			if movement_enabled(): CustomerMovement.sync(self)
 		"hand":
+			if shop.dispatch.action_version==1:
+				var payload := _sales.complete_single(c,shop.fulfillment.addon_dish,shop.fulfillment.pay_at=="on_take")
+				WorkerState.finish_single_order(s)
+				CustomerMovement.single_sale(self,int(c.id),String(c.kind))
+				events.emit("sale",payload)
+				return
 			events.emit("sale", _sales.complete_single(c, shop.fulfillment.addon_dish, shop.fulfillment.pay_at == "on_take"))
 			WorkerState.finish_single_order(s)
 			return

@@ -864,6 +864,8 @@ func _update_customers_motion(frame: Dictionary) -> void:
 			var anchor_path := "Seats/"+seat_key
 			# Sitting is an authored display offset from the reached approach port.
 			pose.pos = anchors.point(anchor_path,point)
+			if _dining!=null:
+				pose.pos = _dining.seat_point(int(row.seat))-Vector2(0,14.0*_actor_unit_scale)
 			pose.facing = int(anchors.meta(anchor_path,"facing",2))
 		var bubble := String(row.dish)
 		if row.exiting or row.state in ["diner","eating"] or not row.carry_item.is_empty(): bubble = ""
@@ -874,6 +876,7 @@ func _update_customers_motion(frame: Dictionary) -> void:
 		actor.display(pose,frame.clock)
 		_customer_positions[key] = row.pos
 		if _z_by_y: actor.z_index = int(actor.position.y)
+		else: actor.z_index = 1 if row.seated else 0
 
 
 ## 订单明细店（serve，规格 §10）：后厨做好的、出餐口上的、桌上的实物都画出来。

@@ -123,6 +123,8 @@ func _assess_existing() -> Dictionary:
 	# 校验不过才当坏档留底、这家店从空店开始；不能因为更新卡在重试界面。
 	var error := _id_map_error(result.state) if result.refresh else ""
 	if error.is_empty(): error = candidate.load_dict(result.state, result.refresh)
+	if error.begins_with("movement adoption:"):
+		return {"error":"旧存档与当前空间不兼容，已停止写入以保留原文件："+error,"protected":true}
 	if not error.is_empty():
 		var reason := "店铺内容已更新，旧存档无法沿用" if result.refresh else "店铺存档状态无效"
 		return {"error": "%s（%s），原档已留底，这家店从空店开始" % [reason, error]}
@@ -228,6 +230,8 @@ func _read_existing() -> Dictionary:
 				if ((action_version is int or action_version is float) and action_version>1) or shop.dispatch.action_version!=1:
 					return {"error":"存档动作版本高于当前配置，已停止写入以保留原文件","protected":true}
 			elif shop.dispatch.action_version==1 and state.get("serve") is Dictionary and state.serve.get("jobs") is Dictionary and state.serve.jobs.has(str(row.get("id",-1))):
+				refresh = true
+			elif shop.dispatch.action_version==1 and (not row.get("job",{}).is_empty() or int(row.get("order",-1))>=0 or not String(row.get("chore","")).is_empty() or row.get("walking",false)):
 				refresh = true
 	var guides: Array = []
 	var raw_guides: Variant = wrapper.get("guides", [])

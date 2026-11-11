@@ -1,6 +1,7 @@
 extends "res://tests/test_case.gd"
+## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
-const SHOPS := [preload("res://content/shops/tea/shop.tres"), preload("res://content/shops/pancake/shop.tres"), preload("res://tests/fixtures/noodle/shop.tres")]
+const SHOPS := [preload("res://tests/fixtures/legacy_shops/tea.tres"), preload("res://tests/fixtures/legacy_shops/pancake.tres"), preload("res://tests/fixtures/noodle/shop.tres")]
 
 func _planner() -> Script:
 	var path := "res://game/rules/fulfillment_plan.gd"

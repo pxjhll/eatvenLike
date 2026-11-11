@@ -1,8 +1,9 @@
 extends "res://tests/test_case.gd"
+## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 ## 煎饼摊玩法跑在通用规则层上（旧 pancake_sim 的行为用例搬过来）：开局、一人跟单走完每台机器、鏊子一次一人、
 ## 面粉箱单独买、打糊加摊饼同一台、装袋选项、口味升级、解锁顺序、招人名额、传单冷却、升级上限、评分。整店节奏由 test_shop_rules 的整店回放对照基准。
 
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
 
 
 ## 只卖一道菜的煎饼摊（不顺带豆浆）

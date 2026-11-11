@@ -117,6 +117,17 @@ func test_complete_module_space_exports_distinct_ports_permissions_obstacles_and
 	check_eq(base.points,{},"original layout remains untouched")
 	check_eq(anchors.export_layout(base).layout.points.counter,Vector2(200,280),"caller cannot mutate scene export")
 
+func test_root_nav_exports_customer_seat_and_wait_approaches_without_reparenting_art() -> void:
+	var art := _art()
+	var nav := art.get_node("Anchors/Nav")
+	_node(nav,"Customers/Seats/lounge/0",Vector2(500,800))
+	_node(nav,"Customers/Waiting/cushion/0",Vector2(600,900))
+	var result: Dictionary = ShopAnchors.new(art.get_node("Anchors")).export_layout(SpecLayout.new())
+	check_eq(result.errors,[],"root seat approaches export with existing modules")
+	if result.layout==null: return
+	check_eq(result.layout.customer_points.get("seat:lounge/0"),Vector2(500,800),"dining approach")
+	check_eq(result.layout.customer_points.get("wait:cushion/0"),Vector2(600,900),"waiting approach")
+
 func test_module_errors_reject_ambiguous_bindings_transforms_and_unsupported_versions() -> void:
 	for defect in ["duplicate_id","duplicate_port","scale","rotation","version","missing_work","bad_binding"]:
 		var art := _art()
@@ -338,11 +349,21 @@ func test_empty_cli_target_is_rejected_instead_of_falling_back_to_production_cam
 		check_eq(OS.execute(OS.get_executable_path(),args,output,true),1,"empty explicit target cannot select production: "+option)
 
 func test_sync_does_not_silently_skip_invalid_scene_density_when_no_export_nav_exists() -> void:
-	var shop: SpecShop = preload("res://content/shops/stirfry/shop.tres").copy_for_editing()
+	# Independent of whichever production scene is next migrated to modules.
+	var art := Node2D.new()
+	owned.append(art)
+	_node(art,"Sortables")
+	_node(art,"Anchors").set_meta("world_size",Vector2(720,1200))
+	_node(art,"Anchors/Queue/0",Vector2(100,100))
+	var shop := SpecShop.new()
+	shop.layout = SpecLayout.new()
 	shop.layout.motion_version = 1
 	shop.layout.motion_units = 999.0
+	var saved: Dictionary = load(FIXTURE).persist(shop,art,"user://no-nav-density-%d-%d"%[OS.get_process_id(),Time.get_ticks_usec()])
+	shop.scene_path = saved.scene_path
 	var result: Dictionary = load("res://tools/sync_shop_layouts.gd").inspect(shop)
 	check(not result.errors.is_empty(),"a non-exportable scene cannot discard its density error")
+	for path in [saved.scene_path,saved.shop_path]: DirAccess.remove_absolute(path)
 
 func test_campaign_sync_validates_every_candidate_before_writing_any_shop() -> void:
 	var fixture: Script = load(FIXTURE)

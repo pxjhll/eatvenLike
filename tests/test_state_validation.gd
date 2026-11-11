@@ -1,7 +1,7 @@
 extends "res://tests/test_case.gd"
 
-const TEA = preload("res://content/shops/tea/shop.tres")
-const PANCAKE = preload("res://content/shops/pancake/shop.tres")
+const TEA = preload("res://tests/fixtures/legacy_shops/tea.tres")
+const PANCAKE = preload("res://tests/fixtures/legacy_shops/pancake.tres")
 const NOODLE = preload("res://tests/fixtures/noodle/shop.tres")
 var _paths: Array[String] = []
 

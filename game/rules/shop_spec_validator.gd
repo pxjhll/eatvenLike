@@ -39,7 +39,7 @@ static func capabilities(mode: String) -> Dictionary:
 		"customer_walk": _reserved(0.0),
 	}
 	var d := {
-		"action_version": _reserved(0),
+		"action_version": _supported([0,1]),
 		"base_scores": _reserved({}) if single else _supported(),
 		"merge": _fixed(["fixed" if single else "carry"]), "merge_cap": _fixed([1]),
 		"resume_from_stock": _reserved(true) if single else _supported(),
