@@ -1,0 +1,290 @@
+<title>eatvenLike 经济曲线调节器</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 布局：左侧旋钮台（像调音台推子），右侧三家店的结果卡 + 收入曲线 */
+:root {
+  --bg: #f6f7f8; --panel: #ffffff; --fg: #15181c; --fg2: #50565e; --muted: #868c94; --line: #dde1e5;
+  --accent: #2a78d6; --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --warn: #b25b00; --warn-bg: #fff3e0;
+  --f-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121417; --panel: #1b1e22; --fg: #eef0f2; --fg2: #b7bcc3; --muted: #858b93; --line: #2d3238;
+  --accent: #3987e5; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --warn: #f0a050; --warn-bg: #2e2416; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121417; --panel: #1b1e22; --fg: #eef0f2; --fg2: #b7bcc3; --muted: #858b93; --line: #2d3238;
+  --accent: #3987e5; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --warn: #f0a050; --warn-bg: #2e2416; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.55; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 24px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font-size: 22px; margin: 0; text-wrap: balance; font-weight: 700; }
+.lede { color: var(--fg2); margin: 6px 0 0; max-width: 68ch; }
+.grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; margin-top: 20px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.knobs { display: flex; flex-direction: column; gap: 18px; }
+.group h2 { font-size: 12px; letter-spacing: .06em; color: var(--muted); font-weight: 500; margin: 0 0 8px; }
+.group .hint { font-size: 12px; color: var(--muted); margin: -4px 0 8px; }
+.knob { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; margin-bottom: 10px; }
+.knob label { color: var(--fg); }
+.knob output { font-family: var(--f-num); font-variant-numeric: tabular-nums; color: var(--accent); }
+.knob input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+.knob input[type=range]:focus-visible, select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+select, .shops input { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+.shops { width: 100%; border-collapse: collapse; font-size: 13px; }
+.shops th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 2px 4px; }
+.shops td { padding: 3px 4px; }
+.shops input { width: 52px; font-family: var(--f-num); }
+button { font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+.results { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.summary { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; }
+.summary .big { font-family: var(--f-num); font-size: 28px; font-weight: 500; }
+.summary .lbl { color: var(--fg2); }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1080px) { .cards { grid-template-columns: minmax(0, 1fr); } }
+.card { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.card h3 { margin: 0; font-size: 16px; display: flex; gap: 8px; align-items: center; }
+.swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.chip { font-size: 12px; color: var(--fg2); border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; }
+.time { font-family: var(--f-num); font-size: 26px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.time small { font-size: 13px; color: var(--fg2); font-family: var(--f-body); margin-left: 4px; }
+.meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 13px; }
+.meta dt { color: var(--muted); } .meta dd { margin: 0; font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.bar { display: flex; height: 12px; gap: 2px; border-radius: 4px; overflow: hidden; }
+.bar span { display: block; min-width: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--fg2); }
+.legend i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 4px; }
+.flag { font-size: 12px; color: var(--warn); background: var(--warn-bg); border-radius: 6px; padding: 4px 8px; }
+.chart-wrap { overflow-x: auto; position: relative; }
+svg text { fill: var(--muted); font-family: var(--f-num); font-size: 11px; }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.12); white-space: nowrap; }
+.tip b { font-family: var(--f-num); font-weight: 500; }
+.notes { color: var(--fg2); font-size: 13px; }
+.notes p { margin: 0 0 6px; max-width: 75ch; }
+h2.sec { font-size: 15px; margin: 0 0 8px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<div class="wrap">
+  <h1>经济曲线调节器</h1>
+  <p class="lede">全局只调这几个旋钮，三家店的时长、钱的流向、多久能买下一样东西会同时变化。机器、员工、招揽的价格不单独写死，统一等于「比例 × 当时菜价升级费」。数字是结构模型的估算，用来比较方向，不是最终数值。</p>
+  <div class="grid">
+    <aside class="panel knobs" id="knobs" aria-label="全局旋钮"></aside>
+    <section class="results">
+      <div class="panel summary" id="summary"></div>
+      <div class="cards" id="cards"></div>
+      <div class="panel">
+        <h2 class="sec">收入曲线（每秒收入，对数刻度）</h2>
+        <div class="legend" id="chart-legend"></div>
+        <div class="chart-wrap" id="chart"></div>
+      </div>
+      <div class="panel notes">
+        <h2 class="sec">怎么读</h2>
+        <p><b>墙的陡度</b>：升级费每级涨得比售价快，越往后每一级越难买，形成满级长尾。</p>
+        <p><b>墙的高度</b>：每到星级里程碑售价翻倍，是店内的破墙工具。上方「每 10 级耗时」会随这两组旋钮实时变化。</p>
+        <p><b>跨店成长</b>：每完成一家店，全局收入乘一次，第 n 家店的收入倍率 = 这个值的 n−1 次方。</p>
+        <p><b>花钱比例</b>：机器、员工、招揽的价格 = 比例 × 当前菜价升级费的平均值 × (1 + 自身涨幅)^已买次数，所以永远和菜价升级抢同一笔钱。可买次数随店内进度逐步开放，上限见左下「产能档数」。</p>
+        <p><b>卡在哪</b>：模型按流量算，每秒卖出 = min(客流, 机器产能, 人手)。玩家每次买「每块钱带来收入最多」的那一项。</p>
+      </div>
+    </section>
+  </div>
+</div>
+<script>
+function simShop(shop, G, M, every) {
+  const d = [{ p: G.p0, L: 1, w: 1 }];
+  let hired = [], train = 1; let C = shop.c0, D = shop.d0, staff = shop.staff0, kM = 0, kL = 0, kS = 0;
+  let t = 0, gold = 60, buys = [], spend = { price: 0, machine: 0, staff: 0, lure: 0, unlock: 0 };
+  let bott = { machine: 0, labor: 0, demand: 0 }, unlocks = [], curve = [];
+  const price = x => x.p * Math.pow(G.pg, x.L - 1) * Math.pow(G.starMult, Math.floor(x.L / G.starEvery));
+  const stars = () => d.reduce((s, x) => s + Math.floor(x.L / G.starEvery), 0);
+  const demand = () => D * Math.pow(G.flowStep, d.length - 1) * (1 + G.starArr * stars() / d.length);
+  const labor = () => staff * G.perStaff * train;
+  const state = () => {
+    const dm = demand(), lb = labor(), x = Math.min(dm, C, lb);
+    const b = x === dm ? 'demand' : x === C ? 'machine' : 'labor';
+    return { inc: M * x * d.reduce((s, y) => s + y.w * price(y), 0), b };
+  };
+  // 同一把尺子：产能项价格 = 比例 × 当前各菜升级费的平均值（随店内进度一起涨）× 自身小梯子
+  const ruler = () => d.reduce((s, x) => s + 4 * x.p * Math.pow(G.cg, x.L - 1), 0) / d.length;
+  const ladder = (r, k) => r * ruler() * Math.pow(1 + G.volGrow, k);
+  // 产能项随店内进度逐步开放（像原作按站点等级开放），防止开局一口气买满
+  const volCap = () => Math.ceil(shop.volMax * Math.min(1, (d.length - 1 + d[d.length - 1].L / shop.cap) / shop.dishes + 0.1));
+  const opts = () => {
+    const o = [];
+    if (d.length < shop.dishes && d[d.length - 1].L >= G.unlockAt)
+      o.push({ k: 'unlock', c: 20 * price(d[d.length - 1]) });
+    d.forEach((x, i) => { if (x.L < shop.cap) o.push({ k: 'price', i, c: 4 * x.p * Math.pow(G.cg, x.L - 1) }); });
+    if (kM < volCap()) o.push({ k: 'machine', c: ladder(G.rM, kM) });
+    if (kS < volCap()) o.push({ k: 'staff', c: ladder(G.rS, kS) });
+    if (kL < volCap()) o.push({ k: 'lure', c: ladder(G.rL, kL) });
+    return o;
+  };
+  const apply = (o, s) => {
+    if (o.k === 'price') d[o.i].L += s;
+    else if (o.k === 'machine') { C *= s > 0 ? 1 + G.capStep : 1 / (1 + G.capStep); kM += s; }
+    else if (o.k === 'staff') { if (s > 0) { if (staff < shop.staffMax) { staff += 1; hired.push(1); } else { train *= 1 + G.capStep; hired.push(0); } } else { if (hired.pop()) staff -= 1; else train /= 1 + G.capStep; } kS += s; }
+    else if (o.k === 'lure') { D *= s > 0 ? 1 + G.capStep : 1 / (1 + G.capStep); kL += s; }
+  };
+  const pick = () => {
+    const o = opts(); const u = o.find(x => x.k === 'unlock'); if (u) return [u];
+    const base = state().inc; let best = null;
+    const cap = o.filter(x => x.k !== 'price');
+    const tryCombo = combo => {
+      combo.forEach(x => apply(x, 1)); const g = state().inc - base; combo.forEach(x => apply(x, -1));
+      const c = combo.reduce((s, x) => s + x.c, 0);
+      if (g > 1e-12 && (!best || c / g < best.r)) best = { r: c / g, combo };
+    };
+    o.forEach(x => tryCombo([x]));
+    for (let i = 0; i < cap.length; i++) for (let j = i + 1; j < cap.length; j++) {
+      tryCombo([cap[i], cap[j]]);
+      for (let k = j + 1; k < cap.length; k++) tryCombo([cap[i], cap[j], cap[k]]);
+    }
+    return best ? best.combo : null;
+  };
+  const done = () => d.length === shop.dishes && d.every(x => x.L >= shop.cap);
+  let guard = 0;
+  while (!done() && guard++ < 20000) {
+    const combo = pick(); if (!combo) break;
+    const cost = combo.reduce((s, x) => s + x.c, 0);
+    const st = state();
+    if (gold < cost) {
+      let wait = (cost - gold) / st.inc;
+      if (every) wait = Math.ceil((t + wait) / every - 1e-9) * every - t;
+      gold += wait * st.inc; bott[st.b] += wait; t += wait;
+      curve.push([t, st.inc]);
+      if (t > 3600 * 48) break;
+    }
+    gold -= cost; buys.push(t);
+    for (const x of combo) {
+      spend[x.k] += x.c;
+      if (x.k === 'unlock') { const p = price(d[d.length - 1]) * G.newDishFactor; d.forEach(y => y.w *= 1 - G.newShare); d.push({ p, L: 1, w: G.newShare }); unlocks.push(t); }
+      else apply(x, 1);
+    }
+  }
+  const gaps = buys.slice(1).map((b, i) => b - buys[i]);
+  const tot = Object.values(spend).reduce((a, b) => a + b, 0);
+  const bt = Object.values(bott).reduce((a, b) => a + b, 0) || 1;
+  return { t, done: done(), unlocks, buys: buys.length, gapMax: Math.max(0, ...gaps),
+    spend: Object.fromEntries(Object.entries(spend).map(([k, v]) => [k, v / tot])),
+    bott: Object.fromEntries(Object.entries(bott).map(([k, v]) => [k, v / bt])), curve, staff };
+}
+const G0 = { pg: 1.08, cg: 1.20, starEvery: 10, starMult: 2, starArr: 0.25, crossMult: 1.4, rM: 1.5, rS: 1.5, rL: 1.5,
+  newDishFactor: 1.0, newShare: 0.45, flowStep: 1.25, capStep: 0.2, perStaff: 0.2, p0: 10, unlockAt: 10, volGrow: 0.2 };
+const SHOPS0 = [
+  { name: '奶茶店', type: '小店', dishes: 2, cap: 20, staff0: 1, staffMax: 3, volMax: 8, c0: 0.25, d0: 0.2 },
+  { name: '煎饼果子店', type: '小店', dishes: 2, cap: 35, staff0: 2, staffMax: 5, volMax: 12, c0: 0.25, d0: 0.2 },
+  { name: '面包店', type: '中店', dishes: 6, cap: 70, staff0: 2, staffMax: 8, volMax: 14, c0: 0.25, d0: 0.2 },
+];
+const KNOBS = [
+  { g: '墙的陡度', items: [['pg', '售价每级 ×', 1.02, 1.15, 0.01], ['cg', '升级费每级 ×', 1.05, 1.40, 0.01]] },
+  { g: '墙的高度', items: [['starEvery', '每几级一颗星', 5, 25, 1], ['starMult', '每颗星售价 ×', 1.2, 3, 0.1]] },
+  { g: '跨店成长', items: [['crossMult', '每完成一家店收入 ×', 1, 2.5, 0.05]] },
+  { g: '花钱比例', hint: '价格 = 比例 × 当前菜价升级费', items: [['rM', '机器', 0.2, 5, 0.1], ['rS', '员工', 0.2, 5, 0.1], ['rL', '招揽客人', 0.2, 5, 0.1], ['volGrow', '每买一次再涨', 0, 0.5, 0.05]] },
+  { g: '新菜与客流', items: [['newDishFactor', '新菜底价 = 上一道菜售价 ×', 0.5, 2, 0.05], ['starArr', '每颗星客流 +', 0, 0.5, 0.05], ['flowStep', '每道新菜客流 ×', 1, 1.6, 0.05]] },
+];
+const SPEND = [['price', '菜价升级', '--s1'], ['machine', '机器', '--s2'], ['staff', '员工', '--s3'], ['lure', '招揽', '--s4']];
+const COLORS = ['--s1', '--s2', '--s3'];
+let G = { ...G0 }, SHOPS = SHOPS0.map(s => ({ ...s })), EVERY = 0;
+const $ = s => document.querySelector(s);
+const fmtMin = s => s >= 3600 ? (s / 3600).toFixed(1) + ' 小时' : (s / 60).toFixed(1) + ' 分钟';
+const fmtNum = x => x >= 1e9 ? (x / 1e9).toFixed(1) + 'B' : x >= 1e6 ? (x / 1e6).toFixed(1) + 'M' : x >= 1e3 ? (x / 1e3).toFixed(1) + 'K' : x.toFixed(x < 10 ? 1 : 0);
+function buildKnobs() {
+  const el = $('#knobs'); let h = '';
+  for (const grp of KNOBS) {
+    h += `<div class="group"><h2>${grp.g}</h2>${grp.hint ? `<p class="hint">${grp.hint}</p>` : ''}`;
+    for (const [k, label, min, max, step] of grp.items)
+      h += `<div class="knob"><label for="k-${k}">${label}</label><output id="o-${k}"></output><input type="range" id="k-${k}" data-k="${k}" min="${min}" max="${max}" step="${step}"></div>`;
+    h += '</div>';
+  }
+  h += `<div class="group"><h2>玩家习惯</h2><div class="knob"><label for="k-every">多久上线买一次</label><span></span>
+    <select id="k-every" style="grid-column:1/-1"><option value="0">一直在线</option><option value="60">每 1 分钟</option><option value="300">每 5 分钟</option><option value="900">每 15 分钟</option></select></div></div>`;
+  h += `<div class="group"><h2>店型（每家店只填这几个数）</h2><table class="shops"><thead><tr><th>店</th><th>菜数</th><th>等级上限</th><th>产能档数</th></tr></thead><tbody>`;
+  SHOPS.forEach((s, i) => h += `<tr><td>${s.name}<br><span class="chip">${s.type}</span></td>
+    <td><input type="number" id="s${i}-dishes" data-i="${i}" data-f="dishes" min="1" max="10" aria-label="${s.name}菜数"></td>
+    <td><input type="number" id="s${i}-cap" data-i="${i}" data-f="cap" min="5" max="200" step="5" aria-label="${s.name}等级上限"></td>
+    <td><input type="number" id="s${i}-volMax" data-i="${i}" data-f="volMax" min="0" max="60" aria-label="${s.name}产能档数"></td></tr>`);
+  h += `</tbody></table></div><button id="reset" type="button">恢复默认</button>`;
+  el.innerHTML = h;
+  el.addEventListener('input', e => {
+    const t = e.target;
+    if (t.dataset.k) G[t.dataset.k] = +t.value;
+    else if (t.dataset.f) { const v = +t.value; if (v > 0 || t.dataset.f === 'volMax') SHOPS[+t.dataset.i][t.dataset.f] = v; }
+    else if (t.id === 'k-every') EVERY = +t.value;
+    sync(); schedule();
+  });
+  $('#reset').addEventListener('click', () => { G = { ...G0 }; SHOPS = SHOPS0.map(s => ({ ...s })); EVERY = 0; fill(); sync(); run(); });
+}
+function fill() {
+  for (const grp of KNOBS) for (const [k] of grp.items) $('#k-' + k).value = G[k];
+  $('#k-every').value = EVERY;
+  SHOPS.forEach((s, i) => ['dishes', 'cap', 'volMax'].forEach(f => $(`#s${i}-${f}`).value = s[f]));
+}
+function sync() {
+  for (const grp of KNOBS) for (const [k, , , , step] of grp.items)
+    $('#o-' + k).textContent = step >= 1 ? G[k] : (k === 'starArr' || k === 'volGrow' ? Math.round(G[k] * 100) + '%' : G[k].toFixed(2));
+}
+let timer = null;
+function schedule() { clearTimeout(timer); timer = setTimeout(run, 60); }
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function run() {
+  const res = SHOPS.map((s, i) => simShop(s, G, Math.pow(G.crossMult, i), EVERY));
+  const wall = Math.pow(G.cg / G.pg, 10) / Math.pow(G.starMult, 10 / G.starEvery);
+  const total = res.reduce((a, r) => a + r.t, 0);
+  $('#summary').innerHTML = `<div><div class="big">${fmtMin(total)}</div><div class="lbl">三家店合计</div></div>
+    <div><div class="big">×${wall.toFixed(2)}</div><div class="lbl">每多 10 级，耗时约变成原来的倍数</div></div>
+    <div><div class="big">×${G.crossMult.toFixed(2)}</div><div class="lbl">每家店给的跨店收入倍率</div></div>`;
+  $('#cards').innerHTML = res.map((r, i) => {
+    const s = SHOPS[i], vol = 1 - r.spend.price - r.spend.unlock;
+    const flags = [];
+    if (!r.done) flags.push('48 小时内完不成，墙太高');
+    if (vol < 0.15) flags.push('机器/员工/招揽花费不到 15%，花钱没有取舍');
+    if (r.spend.price < 0.15) flags.push('几乎不升菜价，墙形同虚设');
+    if (r.gapMax > 600) flags.push('有超过 10 分钟买不起任何东西');
+    const b = r.bott;
+    return `<article class="panel card"><header><h3><span class="swatch" style="background:var(${COLORS[i]})"></span>${s.name}</h3><span class="chip">${s.type} · 收入×${Math.pow(G.crossMult, i).toFixed(2)}</span></header>
+      <div class="time">${r.done ? fmtMin(r.t) : '> 48 小时'}<small>完店</small></div>
+      <dl class="meta"><dt>购买次数</dt><dd>${r.buys}</dd><dt>最长等待</dt><dd>${fmtMin(r.gapMax)}</dd>
+      <dt>新菜解锁</dt><dd>${r.unlocks.length ? r.unlocks.map(u => (u / 60).toFixed(0)).join(' / ') + ' 分' : '—'}</dd>
+      <dt>卡在哪</dt><dd>机器 ${Math.round(b.machine * 100)}% · 人手 ${Math.round(b.labor * 100)}% · 客流 ${Math.round(b.demand * 100)}%</dd></dl>
+      <div><div class="bar" role="img" aria-label="钱花在哪：${SPEND.map(([k, n]) => n + Math.round(r.spend[k] * 100) + '%').join('，')}">
+        ${SPEND.map(([k, n, c]) => r.spend[k] > 0.001 ? `<span title="${n} ${Math.round(r.spend[k] * 100)}%" style="flex:${r.spend[k]};background:var(${c})"></span>` : '').join('')}</div>
+      <div class="legend" style="margin-top:6px">${SPEND.map(([k, n, c]) => `<span><i style="background:var(${c})"></i>${n} ${Math.round(r.spend[k] * 100)}%</span>`).join('')}</div></div>
+      ${flags.map(f => `<div class="flag">⚠ ${f}</div>`).join('')}</article>`;
+  }).join('');
+  drawChart(res);
+}
+function drawChart(res) {
+  const W = 760, H = 260, m = { l: 52, r: 16, t: 12, b: 30 };
+  const series = res.map(r => { const pts = [[0, r.curve.length ? r.curve[0][1] : 1]]; r.curve.forEach(p => pts.push([p[0] / 60, p[1]])); return pts; });
+  const tMax = Math.max(1, ...series.flat().map(p => p[0]));
+  const ys = series.flat().map(p => p[1]).filter(v => v > 0);
+  const lo = Math.floor(Math.log10(Math.min(...ys))), hi = Math.ceil(Math.log10(Math.max(...ys)));
+  const x = t => m.l + (t / tMax) * (W - m.l - m.r), y = v => m.t + (1 - (Math.log10(v) - lo) / Math.max(1, hi - lo)) * (H - m.t - m.b);
+  let g = '';
+  for (let e = lo; e <= hi; e++) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(10 ** e)}" y2="${y(10 ** e)}" stroke="var(--line)" stroke-width="1"/><text x="${m.l - 6}" y="${y(10 ** e) + 4}" text-anchor="end">${fmtNum(10 ** e)}</text>`;
+  const step = tMax > 120 ? 30 : tMax > 40 ? 10 : 5;
+  for (let t = 0; t <= tMax; t += step) g += `<text x="${x(t)}" y="${H - 8}" text-anchor="middle">${t}分</text>`;
+  const paths = series.map((pts, i) => `<path d="${pts.map((p, j) => (j ? 'L' : 'M') + x(p[0]).toFixed(1) + ',' + y(p[1]).toFixed(1)).join('')}" fill="none" stroke="var(${COLORS[i]})" stroke-width="2" stroke-linejoin="round"/>`).join('');
+  $('#chart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:520px" role="img" aria-label="三家店每秒收入随时间变化">${g}${paths}<line id="xh" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-dasharray="3 3" visibility="hidden"/><rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent" id="hit"/></svg><div class="tip" id="tip" hidden></div>`;
+  $('#chart-legend').innerHTML = SHOPS.map((s, i) => `<span><i style="background:var(${COLORS[i]})"></i>${s.name}</span>`).join('');
+  const svg = $('#chart svg'), tip = $('#tip'), xh = $('#xh');
+  const at = (pts, t) => { let v = null; for (const p of pts) { if (p[0] <= t) v = p[1]; else break; } return pts[pts.length - 1][0] < t ? null : v; };
+  $('#hit').addEventListener('pointermove', e => {
+    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * W;
+    const t = Math.max(0, (px - m.l) / (W - m.l - m.r) * tMax);
+    xh.setAttribute('x1', px); xh.setAttribute('x2', px); xh.setAttribute('visibility', 'visible');
+    tip.innerHTML = `<div>${t.toFixed(1)} 分钟</div>` + series.map((pts, i) => { const v = at(pts, t); return `<div><i class="swatch" style="background:var(${COLORS[i]})"></i> ${SHOPS[i].name} <b>${v == null ? '已完店' : fmtNum(v) + '/秒'}</b></div>`; }).join('');
+    tip.hidden = false;
+    const wrap = $('#chart').getBoundingClientRect();
+    tip.style.left = Math.min(e.clientX - wrap.left + 12, wrap.width - 160) + 'px'; tip.style.top = (e.clientY - wrap.top + 12) + 'px';
+  });
+  $('#hit').addEventListener('pointerleave', () => { tip.hidden = true; xh.setAttribute('visibility', 'hidden'); });
+}
+buildKnobs(); fill(); sync(); run();
+</script>
