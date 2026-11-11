@@ -68,6 +68,24 @@ func test_completion_gate_rejects_unfinished_or_out_of_range_shops() -> void:
 		check(not tool.target_errors({"stirfry":{"completed_at":seconds}}).is_empty(),"unfinished or slow third shop must fail acceptance")
 	check_eq(tool.target_errors({"stirfry":{"completed_at":2760.0}}),[],"46-minute target is accepted")
 
+func test_completion_gate_cannot_hide_a_slow_or_missing_secondary_seed() -> void:
+	var tool := _tool()
+	if tool==null: return
+	check(tool.has_method("completion_errors"),"completion gate validates default and secondary seed reports")
+	if not tool.has_method("completion_errors"): return
+	var report := {"shops":{"stirfry":{"completed_at":2760.0}},"audits":{"stirfry":{"42":{"seed":42,"completed_at":3691.9},"84":{"seed":84,"completed_at":2781.1}}}}
+	check(not tool.completion_errors(report).is_empty(),"a passing default cannot conceal the actual slow seed42 regression")
+	report.audits.stirfry["42"].completed_at = 2760.0
+	check_eq(tool.completion_errors(report),[],"all three seeds within target pass together")
+	report.audits.stirfry["42"].seed = 11
+	check(not tool.completion_errors(report).is_empty(),"default seed cannot masquerade as a secondary seed")
+	report.audits.stirfry["42"].seed = 42
+	report.audits.stirfry["84"].completed_at = 3691.9
+	check(not tool.completion_errors(report).is_empty(),"second audit is subject to the same completion target")
+	report.audits.stirfry["84"].completed_at = 2781.1
+	report.audits.stirfry.erase("42")
+	check(not tool.completion_errors(report).is_empty(),"omitting an inconvenient audit must fail")
+
 func test_numeric_calibration_preserves_inflight_business_and_original_file_bytes() -> void:
 	for id in ["tea","pancake","stirfry"]:
 		var current: SpecShop = load("res://content/shops/%s/shop.tres"%id)

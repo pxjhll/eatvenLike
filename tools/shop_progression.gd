@@ -5,6 +5,7 @@ const Replay := preload("res://tests/baselines/replay_rules.gd")
 const Content := preload("res://game/rules/shop_content_contract.gd")
 const SHOPS := ["tea","pancake","stirfry"]
 const TARGETS := {"tea":2133.1,"pancake":1365.1,"stirfry":2760.0}
+const AUDIT_SEEDS := {"stirfry":[42,84]}
 const TOLERANCE := 0.05
 const LIMIT := 5400.0
 
@@ -134,6 +135,22 @@ static func target_errors(shops: Dictionary) -> Array[String]:
 		if at<=0.0 or absf(at/TARGETS[id]-1.0)>TOLERANCE: errors.append("completion target failed: %s %.1fs vs %.1fs +/-5%%"%[id,at,TARGETS[id]])
 	return errors
 
+static func completion_errors(report: Dictionary) -> Array[String]:
+	if not report.get("shops") is Dictionary: return ["completion shop reports missing"]
+	var errors := target_errors(report.shops)
+	var audits: Variant = report.get("audits",{})
+	if not audits is Dictionary: return ["secondary seed reports missing"]
+	for id in report.shops:
+		for seed_ in AUDIT_SEEDS.get(id,[]):
+			var rows: Variant = audits.get(id,{})
+			var row: Variant = rows.get(str(seed_),{}) if rows is Dictionary else {}
+			if not row is Dictionary or row.get("seed")!=seed_:
+				errors.append("missing or mislabeled secondary seed: %s %d"%[id,seed_])
+				continue
+			for error in target_errors({id:row}): errors.append("seed %d: %s"%[seed_,error])
+			if not String(row.get("restore_error","")).is_empty(): errors.append("invalid secondary seed state: %s %d"%[id,seed_])
+	return errors
+
 func _initialize() -> void:
 	var output := ""
 	var baseline := ""
@@ -156,24 +173,30 @@ func _initialize() -> void:
 	var expected: Variant
 	if not baseline.is_empty():
 		expected = JSON.parse_string(FileAccess.get_file_as_string(baseline)) if FileAccess.file_exists(baseline) else null
-		if not expected is Dictionary or not expected.get("shops") is Dictionary or not expected.get("setup") is Dictionary: invalid = true
+		if not expected is Dictionary or not expected.get("shops") is Dictionary or not expected.get("setup") is Dictionary or not expected.get("audits") is Dictionary: invalid = true
 	if invalid:
 		print("FAIL progression arguments: --shop=tea|pancake|stirfry --output=res://_work/... --check=<report>")
 		quit(1)
 		return
-	var report := {"version":1,"setup":{"scenario":"empty_shop","bot":"minute_visit_role_load_v1","limit_seconds":LIMIT,"target_tolerance":TOLERANCE},"shops":{}}
+	var report := {"version":2,"setup":{"scenario":"empty_shop","bot":"minute_visit_role_load_v1","limit_seconds":LIMIT,"target_tolerance":TOLERANCE,"audit_seeds":AUDIT_SEEDS},"shops":{},"audits":{}}
 	var failures: Array[String] = []
 	for id in ids:
 		var row := sample(load("res://content/shops/%s/shop.tres"%id))
 		report.shops[id] = row
 		if not row.restore_error.is_empty(): failures.append("invalid final state: "+id)
 		print("PROGRESSION %s completed=%.1fs first_sale=%.1fs sold=%d revenue=%d staff=%d"%[id,row.completed_at,row.first_sale_tick/10.0,row.sold,int(row.revenue),row.staff])
-	failures.append_array(target_errors(report.shops))
+		if AUDIT_SEEDS.has(id): report.audits[id] = {}
+		for seed_ in AUDIT_SEEDS.get(id,[]):
+			var audit := sample(load("res://content/shops/%s/shop.tres"%id),LIMIT,seed_)
+			report.audits[id][str(seed_)] = audit
+			print("PROGRESSION AUDIT %s seed=%d completed=%.1fs first_sale=%.1fs sold=%d"%[id,seed_,audit.completed_at,audit.first_sale_tick/10.0,audit.sold])
+	failures.append_array(completion_errors(report))
 	if expected is Dictionary:
 		if expected.get("version")!=report.version or expected.get("setup")!=JSON.parse_string(JSON.stringify(report.setup)): failures.append("progression setup differs")
 		if ids.size()==SHOPS.size() and expected.get("shops",{}).size()!=SHOPS.size(): failures.append("progression shop set differs")
 		for id in ids:
 			if expected.get("shops",{}).get(id)!=JSON.parse_string(JSON.stringify(report.shops[id])): failures.append("progression metrics or content differ: "+id)
+			if expected.audits.get(id)!=JSON.parse_string(JSON.stringify(report.audits.get(id))): failures.append("secondary seed metrics or content differ: "+id)
 	if not output.is_empty():
 		DirAccess.make_dir_recursive_absolute(output.get_base_dir())
 		var file := FileAccess.open(output,FileAccess.WRITE)

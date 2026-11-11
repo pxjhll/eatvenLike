@@ -692,10 +692,10 @@ dish = "kungpao_rice"
 unlock_note = "炒锅A学会宫保鸡丁，客人一下多起来"
 customer_interval = 6.67
 order_weights = Dictionary[String, float]({
-"egg_fried_rice": 0.25,
-"kungpao_rice": 0.3,
-"pepper_rice": 0.25,
-"tomato_rice": 0.2
+"egg_fried_rice": 0.2,
+"kungpao_rice": 0.6,
+"pepper_rice": 0.1,
+"tomato_rice": 0.1
 })
 staff_slots = Dictionary[String, int]({
 "kitchen": 5

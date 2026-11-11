@@ -1,5 +1,601 @@
 {
+  "audits": {
+    "stirfry": {
+      "42": {
+        "actions": [
+          [
+            1.0,
+            "unlock wok_a"
+          ],
+          [
+            61.0,
+            "flyer"
+          ],
+          [
+            121.0,
+            "upgrade plating"
+          ],
+          [
+            181.0,
+            "hire"
+          ],
+          [
+            181.0,
+            "deploy 4"
+          ],
+          [
+            241.0,
+            "flyer"
+          ],
+          [
+            241.0,
+            "upgrade plating"
+          ],
+          [
+            301.0,
+            "upgrade wok_a"
+          ],
+          [
+            361.0,
+            "unlock wok_a"
+          ],
+          [
+            421.0,
+            "flyer"
+          ],
+          [
+            421.0,
+            "upgrade wok_a"
+          ],
+          [
+            421.0,
+            "upgrade plating"
+          ],
+          [
+            481.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            541.0,
+            "hire"
+          ],
+          [
+            541.0,
+            "deploy 5"
+          ],
+          [
+            601.0,
+            "upgrade wok_a"
+          ],
+          [
+            601.0,
+            "upgrade plating"
+          ],
+          [
+            661.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            661.0,
+            "upgrade wok_a"
+          ],
+          [
+            841.0,
+            "flyer"
+          ],
+          [
+            841.0,
+            "unlock wok_b"
+          ],
+          [
+            841.0,
+            "upgrade wok_b"
+          ],
+          [
+            841.0,
+            "upgrade wok_b"
+          ],
+          [
+            841.0,
+            "upgrade wok_b"
+          ],
+          [
+            901.0,
+            "upgrade wok_b"
+          ],
+          [
+            961.0,
+            "upgrade plating"
+          ],
+          [
+            1021.0,
+            "upgrade wok_b"
+          ],
+          [
+            1021.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            1081.0,
+            "upgrade wok_a"
+          ],
+          [
+            1141.0,
+            "flyer"
+          ],
+          [
+            1141.0,
+            "upgrade plating"
+          ],
+          [
+            1201.0,
+            "upgrade wok_b"
+          ],
+          [
+            1321.0,
+            "hire"
+          ],
+          [
+            1321.0,
+            "deploy 3"
+          ],
+          [
+            1501.0,
+            "unlock soup_pot"
+          ],
+          [
+            1501.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1501.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1501.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1561.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1561.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1621.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            1681.0,
+            "upgrade wok_a"
+          ],
+          [
+            1921.0,
+            "unlock wok_a"
+          ],
+          [
+            1921.0,
+            "upgrade wok_b"
+          ],
+          [
+            2041.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            2041.0,
+            "seat"
+          ],
+          [
+            2101.0,
+            "hire"
+          ],
+          [
+            2101.0,
+            "deploy 6"
+          ],
+          [
+            2161.0,
+            "upgrade wok_a"
+          ],
+          [
+            2221.0,
+            "upgrade wok_b"
+          ],
+          [
+            2401.0,
+            "unlock wok_b"
+          ],
+          [
+            2401.0,
+            "seat"
+          ],
+          [
+            2461.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            2521.0,
+            "upgrade wok_a"
+          ],
+          [
+            2581.0,
+            "upgrade wok_b"
+          ],
+          [
+            2581.0,
+            "seat"
+          ],
+          [
+            2641.0,
+            "upgrade rice_cooker"
+          ]
+        ],
+        "clock": 2729.9,
+        "completed_at": 2729.9,
+        "content": {
+          "gameplay": "f469f85aa1fbc5dc07a2b045f2e432f373118c2e22ba6ad9658b1fe56a00ab30",
+          "structure": "c72652c75515f3c9feff3e48b6b50b37e95f548b7f89b949952af5c302caf415",
+          "version": 1
+        },
+        "first_sale_tick": 497,
+        "lost": 114,
+        "maximum_sale_gap_ticks": 684,
+        "restore_error": "",
+        "revenue": 3522.0,
+        "role_ticks": {
+          "front": {
+            "busy": 8736,
+            "idle": 18563
+          },
+          "kitchen": {
+            "busy": 65325,
+            "idle": 29730
+          }
+        },
+        "seed": 42,
+        "sold": 198,
+        "staff": 6,
+        "stages": [
+          {
+            "at": 0.1,
+            "gold": 0.0,
+            "sold": 0,
+            "stage": 0
+          },
+          {
+            "at": 361.1,
+            "gold": 9.0,
+            "sold": 13,
+            "stage": 1
+          },
+          {
+            "at": 841.1,
+            "gold": 3.0,
+            "sold": 40,
+            "stage": 2
+          },
+          {
+            "at": 1501.1,
+            "gold": 19.0,
+            "sold": 76,
+            "stage": 3
+          },
+          {
+            "at": 1921.1,
+            "gold": 51.0,
+            "sold": 109,
+            "stage": 4
+          },
+          {
+            "at": 2401.1,
+            "gold": 59.0,
+            "sold": 153,
+            "stage": 5
+          }
+        ]
+      },
+      "84": {
+        "actions": [
+          [
+            1.0,
+            "unlock wok_a"
+          ],
+          [
+            121.0,
+            "flyer"
+          ],
+          [
+            121.0,
+            "upgrade plating"
+          ],
+          [
+            181.0,
+            "hire"
+          ],
+          [
+            181.0,
+            "deploy 4"
+          ],
+          [
+            241.0,
+            "upgrade plating"
+          ],
+          [
+            301.0,
+            "upgrade wok_a"
+          ],
+          [
+            361.0,
+            "flyer"
+          ],
+          [
+            361.0,
+            "unlock wok_a"
+          ],
+          [
+            421.0,
+            "upgrade wok_a"
+          ],
+          [
+            421.0,
+            "upgrade plating"
+          ],
+          [
+            481.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            541.0,
+            "hire"
+          ],
+          [
+            541.0,
+            "deploy 5"
+          ],
+          [
+            601.0,
+            "upgrade wok_a"
+          ],
+          [
+            601.0,
+            "upgrade plating"
+          ],
+          [
+            661.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            661.0,
+            "upgrade wok_a"
+          ],
+          [
+            781.0,
+            "unlock wok_b"
+          ],
+          [
+            841.0,
+            "upgrade wok_b"
+          ],
+          [
+            841.0,
+            "upgrade wok_b"
+          ],
+          [
+            841.0,
+            "upgrade wok_b"
+          ],
+          [
+            901.0,
+            "upgrade wok_b"
+          ],
+          [
+            961.0,
+            "hire"
+          ],
+          [
+            961.0,
+            "deploy 3"
+          ],
+          [
+            1021.0,
+            "upgrade plating"
+          ],
+          [
+            1081.0,
+            "upgrade wok_b"
+          ],
+          [
+            1081.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            1141.0,
+            "upgrade wok_a"
+          ],
+          [
+            1201.0,
+            "upgrade plating"
+          ],
+          [
+            1261.0,
+            "upgrade wok_b"
+          ],
+          [
+            1321.0,
+            "flyer"
+          ],
+          [
+            1441.0,
+            "unlock soup_pot"
+          ],
+          [
+            1441.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1501.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1561.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1561.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1561.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1621.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            1741.0,
+            "upgrade wok_a"
+          ],
+          [
+            1861.0,
+            "unlock wok_a"
+          ],
+          [
+            1981.0,
+            "upgrade wok_b"
+          ],
+          [
+            1981.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            2041.0,
+            "seat"
+          ],
+          [
+            2101.0,
+            "hire"
+          ],
+          [
+            2101.0,
+            "deploy 6"
+          ],
+          [
+            2161.0,
+            "upgrade wok_a"
+          ],
+          [
+            2161.0,
+            "upgrade wok_b"
+          ],
+          [
+            2341.0,
+            "unlock wok_b"
+          ],
+          [
+            2401.0,
+            "seat"
+          ],
+          [
+            2461.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            2461.0,
+            "upgrade wok_a"
+          ],
+          [
+            2521.0,
+            "upgrade wok_b"
+          ],
+          [
+            2581.0,
+            "seat"
+          ],
+          [
+            2641.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            2641.0,
+            "upgrade wok_a"
+          ]
+        ],
+        "clock": 2727.2,
+        "completed_at": 2727.2,
+        "content": {
+          "gameplay": "f469f85aa1fbc5dc07a2b045f2e432f373118c2e22ba6ad9658b1fe56a00ab30",
+          "structure": "c72652c75515f3c9feff3e48b6b50b37e95f548b7f89b949952af5c302caf415",
+          "version": 1
+        },
+        "first_sale_tick": 497,
+        "lost": 125,
+        "maximum_sale_gap_ticks": 649,
+        "restore_error": "",
+        "revenue": 3519.0,
+        "role_ticks": {
+          "front": {
+            "busy": 9256,
+            "idle": 18016
+          },
+          "kitchen": {
+            "busy": 66760,
+            "idle": 31760
+          }
+        },
+        "seed": 84,
+        "sold": 202,
+        "staff": 6,
+        "stages": [
+          {
+            "at": 0.1,
+            "gold": 0.0,
+            "sold": 0,
+            "stage": 0
+          },
+          {
+            "at": 361.1,
+            "gold": 9.0,
+            "sold": 13,
+            "stage": 1
+          },
+          {
+            "at": 781.1,
+            "gold": 12.0,
+            "sold": 37,
+            "stage": 2
+          },
+          {
+            "at": 1441.1,
+            "gold": 7.0,
+            "sold": 77,
+            "stage": 3
+          },
+          {
+            "at": 1861.1,
+            "gold": 1.0,
+            "sold": 110,
+            "stage": 4
+          },
+          {
+            "at": 2341.1,
+            "gold": 74.0,
+            "sold": 155,
+            "stage": 5
+          }
+        ]
+      }
+    }
+  },
   "setup": {
+    "audit_seeds": {
+      "stirfry": [
+        42,
+        84
+      ]
+    },
     "bot": "minute_visit_role_load_v1",
     "limit_seconds": 5400.0,
     "scenario": "empty_shop",
@@ -454,70 +1050,58 @@
           "upgrade wok_a"
         ],
         [
-          2221.0,
+          2161.0,
           "upgrade wok_b"
         ],
         [
-          2401.0,
+          2341.0,
           "unlock wok_b"
         ],
         [
-          2521.0,
+          2401.0,
           "seat"
         ],
         [
-          2521.0,
+          2401.0,
           "upgrade rice_cooker"
         ],
         [
-          2581.0,
+          2461.0,
           "upgrade wok_a"
         ],
         [
-          2641.0,
+          2521.0,
           "upgrade wok_b"
         ],
         [
-          2641.0,
-          "seat"
-        ],
-        [
-          2701.0,
-          "upgrade rice_cooker"
-        ],
-        [
-          2761.0,
-          "upgrade wok_a"
-        ],
-        [
-          2821.0,
+          2581.0,
           "seat"
         ]
       ],
-      "clock": 2857.6,
-      "completed_at": 2857.6,
+      "clock": 2640.9,
+      "completed_at": 2640.9,
       "content": {
-        "gameplay": "d65edf7bd22eaad342c620ff659998f87421d6ff0f7da8877cf9b67b3a78d700",
+        "gameplay": "f469f85aa1fbc5dc07a2b045f2e432f373118c2e22ba6ad9658b1fe56a00ab30",
         "structure": "c72652c75515f3c9feff3e48b6b50b37e95f548b7f89b949952af5c302caf415",
         "version": 1
       },
       "first_sale_tick": 497,
-      "lost": 133,
-      "maximum_sale_gap_ticks": 649,
+      "lost": 126,
+      "maximum_sale_gap_ticks": 662,
       "restore_error": "",
-      "revenue": 3804.0,
+      "revenue": 3390.0,
       "role_ticks": {
         "front": {
-          "busy": 9708,
-          "idle": 18868
+          "busy": 8528,
+          "idle": 17881
         },
         "kitchen": {
-          "busy": 70426,
-          "idle": 35214
+          "busy": 63757,
+          "idle": 31048
         }
       },
       "seed": 11,
-      "sold": 222,
+      "sold": 197,
       "staff": 6,
       "stages": [
         {
@@ -551,9 +1135,9 @@
           "stage": 4
         },
         {
-          "at": 2401.1,
-          "gold": 12.0,
-          "sold": 162,
+          "at": 2341.1,
+          "gold": 62.0,
+          "sold": 157,
           "stage": 5
         }
       ]
@@ -934,5 +1518,5 @@
       ]
     }
   },
-  "version": 1
+  "version": 2
 }
