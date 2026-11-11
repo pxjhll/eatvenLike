@@ -1,0 +1,555 @@
+[gd_scene format=3 uid="uid://dhe7r2x78eyek"]
+
+[ext_resource type="Texture2D" uid="uid://b2tvut3wp1wel" path="res://art/stirfry/scene/back_wall_r00_c00.png" id="back_wall_r00_c00"]
+[ext_resource type="Texture2D" uid="uid://chagix6xu6nr1" path="res://art/stirfry/scene/chopped_scallion_bowl.png" id="chopped_scallion_bowl"]
+[ext_resource type="Texture2D" uid="uid://1qbo20s8cb1e" path="res://art/stirfry/scene/complete_chopping_board.png" id="complete_chopping_board"]
+[ext_resource type="Texture2D" uid="uid://drmderoglof7d" path="res://art/stirfry/scene/complete_double_stove.png" id="complete_double_stove"]
+[ext_resource type="Texture2D" uid="uid://dknjukiep3iup" path="res://art/stirfry/scene/complete_produce_group.png" id="complete_produce_group"]
+[ext_resource type="Texture2D" uid="uid://nltjoq7bx83b" path="res://art/stirfry/scene/complete_soup_station.png" id="complete_soup_station"]
+[ext_resource type="Texture2D" uid="uid://dfut67ompigul" path="res://art/stirfry/scene/complete_steamer_station.png" id="complete_steamer_station"]
+[ext_resource type="Texture2D" uid="uid://oew0h2tu2gbb" path="res://art/stirfry/scene/dining_chair.png" id="dining_chair"]
+[ext_resource type="Texture2D" uid="uid://bolbsnbo7gxi1" path="res://art/stirfry/scene/dining_table.png" id="dining_table"]
+[ext_resource type="Texture2D" uid="uid://beqbaniw58var" path="res://art/stirfry/scene/entrance_bench.png" id="entrance_bench"]
+[ext_resource type="Texture2D" uid="uid://pmncavsw4f3t" path="res://art/stirfry/scene/entrance_mat.png" id="entrance_mat"]
+[ext_resource type="Texture2D" uid="uid://chiojrmxsqi82" path="res://art/stirfry/scene/entrance_plant.png" id="entrance_plant"]
+[ext_resource type="Texture2D" uid="uid://bou6ag0cn6xvu" path="res://art/stirfry/scene/entrance_post.png" id="entrance_post"]
+[ext_resource type="Texture2D" uid="uid://c27ejtjj2f3w1" path="res://art/stirfry/scene/front_wall_r00_c00.png" id="front_wall_r00_c00"]
+[ext_resource type="Texture2D" uid="uid://dw5vad6mjm7i3" path="res://art/stirfry/scene/hood.png" id="hood"]
+[ext_resource type="Texture2D" uid="uid://cp672fu4xevki" path="res://art/stirfry/scene/kitchen_floor_r00_c00.png" id="kitchen_floor_r00_c00"]
+[ext_resource type="Texture2D" uid="uid://bk0wl7s1fnhcx" path="res://art/stirfry/scene/loaded_ingredient_rack.png" id="loaded_ingredient_rack"]
+[ext_resource type="Texture2D" uid="uid://cg67svbuxth5x" path="res://art/stirfry/scene/outer_left_r00_c00.png" id="outer_left_r00_c00"]
+[ext_resource type="Texture2D" uid="uid://bwmwvnw6utekp" path="res://art/stirfry/scene/outer_left_r01_c00.png" id="outer_left_r01_c00"]
+[ext_resource type="Texture2D" uid="uid://djxqdblb3xtsk" path="res://art/stirfry/scene/outer_right_r00_c00.png" id="outer_right_r00_c00"]
+[ext_resource type="Texture2D" uid="uid://dys2amnqivsff" path="res://art/stirfry/scene/outer_right_r01_c00.png" id="outer_right_r01_c00"]
+[ext_resource type="Texture2D" uid="uid://bc6s3bec74akv" path="res://art/stirfry/scene/plating_supply_group.png" id="plating_supply_group"]
+[ext_resource type="Texture2D" uid="uid://sqsnvfopbcc" path="res://art/stirfry/scene/prep_table.png" id="prep_table"]
+[ext_resource type="Texture2D" uid="uid://bx8awufpkoecw" path="res://art/stirfry/scene/red_flower_pot.png" id="red_flower_pot"]
+[ext_resource type="Texture2D" uid="uid://bkshqvgkyiiqo" path="res://art/stirfry/scene/register.png" id="register"]
+[ext_resource type="Texture2D" uid="uid://bove13lana4jo" path="res://art/stirfry/scene/rice_cooker.png" id="rice_cooker"]
+[ext_resource type="Texture2D" uid="uid://d18cgs410vw2j" path="res://art/stirfry/scene/rice_sack.png" id="rice_sack"]
+[ext_resource type="Texture2D" uid="uid://rydd1ogf8ywy" path="res://art/stirfry/scene/service_counter.png" id="service_counter"]
+[ext_resource type="Texture2D" uid="uid://d0f1omuwc57nw" path="res://art/stirfry/scene/staff_gate.png" id="staff_gate"]
+[ext_resource type="Texture2D" uid="uid://dax56jiovmw4l" path="res://art/stirfry/scene/stocked_wall_shelf.png" id="stocked_wall_shelf"]
+[ext_resource type="Texture2D" uid="uid://mvf4tcebmyns" path="res://art/stirfry/scene/support_stand.png" id="support_stand"]
+[ext_resource type="Texture2D" uid="uid://q1u5dnxfnya0" path="res://art/stirfry/scene/wood_floor_r00_c00.png" id="wood_floor_r00_c00"]
+[ext_resource type="Texture2D" uid="uid://cllyhtcawxgxv" path="res://art/stirfry/scene/wood_tray.png" id="wood_tray"]
+
+[node name="StirfryArt" type="Node2D" unique_id=41972885]
+
+[node name="Environment" type="Node2D" parent="." unique_id=1078904973]
+
+[node name="CanvasBase" type="Polygon2D" parent="Environment" unique_id=849617716]
+z_index = -30
+color = Color(0.97, 0.94, 0.89, 1)
+polygon = PackedVector2Array(0, 0, 887, 0, 887, 1774, 0, 1774)
+
+[node name="Floor" type="Node2D" parent="Environment" unique_id=1277280256]
+z_index = -20
+
+[node name="KitchenTile" type="Sprite2D" parent="Environment/Floor" unique_id=584822327]
+position = Vector2(36, 230)
+texture = ExtResource("kitchen_floor_r00_c00")
+centered = false
+region_enabled = true
+region_rect = Rect2(2, 2, 815, 636)
+region_filter_clip_enabled = true
+metadata/asset_id = "kitchen_floor_r00_c00"
+
+[node name="DiningWood" type="Sprite2D" parent="Environment/Floor" unique_id=1954869824]
+position = Vector2(36, 866)
+texture = ExtResource("wood_floor_r00_c00")
+centered = false
+region_enabled = true
+region_rect = Rect2(2, 2, 815, 908)
+region_filter_clip_enabled = true
+metadata/asset_id = "wood_floor_r00_c00"
+
+[node name="EntranceMat" type="Sprite2D" parent="Environment/Floor" unique_id=1504911007]
+position = Vector2(363, 1713)
+texture = ExtResource("entrance_mat")
+centered = false
+metadata/asset_id = "entrance_mat"
+
+[node name="BackWall" type="Node2D" parent="Environment" unique_id=746277106]
+z_index = -10
+
+[node name="WallAndEave" type="Sprite2D" parent="Environment/BackWall" unique_id=1791677123]
+texture = ExtResource("back_wall_r00_c00")
+centered = false
+region_enabled = true
+region_rect = Rect2(2, 2, 887, 230)
+region_filter_clip_enabled = true
+metadata/asset_id = "back_wall_r00_c00"
+
+[node name="WallShelf" type="Sprite2D" parent="Environment/BackWall" unique_id=1156601894]
+position = Vector2(40, 104)
+scale = Vector2(0.3275862, 0.3275862)
+texture = ExtResource("stocked_wall_shelf")
+centered = false
+metadata/asset_id = "stocked_wall_shelf"
+
+[node name="ExtractorHood" type="Sprite2D" parent="Environment/BackWall" unique_id=308027628]
+position = Vector2(306.61777, 15.947778)
+scale = Vector2(0.59555554, 0.59555554)
+texture = ExtResource("hood")
+centered = false
+metadata/asset_id = "hood"
+
+[node name="Foreground" type="Node2D" parent="Environment" unique_id=1564582887]
+z_index = 10
+
+[node name="EntranceLowWall" type="Sprite2D" parent="Environment/Foreground" unique_id=754573003]
+position = Vector2(36, 1718)
+texture = ExtResource("front_wall_r00_c00")
+centered = false
+region_enabled = true
+region_rect = Rect2(2, 2, 815, 44)
+region_filter_clip_enabled = true
+metadata/asset_id = "front_wall_r00_c00"
+
+[node name="LeftOuterWall" type="Node2D" parent="Environment/Foreground" unique_id=25619981]
+
+[node name="Segment1" type="Sprite2D" parent="Environment/Foreground/LeftOuterWall" unique_id=1999160817]
+position = Vector2(0, 230)
+texture = ExtResource("outer_left_r00_c00")
+centered = false
+region_enabled = true
+region_rect = Rect2(2, 2, 36, 1020)
+region_filter_clip_enabled = true
+metadata/asset_id = "outer_left_r00_c00"
+
+[node name="Segment2" type="Sprite2D" parent="Environment/Foreground/LeftOuterWall" unique_id=21614400]
+position = Vector2(0, 1250)
+texture = ExtResource("outer_left_r01_c00")
+centered = false
+region_enabled = true
+region_rect = Rect2(2, 2, 36, 524)
+region_filter_clip_enabled = true
+metadata/asset_id = "outer_left_r01_c00"
+
+[node name="RightOuterWall" type="Node2D" parent="Environment/Foreground" unique_id=976712771]
+
+[node name="Segment1" type="Sprite2D" parent="Environment/Foreground/RightOuterWall" unique_id=1525693577]
+position = Vector2(851, 230)
+texture = ExtResource("outer_right_r00_c00")
+centered = false
+region_enabled = true
+region_rect = Rect2(2, 2, 36, 1020)
+region_filter_clip_enabled = true
+metadata/asset_id = "outer_right_r00_c00"
+
+[node name="Segment2" type="Sprite2D" parent="Environment/Foreground/RightOuterWall" unique_id=1388972141]
+position = Vector2(851, 1250)
+texture = ExtResource("outer_right_r01_c00")
+centered = false
+region_enabled = true
+region_rect = Rect2(2, 2, 36, 524)
+region_filter_clip_enabled = true
+metadata/asset_id = "outer_right_r01_c00"
+
+[node name="EntranceDetails" type="Node2D" parent="Environment/Foreground" unique_id=270309725]
+
+[node name="PostLeft" type="Sprite2D" parent="Environment/Foreground/EntranceDetails" unique_id=1975479223]
+position = Vector2(300, 1679)
+texture = ExtResource("entrance_post")
+centered = false
+metadata/asset_id = "entrance_post"
+
+[node name="PostRight" type="Sprite2D" parent="Environment/Foreground/EntranceDetails" unique_id=770814376]
+position = Vector2(528, 1679)
+texture = ExtResource("entrance_post")
+centered = false
+metadata/asset_id = "entrance_post"
+
+[node name="PottedPlant" type="Sprite2D" parent="Environment/Foreground/EntranceDetails" unique_id=1484077373]
+position = Vector2(61, 1648)
+texture = ExtResource("entrance_plant")
+centered = false
+metadata/asset_id = "entrance_plant"
+
+[node name="Sortables" type="Node2D" parent="." unique_id=1145820304]
+y_sort_enabled = true
+
+[node name="RiceCookerStand" type="Node2D" parent="Sortables" unique_id=746769214]
+position = Vector2(792, 404)
+
+[node name="Stand" type="Sprite2D" parent="Sortables/RiceCookerStand" unique_id=2063473672]
+position = Vector2(-43.000015, -25.182796)
+scale = Vector2(0.32492107, 0.38461548)
+texture = ExtResource("support_stand")
+centered = false
+metadata/asset_id = "support_stand"
+
+[node name="RiceCooker" type="Sprite2D" parent="Sortables/RiceCookerStand" unique_id=1615407739]
+position = Vector2(-38.000122, -81.1828)
+scale = Vector2(0.33325896, 0.3219572)
+texture = ExtResource("rice_cooker")
+centered = false
+metadata/asset_id = "rice_cooker"
+metadata/layout_group = "station:rice_cooker"
+metadata/unlock_rule = "rice_cooker"
+
+[node name="Wok" type="Node2D" parent="Sortables" unique_id=631265431]
+position = Vector2(453, 318.59933)
+metadata/layout_group = "station:wok_a"
+metadata/unlock_rule = "wok_a"
+
+[node name="Art" type="Sprite2D" parent="Sortables/Wok" unique_id=616267130]
+position = Vector2(-123.99999, -189.59933)
+scale = Vector2(0.44695258, 0.44695258)
+texture = ExtResource("complete_double_stove")
+centered = false
+metadata/asset_id = "complete_double_stove"
+
+[node name="Steamer" type="Node2D" parent="Sortables" unique_id=1007222597]
+position = Vector2(671, 281.2027)
+
+[node name="Art" type="Sprite2D" parent="Sortables/Steamer" unique_id=1016507706]
+position = Vector2(-60.000023, -174.2027)
+scale = Vector2(0.43243244, 0.43243244)
+texture = ExtResource("complete_steamer_station")
+centered = false
+metadata/asset_id = "complete_steamer_station"
+
+[node name="SoupStation" type="Node2D" parent="Sortables" unique_id=2035293273]
+position = Vector2(800.5, 319.69034)
+
+[node name="Art" type="Sprite2D" parent="Sortables/SoupStation" unique_id=1403724583]
+position = Vector2(-75.50003, -188.69034)
+scale = Vector2(0.38977006, 0.38977006)
+texture = ExtResource("complete_soup_station")
+centered = false
+metadata/asset_id = "complete_soup_station"
+
+[node name="PantryRack" type="Node2D" parent="Sortables" unique_id=1207514557]
+position = Vector2(105.5, 451.79126)
+metadata/layout_group = "station:pantry"
+metadata/unlock_rule = "pantry"
+
+[node name="Art" type="Sprite2D" parent="Sortables/PantryRack" unique_id=1368917104]
+position = Vector2(-64.49999, -243.79123)
+scale = Vector2(0.4563107, 0.4563107)
+texture = ExtResource("loaded_ingredient_rack")
+centered = false
+metadata/asset_id = "loaded_ingredient_rack"
+
+[node name="StaffGate" type="Node2D" parent="Sortables" unique_id=588607108]
+position = Vector2(782, 852.0062)
+
+[node name="Art" type="Sprite2D" parent="Sortables/StaffGate" unique_id=427388242]
+position = Vector2(-69, -149.01247)
+scale = Vector2(0.34413967, 0.34413967)
+texture = ExtResource("staff_gate")
+centered = false
+metadata/asset_id = "staff_gate"
+
+[node name="EntranceBench" type="Node2D" parent="Sortables" unique_id=178401253]
+position = Vector2(213, 1759)
+
+[node name="Art" type="Sprite2D" parent="Sortables/EntranceBench" unique_id=465964367]
+position = Vector2(-65, -85)
+texture = ExtResource("entrance_bench")
+centered = false
+metadata/asset_id = "entrance_bench"
+
+[node name="PrepTable" type="Node2D" parent="Sortables" unique_id=539734065]
+position = Vector2(203, 617.5083)
+
+[node name="WorkSurface" type="Sprite2D" parent="Sortables/PrepTable" unique_id=432673710]
+position = Vector2(-164, -146.35857)
+scale = Vector2(0.6533865, 0.6533865)
+texture = ExtResource("prep_table")
+centered = false
+metadata/asset_id = "prep_table"
+
+[node name="PantrySupplies" type="Node2D" parent="Sortables/PrepTable" unique_id=1669763067]
+metadata/layout_group = "station:pantry"
+metadata/unlock_rule = "pantry"
+
+[node name="RiceSack" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=1532675641]
+position = Vector2(-163, -165.72475)
+scale = Vector2(0.43722942, 0.43722942)
+texture = ExtResource("rice_sack")
+centered = false
+metadata/asset_id = "rice_sack"
+
+[node name="ChoppingBoard" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=159887730]
+position = Vector2(10, -138.50827)
+scale = Vector2(0.1972477, 0.23190495)
+texture = ExtResource("complete_chopping_board")
+centered = false
+metadata/asset_id = "complete_chopping_board"
+
+[node name="ProduceGroup" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=1473067637]
+position = Vector2(-52.183945, -142.5083)
+scale = Vector2(0.27759197, 0.27759197)
+texture = ExtResource("complete_produce_group")
+centered = false
+metadata/asset_id = "complete_produce_group"
+
+[node name="PrepBowl" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=15688765]
+position = Vector2(101, -122.30922)
+scale = Vector2(0.2175926, 0.2175926)
+texture = ExtResource("chopped_scallion_bowl")
+centered = false
+metadata/asset_id = "chopped_scallion_bowl"
+
+[node name="PlatingTable" type="Node2D" parent="Sortables" unique_id=1773211269]
+position = Vector2(651, 608.4214)
+
+[node name="WorkSurface" type="Sprite2D" parent="Sortables/PlatingTable" unique_id=907604778]
+position = Vector2(-67.00001, -119.42141)
+scale = Vector2(0.53386456, 0.53386456)
+texture = ExtResource("prep_table")
+centered = false
+metadata/asset_id = "prep_table"
+
+[node name="PlatingSupplies" type="Sprite2D" parent="Sortables/PlatingTable" unique_id=1858963761]
+position = Vector2(-33.000004, -144.4214)
+scale = Vector2(0.36591607, 0.36591607)
+texture = ExtResource("plating_supply_group")
+centered = false
+metadata/asset_id = "plating_supply_group"
+metadata/layout_group = "station:plating"
+metadata/unlock_rule = "plating"
+
+[node name="ServiceCounter" type="Node2D" parent="Sortables" unique_id=564535493]
+position = Vector2(384, 911)
+metadata/layout_group = "station:counter"
+metadata/unlock_rule = "counter"
+
+[node name="CounterBody" type="Sprite2D" parent="Sortables/ServiceCounter" unique_id=1784594014]
+position = Vector2(-330.27777, -145)
+scale = Vector2(0.8055556, 0.8055556)
+texture = ExtResource("service_counter")
+centered = false
+metadata/asset_id = "service_counter"
+
+[node name="FlowerPot" type="Sprite2D" parent="Sortables/ServiceCounter" unique_id=1674688968]
+position = Vector2(-308.00003, -187.99998)
+scale = Vector2(0.2798165, 0.2798165)
+texture = ExtResource("red_flower_pot")
+centered = false
+metadata/asset_id = "red_flower_pot"
+
+[node name="Register" type="Sprite2D" parent="Sortables/ServiceCounter" unique_id=1833947896]
+position = Vector2(-227, -188)
+scale = Vector2(0.32542372, 0.32542372)
+texture = ExtResource("register")
+centered = false
+metadata/asset_id = "register"
+
+[node name="PickupTray" type="Sprite2D" parent="Sortables/ServiceCounter" unique_id=24546868]
+position = Vector2(222.08577, -139)
+scale = Vector2(0.19665273, 0.19665273)
+texture = ExtResource("wood_tray")
+centered = false
+metadata/asset_id = "wood_tray"
+metadata/layout_group = "station:window"
+metadata/unlock_rule = "window"
+
+[node name="Dining" type="Node2D" parent="Sortables" unique_id=260827798]
+y_sort_enabled = true
+
+[node name="Table01" type="Node2D" parent="Sortables/Dining" unique_id=156579909]
+position = Vector2(216.5, 1120.3671)
+
+[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table01" unique_id=470471336]
+position = Vector2(-142.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+metadata/asset_id = "dining_chair"
+
+[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table01" unique_id=2020302753]
+position = Vector2(56.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+flip_h = true
+metadata/asset_id = "dining_chair"
+
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table01" unique_id=1775005714]
+position = Vector2(-78.5, -138.73407)
+scale = Vector2(0.43490306, 0.43490306)
+texture = ExtResource("dining_table")
+centered = false
+metadata/asset_id = "dining_table"
+
+[node name="Table02" type="Node2D" parent="Sortables/Dining" unique_id=1653283143]
+position = Vector2(668.5, 1120.3671)
+
+[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table02" unique_id=56496635]
+position = Vector2(-142.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+metadata/asset_id = "dining_chair"
+
+[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table02" unique_id=1513345189]
+position = Vector2(56.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+flip_h = true
+metadata/asset_id = "dining_chair"
+
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table02" unique_id=431816221]
+position = Vector2(-78.5, -138.73407)
+scale = Vector2(0.43490306, 0.43490306)
+texture = ExtResource("dining_table")
+centered = false
+metadata/asset_id = "dining_table"
+
+[node name="Table03" type="Node2D" parent="Sortables/Dining" unique_id=1465079504]
+position = Vector2(216.5, 1303.3671)
+
+[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table03" unique_id=1791544574]
+position = Vector2(-142.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+metadata/asset_id = "dining_chair"
+
+[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table03" unique_id=404300116]
+position = Vector2(56.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+flip_h = true
+metadata/asset_id = "dining_chair"
+
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table03" unique_id=316518562]
+position = Vector2(-78.5, -138.73407)
+scale = Vector2(0.43490306, 0.43490306)
+texture = ExtResource("dining_table")
+centered = false
+metadata/asset_id = "dining_table"
+
+[node name="Table04" type="Node2D" parent="Sortables/Dining" unique_id=1679480104]
+position = Vector2(668.5, 1303.3671)
+
+[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table04" unique_id=1742667489]
+position = Vector2(-142.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+metadata/asset_id = "dining_chair"
+
+[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table04" unique_id=167272396]
+position = Vector2(56.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+flip_h = true
+metadata/asset_id = "dining_chair"
+
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table04" unique_id=497655511]
+position = Vector2(-78.5, -138.73407)
+scale = Vector2(0.43490306, 0.43490306)
+texture = ExtResource("dining_table")
+centered = false
+metadata/asset_id = "dining_table"
+
+[node name="Table05" type="Node2D" parent="Sortables/Dining" unique_id=17723643]
+position = Vector2(216.5, 1493.3671)
+
+[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table05" unique_id=238837930]
+position = Vector2(-142.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+metadata/asset_id = "dining_chair"
+
+[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table05" unique_id=105652250]
+position = Vector2(56.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+flip_h = true
+metadata/asset_id = "dining_chair"
+
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table05" unique_id=361755642]
+position = Vector2(-78.5, -138.73407)
+scale = Vector2(0.43490306, 0.43490306)
+texture = ExtResource("dining_table")
+centered = false
+metadata/asset_id = "dining_table"
+
+[node name="Table06" type="Node2D" parent="Sortables/Dining" unique_id=467196183]
+position = Vector2(668.5, 1493.3671)
+
+[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table06" unique_id=1668644600]
+position = Vector2(-142.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+metadata/asset_id = "dining_chair"
+
+[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table06" unique_id=1017079422]
+position = Vector2(56.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+flip_h = true
+metadata/asset_id = "dining_chair"
+
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table06" unique_id=957701377]
+position = Vector2(-78.5, -138.73407)
+scale = Vector2(0.43490306, 0.43490306)
+texture = ExtResource("dining_table")
+centered = false
+metadata/asset_id = "dining_table"
+
+[node name="Table07" type="Node2D" parent="Sortables/Dining" unique_id=1462339376]
+position = Vector2(216.5, 1681.3671)
+
+[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table07" unique_id=1143016755]
+position = Vector2(-142.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+metadata/asset_id = "dining_chair"
+
+[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table07" unique_id=1081834270]
+position = Vector2(56.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+flip_h = true
+metadata/asset_id = "dining_chair"
+
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table07" unique_id=1697360336]
+position = Vector2(-78.5, -138.73407)
+scale = Vector2(0.43490306, 0.43490306)
+texture = ExtResource("dining_table")
+centered = false
+metadata/asset_id = "dining_table"
+
+[node name="Table08" type="Node2D" parent="Sortables/Dining" unique_id=1335396027]
+position = Vector2(668.5, 1681.3671)
+
+[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table08" unique_id=1746258030]
+position = Vector2(-142.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+metadata/asset_id = "dining_chair"
+
+[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table08" unique_id=1874168561]
+position = Vector2(56.5, -130.46704)
+scale = Vector2(0.39166668, 0.39166668)
+texture = ExtResource("dining_chair")
+centered = false
+flip_h = true
+metadata/asset_id = "dining_chair"
+
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table08" unique_id=1686637293]
+position = Vector2(-78.5, -138.73407)
+scale = Vector2(0.43490306, 0.43490306)
+texture = ExtResource("dining_table")
+centered = false
+metadata/asset_id = "dining_table"
+
+[node name="Anchors" type="Node2D" parent="." unique_id=1156273834]
+metadata/world_size = Vector2(887, 1774)
