@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
-      XDG_DATA_HOME: ${{ runner.temp }}/shop-acceptance-userdata
+      XDG_DATA_HOME: ${{ github.workspace }}/../shop-acceptance-userdata
     steps:
       - uses: actions/checkout@v4
       - name: Download Godot 4.7
