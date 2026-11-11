@@ -7,9 +7,28 @@ func _initialize() -> void:
 	var modes: Array = args[0].split(",") if args.size() > 0 else ["save", "spend"]
 	for m in modes:
 		var rows := []
-		for seed in SEEDS: rows.append(run(load("res://content/shops/stirfry/shop.tres"), seed, m))
+		for seed in SEEDS: rows.append(run(make_shop(m), seed, m))
 		summarize(m, rows)
 	quit()
+
+func make_shop(m: String) -> SpecShop:
+	var s: SpecShop = load("res://content/shops/stirfry/shop.tres").duplicate(true)
+	for part in m.split("+"):
+		match part:
+			"more", "more6": # 后厨位 2/3/4/4/5/5，多招两人
+				var slots := [2, 3, 4, 4, 5, 5]
+				for i in s.stages.size(): s.stages[i].staff_slots["kitchen"] = slots[i]
+				for k in ["fox", "dog"]:
+					var kind: SpecStaffKind = s.staff.kinds[0].duplicate(true)
+					kind.id = k
+					s.staff.kinds.append(kind)
+					s.staff.hire_pool.append(k)
+				s.staff.hire_costs.assign([60, 120, 200, 300])
+				if part == "more6":
+					s.staff.hire_costs.assign([60, 120, 160, 220])
+			"t20": for st in s.stages: for t in st.tasks: if t.amount == 30: t.amount = 20
+			"t15": for st in s.stages: for t in st.tasks: if t.amount >= 25 and t.target != "soup": t.amount = 15 if t.amount == 30 else 20
+	return s
 
 func run(shop: SpecShop, seed: int, mode: String) -> Dictionary:
 	var rules := ShopRules.new(shop, seed)
