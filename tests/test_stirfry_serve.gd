@@ -344,7 +344,6 @@ func test_serve_guest_cannot_reference_a_missing_order_or_wrong_seat() -> void:
 
 func test_unlock_seeds_only_new_stations_and_keeps_existing_rice() -> void:
 	var shop := _shop_copy()
-	shop.stages.resize(1)
 	var wok: SpecStation = shop.station("wok_a").duplicate(true)
 	wok.id = "other_wok"
 	shop.stations.append(wok)
@@ -360,7 +359,7 @@ func test_unlock_seeds_only_new_stations_and_keeps_existing_rice() -> void:
 	stage.stations.assign([wok.id])
 	stage.tasks.clear()
 	shop.stages[0].tasks.clear()
-	shop.stages.append(stage)
+	shop.stages.insert(1, stage)
 	check_eq(Validator.summary(Validator.validate(shop)), "", "两阶段数据合法")
 	var rules := _open(shop)
 	check_eq(int(ServeFlow.stock(rules, "rice_cooker").available), 4, "首台锅获得开局库存")
@@ -609,7 +608,7 @@ func test_recipe_stages_are_bought_in_the_station_panel() -> void:
 	check(view.can_buy("wok_a"), "钱够了炒锅A亮提示")
 	var heard := {}
 	var listen := func(message: Dictionary) -> void:
-		if message.name == "unlocked": heard = message.data
+		if message.name == "unlocked": heard.merge(message.data, true)
 	rules.events.on("*", listen)
 	check_eq(rules.unlock("wok_a"), "", "在炒锅A上学会青椒肉丝")
 	rules.events.off("*", listen)
