@@ -178,6 +178,12 @@ func art_visible(rule: String) -> bool:
 	return rules.station_unlocked(rule)
 
 
+func seat_count(group_id: String) -> int:
+	for group in shop.seat_groups:
+		if group.id==group_id: return mini(int(rules.seats.get(group_id,0)),rules.seat_cap(group))
+	return 0
+
+
 func post_point(id: String) -> Vector2:
 	return rules.nav.post(id)
 

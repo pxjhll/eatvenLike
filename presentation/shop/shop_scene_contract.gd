@@ -4,6 +4,8 @@ extends RefCounted
 
 const Dining := preload("res://presentation/shop/shop_dining.gd")
 const Presentation := preload("res://content/characters/actor_presentation.tres")
+const ModuleSpace := preload("res://presentation/shop/modules/module_space.gd")
+const ModuleLayout := preload("res://presentation/shop/modules/module_layout.gd")
 
 static func prepare(shop: SpecShop) -> Dictionary:
 	var errors: Array[Dictionary] = []
@@ -40,6 +42,17 @@ static func validate(shop: SpecShop, art: Node) -> Array[Dictionary]:
 	if root.position != Vector2.ZERO:
 		_error(errors, "transform", "Anchors.position", "Anchors must be at the world origin.")
 	_scan(root, root, errors)
+	var modules := ModuleSpace.collect(root)
+	errors.append_array(modules.errors)
+	for module in modules.modules:
+		for path in ["Anchors","Nav"]:
+			var local: Node = module.get_node_or_null(path)
+			if local!=null: _scan(local,local,errors)
+		if module.module_kind in ["station","counter"] and shop.station(module.station_id)==null:
+			_error(errors,"module_reference",module.module_id,"Module station binding must resolve in this shop.")
+		if module.module_kind=="table":
+			var matches := shop.seat_groups.filter(func(group: SpecSeatGroup) -> bool: return group!=null and group.id==module.seat_group)
+			if matches.is_empty() or matches[0].purpose!=module.seat_purpose: _error(errors,"module_reference",module.module_id,"Module seat group and purpose must resolve in this shop.")
 	var size: Variant = root.get_meta("world_size", Vector2(720, 1500))
 	if not _positive_vector(size):
 		_error(errors, "metadata", "Anchors.world_size", "World size must be a finite positive Vector2.")
@@ -123,11 +136,14 @@ static func validate(shop: SpecShop, art: Node) -> Array[Dictionary]:
 			break
 	# Nav is optional for straight layouts. When authored, it must describe the
 	# same coordinates the rules use; the runtime must not silently replace data.
-	if errors.is_empty() and anchors.has("Nav") and shop.layout != null:
-		var exported := anchors.layout(shop.layout)
-		for key in ["nav", "cell", "grid_size", "areas", "obstacles", "obstacle_stations", "points", "posts"]:
-			if exported.get(key) != shop.layout.get(key):
-				_error(errors, "layout_mismatch", "Anchors.Nav." + key, "Art navigation differs from shop.layout." + key)
+	if errors.is_empty() and (anchors.has("Nav") or modules.enabled) and shop.layout != null:
+		var exported := anchors.export_layout(shop.layout)
+		errors.append_array(exported.errors)
+		if exported.layout!=null:
+			var fields: Array = ModuleLayout.FIELDS if modules.enabled else ["nav", "cell", "grid_size", "areas", "obstacles", "obstacle_stations", "points", "posts"]
+			for key: String in fields:
+				if exported.layout.get(key) != shop.layout.get(key):
+					_error(errors, "layout_mismatch", "Anchors.Nav." + key, "Art navigation differs from shop.layout." + key)
 	return errors
 
 static func _scan(node: Node, root: Node, errors: Array[Dictionary]) -> void:

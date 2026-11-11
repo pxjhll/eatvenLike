@@ -1,0 +1,38 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://presentation/shop/modules/space.tscn" id="space"]
+[ext_resource type="PackedScene" path="res://presentation/shop/modules/counter.tscn" id="counter"]
+[ext_resource type="PackedScene" path="res://presentation/shop/modules/entrance_queue.tscn" id="entrance"]
+
+[node name="ShopTemplate" type="Node2D"]
+
+[node name="Anchors" type="Node2D" parent="."]
+metadata/module_version = 1
+metadata/world_size = Vector2(720, 1200)
+metadata/top_margin = 100.0
+metadata/sortables = "Sortables"
+
+[node name="Nav" type="Node2D" parent="Anchors"]
+metadata/nav = "grid"
+metadata/cell = 40.0
+metadata/grid_size = Vector2i(18, 30)
+metadata/motion_version = 1
+metadata/motion_units = 1.0
+metadata/spawn_point = "home"
+metadata/aliases = {}
+
+[node name="Points" type="Node2D" parent="Anchors/Nav"]
+
+[node name="home" type="Node2D" parent="Anchors/Nav/Points"]
+position = Vector2(100, 100)
+
+[node name="Sortables" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Space" parent="Sortables" instance=ExtResource("space")]
+
+[node name="Counter" parent="Sortables" instance=ExtResource("counter")]
+position = Vector2(100, 220)
+
+[node name="Entrance" parent="Sortables" instance=ExtResource("entrance")]
+position = Vector2(120, 1080)

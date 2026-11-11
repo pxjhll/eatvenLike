@@ -1,0 +1,42 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://presentation/shop/modules/shop_module.gd" id="module"]
+[ext_resource type="Script" path="res://presentation/shop/anchor_rect.gd" id="rect"]
+
+[node name="EntranceQueue" type="Node2D"]
+script = ExtResource("module")
+module_id = "Entrance"
+module_kind = "entrance"
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Door" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-30, -5, 30, -5, 30, 5, -30, 5)
+color = Color(0.36, 0.52, 0.60, 1)
+
+[node name="Anchors" type="Node2D" parent="."]
+
+[node name="Entrance" type="Node2D" parent="Anchors"]
+
+[node name="Exit" type="Node2D" parent="Anchors"]
+position = Vector2(40, 0)
+
+[node name="Queue" type="Node2D" parent="Anchors"]
+
+[node name="0" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(0, -80)
+
+[node name="1" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(80, -80)
+
+[node name="Nav" type="Node2D" parent="."]
+
+[node name="Customers" type="Node2D" parent="Nav"]
+
+[node name="entrance" type="Node2D" parent="Nav/Customers"]
+
+[node name="exit" type="Node2D" parent="Nav/Customers"]
+position = Vector2(40, 0)
+
+[node name="pickup" type="Node2D" parent="Nav/Customers"]
+position = Vector2(140, -580)

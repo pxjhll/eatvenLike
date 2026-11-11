@@ -22,7 +22,7 @@ New movement-capable layouts opt in with `layout.motion_version = 1`. Version 0 
 - Business calls `ShopRules.begin_move` / `advance_move` and consumes customer readiness. Views consume detached `ShopView.render_snapshot().movement`; they must not integrate GUI delta to advance business travel. The dining component renders furniture/items only in this mode.
 - Movement state version 1 is saved with routes, identities and pending exits. Legacy files receive a backup before first replacement; future versions cannot be overwritten. Customer positions absent from a legacy save are reconstructed from its stage/ports, rather than claimed as exact historical GUI coordinates.
 
-Scene module exports will be introduced in T08. Until then, the new customer ports and permission areas must be authored explicitly in `SpecLayout`; the old employee-only Nav export cannot invent them. Production shops are migrated in T09/T10. Run `tests/render_shared_movement.gd` alongside the ordinary shop UI and rule regressions. See [shared-movement.md](qa/shared-movement.md) for the tested behavior and limits.
+Editable scene modules now export customer ports and permission areas alongside employee space; see the module section below. Legacy scenes still use their original employee-only Nav export. Production shops are migrated in T09/T10. Run `tests/render_shared_movement.gd` alongside the ordinary shop UI and rule regressions. See [shared-movement.md](qa/shared-movement.md) for the tested behavior and limits.
 
 ## Composable actor actions
 
@@ -48,6 +48,18 @@ New active units save a version and recipe signature. The signature includes ite
 
 Use `tests/fixtures/flow_shop.gd` for controlled parallel and two-port examples. `ShopView.production_snapshot(dish_id)` and `render_snapshot().flow` return detached definition and delivery summaries. Run `tests/test_flow_composition.gd` through the normal suite and `tests/render_flow_composition.gd` for real character carrying and event snapshots. See [production-and-delivery-composition.md](qa/production-and-delivery-composition.md). Production shops remain on their legacy settings until the separate migration tasks.
 
+## Editable scene modules
+
+Start from `presentation/shop/modules/ShopTemplate.tscn`. Instantiate the supplied station, counter, table, entrance/queue and space prefabs under `Sortables`; replace only their `Visual` subtree with approved assets. Each module has a unique `module_id`. Station modules reference stable `station_id`s; tables bind seat group, first seat, table index, purpose and `seats_per_table`. Their local `Anchors` and `Nav` children describe interaction rectangles, display points, approach ports and footprints. Module roots and their coordinate parent chains support translation only. Scale sprites inside `Visual` when fitting artwork.
+
+`Anchors` metadata `module_version = 1` opts into the complete export. Root Nav declares grid, cell, dimensions, motion version/density, aliases and spawn point. Module `Areas` and `Access/<profile>` rectangles use native pixel coordinates and must align exactly to grid cells after translation. Footprints remain pixel rectangles. The export validates clear, reachable staff/customer ports against all authored footprints and preserves the shared foot radius. Missing or duplicate bindings, unsupported transforms, bad references and disconnected routes fail preflight.
+
+The read-only `ShopAnchors` projection exposes existing paths to the generic renderer. Moving a module changes its interaction regions, seating and exported space together; no duplicate anchor tree is generated. Work/seat approaches are separate from furniture or seated sprite positions. Queues require contiguous numeric ordering from zero. Table capacity is published to the existing cup renderer; first seat and table index must agree with that capacity. Station visuals follow existing unlocks. The graybox tables are preplaced, chairs follow purchased seats, and the entire furniture footprint is always reserved.
+
+Run `tools/sync_shop_layouts.gd -- --shop=<resource>` to export one explicit shop, and append `--check` for a byte-preserving comparison. `--campaign=<resource>` selects a custom campaign instead; empty targets or conflicting options fail. All candidates are validated before any are written. The full field comparison includes motion settings, actor permissions, customer ports/queue, aliases and spawn point. The runtime consumes the saved `SpecLayout`; it never silently repairs it from art.
+
+See [the module authoring guide](../presentation/shop/modules/README.md) and [T08 QA](qa/editable-scene-modules.md). `tests/fixtures/module_shop.gd` is an independent full assembly using copies of existing content; `tests/render_scene_modules.gd` exercises real world input, rendering, sales and session restore. Formal shop migration and live-save relocation are separate tasks.
+
 ## Art contract
 
 `presentation/shop/shop_scene_contract.gd` exposes read-only `validate(shop, art)` and `prepare(shop)`. Preparation returns `{errors, art}` and frees rejected instances. The caller owns a successful candidate. The generic scene validates data and prepares one art candidate before calling `Session.start`; it adopts that exact candidate on success and frees it when session startup fails. An authoring error blocks business and saving without replacing or quarantining existing progress. Repair the configuration and use the retry button.
@@ -61,7 +73,7 @@ The scene uses one shared world coordinate system:
 - Queue needs at least one point. The renderer extends its final segment for additional customers. Seat groups need enough `Seats/<group>/<n>` points for all declared stage seats and purchases.
 - Every enabled connection needs `Connections/<id>/Frame` and at least two `Path` points. The rules use the same connection ID for the displayed route.
 - An installed `shop_dining.gd` component additionally requires `Lanes`, `Aisle` and `Entrance`, because its path builder directly consumes those anchors. Its rendered dining group also needs enough `Tables/<group>` points for the declared seat capacity (starting seats plus explicit purchase steps, or the fixed step times purchase count). Table count rounds up for partial tables; `per_table` defaults to 2 and must be a positive integer. Table anchors remain optional without the dining component.
-- `Nav` is optional (straight layouts commonly omit it). When present, its exported points/posts, areas, obstacles and navigation metadata must equal `shop.layout`; preflight never silently changes rule data to fit art.
+- `Nav` is optional for legacy scenes (straight layouts commonly omit it). Module version 1 requires a complete grid Nav export. When present, exported fields must equal `shop.layout`; preflight never silently changes rule data to fit art. Local module anchors follow the same rectangle and metadata rules as root anchors.
 
 Safe existing fallbacks stay optional: station Mark/Badge/Buffer/Put, shelf/chip decoration, Waiting, Sale and Pickup, and Exit (falls back to Entrance). In a scene without the dining component, Entrance and Aisle also have safe fallbacks. Other arbitrary art metadata remains available for decoration and extensions.
 

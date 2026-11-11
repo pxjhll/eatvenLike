@@ -21,17 +21,23 @@ extends RefCounted
 
 var root: Node
 var _cache := {}
+const ModuleSpace := preload("res://presentation/shop/modules/module_space.gd")
+var _modules := {}
 
 
 func _init(anchors: Node) -> void:
 	root = anchors
+	_modules = ModuleSpace.collect(root)
 
 
 func has(path: String) -> bool:
+	if _modules.enabled:
+		return _modules.nodes.has(path) or _modules.nodes.keys().any(func(key: String) -> bool: return key.begins_with(path+"/"))
 	return root != null and root.has_node(path)
 
 
 func node(path: String) -> Node:
+	if _modules.enabled: return _modules.nodes.get(path)
 	return root.get_node_or_null(path) if root != null else null
 
 
@@ -50,12 +56,20 @@ func rect(path: String) -> Rect2:
 
 func meta(path: String, key: String, fallback: Variant = null) -> Variant:
 	var n := node(path)
+	if _modules.enabled and _modules.metadata.get(path,{}).has(key) and (n==null or not n.has_meta(key)): return _modules.metadata[path][key]
 	# get_meta 的默认值是 null 时会报错，所以先问有没有
 	return n.get_meta(key) if n != null and n.has_meta(key) else fallback
 
 
 ## 一组按序号排的点（Queue/0、Queue/1 …）
 func points(path: String) -> Array[Vector2]:
+	if _modules.enabled:
+		var out: Array[Vector2] = []
+		var names := children(path)
+		names.sort_custom(func(a: String,b: String) -> bool: return int(a)<int(b))
+		for name in names:
+			if node(path+"/"+name) is Node2D: out.append(point(path+"/"+name))
+		return out
 	var key := "points:" + path
 	if _cache.has(key): return _cache[key]
 	var out: Array[Vector2] = []
@@ -71,6 +85,12 @@ func points(path: String) -> Array[Vector2]:
 
 func children(path: String) -> Array[String]:
 	var out: Array[String] = []
+	if _modules.enabled:
+		for key: String in _modules.nodes:
+			if not key.begins_with(path+"/"): continue
+			var child := key.substr(path.length()+1).get_slice("/",0)
+			if not child.is_empty() and child not in out: out.append(child)
+		return out
 	var n := node(path)
 	if n != null:
 		for child in n.get_children(): out.append(String(child.name))
@@ -91,6 +111,7 @@ func _order(n: Node) -> int:
 
 
 func _offset(n: Node) -> Vector2:
+	if _modules.enabled: return ModuleSpace.offset(n,root.get_parent())
 	var total := Vector2.ZERO
 	var current := n
 	while current != null and current != root:
@@ -101,6 +122,16 @@ func _offset(n: Node) -> Vector2:
 
 ## 导出寻路数据（构建店铺数据时用）：和规则层的 SpecLayout 同一份
 func layout(base: SpecLayout) -> SpecLayout:
+	return export_layout(base).layout
+
+
+func export_layout(base: SpecLayout) -> Dictionary:
+	if not _modules.errors.is_empty(): return {"layout":null,"errors":_modules.errors.duplicate(true)}
+	if _modules.enabled: return ModuleSpace.export_layout(root,base)
+	return {"layout":_legacy_layout(base),"errors":[]}
+
+
+func _legacy_layout(base: SpecLayout) -> SpecLayout:
 	var out: SpecLayout = base.duplicate(true)
 	if not has("Nav"): return out
 	var cell: float = float(meta("Nav", "cell", out.cell))

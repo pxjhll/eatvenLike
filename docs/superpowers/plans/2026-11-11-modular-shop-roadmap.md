@@ -23,7 +23,7 @@
 
 ## 顺序与状态
 
-状态：T01–T03已完成，见docs/qa/tea-modularity-baseline.md。T04已完成，见docs/qa/shared-actor-presentation.md。T05公共能力与三类业务夹具已完成，见docs/qa/shared-movement.md；T06生命周期与首个真实业务适配已完成，见docs/qa/composable-actor-actions.md。T07生产依赖与整单交付能力已在本地完成，见docs/qa/production-and-delivery-composition.md。正式店启用仍按T09/T10迁移。T08–T12尚未开始。
+状态：T01–T03已完成，见docs/qa/tea-modularity-baseline.md。T04已完成，见docs/qa/shared-actor-presentation.md。T05公共能力与三类业务夹具已完成，见docs/qa/shared-movement.md；T06生命周期与首个真实业务适配已完成，见docs/qa/composable-actor-actions.md。T07生产依赖与整单交付能力已完成，见docs/qa/production-and-delivery-composition.md。T08模块、完整空间导出与灰盒样板已在本地完成，见docs/qa/editable-scene-modules.md。正式店启用仍按T09/T10迁移。T09–T12尚未开始。
 
 | 阶段 | 任务 | 优先级 | 依赖 | 交付与独立验收 |
 |---|---|---|---|---|
@@ -79,15 +79,18 @@ T07选择真实业务的最小扩展夹具，覆盖组合与合流的兼容契�
 - [x] T02：六种共享员工资源已提取，奶茶内容与轨迹不变。
 - [x] T03：旧档加载/续跑/重存与基础属性刷新验证完成，A阶段交付。
 
-下一个待执行任务：T08，可编辑场景模块与空间导出。T05已提交并推送7581f15，远端同时包含T04提交8b0d24c；T06本轮提交7eaab3c，未推送；T07保留在工作区。
+下一个待执行任务：T09，第三店完整接入样板。T06提交7eaab3c、T07提交87cb87f均已按授权推送；T08保留在工作区，未自动提交。
 
 - [x] T04：共享角色表现配置、原生单位换算、三店同视口角色尺度及原奶茶画面对照通过。
 - [x] T05：运动协议v1、规则顾客、权限/脚底占地、阻路恢复、存档与纯快照显示通过；保留legacy正式店供后续迁移。
 - [x] T06：六类原子动作、生命周期与业务lease、真实serve适配、等待插入、取消及旧档/事件快照通过；首轮新执行器不开放给single/handoff。
 - [x] T07：原输入输出依赖图、乱序并行合流、多取餐点整单预留/交付/取消、版本保护及旧档备份通过；444项规则、47项交付角色显示验证通过，正式店未启用。
+- [x] T08：五类可编辑模块、ShopTemplate、只读锚点投影与完整空间导出完成；459项规则、25项完整界面、26项真实窗口检查通过，正式店布局未改。
 
 T06接口前置：员工使用ShopRules.begin_move(worker,goal,phase)和advance_move(worker,dt)，客户抵达使用CustomerMovement.ready(rules,key)。空路径始终表示请求待完成；取消必须清理motion。动作组合消费这些事实，不另算走路时间或直接移动表现节点。v1的角色区域和顾客端口见2026-11-11-shared-movement.md。
 
 T07接口前置：RuleActions.start/tick/cancel/validate，ActionContext.reserve/ready/enter/advance/commit/cancel；现有ServeFlow仍是实物和订单唯一所有者。先复用consumes/produces、unit和goods依赖，不另建库存账本。当前顺序步骤是数据，不支持条件脚本或分支解释器；新交付组合需明确自己的业务预留与取消边界。
 
 T08接口前置：ProductionPlan.compile只读取配方；flow_version=1按原工序索引保存签名。模块以稳定station ID导出端口和占地，delivery_points引用pickup工位。须同时导出员工/顾客端口和权限区域，保持T05坐标单位与角色脚底半径；表现模块移动不改变配方索引、实物账本或动作提交方式。
+
+T09接口前置：模块根module_id/station_id及本地Anchors/Nav映射见presentation/shop/modules/README.md；Anchors.module_version=1与运动1完整空间显式导出，不能只开启flag。ShopAnchors.export_layout返回{layout,errors}，错误时layout=null；sync工具通过--shop/--campaign指定目标，--check不写。当前样板桌椅预留整套占地，不能把未显示椅子当作可走区域。正式第三店使用当前已接入美术，未确认的FigCraft分层稿不直接替换；须验证角色全局定义、端口/权限、旧档迁移与真实节奏，不能仅复制灰盒布局。

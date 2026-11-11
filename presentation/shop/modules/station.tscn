@@ -1,0 +1,66 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://presentation/shop/modules/shop_module.gd" id="module"]
+[ext_resource type="Script" path="res://presentation/shop/anchor_rect.gd" id="rect"]
+
+[node name="Station" type="Node2D"]
+script = ExtResource("module")
+module_id = "Station"
+station_id = "station"
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(-40, -80, 40, -80, 40, 0, -40, 0)
+color = Color(0.46, 0.58, 0.61, 1)
+
+[node name="Anchors" type="Node2D" parent="."]
+
+[node name="Station" type="Node2D" parent="Anchors"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Station"]
+position = Vector2(-40, -80)
+script = ExtResource("rect")
+size = Vector2(80, 80)
+
+[node name="Frame" type="Node2D" parent="Anchors/Station"]
+position = Vector2(-40, -80)
+script = ExtResource("rect")
+size = Vector2(80, 80)
+
+[node name="Post" type="Node2D" parent="Anchors/Station"]
+position = Vector2(-30, 10)
+script = ExtResource("rect")
+size = Vector2(60, 60)
+
+[node name="PostPoint" type="Node2D" parent="Anchors/Station"]
+position = Vector2(0, 40)
+
+[node name="Badge" type="Node2D" parent="Anchors/Station"]
+position = Vector2(0, -90)
+
+[node name="Buffer" type="Node2D" parent="Anchors/Station"]
+position = Vector2(0, -20)
+
+[node name="Put" type="Node2D" parent="Anchors/Station"]
+position = Vector2(0, -20)
+
+[node name="Drop" type="Node2D" parent="Anchors"]
+position = Vector2(-30, 10)
+script = ExtResource("rect")
+size = Vector2(60, 60)
+
+[node name="Nav" type="Node2D" parent="."]
+
+[node name="Work" type="Node2D" parent="Nav"]
+position = Vector2(0, 40)
+
+[node name="Post" type="Node2D" parent="Nav"]
+position = Vector2(0, 40)
+
+[node name="Footprints" type="Node2D" parent="Nav"]
+
+[node name="0" type="Node2D" parent="Nav/Footprints"]
+position = Vector2(-40, -80)
+script = ExtResource("rect")
+size = Vector2(80, 80)
