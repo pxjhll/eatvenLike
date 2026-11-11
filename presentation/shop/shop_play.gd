@@ -839,8 +839,16 @@ func _serve_goods(frame: Dictionary, draws: Array) -> void:
 	for good: Dictionary in frame.serve.goods:
 		var at := String(good.at)
 		var pos: Vector2
+		var host := ""
 		if at.begins_with(ServeFlow.SEAT):
-			pos = _serve_seat_point(int(at.substr(ServeFlow.SEAT.length()))) + Vector2(0, -36)
+			var seat := int(at.substr(ServeFlow.SEAT.length()))
+			var table := _serve_table(seat)
+			if table.is_empty():
+				pos = _serve_seat_point(seat) + Vector2(0, -36)
+			else:
+				# 摆在这张桌子的桌面上、靠这个座位的一侧，排在桌子前面
+				pos = anchors.point(table) + Vector2(-28 if _serve_seat_point(seat).x < anchors.point(table).x else 28, 0)
+				host = String(anchors.meta(table, "host", ""))
 		elif at.contains(":"):
 			continue
 		elif anchors.has("Stations/%s/Buffer" % at):
@@ -851,7 +859,15 @@ func _serve_goods(frame: Dictionary, draws: Array) -> void:
 			continue
 		var n := int(count.get(at, 0))
 		count[at] = n + 1
-		draws.append({"pos": pos + Vector2((n % 3 - 1) * 18, -int(n / 3) * 10), "item": String(good.item), "host": ""})
+		draws.append({"pos": pos + Vector2((n % 3 - 1) * 18, -int(n / 3) * 10), "item": String(good.item), "host": host})
+
+
+## 座位所在的桌子锚点（Tables/<组>/<座位 / per_table>）；场景没摆桌子锚点就返回空
+func _serve_table(seat: int) -> String:
+	var group := ServeFlow.seat_point(shop, seat).get_slice("/", 0)
+	var per_table := maxi(1, int(anchors.meta("Tables/" + group, "per_table", 2)))
+	var path := "Tables/%s/%d" % [group, seat / per_table]
+	return path if anchors.has(path) else ""
 
 
 func _serve_seat_point(seat: int) -> Vector2:

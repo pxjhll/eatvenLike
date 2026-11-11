@@ -148,6 +148,7 @@ func art_visible(rule: String) -> bool:
 		var dish := shop.dish(rule.trim_prefix("flavor:"))
 		return dish != null and rules.flavor_open(dish)
 	if rule.begins_with("wait_seats:"): return rules.wait_seats() >= int(rule.get_slice(":", 1))
+	if rule.begins_with("dine_seats:"): return rules.seat_total() >= int(rule.get_slice(":", 1))
 	return rules.station_unlocked(rule)
 
 

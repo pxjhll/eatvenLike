@@ -354,6 +354,8 @@ y_sort_enabled = true
 
 [node name="Table01" type="Node2D" parent="Sortables/Dining" unique_id=156579909]
 position = Vector2(216.5, 1120.3671)
+metadata/layout_group = "dine_seats:1"
+metadata/unlock_rule = "dine_seats:1"
 
 [node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table01" unique_id=470471336]
 position = Vector2(-142.5, -130.46704)
@@ -369,6 +371,8 @@ texture = ExtResource("dining_chair")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
+metadata/layout_group = "dine_seats:2"
+metadata/unlock_rule = "dine_seats:2"
 
 [node name="Table" type="Sprite2D" parent="Sortables/Dining/Table01" unique_id=1775005714]
 position = Vector2(-78.5, -138.73407)
@@ -379,6 +383,8 @@ metadata/asset_id = "dining_table"
 
 [node name="Table02" type="Node2D" parent="Sortables/Dining" unique_id=1653283143]
 position = Vector2(668.5, 1120.3671)
+metadata/layout_group = "dine_seats:3"
+metadata/unlock_rule = "dine_seats:3"
 
 [node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table02" unique_id=56496635]
 position = Vector2(-142.5, -130.46704)
@@ -394,6 +400,8 @@ texture = ExtResource("dining_chair")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
+metadata/layout_group = "dine_seats:4"
+metadata/unlock_rule = "dine_seats:4"
 
 [node name="Table" type="Sprite2D" parent="Sortables/Dining/Table02" unique_id=431816221]
 position = Vector2(-78.5, -138.73407)
@@ -404,6 +412,8 @@ metadata/asset_id = "dining_table"
 
 [node name="Table03" type="Node2D" parent="Sortables/Dining" unique_id=1465079504]
 position = Vector2(216.5, 1303.3671)
+metadata/layout_group = "dine_seats:5"
+metadata/unlock_rule = "dine_seats:5"
 
 [node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table03" unique_id=1791544574]
 position = Vector2(-142.5, -130.46704)
@@ -419,6 +429,8 @@ texture = ExtResource("dining_chair")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
+metadata/layout_group = "dine_seats:6"
+metadata/unlock_rule = "dine_seats:6"
 
 [node name="Table" type="Sprite2D" parent="Sortables/Dining/Table03" unique_id=316518562]
 position = Vector2(-78.5, -138.73407)
@@ -429,6 +441,8 @@ metadata/asset_id = "dining_table"
 
 [node name="Table04" type="Node2D" parent="Sortables/Dining" unique_id=1679480104]
 position = Vector2(668.5, 1303.3671)
+metadata/layout_group = "dine_seats:7"
+metadata/unlock_rule = "dine_seats:7"
 
 [node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table04" unique_id=1742667489]
 position = Vector2(-142.5, -130.46704)
@@ -444,6 +458,8 @@ texture = ExtResource("dining_chair")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
+metadata/layout_group = "dine_seats:8"
+metadata/unlock_rule = "dine_seats:8"
 
 [node name="Table" type="Sprite2D" parent="Sortables/Dining/Table04" unique_id=497655511]
 position = Vector2(-78.5, -138.73407)
@@ -454,6 +470,8 @@ metadata/asset_id = "dining_table"
 
 [node name="Table05" type="Node2D" parent="Sortables/Dining" unique_id=17723643]
 position = Vector2(216.5, 1493.3671)
+metadata/layout_group = "dine_seats:9"
+metadata/unlock_rule = "dine_seats:9"
 
 [node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table05" unique_id=238837930]
 position = Vector2(-142.5, -130.46704)
@@ -469,6 +487,8 @@ texture = ExtResource("dining_chair")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
+metadata/layout_group = "dine_seats:10"
+metadata/unlock_rule = "dine_seats:10"
 
 [node name="Table" type="Sprite2D" parent="Sortables/Dining/Table05" unique_id=361755642]
 position = Vector2(-78.5, -138.73407)
@@ -479,6 +499,8 @@ metadata/asset_id = "dining_table"
 
 [node name="Table06" type="Node2D" parent="Sortables/Dining" unique_id=467196183]
 position = Vector2(668.5, 1493.3671)
+metadata/layout_group = "dine_seats:11"
+metadata/unlock_rule = "dine_seats:11"
 
 [node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table06" unique_id=1668644600]
 position = Vector2(-142.5, -130.46704)
@@ -494,6 +516,8 @@ texture = ExtResource("dining_chair")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
+metadata/layout_group = "dine_seats:12"
+metadata/unlock_rule = "dine_seats:12"
 
 [node name="Table" type="Sprite2D" parent="Sortables/Dining/Table06" unique_id=957701377]
 position = Vector2(-78.5, -138.73407)
@@ -504,6 +528,8 @@ metadata/asset_id = "dining_table"
 
 [node name="Table07" type="Node2D" parent="Sortables/Dining" unique_id=1462339376]
 position = Vector2(216.5, 1681.3671)
+metadata/layout_group = "dine_seats:13"
+metadata/unlock_rule = "dine_seats:13"
 
 [node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table07" unique_id=1143016755]
 position = Vector2(-142.5, -130.46704)
@@ -519,6 +545,8 @@ texture = ExtResource("dining_chair")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
+metadata/layout_group = "dine_seats:14"
+metadata/unlock_rule = "dine_seats:14"
 
 [node name="Table" type="Sprite2D" parent="Sortables/Dining/Table07" unique_id=1697360336]
 position = Vector2(-78.5, -138.73407)
@@ -529,6 +557,8 @@ metadata/asset_id = "dining_table"
 
 [node name="Table08" type="Node2D" parent="Sortables/Dining" unique_id=1335396027]
 position = Vector2(668.5, 1681.3671)
+metadata/layout_group = "dine_seats:15"
+metadata/unlock_rule = "dine_seats:15"
 
 [node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table08" unique_id=1746258030]
 position = Vector2(-142.5, -130.46704)
@@ -544,6 +574,8 @@ texture = ExtResource("dining_chair")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
+metadata/layout_group = "dine_seats:16"
+metadata/unlock_rule = "dine_seats:16"
 
 [node name="Table" type="Sprite2D" parent="Sortables/Dining/Table08" unique_id=1686637293]
 position = Vector2(-78.5, -138.73407)
@@ -711,6 +743,44 @@ position = Vector2(574, 1611)
 
 [node name="15" type="Node2D" parent="Anchors/Seats/table"]
 position = Vector2(772, 1611)
+
+[node name="Tables" type="Node2D" parent="Anchors"]
+
+[node name="table" type="Node2D" parent="Anchors/Tables"]
+metadata/per_table = 2
+metadata/note = "桌面中心（放菜），按座位号两人一桌：第 k 张桌 = 座位 2k、2k+1"
+
+[node name="0" type="Node2D" parent="Anchors/Tables/table"]
+position = Vector2(216.5, 1030.37)
+metadata/host = "Dining/Table01"
+
+[node name="1" type="Node2D" parent="Anchors/Tables/table"]
+position = Vector2(668.5, 1030.37)
+metadata/host = "Dining/Table02"
+
+[node name="2" type="Node2D" parent="Anchors/Tables/table"]
+position = Vector2(216.5, 1213.37)
+metadata/host = "Dining/Table03"
+
+[node name="3" type="Node2D" parent="Anchors/Tables/table"]
+position = Vector2(668.5, 1213.37)
+metadata/host = "Dining/Table04"
+
+[node name="4" type="Node2D" parent="Anchors/Tables/table"]
+position = Vector2(216.5, 1403.37)
+metadata/host = "Dining/Table05"
+
+[node name="5" type="Node2D" parent="Anchors/Tables/table"]
+position = Vector2(668.5, 1403.37)
+metadata/host = "Dining/Table06"
+
+[node name="6" type="Node2D" parent="Anchors/Tables/table"]
+position = Vector2(216.5, 1591.37)
+metadata/host = "Dining/Table07"
+
+[node name="7" type="Node2D" parent="Anchors/Tables/table"]
+position = Vector2(668.5, 1591.37)
+metadata/host = "Dining/Table08"
 
 [node name="Entrance" type="Node2D" parent="Anchors"]
 position = Vector2(443, 1740)

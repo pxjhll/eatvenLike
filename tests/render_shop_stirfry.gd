@@ -48,6 +48,19 @@ func _business(rule: String) -> void:
 		return
 	_check(scene.art != null, rule + ": 美术场景装上了")
 	scene.rules.unlock("wok_a")
+	scene._process(0.25)
+	# 桌椅跟着买到的座位数摆：开局 6 座 = 前 3 张桌；买一座多出第 4 张桌的左椅
+	var dining: Node2D = scene.art.get_node("Sortables/Dining")
+	var start_seats: int = scene.rules.seat_total()
+	var shown := func(k: int) -> bool: return (dining.get_node("Table%02d" % k) as CanvasItem).is_visible_in_tree()
+	_check(shown.call(1) and shown.call(ceili(start_seats / 2.0)) and not shown.call(ceili(start_seats / 2.0) + 1), rule + ": 开局只摆出 %d 座对应的桌子" % start_seats)
+	scene.rules.gold = 100000.0
+	_check(scene.rules.buy_seat().is_empty(), rule + ": 买一个座位")
+	scene._process(0.25)
+	var next_table := dining.get_node("Table%02d" % (start_seats / 2 + 1))
+	_check(next_table.is_visible_in_tree(), rule + ": 买座位后多摆一张桌")
+	_check(not (next_table.get_node("ChairRight") as CanvasItem).visible or scene.rules.seat_total() % 2 == 0, rule + ": 单数座位只摆一把椅子")
+	scene.rules.gold = 0.0
 	var pickup_id := ServeFlow.pickup_of(spec)
 	var window: Vector2 = spec.layout.points[pickup_id]
 	var seen := {}
@@ -65,14 +78,18 @@ func _business(rule: String) -> void:
 			if g.state == "await" and pos.distance_to(window) < 260.0: seen.await_at_window = true
 			if g.state == "eating" and float(g.eat_left) < scene.rules.seat_seconds() - 15.0 and pos.distance_to(seat) <= 2.0: seen.eating_at_seat = true
 			if g.state == "queue": seen.queue = true
-		var visible_cups := scene._cups.filter(func(c: Sprite2D) -> bool: return c.visible).size()
 		for good: Dictionary in scene.rules.serve.goods:
-			if String(good.at).begins_with(ServeFlow.SEAT) and visible_cups > 0: dishes_drawn = true
+			if not String(good.at).begins_with(ServeFlow.SEAT): continue
+			var seat_no := int(String(good.at).substr(ServeFlow.SEAT.length()))
+			var table: Vector2 = scene.anchors.point("Tables/table/%d" % (seat_no / 2))
+			for cup: Sprite2D in scene._cups:
+				# 精灵的落脚点排在桌子前面，画出来的位置要回到桌面上
+				if cup.visible and absf(cup.position.x - table.x) <= 50.0 and cup.position.y >= table.y: dishes_drawn = true
 		if seen.has("eating_at_seat") and dishes_drawn and (rule != "self_pickup" or seen.has("await_at_window")) and scene.rules.sold >= 3: break
 	_check(every_guest_drawn, rule + ": 规则层里每位客人都有人物")
 	_check(seen.has("queue"), rule + ": 有客人排队")
 	_check(seen.has("eating_at_seat"), rule + ": 用餐的客人坐在分到的座位上")
-	_check(dishes_drawn, rule + ": 桌上的菜画出来了")
+	_check(dishes_drawn, rule + ": 桌上的菜摆在桌面上")
 	if rule == "self_pickup": _check(seen.has("await_at_window"), rule + ": 自取的客人站在出餐口前等")
 	_check(scene.rules.sold >= 3, rule + ": 正式界面里卖出了 %d 份" % scene.rules.sold)
 	_check(scene.save_now(false) == OK, rule + ": 能存档")
