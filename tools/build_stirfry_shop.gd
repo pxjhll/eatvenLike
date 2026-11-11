@@ -202,16 +202,16 @@ static func build() -> SpecShop:
 	shop.stages.assign([
 		stage("open", "开张", 0, "tomato_rice", 3.0, {"tomato_rice": 1.0}, 2,
 			[task("sell_tomato", "卖出 20 份番茄炒蛋盖饭", "tomato_rice", 20)], ["wok_a"]),
-		stage("pepper", "青椒肉丝盖饭", 80, "pepper_rice", 4.5, {"tomato_rice": 0.5, "pepper_rice": 0.5}, 2,
+		stage("pepper", "青椒肉丝盖饭", 80, "pepper_rice", 4.5, {"tomato_rice": 0.5, "pepper_rice": 0.5}, 3,
 			[task("sell_pepper", "卖出 20 份青椒肉丝盖饭", "pepper_rice", 20)], [], "wok_a", "炒锅A学会青椒肉丝，盖饭多一种"),
-		stage("fried_rice", "炒锅B · 蛋炒饭", 150, "egg_fried_rice", 5.5, {"tomato_rice": 0.3, "pepper_rice": 0.3, "egg_fried_rice": 0.4}, 3,
-			[task("sell_egg", "卖出 25 份蛋炒饭", "egg_fried_rice", 25)], ["wok_b"], "", "第二口锅，炒饭和盖饭抢同一盆饭"),
-		stage("soup", "汤桶 · 例汤", 220, "soup", 6.5, {"tomato_rice": 0.3, "pepper_rice": 0.3, "egg_fried_rice": 0.4}, 3,
+		stage("fried_rice", "炒锅B · 蛋炒饭", 150, "egg_fried_rice", 5.5, {"tomato_rice": 0.3, "pepper_rice": 0.3, "egg_fried_rice": 0.4}, 4,
+			[task("sell_egg", "卖出 20 份蛋炒饭", "egg_fried_rice", 20)], ["wok_b"], "", "第二口锅，炒饭和盖饭抢同一盆饭"),
+		stage("soup", "汤桶 · 例汤", 220, "soup", 6.5, {"tomato_rice": 0.3, "pepper_rice": 0.3, "egg_fried_rice": 0.4}, 4,
 			[task("sell_soup", "卖出 30 碗例汤", "soup", 30)], ["soup_pot"], "", "约四成客人加一碗例汤"),
-		stage("kungpao", "宫保鸡丁盖饭", 250, "kungpao_rice", 9.0, {"tomato_rice": 0.2, "pepper_rice": 0.25, "egg_fried_rice": 0.25, "kungpao_rice": 0.3}, 3,
-			[task("sell_kungpao", "卖出 30 份宫保鸡丁盖饭", "kungpao_rice", 30)], [], "wok_a", "炒锅A学会宫保鸡丁，客人一下多起来"),
-		stage("yangzhou", "扬州炒饭", 350, "yangzhou_rice", 9.5, {"tomato_rice": 0.15, "pepper_rice": 0.2, "egg_fried_rice": 0.2, "kungpao_rice": 0.2, "yangzhou_rice": 0.25}, 3,
-			[task("sell_yangzhou", "卖出 30 份扬州炒饭", "yangzhou_rice", 30)], [], "wok_b", "炒锅B学会扬州炒饭，最贵的一道"),
+		stage("kungpao", "宫保鸡丁盖饭", 250, "kungpao_rice", 9.0, {"tomato_rice": 0.2, "pepper_rice": 0.25, "egg_fried_rice": 0.25, "kungpao_rice": 0.3}, 5,
+			[task("sell_kungpao", "卖出 15 份宫保鸡丁盖饭", "kungpao_rice", 15)], [], "wok_a", "炒锅A学会宫保鸡丁，客人一下多起来"),
+		stage("yangzhou", "扬州炒饭", 350, "yangzhou_rice", 9.5, {"tomato_rice": 0.15, "pepper_rice": 0.2, "egg_fried_rice": 0.2, "kungpao_rice": 0.2, "yangzhou_rice": 0.25}, 5,
+			[task("sell_yangzhou", "卖出 15 份扬州炒饭", "yangzhou_rice", 15)], [], "wok_b", "炒锅B学会扬州炒饭，最贵的一道"),
 	])
 
 	var f := SpecFulfillment.new()
@@ -258,19 +258,20 @@ static func build() -> SpecShop:
 	shop.seat_groups.append(tables)
 
 	var staff := SpecStaffRules.new()
-	for row in [["gray_cat", "小灰猫"], ["cat", "三花猫"], ["rabbit", "兔子"], ["bear", "小熊"]]:
+	for row in [["gray_cat", "小灰猫"], ["cat", "三花猫"], ["rabbit", "兔子"], ["bear", "小熊"], ["dog", "小狗"], ["sheep", "小羊"]]:
 		var kind := SpecStaffKind.new()
 		kind.id = row[0]
 		kind.display_name = row[1]
-		kind.stats = {"carry": 1.0, "walk": 180.0, "work": 1.0}
+		kind.stats = {"carry": 1.0, "walk": 360.0, "work": 1.5}
 		staff.kinds.append(kind)
 	staff.zones.assign(["front", "kitchen"])
 	staff.front_base_slots = 1
-	# 开局两人：流动厨师（后厨，不坐班）+ 店长（柜台）；可招帮厨 60（开店就能招）、厨师B 120（炒锅B 以后后厨多一个位）
+	# 开局两人：流动厨师（后厨，不坐班）+ 店长（柜台）；招人 60 / 120 / 160 / 220，后厨位按阶段 2/3/4/4/5/5。
+	# 这家店人手大半在端菜跑腿（机器人实测），所以员工走路 360、干活 1.5 倍，整店约 46 分钟
 	staff.starting.assign(["gray_cat", "cat"])
 	staff.starting_posts.assign(["", "counter"])
-	staff.hire_pool.assign(["rabbit", "bear"])
-	staff.hire_costs.assign([60, 120])
+	staff.hire_pool.assign(["rabbit", "bear", "dog", "sheep"])
+	staff.hire_costs.assign([60, 120, 160, 220])
 	staff.can_drag = true
 	staff.home_anchor = "home"
 	shop.staff = staff
