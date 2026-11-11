@@ -383,7 +383,11 @@ static func _staff_target(id: String, c: Dictionary) -> bool:
 	return suffix.is_valid_int() and int(suffix) > 0 and str(int(suffix)) == suffix
 
 static func _stage(stage: SpecStage, p: String, c: Dictionary, errors: Array[Dictionary]) -> void:
-	if stage.stations.is_empty(): _error(errors, p + ".stations", "Each stage needs an unlock station.")
+	if stage.stations.is_empty() and stage.recipe_at.is_empty(): _error(errors, p + ".stations", "Each stage needs an unlock station or a recipe station.")
+	if not stage.recipe_at.is_empty():
+		if not stage.stations.is_empty(): _error(errors, p + ".recipe_at", "A recipe stage opens no stations; use either stations or recipe_at.", "combination")
+		_ref(stage.recipe_at, c.stations, p + ".recipe_at", errors)
+		if stage.dish.is_empty(): _error(errors, p + ".dish", "A recipe stage must name the dish it adds.", "required")
 	for id in stage.stations: _ref(id, c.stations, p + ".stations", errors)
 	_ref(stage.dish, c.dishes, p + ".dish", errors, true)
 	_ref(stage.flavor_fallback, c.dishes, p + ".flavor_fallback", errors, true)

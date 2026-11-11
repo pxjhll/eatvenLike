@@ -542,6 +542,7 @@ func dish_open(dish_id: String, needs_kitchen_hand := true) -> bool:
 			for item in s.produces:
 				if not _box_ready(item): return false
 	if not flavor_open(dish): return false
+	if shop.recipe_stage_of(dish_id) > stage_index: return false
 	if shop.fulfillment.handoff == "handoff" and needs_kitchen_hand and not dish.front and kitchen_staff() <= 0: return false
 	return true
 
@@ -1990,7 +1991,7 @@ func unlock(id: String) -> String:
 
 func next_unlock() -> String:
 	if not is_open(): return shop.goals.opening_station
-	if stage_index + 1 < shop.stages.size(): return shop.stages[stage_index + 1].stations[0]
+	if stage_index + 1 < shop.stages.size(): return shop.sold_at(stage_index + 1)
 	return ""
 
 
@@ -2232,10 +2233,11 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 		"unlock":
 			var id: String = arguments.id
 			var st := shop.station(id)
+			var recipe := _recipe_stage(id)
 			if st == null: code = CommandResult.UNKNOWN_STATION
-			elif station_unlocked(id): code = CommandResult.STATION_ALREADY_UNLOCKED
+			elif station_unlocked(id) and recipe < 0: code = CommandResult.STATION_ALREADY_UNLOCKED
 			else:
-				var stage := shop.stage_of(id)
+				var stage := recipe if recipe >= 0 else shop.stage_of(id)
 				if stage < 0: code = CommandResult.STATION_NOT_UNLOCKABLE
 				elif stage > 0 and not is_open(): code = CommandResult.SHOP_NOT_OPEN
 				elif stage > 0 and stage > stage_index + 1:
@@ -2430,8 +2432,17 @@ func execute_command(command: String, arguments: Dictionary = {}) -> Dictionary:
 
 # Canonical commits are reached only after command_status succeeds.
 
+## 已开的机器上卖的下一个配方阶段（没有返回 -1）：只有紧接着的下一阶段能买，再往后的报“先开上一阶段”
+func _recipe_stage(id: String) -> int:
+	if not station_unlocked(id): return -1
+	for index in shop.recipe_stages(id):
+		if index > stage_index: return index
+	return -1
+
+
 func _commit_unlock(id: String) -> void:
-	var stage := shop.stage_of(id)
+	var recipe := _recipe_stage(id)
+	var stage := recipe if recipe >= 0 else shop.stage_of(id)
 	var previously_unlocked := unlocked.duplicate() if _serving() else {}
 	gold -= shop.stages[stage].cost
 	for key in shop.stages[stage].stations:
@@ -2446,10 +2457,12 @@ func _commit_unlock(id: String) -> void:
 		for st in shop.stations:
 			if station_unlocked(st.id) and not previously_unlocked.get(st.id, false): ServeFlow.seed_stock(self, st.id)
 	if _queued_arrivals():
-		if id == shop.goals.opening_station: _next_customer = shop.fulfillment.first_customer_delay
+		if id == shop.goals.opening_station and recipe < 0: _next_customer = shop.fulfillment.first_customer_delay
 	elif orders.is_empty():
 		for unused in shop.fulfillment.opening_customers: _add_order()
-	events.emit("unlocked", {"station": id, "stage": stage})
+	var message := {"station": id, "stage": stage}
+	if recipe >= 0: message.dish = shop.stages[stage].dish
+	events.emit("unlocked", message)
 
 
 func _commit_unlock_box(material: String) -> void:

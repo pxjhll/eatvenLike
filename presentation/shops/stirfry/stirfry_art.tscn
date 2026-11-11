@@ -214,6 +214,8 @@ metadata/asset_id = "complete_steamer_station"
 
 [node name="SoupStation" type="Node2D" parent="Sortables" unique_id=2035293273]
 position = Vector2(800.5, 319.69034)
+metadata/layout_group = "station:soup_pot"
+metadata/unlock_rule = "soup_pot"
 
 [node name="Art" type="Sprite2D" parent="Sortables/SoupStation" unique_id=1403724583]
 position = Vector2(-75.50003, -188.69034)
@@ -623,20 +625,52 @@ size = Vector2(110, 140)
 [node name="Tap" type="Node2D" parent="Anchors/Stations/wok_a"]
 position = Vector2(329, 129)
 script = ExtResource("anchor")
-size = Vector2(237, 178)
+size = Vector2(118, 178)
 
 [node name="Frame" type="Node2D" parent="Anchors/Stations/wok_a"]
 position = Vector2(329, 129)
 script = ExtResource("anchor")
-size = Vector2(237, 178)
+size = Vector2(118, 178)
 
 [node name="Post" type="Node2D" parent="Anchors/Stations/wok_a"]
-position = Vector2(370, 300)
+position = Vector2(340, 300)
 script = ExtResource("anchor")
-size = Vector2(160, 90)
+size = Vector2(108, 90)
 
 [node name="PostPoint" type="Marker2D" parent="Anchors/Stations/wok_a"]
-position = Vector2(450, 335)
+position = Vector2(400, 335)
+
+[node name="wok_b" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/wok_b"]
+position = Vector2(447, 129)
+script = ExtResource("anchor")
+size = Vector2(118, 178)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/wok_b"]
+position = Vector2(447, 129)
+script = ExtResource("anchor")
+size = Vector2(118, 178)
+
+[node name="Post" type="Node2D" parent="Anchors/Stations/wok_b"]
+position = Vector2(450, 300)
+script = ExtResource("anchor")
+size = Vector2(110, 90)
+
+[node name="PostPoint" type="Marker2D" parent="Anchors/Stations/wok_b"]
+position = Vector2(500, 335)
+
+[node name="soup_pot" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/soup_pot"]
+position = Vector2(725, 131)
+script = ExtResource("anchor")
+size = Vector2(153, 168)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/soup_pot"]
+position = Vector2(725, 131)
+script = ExtResource("anchor")
+size = Vector2(153, 168)
 
 [node name="plating" type="Node2D" parent="Anchors/Stations"]
 

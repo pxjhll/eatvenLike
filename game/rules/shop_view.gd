@@ -226,7 +226,7 @@ func goal() -> Dictionary:
 			"stage":
 				if rules.stage_index < shop.stages.size() - 1:
 					var stage := shop.stages[rules.stage_index + 1]
-					return {"kind": "stage", "id": stage.stations[0], "current": mini(int(rules.gold), stage.cost), "target": stage.cost,
+					return {"kind": "stage", "id": shop.sold_at(rules.stage_index + 1), "current": mini(int(rules.gold), stage.cost), "target": stage.cost,
 						"text": text("stage_short", {"name": stage.display_name, "cost": stage.cost}, "攒金币 · 解锁" + stage.display_name),
 						"long": text("stage", {"name": stage.display_name, "cost": stage.cost})}
 			"tasks":
@@ -301,6 +301,9 @@ func station(id: String) -> Dictionary:
 	if t != null and not t.levels.is_empty():
 		card.sections.append("track")
 		card.track = track_row(id)
+	if not shop.recipe_stages(id).is_empty():
+		card.sections.append("recipes")
+		card.recipes = shop.recipe_stages(id).map(func(index: int) -> Dictionary: return recipe_row(id, index))
 	if not st.materials.is_empty():
 		card.sections.append("materials")
 		card.materials = st.materials.map(func(m: SpecMaterial) -> Dictionary: return material_row(st, m))
@@ -333,6 +336,20 @@ func _unlock_section(id: String, stage: int) -> Dictionary:
 		"dish": dish_name(dish) if not dish.is_empty() else "", "dish_price": rules.dish_price(dish) if d != null else 0.0,
 		"quote": rules.dish_quote(dish) if d != null else {},
 		"description": "基础说明：" + shop.station(id).description, "frame": stage >= 0 and stage == next_stage()}
+
+
+## 配方栏的一行：{stage, dish, name, cost, price, state(owned 已买 / next 下一个可买 / later 还没轮到), status, error}
+func recipe_row(id: String, index: int) -> Dictionary:
+	var def := shop.stages[index]
+	var row := {"stage": index, "dish": def.dish, "name": dish_name(def.dish), "title": def.display_name, "cost": def.cost,
+		"price": rules.dish_price(def.dish), "icon": def.dish, "note": def.unlock_note, "state": "later", "status": {}, "error": ""}
+	if index <= rules.stage_index:
+		row.state = "owned"
+		return row
+	row.status = rules.command_status("unlock", {"id": id})
+	row.error = command_message(row.status)
+	if index == rules.stage_index + 1 and rules.is_open(): row.state = "next"
+	return row
 
 
 ## 一条升级轨的面板行：{key, title, kind, level, max, cost, error, now, next, effect, star_next}
@@ -583,6 +600,7 @@ func can_buy(id: String) -> bool:
 	var st := shop.station(id)
 	for m in st.materials:
 		if CommandResult.is_ok(rules.command_status("upgrade", {"key": id + "/" + m.id})): return true
+	if not shop.recipe_stages(id).is_empty() and CommandResult.is_ok(rules.command_status("unlock", {"id": id})): return true
 	return false
 
 

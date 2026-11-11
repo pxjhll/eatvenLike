@@ -238,6 +238,69 @@ class MaterialsSection extends VBoxContainer:
 		page.view_node().station_action("box" if _box_rows.has(material) else "material", page.station_id, material)
 
 
+## 配方栏（配方阶段，规格 SpecStage.recipe_at）：这台机器上能学的菜，按阶段顺序一行一个；下一个可买的有购买键
+class RecipesSection extends VBoxContainer:
+	var page: Node
+	var title: Label
+	var list: VBoxContainer
+	var buttons := {}
+	var _rows := {}
+	var _signature := ""
+
+	func setup(page_: Node) -> void:
+		page = page_
+		var hud: Control = page.hud()
+		add_theme_constant_override("separation", 12)
+		title = hud._text(self, "配方 · 学会才上菜单", 20)
+		title.add_theme_stylebox_override("normal", ReferenceTheme.style("pill", 12))
+		list = VBoxContainer.new()
+		list.add_theme_constant_override("separation", 12)
+		add_child(list)
+
+	func reset() -> void:
+		_signature = ""
+
+	func refresh(card: Dictionary) -> void:
+		var hud: Control = page.hud()
+		var rows: Array = card.recipes
+		var signature: String = String(card.id) + str(rows.map(func(row: Dictionary) -> String: return String(row.dish)))
+		if signature != _signature:
+			for child in list.get_children(): child.free()
+			buttons.clear()
+			_rows.clear()
+			for row in rows:
+				var box: VBoxContainer = hud._card(list)
+				var line: HBoxContainer = hud._row(box, 12)
+				page.image(line, String(row.icon), 58)
+				var copy := VBoxContainer.new()
+				copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				copy.add_theme_constant_override("separation", 4)
+				line.add_child(copy)
+				_rows[row.dish] = {"card": box.get_parent(), "name": hud._text(copy, "", 22), "effect": hud._text(copy, "", 19, true)}
+				buttons[row.dish] = page.buy_button(line, func() -> void: page.view_node().station_action("recipe", page.station_id))
+			_signature = signature
+			hud.relayout()
+		for row in rows:
+			var nodes: Dictionary = _rows[row.dish]
+			var button: Button = buttons[row.dish]
+			nodes.name.text = String(row.name)
+			nodes.card.modulate.a = 1.0
+			match String(row.state):
+				"owned":
+					nodes.effect.text = "已上菜单 · 售价 %.1f" % float(row.price)
+					button.text = "已学会"
+					button.disabled = true
+				"next":
+					nodes.effect.text = String(row.note) if not String(row.note).is_empty() else "学会后上菜单 · 售价 %.1f" % float(row.price)
+					button.text = "学会 · %d 金币" % int(row.cost)
+					button.disabled = not CommandResult.is_ok(row.status)
+				_:
+					nodes.effect.text = "先开前面的阶段"
+					nodes.card.modulate.a = 0.6
+					button.text = "未开放"
+					button.disabled = true
+
+
 ## 没解锁：这一阶段开哪些机器、卖什么、解锁键
 class UnlockSection extends VBoxContainer:
 	var page: Node

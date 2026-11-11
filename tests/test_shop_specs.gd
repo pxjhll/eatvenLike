@@ -10,7 +10,7 @@ const CAMPAIGN: SpecCampaign = preload("res://content/campaign/campaign.tres")
 # ---------- 通用 ----------
 
 func test_every_reference_in_shop_data_points_at_something_real() -> void:
-	for shop in [TEA, PANCAKE, preload("res://tests/fixtures/noodle/shop.tres")]:
+	for shop in [TEA, PANCAKE, preload("res://content/shops/stirfry/shop.tres"), preload("res://tests/fixtures/noodle/shop.tres")]:
 		var items := {}
 		for i in shop.items: items[i.id] = true
 		for dish in shop.dishes:
@@ -34,9 +34,10 @@ func test_every_reference_in_shop_data_points_at_something_real() -> void:
 
 func test_campaign_lists_the_north_city_in_order() -> void:
 	check_eq(CAMPAIGN.cities.size(), 1, "一座城")
-	check_eq(CAMPAIGN.shop_ids(), ["pancake", "tea", "bakery"] as Array[String], "北方城店铺顺序")
+	check_eq(CAMPAIGN.shop_ids(), ["pancake", "tea", "stirfry", "bakery"] as Array[String], "北方城店铺顺序")
 	check_eq(CAMPAIGN.next_shop("pancake"), "tea", "煎饼摊之后是奶茶店")
-	check_eq(CAMPAIGN.next_shop("tea"), "", "面包店还没做")
+	check_eq(CAMPAIGN.next_shop("tea"), "stirfry", "奶茶店之后是小炒饭馆")
+	check_eq(CAMPAIGN.next_shop("stirfry"), "", "面包店还没做")
 	for city in CAMPAIGN.cities:
 		for shop in city.shops:
 			if shop.shop_path.is_empty(): continue

@@ -25,6 +25,8 @@ var upgrade_button: Button:
 	get: return _sections.track.upgrade_button if _sections.has("track") else null
 var material_buttons: Dictionary:
 	get: return _sections.materials.buttons if _sections.has("materials") else {}
+var recipe_buttons: Dictionary:
+	get: return _sections.recipes.buttons if _sections.has("recipes") else {}
 var seat_button: Button:
 	get: return _sections.seats.button if _sections.has("seats") else null
 var flyer_button: Button:
@@ -38,7 +40,7 @@ func setup(view: Node2D, hud: Control) -> void:
 	_hud = hud
 	add_theme_constant_override("separation", 12)
 	for pair in [["track", Sections.TrackSection], ["seats", Sections.SeatsSection], ["flyer", Sections.FlyerSection],
-			["materials", Sections.MaterialsSection], ["unlock", Sections.UnlockSection]]:
+			["materials", Sections.MaterialsSection], ["recipes", Sections.RecipesSection], ["unlock", Sections.UnlockSection]]:
 		register_section(pair[0], pair[1])
 
 

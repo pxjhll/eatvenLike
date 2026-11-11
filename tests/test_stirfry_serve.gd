@@ -1,15 +1,24 @@
 extends "res://tests/test_case.gd"
-## 小炒饭馆最小原型（Notion《小炒饭馆｜设计稿 v0.3》§8 首个原型通过条件，规格 §10 草案）：
-## 交接方式 serve = 订单明细 + 组合台等齐 + 共享米饭库存与预留 + 前厅送餐到座。全部走通用规则层，店铺只给数据。
+## 交接方式 serve（规格 §10）：订单明细 + 组合台等齐 + 共享米饭库存与预留 + 交到客人手里。全部走通用规则层，店铺只给数据。
+## 原型阶段的用例（Notion《小炒饭馆｜设计稿 v0.3》§8）用小炒饭馆数据改回送桌（seat_wait）跑，测通用的送桌路径；
+## 正式的小炒饭馆是客人自取（self_pickup），在后面的用例里测。
 
-const STIRFRY: SpecShop = preload("res://content/shops/stirfry/shop.tres")
+const DATA: SpecShop = preload("res://content/shops/stirfry/shop.tres")
+## 送桌版的小炒饭馆数据（前厅送餐到座位）
+var STIRFRY: SpecShop = _seat_wait(DATA)
+
+
+static func _seat_wait(shop: SpecShop) -> SpecShop:
+	var copy: SpecShop = shop.duplicate(true)
+	copy.fulfillment.dine_rule = "seat_wait"
+	return copy
 const ServeFlow := preload("res://game/rules/serve_flow.gd")
 const Validator := preload("res://game/rules/shop_spec_validator.gd")
 const SceneContract := preload("res://presentation/shop/shop_scene_contract.gd")
 
 
-func _open(shop: SpecShop = STIRFRY) -> ShopRules:
-	var rules := ShopRules.new(shop)
+func _open(shop: SpecShop = null) -> ShopRules:
+	var rules := ShopRules.new(shop if shop != null else STIRFRY)
 	rules.unlock("wok_a")
 	return rules
 
@@ -44,8 +53,10 @@ func _shop_copy() -> SpecShop:
 
 
 func test_data_passes_the_capability_contract() -> void:
-	check_eq(Validator.summary(Validator.validate(STIRFRY)), "", "小炒饭馆原型数据过配置校验")
-	check(not "stirfry" in preload("res://content/campaign/campaign.tres").shop_ids(), "原型还没进关卡表")
+	check_eq(Validator.summary(Validator.validate(DATA)), "", "小炒饭馆数据过配置校验")
+	check_eq(Validator.summary(Validator.validate(STIRFRY)), "", "送桌版也过配置校验")
+	check_eq(DATA.fulfillment.dine_rule, "self_pickup", "小炒饭馆是客人自取")
+	check_eq(preload("res://content/campaign/campaign.tres").shop_ids().find("stirfry"), 2, "小炒饭馆是关卡表第 3 关")
 
 
 func test_unsupported_serve_combinations_are_rejected() -> void:
@@ -236,7 +247,7 @@ func test_save_resume_and_counters() -> void:
 	var rules := _open()
 	rules.run(240.0)
 	check(rules.serve.guests.size() > 0 and rules.serve.goods.size() > 0, "店里有客人、有东西在做")
-	var copy := ShopRules.new(STIRFRY)
+	var copy := ShopRules.new(rules.shop)
 	check_eq(copy.load_dict(rules.to_dict()), "", "中途存档能读")
 	rules.run(120.0)
 	copy.run(120.0)
@@ -378,7 +389,7 @@ func test_delivery_callbacks_capture_resumable_settled_orders() -> void:
 	rules.events.off("*", listener)
 	check_eq(snapshots.map(func(s: Dictionary) -> String: return s.name), ["delivered", "sale", "eat_start"], "保留送达、结账、开吃的广播顺序")
 	for snapshot in snapshots:
-		var resumed := ShopRules.new(STIRFRY)
+		var resumed := ShopRules.new(rules.shop)
 		var error := resumed.load_dict(snapshot.state)
 		check_eq(error, "", snapshot.name + " 回调状态可以读档")
 		if not error.is_empty(): continue
@@ -577,3 +588,71 @@ func test_art_scene_passes_the_contract_and_matches_the_layout() -> void:
 		var tap := anchors.rect("Stations/%s/Tap" % st.id)
 		check(tap.has_area(), st.display_name + " 有点按区")
 	art.free()
+
+
+## 配方阶段（SpecStage.recipe_at，通用）：不开新机器，在已开机器的面板配方栏里买；买了菜才上菜单，只能按阶段顺序买
+func test_recipe_stages_are_bought_in_the_station_panel() -> void:
+	var rules := ShopRules.new(DATA)
+	var view := ShopView.new(rules)
+	check_eq(rules.unlock("wok_a"), "", "开张")
+	check_eq(rules.menu(), ["tomato_rice"] as Array[String], "开张只卖番茄炒蛋盖饭")
+	check_eq(rules.next_unlock(), "wok_a", "下一步在炒锅A上买配方")
+	check_eq(String(view.goal().id), "wok_a", "目标栏指向炒锅A")
+	var card := view.station("wok_a")
+	check("recipes" in card.sections, "炒锅A面板有配方栏")
+	check_eq(card.recipes.map(func(r: Dictionary) -> String: return r.dish), ["pepper_rice", "kungpao_rice"], "炒锅A能学青椒肉丝、宫保鸡丁")
+	check_eq(String(card.recipes[0].state), "next", "青椒肉丝是下一个")
+	check_eq(String(card.recipes[1].state), "later", "宫保鸡丁还没轮到")
+	check(not rules.unlock("wok_a").is_empty(), "没钱买不了")
+	rules.gold = 1000.0
+	check(view.can_buy("wok_a"), "钱够了炒锅A亮提示")
+	var heard := {}
+	var listen := func(message: Dictionary) -> void:
+		if message.name == "unlocked": heard = message.data
+	rules.events.on("*", listen)
+	check_eq(rules.unlock("wok_a"), "", "在炒锅A上学会青椒肉丝")
+	rules.events.off("*", listen)
+	check_eq(String(heard.get("dish", "")), "pepper_rice", "解锁广播带上学会的菜")
+	check_eq(rules.stage_index, 1, "进入第 2 阶段")
+	check_eq(rules.gold, 920.0, "花了 80")
+	check("pepper_rice" in rules.menu(), "青椒肉丝上菜单")
+	check_eq(String(view.station("wok_a").recipes[0].state), "owned", "配方栏显示已学会")
+	check(not rules.unlock("wok_a").is_empty(), "宫保鸡丁要等炒锅B、汤桶以后才能学")
+	check_eq(rules.next_unlock(), "wok_b", "下一步开炒锅B")
+	var saved := ShopRules.new(DATA)
+	check_eq(saved.load_dict(rules.to_dict()), "", "学过配方的存档能读")
+	check_eq(saved.menu(), rules.menu(), "读档后菜单一样")
+	while not rules.next_unlock().is_empty(): check_eq(rules.unlock(rules.next_unlock()), "", "按顺序解锁 " + rules.next_unlock())
+	check_eq(rules.stage_index, DATA.stages.size() - 1, "全部阶段都开了")
+	for dish in DATA.dishes: check(rules.dish_open(dish.id, false), dish.display_name + " 已上菜单")
+	# 配方阶段的数据约束
+	var both := DATA.duplicate(true)
+	both.stages[1].stations.assign(["wok_b"])
+	check("recipe_at" in Validator.summary(Validator.validate(both)), "配方阶段不能同时开机器")
+	var nameless := DATA.duplicate(true)
+	nameless.stages[1].dish = ""
+	check("dish" in Validator.summary(Validator.validate(nameless)), "配方阶段必须写学会哪道菜")
+
+
+## v0.3 全菜单：两口锅抢一盆饭、盖饭合盘、炒饭直接出锅、例汤附加，客人自取整单；每道菜都卖得出去，状态自洽
+func test_full_menu_sells_every_dish_with_self_pickup() -> void:
+	var rules := ShopRules.new(DATA)
+	rules.gold = 100000.0
+	while not rules.next_unlock().is_empty(): rules.unlock(rules.next_unlock())
+	while rules.hire().is_empty(): rules.deploy_worker(rules.roster[-1].id)
+	rules.gold = 0.0
+	var sold := {}
+	var soup_orders := {"with": 0, "all": 0}
+	var count := func(message: Dictionary) -> void:
+		if message.name == "delivered": sold[message.data.dish] = int(sold.get(message.data.dish, 0)) + 1
+		if message.name == "order_taken":
+			soup_orders.all += 1
+			if ServeFlow.order(rules, int(message.data.order)).lines.size() > 1: soup_orders.with += 1
+	rules.events.on("*", count)
+	rules.run(900.0)
+	rules.events.off("*", count)
+	for dish in DATA.dishes: check(int(sold.get(dish.id, 0)) > 0, "%s 卖出 %d 份" % [dish.display_name, int(sold.get(dish.id, 0))])
+	check(soup_orders.with > 0 and soup_orders.with < soup_orders.all, "部分客人加例汤（%d/%d）" % [soup_orders.with, soup_orders.all])
+	for job in rules.serve.jobs.values(): check(job.kind != "serve", "自取店没人送桌")
+	check(int(rules.serve.served) >= 40, "15 分钟服务 %d 人" % int(rules.serve.served))
+	check_eq(_consistent(rules), "", "全菜单跑完状态自洽")
