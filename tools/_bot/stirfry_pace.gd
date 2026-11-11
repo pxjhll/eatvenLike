@@ -14,10 +14,16 @@ func _initialize() -> void:
 func run(shop: SpecShop, seed: int, mode: String) -> Dictionary:
 	var rules := ShopRules.new(shop, seed)
 	var next_visit := 1.0
-	var out := {"done": -1.0, "stages": [], "tasks": {}, "hires": [], "seats": 0, "lost": 0, "revenue": 0.0, "buys": 0, "idle": 0.0, "peak_queue": 0}
+	var out := {"done": -1.0, "stages": [], "tasks": {}, "hires": [], "seats": 0, "lost": 0, "revenue": 0.0, "buys": 0, "idle": 0.0, "peak_queue": 0, "load": {}, "late": 0.0}
 	var last_stage := -1
 	while rules.clock < 70 * 60.0:
 		rules.step(ShopRules.STEP)
+		if rules.stage_index >= 4:
+			for key in rules.serve.jobs:
+				var j: Dictionary = rules.serve.jobs[key]
+				var tag := "%s:%s" % [j.kind, j.to] if j.kind != "home" else "idle"
+				out.load[tag] = float(out.load.get(tag, 0.0)) + ShopRules.STEP
+			out.late += ShopRules.STEP
 		if rules.is_open() and rules.stage_index != last_stage:
 			last_stage = rules.stage_index
 			out.stages.append(rules.clock)
@@ -36,7 +42,10 @@ func run(shop: SpecShop, seed: int, mode: String) -> Dictionary:
 				out.buys += 1
 				continue
 			if rules.hire_error() == "" and rules.hire() == "":
-				rules.deploy_worker(rules.roster[-1].id)
+				var post := ""
+				if mode.contains("seat"): post = "wok_a" if out.hires.is_empty() else "wok_b"
+				var derr := rules.deploy_worker(rules.roster[-1].id, post)
+				if derr != "": print("deploy ", post, " ", derr)
 				out.hires.append(rules.clock)
 				continue
 			var opts := []
@@ -48,7 +57,7 @@ func run(shop: SpecShop, seed: int, mode: String) -> Dictionary:
 			opts.sort()
 			var pick: Array = opts[0]
 			var target: int = rules.next_stage_cost() if not nxt.is_empty() else 0
-			if mode == "save" and not nxt.is_empty() and pick[0] > 0.25 * target: break
+			if mode.begins_with("save") and not nxt.is_empty() and pick[0] > 0.25 * target: break
 			var err: String = rules.buy_seat() if pick[1] == "#seat" else rules.upgrade(pick[1])
 			if err != "": break
 			out.buys += 1
@@ -73,6 +82,14 @@ func summarize(name: String, rows: Array) -> void:
 		for k in r.tasks: tk.append("%s %.1f" % [k, r.tasks[k] / 60.0])
 		print("完店 %5.1f | 阶段 %s | 任务 %s | 招人 %s | 座位+%d | 买 %d | 流失 %d 服务 %d | 营业额 %.0f 余 %.0f | 队列峰 %d | 未满级 %s" % [
 			r.done / 60.0, st, ", ".join(tk), ", ".join(r.hires.map(func(t): return "%.1f" % (t / 60.0))), r.seats, r.buys, r.lost, r.served, r.revenue, r.gold, r.peak_queue, r.left])
+	var agg := {}
+	var late := 0.0
+	for r in rows:
+		late += r.late
+		for k in r.load: agg[k] = float(agg.get(k, 0.0)) + r.load[k]
+	var keys := agg.keys()
+	keys.sort_custom(func(a, b): return agg[a] > agg[b])
+	print("宫保阶段起人手占用（人·秒/秒）：", ", ".join(keys.map(func(k): return "%s %.2f" % [k, agg[k] / maxf(1.0, late)])))
 	var done := rows.map(func(r): return r.done / 60.0)
 	var m := 0.0
 	for x in done: m += x

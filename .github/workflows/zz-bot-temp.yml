@@ -17,4 +17,4 @@ jobs:
           unzip -q godot.zip
           mv Godot_v4.7-stable_linux.x86_64 godot
       - run: ./godot --headless --path . --import
-      - run: timeout 900s ./godot --headless --path . -s tools/_bot/stirfry_pace.gd -- save,spend
+      - run: timeout 900s ./godot --headless --path . -s tools/_bot/stirfry_pace.gd -- save,save_seat
