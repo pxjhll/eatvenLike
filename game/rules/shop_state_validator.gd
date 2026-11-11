@@ -1,4 +1,5 @@
 extends RefCounted
+const MovementValidator := preload("res://game/rules/movement_validator.gd")
 ## Read-only save validation. Defaults describe the current data IDs; historical
 ## orphan top-level IDs are ignored exactly as in the restore merge.
 
@@ -145,7 +146,9 @@ func validate(data: Dictionary, defaults: Dictionary, shop: SpecShop, chains: Di
 		if not _routes.has(row.route) or not _items.has(row.item) or row.count <= 0 or row.duration <= 0 or row.progress < 0 or row.progress > 1: return "belt_items 状态无效"
 		if row.dst != _routes[row.route].to or not _destination(row.dst): return "belt_items 目标无效"
 		if not _delivery_slot(row.dst, row.item): return "belt_items 缺少目标物品"
-	return _serve(data)
+	error = _serve(data)
+	if not error.is_empty(): return error
+	return MovementValidator.validate(data,shop)
 
 
 ## 送桌店（serve）的运行状态：引用都指向现有的顾客 / 订单 / 份 / 实物 / 员工，实物在合法位置，预留和手上的活对得上。

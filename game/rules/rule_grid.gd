@@ -13,7 +13,7 @@ func contains_cell(cell: Vector2i) -> bool:
 
 
 ## 四方向广度优先搜索。包含起终点；不可达返回空数组。
-func find_path(from_cell: Vector2i, to_cell: Vector2i) -> Array[Vector2i]:
+func find_path(from_cell: Vector2i, to_cell: Vector2i, can_step: Callable = Callable()) -> Array[Vector2i]:
 	var obstacles := {}
 	for cell in blocked_cells:
 		obstacles[cell] = true
@@ -36,6 +36,7 @@ func find_path(from_cell: Vector2i, to_cell: Vector2i) -> Array[Vector2i]:
 		for direction in [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]:
 			var next: Vector2i = current + direction
 			if contains_cell(next) and not obstacles.has(next) and not previous.has(next):
+				if can_step.is_valid() and not can_step.call(current,next): continue
 				previous[next] = current
 				frontier.append(next)
 	return []

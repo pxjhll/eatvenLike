@@ -209,6 +209,13 @@ func _read_existing() -> Dictionary:
 	# bytes_to_var deliberately excludes objects; never use bytes_to_var_with_objects.
 	var state: Variant = bytes_to_var(bytes)
 	if not state is Dictionary: return {"error": "店铺存档状态必须是字典"}
+	if state.get("movement") is Dictionary:
+		var protocol: Variant = state.movement.get("version")
+		if ((protocol is int or protocol is float) and protocol>1) or shop.layout.motion_version!=1:
+			return {"error":"存档运动版本高于当前配置，已停止写入以保留原文件","protected":true}
+	# First movement adoption also needs a durable old-file backup, even when
+	# the wrapper already carries the current content fingerprint.
+	if shop.layout.motion_version==1 and not state.has("movement"): refresh = true
 	var guides: Array = []
 	var raw_guides: Variant = wrapper.get("guides", [])
 	if raw_guides is Array:

@@ -20,6 +20,7 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 			if value.block == "hand": out["locks_user"] = int(value.params.get("users", 0)) > 0
 		for prop in value.get_property_list():
 			var key: String = prop.name
+			if type_name == "SpecLayout" and value.motion_version == 0 and key in ["motion_version","motion_units","actor_areas","customer_points","customer_queue"]: continue
 			if not (int(prop.usage) & PROPERTY_USAGE_SCRIPT_VARIABLE) or not (int(prop.usage) & PROPERTY_USAGE_STORAGE): continue
 			if key in PRESENTATION or (type_name == "SpecStaffKind" and key == "role"): continue
 			if structural and key in ["effects", "base_effects", "stats"]: continue

@@ -14,6 +14,7 @@ extends RefCounted
 ## 物品守恒：实物只在“从原料箱拿起 / 批量锅出锅”时出生，只在“配方工序消耗 / 客人吃完”时消失；取消只放回、不凭空增减。
 
 const WorkerState := preload("res://game/rules/worker_state.gd")
+const CustomerMovement := preload("res://game/rules/customer_movement.gd")
 const SHARED := -1
 const SOURCE_BLOCKS := ["supply", "batch_pot"]
 const WORK_BLOCKS := ["hand", "combine"]
@@ -193,6 +194,7 @@ static func _spawn(rules: ShopRules) -> void:
 	s.guests.append({"id": _next(rules), "state": "queue", "wait": 0.0, "seat": -1, "order": -1, "claimed": -1,
 		"walk_left": 0.0, "walk_total": 0.0, "eat_left": 0.0})
 	rules._next_customer_id += 1
+	if rules.movement_enabled(): CustomerMovement.sync(rules)
 	rules.events.emit("arrived", {})
 
 
@@ -259,8 +261,9 @@ static func _guests(rules: ShopRules, dt: float) -> void:
 			"to_pickup":
 				g.wait += dt
 				g.walk_left = maxf(0.0, float(g.walk_left) - dt)
-				if g.walk_left <= 0.000001:
+				if CustomerMovement.ready(rules,"guest:%d"%int(g.id)) if rules.movement_enabled() else g.walk_left <= 0.000001:
 					g.state = "await"
+					if rules.movement_enabled(): CustomerMovement.sync(rules)
 					rules.events.emit("await_pickup", {"guest": g.id})
 					_collect(rules, g)
 			"await":
@@ -269,8 +272,9 @@ static func _guests(rules: ShopRules, dt: float) -> void:
 			"to_seat":
 				g.wait += dt
 				g.walk_left = maxf(0.0, float(g.walk_left) - dt)
-				if g.walk_left <= 0.000001:
+				if CustomerMovement.ready(rules,"guest:%d"%int(g.id)) if rules.movement_enabled() else g.walk_left <= 0.000001:
 					g.state = "seated"
+					if rules.movement_enabled(): CustomerMovement.sync(rules)
 					rules.events.emit("seated", {"guest": g.id, "seat": g.seat})
 					_maybe_eat(rules, g)
 			"seated":
@@ -292,12 +296,14 @@ static func _start_eating(rules: ShopRules, g: Dictionary) -> bool:
 	if o.is_empty() or not order_complete(o): return false
 	g.state = "eating"
 	g.eat_left = rules.seat_seconds()
+	if rules.movement_enabled(): CustomerMovement.sync(rules)
 	return true
 
 
 ## 自取（dine_rule = self_pickup）：这一单的每份餐都在出餐口上了，客人一次端走，走去座位。
 ## 状态先全部改好（东西归到座位、客人在路上、每份记送达、整单结账），最后才广播。
 static func _collect(rules: ShopRules, g: Dictionary) -> void:
+	if rules.movement_enabled() and not CustomerMovement.ready(rules,"guest:%d"%int(g.id)): return
 	var o := order(rules, int(g.order))
 	if o.is_empty(): return
 	var pickup := pickup_of(rules.shop)
@@ -318,6 +324,7 @@ static func _collect(rules: ShopRules, g: Dictionary) -> void:
 	var speed := maxf(1.0, rules.shop.fulfillment.customer_walk)
 	g.walk_total = RuleNav.length(rules.nav.path(rules.nav.point(pickup), _point(rules, SEAT + str(g.seat)))) / speed
 	g.walk_left = g.walk_total
+	if rules.movement_enabled(): CustomerMovement.sync(rules)
 	var done: Array = []
 	for pair in ready: done.append(_commit_delivery(rules, int(pair[0].id)))
 	# 整单端走、送达计数、结账全部落定后才广播，回调里存档读档接得上
@@ -337,6 +344,7 @@ static func _leave(rules: ShopRules, g: Dictionary) -> void:
 		if owned.has(int(good.owner)) and good.at == SEAT + str(g.seat): s.goods.erase(good)
 	if not o.is_empty(): s.orders.erase(o)
 	s.guests.erase(g)
+	if rules.movement_enabled(): CustomerMovement.sync(rules)
 	rules.events.emit("left", {"guest": g.id, "seat": g.seat})
 
 
@@ -354,12 +362,12 @@ static func _go(rules: ShopRules, worker: Dictionary, at: String, stage: String)
 	job.stage = stage
 	worker.target = "" if at.begins_with(SEAT) else at
 	var goal := _point(rules, at)
-	if worker.pos.distance_to(goal) < 1.0:
+	if worker.pos.distance_to(goal) < 1.0 and not rules.movement_enabled():
 		worker.walking = false
 		worker.pos = goal
 		_arrived(rules, worker)
 	else:
-		WorkerState.begin_walk(worker, rules.nav.path(worker.pos, goal), "walk")
+		rules.begin_move(worker,goal,"walk")
 
 
 static func _act(worker: Dictionary, job: Dictionary, stage: String, seconds: float, label: String) -> void:
@@ -376,9 +384,10 @@ static func _work(rules: ShopRules, worker: Dictionary, dt: float) -> void:
 		worker.phase = "idle"
 		return
 	if worker.walking:
-		if WorkerState.advance_walk(worker, rules.walk_speed(worker) * dt): _arrived(rules, worker)
+		if rules.advance_move(worker,dt): _arrived(rules, worker)
 		return
 	if worker.phase != "work": return
+	if rules.movement_enabled() and job.kind=="take" and not CustomerMovement.ready(rules,"guest:%d"%int(job.guest)): return
 	worker.action_left = maxf(0.0, float(worker.action_left) - dt)
 	if worker.action_left > 0.000001: return
 	match String(job.stage):
@@ -497,6 +506,7 @@ static func _taken(rules: ShopRules, worker: Dictionary, job: Dictionary) -> voi
 		g.walk_total = RuleNav.length(rules.nav.path(rules.nav.point(rules.counter_id), _point(rules, SEAT + str(g.seat)))) / speed
 	g.walk_left = g.walk_total
 	_end(rules, worker)
+	if rules.movement_enabled(): CustomerMovement.sync(rules)
 	rules.events.emit("order_taken", {"guest": g.id, "order": o.id, "seat": g.seat})
 
 
@@ -557,6 +567,7 @@ static func _good(rules: ShopRules, id: int) -> Dictionary:
 static func cancel(rules: ShopRules, worker: Dictionary) -> void:
 	var job := job_of(rules, worker)
 	if job.is_empty(): return
+	worker.erase("motion")
 	if int(job.good) != -1:
 		var good := _good(rules, int(job.good))
 		if not good.is_empty():
@@ -605,7 +616,7 @@ static func _idle(rules: ShopRules, worker: Dictionary) -> void:
 	if worker.pos.distance_to(home) < 1.0: return
 	rules.serve.jobs[str(worker.id)] = _job("home", -1, -1, "", -1, "", worker.post)
 	worker.task_label = "回岗"
-	WorkerState.begin_walk(worker, rules.nav.path(worker.pos, home), "walk")
+	rules.begin_move(worker,home,"walk")
 	job_of(rules, worker).stage = "home"
 
 
@@ -637,7 +648,11 @@ static func candidates(rules: ShopRules, worker: Dictionary) -> Array:
 	var d := shop.dispatch
 	if r in ["front", "any"]:
 		for g in rules.serve.guests:
-			if g.state != "queue" or int(g.claimed) != -1: continue
+			if g.state != "queue": continue
+			if int(g.claimed) != -1:
+				if rules.movement_enabled(): break
+				continue
+			if rules.movement_enabled() and not CustomerMovement.ready(rules,"guest:%d"%int(g.id)): break
 			if free_seat(rules) < 0: break
 			out.append(_scored(rules, worker, _job("take", -1, -1, "", -1, rules.counter_id, rules.counter_id, int(g.id)), "take", float(g.wait), "接单"))
 			break

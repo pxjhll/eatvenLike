@@ -16,6 +16,9 @@ const Completion := preload("res://game/rules/fulfillment_completion.gd")
 const MachineProgress := preload("res://game/rules/machine_progress.gd")
 const DispatchPolicy := preload("res://game/rules/dispatch_policy.gd")
 const ServeFlow := preload("res://game/rules/serve_flow.gd")
+const Movement := preload("res://game/rules/rule_movement.gd")
+const CustomerMovement := preload("res://game/rules/customer_movement.gd")
+var movement: Dictionary = {}
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -189,6 +192,7 @@ func to_dict() -> Dictionary:
 	out.log = _plain(events.log)
 	# 奇遇按 id 存：店铺数据里的奇遇，加上等玩家选的卡片
 	out.pending_events = pending_events.map(func(ev: SpecEvent) -> String: return ev.id)
+	if movement_enabled(): out.movement = _plain(movement)
 	return out
 
 
@@ -208,6 +212,10 @@ static func _plain(v: Variant) -> Variant:
 ## Validate and fully restore off to the side before replacing any live object.
 func load_dict(data: Dictionary, refresh_content: bool = false) -> String:
 	var candidate := ShopRules.new(shop)
+	var rebuild_motion := movement_enabled() and not data.has("movement")
+	if rebuild_motion:
+		data = data.duplicate(true)
+		data.movement = {"version":1,"customers":{}}
 	# Saves written before the serve mode existed carry no serve state.
 	if not data.has("serve"):
 		data = data.duplicate()
@@ -217,9 +225,16 @@ func load_dict(data: Dictionary, refresh_content: bool = false) -> String:
 	var error := StateValidator.new().validate(data, candidate.to_dict(), shop, chains, candidate.event_defs)
 	if not error.is_empty(): return error
 	candidate._restore_validated(data)
+	if movement_enabled():
+		candidate.movement = data.movement.duplicate(true)
+		if rebuild_motion:
+			CustomerMovement.sync(candidate,true)
+			for worker in candidate.workers:
+				if worker.walking and not worker.has("motion"): candidate._rebuild_move(worker)
 	if refresh_content: candidate._refresh_content_values()
 	for key in STATE_KEYS: set(key, candidate.get(key))
 	workers = candidate.workers
+	movement = candidate.movement
 	nav = candidate.nav
 	rng = candidate.rng
 	event_rng = candidate.event_rng
@@ -318,6 +333,7 @@ func _derive_roles() -> void:
 
 
 func reset(seed := -1) -> void:
+	movement = {}
 	clock = 0.0
 	gold = float(shop.start_gold)
 	revenue = 0.0
@@ -403,6 +419,7 @@ func reset(seed := -1) -> void:
 		# 每位开局员工可以有自己的岗位（starting_posts，空 = 流动），没写就都用 starting_post
 		var post: String = shop.staff.starting_posts[index] if index < shop.staff.starting_posts.size() else shop.staff.starting_post
 		if not post.is_empty(): _seat_at(worker, post)
+	if movement_enabled(): CustomerMovement.sync(self)
 
 
 func _build_stations() -> void:
@@ -592,6 +609,10 @@ func run(seconds: float) -> void:
 func _tick() -> void:
 	clock += STEP
 	events.clock = clock
+	if movement_enabled():
+		CustomerMovement.sync(self)
+		CustomerMovement.tick(self,STEP)
+		CustomerMovement.sync(self)
 	for e in mods.tick(STEP): events.emit("modifier_ended", e)
 	# 整秒 / 整分钟广播：按时间触发的奇遇听这两个
 	if int(round(clock * 10.0)) % 10 == 0: events.emit("tick_second", {"time": clock})
@@ -600,6 +621,7 @@ func _tick() -> void:
 		"single": _tick_single()
 		"serve": ServeFlow.tick(self, STEP)
 		_: _tick_handoff()
+	if movement_enabled(): CustomerMovement.sync(self)
 	_track_bottleneck()
 	if completed_at < 0.0 and shop_complete():
 		completed_at = clock
@@ -628,7 +650,12 @@ func _tick_handoff() -> void:
 			_update_worker(worker)
 	_allocate()
 	_run_belts()
-	_orders_state.advance_diners(STEP)
+	if movement_enabled():
+		for index in range(diners.size()-1,-1,-1):
+			if not CustomerMovement.ready(self,"diner:%d"%int(diners[index].seat)): continue
+			diners[index].left -= STEP
+			if diners[index].left <= 0.000001: diners.remove_at(index)
+	else: _orders_state.advance_diners(STEP)
 	if not shop.fulfillment.takeaway_station.is_empty() and station_unlocked(shop.fulfillment.takeaway_station):
 		_orders_state.overflow_to_takeaway(free_seats())
 
@@ -727,6 +754,7 @@ func _add_order() -> void:
 		seat = _first_open_seat() if spare > 0 else -1
 		takeaway = takeaway_open and spare <= 0
 	_orders_state.admit_handoff(selected, seat, takeaway, weights, shop.fulfillment.ramp_orders, takeaway_open)
+	if movement_enabled(): CustomerMovement.sync(self)
 	events.emit("arrived", {"dish": selected})
 
 
@@ -936,7 +964,42 @@ func stat(worker: Dictionary, name: String) -> float:
 
 
 func walk_speed(worker: Dictionary) -> float:
-	return Numbers.walk_speed(shop, mods, tune, worker)
+	return Numbers.walk_speed(shop, mods, tune, worker) * (shop.layout.motion_units if movement_enabled() else 1.0)
+
+
+func movement_enabled() -> bool:
+	return shop.layout != null and shop.layout.motion_version == 1
+
+
+func begin_move(worker: Dictionary, goal: Vector2, phase: String) -> void:
+	if not movement_enabled():
+		WorkerState.begin_walk(worker,nav.path(worker.pos,goal),phase)
+		return
+	var profile := "staff"
+	if _serving():
+		var role := ServeFlow.role(self,worker)
+		if shop.layout.actor_areas.has(role): profile = role
+	Movement.request(worker,nav,goal,profile)
+	worker.phase = phase
+
+
+func advance_move(worker: Dictionary, dt: float) -> bool:
+	if not movement_enabled(): return WorkerState.advance_walk(worker,walk_speed(worker)*dt)
+	if not worker.has("motion"):
+		_rebuild_move(worker)
+	return Movement.tick(worker,nav,walk_speed(worker)*dt)
+
+
+func _rebuild_move(worker: Dictionary) -> void:
+	var goal: Vector2
+	if not worker.path.is_empty(): goal = worker.path[-1]
+	elif _serving():
+		var job := ServeFlow.job_of(self,worker)
+		goal = nav.post(worker.post) if job.get("stage","")=="home" else ServeFlow._point(self,job.to if job.get("stage","")=="go_to" else job.get("from",worker.post))
+	elif not worker.job.is_empty():
+		goal = _destination_point(worker.job) if worker.phase=="walk_dropoff" else _source_point(worker.job)
+	else: goal = nav.point(worker.target)
+	begin_move(worker,goal,worker.phase)
 
 
 func skill(worker: Dictionary) -> float:
@@ -1266,10 +1329,11 @@ func _reserve(worker: Dictionary, job: Dictionary) -> void:
 	worker.task_label = job.kind
 	_walk(worker, _source_point(job), "walk_pickup")
 	if not ticket.is_empty(): worker.ticket = ticket
+	if movement_enabled(): CustomerMovement.sync(self)
 
 
 func _walk(worker: Dictionary, destination: Vector2, phase: String) -> void:
-	WorkerState.begin_walk(worker, nav.path(worker.pos, destination), phase)
+	begin_move(worker,destination,phase)
 
 
 func _take(job: Dictionary) -> void:
@@ -1305,7 +1369,7 @@ func _action_duration(job: Dictionary, worker: Dictionary) -> float:
 func _update_worker(worker: Dictionary) -> void:
 	var job: Dictionary = worker.job
 	if worker.walking:
-		if not WorkerState.advance_walk(worker, walk_speed(worker) * STEP): return
+		if not advance_move(worker,STEP): return
 		if worker.phase == "walk_pickup":
 			WorkerState.enter_handoff_action(worker, "work" if _is_operation(job) else "pickup",
 				_action_duration(job, worker))
@@ -1315,6 +1379,7 @@ func _update_worker(worker: Dictionary) -> void:
 		else:
 			WorkerState.enter_handoff_action(worker, "dropoff", shop.dispatch.hop_seconds / skill(worker))
 		return
+	if movement_enabled() and worker.phase=="dropoff" and job.get("kind","")=="serve" and not CustomerMovement.ready(self,"order:%d"%int(job.order_id)): return
 	var action_done := WorkerState.tick_handoff_action(worker, STEP)
 	if worker.phase == "work" and job.kind == "work":
 		stations[job.src].progress = 1.0 - worker.action_left / stations[job.src].duration
@@ -1332,11 +1397,12 @@ func _update_worker(worker: Dictionary) -> void:
 			_finish(worker)
 		"dropoff":
 			if job.kind == "serve":
+				if movement_enabled(): _finish(worker)
 				_record_sale(job)
 				_orders_state.remove_handoff(job.order_id)
 			else:
 				_deliver(job.dst, job.item, job.count)
-			_finish(worker)
+			if not (movement_enabled() and job.kind=="serve"): _finish(worker)
 
 
 func _complete_topping(_id: String, station: Dictionary, job: Dictionary) -> void:
@@ -1369,10 +1435,15 @@ func _manual(id: String) -> bool:
 
 
 func _record_sale(job: Dictionary) -> void:
+	var diner_seat := -1
 	if not _to_go(job):
 		var seat := int(_order_by_id(job.order_id).get("seat", -1))
 		if seat < 0: seat = _first_open_seat()
 		_orders_state.add_diner(seat, job.item, seat_seconds())
+		diner_seat = seat
+	if movement_enabled():
+		_orders_state.remove_handoff(job.order_id)
+		CustomerMovement.handoff_sale(self,int(job.order_id),diner_seat)
 	_sales.count_handoff(job.item, job.count)
 	events.emit("sale", _sales.credit_handoff(job, dish_price(job.item)))
 
@@ -1795,6 +1866,7 @@ func _spawn_single() -> void:
 	var f := shop.fulfillment
 	var addon: bool = kind == f.addon_dish or (not f.addon_dish.is_empty() and rng.randf() < f.addon_chance)
 	_orders_state.admit_single(kind, addon, _roll_options())
+	if movement_enabled(): CustomerMovement.sync(self)
 	events.emit("arrived", {"dish": kind})
 
 
@@ -1837,9 +1909,9 @@ func _staff_tick(s: Dictionary) -> void:
 ## 沿寻路路线走（格子寻路的店绕开桌子，直线走的店路线就是起点到终点）
 func _walk_single(s: Dictionary) -> void:
 	# 旧存档读进来时没有路线：现算一条
-	if s.path.is_empty():
+	if s.path.is_empty() and not movement_enabled():
 		WorkerState.assign_path(s, nav.path(s.pos, nav.point(s.target)))
-	if not WorkerState.advance_walk(s, walk_speed(s) * STEP): return
+	if not advance_move(s,STEP): return
 	_arrived_single(s)
 
 
@@ -1847,11 +1919,11 @@ func _go(s: Dictionary, point: String, label: String) -> void:
 	s.target = point
 	s.task_label = label
 	var goal := nav.point(point)
-	if s.pos.distance_to(goal) < 1.0:
+	if s.pos.distance_to(goal) < 1.0 and not movement_enabled():
 		WorkerState.arrive(s)
 		_arrived_single(s)
 	else:
-		WorkerState.begin_walk(s, nav.path(s.pos, goal), "walk")
+		begin_move(s,goal,"walk")
 
 
 func _work_single(s: Dictionary, seconds: float) -> void:
@@ -1878,6 +1950,7 @@ func _crowded(s: Dictionary) -> bool:
 
 func _find_job_single(s: Dictionary) -> bool:
 	if shop.dispatch.chores_first and _try_pot_chore(s, false): return true
+	if movement_enabled() and (queue.is_empty() or not CustomerMovement.ready(self,"customer:%d"%int(queue[0]))): return false
 	var c := _orders_state.claim_single()
 	if c.is_empty(): return false
 	WorkerState.claim_single_order(s, c.id, _order_steps(c))
@@ -1914,6 +1987,9 @@ func _arrived_single(s: Dictionary) -> void:
 		WorkerState.standby_single(s)
 		return
 	var st: Dictionary = s.steps[s.step]
+	if movement_enabled() and st.action in ["take","hand"] and not CustomerMovement.ready(self,"customer:%d"%int(s.order)):
+		WorkerState.wait_single(s,"等待")
+		return
 	var station := shop.station(st.station)
 	if station.block == "hand" and int(station.params.get("users", 0)) > 0:
 		var busy: Dictionary = stations[st.station]
@@ -1953,6 +2029,7 @@ func _finish_work_single(s: Dictionary) -> void:
 			_orders_state.dequeue_single(c.id)
 			_sales.accept_single(c, order_price_single(c), shop.fulfillment.pay_at == "on_take")
 			Completion.advance_single_step(s, {}, false)
+			if movement_enabled(): CustomerMovement.sync(self)
 		"hand":
 			events.emit("sale", _sales.complete_single(c, shop.fulfillment.addon_dish, shop.fulfillment.pay_at == "on_take"))
 			WorkerState.finish_single_order(s)

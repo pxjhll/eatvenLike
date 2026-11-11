@@ -418,7 +418,9 @@ func _refresh(delta: float) -> void:
 	_update_cups(frame)
 	_update_customers(moving, frame)
 	if _dining != null:
-		_dining.refresh(rules.seat_total(), frame.diners, _font, frame.clock, moving)
+		if frame.has("movement"):
+			_dining.refresh_authoritative(rules.seat_total(),frame.movement.customers.values())
+		else: _dining.refresh(rules.seat_total(), frame.diners, _font, frame.clock, moving)
 	if frame.sold > _last_sold: _pop_income(int(frame.revenue) - _last_revenue)
 	_last_sold = frame.sold
 	_last_revenue = int(frame.revenue)
@@ -764,6 +766,9 @@ func _update_cups(frame: Dictionary = {}) -> void:
 
 func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 	if frame.is_empty(): frame = view.render_snapshot()
+	if shop.layout.motion_version==1:
+		_update_customers_motion(frame)
+		return
 	if shop.fulfillment.handoff == "single":
 		_update_customers_single(delta, frame)
 		return
@@ -833,6 +838,42 @@ func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 		_customer_positions.erase(id)
 		_customer_orders.erase(id)
 		_customer_entering.erase(id)
+
+
+## Shared protocol: GUI never plans routes, integrates delta, or decides arrival.
+func _update_customers_motion(frame: Dictionary) -> void:
+	var rows: Dictionary = frame.get("movement",{}).get("customers",{})
+	for key in _customers.keys():
+		if rows.has(key): continue
+		_customers[key].free()
+		_customers.erase(key)
+		_customer_positions.erase(key)
+	for key in rows:
+		var row: Dictionary = rows[key]
+		if not _customers.has(key):
+			var created := _actor(Characters.customer_art(int(row.id)),_customer_height)
+			_sortables.add_child(created)
+			_customers[key] = created
+		var actor: Node2D = _customers[key]
+		var point: Vector2 = row.pos
+		var pose := {"pos":point,"walking":row.walking and not row.path.is_empty(),"seated":row.seated,
+			"path":row.path,"path_index":row.path_index,"phase":"idle","task_label":"",
+			"speed":float(Presentation.customer_speed),"carry_item":row.carry_item,"carry_count":0 if row.carry_item.is_empty() else 1}
+		if row.seated:
+			var seat_key: String = String(row.target).get_slice(":",1)
+			var anchor_path := "Seats/"+seat_key
+			# Sitting is an authored display offset from the reached approach port.
+			pose.pos = anchors.point(anchor_path,point)
+			pose.facing = int(anchors.meta(anchor_path,"facing",2))
+		var bubble := String(row.dish)
+		if row.exiting or row.state in ["diner","eating"] or not row.carry_item.is_empty(): bubble = ""
+		var patience := -1.0
+		if shop.fulfillment.handoff=="single" and row.state=="queue" and shop.fulfillment.leave_after>0:
+			patience = 1.0-float(row.wait)/shop.fulfillment.leave_after
+		actor.show_order(bubble,patience,rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway)
+		actor.display(pose,frame.clock)
+		_customer_positions[key] = row.pos
+		if _z_by_y: actor.z_index = int(actor.position.y)
 
 
 ## 订单明细店（serve，规格 §10）：后厨做好的、出餐口上的、桌上的实物都画出来。

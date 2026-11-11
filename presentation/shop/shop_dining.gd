@@ -199,6 +199,7 @@ func _table_cup(seat: int, item: String) -> void:
 	sprite.offset = Vector2(-sprite.texture.get_width() / 2.0, -sprite.texture.get_height() - (CUP_LIFT + 2.0) * _actor_unit_scale / sprite.scale.y)
 	sprite.z_index = 1
 	sprite.set_meta("art_layer", "drinks")
+	sprite.set_meta("item_id",item)
 	add_child(sprite)
 	_cups[seat] = sprite
 
@@ -253,6 +254,33 @@ func _advance(delta: float, clock: float) -> void:
 
 func walking_count() -> int:
 	return _walkers.size()
+
+
+## In the shared protocol every customer belongs to ShopRules/ShopPlay.
+## Dining renders only authored furniture and table items, never a second actor.
+func refresh_authoritative(seat_count: int, customers: Array) -> void:
+	_available.clear()
+	_occupied.clear()
+	if anchors==null: return
+	_build_furniture()
+	for index in mini(seat_count,seats().size()): _available.append(index)
+	for i in _chairs.size(): _chairs[i].visible = i in _available
+	for i in _tables.size(): _tables[i].visible = i*per_table() in _available
+	var served_seats: Array[int] = []
+	for row: Dictionary in customers:
+		var seat := int(row.seat)
+		if row.seated and row.target.begins_with("seat:"+group+"/") and seat in _available:
+			_occupied.append(seat)
+			if row.state in ["diner","eating"]:
+				served_seats.append(seat)
+				if _cups.has(seat) and _cups[seat].get_meta("item_id","")!=String(row.dish):
+					_cups[seat].free()
+					_cups.erase(seat)
+				_table_cup(seat,String(row.dish))
+	for seat in _cups.keys():
+		if not seat in served_seats:
+			_cups[seat].free()
+			_cups.erase(seat)
 
 
 func available_seats() -> Array[int]:

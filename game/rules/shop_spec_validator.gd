@@ -536,6 +536,7 @@ static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dic
 static func _validate_layout(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
 	var layout := shop.layout
 	if layout == null: return
+	_validate_motion(shop,errors)
 	_enum(layout.nav, ["straight", "grid"], "layout.nav", errors)
 	_number(layout.cell, "layout.cell", errors, 0, true)
 	if layout.nav == "grid":
@@ -553,6 +554,38 @@ static func _validate_layout(shop: SpecShop, c: Dictionary, errors: Array[Dictio
 	for id in c.stations:
 		var point: String = layout.aliases.get(id, id)
 		_ref(point, layout.points, "layout.points." + id, errors)
+
+static func _validate_motion(shop: SpecShop, errors: Array[Dictionary]) -> void:
+	var layout := shop.layout
+	_enum(layout.motion_version,[0,1],"layout.motion_version",errors)
+	if layout.motion_version!=1: return
+	_enum(layout.nav,["grid"],"layout.nav",errors)
+	_number(layout.motion_units,"layout.motion_units",errors,0,true)
+	for profile in ["staff","customer"]:
+		if not layout.actor_areas.has(profile): _error(errors,"layout.actor_areas."+profile,"An explicit permission area is required.")
+	for profile in layout.actor_areas:
+		var areas: Variant = layout.actor_areas[profile]
+		if not profile is String or String(profile).is_empty() or not areas is Array or areas.is_empty():
+			_error(errors,"layout.actor_areas","Permission names require a nonempty array of grid rectangles.")
+			continue
+		for area in areas:
+			if not area is Rect2i or area.size.x<=0 or area.size.y<=0 or not Rect2i(Vector2i.ZERO,layout.grid_size).encloses(area):
+				_error(errors,"layout.actor_areas."+profile,"Permission rectangles must fit inside the grid.")
+	for name in ["entrance","exit","pickup"]:
+		if not layout.customer_points.has(name): _error(errors,"layout.customer_points."+name,"Customer port is required.")
+	for group in shop.seat_groups:
+		var count := group.start+group.step*group.costs.size()
+		if not group.steps.is_empty():
+			count = group.start
+			for extra in group.steps: count += extra
+		for index in count:
+			var name := ("wait:" if group.purpose=="wait" else "seat:")+"%s/%d"%[group.id,index]
+			if not layout.customer_points.has(name): _error(errors,"layout.customer_points."+name,"Seat approach port is required.")
+	for name in layout.customer_points:
+		if not layout.customer_points[name].is_finite(): _error(errors,"layout.customer_points."+name,"Port must be finite.")
+	if layout.customer_queue.is_empty(): _error(errors,"layout.customer_queue","Queue must have at least one explicit point.")
+	for index in layout.customer_queue.size():
+		if not layout.customer_queue[index].is_finite(): _error(errors,"layout.customer_queue[%d]"%index,"Queue point must be finite.")
 
 ## Check the necessary staged production graph, without trying to solve economy/balance.
 static func _validate_graph(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:

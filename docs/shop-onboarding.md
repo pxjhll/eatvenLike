@@ -11,6 +11,19 @@ A shop needs rule data, a campaign entry and an independent art scene. `ShopRule
 
 The production `Profile` defaults to the production campaign. A separate campaign can be supplied with `Profile.new(profile_path, campaign)`. Reopening that profile requires passing the same campaign. Use `profile.available_shops()` and `profile.next_shop(id)` for instance navigation; `Profile.shops()` intentionally retains the default production list. `ShopSession.shop_for(profile, target_id)` resolves an entry from the instance campaign.
 
+## Shared movement protocol
+
+New movement-capable layouts opt in with `layout.motion_version = 1`. Version 0 retains legacy behavior during staged migration. Use `tests/fixtures/movement_shop.gd` as an executable, data-only example for the three existing fulfillment modes; it is controlled test geometry, not a replacement production art scene.
+
+- Version 1 requires grid navigation. Set `motion_units` to native art width / 720; scene preflight rejects a density mismatch. Logical customer speed is the shared 170. Employee attributes come from their registered definitions and upgrades, then convert to native units.
+- Define `actor_areas` as permission name to an array of grid `Rect2i`s. `staff` and `customer` are required. Optional serve-role profiles `front` and `kitchen` restrict those employees; roles without a separate profile use explicit `staff` access. Each profile intersects the overall `areas`. Unknown profiles are denied.
+- Author `customer_queue` in queue order and `customer_points` for `entrance`, `exit`, `pickup`, `seat:<group>/<index>` and `wait:<group>/<index>`. These are reachable approach ports. Employee station points and customer pickup points are separate; the seated sprite position remains an art anchor offset.
+- Keep the entire 12-logical-unit foot radius clear. Routes conservatively use its square bounds. Unreachable requests wait and retain their actual location, task and reservations; they cannot turn into straight paths or business arrivals. Navigation obstacles still follow `obstacle_stations` unlock state.
+- Business calls `ShopRules.begin_move` / `advance_move` and consumes customer readiness. Views consume detached `ShopView.render_snapshot().movement`; they must not integrate GUI delta to advance business travel. The dining component renders furniture/items only in this mode.
+- Movement state version 1 is saved with routes, identities and pending exits. Legacy files receive a backup before first replacement; future versions cannot be overwritten. Customer positions absent from a legacy save are reconstructed from its stage/ports, rather than claimed as exact historical GUI coordinates.
+
+Scene module exports will be introduced in T08. Until then, the new customer ports and permission areas must be authored explicitly in `SpecLayout`; the old employee-only Nav export cannot invent them. Production shops are migrated in T09/T10. Run `tests/render_shared_movement.gd` alongside the ordinary shop UI and rule regressions. See [shared-movement.md](qa/shared-movement.md) for the tested behavior and limits.
+
 ## Art contract
 
 `presentation/shop/shop_scene_contract.gd` exposes read-only `validate(shop, art)` and `prepare(shop)`. Preparation returns `{errors, art}` and frees rejected instances. The caller owns a successful candidate. The generic scene validates data and prepares one art candidate before calling `Session.start`; it adopts that exact candidate on success and frees it when session startup fails. An authoring error blocks business and saving without replacing or quarantining existing progress. Repair the configuration and use the retry button.

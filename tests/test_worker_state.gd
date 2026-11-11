@@ -85,7 +85,7 @@ func test_walk_zero_distance_empty_index_end_and_epsilon() -> void:
 	if state == null: return
 	var worker := _history()
 	state.begin_walk(worker, PackedVector2Array(), "walk")
-	check(state.advance_walk(worker, 0.0) and not worker.walking, "empty route arrived at zero budget")
+	check(not state.advance_walk(worker, 0.0) and worker.walking, "empty route stays blocked even at zero budget")
 	worker.pos = Vector2.ZERO
 	state.begin_walk(worker, PackedVector2Array([Vector2.ZERO]), "walk")
 	check(not state.advance_walk(worker, 0.0), "zero budget leaves unconsumed coincident waypoint")

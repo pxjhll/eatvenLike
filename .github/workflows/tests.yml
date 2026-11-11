@@ -48,6 +48,10 @@ jobs:
         run: timeout 60s ./godot --headless --path . -s tests/render_shop_stirfry.gd
       - name: Shared actor presentation - three shops and two window sizes
         run: timeout 60s ./godot --headless --path . -s tests/render_actor_presentation.gd
+      - name: Shared movement - authoritative customer poses across business modes
+        env:
+          XDG_DATA_HOME: ${{ runner.temp }}/shared-movement-userdata
+        run: timeout 30s ./godot --headless --path . -s tests/render_shared_movement.gd
       - name: Generic shop scene - data-driven tutorial real-click regression
         run: timeout 45s ./godot --headless --path . -s tests/render_shop_guide.gd
       - name: Generic shop scene - HUD extension acceptance and save round trip

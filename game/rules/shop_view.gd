@@ -32,14 +32,21 @@ func command_message(status: Dictionary) -> String:
 
 ## One caller-owned frame, in the simulation's existing iteration order.
 func render_snapshot() -> Dictionary:
-	return {"clock": rules.clock, "gold": rules.gold, "revenue": rules.revenue, "sold": rules.sold,
+	var frame := {"clock": rules.clock, "gold": rules.gold, "revenue": rules.revenue, "sold": rules.sold,
 		"lost": rules.lost, "paused": rules.paused, "stage_index": rules.stage_index,
 		"completed_at": rules.completed_at, "shelf_count": rules.shelf_count,
 		"workers": rules.workers, "roster": rules.roster, "stations": rules.stations,
 		"shelf_stock": rules.shelf_stock, "orders": rules.orders, "customers": rules.customers,
 		"queue": rules.queue, "diners": rules.diners, "belts": rules.belts,
 		"belt_items": rules.belt_items, "seats": rules.seats, "serve": rules.serve,
-		"stage_queue_capacity": rules.current_stage().queue_capacity}.duplicate(true)
+		"stage_queue_capacity": rules.current_stage().queue_capacity}
+	if rules.movement_enabled(): frame.movement = rules.movement
+	frame = frame.duplicate(true)
+	if rules.movement_enabled():
+		for worker: Dictionary in frame.workers:
+			worker.speed = rules.walk_speed(worker)/shop.layout.motion_units
+			worker.walking = worker.walking and not worker.path.is_empty()
+	return frame
 
 
 func roster_snapshot() -> Array:

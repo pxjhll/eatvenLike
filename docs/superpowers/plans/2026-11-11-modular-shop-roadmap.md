@@ -23,7 +23,7 @@
 
 ## 顺序与状态
 
-状态：T01–T03已完成，见docs/qa/tea-modularity-baseline.md。T04已完成，见docs/qa/shared-actor-presentation.md。T05–T12尚未开始，在前置接口完成后展开详细实现步骤。
+状态：T01–T03已完成，见docs/qa/tea-modularity-baseline.md。T04已完成，见docs/qa/shared-actor-presentation.md。T05公共能力与三类业务夹具已完成，见docs/qa/shared-movement.md；正式店启用仍按T09/T10迁移。T06–T12尚未开始，在前置接口完成后展开详细实现步骤。
 
 | 阶段 | 任务 | 优先级 | 依赖 | 交付与独立验收 |
 |---|---|---|---|---|
@@ -79,6 +79,9 @@ T07选择真实业务的最小扩展夹具，覆盖组合与合流的兼容契�
 - [x] T02：六种共享员工资源已提取，奶茶内容与轨迹不变。
 - [x] T03：旧档加载/续跑/重存与基础属性刷新验证完成，A阶段交付。
 
-下一个待执行任务：T05，共用移动与抵达协议。A阶段提交9fd08aa已推送；T04工作区验收见docs/qa/shared-actor-presentation.md。
+下一个待执行任务：T06，可组合原子动作。A阶段提交9fd08aa已推送；T04提交8b0d24c与T05按本轮用户指令一起推送到当前分支。
 
 - [x] T04：共享角色表现配置、原生单位换算、三店同视口角色尺度及原奶茶画面对照通过。
+- [x] T05：运动协议v1、规则顾客、权限/脚底占地、阻路恢复、存档与纯快照显示通过；保留legacy正式店供后续迁移。
+
+T06接口前置：员工使用ShopRules.begin_move(worker,goal,phase)和advance_move(worker,dt)，客户抵达使用CustomerMovement.ready(rules,key)。空路径始终表示请求待完成；取消必须清理motion。动作组合消费这些事实，不另算走路时间或直接移动表现节点。v1的角色区域和顾客端口见2026-11-11-shared-movement.md。

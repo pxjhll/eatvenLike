@@ -43,6 +43,8 @@ static func validate(shop: SpecShop, art: Node) -> Array[Dictionary]:
 	var size: Variant = root.get_meta("world_size", Vector2(720, 1500))
 	if not _positive_vector(size):
 		_error(errors, "metadata", "Anchors.world_size", "World size must be a finite positive Vector2.")
+	elif shop.layout != null and shop.layout.motion_version==1 and not is_equal_approx(shop.layout.motion_units,Presentation.scene_units(size)):
+		_error(errors,"movement_units","layout.motion_units","Movement units must equal native canvas width / shared reference width.")
 	var sortable_path: Variant = root.get_meta("sortables", "Sortables")
 	if not sortable_path is String or String(sortable_path).is_empty() or not art.get_node_or_null(NodePath(str(sortable_path))) is Node2D:
 		_error(errors, "required", "Anchors.sortables", "Sortables must reference a Node2D in this art scene.")
