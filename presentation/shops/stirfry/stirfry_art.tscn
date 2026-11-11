@@ -82,7 +82,7 @@ region_filter_clip_enabled = true
 metadata/asset_id = "back_wall_r00_c00"
 
 [node name="WallShelf" type="Sprite2D" parent="Environment/BackWall" unique_id=1156601894]
-position = Vector2(38, 86.286224)
+position = Vector2(40, 104)
 scale = Vector2(0.3275862, 0.3275862)
 texture = ExtResource("stocked_wall_shelf")
 centered = false
@@ -171,17 +171,17 @@ metadata/asset_id = "entrance_plant"
 y_sort_enabled = true
 
 [node name="RiceCookerStand" type="Node2D" parent="Sortables" unique_id=746769214]
-position = Vector2(225, 367.1828)
+position = Vector2(792, 404)
 
 [node name="Stand" type="Sprite2D" parent="Sortables/RiceCookerStand" unique_id=2063473672]
-position = Vector2(-178.99988, 285.81717)
+position = Vector2(-43.000015, -25.182796)
 scale = Vector2(0.32492107, 0.38461548)
 texture = ExtResource("support_stand")
 centered = false
 metadata/asset_id = "support_stand"
 
 [node name="RiceCooker" type="Sprite2D" parent="Sortables/RiceCookerStand" unique_id=1615407739]
-position = Vector2(-174, 229.8172)
+position = Vector2(-38.000122, -81.1828)
 scale = Vector2(0.33325896, 0.3219572)
 texture = ExtResource("rice_cooker")
 centered = false
@@ -227,7 +227,7 @@ metadata/layout_group = "station:pantry"
 metadata/unlock_rule = "pantry"
 
 [node name="Art" type="Sprite2D" parent="Sortables/PantryRack" unique_id=1368917104]
-position = Vector2(-70.5, -244.58252)
+position = Vector2(-64.49999, -243.79123)
 scale = Vector2(0.4563107, 0.4563107)
 texture = ExtResource("loaded_ingredient_rack")
 centered = false
