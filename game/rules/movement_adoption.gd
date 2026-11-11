@@ -4,7 +4,9 @@ const Flow := preload("res://game/rules/serve_flow.gd")
 
 static func _nearest(rules: ShopRules, at: Vector2, goal: Vector2, profile: String) -> Vector2:
 	if rules.nav.can_stand(at,profile) and not rules.nav.path(at,goal,profile).is_empty(): return at
-	var candidates: Array = []
+	# A valid authored port may fit between furniture even when no grid center
+	# does. Include it so legacy coordinates cannot discard otherwise valid work.
+	var candidates: Array = [{"point":goal,"distance":goal.distance_squared_to(at)}]
 	var data := rules.shop.layout
 	for y in data.grid_size.y:
 		for x in data.grid_size.x:

@@ -177,20 +177,29 @@ func test_real_legacy_file_preserves_original_bytes_and_progress_before_first_re
 	check_eq(reopened.load_game().to_dict(),rules.to_dict(),"new protocol round trip is exact")
 	check_eq(reopened.load_error,OK,"reopen succeeds")
 
-func test_impossible_adoption_protects_the_old_file_instead_of_clearing_valid_progress() -> void:
+func test_impossible_adoption_keeps_old_bytes_without_permanently_locking_entry() -> void:
 	if not _enabled(): return
 	var captured: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(STATES))
 	var shop := DATA.copy_for_editing()
-	shop.layout.obstacles.append(Rect2(Vector2.ZERO,Vector2(900,1780)))
+	# Only the old active pantry task is incompatible; the fresh spawn is legal.
+	shop.layout.obstacles.append(Rect2(180,640,40,40))
 	shop.layout.obstacle_stations.append("")
 	var path := "user://stirfry-no-route-%d-%d.json"%[OS.get_process_id(),Time.get_ticks_usec()]
 	var original := _write(path,captured.states.mid_walk_collision)
 	var store := ShopSave.new(shop,path)
-	store.load_game()
-	check_eq(store.load_error,ERR_UNAVAILABLE,"unavailable geometry protects valid legacy file")
-	check(FileAccess.file_exists(path),"original progress stays at original path")
-	if FileAccess.file_exists(path): check_eq(FileAccess.get_file_as_bytes(path),original,"failed adoption preserves bytes")
-	check(store.save_game(ShopRules.new(shop))!=OK,"protected old progress cannot be replaced by a fresh business")
+	var recovered := store.load_game()
+	check_eq(store.load_error,OK,"unmigratable old positions cannot permanently lock entry")
+	check_eq(recovered.clock,0.0,"fresh business returned after durable old-file backup")
+	var backups: Array[String] = []
+	for name in DirAccess.get_files_at("user://"):
+		if name.begins_with(path.get_file()+".corrupt-"): backups.append("user://"+name)
+	files.append_array(backups)
+	check_eq(backups.size(),1,"old business retained for recovery")
+	if not backups.is_empty(): check_eq(FileAccess.get_file_as_bytes(backups[0]),original,"failed adoption preserves original bytes")
+	check_eq(store.save_game(recovered),OK,"safe recovered business can save")
+	var reopened := ShopSave.new(shop,path)
+	check_eq(reopened.load_game().to_dict(),recovered.to_dict(),"subsequent entry uses recovered business")
+	check_eq(reopened.load_error,OK,"recovered shop does not return to retry")
 
 func test_legacy_routes_are_retargeted_to_current_ports_and_future_protocols_are_not_overwritten() -> void:
 	if not _enabled(): return

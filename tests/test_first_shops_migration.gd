@@ -7,6 +7,11 @@ const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
 const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
 var paths: Array[String] = []
 
+class QuarantineFailure extends ShopSave:
+	var fail_backup := true
+	func _backup_corrupt() -> Error:
+		return ERR_CANT_CREATE if fail_backup else super._backup_corrupt()
+
 func cleanup() -> void:
 	for path in paths:
 		for name in DirAccess.get_files_at("user://"):
@@ -199,7 +204,7 @@ func test_actual_legacy_files_get_byte_exact_backup_and_new_state_roundtrips() -
 		var loaded := ShopSave.new(shop,path).load_game()
 		check_eq(loaded.to_dict(),rules.to_dict(),"new state loads without relocation")
 
-func test_impossible_old_geometry_is_protected_before_any_file_replacement() -> void:
+func test_unmigratable_old_geometry_is_backed_up_and_does_not_lock_shop_entry() -> void:
 	var fixtures: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/legacy_shops/states.json"))
 	for source in [TEA,PANCAKE]:
 		var shop: SpecShop = source.copy_for_editing()
@@ -211,10 +216,53 @@ func test_impossible_old_geometry_is_protected_before_any_file_replacement() -> 
 		file.store_buffer(original)
 		file.close()
 		var store := ShopSave.new(shop,path)
-		store.load_game()
-		check_eq(store.load_error,ERR_UNAVAILABLE,"failed spatial adoption protects active progress")
-		check_eq(store.save_game(ShopRules.new(shop)),ERR_UNAVAILABLE,"fresh save cannot erase incompatible progress")
-		check_eq(FileAccess.get_file_as_bytes(path),original,"protected original remains byte exact")
+		var recovered := store.load_game()
+		check_eq(store.load_error,OK,"spatial migration failure does not lock shop entry")
+		check_eq(recovered.clock,0.0,"unrecoverable progress starts safe fresh business")
+		check(not store.last_error.is_empty(),"recovery exposes a warning to the session")
+		var backups: Array[String] = []
+		for name in DirAccess.get_files_at("user://"):
+			if name.begins_with(path.get_file()+".corrupt-"): backups.append("user://"+name)
+		check_eq(backups.size(),1,"original is retained before fresh business starts")
+		if not backups.is_empty(): check_eq(FileAccess.get_file_as_bytes(backups[0]),original,"recoverable original remains byte exact")
+		check_eq(ShopSave.new(shop,path).load_game().clock,0.0,"repeated entry does not return to retry")
+
+func test_legacy_position_can_adopt_a_legal_port_without_a_walkable_grid_center() -> void:
+	var shop := _shop("handoff")
+	shop.layout.cell = 40.0
+	shop.layout.grid_size = Vector2i(2,1)
+	shop.layout.areas = [Rect2i(0,0,2,1)]
+	shop.layout.actor_areas = {"staff":[Rect2i(0,0,2,1)]}
+	shop.layout.obstacles = [Rect2(0,0,25,40),Rect2(55,0,25,40)]
+	shop.layout.obstacle_stations = ["",""]
+	var rules := ShopRules.new(shop,42)
+	var goal := Vector2(40,20)
+	check(rules.nav.can_stand(goal),"current authored port accommodates whole footprint")
+	check(not rules.nav.can_stand(Vector2(20,20)) and not rules.nav.can_stand(Vector2(60,20)),"grid centers cannot accommodate this narrow port")
+	var actual: Vector2 = preload("res://game/rules/movement_adoption.gd")._nearest(rules,Vector2(-100,20),goal,"staff")
+	check_eq(actual,goal,"legacy position falls back to a legal current port without discarding business")
+
+func test_failed_migration_backup_retains_original_and_can_retry_after_repair() -> void:
+	var fixtures: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/legacy_shops/states.json"))
+	var shop := TEA.copy_for_editing()
+	shop.layout.actor_areas.staff = []
+	var path := "user://first-backup-retry-%d.json"%Time.get_ticks_usec()
+	paths.append(path)
+	var original := JSON.stringify(fixtures.tea.active).to_utf8_buffer()
+	var file := FileAccess.open(path,FileAccess.WRITE)
+	file.store_buffer(original)
+	file.close()
+	var store := QuarantineFailure.new(shop,path)
+	store.load_game()
+	check_eq(store.load_error,ERR_CANT_CREATE,"backup failure blocks before adopting fresh business")
+	check_eq(FileAccess.get_file_as_bytes(path),original,"failed backup cannot remove old progress")
+	# Use valid fresh geometry so this checks the write seal, not state validation.
+	store.shop = TEA
+	check_eq(store.save_game(ShopRules.new(TEA)),ERR_UNAVAILABLE,"failed backup seals automatic writes")
+	store.shop = shop
+	store.fail_backup = false
+	store.load_game()
+	check_eq(store.load_error,OK,"explicit retry succeeds when backup can be retained")
 
 func test_unreachable_actions_block_without_business_effects_and_resume_when_route_opens() -> void:
 	for mode in ["handoff","single"]:
