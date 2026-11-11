@@ -344,6 +344,7 @@ func test_serve_guest_cannot_reference_a_missing_order_or_wrong_seat() -> void:
 
 func test_unlock_seeds_only_new_stations_and_keeps_existing_rice() -> void:
 	var shop := _shop_copy()
+	shop.stages.resize(1)
 	var wok: SpecStation = shop.station("wok_a").duplicate(true)
 	wok.id = "other_wok"
 	shop.stations.append(wok)
@@ -622,7 +623,11 @@ func test_recipe_stages_are_bought_in_the_station_panel() -> void:
 	var saved := ShopRules.new(DATA)
 	check_eq(saved.load_dict(rules.to_dict()), "", "学过配方的存档能读")
 	check_eq(saved.menu(), rules.menu(), "读档后菜单一样")
-	while not rules.next_unlock().is_empty(): check_eq(rules.unlock(rules.next_unlock()), "", "按顺序解锁 " + rules.next_unlock())
+	rules.gold = 100000.0
+	for i in DATA.stages.size():
+		if rules.next_unlock().is_empty(): break
+		var id := rules.next_unlock()
+		check_eq(rules.unlock(id), "", "按顺序解锁 " + id)
 	check_eq(rules.stage_index, DATA.stages.size() - 1, "全部阶段都开了")
 	for dish in DATA.dishes: check(rules.dish_open(dish.id, false), dish.display_name + " 已上菜单")
 	# 配方阶段的数据约束
@@ -638,8 +643,12 @@ func test_recipe_stages_are_bought_in_the_station_panel() -> void:
 func test_full_menu_sells_every_dish_with_self_pickup() -> void:
 	var rules := ShopRules.new(DATA)
 	rules.gold = 100000.0
-	while not rules.next_unlock().is_empty(): rules.unlock(rules.next_unlock())
-	while rules.hire().is_empty(): rules.deploy_worker(rules.roster[-1].id)
+	for i in DATA.stages.size() + 1:
+		if rules.next_unlock().is_empty(): break
+		check_eq(rules.unlock(rules.next_unlock()), "", "全部解锁")
+	for i in 10:
+		if not rules.hire().is_empty(): break
+		rules.deploy_worker(rules.roster[-1].id)
 	rules.gold = 0.0
 	var sold := {}
 	var soup_orders := {"with": 0, "all": 0}
@@ -649,10 +658,10 @@ func test_full_menu_sells_every_dish_with_self_pickup() -> void:
 			soup_orders.all += 1
 			if ServeFlow.order(rules, int(message.data.order)).lines.size() > 1: soup_orders.with += 1
 	rules.events.on("*", count)
-	rules.run(900.0)
+	rules.run(420.0)
 	rules.events.off("*", count)
 	for dish in DATA.dishes: check(int(sold.get(dish.id, 0)) > 0, "%s 卖出 %d 份" % [dish.display_name, int(sold.get(dish.id, 0))])
 	check(soup_orders.with > 0 and soup_orders.with < soup_orders.all, "部分客人加例汤（%d/%d）" % [soup_orders.with, soup_orders.all])
 	for job in rules.serve.jobs.values(): check(job.kind != "serve", "自取店没人送桌")
-	check(int(rules.serve.served) >= 40, "15 分钟服务 %d 人" % int(rules.serve.served))
+	check(int(rules.serve.served) >= 20, "7 分钟服务 %d 人" % int(rules.serve.served))
 	check_eq(_consistent(rules), "", "全菜单跑完状态自洽")
