@@ -4,7 +4,9 @@
 [ext_resource type="Texture2D" uid="uid://b2tvut3wp1wel" path="res://art/stirfry/scene/back_wall_r00_c00.png" id="back_wall_r00_c00"]
 [ext_resource type="Texture2D" uid="uid://chagix6xu6nr1" path="res://art/stirfry/scene/chopped_scallion_bowl.png" id="chopped_scallion_bowl"]
 [ext_resource type="Texture2D" uid="uid://1qbo20s8cb1e" path="res://art/stirfry/scene/complete_chopping_board.png" id="complete_chopping_board"]
-[ext_resource type="Texture2D" uid="uid://drmderoglof7d" path="res://art/stirfry/scene/complete_double_stove.png" id="complete_double_stove"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/double_stove.png" id="double_stove"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/wok_tomato_egg.png" id="wok_tomato_egg"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/wok_meat_vegetables.png" id="wok_meat_vegetables"]
 [ext_resource type="Texture2D" uid="uid://dknjukiep3iup" path="res://art/stirfry/scene/complete_produce_group.png" id="complete_produce_group"]
 [ext_resource type="Texture2D" uid="uid://nltjoq7bx83b" path="res://art/stirfry/scene/complete_soup_station.png" id="complete_soup_station"]
 [ext_resource type="Texture2D" uid="uid://dfut67ompigul" path="res://art/stirfry/scene/complete_steamer_station.png" id="complete_steamer_station"]
@@ -195,12 +197,26 @@ position = Vector2(453, 318.59933)
 metadata/layout_group = "station:wok_a"
 metadata/unlock_rule = "wok_a"
 
-[node name="Art" type="Sprite2D" parent="Sortables/Wok" unique_id=616267130]
+[node name="Stove" type="Sprite2D" parent="Sortables/Wok" unique_id=616267130]
 position = Vector2(-123.99999, -189.59933)
 scale = Vector2(0.44695258, 0.44695258)
-texture = ExtResource("complete_double_stove")
+texture = ExtResource("double_stove")
 centered = false
-metadata/asset_id = "complete_double_stove"
+metadata/asset_id = "double_stove"
+
+[node name="WokLeft" type="Sprite2D" parent="Sortables/Wok"]
+position = Vector2(-123.99999, -189.59933)
+scale = Vector2(0.44695258, 0.44695258)
+texture = ExtResource("wok_tomato_egg")
+centered = false
+metadata/asset_id = "wok_tomato_egg"
+
+[node name="WokRight" type="Sprite2D" parent="Sortables/Wok"]
+position = Vector2(-123.99999, -189.59933)
+scale = Vector2(0.44695258, 0.44695258)
+texture = ExtResource("wok_meat_vegetables")
+centered = false
+metadata/asset_id = "wok_meat_vegetables"
 
 [node name="Steamer" type="Node2D" parent="Sortables" unique_id=1007222597]
 position = Vector2(671, 281.2027)
