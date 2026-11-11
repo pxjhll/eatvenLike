@@ -1,6 +1,9 @@
 extends RefCounted
 ## 交接方式 serve（规格 §10，v1.1 草案）：顾客排队 → 前厅接单并分配座位 → 后厨按配方依赖做（多路半成品在组合台等齐才合）
-## → 放出餐口 → 前厅送到座位 → 已就座且整单送齐才开吃 → 吃完离座。
+## → 放出餐口 → 交到客人手里 → 已就座且整单送齐才开吃 → 吃完离座。
+## 交到客人手里有两种（fulfillment.dine_rule）：
+##   seat_wait   = 客人先去座位等，前厅员工把每份餐从出餐口送到座位
+##   self_pickup = 客人在出餐口前等，整单都放上出餐口后自己一次端走，再走去座位（前厅只接单）
 ##
 ## 规则层只认积木类型和配方数据，不认任何店、机器、菜的名字。全部运行状态在 rules.serve 里（跟存档走）：
 ##   guests  顾客：排队 / 去座位 / 坐着等 / 吃 —— 顾客、订单、座位是三样东西，用 id 互相引用
@@ -132,6 +135,10 @@ static func free_seat(rules: ShopRules) -> int:
 	return -1
 
 
+static func self_pickup(shop: SpecShop) -> bool:
+	return shop.fulfillment.dine_rule == "self_pickup"
+
+
 static func queue_size(rules: ShopRules) -> int:
 	var n := 0
 	for g in rules.serve.guests:
@@ -249,6 +256,16 @@ static func _guests(rules: ShopRules, dt: float) -> void:
 					rules.serve.guests.erase(g)
 					rules.lost += 1
 					rules.events.emit("lost", {})
+			"to_pickup":
+				g.wait += dt
+				g.walk_left = maxf(0.0, float(g.walk_left) - dt)
+				if g.walk_left <= 0.000001:
+					g.state = "await"
+					rules.events.emit("await_pickup", {"guest": g.id})
+					_collect(rules, g)
+			"await":
+				g.wait += dt
+				_collect(rules, g)
 			"to_seat":
 				g.wait += dt
 				g.walk_left = maxf(0.0, float(g.walk_left) - dt)
@@ -276,6 +293,36 @@ static func _start_eating(rules: ShopRules, g: Dictionary) -> bool:
 	g.state = "eating"
 	g.eat_left = rules.seat_seconds()
 	return true
+
+
+## 自取（dine_rule = self_pickup）：这一单的每份餐都在出餐口上了，客人一次端走，走去座位。
+## 状态先全部改好（东西归到座位、客人在路上、每份记送达、整单结账），最后才广播。
+static func _collect(rules: ShopRules, g: Dictionary) -> void:
+	var o := order(rules, int(g.order))
+	if o.is_empty(): return
+	var pickup := pickup_of(rules.shop)
+	var ready: Array = []
+	for u in rules.serve.units:
+		if int(u.order) != int(o.id): continue
+		var item := String(rules.shop.dish(String(u.dish)).item)
+		var found := {}
+		for good in rules.serve.goods:
+			if int(good.owner) == int(u.id) and good.item == item and good.at == pickup and int(good.res) == -1:
+				found = good
+				break
+		if found.is_empty(): return
+		ready.append([u, found])
+	if ready.is_empty(): return
+	for pair in ready: pair[1].at = SEAT + str(g.seat)
+	g.state = "to_seat"
+	var speed := maxf(1.0, rules.shop.fulfillment.customer_walk)
+	g.walk_total = RuleNav.length(rules.nav.path(rules.nav.point(pickup), _point(rules, SEAT + str(g.seat)))) / speed
+	g.walk_left = g.walk_total
+	var done: Array = []
+	for pair in ready: done.append(_commit_delivery(rules, int(pair[0].id)))
+	# 整单端走、送达计数、结账全部落定后才广播，回调里存档读档接得上
+	rules.events.emit("picked_up", {"guest": g.id, "order": o.id})
+	for d in done: _announce_delivery(rules, d)
 
 
 static func _leave(rules: ShopRules, g: Dictionary) -> void:
@@ -441,9 +488,13 @@ static func _taken(rules: ShopRules, worker: Dictionary, job: Dictionary) -> voi
 			s.units.append({"id": _next(rules), "order": o.id, "line": i, "dish": lines[i].dish, "done": [], "wait": 0.0})
 	g.order = o.id
 	g.claimed = -1
-	g.state = "to_seat"
 	var speed := maxf(1.0, f.customer_walk)
-	g.walk_total = RuleNav.length(rules.nav.path(rules.nav.point(rules.counter_id), _point(rules, SEAT + str(g.seat)))) / speed
+	if self_pickup(rules.shop):
+		g.state = "to_pickup"
+		g.walk_total = RuleNav.length(rules.nav.path(rules.nav.point(rules.counter_id), rules.nav.point(pickup_of(rules.shop)))) / speed
+	else:
+		g.state = "to_seat"
+		g.walk_total = RuleNav.length(rules.nav.path(rules.nav.point(rules.counter_id), _point(rules, SEAT + str(g.seat)))) / speed
 	g.walk_left = g.walk_total
 	_end(rules, worker)
 	rules.events.emit("order_taken", {"guest": g.id, "order": o.id, "seat": g.seat})
@@ -451,6 +502,16 @@ static func _taken(rules: ShopRules, worker: Dictionary, job: Dictionary) -> voi
 
 ## 一份餐送到座位：只更新它那条明细；整单齐了才结一次账（§10.4）
 static func _delivered(rules: ShopRules, unit_id: int) -> void:
+	var done := _commit_delivery(rules, unit_id)
+	var g := guest(rules, int(done.guest))
+	var started := _start_eating(rules, g)
+	# All delivery state is committed before listeners may save, load or reassign staff.
+	_announce_delivery(rules, done)
+	if started: rules.events.emit("eat_start", {"guest": g.id, "seat": g.seat})
+
+
+## 只改状态（送达计数、件数、整单结账），不广播；返回之后要广播的内容
+static func _commit_delivery(rules: ShopRules, unit_id: int) -> Dictionary:
 	var s := rules.serve
 	var u := unit(rules, unit_id)
 	var o := order(rules, int(u.order))
@@ -471,12 +532,12 @@ static func _delivered(rules: ShopRules, unit_id: int) -> void:
 		sale.count = count
 		s.served = int(s.served) + 1
 		s.orders_done = int(s.orders_done) + 1
-	var g := guest(rules, int(o.guest))
-	var started := _start_eating(rules, g)
-	# All delivery state is committed before listeners may save, load or reassign staff.
-	rules.events.emit("delivered", {"dish": u.dish, "order": o.id})
-	if not sale.is_empty(): rules.events.emit("sale", sale)
-	if started: rules.events.emit("eat_start", {"guest": g.id, "seat": g.seat})
+	return {"dish": u.dish, "order": o.id, "guest": o.guest, "sale": sale}
+
+
+static func _announce_delivery(rules: ShopRules, done: Dictionary) -> void:
+	rules.events.emit("delivered", {"dish": done.dish, "order": done.order})
+	if not done.sale.is_empty(): rules.events.emit("sale", done.sale)
 
 
 static func _end(rules: ShopRules, worker: Dictionary) -> void:
@@ -581,7 +642,7 @@ static func candidates(rules: ShopRules, worker: Dictionary) -> Array:
 			out.append(_scored(rules, worker, _job("take", -1, -1, "", -1, rules.counter_id, rules.counter_id, int(g.id)), "take", float(g.wait), "接单"))
 			break
 		var pickup := pickup_of(shop)
-		for good in rules.serve.goods:
+		for good in ([] if self_pickup(shop) else rules.serve.goods):
 			if good.at != pickup or int(good.res) != -1 or int(good.owner) == SHARED: continue
 			var u := unit(rules, int(good.owner))
 			if u.is_empty() or String(rules.shop.dish(String(u.dish)).item) != String(good.item): continue

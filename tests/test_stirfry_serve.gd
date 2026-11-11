@@ -436,3 +436,119 @@ func test_serve_transport_jobs_require_the_goods_the_worker_is_carrying() -> voi
 		if good.at == "hand:" + key: good.at = "pantry"
 	check(not rules.load_dict(dropped).is_empty(), "送往目标的物品必须确实在员工手里")
 	check(rules.to_dict() == base, "无效搬运任务不改变原状态")
+
+
+func _pickup_shop() -> SpecShop:
+	var shop := _shop_copy()
+	shop.fulfillment.dine_rule = "self_pickup"
+	return shop
+
+
+## 自取（dine_rule = self_pickup）：接单分座后客人走到出餐口等，整单齐了自己端走，走到座位才开吃；前厅不送桌
+func test_self_pickup_guest_collects_the_whole_order_then_eats_at_the_seat() -> void:
+	var shop := _pickup_shop()
+	check_eq(Validator.summary(Validator.validate(shop)), "", "自取是通用 serve 的合法参数")
+	var bad := _shop_copy()
+	bad.fulfillment.dine_rule = "walk_in"
+	check("dine_rule" in Validator.summary(Validator.validate(bad)), "不认识的入座规则明确拒绝")
+	var rules := _open(shop)
+	var trail: Array = []
+	var states := {}
+	var jobs := {}
+	var record := func(message: Dictionary) -> void:
+		if message.name in ["order_taken", "await_pickup", "picked_up", "delivered", "sale", "seated", "eat_start"]:
+			trail.append(message.name)
+	rules.events.on("*", record)
+	var bad_eat := false
+	var bad_window := false
+	while rules.clock < 300.0 and not "eat_start" in trail:
+		rules.step(0.1)
+		for w in rules.workers:
+			var job := ServeFlow.job_of(rules, w)
+			if not job.is_empty(): jobs["%s:%s" % [w.kind, job.kind]] = true
+		for g in rules.serve.guests:
+			states[g.state] = true
+			if g.state == "eating" and not ServeFlow.order_complete(ServeFlow.order(rules, int(g.order))): bad_eat = true
+			if g.state in ["to_pickup", "await"]:
+				for good in rules.serve.goods:
+					var u := ServeFlow.unit(rules, int(good.owner)) if int(good.owner) >= 0 else {}
+					if not u.is_empty() and int(u.order) == int(g.order) and String(good.at).begins_with("seat:"): bad_window = true
+	rules.events.off("*", record)
+	check("eat_start" in trail, "五分钟内第一位客人开吃")
+	var order := ["order_taken", "await_pickup", "picked_up", "delivered", "sale", "seated", "eat_start"]
+	var at := 0
+	for name in trail:
+		if at < order.size() and name == order[at]: at += 1
+	check_eq(at, order.size(), "接单 → 到出餐口 → 端走 → 结账 → 坐下 → 开吃：%s" % [trail])
+	for state in ["to_pickup", "await", "to_seat"]: check(states.has(state), "客人经过 " + state)
+	check(not jobs.has("cat:serve") and not jobs.has("gray_cat:serve"), "没人送桌")
+	check(jobs.has("cat:take") and jobs.has("gray_cat:pass"), "店长接单，厨师把餐放上出餐口")
+	check(not bad_eat, "开吃的都是整单齐的")
+	check(not bad_window, "客人没端走前，餐不会自己跑到座位上")
+	check_eq(rules.gold, 12.0, "第一单只收一次钱")
+	check_eq(_consistent(rules), "", "自取状态自洽")
+
+
+## 自取：等在出餐口、在路上、坐下吃，任何时刻存读档都接得上，读档后跑出来一模一样；送桌店不受影响
+func test_self_pickup_save_resume_matches_and_seat_wait_is_unchanged() -> void:
+	var shop := _pickup_shop()
+	var rules := _open(shop)
+	var saved := {}
+	while rules.clock < 600.0 and saved.size() < 3:
+		rules.step(0.1)
+		for g in rules.serve.guests:
+			if g.state in ["await", "to_seat", "eating"] and not saved.has(g.state):
+				check_eq(_consistent(rules), "", String(g.state) + " 时可读档")
+				saved[g.state] = rules.to_dict()
+	check_eq(saved.size(), 3, "等取餐、去座位、用餐三个时刻都存到了")
+	for key in saved:
+		var a := ShopRules.new(shop)
+		var b := ShopRules.new(shop)
+		check_eq(a.load_dict(saved[key]), "", key + " 存档能读")
+		b.load_dict(saved[key])
+		a.run(120.0)
+		b.run(120.0)
+		check_eq(a.to_dict(), b.to_dict(), key + " 读档后接着跑结果一致")
+		check_eq(_consistent(a), "", key + " 读档后跑两分钟仍自洽")
+	var long_run := _open(shop)
+	long_run.run(900.0)
+	check(long_run.serve.served >= 5, "自取店 15 分钟能服务多位客人（%d）" % long_run.serve.served)
+	check_eq(int(long_run.serve.orders_done), int(long_run.serve.served), "一单一人")
+	check_eq(_consistent(long_run), "", "长跑后状态自洽")
+	# 送桌店不受影响：店长照样送桌，客人不会去出餐口
+	var classic := _open()
+	var serve_job := false
+	var went_to_window := false
+	while classic.clock < 180.0:
+		classic.step(0.1)
+		if ServeFlow.job_of(classic, _manager(classic)).get("kind", "") == "serve": serve_job = true
+		for g in classic.serve.guests:
+			if g.state in ["to_pickup", "await"]: went_to_window = true
+	check(serve_job, "送桌店店长照样送桌")
+	check(not went_to_window, "送桌店客人不去出餐口")
+
+
+## 自取：端走、送达、结账的回调里存档，读档后客人照样坐下吃完离店，钱不漏收不重收
+func test_self_pickup_callbacks_capture_resumable_settled_orders() -> void:
+	var shop := _pickup_shop()
+	var rules := _open(shop)
+	var snapshots: Array = []
+	var listener := func(message: Dictionary) -> void:
+		if message.name in ["picked_up", "delivered", "sale"]:
+			snapshots.append({"name": message.name, "order": rules.serve.orders[0].id, "state": rules.to_dict()})
+	rules.events.on("*", listener)
+	while rules.clock < 300.0 and snapshots.size() < 3: rules.step(0.1)
+	rules.events.off("*", listener)
+	check_eq(snapshots.map(func(s: Dictionary) -> String: return s.name), ["picked_up", "delivered", "sale"], "端走 → 送达 → 结账 的广播顺序")
+	for snapshot in snapshots:
+		var resumed := ShopRules.new(shop)
+		var error := resumed.load_dict(snapshot.state)
+		check_eq(error, "", snapshot.name + " 回调状态可以读档")
+		if not error.is_empty(): continue
+		var order := ServeFlow.order(resumed, int(snapshot.order))
+		check(bool(order.paid) and ServeFlow.order_complete(order), snapshot.name + " 回调前整单已送达并结账")
+		check_eq(resumed.gold, 12.0, "第一单只收一次钱")
+		check_eq(String(ServeFlow.guest(resumed, int(order.guest)).state), "to_seat", "回调前客人已端走在路上")
+		resumed.run(150.0)
+		check(ServeFlow.order(resumed, int(snapshot.order)).is_empty(), snapshot.name + " 读档后客人坐下吃完离店")
+		check(resumed.gold >= 12.0 and int(resumed.serve.served) >= 1, "继续运行不会漏收")

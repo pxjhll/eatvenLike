@@ -48,11 +48,12 @@ static func capabilities(mode: String) -> Dictionary:
 		d[key] = _reserved(0.0) if single else _supported()
 	return {"fulfillment": f, "dispatch": d}
 
-## serve（§10 草案，首轮原型）：前厅接单分座 → 后厨按配方依赖合流 → 出餐口 → 前厅送到座位 → 就座且整单送齐开吃。
+## serve（§10 草案，首轮原型）：前厅接单分座 → 后厨按配方依赖合流 → 出餐口 → 前厅送到座位（seat_wait）
+## 或客人在出餐口自取整单（self_pickup）→ 就座且整单送齐开吃。
 ## 每趟端 1 件、不合送；整单送齐时一次结账；附加菜（例汤）作为订单第二条明细。
 static func _serve_capabilities() -> Dictionary:
 	var f := {
-		"handoff": _fixed(["serve"]), "taker": _fixed(["front"]), "dine_rule": _fixed(["seat_wait"]),
+		"handoff": _fixed(["serve"]), "taker": _fixed(["front"]), "dine_rule": _supported(["seat_wait", "self_pickup"]),
 		"pay_at": _fixed(["on_deliver"]), "price_rounding": _fixed(["dish_tenth_carry"]), "leave_queue": _fixed(["after_take"]),
 		"wait_area": _fixed([""]), "leave_who": _supported(["none", "queued_unclaimed"]), "arrival": _supported(["fixed", "exponential"]),
 		"mood_seconds": _supported(), "addon_dish": _supported(), "addon_chance": _supported(), "addon_first": _reserved(true),

@@ -169,7 +169,7 @@ func _serve(data: Dictionary) -> String:
 	for g in s.guests:
 		error = _shape(g, {"id": 0, "state": "", "wait": 0.0, "seat": 0, "order": 0, "claimed": 0, "walk_left": 0.0, "walk_total": 0.0, "eat_left": 0.0}, "serve.guests")
 		if not error.is_empty(): return error
-		if not g.state in ["queue", "to_seat", "seated", "eating"] or g.wait < 0 or g.walk_left < 0 or g.eat_left < 0: return "serve.guests 状态无效"
+		if not g.state in ["queue", "to_pickup", "await", "to_seat", "seated", "eating"] or g.wait < 0 or g.walk_left < 0 or g.eat_left < 0: return "serve.guests 状态无效"
 		if g.seat >= 0:
 			if seats.has(g.seat): return "serve.guests 座位重复"
 			seats[g.seat] = true

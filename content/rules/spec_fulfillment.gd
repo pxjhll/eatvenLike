@@ -11,6 +11,7 @@ extends Resource
 @export var addon_first: bool = true
 ## 堂食/外带判定：seat_first = 有空座先坐下点单，没空座且外带开放 → 外带，否则站队堂食；
 ## single uses takeaway_only; handoff uses seat_first. share is unsupported.
+## serve：seat_wait = 前厅送到座位；self_pickup = 客人在出餐口自取整单再入座。
 @export var dine_rule: String = "seat_first"
 ## 外带开放要哪台机器（封口机）
 @export var takeaway_station: String = ""

@@ -5,7 +5,7 @@ extends Node2D
 
 const ServeFlow := preload("res://game/rules/serve_flow.gd")
 const SHOP_PATH := "res://content/shops/stirfry/shop.tres"
-const COLORS := {"queue": Color(0.55, 0.55, 0.6), "to_seat": Color(0.35, 0.55, 0.95), "seated": Color(0.95, 0.6, 0.2), "eating": Color(0.3, 0.75, 0.35)}
+const COLORS := {"queue": Color(0.55, 0.55, 0.6), "to_pickup": Color(0.6, 0.45, 0.85), "await": Color(0.85, 0.3, 0.6), "to_seat": Color(0.35, 0.55, 0.95), "seated": Color(0.95, 0.6, 0.2), "eating": Color(0.3, 0.75, 0.35)}
 
 var rules: ShopRules
 var speed := 1.0
@@ -122,8 +122,13 @@ func _draw() -> void:
 			q += 1
 		else:
 			var seat := rules.nav.point(ServeFlow.seat_point(shop, int(g.seat)))
+			var window := rules.nav.point(ServeFlow.pickup_of(shop))
+			# 自取店：接单后先走到出餐口等，端走以后才从出餐口走去座位
+			var from := window if ServeFlow.self_pickup(shop) else counter
 			pos = seat
-			if g.state == "to_seat": pos = seat.lerp(counter, float(g.walk_left) / maxf(0.001, float(g.walk_total)))
+			if g.state == "to_seat": pos = seat.lerp(from, float(g.walk_left) / maxf(0.001, float(g.walk_total)))
+			elif g.state == "to_pickup": pos = window.lerp(counter, float(g.walk_left) / maxf(0.001, float(g.walk_total)))
+			elif g.state == "await": pos = window + Vector2(0, 60)
 		draw_circle(pos, 16, COLORS.get(g.state, Color.GRAY))
 	# 员工
 	for w in rules.workers:
@@ -137,8 +142,8 @@ func _draw() -> void:
 			draw_rect(Rect2(p + Vector2(18, -10), Vector2(84, 18)), Color(1, 1, 0.85))
 			_text(p + Vector2(21, 5), _name(w.carry_item), 13)
 	# 图例
-	var x := 400.0
-	for state in ["queue", "to_seat", "seated", "eating"]:
+	var x := 240.0
+	for state in ["queue", "to_pickup", "await", "to_seat", "seated", "eating"]:
 		draw_circle(Vector2(x, 1186), 8, COLORS[state])
-		_text(Vector2(x + 12, 1192), {"queue": "排队", "to_seat": "去座位", "seated": "等餐", "eating": "用餐"}[state], 15)
-		x += 80
+		_text(Vector2(x + 12, 1192), {"queue": "排队", "to_pickup": "去取餐", "await": "等取餐", "to_seat": "去座位", "seated": "等餐", "eating": "用餐"}[state], 15)
+		x += 90
