@@ -49,6 +49,10 @@ func _business(rule: String) -> void:
 	_check(scene.art != null, rule + ": 美术场景装上了")
 	scene.rules.unlock("wok_a")
 	scene._process(0.25)
+	# 双灶：灶台和左锅开张就有，右锅（炒锅B）买了才摆上
+	var stove: Node2D = scene.art.get_node("Sortables/Wok")
+	_check(stove.get_node("Stove").is_visible_in_tree() and stove.get_node("WokLeft").is_visible_in_tree(), rule + ": 开张后灶台和炒锅A 都在")
+	_check(not stove.get_node("WokRight").is_visible_in_tree(), rule + ": 没买炒锅B 时右边没锅")
 	# 桌椅跟着买到的座位数摆：开局 6 座 = 前 3 张桌；买一座多出第 4 张桌的左椅
 	var dining: Node2D = scene.art.get_node("Sortables/Dining")
 	var start_seats: int = scene.rules.seat_total()
@@ -92,6 +96,13 @@ func _business(rule: String) -> void:
 	_check(dishes_drawn, rule + ": 桌上的菜摆在桌面上")
 	if rule == "self_pickup": _check(seen.has("await_at_window"), rule + ": 自取的客人站在出餐口前等")
 	_check(scene.rules.sold >= 3, rule + ": 正式界面里卖出了 %d 份" % scene.rules.sold)
+	scene.rules.gold = 100000.0
+	for unused in 4:
+		if scene.rules.next_unlock() == "wok_b": break
+		scene.rules.unlock(scene.rules.next_unlock())
+	_check(scene.rules.unlock("wok_b").is_empty(), rule + ": 买炒锅B")
+	scene._process(0.25)
+	_check(stove.get_node("WokRight").is_visible_in_tree(), rule + ": 买了炒锅B 右锅摆上")
 	_check(scene.save_now(false) == OK, rule + ": 能存档")
 	scene.free()
 
