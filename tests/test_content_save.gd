@@ -45,7 +45,7 @@ func _quarantined(path: String, original: PackedByteArray) -> bool:
 	return false
 
 func _with_optional_progress(mode: String) -> SpecShop:
-	var spec: SpecShop = TEA.duplicate(true)
+	var spec: SpecShop = TEA.copy_for_editing()
 	if mode == "material":
 		var material := SpecMaterial.new()
 		material.id = "retired_material"
@@ -69,7 +69,7 @@ func test_legacy_removed_recorded_ids_drop_only_removed_progress() -> void:
 	# 删了机器或升级轨不能让整家店白玩：只丢掉删掉的那部分，其余进度保留
 	for mode in ["staff", "material", "station"]:
 		var old_spec := _with_optional_progress(mode)
-		var changed: SpecShop = TEA.duplicate(true)
+		var changed: SpecShop = TEA.copy_for_editing()
 		if mode == "staff": changed.staff.tracks.remove_at(0)
 		check(SpecValidator.validate(old_spec, Profile.CAMPAIGN).is_empty(), mode + " original content valid")
 		check(SpecValidator.validate(changed, Profile.CAMPAIGN).is_empty(), mode + " changed content valid")
@@ -160,7 +160,7 @@ func test_legacy_refresh_is_read_only_until_exact_backup_and_save() -> void:
 	old.unlock(old.next_unlock())
 	old.run(12.0)
 	var original := _write(path, old.to_dict(), {}, 1)
-	var updated: SpecShop = TEA.duplicate(true)
+	var updated: SpecShop = TEA.copy_for_editing()
 	updated.staff.kinds[0].stats.speed = 19.0
 	updated.stations[0].params.capacity = 81
 	updated.dishes[0].price_parts[updated.dishes[0].price_parts.keys()[0]] += 100.0
@@ -194,7 +194,7 @@ func test_numeric_update_preserves_recorded_state_and_same_content_is_exact() ->
 	var original := _write(path, saved, CONTRACT.describe(TEA))
 	var same := ShopSave.new(TEA, path).load_game()
 	check_eq(var_to_bytes(same.to_dict()), var_to_bytes(saved), "same content exact state")
-	var updated: SpecShop = TEA.duplicate(true)
+	var updated: SpecShop = TEA.copy_for_editing()
 	updated.staff.kinds[0].stats.speed = 19.0
 	updated.stations[0].params.capacity = 81
 	for station in updated.stations:
@@ -308,7 +308,7 @@ func test_renamed_shop_with_shared_save_path_quarantines_and_opens() -> void:
 	var path := _path()
 	var data := ShopRules.new(TEA).to_dict()
 	var original := _write(path, data, CONTRACT.describe(TEA))
-	var renamed: SpecShop = TEA.duplicate(true)
+	var renamed: SpecShop = TEA.copy_for_editing()
 	renamed.id = "renamed_tea"
 	var store := ShopSave.new(renamed, path)
 	var rules := store.load_game()
@@ -320,11 +320,11 @@ func test_renamed_shop_with_shared_save_path_quarantines_and_opens() -> void:
 func test_outgoing_content_and_invalid_state_cannot_be_mislabeled() -> void:
 	var path := _path()
 	var store := ShopSave.new(TEA, path)
-	var different: SpecShop = TEA.duplicate(true)
+	var different: SpecShop = TEA.copy_for_editing()
 	different.staff.kinds[0].stats.work = 12.0
 	check_eq(store.save_game(ShopRules.new(different)), ERR_INVALID_PARAMETER, "different gameplay rejected")
 	check(not store.exists(), "mismatched rules do no IO")
-	var copy: SpecShop = TEA.duplicate(true)
+	var copy: SpecShop = TEA.copy_for_editing()
 	check_eq(store.save_game(ShopRules.new(copy)), OK, "equivalent resource accepted")
 	var original := FileAccess.get_file_as_bytes(path)
 	var invalid := ShopRules.new(TEA)
@@ -341,7 +341,7 @@ func test_real_topology_and_level_count_changes_keep_progress() -> void:
 		old.unlock(old.next_unlock())
 		var gold := old.gold
 		var original := _write(path, old.to_dict(), CONTRACT.describe(TEA))
-		var changed: SpecShop = TEA.duplicate(true)
+		var changed: SpecShop = TEA.copy_for_editing()
 		if mode == "geometry": changed.layout.points[changed.layout.points.keys()[0]] += Vector2(1, 0)
 		else:
 			for station in changed.stations:
@@ -380,4 +380,75 @@ func test_missing_or_malformed_metadata_and_legacy_binary_corruption_quarantine(
 			if file.begins_with(path.get_file() + ".corrupt-"):
 				retained = FileAccess.get_file_as_bytes(path.get_base_dir().path_join(file)) == original
 		check(retained, mode + " exact quarantine bytes")
+
+
+func test_shared_staff_original_shop_files_resume_exactly() -> void:
+	var capture: Script = load("res://tests/baselines/capture_tea_modularity.gd")
+	var fixture_root := "res://tests/fixtures/tea_modularity/"
+	var expected: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(fixture_root+"continuations.json"))
+	var metadata := CONTRACT.describe(TEA)
+	check_eq(metadata.gameplay,expected.content.gameplay,"Shared definitions retain original gameplay fingerprint")
+	check_eq(metadata.structure,expected.content.structure,"Shared definitions retain original structure fingerprint")
+	for name in ["unopened","active"]:
+		var original := FileAccess.get_file_as_bytes(fixture_root+name+".json")
+		var path := _path()
+		var file := FileAccess.open(path,FileAccess.WRITE)
+		file.store_buffer(original)
+		file.close()
+		var store := ShopSave.new(TEA,path)
+		var resumed := store.load_game()
+		check_eq(store.load_error,OK,name+" original file is accepted")
+		check(store.last_error.is_empty(),name+" loads without recovery or migration")
+		check_eq(store.loaded_speed,1.5 if name == "unopened" else 2.0,name+" playback speed retained")
+		check_eq(store.loaded_guides,["opening"] if name == "unopened" else ["opening","boil"],name+" guides retained")
+		check_eq(FileAccess.get_file_as_bytes(path),original,name+" load does not write original file")
+		if name == "active":
+			check(not resumed.orders.is_empty(),"Active old save includes orders")
+			check(resumed.workers.any(func(w: Dictionary) -> bool: return w.walking),"Active old save includes moving staff")
+		for worker in resumed.workers:
+			var matches := resumed.roster.filter(func(w: Dictionary) -> bool: return w.id == worker.id)
+			check(matches.size() == 1 and is_same(matches[0],worker),"Restored worker/roster identity retained")
+		var actual: Dictionary = capture.trajectory(resumed,60)
+		check(actual == expected[name],name+" exact original 60-second state and event trace")
+		var finished: String = capture.digest(resumed.to_dict())
+		check_eq(store.save_game(resumed,store.loaded_speed,store.loaded_guides),OK,name+" can re-save")
+		check_eq(_backups(path).size(),0,name+" equivalent resource extraction needs no content migration")
+		var reopened := ShopSave.new(TEA,path)
+		var after := reopened.load_game()
+		check_eq(reopened.load_error,OK,name+" reopens after save")
+		check_eq(capture.digest(after.to_dict()),finished,name+" re-saved complete state retained")
+		check_eq(FileAccess.get_file_as_bytes(fixture_root+name+".json"),original,name+" checked-in old fixture is immutable")
+
+
+func test_shared_staff_numeric_refresh_preserves_old_file_progress() -> void:
+	var fixture := "res://tests/fixtures/tea_modularity/active.json"
+	var original := FileAccess.get_file_as_bytes(fixture)
+	var path := _path()
+	var file := FileAccess.open(path,FileAccess.WRITE)
+	file.store_buffer(original)
+	file.close()
+	var old_store := ShopSave.new(TEA,path)
+	var old := old_store.load_game()
+	check_eq(old_store.load_error,OK,"Old snapshot loads")
+	var shared_stats := TEA.staff.kinds[0].stats.duplicate(true)
+	var updated: SpecShop = TEA.copy_for_editing()
+	updated.staff.kinds[0].stats.walk = 113.0
+	var store := ShopSave.new(updated,path)
+	var refreshed := store.load_game()
+	check_eq(store.load_error,OK,"Changed numeric definition refreshes old file")
+	check_eq(refreshed.roster[0].stats.walk,113.0,"Saved base stats refreshed")
+	check_eq(TEA.staff.kinds[0].stats,shared_stats,"Shared original resource not mutated by copied shop")
+	for key in ["clock","gold","revenue","sold","stage_index","levels","orders","boxes","seats"]:
+		check_eq(refreshed.get(key),old.get(key),"Numeric refresh preserves "+key)
+	check_eq(refreshed.roster.map(func(w: Dictionary) -> Array: return [w.id,w.kind,w.post,w.pos,w.completed]),old.roster.map(func(w: Dictionary) -> Array: return [w.id,w.kind,w.post,w.pos,w.completed]),"Identity, roles and work history preserved")
+	check_eq(refreshed.mods.entries,old.mods.entries,"Upgrade and event modifiers are not duplicated")
+	check_eq(FileAccess.get_file_as_bytes(path),original,"Refresh only reads until explicit save")
+	check_eq(store.save_game(refreshed,store.loaded_speed,store.loaded_guides),OK,"Refreshed state saves")
+	var backups := _backups(path)
+	check_eq(backups.size(),1,"Original file backed up before actual numeric migration")
+	if backups.size() == 1: check_eq(FileAccess.get_file_as_bytes(backups[0]),original,"Migration backup retains exact old bytes")
+	var reopened_store := ShopSave.new(updated,path)
+	var reopened := reopened_store.load_game()
+	check_eq(reopened_store.load_error,OK,"Migrated file reopens")
+	check_eq(reopened.to_dict(),refreshed.to_dict(),"Migrated full state survives re-save")
 

@@ -35,6 +35,14 @@ extends Resource
 @export var scale_anchor: String = ""
 
 
+## Editable variants must own external definitions too. Resource.duplicate(true)
+## retains external resources, which would let a variant change the shared catalog.
+## Keep the native Resource return type: self-typed deep-copy methods retain
+## dependent scripts at shutdown on Godot 4.6. Callers can type the result SpecShop.
+func copy_for_editing() -> Resource:
+	return duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
+
+
 func station(station_id: String) -> SpecStation:
 	for s in stations:
 		if s.id == station_id: return s
