@@ -29,7 +29,7 @@ func _ready() -> void:
 	var bar := HBoxContainer.new()
 	bar.position = Vector2(12, 1210)
 	bar.add_theme_constant_override("separation", 12)
-	add_child(bar)
+	ui.add_child(bar)
 	for row in [["招帮厨", _hire], ["倍速", _faster], ["重开", _restart]]:
 		var b := Button.new()
 		b.text = row[0]
@@ -37,7 +37,6 @@ func _ready() -> void:
 		b.custom_minimum_size = Vector2(150, 56)
 		b.pressed.connect(row[1])
 		bar.add_child(b)
-	ui.add_child(bar)
 	_hud = Label.new()
 	_hud.theme = theme
 	_hud.position = Vector2(12, 8)
