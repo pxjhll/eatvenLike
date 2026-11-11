@@ -83,7 +83,7 @@ static func run_command(rules: ShopRules, command: String) -> String:
 		"unlock": return rules.unlock(parts[1])
 		"box": return rules.unlock_box(parts[1])
 		"hire": return rules.hire()
-		"deploy": return rules.deploy_worker(int(parts[1]))
+		"deploy": return rules.deploy_worker(int(parts[1]),parts[2] if parts.size()>2 else "")
 		"upgrade": return rules.upgrade(parts[1])
 		"material": return rules.upgrade(parts[1] + "/" + parts[2])
 		"staff": return rules.upgrade("staff/" + parts[1])

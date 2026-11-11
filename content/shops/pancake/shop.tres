@@ -56,7 +56,7 @@ id = "soy"
 display_name = "豆浆"
 item = "soy"
 price_parts = Dictionary[String, float]({
-"base": 6.0
+"base": 6.9
 })
 steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_ghdy6")])
 takeaway_process = false
@@ -120,7 +120,7 @@ id = "plain"
 display_name = "原味煎饼"
 item = "plain"
 price_parts = Dictionary[String, float]({
-"base": 15.0
+"base": 17.25
 })
 steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_qd1b2"), SubResource("Resource_x2ql6"), SubResource("Resource_hfxa7"), SubResource("Resource_cdm4k")])
 takeaway_process = false
@@ -197,7 +197,7 @@ id = "guozi"
 display_name = "煎饼果子"
 item = "guozi"
 price_parts = Dictionary[String, float]({
-"base": 22.0
+"base": 25.3
 })
 steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_f7vts"), SubResource("Resource_pwe3r"), SubResource("Resource_cpw7y"), SubResource("Resource_b2nlq"), SubResource("Resource_8t27y")])
 takeaway_process = false
@@ -287,8 +287,8 @@ id = "ham"
 display_name = "火腿煎饼果子"
 item = "ham"
 price_parts = Dictionary[String, float]({
-"base": 22.0,
-"topping": 6.0
+"base": 25.3,
+"topping": 6.9
 })
 steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_sfhp0"), SubResource("Resource_f28y0"), SubResource("Resource_che6p"), SubResource("Resource_87lyh"), SubResource("Resource_rabor"), SubResource("Resource_3p7hd")])
 takeaway_process = false
@@ -381,8 +381,8 @@ id = "floss"
 display_name = "肉松煎饼果子"
 item = "floss"
 price_parts = Dictionary[String, float]({
-"base": 22.0,
-"topping": 7.0
+"base": 25.3,
+"topping": 8.05
 })
 steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_17s07"), SubResource("Resource_i4hl3"), SubResource("Resource_a5y5p"), SubResource("Resource_jj76k"), SubResource("Resource_3lgnt"), SubResource("Resource_587tl")])
 takeaway_process = false
@@ -475,8 +475,8 @@ id = "bacon"
 display_name = "培根煎饼果子"
 item = "bacon"
 price_parts = Dictionary[String, float]({
-"base": 22.0,
-"topping": 8.0
+"base": 25.3,
+"topping": 9.2
 })
 steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_0kb6m"), SubResource("Resource_k5ieb"), SubResource("Resource_os17r"), SubResource("Resource_cye4v"), SubResource("Resource_dcnuq"), SubResource("Resource_5yb0s")])
 takeaway_process = false
@@ -569,8 +569,8 @@ id = "family"
 display_name = "全家福"
 item = "family"
 price_parts = Dictionary[String, float]({
-"base": 22.0,
-"topping": 18.0
+"base": 25.3,
+"topping": 20.7
 })
 steps = Array[ExtResource("3_nwmtm")]([SubResource("Resource_60obm"), SubResource("Resource_f5p8v"), SubResource("Resource_umxff"), SubResource("Resource_gu1b7"), SubResource("Resource_tah0t"), SubResource("Resource_yi5lw")])
 takeaway_process = false

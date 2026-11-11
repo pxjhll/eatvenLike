@@ -23,7 +23,7 @@ func _enabled() -> bool:
 func _state(wrapper: Dictionary) -> Dictionary:
 	return bytes_to_var(Marshalls.base64_to_raw(wrapper.state))
 
-func test_formal_shop_uses_shared_baselines_and_keeps_existing_business_content() -> void:
+func test_formal_shop_uses_shared_baselines_and_keeps_business_structure_after_calibration() -> void:
 	_enabled()
 	for kind in DATA.staff.kinds:
 		var path := "res://content/characters/staff/%s.tres"%kind.id
@@ -34,7 +34,6 @@ func test_formal_shop_uses_shared_baselines_and_keeps_existing_business_content(
 	check_eq(DATA.save_file,LEGACY.save_file,"existing progress path retained")
 	check_eq(DATA.staff.starting,LEGACY.staff.starting,"starting identities preserved")
 	check_eq(DATA.staff.hire_pool,LEGACY.staff.hire_pool,"hire order preserved")
-	check_eq(DATA.staff.hire_costs,LEGACY.staff.hire_costs,"hire prices preserved")
 	check_eq(DATA.layout.motion_units,887.0/720.0,"native art density")
 	for dish in DATA.dishes:
 		var old := LEGACY.dish(dish.id)
@@ -45,7 +44,7 @@ func test_formal_shop_uses_shared_baselines_and_keeps_existing_business_content(
 	comparable.layout = LEGACY.layout.duplicate(true)
 	comparable.dispatch.action_version = 0
 	var content := preload("res://game/rules/shop_content_contract.gd")
-	check_eq(content.describe(comparable),content.describe(LEGACY),"only shared staff, motion geometry and action opt-in change gameplay definitions")
+	check_eq(content.describe(comparable).structure,content.describe(LEGACY).structure,"recipe and policy structure remains compatible after numeric calibration")
 
 func test_legacy_samples_cover_real_jobs_and_validate_without_modern_protocols() -> void:
 	var captured: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(STATES))

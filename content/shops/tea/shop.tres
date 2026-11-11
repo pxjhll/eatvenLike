@@ -1135,7 +1135,7 @@ script = ExtResource("19_a4xei")
 id = "stage0"
 display_name = "开张"
 stations = Array[String](["lemonade"])
-cost = 10
+cost = 12
 dish = "lemonade"
 customer_interval = 10.0
 order_weights = Dictionary[String, float]({
@@ -1160,7 +1160,7 @@ script = ExtResource("19_a4xei")
 id = "stage1"
 display_name = "煮茶机"
 stations = Array[String](["boil"])
-cost = 100
+cost = 115
 dish = "black_tea"
 unlock_note = "开始卖红茶（售价 28）。原料柜里还要解锁茶叶箱"
 customer_interval = 7.0
@@ -1188,7 +1188,7 @@ script = ExtResource("19_a4xei")
 id = "stage2"
 display_name = "封口机"
 stations = Array[String](["seal"])
-cost = 250
+cost = 288
 dish = "black_tea"
 unlock_note = "开放打包外带：想外带或坐不下的客人，封好口带走"
 customer_interval = 5.5
@@ -1232,7 +1232,7 @@ script = ExtResource("19_a4xei")
 id = "stage3"
 display_name = "调奶台"
 stations = Array[String](["mix"])
-cost = 300
+cost = 345
 dish = "plain_milk_tea"
 unlock_note = "开始卖原味奶茶（售价 30）。原料柜里还要解锁牛奶箱"
 customer_interval = 5.0
@@ -1269,7 +1269,7 @@ script = ExtResource("19_a4xei")
 id = "stage4"
 display_name = "手打台"
 stations = Array[String](["press"])
-cost = 550
+cost = 633
 dish = "lemon_tea"
 unlock_note = "开始卖柠檬茶：前台员工接一杯柠檬水，再亲手捣柠檬，外带不用封口"
 customer_interval = 4.0
@@ -1314,7 +1314,7 @@ script = ExtResource("19_a4xei")
 id = "stage5"
 display_name = "加料机"
 stations = Array[String](["topping"])
-cost = 900
+cost = 1035
 dish = "pearl_milk_tea"
 unlock_note = "开始卖珍珠奶茶，升级加料机开放更多口味"
 customer_interval = 3.2
@@ -1361,7 +1361,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_urru1"]
 script = ExtResource("8_cgjme")
-cost = 25
+cost = 29
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_wrbwp")])
 
 [sub_resource type="Resource" id="Resource_jt77o"]
@@ -1372,7 +1372,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_1es01"]
 script = ExtResource("8_cgjme")
-cost = 45
+cost = 52
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_jt77o")])
 
 [sub_resource type="Resource" id="Resource_q2lll"]
@@ -1389,7 +1389,7 @@ value = 1.25
 
 [sub_resource type="Resource" id="Resource_w1iat"]
 script = ExtResource("8_cgjme")
-cost = 81
+cost = 93
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_q2lll"), SubResource("Resource_lfvv2")])
 star = true
 
@@ -1401,7 +1401,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_4ygtl"]
 script = ExtResource("8_cgjme")
-cost = 146
+cost = 168
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_tyn02")])
 
 [sub_resource type="Resource" id="Resource_u86ql"]
@@ -1440,7 +1440,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_wsohg"]
 script = ExtResource("8_cgjme")
-cost = 50
+cost = 57
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ygrx2")])
 
 [sub_resource type="Resource" id="Resource_aub8f"]
@@ -1451,7 +1451,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_3arwv"]
 script = ExtResource("8_cgjme")
-cost = 90
+cost = 103
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_aub8f")])
 
 [sub_resource type="Resource" id="Resource_k3uxj"]
@@ -1481,7 +1481,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_4jqex"]
 script = ExtResource("8_cgjme")
-cost = 62
+cost = 71
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_nqjem")])
 
 [sub_resource type="Resource" id="Resource_xbti6"]
@@ -1492,7 +1492,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_wg4du"]
 script = ExtResource("8_cgjme")
-cost = 112
+cost = 129
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_xbti6")])
 
 [sub_resource type="Resource" id="Resource_t68n5"]
@@ -1561,7 +1561,7 @@ value = 3.0
 
 [sub_resource type="Resource" id="Resource_76oly"]
 script = ExtResource("8_cgjme")
-cost = 20
+cost = 23
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_bgwt4"), SubResource("Resource_1hk0j")])
 
 [sub_resource type="Resource" id="Resource_oqoq5"]
@@ -1578,7 +1578,7 @@ value = 3.0
 
 [sub_resource type="Resource" id="Resource_grok8"]
 script = ExtResource("8_cgjme")
-cost = 45
+cost = 52
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_oqoq5"), SubResource("Resource_620eu")])
 
 [sub_resource type="Resource" id="Resource_v5688"]
@@ -1595,7 +1595,7 @@ value = 4.0
 
 [sub_resource type="Resource" id="Resource_ae368"]
 script = ExtResource("8_cgjme")
-cost = 101
+cost = 116
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_v5688"), SubResource("Resource_mp4j2")])
 star = true
 
@@ -1613,7 +1613,7 @@ value = 4.0
 
 [sub_resource type="Resource" id="Resource_m74ij"]
 script = ExtResource("8_cgjme")
-cost = 224
+cost = 258
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_odx33"), SubResource("Resource_er730")])
 
 [sub_resource type="Resource" id="Resource_viia1"]
@@ -1630,7 +1630,7 @@ value = 5.0
 
 [sub_resource type="Resource" id="Resource_bjqmi"]
 script = ExtResource("8_cgjme")
-cost = 491
+cost = 565
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_viia1"), SubResource("Resource_cyqph")])
 
 [sub_resource type="Resource" id="Resource_3y7hs"]
@@ -1647,7 +1647,7 @@ value = 6.0
 
 [sub_resource type="Resource" id="Resource_4v3c2"]
 script = ExtResource("8_cgjme")
-cost = 1067
+cost = 1227
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_3y7hs"), SubResource("Resource_xo0ut")])
 
 [sub_resource type="Resource" id="Resource_2yc64"]
@@ -1664,7 +1664,7 @@ value = 6.0
 
 [sub_resource type="Resource" id="Resource_7v10f"]
 script = ExtResource("8_cgjme")
-cost = 2304
+cost = 2650
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_2yc64"), SubResource("Resource_8m34q")])
 star = true
 
@@ -1726,7 +1726,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_81ppo"]
 script = ExtResource("8_cgjme")
-cost = 15
+cost = 17
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_35hqm"), SubResource("Resource_4lh0n")])
 
 [sub_resource type="Resource" id="Resource_hg2ww"]
@@ -1742,7 +1742,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_uvvs1"]
 script = ExtResource("8_cgjme")
-cost = 36
+cost = 41
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_hg2ww"), SubResource("Resource_kbe2e")])
 
 [sub_resource type="Resource" id="Resource_apu7y"]
@@ -1758,7 +1758,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_0gbvm"]
 script = ExtResource("8_cgjme")
-cost = 63
+cost = 72
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_apu7y"), SubResource("Resource_5am13")])
 
 [sub_resource type="Resource" id="Resource_xpo8d"]
@@ -1775,7 +1775,7 @@ value = 2.0
 
 [sub_resource type="Resource" id="Resource_y0bc1"]
 script = ExtResource("8_cgjme")
-cost = 136
+cost = 156
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_xpo8d"), SubResource("Resource_xs4sk")])
 star = true
 
@@ -1793,7 +1793,7 @@ value = 2.0
 
 [sub_resource type="Resource" id="Resource_hygpt"]
 script = ExtResource("8_cgjme")
-cost = 279
+cost = 321
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_2oi6y"), SubResource("Resource_rpr48")])
 
 [sub_resource type="Resource" id="Resource_semvr"]
@@ -1837,7 +1837,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_0m85s"]
 script = ExtResource("8_cgjme")
-cost = 62
+cost = 71
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_k8ju5")])
 
 [sub_resource type="Resource" id="Resource_rj7pd"]
@@ -1848,7 +1848,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_ylrt7"]
 script = ExtResource("8_cgjme")
-cost = 113
+cost = 130
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_rj7pd")])
 
 [sub_resource type="Resource" id="Resource_8niis"]
@@ -1865,7 +1865,7 @@ value = 1.25
 
 [sub_resource type="Resource" id="Resource_kd7rd"]
 script = ExtResource("8_cgjme")
-cost = 203
+cost = 233
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_8niis"), SubResource("Resource_kub0l")])
 star = true
 
@@ -1877,7 +1877,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_6fsjj"]
 script = ExtResource("8_cgjme")
-cost = 365
+cost = 420
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_tkbbj")])
 
 [sub_resource type="Resource" id="Resource_f84qc"]
@@ -1888,7 +1888,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_p3x0k"]
 script = ExtResource("8_cgjme")
-cost = 656
+cost = 754
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_f84qc")])
 
 [sub_resource type="Resource" id="Resource_uip26"]
@@ -1905,7 +1905,7 @@ value = 1.25
 
 [sub_resource type="Resource" id="Resource_pailp"]
 script = ExtResource("8_cgjme")
-cost = 1181
+cost = 1358
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_uip26"), SubResource("Resource_j8s3s")])
 star = true
 
@@ -1952,7 +1952,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_vd0ku"]
 script = ExtResource("8_cgjme")
-cost = 62
+cost = 71
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_m73s2")])
 
 [sub_resource type="Resource" id="Resource_pajci"]
@@ -1964,7 +1964,7 @@ value = 1.1025
 
 [sub_resource type="Resource" id="Resource_bwn7v"]
 script = ExtResource("8_cgjme")
-cost = 112
+cost = 129
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_pajci")])
 
 [sub_resource type="Resource" id="Resource_7nern"]
@@ -1991,7 +1991,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_lv7og"]
 script = ExtResource("8_cgjme")
-cost = 88
+cost = 101
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_w0igs")])
 
 [sub_resource type="Resource" id="Resource_aakk8"]
@@ -2002,7 +2002,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_ma1fs"]
 script = ExtResource("8_cgjme")
-cost = 158
+cost = 182
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_aakk8")])
 
 [sub_resource type="Resource" id="Resource_jjx1k"]
@@ -2019,7 +2019,7 @@ value = 1.25
 
 [sub_resource type="Resource" id="Resource_8lq6c"]
 script = ExtResource("8_cgjme")
-cost = 284
+cost = 327
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_jjx1k"), SubResource("Resource_nichh")])
 star = true
 
@@ -2031,7 +2031,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_rnpc0"]
 script = ExtResource("8_cgjme")
-cost = 510
+cost = 587
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_e6p3x")])
 
 [sub_resource type="Resource" id="Resource_i46xi"]
@@ -2079,7 +2079,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_vwj84"]
 script = ExtResource("8_cgjme")
-cost = 50
+cost = 57
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_mnnw7")])
 
 [sub_resource type="Resource" id="Resource_5l4xw"]
@@ -2091,7 +2091,7 @@ value = 1.1025
 
 [sub_resource type="Resource" id="Resource_bqrae"]
 script = ExtResource("8_cgjme")
-cost = 90
+cost = 103
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_5l4xw")])
 
 [sub_resource type="Resource" id="Resource_107pf"]
@@ -2125,7 +2125,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_f5gby"]
 script = ExtResource("8_cgjme")
-cost = 75
+cost = 86
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ulweq")])
 
 [sub_resource type="Resource" id="Resource_w6r8h"]
@@ -2137,7 +2137,7 @@ value = 1.1025
 
 [sub_resource type="Resource" id="Resource_hgso8"]
 script = ExtResource("8_cgjme")
-cost = 135
+cost = 155
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_w6r8h")])
 
 [sub_resource type="Resource" id="Resource_oa1x0"]
@@ -2172,7 +2172,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_hxmgj"]
 script = ExtResource("8_cgjme")
-cost = 88
+cost = 101
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_lnihg")])
 
 [sub_resource type="Resource" id="Resource_8o05w"]
@@ -2184,7 +2184,7 @@ value = 1.1025
 
 [sub_resource type="Resource" id="Resource_ufwq4"]
 script = ExtResource("8_cgjme")
-cost = 158
+cost = 182
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_8o05w")])
 
 [sub_resource type="Resource" id="Resource_fd1fs"]
@@ -2219,7 +2219,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_4e24y"]
 script = ExtResource("8_cgjme")
-cost = 100
+cost = 115
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_vuhrv")])
 
 [sub_resource type="Resource" id="Resource_lagqi"]
@@ -2231,7 +2231,7 @@ value = 1.1025
 
 [sub_resource type="Resource" id="Resource_7yvj0"]
 script = ExtResource("8_cgjme")
-cost = 180
+cost = 207
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_lagqi")])
 
 [sub_resource type="Resource" id="Resource_qqh1t"]
@@ -2269,7 +2269,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_5c0bn"]
 script = ExtResource("8_cgjme")
-cost = 55
+cost = 63
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ji7co"), SubResource("Resource_euwds")])
 
 [sub_resource type="Resource" id="Resource_ev0t4"]
@@ -2285,7 +2285,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_cog4c"]
 script = ExtResource("8_cgjme")
-cost = 115
+cost = 132
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ev0t4"), SubResource("Resource_l0bpe")])
 
 [sub_resource type="Resource" id="Resource_lc0wt"]
@@ -2301,7 +2301,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_7711k"]
 script = ExtResource("8_cgjme")
-cost = 205
+cost = 236
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_lc0wt"), SubResource("Resource_2nauh")])
 
 [sub_resource type="Resource" id="Resource_e0rlp"]

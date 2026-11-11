@@ -196,10 +196,11 @@ func _interactions(scene: Node2D) -> void:
 	scene.view = counter
 	var old: Array = scene.all_staff()
 	rules.gold = 100000.0
+	var opening_cost := rules.shop.stages[0].cost
 	scene.ui.open_station("lemonade")
 	await _click(scene, scene.ui.page_node("station").unlock_button)
 	_last(scene, "unlock", {"id": "lemonade"})
-	_check(rules.gold == 99990.0, "standard opening feedback retains exact debit")
+	_check(rules.gold == 100000.0-opening_cost, "standard opening feedback retains exact displayed debit")
 	scene.station_action("unlock", "boil")
 	scene.ui.open_page("staff")
 	await _click(scene, scene.ui.page_node("staff").hire_button)

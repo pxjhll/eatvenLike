@@ -163,7 +163,7 @@ func test_malformed_business_bindings_and_effects_are_rejected_atomically() -> v
 			check(not rules.load_dict(bad).is_empty(),"reject "+mode+" "+field)
 			check_eq(rules.to_dict(),saved,"failed load preserves live state")
 
-func test_formal_content_changes_only_shared_staff_spatial_data_and_action_opt_in() -> void:
+func test_formal_content_preserves_recipe_and_policy_structure_after_rhythm_calibration() -> void:
 	var content := preload("res://game/rules/shop_content_contract.gd")
 	var contract := preload("res://presentation/shop/shop_scene_contract.gd")
 	for pair in [[TEA,LEGACY_TEA],[PANCAKE,LEGACY_PANCAKE]]:
@@ -173,7 +173,7 @@ func test_formal_content_changes_only_shared_staff_spatial_data_and_action_opt_i
 		comparable.layout = original.layout.duplicate(true)
 		comparable.staff.kinds = original.staff.duplicate(true).kinds
 		comparable.dispatch.action_version = 0
-		check_eq(content.describe(comparable),content.describe(original),"recipes, policies, economy and progression unchanged: "+shop.id)
+		check_eq(content.describe(comparable).structure,content.describe(original).structure,"recipes, policies and progression structure preserved: "+shop.id)
 		var prepared := contract.prepare(shop)
 		check_eq(prepared.errors,[],"formal authored geometry agrees: "+shop.id)
 		if prepared.art!=null: prepared.art.free()

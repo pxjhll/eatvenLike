@@ -297,6 +297,18 @@
       "success": "SHOP RHYTHM: 0 failures"
     },
     {
+      "id": "shop_progression",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tools/shop_progression.gd",
+      "args": [
+        "--check=res://tests/baselines/shared_shop_progression.json",
+        "--output={res_output}/shared-progression.json"
+      ],
+      "timeout": 240,
+      "success": "SHOP PROGRESSION: 0 failures"
+    },
+    {
       "id": "web_pack",
       "kind": "web",
       "profile": "web",

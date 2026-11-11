@@ -58,6 +58,6 @@
 3. 跑 `tools/check_shops.py` 的headless及web档；查看每项日志和summary.json。
 4. 真窗口检查角色尺度、路径、遮挡、坐姿、携物、操作和所有声明交付。
 5. 使用原档/新档验证保存、重开、取消补偿与未来版本保护；不能以清档代替迁移。
-6. 节奏报告写明种子、员工数、解锁条件、首单和销售间隔。不能只以“能卖出”判定经营节奏合格。
+6. 分别验收全开/固定员工的短测与空店完店回放。写明种子、购买策略、初始员工、首单、阶段解锁、流失、销售间隔和完店目标/容差；将完店回放接入`shop_acceptance.json`。不能只以“能卖出”或录下报告判定节奏合格。三店示例见`docs/qa/shared-shop-progression.md`。
 
 可直接加载的示例是 `tests/fixtures/onboarding/shop.tres` 和独立campaign；只依赖已有模块/动画/配方，不依赖生成器。第三店的真实美术映射见 `docs/art/stirfry-module-map.md`。

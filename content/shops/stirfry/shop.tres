@@ -55,7 +55,7 @@ label = "盛饭"
 script = ExtResource("3_pc7b7")
 station = "wok_a"
 action = "stir_fry"
-seconds = 12.0
+seconds = 6.0
 consumes = Dictionary[String, int]({
 "tomato_egg_raw": 1
 })
@@ -68,7 +68,7 @@ label = "炒番茄炒蛋"
 script = ExtResource("3_pc7b7")
 station = "plating"
 action = "plate"
-seconds = 7.0
+seconds = 3.5
 consumes = Dictionary[String, int]({
 "rice": 1,
 "tomato_egg": 1
@@ -113,7 +113,7 @@ label = "盛饭"
 script = ExtResource("3_pc7b7")
 station = "wok_a"
 action = "stir_fry"
-seconds = 12.0
+seconds = 6.0
 consumes = Dictionary[String, int]({
 "pepper_pork_raw": 1
 })
@@ -126,7 +126,7 @@ label = "炒青椒肉丝"
 script = ExtResource("3_pc7b7")
 station = "plating"
 action = "plate"
-seconds = 7.0
+seconds = 3.5
 consumes = Dictionary[String, int]({
 "pepper_pork": 1,
 "rice": 1
@@ -171,7 +171,7 @@ label = "盛饭"
 script = ExtResource("3_pc7b7")
 station = "wok_b"
 action = "stir_fry"
-seconds = 14.0
+seconds = 7.0
 consumes = Dictionary[String, int]({
 "egg_rice_raw": 1,
 "rice": 1
@@ -237,7 +237,7 @@ label = "盛饭"
 script = ExtResource("3_pc7b7")
 station = "wok_a"
 action = "stir_fry"
-seconds = 14.0
+seconds = 7.0
 consumes = Dictionary[String, int]({
 "kungpao_raw": 1
 })
@@ -250,7 +250,7 @@ label = "炒宫保鸡丁"
 script = ExtResource("3_pc7b7")
 station = "plating"
 action = "plate"
-seconds = 7.0
+seconds = 3.5
 consumes = Dictionary[String, int]({
 "kungpao": 1,
 "rice": 1
@@ -295,7 +295,7 @@ label = "盛饭"
 script = ExtResource("3_pc7b7")
 station = "wok_b"
 action = "stir_fry"
-seconds = 16.0
+seconds = 8.0
 consumes = Dictionary[String, int]({
 "rice": 1,
 "yangzhou_raw": 1
@@ -563,7 +563,7 @@ kinds = Array[ExtResource("18_sirxl")]([ExtResource("19_of5hw"), ExtResource("20
 starting = Array[String](["gray_cat", "cat"])
 starting_posts = Array[String](["", "counter"])
 hire_pool = Array[String](["rabbit", "bear", "dog", "sheep"])
-hire_costs = Array[int]([60, 120, 160, 220])
+hire_costs = Array[int]([30, 60, 80, 110])
 zones = Array[String](["front", "kitchen"])
 can_drag = true
 home_anchor = "home"
@@ -721,11 +721,11 @@ dish = "yangzhou_rice"
 unlock_note = "炒锅B学会扬州炒饭，最贵的一道"
 customer_interval = 6.32
 order_weights = Dictionary[String, float]({
-"egg_fried_rice": 0.2,
-"kungpao_rice": 0.2,
-"pepper_rice": 0.2,
-"tomato_rice": 0.15,
-"yangzhou_rice": 0.25
+"egg_fried_rice": 0.125,
+"kungpao_rice": 0.125,
+"pepper_rice": 0.125,
+"tomato_rice": 0.125,
+"yangzhou_rice": 0.5
 })
 staff_slots = Dictionary[String, int]({
 "kitchen": 5
@@ -970,7 +970,7 @@ id = "wok_a"
 display_name = "炒锅A"
 block = "hand"
 params = {
-"seconds": 12.0,
+"seconds": 6.0,
 "unit": "份",
 "users": 1
 }
@@ -1057,7 +1057,7 @@ display_name = "装盘台"
 block = "combine"
 params = {
 "manual": true,
-"seconds": 7.0,
+"seconds": 3.5,
 "unit": "份"
 }
 zone = "kitchen"
@@ -1184,7 +1184,7 @@ id = "wok_b"
 display_name = "炒锅B"
 block = "hand"
 params = {
-"seconds": 14.0,
+"seconds": 7.0,
 "unit": "份",
 "users": 1
 }

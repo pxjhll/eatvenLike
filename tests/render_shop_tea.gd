@@ -41,8 +41,10 @@ func _run() -> void:
 	_check(_frame("lemonade").can_unlock, "买得起的框上有红 ↑")
 	await _click(view._station_buttons.lemonade)
 	_check(hud.page == "station" and hud.page_node("station").station_id == "lemonade", "点框打开柠檬水台的解锁面板")
+	var opening_cost := _rules().shop.stages[0].cost
+	var opening_gold := _rules().gold
 	await _click(hud.page_node("station").unlock_button)
-	_check(_rules().is_open() and int(_rules().gold) == 40, "开张花 10 金币")
+	_check(_rules().is_open() and _rules().gold == opening_gold-opening_cost, "开张按当前标价扣款一次")
 	await _click(hud.tab("shop"))
 	view._refresh(0)
 	_check(_frame("boil").is_visible_in_tree() and not _frame("lemonade").is_visible_in_tree(), "开张以后只显示煮茶机的框")

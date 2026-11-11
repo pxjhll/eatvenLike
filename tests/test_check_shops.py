@@ -32,7 +32,7 @@ class AcceptanceTests(unittest.TestCase):
                     'tests/render_flow_composition.gd', 'tests/render_scene_modules.gd',
                     'tests/render_actor_presentation.gd', 'tests/render_stirfry_migration.gd',
                     'tests/render_first_shops_migration.gd', 'tests/render_shop_onboarding.gd',
-                    'tools/shop_rhythm.gd', 'tests/render_work_actions.gd'}
+                    'tools/shop_rhythm.gd', 'tools/shop_progression.gd', 'tests/render_work_actions.gd'}
         for shop in ['tea', 'pancake', 'stirfry', 'noodle', 'guide', 'extend']:
             required.add(f'tests/render_shop_{shop}.gd')
         for name in ['rabbit_frame_atlas', 'rabbit_game_visuals', 'gray_cat_atlas',

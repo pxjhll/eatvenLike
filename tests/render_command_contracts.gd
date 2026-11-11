@@ -102,12 +102,13 @@ func _success(scene: Node2D, action: Callable, event: String, label: String) -> 
 
 func _test_tea(scene: Node2D, translated: String) -> void:
 	var rules: ShopRules = scene.rules
+	var opening_cost := rules.shop.stages[0].cost
 	rules.gold = 0.0
 	scene.ui.open_station("lemonade")
 	scene._refresh(0.0)
 	var station: Control = scene.ui.page_node("station")
 	suite.check(station.unlock_button.disabled, "empty or translated failure disables real unlock button")
-	suite.check_eq(station.unlock_button.text, "金币不足 · 10 金币", "real gold failure caption is stable")
+	suite.check_eq(station.unlock_button.text, "金币不足 · %d 金币"%opening_cost, "real gold failure caption shows current price")
 	suite.check(not scene._station_buttons.lemonade.can_unlock, "failure has no world-frame affordability marker")
 	suite.check(not scene.guide._holds("affordable:lemonade"), "failure never satisfies guide affordability")
 	_reject(scene, func() -> void: station.unlock_button.pressed.emit(), "opening funds")
@@ -116,7 +117,7 @@ func _test_tea(scene: Node2D, translated: String) -> void:
 	suite.check(not station.unlock_button.disabled and scene._station_buttons.lemonade.can_unlock, "nonempty success display enables button and frame")
 	suite.check(scene.guide._holds("affordable:lemonade"), "nonempty success display permits guide")
 	_success(scene, func() -> void: station.unlock_button.pressed.emit(), "unlocked", "opening")
-	suite.check_eq(rules.gold, 99990.0, "opening debits exactly one cost")
+	suite.check_eq(rules.gold, 100000.0-opening_cost, "opening debits exactly one displayed cost")
 	_reject(scene, func() -> void: scene.station_action("unlock", "lemonade"), "repeat opening")
 	scene.ui.open_station(rules.supply_id)
 	var supply := TEA.station(rules.supply_id)
