@@ -273,19 +273,19 @@ texture = ExtResource("rice_sack")
 centered = false
 metadata/asset_id = "rice_sack"
 
-[node name="ProduceGroup" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=1473067637]
-position = Vector2(-52.183945, -142.5083)
-scale = Vector2(0.27759197, 0.27759197)
-texture = ExtResource("complete_produce_group")
-centered = false
-metadata/asset_id = "complete_produce_group"
-
 [node name="ChoppingBoard" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=159887730]
 position = Vector2(10, -138.50827)
 scale = Vector2(0.1972477, 0.23190495)
 texture = ExtResource("complete_chopping_board")
 centered = false
 metadata/asset_id = "complete_chopping_board"
+
+[node name="ProduceGroup" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=1473067637]
+position = Vector2(-52.183945, -142.5083)
+scale = Vector2(0.27759197, 0.27759197)
+texture = ExtResource("complete_produce_group")
+centered = false
+metadata/asset_id = "complete_produce_group"
 
 [node name="PrepBowl" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=15688765]
 position = Vector2(101, -122.30922)
@@ -326,14 +326,14 @@ centered = false
 metadata/asset_id = "service_counter"
 
 [node name="FlowerPot" type="Sprite2D" parent="Sortables/ServiceCounter" unique_id=1674688968]
-position = Vector2(-345, -186.8922)
+position = Vector2(-308.00003, -187.99998)
 scale = Vector2(0.2798165, 0.2798165)
 texture = ExtResource("red_flower_pot")
 centered = false
 metadata/asset_id = "red_flower_pot"
 
 [node name="Register" type="Sprite2D" parent="Sortables/ServiceCounter" unique_id=1833947896]
-position = Vector2(-266.4254, -188)
+position = Vector2(-227, -188)
 scale = Vector2(0.32542372, 0.32542372)
 texture = ExtResource("register")
 centered = false
