@@ -7,7 +7,7 @@ on:
 
 jobs:
   headless:
-    timeout-minutes: 9
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,14 +22,6 @@ jobs:
           mv Godot_v4.7-stable_linux.x86_64 godot
       - name: Import (build class cache)
         run: ./godot --headless --path . --import
-      - name: TEMP regenerate stir-fry shop data and time it with the bot (remove before merge)
-        run: |
-          ./godot --headless --path . -s tools/build_stirfry_shop.gd
-          echo "===TRES-BEGIN==="
-          base64 -w0 content/shops/stirfry/shop.tres
-          echo
-          echo "===TRES-END==="
-          timeout 200s ./godot --headless --path . -s tools/_bot/stirfry_pace.gd -- save || true
       - name: Run tests
         run: timeout 240s ./godot --headless --path . -s tests/run_all.gd
       - name: Shop data and scene authoring contracts (production and third fixture)
