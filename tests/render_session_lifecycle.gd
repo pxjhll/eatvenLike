@@ -202,27 +202,39 @@ func _test_dining_restart() -> void:
 	furniture.append_array(dining._tables)
 	var anchors: ShopAnchors = dining.anchors
 	_open_until_dining(scene)
-	suite.check(not dining._diners.is_empty(), "real business generates a seated dining customer")
-	dining.queue_exit(scene.anchors.point("Entrance") + Vector2(50, 50), "rabbit", "lemonade")
-	scene._refresh(0.0)
-	suite.check(dining.walking_count() > 0, "dining owns an active exit walker before restart")
-	var old_nodes: Array = dining._diners.values()
+	suite.check(_has_seated_diner(scene), "real business generates an authoritative seated dining customer")
+	suite.check(dining._diners.is_empty() and dining.walking_count()==0, "dining does not duplicate shared customer actors")
+	# Let a real served guest finish dining and begin the rule-owned exit route.
+	var has_exit := false
+	for unused in 480:
+		scene._process(0.25)
+		has_exit = scene.rules.movement.customers.values().any(func(row: Dictionary) -> bool: return row.exiting and row.walking and not row.path.is_empty())
+		if has_exit and _has_seated_diner(scene): break
+	suite.check(has_exit, "shared movement owns a real active exit route before restart")
+	suite.check(not dining._cups.is_empty(), "served seated guest has a table cup before restart")
+	var old_nodes: Array = scene._customers.values()
 	old_nodes.append_array(dining._cups.values())
-	for walker in dining._walkers: old_nodes.append(walker.actor)
 	var old_ids: Array = old_nodes.map(func(node: Node) -> int: return node.get_instance_id())
 	dining.queue_arrival(0, scene.anchors.point("Entrance"), "rabbit")
 	dining.queue_exit(scene.anchors.point("Entrance"), "rabbit", "lemonade")
 	scene.restart()
+	suite.check(scene.rules.movement.customers.is_empty() and scene._customers.is_empty(), "restart clears authoritative customers, exit routes and scene actors")
 	suite.check(dining._diners.is_empty() and dining._cups.is_empty() and dining._walkers.is_empty(), "restart discards dining actors cups and walkers")
 	suite.check(dining._arrivals.is_empty() and dining._exits.is_empty() and dining.occupied_seats().is_empty(), "restart clears pending dining movements and occupied seats")
-	suite.check(old_nodes.all(func(node: Variant) -> bool: return not is_instance_valid(node)), "restart immediately frees prior dining actors and cups")
+	suite.check(old_nodes.all(func(node: Variant) -> bool: return not is_instance_valid(node)), "restart immediately frees prior shared customer actors and cups")
 	suite.check(dining.anchors == anchors and furniture.all(func(node: Node) -> bool: return is_instance_valid(node) and node.get_parent() == dining), "restart preserves dining anchors and static furniture")
 	scene._refresh(0.25)
-	suite.check(dining.walking_count() == 0, "old arrivals and exits cannot create actors on next refresh")
+	suite.check(dining.walking_count() == 0 and scene._customers.is_empty() and scene.rules.movement.customers.is_empty(), "old arrivals and exits cannot create actors on next refresh")
 	_open_until_dining(scene)
-	suite.check(not dining._diners.is_empty(), "new session still creates its first dining guests")
-	for actor in dining._diners.values(): suite.check(actor.get_instance_id() not in old_ids, "new diner never reuses an old actor")
+	suite.check(_has_seated_diner(scene), "new session still seats its first authoritative dining guest")
+	for actor in scene._customers.values(): suite.check(actor.get_instance_id() not in old_ids, "new customer never reuses an old actor")
 	scene.free()
+
+func _has_seated_diner(scene: Node2D) -> bool:
+	for key in scene.rules.movement.customers:
+		var row: Dictionary = scene.rules.movement.customers[key]
+		if row.state=="diner" and row.seated and scene._customers.has(key): return true
+	return false
 
 func _open_until_dining(scene: Node2D) -> void:
 	scene.rules.unlock("lemonade")
@@ -230,7 +242,7 @@ func _open_until_dining(scene: Node2D) -> void:
 	scene.rules.hire()
 	for unused in 2400:
 		scene._process(0.25)
-		if not scene._dining._diners.is_empty(): return
+		if _has_seated_diner(scene): return
 
 func _test_production_profile_repair(app: Node) -> void:
 	var original_profile: RefCounted = app.get("_profile")
