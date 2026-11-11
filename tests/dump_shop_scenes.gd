@@ -18,7 +18,7 @@ func _initialize() -> void:
 		if not ResourceLoader.exists(shop_path): continue
 		var shop: Resource = load(shop_path)
 		var scene_path := String(shop.get("scene_path"))
-		# 还没有美术场景的原型店（比如小炒饭馆）没有场景可核对
+		# 还没有美术场景的原型店没有场景可核对
 		if scene_path.is_empty(): continue
 		var art: Node = load(scene_path).instantiate()
 		var anchors := art.get_node_or_null("Anchors")

@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://dhe7r2x78eyek"]
 
+[ext_resource type="Script" path="res://presentation/shop/anchor_rect.gd" id="anchor"]
 [ext_resource type="Texture2D" uid="uid://b2tvut3wp1wel" path="res://art/stirfry/scene/back_wall_r00_c00.png" id="back_wall_r00_c00"]
 [ext_resource type="Texture2D" uid="uid://chagix6xu6nr1" path="res://art/stirfry/scene/chopped_scallion_bowl.png" id="chopped_scallion_bowl"]
 [ext_resource type="Texture2D" uid="uid://1qbo20s8cb1e" path="res://art/stirfry/scene/complete_chopping_board.png" id="complete_chopping_board"]
@@ -174,15 +175,15 @@ y_sort_enabled = true
 position = Vector2(792, 404)
 
 [node name="Stand" type="Sprite2D" parent="Sortables/RiceCookerStand" unique_id=2063473672]
-position = Vector2(-43.000015, -25.182796)
-scale = Vector2(0.32492107, 0.38461548)
+position = Vector2(-48.6, -22.6)
+scale = Vector2(0.36, 0.36)
 texture = ExtResource("support_stand")
 centered = false
 metadata/asset_id = "support_stand"
 
 [node name="RiceCooker" type="Sprite2D" parent="Sortables/RiceCookerStand" unique_id=1615407739]
-position = Vector2(-38.000122, -81.1828)
-scale = Vector2(0.33325896, 0.3219572)
+position = Vector2(-37.55, -82.4)
+scale = Vector2(0.33, 0.33)
 texture = ExtResource("rice_cooker")
 centered = false
 metadata/asset_id = "rice_cooker"
@@ -274,8 +275,8 @@ centered = false
 metadata/asset_id = "rice_sack"
 
 [node name="ChoppingBoard" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=159887730]
-position = Vector2(10, -138.50827)
-scale = Vector2(0.1972477, 0.23190495)
+position = Vector2(7.2, -136.1)
+scale = Vector2(0.21, 0.21)
 texture = ExtResource("complete_chopping_board")
 centered = false
 metadata/asset_id = "complete_chopping_board"
@@ -553,3 +554,164 @@ metadata/asset_id = "dining_table"
 
 [node name="Anchors" type="Node2D" parent="." unique_id=1156273834]
 metadata/world_size = Vector2(887, 1774)
+
+[node name="Stations" type="Node2D" parent="Anchors"]
+
+[node name="counter" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/counter"]
+position = Vector2(54, 715)
+script = ExtResource("anchor")
+size = Vector2(500, 150)
+
+[node name="Post" type="Node2D" parent="Anchors/Stations/counter"]
+position = Vector2(130, 730)
+script = ExtResource("anchor")
+size = Vector2(200, 110)
+
+[node name="PostPoint" type="Marker2D" parent="Anchors/Stations/counter"]
+position = Vector2(215, 750)
+
+[node name="pantry" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/pantry"]
+position = Vector2(39, 208)
+script = ExtResource("anchor")
+size = Vector2(290, 409)
+
+[node name="rice_cooker" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/rice_cooker"]
+position = Vector2(745, 320)
+script = ExtResource("anchor")
+size = Vector2(110, 140)
+
+[node name="wok_a" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/wok_a"]
+position = Vector2(329, 129)
+script = ExtResource("anchor")
+size = Vector2(237, 178)
+
+[node name="Frame" type="Node2D" parent="Anchors/Stations/wok_a"]
+position = Vector2(329, 129)
+script = ExtResource("anchor")
+size = Vector2(237, 178)
+
+[node name="Post" type="Node2D" parent="Anchors/Stations/wok_a"]
+position = Vector2(370, 300)
+script = ExtResource("anchor")
+size = Vector2(160, 90)
+
+[node name="PostPoint" type="Marker2D" parent="Anchors/Stations/wok_a"]
+position = Vector2(450, 335)
+
+[node name="plating" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/plating"]
+position = Vector2(584, 470)
+script = ExtResource("anchor")
+size = Vector2(268, 140)
+
+[node name="window" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/window"]
+position = Vector2(580, 740)
+script = ExtResource("anchor")
+size = Vector2(134, 110)
+
+[node name="Drops" type="Node2D" parent="Anchors"]
+
+[node name="0" type="Node2D" parent="Anchors/Drops"]
+position = Vector2(370, 300)
+script = ExtResource("anchor")
+size = Vector2(160, 90)
+metadata/post = "wok_a"
+
+[node name="1" type="Node2D" parent="Anchors/Drops"]
+position = Vector2(130, 730)
+script = ExtResource("anchor")
+size = Vector2(200, 110)
+metadata/post = "counter"
+
+[node name="Queue" type="Node2D" parent="Anchors"]
+
+[node name="0" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(215, 950)
+
+[node name="1" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(290, 950)
+
+[node name="2" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(365, 950)
+
+[node name="3" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(443, 975)
+
+[node name="4" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(443, 1045)
+
+[node name="5" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(443, 1115)
+
+[node name="6" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(443, 1185)
+
+[node name="7" type="Node2D" parent="Anchors/Queue"]
+position = Vector2(443, 1255)
+
+[node name="Seats" type="Node2D" parent="Anchors"]
+
+[node name="table" type="Node2D" parent="Anchors/Seats"]
+
+[node name="0" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(121, 1050)
+
+[node name="1" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(320, 1050)
+
+[node name="2" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(574, 1050)
+
+[node name="3" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(772, 1050)
+
+[node name="4" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(121, 1233)
+
+[node name="5" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(320, 1233)
+
+[node name="6" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(574, 1233)
+
+[node name="7" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(772, 1233)
+
+[node name="8" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(121, 1423)
+
+[node name="9" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(320, 1423)
+
+[node name="10" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(574, 1423)
+
+[node name="11" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(772, 1423)
+
+[node name="12" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(121, 1611)
+
+[node name="13" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(320, 1611)
+
+[node name="14" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(574, 1611)
+
+[node name="15" type="Node2D" parent="Anchors/Seats/table"]
+position = Vector2(772, 1611)
+
+[node name="Entrance" type="Node2D" parent="Anchors"]
+position = Vector2(443, 1740)
+metadata/note = "客人从下方门口进来"

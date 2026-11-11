@@ -175,34 +175,34 @@ display_name = "番茄炒蛋盖饭"
 [sub_resource type="Resource" id="Resource_s34ee"]
 script = ExtResource("14_fr6bm")
 points = Dictionary[String, Vector2]({
-"counter": Vector2(160, 600),
-"door": Vector2(40, 640),
-"home": Vector2(320, 360),
-"pantry": Vector2(110, 250),
-"plating": Vector2(450, 400),
-"rice_cooker": Vector2(560, 250),
-"table/0": Vector2(170, 820),
-"table/1": Vector2(226, 820),
-"table/10": Vector2(310, 1020),
-"table/11": Vector2(366, 1020),
-"table/12": Vector2(450, 1020),
-"table/13": Vector2(506, 1020),
-"table/14": Vector2(590, 1020),
-"table/15": Vector2(646, 1020),
-"table/2": Vector2(310, 820),
-"table/3": Vector2(366, 820),
-"table/4": Vector2(450, 820),
-"table/5": Vector2(506, 820),
-"table/6": Vector2(590, 820),
-"table/7": Vector2(646, 820),
-"table/8": Vector2(170, 1020),
-"table/9": Vector2(226, 1020),
-"window": Vector2(360, 540),
-"wok_a": Vector2(310, 230)
+"counter": Vector2(215, 755),
+"door": Vector2(443, 1740),
+"home": Vector2(450, 560),
+"pantry": Vector2(200, 660),
+"plating": Vector2(720, 650),
+"rice_cooker": Vector2(790, 480),
+"table/0": Vector2(121, 1050),
+"table/1": Vector2(320, 1050),
+"table/10": Vector2(574, 1423),
+"table/11": Vector2(772, 1423),
+"table/12": Vector2(121, 1611),
+"table/13": Vector2(320, 1611),
+"table/14": Vector2(574, 1611),
+"table/15": Vector2(772, 1611),
+"table/2": Vector2(574, 1050),
+"table/3": Vector2(772, 1050),
+"table/4": Vector2(121, 1233),
+"table/5": Vector2(320, 1233),
+"table/6": Vector2(574, 1233),
+"table/7": Vector2(772, 1233),
+"table/8": Vector2(121, 1423),
+"table/9": Vector2(320, 1423),
+"window": Vector2(640, 755),
+"wok_a": Vector2(450, 340)
 })
 posts = Dictionary[String, Vector2]({
-"counter": Vector2(160, 580),
-"wok_a": Vector2(310, 210)
+"counter": Vector2(215, 750),
+"wok_a": Vector2(450, 335)
 })
 spawn_point = "home"
 
@@ -648,4 +648,5 @@ seat_groups = Array[ExtResource("17_47ana")]([SubResource("Resource_1xlps")])
 staff = SubResource("Resource_0o08o")
 goals = SubResource("Resource_w3c2t")
 layout = SubResource("Resource_s34ee")
+scene_path = "res://presentation/shops/stirfry/stirfry_art.tscn"
 save_file = "shop_stirfry_proto.json"

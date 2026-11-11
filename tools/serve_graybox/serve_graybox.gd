@@ -2,6 +2,7 @@ extends Node2D
 ## 送桌店（serve）灰盒观察器：直接画规则层状态，不走正式界面，只给原型验证看。
 ## 打开 tools/serve_graybox/serve_graybox.tscn 运行（或 godot --path . tools/serve_graybox/serve_graybox.tscn）。
 ## 按钮：招帮厨（招人并上岗流动）、倍速、重开。
+## 店铺数据有 scene_path 时，把美术场景缩放进 720×1280 当底图，状态画在上面；没有就画纯灰盒。
 
 const ServeFlow := preload("res://game/rules/serve_flow.gd")
 const SHOP_PATH := "res://content/shops/stirfry/shop.tres"
@@ -11,6 +12,8 @@ var rules: ShopRules
 var speed := 1.0
 var font: Font
 var _hud: Label
+var _art: Node2D
+var _anchors: ShopAnchors
 
 
 func _ready() -> void:
@@ -20,6 +23,9 @@ func _ready() -> void:
 	var theme := Theme.new()
 	theme.default_font = font
 	theme.default_font_size = 22
+	# 按钮和文字放在 CanvasLayer 上，不跟底图一起缩放
+	var ui := CanvasLayer.new()
+	add_child(ui)
 	var bar := HBoxContainer.new()
 	bar.position = Vector2(12, 1210)
 	bar.add_theme_constant_override("separation", 12)
@@ -31,11 +37,32 @@ func _ready() -> void:
 		b.custom_minimum_size = Vector2(150, 56)
 		b.pressed.connect(row[1])
 		bar.add_child(b)
+	ui.add_child(bar)
 	_hud = Label.new()
 	_hud.theme = theme
 	_hud.position = Vector2(12, 8)
-	add_child(_hud)
+	ui.add_child(_hud)
+	var legend := Label.new()
+	legend.theme = theme
+	legend.add_theme_font_size_override("font_size", 16)
+	legend.position = Vector2(12, 1170)
+	legend.text = "圆点：灰=排队  蓝=去座位  橙=等餐  绿=用餐   红点=桌上的菜"
+	ui.add_child(legend)
+	_load_art(load(SHOP_PATH))
 	_restart()
+
+
+func _load_art(shop: SpecShop) -> void:
+	if shop.scene_path.is_empty() or not ResourceLoader.exists(shop.scene_path): return
+	_art = load(shop.scene_path).instantiate()
+	_art.show_behind_parent = true
+	add_child(_art)
+	_anchors = ShopAnchors.new(_art.get_node_or_null("Anchors"))
+	var world := Vector2(720, 1280)
+	if _anchors.root != null: world = _anchors.root.get_meta("world_size", world)
+	var k := minf(720.0 / world.x, 1280.0 / world.y)
+	scale = Vector2(k, k)
+	position = Vector2((720.0 - world.x * k) / 2.0, 0)
 
 
 func _restart() -> void:
@@ -74,16 +101,18 @@ func _text(at: Vector2, text: String, size := 18, color := Color(0.15, 0.15, 0.1
 func _draw() -> void:
 	if rules == null: return
 	var shop := rules.shop
-	draw_rect(Rect2(0, 0, 720, 1280), Color(0.97, 0.95, 0.9))
-	draw_rect(Rect2(0, 90, 720, 400), Color(0.93, 0.88, 0.8))
-	_text(Vector2(12, 120), "后厨", 20, Color(0.5, 0.4, 0.3))
-	_text(Vector2(12, 760), "堂食", 20, Color(0.5, 0.4, 0.3))
+	if _art == null:
+		draw_rect(Rect2(0, 0, 720, 1280), Color(0.97, 0.95, 0.9))
+		draw_rect(Rect2(0, 90, 720, 400), Color(0.93, 0.88, 0.8))
+		_text(Vector2(12, 120), "后厨", 20, Color(0.5, 0.4, 0.3))
+		_text(Vector2(12, 760), "堂食", 20, Color(0.5, 0.4, 0.3))
+	var alpha := 0.8 if _art != null else 1.0
 	# 机器
 	for st in shop.stations:
 		var p := rules.nav.point(st.id)
 		var box := Rect2(p + Vector2(-62, -78), Vector2(124, 58))
 		var on := rules.station_unlocked(st.id)
-		draw_rect(box, Color(0.82, 0.86, 0.95) if on else Color(0.85, 0.85, 0.85))
+		draw_rect(box, Color(0.82, 0.86, 0.95, alpha) if on else Color(0.85, 0.85, 0.85, alpha))
 		draw_rect(box, Color(0.3, 0.3, 0.35), false, 2.0)
 		_text(box.position + Vector2(6, 22), st.display_name, 18)
 		var row: Dictionary = rules.stations[st.id]
@@ -107,7 +136,8 @@ func _draw() -> void:
 	# 座位
 	for n in rules.seat_total():
 		var p := rules.nav.point(ServeFlow.seat_point(shop, n))
-		draw_rect(Rect2(p - Vector2(22, 22), Vector2(44, 44)), Color(0.8, 0.7, 0.55))
+		if _art == null: draw_rect(Rect2(p - Vector2(22, 22), Vector2(44, 44)), Color(0.8, 0.7, 0.55))
+		else: draw_arc(p, 26, 0, TAU, 24, Color(0.95, 0.85, 0.3), 3.0)
 	for g in rules.serve.goods:
 		if String(g.at).begins_with("seat:"):
 			var p := rules.nav.point(ServeFlow.seat_point(shop, int(String(g.at).substr(5))))
@@ -115,10 +145,12 @@ func _draw() -> void:
 	# 顾客
 	var q := 0
 	var counter := rules.nav.point(rules.counter_id)
+	var queue_points: Array[Vector2] = []
+	if _anchors != null: queue_points = _anchors.points("Queue")
 	for g in rules.serve.guests:
 		var pos: Vector2
 		if g.state == "queue":
-			pos = counter + Vector2(-20 - 0 * q, 70 + q * 46)
+			pos = queue_points[mini(q, queue_points.size() - 1)] if not queue_points.is_empty() else counter + Vector2(-20, 70 + q * 46)
 			q += 1
 		else:
 			var seat := rules.nav.point(ServeFlow.seat_point(shop, int(g.seat)))
@@ -136,9 +168,3 @@ func _draw() -> void:
 		if not String(w.carry_item).is_empty():
 			draw_rect(Rect2(p + Vector2(18, -10), Vector2(84, 18)), Color(1, 1, 0.85))
 			_text(p + Vector2(21, 5), _name(w.carry_item), 13)
-	# 图例
-	var x := 400.0
-	for state in ["queue", "to_seat", "seated", "eating"]:
-		draw_circle(Vector2(x, 1186), 8, COLORS[state])
-		_text(Vector2(x + 12, 1192), {"queue": "排队", "to_seat": "去座位", "seated": "等餐", "eating": "用餐"}[state], 15)
-		x += 80
