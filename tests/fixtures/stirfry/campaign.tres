@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="SpecCampaign" format=3]
+
+[ext_resource type="Script" path="res://content/rules/spec_campaign.gd" id="1_campaign"]
+[ext_resource type="Script" path="res://content/rules/spec_city.gd" id="2_city"]
+[ext_resource type="Script" path="res://content/rules/spec_campaign_shop.gd" id="3_shop"]
+
+[sub_resource type="Resource" id="StirfryShop"]
+script = ExtResource("3_shop")
+id = "stirfry"
+display_name = "小炒饭馆"
+shop_path = "res://content/shops/stirfry/shop.tres"
+
+[sub_resource type="Resource" id="TestCity"]
+script = ExtResource("2_city")
+id = "test_stirfry"
+display_name = "Test City"
+shops = Array[ExtResource("3_shop")]([SubResource("StirfryShop")])
+
+[resource]
+script = ExtResource("1_campaign")
+cities = Array[ExtResource("2_city")]([SubResource("TestCity")])

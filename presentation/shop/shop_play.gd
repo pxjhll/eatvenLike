@@ -17,6 +17,7 @@ const DefaultHud := preload("res://presentation/shop/hud/default_hud.gd")
 const ArtGroups := preload("res://presentation/shop/art_groups.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
+const ServeFlow := preload("res://game/rules/serve_flow.gd")
 const Schema := preload("res://game/rules/shop_spec_validator.gd")
 const SceneContract := preload("res://presentation/shop/shop_scene_contract.gd")
 ## 竖屏铺满宽度；横屏最多少看 MIN_VISIBLE_WORLD 这么高的店面
@@ -734,6 +735,7 @@ func _update_cups(frame: Dictionary = {}) -> void:
 			if int(frame.stations[id].output[item]) > 0:
 				draws.append({"pos": anchors.point(path), "item": item, "host": String(anchors.meta(path, "host", ""))})
 				break
+	if shop.fulfillment.handoff == "serve": _serve_goods(frame, draws)
 	while _cups.size() < draws.size():
 		var sprite := Sprite2D.new()
 		sprite.centered = false
@@ -761,6 +763,9 @@ func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 	if frame.is_empty(): frame = view.render_snapshot()
 	if shop.fulfillment.handoff == "single":
 		_update_customers_single(delta, frame)
+		return
+	if shop.fulfillment.handoff == "serve":
+		_update_customers_serve(delta, frame)
 		return
 	var active := {}
 	var queue := anchors.points("Queue")
@@ -825,6 +830,106 @@ func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 		_customer_positions.erase(id)
 		_customer_orders.erase(id)
 		_customer_entering.erase(id)
+
+
+## 订单明细店（serve，规格 §10）：后厨做好的、出餐口上的、桌上的实物都画出来。
+## 同一处的几份并排摆开；员工手里的由员工自己画。共享库存（饭盆）只看机器牌子上的数。
+func _serve_goods(frame: Dictionary, draws: Array) -> void:
+	var count := {}
+	for good: Dictionary in frame.serve.goods:
+		var at := String(good.at)
+		var pos: Vector2
+		if at.begins_with(ServeFlow.SEAT):
+			pos = _serve_seat_point(int(at.substr(ServeFlow.SEAT.length()))) + Vector2(0, -36)
+		elif at.contains(":"):
+			continue
+		elif anchors.has("Stations/%s/Buffer" % at):
+			pos = anchors.point("Stations/%s/Buffer" % at)
+		elif _layout_has(at):
+			pos = _layout_point(at)
+		else:
+			continue
+		var n := int(count.get(at, 0))
+		count[at] = n + 1
+		draws.append({"pos": pos + Vector2((n % 3 - 1) * 18, -int(n / 3) * 10), "item": String(good.item), "host": ""})
+
+
+func _serve_seat_point(seat: int) -> Vector2:
+	var key := ServeFlow.seat_point(shop, seat)
+	return anchors.point("Seats/" + key, _layout_point(key))
+
+
+## 店铺数据里的走位点（和规则层寻路用同一份坐标，读的是共享定义，不碰运行状态）
+func _layout_has(key: String) -> bool:
+	return shop.layout != null and shop.layout.points.has(shop.layout.aliases.get(key, key))
+
+
+func _layout_point(key: String) -> Vector2:
+	if shop.layout == null: return Vector2.ZERO
+	return shop.layout.points.get(shop.layout.aliases.get(key, key), Vector2.ZERO)
+
+
+## 订单明细店的客人：排队站队伍位；自取店接单后走到出餐口前排开等，端走以后走去分到的座位；
+## 送桌店接单后直接去座位。坐下等餐、用餐都坐着；离店的走到门口再消失。
+func _update_customers_serve(delta: float, frame: Dictionary) -> void:
+	var queue := anchors.points("Queue")
+	var entrance := anchors.point("Entrance", Vector2(_world_size.x / 2.0, _world_size.y))
+	var pickup_id := ServeFlow.pickup_of(shop)
+	var window: Vector2 = anchors.point("Stations/%s/Waiting" % pickup_id, _layout_point(pickup_id) + Vector2(0, 90))
+	var orders := {}
+	for o: Dictionary in frame.serve.orders: orders[int(o.id)] = o
+	var present := {}
+	var line := 0
+	var waiting := 0
+	for g: Dictionary in frame.serve.guests:
+		var id := int(g.id)
+		present[id] = true
+		if not _customers.has(id):
+			var actor := _actor(Characters.customer_art(id), _customer_height)
+			_sortables.add_child(actor)
+			_customers[id] = actor
+			_customer_positions[id] = entrance
+		var state := String(g.state)
+		var goal: Vector2
+		if state == "queue":
+			goal = _queue_spot(queue, line) if not queue.is_empty() else entrance
+			line += 1
+		elif state in ["to_pickup", "await"]:
+			goal = window + Vector2((waiting % 4 - 1.5) * 48, int(waiting / 4) * 40)
+			waiting += 1
+		else:
+			goal = _serve_seat_point(int(g.seat))
+		var point: Vector2 = Vector2(_customer_positions[id]).move_toward(goal, delta * _customer_speed)
+		_customer_positions[id] = point
+		var arrived := point.distance_to(goal) <= 1.0
+		var seated := arrived and state in ["seated", "eating"]
+		var actor: Node2D = _customers[id]
+		var o: Dictionary = orders.get(int(g.order), {})
+		var dish := String(o.lines[0].dish) if not o.is_empty() and not o.lines.is_empty() else ""
+		if state == "queue":
+			actor.show_order("", -1.0, rules.order_mood({"wait": g.wait}))
+		elif state in ["eating"] or (state == "to_seat" and ServeFlow.self_pickup(shop)):
+			actor.show_order("", -1.0)
+		else:
+			actor.show_order(dish, -1.0, rules.order_mood({"wait": g.wait, "seat": g.seat}))
+		var pose := {"pos": point, "walking": not arrived, "seated": seated, "phase": "idle", "task_label": ""}
+		if seated: pose.facing = int(anchors.meta("Seats/" + ServeFlow.seat_point(shop, int(g.seat)), "facing", 2))
+		actor.display(pose, frame.clock)
+		if _z_by_y: actor.z_index = int(actor.position.y)
+	var exit := anchors.point("Exit", entrance)
+	for id in _customers.keys():
+		if present.has(id): continue
+		var actor: Node2D = _customers[id]
+		actor.show_order("", -1.0)
+		var point: Vector2 = Vector2(_customer_positions[id]).move_toward(exit, delta * _customer_speed)
+		_customer_positions[id] = point
+		actor.display({"pos": point, "walking": true, "phase": "idle", "task_label": ""}, frame.clock)
+		if _z_by_y: actor.z_index = int(actor.position.y)
+		if point.distance_to(exit) <= 4.0:
+			actor.free()
+			_customers.erase(id)
+			_customer_positions.erase(id)
+			_customer_orders.erase(id)
 
 
 ## 一人跟单的店（规格 §3.2）：排队的站在队伍位上，站不下的坐等位；付了钱的先坐等位等餐，没等位就站在一边；

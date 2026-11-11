@@ -38,7 +38,7 @@ func render_snapshot() -> Dictionary:
 		"workers": rules.workers, "roster": rules.roster, "stations": rules.stations,
 		"shelf_stock": rules.shelf_stock, "orders": rules.orders, "customers": rules.customers,
 		"queue": rules.queue, "diners": rules.diners, "belts": rules.belts,
-		"belt_items": rules.belt_items, "seats": rules.seats,
+		"belt_items": rules.belt_items, "seats": rules.seats, "serve": rules.serve,
 		"stage_queue_capacity": rules.current_stage().queue_capacity}.duplicate(true)
 
 
