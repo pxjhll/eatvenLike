@@ -23,7 +23,7 @@
 
 ## 顺序与状态
 
-状态：T01–T03已完成，见docs/qa/tea-modularity-baseline.md。T04已完成，见docs/qa/shared-actor-presentation.md。T05公共能力与三类业务夹具已完成，见docs/qa/shared-movement.md；正式店启用仍按T09/T10迁移。T06–T12尚未开始，在前置接口完成后展开详细实现步骤。
+状态：T01–T03已完成，见docs/qa/tea-modularity-baseline.md。T04已完成，见docs/qa/shared-actor-presentation.md。T05公共能力与三类业务夹具已完成，见docs/qa/shared-movement.md；T06生命周期与首个真实业务适配已完成，见docs/qa/composable-actor-actions.md。正式店启用仍按T09/T10迁移。T07–T12尚未开始。
 
 | 阶段 | 任务 | 优先级 | 依赖 | 交付与独立验收 |
 |---|---|---|---|---|
@@ -61,7 +61,7 @@
 ## 阶段出口
 
 - [x] A完成：奶茶既有体验被冻结，共享员工定义替换未改变奶茶结果；旧档仍能继续。
-- [ ] B完成：共享逻辑尺寸、移动、动作接口可被业务组合；规则和画面不再各算一套到达。
+- [x] B公共能力完成：共享尺寸、规则运动和动作生命周期可组合，新协议画面不独立判断到达；正式店迁移在E阶段完成。
 - [ ] C完成：新能力夹具只增加数据或实现新增能力；未启用它的旧流程无变化。
 - [ ] D完成：移动工位实例时占地、端口、交互区一并移动；界面可显示空间错误。
 - [ ] E完成：第三店和煎饼摊引用统一底座，旧档迁移受控，行为调整记录清楚。
@@ -79,9 +79,12 @@ T07选择真实业务的最小扩展夹具，覆盖组合与合流的兼容契�
 - [x] T02：六种共享员工资源已提取，奶茶内容与轨迹不变。
 - [x] T03：旧档加载/续跑/重存与基础属性刷新验证完成，A阶段交付。
 
-下一个待执行任务：T06，可组合原子动作。A阶段提交9fd08aa已推送；T04提交8b0d24c与T05按本轮用户指令一起推送到当前分支。
+下一个待执行任务：T07，生产依赖与交付组合。T05已提交并推送7581f15，远端同时包含T04提交8b0d24c；T06留在工作区。
 
 - [x] T04：共享角色表现配置、原生单位换算、三店同视口角色尺度及原奶茶画面对照通过。
 - [x] T05：运动协议v1、规则顾客、权限/脚底占地、阻路恢复、存档与纯快照显示通过；保留legacy正式店供后续迁移。
+- [x] T06：六类原子动作、生命周期与业务lease、真实serve适配、等待插入、取消及旧档/事件快照通过；首轮新执行器不开放给single/handoff。
 
 T06接口前置：员工使用ShopRules.begin_move(worker,goal,phase)和advance_move(worker,dt)，客户抵达使用CustomerMovement.ready(rules,key)。空路径始终表示请求待完成；取消必须清理motion。动作组合消费这些事实，不另算走路时间或直接移动表现节点。v1的角色区域和顾客端口见2026-11-11-shared-movement.md。
+
+T07接口前置：RuleActions.start/tick/cancel/validate，ActionContext.reserve/ready/enter/advance/commit/cancel；现有ServeFlow仍是实物和订单唯一所有者。先复用consumes/produces、unit和goods依赖，不另建库存账本。当前顺序步骤是数据，不支持条件脚本或分支解释器；新交付组合需明确自己的业务预留与取消边界。

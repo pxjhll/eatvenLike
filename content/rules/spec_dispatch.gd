@@ -1,5 +1,7 @@
 class_name SpecDispatch
 extends Resource
+## 0 preserves legacy execution. 1 uses composable actions with shared movement.
+@export var action_version: int = 0
 ## Mode contract: game/rules/shop_spec_validator.gd capabilities(); docs/shop-capabilities.md.
 ## Handoff uses scored dispatch; single follows one order. Unused fields retain defaults.
 ## 员工调度打分表（§3.6）。分数 = 基础分 + 等待加成（有上限）+ 缺口加成 − 路程。

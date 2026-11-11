@@ -24,6 +24,18 @@ New movement-capable layouts opt in with `layout.motion_version = 1`. Version 0 
 
 Scene module exports will be introduced in T08. Until then, the new customer ports and permission areas must be authored explicitly in `SpecLayout`; the old employee-only Nav export cannot invent them. Production shops are migrated in T09/T10. Run `tests/render_shared_movement.gd` alongside the ordinary shop UI and rule regressions. See [shared-movement.md](qa/shared-movement.md) for the tested behavior and limits.
 
+## Composable actor actions
+
+`dispatch.action_version = 0` preserves legacy execution. The first version-1 adapter supports `serve` with `layout.motion_version = 1`; unsupported combinations fail preflight. Production shop migration remains separate. `rule_actions.gd` owns only the lifecycle of a sequential plan; recipe dependencies remain in the existing fulfillment rules.
+
+An action step is `{kind, target, seconds, label, data}`. The six registered kinds are `move`, `pickup`, `operate`, `transport`, `drop`, `wait`. `ActionContext` owns the meaning of ports and durations; the serve adapter calculates operation/pick/drop durations from existing rules on entry, while explicit waits use their `seconds`. `ready` must be read-only and is checked before entry and each tick. A blocked action retains its remaining time and reservations. Each tick commits at most one action, including zero-duration actions.
+
+The context's `reserve` returns `{error, lease}` atomically. The lease references the one business inventory/reservation owner; do not create a second stock ledger in the executor. `commit` must complete its validated transaction and release a terminal lease. `cancel` releases/compensates only the uncompleted business scope. Use the cancellation API before replacing a program; arbitrary record replacement cannot infer where real items should go.
+
+Programs contain only data and keep a versioned cursor/status. Cursors commit before synchronous effects broadcast events. Future versions cannot overwrite an existing file; legacy active jobs rebuild from their recorded stage and remaining time, with an original-file backup before replacement. `ShopView.render_snapshot().actions` publishes detached per-worker summaries; presentation code must never commit action effects.
+
+See [composable-actor-actions.md](qa/composable-actor-actions.md), `tests/fixtures/action_context.gd` for a small real inventory context, and `serve_action_context.gd` for a production-rule adapter. Run `tests/render_actor_actions.gd` in addition to the shared movement and ordinary shop regressions. Multi-input recipe joins and delivery composition are covered by T07, rather than added as a new scripting language here.
+
 ## Art contract
 
 `presentation/shop/shop_scene_contract.gd` exposes read-only `validate(shop, art)` and `prepare(shop)`. Preparation returns `{errors, art}` and frees rejected instances. The caller owns a successful candidate. The generic scene validates data and prepares one art candidate before calling `Session.start`; it adopts that exact candidate on success and frees it when session startup fails. An authoring error blocks business and saving without replacing or quarantining existing progress. Repair the configuration and use the retry button.

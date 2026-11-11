@@ -15,6 +15,8 @@ extends RefCounted
 
 const WorkerState := preload("res://game/rules/worker_state.gd")
 const CustomerMovement := preload("res://game/rules/customer_movement.gd")
+const Actions := preload("res://game/rules/rule_actions.gd")
+const ActionContext := preload("res://game/rules/serve_action_context.gd")
 const SHARED := -1
 const SOURCE_BLOCKS := ["supply", "batch_pot"]
 const WORK_BLOCKS := ["hand", "combine"]
@@ -383,13 +385,17 @@ static func _work(rules: ShopRules, worker: Dictionary, dt: float) -> void:
 	if job.is_empty():
 		worker.phase = "idle"
 		return
+	if rules.shop.dispatch.action_version==1:
+		var context := _action_context(rules)
+		if not worker.has("action"): context.restore(worker)
+		Actions.tick(worker,dt,context)
+		return
 	if worker.walking:
 		if rules.advance_move(worker,dt): _arrived(rules, worker)
 		return
 	if worker.phase != "work": return
 	if rules.movement_enabled() and job.kind=="take" and not CustomerMovement.ready(rules,"guest:%d"%int(job.guest)): return
-	worker.action_left = maxf(0.0, float(worker.action_left) - dt)
-	if worker.action_left > 0.000001: return
+	if not WorkerState.tick_handoff_action(worker,dt): return
 	match String(job.stage):
 		"pick": _picked(rules, worker, job)
 		"drop": _dropped(rules, worker, job)
@@ -435,6 +441,11 @@ static func _pick_label(rules: ShopRules, job: Dictionary) -> String:
 
 
 static func _picked(rules: ShopRules, worker: Dictionary, job: Dictionary) -> void:
+	_pick_good(rules,worker,job)
+	_go(rules, worker, String(job.to), "go_to")
+
+
+static func _pick_good(rules: ShopRules, worker: Dictionary, job: Dictionary) -> void:
 	var good: Dictionary
 	if int(job.good) == -1:
 		good = _birth(rules, String(job.item), HAND + str(worker.id), int(job.unit))
@@ -448,7 +459,6 @@ static func _picked(rules: ShopRules, worker: Dictionary, job: Dictionary) -> vo
 	worker.carry_item = String(job.item)
 	worker.carry_count = 1
 	worker.task_label = "送餐" if job.kind == "serve" else ("出餐" if job.kind == "pass" else "搬")
-	_go(rules, worker, String(job.to), "go_to")
 
 
 static func _dropped(rules: ShopRules, worker: Dictionary, job: Dictionary) -> void:
@@ -551,6 +561,7 @@ static func _announce_delivery(rules: ShopRules, done: Dictionary) -> void:
 
 
 static func _end(rules: ShopRules, worker: Dictionary) -> void:
+	worker.erase("action")
 	rules.serve.jobs.erase(str(worker.id))
 	worker.phase = "idle"
 	worker.task_label = "idle"
@@ -565,6 +576,12 @@ static func _good(rules: ShopRules, id: int) -> Dictionary:
 
 ## 放下手上的活（调岗、收回名册）：预留全部释放；手上的东西放回拿的地方，仍归原来那份餐（§10.3 取消释放）
 static func cancel(rules: ShopRules, worker: Dictionary) -> void:
+	if worker.has("action") and Actions.cancel(worker,_action_context(rules)): return
+	_cancel_assignment(rules,worker)
+
+
+static func _cancel_assignment(rules: ShopRules, worker: Dictionary) -> void:
+	worker.erase("action")
 	var job := job_of(rules, worker)
 	if job.is_empty(): return
 	worker.erase("motion")
@@ -616,6 +633,11 @@ static func _idle(rules: ShopRules, worker: Dictionary) -> void:
 	if worker.pos.distance_to(home) < 1.0: return
 	rules.serve.jobs[str(worker.id)] = _job("home", -1, -1, "", -1, "", worker.post)
 	worker.task_label = "回岗"
+	if rules.shop.dispatch.action_version==1:
+		var context := _action_context(rules)
+		var error := Actions.start(worker,context.plan(job_of(rules,worker)),context)
+		if not error.is_empty(): _cancel_assignment(rules,worker)
+		return
 	rules.begin_move(worker,home,"walk")
 	job_of(rules, worker).stage = "home"
 
@@ -637,7 +659,21 @@ static func _claim(rules: ShopRules, worker: Dictionary, c: Dictionary) -> void:
 		var u := unit(rules, int(job.unit))
 		rules.stations[rules.shop.dish(String(u.dish)).steps[int(job.step)].station].user = worker.id
 	worker.task_label = String(c.get("label", ""))
-	_go(rules, worker, String(job.from), "go_from")
+	if rules.shop.dispatch.action_version==1:
+		var context := _action_context(rules)
+		var error := Actions.start(worker,context.plan(job),context)
+		if not error.is_empty(): _cancel_assignment(rules,worker)
+	else: _go(rules, worker, String(job.from), "go_from")
+
+
+static func _action_context(rules: ShopRules) -> RefCounted:
+	return ActionContext.new(rules,load("res://game/rules/serve_flow.gd"))
+
+
+static func restore_actions(rules: ShopRules) -> void:
+	var context := _action_context(rules)
+	for worker: Dictionary in rules.workers:
+		if not job_of(rules,worker).is_empty() and not worker.has("action"): context.restore(worker)
 
 
 ## 这个员工现在能接的所有活（只读）

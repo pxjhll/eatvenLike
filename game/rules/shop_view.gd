@@ -42,6 +42,14 @@ func render_snapshot() -> Dictionary:
 		"stage_queue_capacity": rules.current_stage().queue_capacity}
 	if rules.movement_enabled(): frame.movement = rules.movement
 	frame = frame.duplicate(true)
+	if shop.dispatch.action_version==1:
+		frame.actions = {}
+		for worker: Dictionary in frame.workers:
+			if not worker.has("action"): continue
+			var action: Dictionary = worker.action
+			var step: Dictionary = action.steps[action.index]
+			frame.actions[str(worker.id)] = {"status":action.status,"reason":action.reason,"kind":step.kind,"target":step.target,
+				"index":action.index,"count":action.steps.size(),"remaining":worker.action_left}
 	if rules.movement_enabled():
 		for worker: Dictionary in frame.workers:
 			worker.speed = rules.walk_speed(worker)/shop.layout.motion_units

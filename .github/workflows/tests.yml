@@ -52,6 +52,10 @@ jobs:
         env:
           XDG_DATA_HOME: ${{ runner.temp }}/shared-movement-userdata
         run: timeout 30s ./godot --headless --path . -s tests/render_shared_movement.gd
+      - name: Composable actor actions - real movement, carrying, work and wait poses
+        env:
+          XDG_DATA_HOME: ${{ runner.temp }}/actor-actions-userdata
+        run: timeout 30s ./godot --headless --path . -s tests/render_actor_actions.gd
       - name: Generic shop scene - data-driven tutorial real-click regression
         run: timeout 45s ./godot --headless --path . -s tests/render_shop_guide.gd
       - name: Generic shop scene - HUD extension acceptance and save round trip

@@ -37,6 +37,7 @@ static func capabilities(mode: String) -> Dictionary:
 		"customer_walk": _reserved(0.0),
 	}
 	var d := {
+		"action_version": _reserved(0),
 		"base_scores": _reserved({}) if single else _supported(),
 		"merge": _fixed(["fixed" if single else "carry"]), "merge_cap": _fixed([1]),
 		"resume_from_stock": _reserved(true) if single else _supported(),
@@ -62,6 +63,7 @@ static func _serve_capabilities() -> Dictionary:
 		"first_customer_delay": _supported(), "customer_walk": _supported(),
 	}
 	var d := {
+		"action_version": _supported([0,1]),
 		"base_scores": _supported(), "merge": _fixed(["fixed"]), "merge_cap": _fixed([1]), "resume_from_stock": _reserved(true),
 		"help_while_waiting": _fixed([true]), "leave_seated_segments": _fixed([true]), "chores_first": _reserved(false),
 		"shortage_bonus": _reserved(0.0), "shortage_per": _reserved(0.0), "shortage_cap": _reserved(0.0),
@@ -222,6 +224,7 @@ static func _validate_policies(shop: SpecShop, c: Dictionary, errors: Array[Dict
 		_number(f.mood_seconds[i], "fulfillment.mood_seconds[%d]" % i, errors)
 		if i > 0 and f.mood_seconds[i] < f.mood_seconds[i - 1]: _error(errors, "fulfillment.mood_seconds", "Thresholds must be ordered.")
 	if shop.dispatch != null:
+		if shop.dispatch.action_version==1 and (shop.layout==null or shop.layout.motion_version!=1): _error(errors,"dispatch.action_version","Actions require shared movement version 1.")
 		for prop in shop.dispatch.get_property_list():
 			if (int(prop.usage) & PROPERTY_USAGE_SCRIPT_VARIABLE) and prop.type == TYPE_FLOAT: _number(shop.dispatch.get(prop.name), "dispatch." + prop.name, errors)
 		for key in shop.dispatch.base_scores:

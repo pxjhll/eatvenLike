@@ -1,5 +1,6 @@
 extends RefCounted
 const MovementValidator := preload("res://game/rules/movement_validator.gd")
+const ActionValidator := preload("res://game/rules/action_validator.gd")
 ## Read-only save validation. Defaults describe the current data IDs; historical
 ## orphan top-level IDs are ignored exactly as in the restore merge.
 
@@ -148,7 +149,9 @@ func validate(data: Dictionary, defaults: Dictionary, shop: SpecShop, chains: Di
 		if not _delivery_slot(row.dst, row.item): return "belt_items 缺少目标物品"
 	error = _serve(data)
 	if not error.is_empty(): return error
-	return MovementValidator.validate(data,shop)
+	error = MovementValidator.validate(data,shop)
+	if not error.is_empty(): return error
+	return ActionValidator.validate(data,shop)
 
 
 ## 送桌店（serve）的运行状态：引用都指向现有的顾客 / 订单 / 份 / 实物 / 员工，实物在合法位置，预留和手上的活对得上。
@@ -230,13 +233,13 @@ func _serve(data: Dictionary) -> String:
 		elif job.kind == "home": stages = ["home"]
 		if not job.stage in stages: return "serve.jobs.stage 无效"
 		var walking: bool = job.stage in ["go_from", "go_to", "home"]
-		if worker.walking != walking or worker.phase != ("walk" if walking else "work"): return "serve.jobs 员工阶段不一致"
+		if not worker.has("action") and (worker.walking != walking or worker.phase != ("walk" if walking else "work")): return "serve.jobs 员工阶段不一致"
 		if job.kind != "home" and _shop.station(job.from) == null: return "serve.jobs.from 无效"
 		if job.kind == "serve":
 			if job.to != "seat:" + str(orders[units[job.unit].order].seat): return "serve.jobs.to 座位无效"
 		elif _shop.station(job.to) == null: return "serve.jobs.to 无效"
 		if job.kind in ["carry", "pass", "serve"]:
-			var carrying: bool = job.stage in ["go_to", "drop"]
+			var carrying: bool = worker.carry_count>0 if worker.has("action") else job.stage in ["go_to", "drop"]
 			if not _items.has(job.item): return "serve.jobs.item 无效"
 			if job.good == -1:
 				if carrying or _shop.station(job.from).block != "supply": return "serve.jobs.good 缺少搬运物品"

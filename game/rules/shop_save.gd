@@ -216,6 +216,15 @@ func _read_existing() -> Dictionary:
 	# First movement adoption also needs a durable old-file backup, even when
 	# the wrapper already carries the current content fingerprint.
 	if shop.layout.motion_version==1 and not state.has("movement"): refresh = true
+	if state.get("roster") is Array:
+		for row in state.roster:
+			if not row is Dictionary: continue
+			if row.get("action") is Dictionary:
+				var action_version: Variant = row.action.get("version")
+				if ((action_version is int or action_version is float) and action_version>1) or shop.dispatch.action_version!=1:
+					return {"error":"存档动作版本高于当前配置，已停止写入以保留原文件","protected":true}
+			elif shop.dispatch.action_version==1 and state.get("serve") is Dictionary and state.serve.get("jobs") is Dictionary and state.serve.jobs.has(str(row.get("id",-1))):
+				refresh = true
 	var guides: Array = []
 	var raw_guides: Variant = wrapper.get("guides", [])
 	if raw_guides is Array:
