@@ -296,7 +296,7 @@ static func _start_eating(rules: ShopRules, g: Dictionary) -> bool:
 
 
 ## 自取（dine_rule = self_pickup）：这一单的每份餐都在出餐口上了，客人一次端走，走去座位。
-## 状态先全部改好（东西归到座位、客人在路上），再逐份记送达和结账，回调里存档读档都接得上。
+## 状态先全部改好（东西归到座位、客人在路上、每份记送达、整单结账），最后才广播。
 static func _collect(rules: ShopRules, g: Dictionary) -> void:
 	var o := order(rules, int(g.order))
 	if o.is_empty(): return
@@ -318,8 +318,11 @@ static func _collect(rules: ShopRules, g: Dictionary) -> void:
 	var speed := maxf(1.0, rules.shop.fulfillment.customer_walk)
 	g.walk_total = RuleNav.length(rules.nav.path(rules.nav.point(pickup), _point(rules, SEAT + str(g.seat)))) / speed
 	g.walk_left = g.walk_total
+	var done: Array = []
+	for pair in ready: done.append(_commit_delivery(rules, int(pair[0].id)))
+	# 整单端走、送达计数、结账全部落定后才广播，回调里存档读档接得上
 	rules.events.emit("picked_up", {"guest": g.id, "order": o.id})
-	for pair in ready: _delivered(rules, int(pair[0].id))
+	for d in done: _announce_delivery(rules, d)
 
 
 static func _leave(rules: ShopRules, g: Dictionary) -> void:
@@ -499,6 +502,16 @@ static func _taken(rules: ShopRules, worker: Dictionary, job: Dictionary) -> voi
 
 ## 一份餐送到座位：只更新它那条明细；整单齐了才结一次账（§10.4）
 static func _delivered(rules: ShopRules, unit_id: int) -> void:
+	var done := _commit_delivery(rules, unit_id)
+	var g := guest(rules, int(done.guest))
+	var started := _start_eating(rules, g)
+	# All delivery state is committed before listeners may save, load or reassign staff.
+	_announce_delivery(rules, done)
+	if started: rules.events.emit("eat_start", {"guest": g.id, "seat": g.seat})
+
+
+## 只改状态（送达计数、件数、整单结账），不广播；返回之后要广播的内容
+static func _commit_delivery(rules: ShopRules, unit_id: int) -> Dictionary:
 	var s := rules.serve
 	var u := unit(rules, unit_id)
 	var o := order(rules, int(u.order))
@@ -519,12 +532,12 @@ static func _delivered(rules: ShopRules, unit_id: int) -> void:
 		sale.count = count
 		s.served = int(s.served) + 1
 		s.orders_done = int(s.orders_done) + 1
-	var g := guest(rules, int(o.guest))
-	var started := _start_eating(rules, g)
-	# All delivery state is committed before listeners may save, load or reassign staff.
-	rules.events.emit("delivered", {"dish": u.dish, "order": o.id})
-	if not sale.is_empty(): rules.events.emit("sale", sale)
-	if started: rules.events.emit("eat_start", {"guest": g.id, "seat": g.seat})
+	return {"dish": u.dish, "order": o.id, "guest": o.guest, "sale": sale}
+
+
+static func _announce_delivery(rules: ShopRules, done: Dictionary) -> void:
+	rules.events.emit("delivered", {"dish": done.dish, "order": done.order})
+	if not done.sale.is_empty(): rules.events.emit("sale", done.sale)
 
 
 static func _end(rules: ShopRules, worker: Dictionary) -> void:

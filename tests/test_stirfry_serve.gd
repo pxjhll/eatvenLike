@@ -526,3 +526,29 @@ func test_self_pickup_save_resume_matches_and_seat_wait_is_unchanged() -> void:
 			if g.state in ["to_pickup", "await"]: went_to_window = true
 	check(serve_job, "送桌店店长照样送桌")
 	check(not went_to_window, "送桌店客人不去出餐口")
+
+
+## 自取：端走、送达、结账的回调里存档，读档后客人照样坐下吃完离店，钱不漏收不重收
+func test_self_pickup_callbacks_capture_resumable_settled_orders() -> void:
+	var shop := _pickup_shop()
+	var rules := _open(shop)
+	var snapshots: Array = []
+	var listener := func(message: Dictionary) -> void:
+		if message.name in ["picked_up", "delivered", "sale"]:
+			snapshots.append({"name": message.name, "order": rules.serve.orders[0].id, "state": rules.to_dict()})
+	rules.events.on("*", listener)
+	while rules.clock < 300.0 and snapshots.size() < 3: rules.step(0.1)
+	rules.events.off("*", listener)
+	check_eq(snapshots.map(func(s: Dictionary) -> String: return s.name), ["picked_up", "delivered", "sale"], "端走 → 送达 → 结账 的广播顺序")
+	for snapshot in snapshots:
+		var resumed := ShopRules.new(shop)
+		var error := resumed.load_dict(snapshot.state)
+		check_eq(error, "", snapshot.name + " 回调状态可以读档")
+		if not error.is_empty(): continue
+		var order := ServeFlow.order(resumed, int(snapshot.order))
+		check(bool(order.paid) and ServeFlow.order_complete(order), snapshot.name + " 回调前整单已送达并结账")
+		check_eq(resumed.gold, 12.0, "第一单只收一次钱")
+		check_eq(String(ServeFlow.guest(resumed, int(order.guest)).state), "to_seat", "回调前客人已端走在路上")
+		resumed.run(150.0)
+		check(ServeFlow.order(resumed, int(snapshot.order)).is_empty(), snapshot.name + " 读档后客人坐下吃完离店")
+		check(resumed.gold >= 12.0 and int(resumed.serve.served) >= 1, "继续运行不会漏收")
