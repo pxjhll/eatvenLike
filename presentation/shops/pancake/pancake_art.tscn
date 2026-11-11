@@ -9,11 +9,8 @@
 
 [node name="Anchors" type="Node2D" parent="."]
 metadata/world_size = Vector2(937, 1678)
-metadata/customer_height = 167.0
-metadata/staff_height = 194.5
 metadata/sortables = "Stall/SceneClip/Sortables"
 metadata/labels_z = 2000
-metadata/customer_speed = 140.0
 
 [node name="Stations" type="Node2D" parent="Anchors"]
 

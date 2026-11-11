@@ -4,16 +4,17 @@ extends Node2D
 
 const Prop := preload("res://presentation/shop/fitted_prop.gd")
 const Actor := preload("res://presentation/shop/shop_actor.gd")
+const Presentation := preload("res://content/characters/actor_presentation.tres")
 ## 杯子立在桌面上：离客人那一侧多远、抬多高
 const CUP_SIDE := 34.0
 const CUP_LIFT := 92.0
 const TABLE_CUP_HEIGHT := 36.0
-const WALK_SPEED := 170.0
 
 var group := ""
 var anchors: ShopAnchors
 var art_of: Callable = func(_item: String) -> Dictionary: return {}
 var customer_height := 110.0
+var _actor_unit_scale := 1.0
 var _chairs: Array[Sprite2D] = []
 var _tables: Array[Sprite2D] = []
 var _cups := {}
@@ -26,11 +27,12 @@ var _arrivals := {}
 var _exits: Array = []
 
 
-func setup(anchors_: ShopAnchors, group_: String, item_art: Callable, height: float) -> void:
+func setup(anchors_: ShopAnchors, group_: String, item_art: Callable, height: float, unit_scale := 1.0) -> void:
 	anchors = anchors_
 	group = group_
 	art_of = item_art
 	customer_height = height
+	_actor_unit_scale = unit_scale
 	y_sort_enabled = true
 	_build_furniture()
 
@@ -93,7 +95,7 @@ func _prop(id: String, width: float, point: Vector2) -> Sprite2D:
 
 ## 坐下的位置（椅面，比椅子的落地点高一点）
 func seat_point(seat: int) -> Vector2:
-	return seats()[seat] + Vector2(anchors.meta("Seats/" + group, "sit_offset", Vector2(0, -12)))
+	return seats()[seat] + Vector2(anchors.meta("Seats/" + group, "sit_offset", Vector2(0, -12) * _actor_unit_scale))
 
 
 func _facing(seat: int) -> int:
@@ -178,7 +180,7 @@ func refresh(seat_count: int, diners: Array, font: Font, clock: float, delta := 
 			"facing": _facing(seat), "phase": "idle", "task_label": ""}, clock)
 		_diners[seat].task.visible = false
 		_diners[seat].z_index = 1
-		_diners[seat].position.y -= 14
+		_diners[seat].position.y -= 14 * _actor_unit_scale
 		if _diners[seat].frame_actor == null: _diners[seat].face(seat % 2 == 0)
 
 
@@ -190,11 +192,11 @@ func _table_cup(seat: int, item: String) -> void:
 	sprite.texture = art.get("texture", null)
 	if sprite.texture == null: sprite.texture = load("res://art/reference/" + String(art.get("art", "pearl_tea")) + ".png")
 	sprite.self_modulate = art.get("tint", Color.WHITE)
-	sprite.scale = Vector2.ONE * TABLE_CUP_HEIGHT / sprite.texture.get_height()
+	sprite.scale = Vector2.ONE * TABLE_CUP_HEIGHT * _actor_unit_scale / sprite.texture.get_height()
 	sprite.centered = false
 	var table: Vector2 = tables()[seat / per_table()]
-	sprite.position = Vector2(table.x + (-CUP_SIDE if seat % 2 == 0 else CUP_SIDE), table.y + 2.0)
-	sprite.offset = Vector2(-sprite.texture.get_width() / 2.0, -sprite.texture.get_height() - (CUP_LIFT + 2.0) / sprite.scale.y)
+	sprite.position = table + Vector2(-CUP_SIDE if seat % 2 == 0 else CUP_SIDE, 2.0) * _actor_unit_scale
+	sprite.offset = Vector2(-sprite.texture.get_width() / 2.0, -sprite.texture.get_height() - (CUP_LIFT + 2.0) * _actor_unit_scale / sprite.scale.y)
 	sprite.z_index = 1
 	sprite.set_meta("art_layer", "drinks")
 	add_child(sprite)
@@ -205,6 +207,7 @@ func _actor(art: String, font: Font) -> Node2D:
 	var actor := Actor.new()
 	actor.item_art = art_of
 	actor.setup(art, font, customer_height)
+	actor.scale = Vector2.ONE * _actor_unit_scale
 	add_child(actor)
 	return actor
 
@@ -225,7 +228,7 @@ func _advance(delta: float, clock: float) -> void:
 		var walker: Dictionary = _walkers[index]
 		var actor: Node2D = walker.actor
 		var point: Vector2 = actor.position
-		var budget := delta * WALK_SPEED
+		var budget := delta * Presentation.customer_speed * _actor_unit_scale
 		while budget > 0.0 and walker.step < walker.path.size():
 			var target: Vector2 = walker.path[walker.step]
 			var gap := point.distance_to(target)

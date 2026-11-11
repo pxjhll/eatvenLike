@@ -23,7 +23,7 @@
 
 ## 顺序与状态
 
-状态：T01–T03已完成，见docs/qa/tea-modularity-baseline.md。T04–T12尚未开始，在前置接口完成后展开详细实现步骤。
+状态：T01–T03已完成，见docs/qa/tea-modularity-baseline.md。T04已完成，见docs/qa/shared-actor-presentation.md。T05–T12尚未开始，在前置接口完成后展开详细实现步骤。
 
 | 阶段 | 任务 | 优先级 | 依赖 | 交付与独立验收 |
 |---|---|---|---|---|
@@ -79,4 +79,6 @@ T07选择真实业务的最小扩展夹具，覆盖组合与合流的兼容契�
 - [x] T02：六种共享员工资源已提取，奶茶内容与轨迹不变。
 - [x] T03：旧档加载/续跑/重存与基础属性刷新验证完成，A阶段交付。
 
-下一个待执行任务：T04，统一逻辑尺度与角色表现配置。A阶段验证记录：docs/qa/tea-modularity-baseline.md。
+下一个待执行任务：T05，共用移动与抵达协议。A阶段提交9fd08aa已推送；T04工作区验收见docs/qa/shared-actor-presentation.md。
+
+- [x] T04：共享角色表现配置、原生单位换算、三店同视口角色尺度及原奶茶画面对照通过。

@@ -20,12 +20,10 @@ const Characters := preload("res://presentation/characters/character_library.gd"
 const ServeFlow := preload("res://game/rules/serve_flow.gd")
 const Schema := preload("res://game/rules/shop_spec_validator.gd")
 const SceneContract := preload("res://presentation/shop/shop_scene_contract.gd")
-## 竖屏铺满宽度；横屏最多少看 MIN_VISIBLE_WORLD 这么高的店面
-const MIN_VISIBLE_WORLD := 1100.0
+const Presentation := preload("res://content/characters/actor_presentation.tres")
 ## 界面按这个宽度排版（竖屏铺满宽度）；店面比它宽的店，店面另外缩放
 const UI_WIDTH := 720.0
 const PAN_SLOP := 12.0
-const WALK_SPEED := 170.0
 
 var session: RefCounted
 var shop: SpecShop
@@ -52,9 +50,10 @@ var _font: Font
 var _drag: Node2D
 var _world_size := Vector2(720, 1500)
 var _top_margin := 0.0
-var _customer_height := 110.0
-var _staff_height := 128.0
-var _customer_speed := WALK_SPEED
+var _customer_height := float(Presentation.customer_height)
+var _staff_height := float(Presentation.staff_height)
+var _customer_speed := float(Presentation.customer_speed)
+var _actor_unit_scale := 1.0
 ## 员工、客人、杯子挂在哪个节点下排前后；z_by_y = 那个节点里没有 y 排序，按脚底 y 设 z（物件的 z 在美术场景里）
 var _sortables: Node2D
 var _z_by_y := false
@@ -157,9 +156,10 @@ func _ready() -> void:
 	anchors = ShopAnchors.new(art.get_node("Anchors"))
 	_world_size = anchors.meta(".", "world_size", _world_size)
 	_top_margin = float(anchors.meta(".", "top_margin", 0.0))
-	_customer_height = float(anchors.meta(".", "customer_height", _customer_height))
-	_staff_height = float(anchors.meta(".", "staff_height", _staff_height))
-	_customer_speed = float(anchors.meta(".", "customer_speed", _customer_speed))
+	_actor_unit_scale = Presentation.scene_units(_world_size)
+	_customer_height = Presentation.customer_height
+	_staff_height = Presentation.staff_height
+	_customer_speed = Presentation.customer_speed * _actor_unit_scale
 	_sortables = art.get_node(String(anchors.meta(".", "sortables", "Sortables")))
 	_z_by_y = _sortables.get_meta("z_by_y", false)
 	$Canvas/WorldLabels.z_index = int(anchors.meta(".", "labels_z", $Canvas/WorldLabels.z_index))
@@ -168,7 +168,7 @@ func _ready() -> void:
 	_dining = art.find_children("*", "Node2D", true, false).filter(func(n: Node) -> bool: return n.get_script() == Dining).front() \
 		if art.find_children("*", "Node2D", true, false).any(func(n: Node) -> bool: return n.get_script() == Dining) else null
 	if _dining != null and rules.dine_group() != null:
-		_dining.setup(anchors, rules.dine_group().id, view.item_art, _customer_height)
+		_dining.setup(anchors, rules.dine_group().id, view.item_art, _customer_height, _actor_unit_scale)
 	ui = $Overlay/UI/HUD
 	ui.setup(self)
 	_toast = ui.toast
@@ -424,7 +424,8 @@ func _refresh(delta: float) -> void:
 	_last_revenue = int(frame.revenue)
 
 
-func _actor(kind: String, height := 128.0) -> Node2D:
+func _actor(kind: String, height := -1.0) -> Node2D:
+	if height < 0.0: height = _staff_height
 	var actor := Actor.new()
 	actor.item_art = view.item_art
 	actor.task_text = view.task_text
@@ -433,6 +434,7 @@ func _actor(kind: String, height := 128.0) -> Node2D:
 	actor.order_icon = _order_icon
 	actor.work_progress = view.work_progress
 	actor.setup(kind, _font, height)
+	actor.scale = Vector2.ONE * _actor_unit_scale
 	actor.progress_bar.theme = ui.theme
 	return actor
 
@@ -546,7 +548,7 @@ func _show_put_down(worker: Dictionary) -> void:
 	if texture == null: return
 	sprite.texture = texture
 	sprite.modulate = look.get("tint", Color.WHITE)
-	sprite.scale = Vector2.ONE * 52.0 / maxf(texture.get_width(), texture.get_height())
+	sprite.scale = Vector2.ONE * Actor.CUP_HEIGHT * _actor_unit_scale / maxf(texture.get_width(), texture.get_height())
 	sprite.position = anchors.point(path)
 	sprite.visible = true
 
@@ -751,7 +753,7 @@ func _update_cups(frame: Dictionary = {}) -> void:
 		var texture: Texture2D = look.texture
 		sprite.texture = texture
 		sprite.modulate = look.get("tint", Color.WHITE)
-		sprite.scale = Vector2.ONE * Actor.CUP_HEIGHT / texture.get_height()
+		sprite.scale = Vector2.ONE * Actor.CUP_HEIGHT * _actor_unit_scale / maxf(texture.get_width(), texture.get_height())
 		# 放在家具上的杯子排在那件家具的落脚点前面一点：压得住家具，又在离镜头更近的员工后面
 		var host: Node2D = _sortables.get_node_or_null(String(row.host)) if not String(row.host).is_empty() else null
 		var sort_y: float = row.pos.y if host == null else maxf(row.pos.y, host.position.y + 1.0)
@@ -793,10 +795,10 @@ func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 		var goal: Vector2 = queue[i] if seat < 0 else (pickup if order.reserved else _dining.seat_point(seat))
 		var point: Vector2 = _customer_positions[order.id]
 		if _customer_entering.get(order.id, false):
-			point = point.move_toward(waypoint, delta * WALK_SPEED)
+			point = point.move_toward(waypoint, delta * _customer_speed)
 			if point.distance_to(waypoint) < 1.0: _customer_entering.erase(order.id)
 		else:
-			point = point.move_toward(goal, delta * WALK_SPEED)
+			point = point.move_toward(goal, delta * _customer_speed)
 		_customer_positions[order.id] = point
 		_customers[order.id].show_order(String(order.dish), -1.0, rules.order_mood(order), order.get("takeaway", false))
 		var pose := {"pos": point, "walking": point.distance_to(goal) > 1, "phase": "idle", "task_label": ""}
@@ -1329,11 +1331,11 @@ func _staffing_warning(workers: Array = []) -> String:
 func _fit() -> void:
 	var size := get_viewport_rect().size
 	var fitted_size := _world_size + Vector2(0, _top_margin)
-	# 店面比界面宽的店（世界单位更小）：店面照样铺满宽度，界面另按 UI_WIDTH 排
-	var world_scale := fitted_size.x / UI_WIDTH
-	var world_factor := minf(size.x / fitted_size.x, size.y / (MIN_VISIBLE_WORLD * world_scale))
+	var fitted: Dictionary = Presentation.fit(size, fitted_size, UI_WIDTH)
+	if fitted.is_empty(): return
+	var world_factor := float(fitted.world_factor)
 	_world_factor = world_factor
-	_ui_factor = world_factor * world_scale
+	_ui_factor = float(fitted.ui_factor)
 	var world_height := fitted_size.y * world_factor
 	_scroll_min = minf(0.0, size.y - world_height)
 	_world_top = maxf(0.0, (size.y - world_height) / 2.0)

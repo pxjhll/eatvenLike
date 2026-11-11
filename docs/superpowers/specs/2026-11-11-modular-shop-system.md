@@ -65,4 +65,4 @@
 
 ## 本次安排的工作
 
-任务总表见 `../plans/2026-11-11-modular-shop-roadmap.md`。首批详细执行计划见 `../plans/2026-11-11-tea-baseline-and-shared-staff.md`。用户已授权开始执行，首批T01–T03已完成。不启动并行代理、不创建其他聊天；当前尚未提交或推送。
+任务总表见 `../plans/2026-11-11-modular-shop-roadmap.md`。首批详细执行计划见 `../plans/2026-11-11-tea-baseline-and-shared-staff.md`。用户已授权开始执行，首批T01–T03已完成。不启动并行代理、不创建其他聊天；A阶段已按用户授权提交并推送为9fd08aa，T04已完成并按本轮指令单独提交，本次不推送。

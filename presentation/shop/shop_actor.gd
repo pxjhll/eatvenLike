@@ -4,6 +4,7 @@ extends Node2D
 ## The view is orthographic, so a cup is the same size on a belt, a shelf or in a paw.
 const CUP_HEIGHT := 52.0
 const Characters := preload("res://presentation/characters/character_library.gd")
+const Presentation := preload("res://content/characters/actor_presentation.tres")
 const BUBBLE := preload("res://art/ui/bubble.png")
 ## 外面给的查表：物品 → {art, tint}；任务 → 头顶的字；机器 → 干活时朝哪个方向（8 方向）
 var item_art: Callable = func(_item: String) -> Dictionary: return {}
@@ -44,7 +45,8 @@ func face(right: bool) -> void:
 	body.flip_h = not right
 
 
-func setup(art_id: String, font: Font, height := 128.0) -> void:
+func setup(art_id: String, font: Font, height := -1.0) -> void:
+	if height < 0.0: height = Presentation.staff_height
 	_font = font
 	_art = art_id
 	_height = height

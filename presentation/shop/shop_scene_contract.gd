@@ -3,6 +3,7 @@ extends RefCounted
 ## Optional visual decoration is not part of the gameplay contract.
 
 const Dining := preload("res://presentation/shop/shop_dining.gd")
+const Presentation := preload("res://content/characters/actor_presentation.tres")
 
 static func prepare(shop: SpecShop) -> Dictionary:
 	var errors: Array[Dictionary] = []
@@ -25,6 +26,8 @@ static func validate(shop: SpecShop, art: Node) -> Array[Dictionary]:
 	if shop == null:
 		_error(errors, "required", "shop", "Shop data is required.")
 		return errors
+	for key in Presentation.validate():
+		_error(errors, "shared_actor_profile", "actor_presentation." + key, "Shared actor values must be finite positive numbers.")
 	if not art is Node2D:
 		_error(errors, "scene_root", "scene_path", "Art root must be Node2D.")
 		return errors
@@ -137,10 +140,12 @@ static func _scan(node: Node, root: Node, errors: Array[Dictionary]) -> void:
 			_error(errors, "rectangle", path + ".size", "Interaction rectangles need finite positive size.")
 	for key in node.get_meta_list():
 		var value: Variant = node.get_meta(key)
-		if key == "per_table":
+		if key in ["customer_height", "staff_height", "customer_speed"]:
+			_error(errors, "shared_actor_profile", path + "." + key, "Use the shared actor presentation profile instead of per-shop actor values.")
+		elif key == "per_table":
 			if not _positive_number(value) or float(value) != floorf(float(value)):
 				_error(errors, "metadata", path + "." + key, "Expected a positive integer.")
-		elif key in ["customer_height", "staff_height", "customer_speed", "width", "cell"]:
+		elif key in ["width", "cell"]:
 			if not _positive_number(value): _error(errors, "metadata", path + "." + key, "Expected a finite positive number.")
 		elif key in ["top_margin", "labels_z", "facing"]:
 			if not _number(value): _error(errors, "metadata", path + "." + key, "Expected a finite number.")

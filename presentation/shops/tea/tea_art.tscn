@@ -16,7 +16,6 @@ script = ExtResource("dining")
 [node name="Anchors" type="Node2D" parent="."]
 metadata/world_size = Vector2(720, 1500)
 metadata/top_margin = 50.0
-metadata/customer_height = 110.0
 
 [node name="Stations" type="Node2D" parent="Anchors"]
 
