@@ -80,6 +80,13 @@ func _run() -> void:
 			preview.set_direction(2)
 			preview.frame_actor.seek_phase(0.45)
 			await _capture(id + "-" + str(preview.available_actions[i].id) + ".png")
+			if id in Library.CUSTOMER_IDS and preview.available_actions[i].id == "walk":
+				for direction in [0, 2, 3]:
+					preview.set_direction(direction)
+					preview.frame_actor.seek_phase(0.45)
+					var expected: String = "walk_front" if direction == 0 else "walk_right" if direction == 2 or id == "hamster" else "walk_back_right"
+					_check(preview.frame_actor.sprite.animation == expected, id + " preview resolves the supplied customer walk views")
+					await _capture_stage(id + "-walk-view-%d.png" % direction, preview._stage)
 			if id in Library.STAFF_IDS and preview.available_actions[i].id == "work":
 				for direction in [0, 2, 3]:
 					preview.set_direction(direction)

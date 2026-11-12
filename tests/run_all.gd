@@ -5,6 +5,7 @@ extends SceneTree
 const SUITES := [
 	preload("res://tests/test_staff_availability.gd"),
 	preload("res://tests/test_staff_assets.gd"),
+	preload("res://tests/test_customer_assets.gd"),
 	preload("res://tests/test_order_lifecycle.gd"),
 	preload("res://tests/test_dispatch_policy.gd"),
 	preload("res://tests/test_machine_progress.gd"),

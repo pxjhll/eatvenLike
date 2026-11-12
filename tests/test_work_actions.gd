@@ -39,6 +39,16 @@ func _run() -> void:
 		actor.display(worker, 0.9)
 		_check(actor.frame_actor.action == "walk" and actor.frame_actor.direction == 2, "movement resumes walk facing right")
 		_check(actor.frame_actor.sprite.flip_h == (id in ["dog", "fox"]), "left-facing source walks are corrected without changing PNGs")
+		if id in library.CUSTOMER_IDS:
+			worker.pos = Vector2(10, 10)
+			actor.display(worker, 1.0)
+			_check(actor.frame_actor.direction == 0 and actor.frame_actor.sprite.animation == "walk_front", id + " moving toward the camera uses the new authored front walk")
+			var front_phase: float = actor.frame_actor.get_phase()
+			actor.display(worker, 1.0)
+			_check(is_equal_approx(front_phase, actor.frame_actor.get_phase()), "paused simulation freezes the new customer walk")
+			worker.pos = Vector2(20, 0)
+			actor.display(worker, 1.1)
+			_check(actor.frame_actor.sprite.animation == ("walk_right" if id == "hamster" else "walk_back_right"), id + " moving away uses the authored diagonal or the existing fallback")
 		if id in library.STAFF_IDS:
 			worker.walking = false
 			worker.phase = "work"
