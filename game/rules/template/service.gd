@@ -4,9 +4,12 @@ extends RefCounted
 const Orders := preload("res://game/rules/template/orders.gd")
 const Customers := preload("res://game/rules/template/customers.gd")
 const Inventory := preload("res://game/rules/template/inventory.gd")
+const Arrivals := preload("res://game/rules/template/arrivals.gd")
+const Numbers := preload("res://game/rules/rule_numbers.gd")
 
 var orders: RefCounted
 var customers: RefCounted
+var arrivals: RefCounted
 var last_error := ""
 var _runtime_ref: WeakRef
 var _runtime: RefCounted:
@@ -31,6 +34,35 @@ func _init(runtime: RefCounted, policy: Dictionary) -> void:
 		if not found: last_error = "service menu has no shared dish quote"; return
 	for role in policy.admission_roles + policy.delivery_roles:
 		if not runtime.runner.owner.shop.layout.actor_areas.has(role): last_error = "service role has no declared access profile"; return
+	if not policy.arrivals.is_empty(): arrivals = Arrivals.new(policy.arrivals)
+
+func set_open(value: bool) -> String:
+	if arrivals == null: return "template has no automatic arrival capability"
+	for index in arrivals.set_open(value):
+		var result := _automatic_arrival()
+		if result not in ["", "queue full"]: return result
+	return ""
+
+func _automatic_arrival() -> String:
+	if orders.queue().size() >= _runtime.runner.owner.nav.layout.customer_queue.size(): return String(orders.reject_arrival().error)
+	var result: Dictionary = arrive(arrivals.request(_runtime.runner.owner.rng))
+	return result.error
+
+func _advance_arrivals(dt: float) -> String:
+	if arrivals == null: return ""
+	var error: String = arrivals.advance(dt)
+	if not error.is_empty(): return error
+	var count := 0
+	while arrivals.due():
+		count += 1
+		if count > 10000: return "arrival schedule exceeds supported events per step"
+		var owner: RefCounted = _runtime.runner.owner
+		var mean := Numbers.flow_interval(float(_policy.arrivals.interval), float(owner.mods.value("flow", 1.0)), owner.tune)
+		error = arrivals.schedule_next(mean, owner.rng)
+		if not error.is_empty(): return error
+		error = _automatic_arrival()
+		if error not in ["", "queue full"]: return error
+	return ""
 
 func arrive(request: Array) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}
@@ -51,7 +83,9 @@ func arrive(request: Array) -> Dictionary:
 
 func advance(dt: float) -> String:
 	if not last_error.is_empty(): return last_error
-	var error: String = customers.advance(dt)
+	var error := _advance_arrivals(dt)
+	if not error.is_empty(): return error
+	error = customers.advance(dt)
 	if not error.is_empty(): return error
 	error = orders.advance(dt)
 	if not error.is_empty(): return error
@@ -86,13 +120,18 @@ func advance(dt: float) -> String:
 func frame() -> Dictionary:
 	var state: Dictionary = orders.snapshot()
 	return {"guests":state.guests, "orders":state.orders, "queue":orders.queue(), "lost":state.lost,
-		"customers":customers.snapshot().customers}
+		"customers":customers.snapshot().customers, "arrivals":arrivals.snapshot() if arrivals != null else {}}
 
 func snapshot() -> Dictionary:
-	return {"version":1, "orders":orders.snapshot(), "customers":customers.snapshot(), "deliveries":_deliveries.duplicate(true)}
+	return {"version":1, "orders":orders.snapshot(), "customers":customers.snapshot(), "deliveries":_deliveries.duplicate(true),
+		"arrivals":arrivals.snapshot() if arrivals != null else {}}
 
 func prepare_restore(data: Dictionary, stock: RefCounted) -> String:
-	if not Inventory._shape(data, {"version":0, "orders":{}, "customers":{}, "deliveries":[]}) or data.version != 1: return "invalid customer service state"
+	if not Inventory._shape(data, {"version":0, "orders":{}, "customers":{}, "deliveries":[], "arrivals":{}}) or data.version != 1: return "invalid customer service state"
+	if (arrivals == null) != data.arrivals.is_empty(): return "arrival state differs from declared capabilities"
+	if arrivals != null:
+		var arrival_error: String = arrivals.restore(data.arrivals)
+		if not arrival_error.is_empty(): return arrival_error
 	var error: String = orders.restore(data.orders, stock)
 	if not error.is_empty(): return error
 	error = customers.restore(data.customers)

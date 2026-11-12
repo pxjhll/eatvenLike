@@ -1,9 +1,10 @@
 extends RefCounted
 const Orders := preload("res://game/rules/template/orders.gd")
+const Arrivals := preload("res://game/rules/template/arrivals.gd")
 
 const DEFAULTS := {"menu":{}, "admission":"automatic", "admission_port":"", "admission_seconds":0.6,
 	"admission_roles":[], "delivery":"counter", "delivery_roles":[], "handoff_port":"", "pickup":"",
-	"customer_capacity":2, "seats":{}, "eat_seconds":3.0, "orders":{}}
+	"customer_capacity":2, "seats":{}, "eat_seconds":3.0, "orders":{}, "arrivals":{}}
 
 static func compile(raw: Dictionary, places: Dictionary, recipes: Dictionary) -> Dictionary:
 	if raw.is_empty(): return {"definition":{}, "error":""}
@@ -44,6 +45,10 @@ static func compile(raw: Dictionary, places: Dictionary, recipes: Dictionary) ->
 		seat_ports[result.seats[seat]] = true
 	for place in places:
 		if String(place).begins_with("guest:"): return _error("guest containers are managed by service")
+	if not result.arrivals is Dictionary: return _error("invalid arrival definition")
+	var arrivals := Arrivals.compile(result.arrivals, result.menu, int(result.customer_capacity) if result.delivery == "self_pickup" else -1)
+	if not String(arrivals.error).is_empty(): return arrivals
+	result.arrivals = arrivals.definition
 	return {"definition":result, "error":""}
 
 static func _error(message: String) -> Dictionary:

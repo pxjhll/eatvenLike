@@ -23,14 +23,17 @@ func arrive(request: Array, capacity: int) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}
 	if not _request_valid(request) or capacity < 1: return {"error":"invalid customer request or queue capacity", "id":-1}
 	if queue().size() >= capacity:
-		_state.lost += 1
-		return {"error":"queue full", "id":-1}
+		return reject_arrival()
 	var guest := _guest()
 	guest.id = _state.next_guest
 	_state.next_guest += 1
 	guest.request = request.duplicate(true)
 	_state.guests.append(guest)
 	return {"error":"", "id":guest.id}
+
+func reject_arrival() -> Dictionary:
+	_state.lost += 1
+	return {"error":"queue full", "id":-1}
 
 func queue() -> Array:
 	var out: Array = []

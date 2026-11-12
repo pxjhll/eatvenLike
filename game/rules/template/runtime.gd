@@ -7,6 +7,7 @@ const Inventory := preload("res://game/rules/template/inventory.gd")
 const Restock := preload("res://game/rules/template/restock.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Service := preload("res://game/rules/template/service.gd")
+const Dispatch := preload("res://game/rules/template/dispatch.gd")
 
 var runner: RefCounted
 var last_error := ""
@@ -37,6 +38,9 @@ func _init(owner: RefCounted, template: Resource) -> void:
 		last_error = runner.machines.configure(id, machine.input, machine.output, machine.profile)
 		if not last_error.is_empty(): return
 	_restocks = Restock.new(_definition.restocks, runner)
+	runner.dispatcher = Dispatch.new(_definition.dispatch, runner)
+	last_error = runner.dispatcher.last_error
+	if not last_error.is_empty(): return
 	if not _definition.service.is_empty():
 		service = Service.new(self, _definition.service)
 		last_error = service.last_error
@@ -45,6 +49,11 @@ func arrive(request: Array) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}
 	if service == null: return {"error":"template has no customer service capability", "id":-1}
 	return service.arrive(request)
+
+func set_service_open(value: bool) -> String:
+	if not last_error.is_empty(): return last_error
+	if service == null: return "template has no customer service capability"
+	return service.set_open(value)
 
 func request_production(recipe: String) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}

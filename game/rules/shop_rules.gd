@@ -2,6 +2,7 @@ class_name ShopRules
 extends RefCounted
 const FulfillmentPlan := preload("res://game/rules/fulfillment_plan.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
+const Sampling := preload("res://game/rules/rule_sampling.gd")
 const Upgrades := preload("res://game/rules/upgrade_modifiers.gd")
 const QueryContext := preload("res://game/rules/rule_query_context.gd")
 const CommandResult := preload("res://game/rules/rule_command_result.gd")
@@ -704,13 +705,13 @@ func flow_multiplier() -> float:
 
 
 func _order_interval() -> float:
-	return current_stage().customer_interval / flow_multiplier() * tuned("customer")
+	return Numbers.flow_interval(current_stage().customer_interval, flow_multiplier(), tune)
 
 
 ## 现在平均几秒来一位客人（一人跟单的店不算机器等级带来的客流）
 func customer_interval() -> float:
 	if shop.fulfillment.handoff != "single": return _order_interval()
-	return current_stage().customer_interval / mods.value("flow", 1.0) * tuned("customer")
+	return Numbers.flow_interval(current_stage().customer_interval, mods.value("flow", 1.0), tune)
 
 
 func ramp(key: String) -> float:
@@ -756,16 +757,7 @@ func arrivals() -> int:
 
 
 func _pick_dish(weights: Dictionary) -> String:
-	var total := 0.0
-	for dish in weights: total += weights[dish]
-	var sample := rng.randf() * total
-	var selected: String = weights.keys()[0] if not weights.is_empty() else ""
-	for dish in weights:
-		sample -= weights[dish]
-		if sample <= 0:
-			selected = dish
-			break
-	return selected
+	return Sampling.choose(weights, rng)
 
 
 func _add_order() -> void:
@@ -1896,7 +1888,7 @@ func _arrivals_single() -> void:
 			_spawn_single()
 	if _next_customer <= 0.0:
 		var interval := customer_interval()
-		_next_customer = interval if shop.fulfillment.arrival == "fixed" else -log(1.0 - rng.randf() * 0.999) * interval
+		_next_customer = Sampling.interval(shop.fulfillment.arrival, interval, rng)
 		_spawn_single()
 
 

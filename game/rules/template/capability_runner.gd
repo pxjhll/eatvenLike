@@ -14,6 +14,7 @@ const ACTOR_OPTIONAL := ["duration", "motion", "action"]
 var owner: RefCounted
 var inventory := Inventory.new()
 var machines: RefCounted
+var dispatcher: RefCounted
 var ports: Dictionary = {}
 var _dynamic_places: Dictionary = {}
 var tasks: Dictionary = {}
@@ -45,6 +46,7 @@ func transfer(worker_id: int, source: String, destination: String, item: String,
 	if not ports.has(source) or not ports.has(destination) or not is_finite(hop_seconds) or hop_seconds < 0.0: return "invalid transfer ports or duration"
 	if not is_finite(pickup_seconds) or (pickup_seconds < 0.0 and pickup_seconds != -1.0): return "invalid pickup duration"
 	var worker: Dictionary = owner.worker_by_id(worker_id)
+	if dispatcher != null and not dispatcher.allowed(worker, {"kind":"transfer", "from":source, "to":destination}): return "employee cannot perform this transfer"
 	var claim := inventory.reserve_transfer(worker_id, source, destination, item, count, owner.carry(worker), stock_owner, allocate_owner)
 	if not String(claim.error).is_empty(): return claim.error
 	var task := _task("transfer", worker)
@@ -66,6 +68,7 @@ func operate(worker_id: int, run_id: int, port: String) -> String:
 	for task in tasks.values():
 		if task.kind == "operate" and task.run == run_id: return "machine stage already assigned"
 	var worker: Dictionary = owner.worker_by_id(worker_id)
+	if dispatcher != null and not dispatcher.allowed(worker, {"kind":"operate", "machine":run.machine}): return "employee cannot operate this device"
 	var task := _task("operate", worker)
 	task.run = run_id
 	task.from = port
@@ -92,6 +95,9 @@ func transfer_bundle(worker_id: int, entries: Array, hop_seconds: float) -> Stri
 		stock_entries.append(stock_entry)
 		pickup_times.append(float(seconds))
 	var worker: Dictionary = owner.worker_by_id(worker_id)
+	var sources: Array = []
+	for entry in entries: sources.append(String(entry.from))
+	if dispatcher != null and not dispatcher.allowed(worker, {"kind":"bundle", "froms":sources, "to":destination}): return "employee cannot collect or deliver this bundle"
 	var result: Dictionary = inventory.reserve_bundle("staff:" + str(worker_id), stock_entries, owner.carry(worker))
 	if not String(result.error).is_empty(): return result.error
 	var task := _task("bundle", worker)
@@ -109,6 +115,7 @@ func interact(worker_id: int, port: String, seconds: float, purpose: String, sub
 	if not error.is_empty(): return error
 	if not ports.has(port) or not is_finite(seconds) or seconds < 0.0 or purpose != "admit" or subject < 1: return "invalid public interaction"
 	var worker: Dictionary = owner.worker_by_id(worker_id)
+	if dispatcher != null and not dispatcher.allowed(worker, {"kind":"interact", "port":port}): return "employee cannot perform this interaction"
 	var task := _task("interact", worker)
 	task.from = port
 	task.to = port
@@ -125,6 +132,13 @@ func take_interactions() -> Array:
 func step(dt: float, paused := false) -> String:
 	if not is_finite(dt) or dt < 0.0: return "invalid capability time"
 	if paused or dt == 0.0: return ""
+	# Revoke leases before advancing any manual clock or committing a pickup.
+	for id in tasks.keys():
+		var worker: Dictionary = owner.worker_by_id(id)
+		if worker.is_empty(): return "assigned employee missing"
+		if not worker.deployed or tasks[id].profile != access_profile(worker) or (dispatcher != null and not dispatcher.allowed_task(worker, tasks[id], machines)):
+			var revoked := cancel(id)
+			if not revoked.is_empty(): return revoked
 	var error: String = machines.advance(dt)
 	if not error.is_empty(): return error
 	last_error = ""
@@ -292,6 +306,7 @@ func _prepare_restore(data: Dictionary, dynamic: Variant = null) -> Dictionary:
 			else:
 				var phase: String = "work" if action.kind == "operate" else ("pickup" if action.kind == "pickup" else "dropoff")
 				if actor.walking or actor.phase != phase or not Vector2(actor.pos).is_equal_approx(expected_ports[action.target]): return {"error":"actor operation is not at its port"}
+		if dispatcher != null and not dispatcher.allowed_task(owner.worker_by_id(task.worker), task, devices): return {"error":"restored task is not authorized for employee role or post"}
 		restored_tasks[task.worker] = task.duplicate(true)
 		task_ids[task.id] = true
 	for actor in actors.values():

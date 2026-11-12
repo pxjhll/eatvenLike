@@ -18,6 +18,7 @@ const CustomerMovement := preload("res://game/rules/customer_movement.gd")
 const Actions := preload("res://game/rules/rule_actions.gd")
 const ActionContext := preload("res://game/rules/serve_action_context.gd")
 const Production := preload("res://game/rules/production_plan.gd")
+const Sampling := preload("res://game/rules/rule_sampling.gd")
 const Bundle := preload("res://game/rules/bundle_delivery.gd")
 const BundleContext := preload("res://game/rules/bundle_action_context.gd")
 const SHARED := -1
@@ -181,7 +182,7 @@ static func _arrivals(rules: ShopRules, dt: float) -> void:
 			_spawn(rules)
 	if rules._next_customer <= 0.0:
 		var interval := rules.customer_interval()
-		rules._next_customer = interval if rules.shop.fulfillment.arrival == "fixed" else -log(1.0 - rules.rng.randf() * 0.999) * interval
+		rules._next_customer = Sampling.interval(rules.shop.fulfillment.arrival, interval, rules.rng)
 		_spawn(rules)
 
 

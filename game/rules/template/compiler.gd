@@ -6,6 +6,7 @@ const Machines := preload("res://game/rules/template/machines.gd")
 const Contract := preload("res://game/rules/shop_content_contract.gd")
 const Restock := preload("res://game/rules/template/restock.gd")
 const ServicePolicy := preload("res://game/rules/template/service_policy.gd")
+const Dispatch := preload("res://game/rules/template/dispatch.gd")
 
 static func compile(template: Resource) -> Dictionary:
 	var errors: Array = []
@@ -71,6 +72,9 @@ static func compile(template: Resource) -> Dictionary:
 	var service := ServicePolicy.compile(template.service, definition.places, definition.recipes)
 	if not String(service.error).is_empty(): return {"definition":{}, "errors":[_error("invalid_service", "service", service.error)]}
 	definition.service = service.definition
+	var dispatch := Dispatch.compile(template.dispatch, definition.places, definition.machines)
+	if not String(dispatch.error).is_empty(): return {"definition":{}, "errors":[_error("invalid_dispatch", "dispatch", dispatch.error)]}
+	definition.dispatch = dispatch.definition
 	definition.signature = Contract._canonical(definition).sha256_text()
 	return {"definition":definition, "errors":[]}
 

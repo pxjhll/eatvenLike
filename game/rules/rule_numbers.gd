@@ -15,6 +15,9 @@ static func normalize_tuning(value: float, snap := false) -> float:
 static func tuned(tune: Dictionary, key: String) -> float:
 	return normalize_tuning(float(tune.get(key, 1.0)))
 
+static func flow_interval(base_seconds: float, flow: float, tune: Dictionary) -> float:
+	return base_seconds / flow * tuned(tune, "customer")
+
 
 static func speed(mods: RuleModifiers, id: String) -> float:
 	return mods.value("speed", 1.0, id)

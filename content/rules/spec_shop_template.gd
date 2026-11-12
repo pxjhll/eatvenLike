@@ -9,3 +9,4 @@ extends Resource
 @export var restocks: Dictionary = {}
 @export var recipes: Dictionary = {}
 @export var service: Dictionary = {}
+@export var dispatch: Dictionary = {}
