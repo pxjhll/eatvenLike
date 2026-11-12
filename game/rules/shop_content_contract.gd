@@ -22,6 +22,9 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 			var key: String = prop.name
 			if type_name == "SpecFulfillment" and value.flow_version==0 and key in ["flow_version","delivery_batch","delivery_points"]: continue
 			if type_name == "SpecDispatch" and key == "action_version" and value.action_version == 0: continue
+			if type_name == "SpecDispatch" and key == "transport_helpers" and value.transport_helpers.is_empty(): continue
+			if type_name == "SpecDispatch" and key == "preposition_work" and not value.preposition_work: continue
+			if type_name == "SpecDispatch" and key == "prefetch_inputs" and not value.prefetch_inputs: continue
 			if type_name == "SpecLayout" and value.motion_version == 0 and key in ["motion_version","motion_units","actor_areas","customer_points","customer_queue"]: continue
 			if not (int(prop.usage) & PROPERTY_USAGE_SCRIPT_VARIABLE) or not (int(prop.usage) & PROPERTY_USAGE_STORAGE): continue
 			if key in PRESENTATION or (type_name == "SpecStaffKind" and key == "role"): continue

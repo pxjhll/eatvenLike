@@ -108,8 +108,14 @@ static func effective_worker_stats(shop: SpecShop, mods: RuleModifiers, tune: Di
 
 static func manual_operation_seconds(shop: SpecShop, mods: RuleModifiers, tune: Dictionary, id: String, base_seconds: float, worker: Dictionary = {}, fixed := false) -> float:
 	var station := shop.station(id)
-	var machine := 1.0 if fixed or station.block == "batch_pot" else duration_mult(mods, id) / speed(mods, id)
-	return base_seconds * machine * tuned(tune, id) / (skill(shop, mods, tune, worker) if not worker.is_empty() else 1.0)
+	return capability_seconds(mods, tune, id, base_seconds, fixed or station.block == "batch_pot") / (skill(shop, mods, tune, worker) if not worker.is_empty() else 1.0)
+
+
+## Public capability clocks do not infer execution policy from a shop mode or
+## require a legacy station object. Employee rate is applied by the work stage.
+static func capability_seconds(mods: RuleModifiers, tune: Dictionary, id: String, base_seconds: float, fixed := false) -> float:
+	var machine := 1.0 if fixed else duration_mult(mods, id) / speed(mods, id)
+	return base_seconds * machine * tuned(tune, id)
 
 
 ## Baseline operation, not a complete order; automatic machines retain batch semantics.

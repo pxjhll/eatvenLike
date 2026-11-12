@@ -625,6 +625,15 @@ static func _cancel_assignment(rules: ShopRules, worker: Dictionary) -> void:
 
 static func _allocate(rules: ShopRules) -> void:
 	for u in rules.serve.units: u.wait = float(u.wait) + ShopRules.STEP
+	if rules.shop.dispatch.preposition_work:
+		# An inbound carrier can be recalled or reassigned while a cook waits.
+		# Release the speculative work lease so the remaining cook can fetch.
+		var claimed := _claimed(rules)
+		for worker: Dictionary in rules.workers:
+			var job := job_of(rules,worker)
+			if job.get("kind","")!="work": continue
+			var u := unit(rules,int(job.unit))
+			if not _inputs_promised(rules,u,int(job.step),claimed): cancel(rules,worker)
 	for worker in rules.workers:
 		if not job_of(rules, worker).is_empty(): continue
 		var best := {}
@@ -727,6 +736,14 @@ static func candidates(rules: ShopRules, worker: Dictionary) -> Array:
 	var claimed := _claimed(rules)
 	for u in rules.serve.units:
 		_unit_jobs(rules, worker, r, u, claimed, out)
+	# Another region's logistics are a fallback after native work, never a
+	# competing cooking assignment. Wait for approaching counter guests too.
+	if out.is_empty() and r in d.transport_helpers:
+		if r=="front" and queue_size(rules)>0 and free_seat(rules)>=0: return out
+		for u in rules.serve.units:
+			var dish := shop.dish(String(u.dish))
+			if (r=="front")==dish.front: continue
+			_unit_jobs(rules,worker,r,u,claimed,out,true)
 	return out
 
 
@@ -734,6 +751,11 @@ static func _scored(rules: ShopRules, worker: Dictionary, job: Dictionary, key: 
 	var d := rules.shop.dispatch
 	var travel: float = (worker.pos as Vector2).distance_to(_point(rules, String(job.from)))
 	job.score = float(d.base_scores.get(key, 0.0)) + minf(d.wait_bonus_cap, wait * d.wait_bonus_per_second) - travel * d.travel_penalty
+	var continuation := float(d.base_scores.get("continuation",0.0))
+	if continuation!=0.0 and int(job.unit)>=0:
+		var progress := unit(rules,int(job.unit))
+		if not progress.is_empty() and not progress.done.is_empty():
+			job.score += continuation
 	job.label = label
 	return job
 
@@ -751,11 +773,20 @@ static func _claimed(rules: ShopRules) -> Dictionary:
 	return out
 
 
-static func _unit_jobs(rules: ShopRules, worker: Dictionary, r: String, u: Dictionary, claimed: Dictionary, out: Array) -> void:
+static func _inputs_promised(rules: ShopRules, u: Dictionary, index: int, claimed: Dictionary) -> bool:
+	var step := rules.shop.dish(String(u.dish)).steps[index]
+	for item in step.consumes:
+		var here := goods_at(rules,step.station,item,int(u.id)).size()
+		var coming := int(claimed.get("carry|%d|%s|%s"%[u.id,item,step.station],0))
+		if here+coming<int(step.consumes[item]): return false
+	return true
+
+
+static func _unit_jobs(rules: ShopRules, worker: Dictionary, r: String, u: Dictionary, claimed: Dictionary, out: Array, transport_only := false) -> void:
 	var shop := rules.shop
 	var dish := shop.dish(String(u.dish))
 	if dish.front and shop.fulfillment.flow_version!=1: return
-	if (r=="front" and not dish.front) or (r=="kitchen" and dish.front): return
+	if not transport_only and ((r=="front" and not dish.front) or (r=="kitchen" and dish.front)): return
 	var flowing := r in ["front", "kitchen", "any"]
 	var pickup := pickup_for(shop,dish.id)
 	var all_done := true
@@ -766,7 +797,7 @@ static func _unit_jobs(rules: ShopRules, worker: Dictionary, r: String, u: Dicti
 		var station: Dictionary = rules.stations[s.station]
 		# 前面的工序还没做完（浇头没炒好）就不往这台送别的料：按单合流，不提前囤货（§10.3）
 		var blocked := Production.blocked_inputs(shop,dish.id,i,u.done)
-		if blocked: continue
+		if blocked and not shop.dispatch.prefetch_inputs: continue
 		var ready := true
 		for item in s.consumes:
 			var need: int = s.consumes[item]
@@ -776,7 +807,9 @@ static func _unit_jobs(rules: ShopRules, worker: Dictionary, r: String, u: Dicti
 			if here + coming >= need or not flowing: continue
 			var c := _carry_in(rules, worker, u, item, s.station)
 			if not c.is_empty(): out.append(c)
-		if not ready or claimed.has("work|%d|%d" % [u.id, i]): continue
+		if transport_only or blocked: continue
+		var promised := shop.dispatch.preposition_work and _inputs_promised(rules,u,i,claimed)
+		if (not ready and not promised) or claimed.has("work|%d|%d" % [u.id, i]): continue
 		if int(station.user) != -1 or not rules.station_unlocked(s.station): continue
 		# 坐班的人只做自己这台；有人坐班的台子流动员工不碰（§3.6 坐班）
 		if r == "seated" and worker.post != s.station: continue

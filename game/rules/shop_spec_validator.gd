@@ -40,6 +40,9 @@ static func capabilities(mode: String) -> Dictionary:
 	}
 	var d := {
 		"action_version": _supported([0,1]),
+		"transport_helpers": _reserved([]),
+		"preposition_work": _reserved(false),
+		"prefetch_inputs": _reserved(false),
 		"base_scores": _reserved({}) if single else _supported(),
 		"merge": _fixed(["fixed" if single else "carry"]), "merge_cap": _fixed([1]),
 		"resume_from_stock": _reserved(true) if single else _supported(),
@@ -67,6 +70,9 @@ static func _serve_capabilities() -> Dictionary:
 	}
 	var d := {
 		"action_version": _supported([0,1]),
+		"transport_helpers": _supported(),
+		"preposition_work": _supported(),
+		"prefetch_inputs": _supported(),
 		"base_scores": _supported(), "merge": _fixed(["fixed"]), "merge_cap": _fixed([1]), "resume_from_stock": _reserved(true),
 		"help_while_waiting": _fixed([true]), "leave_seated_segments": _fixed([true]), "chores_first": _reserved(false),
 		"shortage_bonus": _reserved(0.0), "shortage_per": _reserved(0.0), "shortage_cap": _reserved(0.0),
@@ -76,7 +82,7 @@ static func _serve_capabilities() -> Dictionary:
 	}
 	return {"fulfillment": f, "dispatch": d}
 
-const SERVE_SCORES := ["take", "serve", "carry", "work", "pass"]
+const SERVE_SCORES := ["take", "serve", "carry", "work", "pass", "continuation"]
 
 static func summary(errors: Array) -> String:
 	var lines: PackedStringArray = []
@@ -675,6 +681,19 @@ static func _validate_graph(shop: SpecShop, c: Dictionary, errors: Array[Diction
 ## serve 模式能执行的配方形状（§10.5：不支持的组合明确拒绝）：
 ## 原料箱 / 自动批量锅只当来源；手工台、要人的组合台是工序；每道菜最后做出 dish.item；有出餐口、堂食座位组和每个座位的站位。
 static func _validate_serve(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
+	if shop.dispatch.prefetch_inputs and (shop.fulfillment.flow_version!=1 or shop.dispatch.action_version!=1):
+		_error(errors,"dispatch.prefetch_inputs","Parallel preparation requires serve flow1 and shared actions.","unsupported")
+	if shop.dispatch.preposition_work and (shop.fulfillment.flow_version!=1 or shop.dispatch.action_version!=1):
+		_error(errors,"dispatch.preposition_work","Prepositioned work requires serve flow1 and shared actions.","unsupported")
+	var helpers := shop.dispatch.transport_helpers
+	if not helpers.is_empty() and (shop.fulfillment.flow_version!=1 or shop.dispatch.action_version!=1 or not c.zoned):
+		_error(errors,"dispatch.transport_helpers","Transport assistance requires zoned serve flow1 and shared actions.","unsupported")
+	var helper_roles := {}
+	for index in helpers.size():
+		var role := helpers[index]
+		_enum(role,["front","kitchen"],"dispatch.transport_helpers[%d]"%index,errors)
+		if helper_roles.has(role): _error(errors,"dispatch.transport_helpers","Helper roles must be unique.")
+		helper_roles[role] = true
 	var pickups := 0
 	for id in c.stations:
 		var st: SpecStation = c.stations[id]

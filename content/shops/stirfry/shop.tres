@@ -47,7 +47,7 @@
 script = ExtResource("3_pc7b7")
 station = "pantry"
 action = "fetch"
-seconds = 2.0
+seconds = 0.6
 produces = Dictionary[String, int]({
 "tomato_egg_raw": 1
 })
@@ -57,7 +57,7 @@ label = "拿料"
 script = ExtResource("3_pc7b7")
 station = "rice_cooker"
 action = "scoop"
-seconds = 1.0
+seconds = 0.6
 produces = Dictionary[String, int]({
 "rice": 1
 })
@@ -105,7 +105,7 @@ takeaway_process = false
 script = ExtResource("3_pc7b7")
 station = "pantry"
 action = "fetch"
-seconds = 2.0
+seconds = 0.6
 produces = Dictionary[String, int]({
 "pepper_pork_raw": 1
 })
@@ -115,7 +115,7 @@ label = "拿料"
 script = ExtResource("3_pc7b7")
 station = "rice_cooker"
 action = "scoop"
-seconds = 1.0
+seconds = 0.6
 produces = Dictionary[String, int]({
 "rice": 1
 })
@@ -163,7 +163,7 @@ takeaway_process = false
 script = ExtResource("3_pc7b7")
 station = "pantry"
 action = "fetch"
-seconds = 2.0
+seconds = 0.6
 produces = Dictionary[String, int]({
 "egg_rice_raw": 1
 })
@@ -173,7 +173,7 @@ label = "拿料"
 script = ExtResource("3_pc7b7")
 station = "rice_cooker"
 action = "scoop"
-seconds = 1.0
+seconds = 0.6
 produces = Dictionary[String, int]({
 "rice": 1
 })
@@ -229,7 +229,7 @@ takeaway_process = false
 script = ExtResource("3_pc7b7")
 station = "pantry"
 action = "fetch"
-seconds = 2.0
+seconds = 0.6
 produces = Dictionary[String, int]({
 "kungpao_raw": 1
 })
@@ -239,7 +239,7 @@ label = "拿料"
 script = ExtResource("3_pc7b7")
 station = "rice_cooker"
 action = "scoop"
-seconds = 1.0
+seconds = 0.6
 produces = Dictionary[String, int]({
 "rice": 1
 })
@@ -287,7 +287,7 @@ takeaway_process = false
 script = ExtResource("3_pc7b7")
 station = "pantry"
 action = "fetch"
-seconds = 2.0
+seconds = 0.6
 produces = Dictionary[String, int]({
 "yangzhou_raw": 1
 })
@@ -297,7 +297,7 @@ label = "拿料"
 script = ExtResource("3_pc7b7")
 station = "rice_cooker"
 action = "scoop"
-seconds = 1.0
+seconds = 0.6
 produces = Dictionary[String, int]({
 "rice": 1
 })
@@ -353,7 +353,11 @@ front = true
 [sub_resource type="Resource" id="Resource_gj1mq"]
 script = ExtResource("4_koqbq")
 action_version = 1
+transport_helpers = Array[String](["front"])
+preposition_work = true
+prefetch_inputs = true
 base_scores = Dictionary[String, float]({
+"continuation": 40.0,
 "carry": 45.0,
 "pass": 55.0,
 "serve": 70.0,
@@ -400,7 +404,7 @@ handoff = "serve"
 leave_queue = "after_take"
 leave_after = 60.0
 leave_who = "queued_unclaimed"
-arrival = "exponential"
+arrival = "fixed"
 customer_walk = 120.0
 first_customer_delay = 2.0
 
@@ -805,7 +809,7 @@ block = "counter"
 params = {
 "hand_seconds": 1.0,
 "posts": 1,
-"take_seconds": 5.0,
+"take_seconds": 1.0,
 "unit": "份"
 }
 zone = "front"
@@ -818,7 +822,7 @@ id = "pantry"
 display_name = "备料柜"
 block = "supply"
 params = {
-"fetch_seconds": 2.0,
+"fetch_seconds": 0.6,
 "unit": "份"
 }
 zone = "kitchen"

@@ -2,6 +2,14 @@ class_name SpecDispatch
 extends Resource
 ## 0 preserves legacy execution. 1 uses composable actions with shared movement.
 @export var action_version: int = 0
+## Serve flow1: these idle roles may carry for another production region.
+## Native counter/recipe work has priority; helpers never operate another region.
+@export var transport_helpers: Array[String] = []
+## Serve flow1: move to the next workbench while all missing inputs are
+## already reserved in transport; operation still waits for physical arrival.
+@export var preposition_work: bool = false
+## Prepare independent recipe inputs in parallel, keeping ownership per order.
+@export var prefetch_inputs: bool = false
 ## Mode contract: game/rules/shop_spec_validator.gd capabilities(); docs/shop-capabilities.md.
 ## Handoff uses scored dispatch; single follows one order. Unused fields retain defaults.
 ## 员工调度打分表（§3.6）。分数 = 基础分 + 等待加成（有上限）+ 缺口加成 − 路程。

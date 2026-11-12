@@ -46,7 +46,12 @@ func test_formal_shop_uses_shared_baselines_and_keeps_business_structure_after_c
 	comparable.staff.kinds = LEGACY.staff.duplicate(true).kinds
 	comparable.layout = LEGACY.layout.duplicate(true)
 	comparable.dispatch.action_version = 0
+	comparable.dispatch.transport_helpers.clear()
+	comparable.dispatch.preposition_work = false
+	comparable.dispatch.prefetch_inputs = false
+	comparable.dispatch.base_scores.erase("continuation")
 	comparable.fulfillment.flow_version = 0
+	comparable.fulfillment.arrival = LEGACY.fulfillment.arrival
 	comparable.items.assign(comparable.items.filter(func(item: SpecItem) -> bool: return item.id!="plum_juice"))
 	comparable.dishes.assign(comparable.dishes.filter(func(dish: SpecDish) -> bool: return dish.id!="plum_juice"))
 	comparable.stations.assign(comparable.stations.filter(func(station: SpecStation) -> bool: return station.id!="plum_dispenser"))

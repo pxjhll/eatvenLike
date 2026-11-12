@@ -47,6 +47,8 @@
 
 每个成品、半成品和原料都填写 `SpecItem.icon`（独立 PNG 或图集区域）；旧 `art` 只用于明确绑定的场景图。逐项检查订单气泡、员工搬运、工位产物、桌面及 HUD；缺图会显示中性占位符。设备面板另填 `SpecStation.icon`，不要借用其他店的图标。
 
+局内节奏：先分别测开局与按正常编制的后期；观察首单、连续出单、工位候料、搬运、排队和流失。serve flow1可显式选用 `transport_helpers`（空闲岗位仅协助搬运）、`prefetch_inputs`（独立输入按订单并行准备）和 `preposition_work`（入料已有搬运预留时到站候料）；`base_scores.continuation` 优先完成半成品订单。默认关闭，不用提高全局角色速度掩盖搬运问题。
+
 ## 5. 完整空间表
 
 - 写明网格cell/grid_size、Areas，以及staff/customer权限区域；区域对齐格子。
