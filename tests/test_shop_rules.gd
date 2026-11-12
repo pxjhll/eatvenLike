@@ -26,7 +26,7 @@ func _check_replay(id: String, shop: SpecShop) -> void:
 		check(row.ok, "%s %s：旧 %s 新 %s" % [id, row.name, row.old, row.new])
 
 
-func test_tea_whole_shop_matches_old_sim_baseline() -> void:
+func test_tea_whole_shop_matches_active_staff_baseline() -> void:
 	_check_replay("tea", TEA)
 
 
@@ -165,8 +165,9 @@ func test_luck_raises_event_chance() -> void:
 func test_manager_visit_opens_staff_kind_without_touching_shop_data() -> void:
 	var rules := ShopRules.new(PANCAKE)
 	var before := PANCAKE.staff.hire_pool.duplicate()
-	rules.apply_effect("event", "manager_visit", SpecEffect.make("unlock_staff_kind", "add", 1.0, "fox"))
-	check("fox" in rules.hire_pool, "本局可招狐狸")
+	rules.hire_pool.erase("bear")
+	rules.apply_effect("event", "manager_visit", SpecEffect.make("unlock_staff_kind", "add", 1.0, "bear"))
+	check("bear" in rules.hire_pool, "本局开放已定义的小熊")
 	check_eq(PANCAKE.staff.hire_pool, before, "店铺数据没被改")
 
 

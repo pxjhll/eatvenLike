@@ -47,7 +47,7 @@ func _ready() -> void:
 	character_select.custom_minimum_size = Vector2(210, 58)
 	character_select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for id: String in Library.IDS:
-		character_select.add_item(Library.NAMES[id])
+		character_select.add_item(Library.NAMES[id] + ("（未开放）" if id in Library.ARCHIVED_IDS else ""))
 	character_select.item_selected.connect(func(index: int) -> void: select_character(Library.IDS[index]))
 	selectors.add_child(character_select)
 	action_select = OptionButton.new()

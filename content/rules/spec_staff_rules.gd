@@ -3,6 +3,8 @@ extends Resource
 ## 员工规则（§3.5）。
 
 @export var kinds: Array[SpecStaffKind] = []
+## 已下架种类 → 当前种类。保留旧定义供存档校验；只允许直接替换到未下架种类。
+@export var retired_kinds: Dictionary[String, String] = {}
 ## 开局员工（种类 id 列表），第一位坐在哪
 @export var starting: Array[String] = []
 @export var starting_post: String = ""

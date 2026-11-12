@@ -1,27 +1,32 @@
 extends RefCounted
 ## Shared visual data. Only actions actually present in resources are advertised.
 
-const STAFF_IDS := ["cat", "raccoon", "fox", "rabbit", "gray_cat", "bear"]
+const STAFF_IDS := ["rabbit", "gray_cat", "bear", "fox", "parrot"]
 const CUSTOMER_IDS := ["squirrel", "dog", "sheep", "hamster"]
-const IDS := STAFF_IDS + CUSTOMER_IDS
+const ARCHIVED_IDS := ["cat", "raccoon"]
+const IDS := STAFF_IDS + CUSTOMER_IDS + ARCHIVED_IDS
 ## 所有店共用的人物比例，用一只杯子的高度当尺子（照奶茶店：杯 52、员工 128、客人 110）。
 ## 新场景量出自己杯子的高度再乘这两个数，人物和物件的比例就和奶茶店一致。
 const STAFF_PER_CUP := 128.0 / 52.0
 const CUSTOMER_PER_CUP := 110.0 / 52.0
-const NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸", "rabbit": "小兔子", "gray_cat": "小灰猫", "bear": "小熊", "squirrel": "小松鼠", "dog": "小狗", "sheep": "小羊", "hamster": "仓鼠"}
+const NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸", "rabbit": "小兔子", "gray_cat": "小灰猫", "bear": "小熊", "parrot": "小鹦鹉", "squirrel": "小松鼠", "dog": "小狗", "sheep": "小羊", "hamster": "仓鼠"}
 const ACTION_NAMES := {"walk": "走路", "idle": "待机", "sit": "坐姿", "work": "操作", "carry": "搬运", "pose": "站姿"}
 const RABBIT_FRAMES := preload("res://art/rabbit_work_actions/rabbit_work_actions_frames.tres")
 const RABBIT_SCENE := preload("res://presentation/rabbit_walk_frames/rabbit_walk.tscn")
-const GRAY_CAT_FRAMES := preload("res://art/gray_cat_work_actions/gray_cat_work_actions_frames.tres")
+const GRAY_CAT_FRAMES := preload("res://art/gray_cat_staff_actions/gray_cat_staff_actions_frames.tres")
 const GRAY_CAT_SCENE := preload("res://presentation/gray_cat_walk_frames/gray_cat_walk.tscn")
 const FRAME_ASSETS := {"rabbit": RABBIT_FRAMES, "gray_cat": GRAY_CAT_FRAMES,
-	"bear": preload("res://art/bear_actions/bear_actions_frames.tres"),
+	"bear": preload("res://art/bear_staff_actions/bear_staff_actions_frames.tres"),
+	"fox": preload("res://art/fox_actions/fox_actions_frames.tres"),
+	"parrot": preload("res://art/parrot_actions/parrot_actions_frames.tres"),
 	"squirrel": preload("res://art/squirrel_actions/squirrel_actions_frames.tres"),
 	"dog": preload("res://art/dog_actions/dog_actions_frames.tres"),
 	"sheep": preload("res://art/sheep_actions/sheep_actions_frames.tres"),
 	"hamster": preload("res://art/hamster_actions/hamster_actions_frames.tres")}
 const FRAME_SCENES := {"rabbit": RABBIT_SCENE, "gray_cat": GRAY_CAT_SCENE,
 	"bear": preload("res://presentation/characters/bear.tscn"),
+	"fox": preload("res://presentation/characters/fox.tscn"),
+	"parrot": preload("res://presentation/characters/parrot.tscn"),
 	"squirrel": preload("res://presentation/characters/squirrel.tscn"),
 	"dog": preload("res://presentation/characters/dog.tscn"),
 	"sheep": preload("res://presentation/characters/sheep.tscn"),
@@ -61,7 +66,7 @@ static func actions(art: String) -> Array:
 		var views: Array[String] = []
 		for suffix: String in DIRECTION_SUFFIXES:
 			if frames.has_animation(action + suffix): views.append(suffix)
-		var label: String = "组装" if art == "rabbit" and action == "work" else ACTION_NAMES.get(action, action)
+		var label: String = ACTION_NAMES.get(action, action)
 		result.append({"id": action, "label": label, "type": "frames", "directional": not views.is_empty(), "view_count": views.size()})
 	return result
 
@@ -71,7 +76,7 @@ static func frame_height(art: String) -> float:
 
 
 static func walk_speed(art: String) -> float:
-	return 88.0 if art == "bear" else 112.0 if art == "gray_cat" else 104.0
+	return 88.0 if art == "bear" else 96.0 if art == "fox" else 112.0 if art in ["gray_cat", "parrot"] else 104.0
 
 
 static func customer_art(id: int) -> String:

@@ -21,11 +21,10 @@ func _run() -> void:
 		sim.unlock(station)
 	sim.unlock_box("tea_leaf")
 	sim.unlock_box("milk")
-	for unused in 5: sim.hire()
-	for id in [4, 5, 6]: sim.deploy_worker(id)
+	for unused in 4: sim.hire()
+	for id in [2, 3, 4, 5]: sim.deploy_worker(id)
 	sim.worker_by_id(4).pos = Vector2(270, 430)
 	sim.worker_by_id(5).pos = Vector2(430, 510)
-	sim.worker_by_id(6).pos = Vector2(340, 620)
 	sim.orders.clear()
 	sim.seats[sim.dine_group().id] = 8
 	for seat in 8: sim.diners.append({"seat": seat, "dish": "lemonade", "left": 20.0})
@@ -45,6 +44,17 @@ func _run() -> void:
 		if actor.frame_actor != null:
 			_check(actor.frame_actor.action == "sit", "actual dining scene uses seated clips")
 	await _capture("shop.png")
+	view.ui.open_page("staff")
+	var staff_page = view.ui.page_node("staff")
+	_check(staff_page._titles.size() == 5, "staff page shows all five employee species")
+	for title: Label in staff_page._titles:
+		_check(title.text.begins_with("小灰猫") or title.text.begins_with("小熊") or title.text.begins_with("小兔子") or title.text.begins_with("狐狸") or title.text.begins_with("小鹦鹉"), "staff page only lists active employees")
+	await _capture("staff-roster.png")
+	view.ui.open_page("shop")
+	# Add a second gray cat for the brewer probe while the starter keeps serving.
+	_check(sim.hire().is_empty() and sim.deploy_worker(6).is_empty(), "duplicate staff keep distinct roster identities")
+	sim.worker_by_id(6).pos = Vector2(340, 620)
+	view._refresh(0)
 	# Follow the real entry path until a queued customer reaches the reserved chair.
 	sim.diners.clear()
 	sim.orders = [{"id": 101, "dish": "lemonade", "seat": 0, "wait": 0.0, "reserved": false, "takeaway": false}]
@@ -58,7 +68,7 @@ func _run() -> void:
 	view.ui.page_node("characters").select("rabbit")
 	view.ui.open_page("characters")
 	var preview = view.ui.page_node("characters").preview
-	for id in ["rabbit", "gray_cat", "bear", "squirrel", "dog", "sheep", "hamster"]:
+	for id in ["rabbit", "gray_cat", "bear", "fox", "parrot", "squirrel", "dog", "sheep", "hamster"]:
 		preview.select_character(id)
 		_check(preview.frame_actor.sprite.sprite_frames == Library.FRAME_ASSETS[id], "preview uses selected character")
 		for i in preview.available_actions.size():
@@ -70,6 +80,13 @@ func _run() -> void:
 			preview.set_direction(2)
 			preview.frame_actor.seek_phase(0.45)
 			await _capture(id + "-" + str(preview.available_actions[i].id) + ".png")
+			if id in Library.STAFF_IDS and preview.available_actions[i].id == "work":
+				for direction in [0, 2, 3]:
+					preview.set_direction(direction)
+					preview.frame_actor.seek_phase(0.45)
+					var clip: String = {0: "work_front", 2: "work_right", 3: "work_back_right"}[direction]
+					_check(preview.frame_actor.sprite.animation == clip, id + " previews all three authored operation views")
+					await _capture_stage(id + "-work-view-%d.png" % direction, preview._stage)
 			if id == "gray_cat" and preview.available_actions[i].id == "work":
 				preview.set_direction(3)
 				_check(preview.frame_actor.sprite.animation == "work_back_right", "back operation resolves to its separate source clip")
@@ -101,9 +118,9 @@ func _run() -> void:
 	view._update_customers(0.1)
 	view._refresh(0)
 	_check(dining._walkers.any(func(w): return w.actor._art == "hamster" and w.actor.frame_actor.action == "walk"), "served hamster leaves with animated walking")
-	# Capture naturally assigned operations in the actual shop for both employees.
+	# Capture naturally assigned operations in the actual shop for all five species.
 	sim.paused = false
-	for worker_id in [5, 4]:
+	for worker_id in [6, 2, 3, 4, 5]:
 		var art_id: String = sim.worker_by_id(worker_id).kind
 		_check(sim.place_worker(worker_id, "boil") == "", art_id + " can be assigned to the manual brewer post")
 		var operated := false
@@ -129,6 +146,15 @@ func _capture(name: String) -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	_check(root.get_texture().get_image().save_png("res://.godot/work_actions_capture/" + name) == OK, "native screenshot")
+
+
+func _capture_stage(name: String, stage: Control) -> void:
+	if DisplayServer.get_name() == "headless": return
+	await process_frame
+	await RenderingServer.frame_post_draw
+	var screenshot := root.get_texture().get_image()
+	var bounds := Rect2i(stage.get_global_rect())
+	_check(screenshot.get_region(bounds).save_png("res://.godot/work_actions_capture/" + name) == OK, "native three-view operation screenshot")
 
 func _check(ok: bool, message: String) -> void:
 	if not ok:

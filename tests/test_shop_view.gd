@@ -1,5 +1,5 @@
 extends "res://tests/test_case.gd"
-## 界面快照 ShopView（规格 §6.2.1）：奶茶店整局对旧模拟录下的界面数据（tests/baselines/tea_ui_73b0ae3.json），
+## 界面快照 ShopView（规格 §6.2.1）：奶茶店整局对当前五种员工的界面数据（tests/baselines/tea_ui_active_staff.json），
 ## 界面读到的目标、瓶颈提示、机器面板数字（解锁、等级、升级价、售价预览、原料箱）都一样。
 
 const Replay := preload("res://tests/baselines/replay_rules.gd")
@@ -37,9 +37,9 @@ static func _same(a: Variant, b: Variant) -> bool:
 	return a == b
 
 
-func test_tea_snapshot_matches_old_ui_data_through_whole_shop() -> void:
-	var base: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/tea_73b0ae3.json"))
-	var recorded: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/tea_ui_73b0ae3.json"))
+func test_tea_snapshot_matches_active_staff_ui_through_whole_shop() -> void:
+	var base: Dictionary = Replay.baseline("tea")
+	var recorded: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/tea_ui_active_staff.json"))
 	var rules := ShopRules.new(TEA)
 	var view := ShopView.new(rules)
 	var actions: Array = base.actions

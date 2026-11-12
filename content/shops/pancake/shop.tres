@@ -1153,13 +1153,37 @@ script = ExtResource("9_u2yoc")
 display_name = "员工"
 levels = Array[ExtResource("8_wn2x6")]([SubResource("Resource_c0lsj"), SubResource("Resource_yyiis"), SubResource("Resource_68i8m"), SubResource("Resource_011k4")])
 
+[sub_resource type="Resource" id="Resource_staff_fox"]
+script = ExtResource("17_70k8p")
+id = "fox"
+display_name = "Fox"
+stats = Dictionary[String, float]({
+"carry": 1.0,
+"walk": 200.0,
+"work": 1.0
+})
+description = "擅长手工制作"
+role = "操作型"
+
+[sub_resource type="Resource" id="Resource_staff_parrot"]
+script = ExtResource("17_70k8p")
+id = "parrot"
+display_name = "小鹦鹉"
+stats = Dictionary[String, float]({
+"carry": 1.0,
+"walk": 200.0,
+"work": 1.0
+})
+description = "擅长快速搬运"
+role = "速度型"
+
 [sub_resource type="Resource" id="Resource_q5hjk"]
 script = ExtResource("18_5yr4h")
-kinds = Array[ExtResource("17_70k8p")]([SubResource("Resource_rrmvw"), SubResource("Resource_j5lce"), SubResource("Resource_j3474")])
+kinds = Array[ExtResource("17_70k8p")]([SubResource("Resource_rrmvw"), SubResource("Resource_j5lce"), SubResource("Resource_j3474"), SubResource("Resource_staff_fox"), SubResource("Resource_staff_parrot")])
 starting = Array[String](["rabbit"])
-hire_pool = Array[String](["rabbit", "gray_cat", "bear"])
+hire_pool = Array[String](["rabbit", "gray_cat", "bear", "fox", "parrot"])
 hire_rule = "cycle"
-hire_order = Array[String](["gray_cat", "bear", "rabbit"])
+hire_order = Array[String](["gray_cat", "bear", "rabbit", "fox", "parrot"])
 hire_costs = Array[int]([30, 100, 200])
 tracks = Array[ExtResource("9_u2yoc")]([SubResource("Resource_qwd65")])
 home_anchor = "home"

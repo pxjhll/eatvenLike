@@ -102,9 +102,9 @@ func test_two_staff_serve_the_first_rice_bowl_end_to_end() -> void:
 	for name in names:
 		if at < order.size() and name == order[at]: at += 1
 	check_eq(at, order.size(), "事件按 接单 → 炒浇头 → 合盘 → 送达 → 结账 → 开吃 的顺序：%s" % [names])
-	check(jobs.has("cat:take") and jobs.has("cat:serve"), "店长接单也送桌")
+	check(jobs.has("rabbit:take") and jobs.has("rabbit:serve"), "店长接单也送桌")
 	for kind in ["carry", "work", "pass"]: check(jobs.has("gray_cat:" + kind), "厨师做 " + kind)
-	check(not jobs.has("cat:carry") and not jobs.has("cat:work") and not jobs.has("gray_cat:serve") and not jobs.has("gray_cat:take"), "前厅后厨各管各的")
+	check(not jobs.has("rabbit:carry") and not jobs.has("rabbit:work") and not jobs.has("gray_cat:serve") and not jobs.has("gray_cat:take"), "前厅后厨各管各的")
 	check_eq(rules.roster.size(), 2, "没招第三人")
 	check(rules.sold >= 1 and rules.serve.served >= 1 and rules.gold >= 12.0, "收了一份钱（%d 金币）" % rules.gold)
 
@@ -493,8 +493,8 @@ func test_self_pickup_guest_collects_the_whole_order_then_eats_at_the_seat() -> 
 		if at < order.size() and name == order[at]: at += 1
 	check_eq(at, order.size(), "接单 → 到出餐口 → 端走 → 结账 → 坐下 → 开吃：%s" % [trail])
 	for state in ["to_pickup", "await", "to_seat"]: check(states.has(state), "客人经过 " + state)
-	check(not jobs.has("cat:serve") and not jobs.has("gray_cat:serve"), "没人送桌")
-	check(jobs.has("cat:take") and jobs.has("gray_cat:pass"), "店长接单，厨师把餐放上出餐口")
+	check(not jobs.has("rabbit:serve") and not jobs.has("gray_cat:serve"), "没人送桌")
+	check(jobs.has("rabbit:take") and jobs.has("gray_cat:pass"), "店长接单，厨师把餐放上出餐口")
 	check(not bad_eat, "开吃的都是整单齐的")
 	check(not bad_window, "客人没端走前，餐不会自己跑到座位上")
 	check_eq(rules.gold, 12.0, "第一单只收一次钱")
