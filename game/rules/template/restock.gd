@@ -3,6 +3,7 @@ extends RefCounted
 ## an actor or edits stock outside the public transaction/machine services.
 const Inventory := preload("res://game/rules/template/inventory.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
+const Batch := preload("res://game/rules/template/batch_recipe.gd")
 var _definition: Dictionary
 var _runner: RefCounted
 var _runs: Dictionary = {}
@@ -15,13 +16,16 @@ func _init(definition: Dictionary, runner: RefCounted) -> void:
 		_runs[id] = -1
 		uses_demand = uses_demand or definition[id].policy.mode == "demand"
 
-func advance(demand: Dictionary = {}) -> void:
+func advance(demand: Dictionary = {}) -> String:
 	for id in _definition:
 		var rule: Dictionary = _definition[id]
 		if int(_runs[id]) >= 0:
 			var run: Dictionary = _runner.machines.run(_runs[id])
 			if run.get("phase", "") not in ["completed", "cancelled"]: continue
 			_runs[id] = -1
+		var planned := Batch.evaluate(rule, _runner.owner.mods)
+		if not planned.error.is_empty(): return "restocks." + id + ": " + planned.error
+		rule = planned.definition
 		if not _can_fill(rule, demand): continue
 		var device: Dictionary = _runner.machines.snapshot().definitions[rule.machine]
 		var ready := true
@@ -32,6 +36,7 @@ func advance(demand: Dictionary = {}) -> void:
 		var seconds := Numbers.capability_seconds(_runner.owner.mods, _runner.owner.tune, rule.machine, rule.seconds)
 		var started: Dictionary = _runner.machines.start(rule.machine, rule.consumes, rule.produces, seconds)
 		if String(started.error).is_empty(): _runs[id] = started.id
+	return ""
 
 func candidates(demand: Dictionary = {}) -> Array:
 	var out: Array = []
@@ -43,6 +48,9 @@ func candidates(demand: Dictionary = {}) -> Array:
 			if String(run.get("phase", "")).begins_with("await_"):
 				out.append({"kind":"operate", "run":run.id, "port":device.output if run.phase == "await_unload" else device.input})
 			continue
+		var planned := Batch.evaluate(rule, _runner.owner.mods)
+		if not planned.error.is_empty(): continue
+		rule = planned.definition
 		if not _can_fill(rule, demand): continue
 		for item in rule.consumes:
 			if not rule.sources.has(item): continue
@@ -50,8 +58,11 @@ func candidates(demand: Dictionary = {}) -> Array:
 			if need <= 0: continue
 			var source: String = rule.sources[item]
 			if item not in _runner.inventory.snapshot().places[source].infinite and _runner.inventory.quantity(source, item, -1, true) <= 0: continue
+			var seconds: float = rule.fetch_seconds
+			if not String(rule.get("fetch_timing_target", "")).is_empty():
+				seconds = Numbers.capability_seconds(_runner.owner.mods, _runner.owner.tune, rule.fetch_timing_target, seconds, bool(rule.get("fetch_fixed",false)))
 			out.append({"kind":"transfer", "from":source, "to":device.input, "item":item,
-				"count":need, "seconds":rule.fetch_seconds, "owner":-1, "unit":-1})
+				"count":need, "seconds":seconds, "owner":-1, "unit":-1})
 	return out
 
 func snapshot() -> Dictionary:
@@ -72,7 +83,7 @@ func validate_snapshot(data: Dictionary, machine_state: Dictionary, stock_state:
 		var run: Dictionary = runs[data.runs[id]]
 		var claim: Dictionary = claims[run.claim]
 		var rule: Dictionary = _definition[id]
-		if run.machine != rule.machine or claim.owner != -1 or claim.consumes != rule.consumes or claim.produces != rule.produces: return "replenishment differs from its declared recipe"
+		if run.machine != rule.machine or claim.owner != -1 or not Batch.matches(rule,claim): return "replenishment differs from its declared recipe"
 	return ""
 
 func restore_validated(data: Dictionary) -> void:
@@ -115,7 +126,9 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 			continue
 		var valid := true
 		for key in rule:
-			if key not in ["machine", "consumes", "produces", "sources", "seconds", "fetch_seconds", "stock_limit", "policy"]: valid = false
+			if key not in ["machine", "consumes", "produces", "sources", "seconds", "fetch_seconds", "stock_limit", "policy", "batch", "fetch_timing_target", "fetch_fixed"]: valid = false
+		if not rule.get("fetch_timing_target", "") is String or not rule.get("fetch_fixed", false) is bool: valid = false
+		elif rule.get("fetch_fixed", false) and String(rule.get("fetch_timing_target", "")).is_empty(): valid = false
 		if not rule.get("machine") is String or not machines.has(rule.machine) or not rule.get("consumes", {}) is Dictionary or not rule.get("produces") is Dictionary or not rule.get("sources", {}) is Dictionary: valid = false
 		for key in ["seconds", "fetch_seconds"]:
 			var value: Variant = rule.get(key, 0.6 if key == "fetch_seconds" else 0.0)
@@ -145,6 +158,10 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 		for item in rule.produces:
 			if item in places[device.output].infinite: valid = false
 		var capacity: int = places[device.output].capacity
+		var batch := Batch.compile(rule.get("batch",{}),consumes,rule.produces,places[device.input],places[device.output],int(rule.stock_limit))
+		if not batch.error.is_empty():
+			errors.append({"code":"invalid_batch_binding","path":path + ".batch","message":batch.error})
+			continue
 		if capacity >= 0 and (int(rule.stock_limit) > capacity or Inventory._total(rule.produces) > capacity): valid = false
 		if not valid:
 			errors.append({"code":"invalid_restock", "path":path, "message":"replenishment source or output capacity is invalid"})
@@ -152,6 +169,10 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 		result[id] = {"machine":rule.machine, "consumes":consumes.duplicate(), "produces":rule.produces.duplicate(),
 			"sources":sources.duplicate(), "seconds":float(rule.get("seconds", 0.0)),
 			"fetch_seconds":float(rule.get("fetch_seconds", 0.6)), "stock_limit":int(rule.stock_limit), "policy":policy.definition}
+		if not batch.definition.is_empty(): result[id].batch = batch.definition
+		if not String(rule.get("fetch_timing_target", "")).is_empty():
+			result[id].fetch_timing_target = rule.fetch_timing_target
+			result[id].fetch_fixed = bool(rule.get("fetch_fixed",false))
 	return {"definition":result, "errors":errors}
 
 static func _policy(raw: Variant) -> Dictionary:

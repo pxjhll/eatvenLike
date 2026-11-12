@@ -75,7 +75,8 @@ func step(dt: float, paused := false) -> String:
 	if service != null:
 		error = service.advance(dt)
 		if not error.is_empty(): last_error = error; return error
-	_restocks.advance(_stock_demand())
+	error = _restocks.advance(_stock_demand())
+	if not error.is_empty(): last_error = error; return error
 	_start_ready_nodes()
 	error = runner.dispatcher.reconcile()
 	if not error.is_empty(): last_error = error; return error
