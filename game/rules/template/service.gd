@@ -6,6 +6,7 @@ const Customers := preload("res://game/rules/template/customers.gd")
 const Inventory := preload("res://game/rules/template/inventory.gd")
 const Arrivals := preload("res://game/rules/template/arrivals.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
+const Customization := preload("res://game/rules/template/customization.gd")
 
 var orders: RefCounted
 var customers: RefCounted
@@ -34,6 +35,8 @@ func _init(runtime: RefCounted, policy: Dictionary) -> void:
 		if not found: last_error = "service menu has no shared dish quote"; return
 	for role in policy.admission_roles + policy.delivery_roles:
 		if not runtime.runner.owner.shop.layout.actor_areas.has(role): last_error = "service role has no declared access profile"; return
+	for option in policy.get("customization",{}).get("options",[]):
+		if runtime.runner.owner.shop.station(option.unlock) == null: last_error = "option unlock has no declared station"; return
 	if not policy.arrivals.is_empty(): arrivals = Arrivals.new(policy.arrivals)
 
 func set_open(value: bool) -> String:
@@ -64,7 +67,7 @@ func _advance_arrivals(dt: float) -> String:
 		if error not in ["", "queue full"]: return error
 	return ""
 
-func arrive(request: Array) -> Dictionary:
+func arrive(request: Array, selected_options: Variant = null) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}
 	var rows: Array = []
 	var total := 0
@@ -75,6 +78,18 @@ func arrive(request: Array) -> Dictionary:
 		rows.append({"dish":String(row.dish), "recipe":recipe, "item":String(output.item), "qty":int(row.qty)})
 		total += int(row.qty)
 	if rows.is_empty() or (_policy.delivery == "self_pickup" and total > int(_policy.customer_capacity)): return {"error":"order exceeds whole pickup capacity", "id":-1}
+	if not _policy.has("customization") and selected_options != null and (not selected_options is Array or not selected_options.is_empty()): return {"error":"template has no order option capability","id":-1}
+	var choice: Dictionary = {}
+	if _policy.has("customization") and selected_options != null:
+		choice = Customization.select(_policy.customization,rows[0].dish,rows[0].recipe,selected_options,_runtime.runner.owner)
+		if not choice.error.is_empty(): return {"error":choice.error,"id":-1}
+	if orders.queue().size() >= _runtime.runner.owner.nav.layout.customer_queue.size(): return orders.reject_arrival()
+	if _policy.has("customization"):
+		if choice.is_empty(): choice = Customization.select(_policy.customization,rows[0].dish,rows[0].recipe,selected_options,_runtime.runner.owner)
+		if not choice.error.is_empty(): return {"error":choice.error,"id":-1}
+		rows[0].options = choice.ids
+		rows[0].recipe = choice.recipe
+		rows[0].item = String(_runtime._definition.recipes[choice.recipe].output.item)
 	var admitted: Dictionary = orders.arrive(rows, _runtime.runner.owner.nav.layout.customer_queue.size())
 	if not String(admitted.error).is_empty(): return admitted
 	last_error = customers.spawn(admitted.id)
@@ -148,8 +163,19 @@ func prepare_restore(data: Dictionary, stock: RefCounted) -> String:
 	var queue: Array = orders.queue()
 	if queue.size() > _runtime.runner.owner.nav.layout.customer_queue.size(): return "customer queue exceeds declared ports"
 	for guest in orders.snapshot().guests:
-		for row in guest.request:
-			if not _policy.menu.has(row.dish) or _policy.menu[row.dish] != row.recipe or _runtime._definition.recipes[row.recipe].output.item != row.item: return "customer request differs from service menu"
+		for index in guest.request.size():
+			var row: Dictionary = guest.request[index]
+			if not _policy.menu.has(row.dish): return "customer request differs from service menu"
+			var recipe: String = _policy.menu[row.dish]
+			if index == 0 and _policy.has("customization"):
+				if not row.has("options"): return "customized request has no frozen selection"
+				var canonical := Customization.canonical(_policy.customization,row.options)
+				if not canonical.error.is_empty() or canonical.ids != row.options: return "invalid frozen option selection"
+				var resolved := Customization.resolve(_policy.customization,row.dish,recipe,row.options)
+				if not resolved.error.is_empty(): return resolved.error
+				recipe = resolved.recipe
+			elif row.has("options"): return "unrelated request option selection"
+			if recipe != row.recipe or _runtime._definition.recipes[recipe].output.item != row.item: return "customer request differs from service menu"
 		if not guest.seat.is_empty() and (not _policy.seats.has(guest.seat) or guest.order < 1): return "customer seat differs from template"
 		if guest.order > 0 and guest.seat.is_empty() != _policy.seats.is_empty(): return "accepted customer has an inconsistent seat lease"
 		if guest.state != "gone" and not guest.seat.is_empty():
@@ -282,7 +308,12 @@ func _accept(id: int, employee: int = -1) -> String:
 	var seat := _free_seat()
 	if not _policy.seats.is_empty() and seat.is_empty(): return "admission lost its seat"
 	var quotes := {}
-	for row in orders.guest(id).request: quotes[row.dish] = float(_runtime.runner.owner.dish_price(row.dish))
+	var request: Array = orders.guest(id).request
+	for index in request.size():
+		var row: Dictionary = request[index]
+		if _policy.has("customization"):
+			quotes[index] = Customization.quote(_policy.customization,_runtime.runner.owner,row.dish,row.get("options",[]))
+		else: quotes[row.dish] = float(_runtime.runner.owner.dish_price(row.dish))
 	var admitted: Dictionary = orders.admit(id, quotes, employee)
 	if not String(admitted.error).is_empty(): return admitted.error
 	if not seat.is_empty():

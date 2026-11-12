@@ -1,6 +1,7 @@
 extends RefCounted
 const Orders := preload("res://game/rules/template/orders.gd")
 const Arrivals := preload("res://game/rules/template/arrivals.gd")
+const Customization := preload("res://game/rules/template/customization.gd")
 
 const DEFAULTS := {"menu":{}, "admission":"automatic", "admission_port":"", "admission_seconds":0.6,
 	"admission_roles":[], "delivery":"counter", "delivery_roles":[], "handoff_port":"", "pickup":"",
@@ -10,6 +11,7 @@ static func compile(raw: Dictionary, places: Dictionary, recipes: Dictionary) ->
 	if raw.is_empty(): return {"definition":{}, "error":""}
 	var result := DEFAULTS.duplicate(true)
 	for key in raw:
+		if key == "customization": continue
 		if not result.has(key): return _error("unsupported service parameter: " + str(key))
 		result[key] = raw[key]
 	for key in ["admission", "delivery", "admission_port", "handoff_port", "pickup"]:
@@ -34,6 +36,9 @@ static func compile(raw: Dictionary, places: Dictionary, recipes: Dictionary) ->
 	var orders := Orders.new(result.orders)
 	if not orders.last_error.is_empty(): return _error(orders.last_error)
 	result.orders = orders._policy.duplicate(true)
+	var customization := Customization.compile(raw.get("customization",{}),result.menu,recipes,result.orders.rounding)
+	if not customization.error.is_empty(): return customization
+	if not customization.definition.is_empty(): result.customization = customization.definition
 	for key in ["admission_port", "handoff_port", "pickup"]:
 		var required: bool = (key == "admission_port" and result.admission == "employee") or (key == "handoff_port" and result.delivery == "counter") or (key == "pickup" and result.delivery == "self_pickup")
 		if required and not places.has(result[key]): return _error("missing service port: " + key)

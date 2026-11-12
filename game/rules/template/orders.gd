@@ -62,8 +62,9 @@ func admit(guest_id: int, quotes: Dictionary, worker: int = -1) -> Dictionary:
 	if guest.order >= 0: return {"error":"", "id":guest.order}
 	if guest.state != "queue" or (guest.claimed != -1 and guest.claimed != worker): return {"error":"customer admission unavailable", "id":-1}
 	var total := 0.0
-	for row in guest.request:
-		var quote: Variant = quotes.get(row.dish)
+	for index in guest.request.size():
+		var row: Dictionary = guest.request[index]
+		var quote: Variant = quotes.get(index,quotes.get(row.dish))
 		if not (quote is float or quote is int) or not is_finite(float(quote)) or quote < 0.0: return {"error":"missing or invalid dish quote", "id":-1}
 		total += float(quote) * int(row.qty)
 	if not is_finite(total): return {"error":"invalid order quote", "id":-1}
@@ -72,12 +73,14 @@ func admit(guest_id: int, quotes: Dictionary, worker: int = -1) -> Dictionary:
 	_state.next_order += 1
 	order.guest = guest_id
 	order.quote = total
-	for row in guest.request:
+	for index in guest.request.size():
+		var row: Dictionary = guest.request[index]
 		var line := _line()
 		line.id = _state.next_line
 		_state.next_line += 1
 		for key in ["dish", "recipe", "item", "qty"]: line[key] = row[key]
-		line.price = float(quotes[row.dish])
+		if row.has("options"): line.options = row.options.duplicate()
+		line.price = float(quotes.get(index,quotes.get(row.dish)))
 		order.lines.append(line)
 	_state.orders.append(order)
 	guest.order = order.id
@@ -253,7 +256,8 @@ func _validate(data: Dictionary, inventory: RefCounted) -> String:
 		if request.size() != order.lines.size(): return "order lines differ from customer request"
 		var request_index := 0
 		for line in order.lines:
-			if not Inventory._shape(line, _line()): return "invalid order line shape"
+			if not _with_options_shape(line, _line()): return "invalid order line shape"
+			if line.get("options") != request[request_index].get("options"): return "order line options differ from customer request"
 			for key in ["dish", "recipe", "item", "qty"]:
 				if line[key] != request[request_index][key]: return "order line identity differs from customer request"
 			request_index += 1
@@ -339,10 +343,22 @@ static func _binding(line: Dictionary, unit: int) -> Dictionary:
 static func _request_valid(request: Array) -> bool:
 	if request.is_empty(): return false
 	for row in request:
-		if not Inventory._shape(row, {"dish":"", "recipe":"", "item":"", "qty":0}) or row.qty < 1: return false
+		if not _with_options_shape(row, {"dish":"", "recipe":"", "item":"", "qty":0}) or row.qty < 1: return false
 		for key in ["dish", "recipe", "item"]:
 			if String(row[key]).is_empty(): return false
 	return true
+
+static func _with_options_shape(value: Variant, example: Dictionary) -> bool:
+	if not value is Dictionary: return false
+	if not value.has("options"): return Inventory._shape(value,example)
+	if not value.options is Array: return false
+	var seen := {}
+	for id in value.options:
+		if not id is String or id.is_empty() or seen.has(id): return false
+		seen[id] = true
+	var plain: Dictionary = value.duplicate()
+	plain.erase("options")
+	return Inventory._shape(plain,example)
 
 static func _find(rows: Array, id: int) -> Dictionary:
 	for row in rows:

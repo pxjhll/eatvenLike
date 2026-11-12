@@ -25,6 +25,7 @@ static func reserve(stock: RefCounted, actor: String, entries: Array, capacity: 
 		if result.count != entry.count: return stock._failure("bundle stock or capacity unavailable")
 		group.claims.append(int(result.id))
 	stock._state = candidate._state
+	stock._sync_capacity_limits()
 	return {"error":"", "id":group.id, "count":total}
 
 static func apply(stock: RefCounted, id: int, operation: String, child: int = -1) -> String:
@@ -42,6 +43,7 @@ static func apply(stock: RefCounted, id: int, operation: String, child: int = -1
 			"cancel": error = candidate._cancel(claim, true)
 		if not error.is_empty(): return error
 	stock._state = candidate._state
+	stock._sync_capacity_limits()
 	return ""
 
 static func validate(stock: RefCounted) -> String:

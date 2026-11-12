@@ -4,6 +4,7 @@ extends RefCounted
 const Inventory := preload("res://game/rules/template/inventory.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Batch := preload("res://game/rules/template/batch_recipe.gd")
+const Limits := preload("res://game/rules/template/numeric_limits.gd")
 var _definition: Dictionary
 var _runner: RefCounted
 var _runs: Dictionary = {}
@@ -157,8 +158,8 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 			if not consumes.has(item) or item in places[device.input].infinite: valid = false
 		for item in rule.produces:
 			if item in places[device.output].infinite: valid = false
-		var capacity: int = places[device.output].capacity
-		var batch := Batch.compile(rule.get("batch",{}),consumes,rule.produces,places[device.input],places[device.output],int(rule.stock_limit))
+		var capacity: int = Limits.storage_ceiling(places[device.output]).capacity
+		var batch := Batch.compile(rule.get("batch",{}),consumes,rule.produces,Limits.storage_ceiling(places[device.input]),Limits.storage_ceiling(places[device.output]),int(rule.stock_limit))
 		if not batch.error.is_empty():
 			errors.append({"code":"invalid_batch_binding","path":path + ".batch","message":batch.error})
 			continue

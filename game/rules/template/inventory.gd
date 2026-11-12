@@ -5,6 +5,7 @@ const ANY_OWNER := -2
 const SHARED := -1
 const ACTIVE := ["reserved", "held"]
 const Bundles := preload("res://game/rules/template/bundle_transfers.gd")
+var _capacity_targets: Dictionary = {}
 
 var _state: Dictionary = {"version":1, "next_lot":1, "next_claim":1, "next_bundle":1,
 	"places":{}, "lots":[], "claims":[], "bundles":[], "created":{}, "consumed":{}}
@@ -40,6 +41,16 @@ func quantity(place: String, item: String = "", owner: int = ANY_OWNER, availabl
 
 func remaining_capacity(place: String) -> int:
 	return _free(place) if _state.places.has(place) else 0
+
+func set_capacity_limit(place: String, capacity: int) -> String:
+	if not _state.places.has(place) or is_hand_place(place) or capacity < 0: return "invalid capacity target"
+	_capacity_targets[place] = capacity
+	_sync_capacity_limits()
+	return ""
+
+func _sync_capacity_limits() -> void:
+	for place in _capacity_targets:
+		if _state.places.has(place): _state.places[place].capacity = maxi(int(_capacity_targets[place]),occupied_capacity(place))
 
 func incoming(place: String, item: String, owner: int = ANY_OWNER) -> int:
 	var count := 0
@@ -148,6 +159,7 @@ func _drop(id: int, grouped: bool) -> String:
 	if task.state != "held" or not _held_valid(task): return "carried stock unavailable"
 	for held in task.held: _find(_state.lots, held.lot).place = task.to
 	task.state = "dropped"
+	_sync_capacity_limits()
 	return ""
 
 func reserve_operation(worker: int, place: String, consumes: Dictionary, produces: Dictionary,
@@ -194,6 +206,7 @@ func complete_operation(id: int) -> String:
 		_insert(task.to, item, task.produces[item], task.owner)
 		_add(_state.created, item, task.produces[item])
 	task.state = "completed"
+	_sync_capacity_limits()
 	return ""
 
 func cancel(id: int) -> String:
@@ -216,6 +229,7 @@ func _cancel(id: int, grouped: bool) -> String:
 				lot.place = task.from
 				lot.owner = held.owner
 	task.state = "cancelled"
+	_sync_capacity_limits()
 	return ""
 
 func claim(id: int) -> Dictionary:
@@ -230,6 +244,7 @@ func restore(data: Dictionary) -> String:
 	var errors: Array = candidate.audit()
 	if not errors.is_empty(): return String(errors[0])
 	_state = candidate._state
+	_sync_capacity_limits()
 	return ""
 
 func audit() -> Array:
@@ -360,12 +375,15 @@ func _reserved_lot(id: int) -> int:
 func _free(place: String) -> int:
 	var capacity: int = _state.places[place].capacity
 	if capacity < 0: return 2147483647
+	return capacity - occupied_capacity(place)
+
+func occupied_capacity(place: String) -> int:
 	var used := quantity(place)
 	for task in _state.claims:
 		if task.state not in ACTIVE: continue
 		if task.to == place: used += int(task.space)
 		if task.state == "held" and task.from == place and not task.minted: used += int(task.count)
-	return capacity - used
+	return used
 
 func _busy(worker: int) -> bool:
 	return _busy_actor("staff:" + str(worker))

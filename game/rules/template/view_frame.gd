@@ -1,5 +1,6 @@
 extends RefCounted
 const Inventory := preload("res://game/rules/template/inventory.gd")
+const Processing := preload("res://game/rules/template/processing_display.gd")
 ## Detached UI and item display data from the authoritative public ledger.
 ## A stock lot does not create a scene sprite. Showcase ports must be explicit.
 
@@ -36,19 +37,39 @@ static func build(inventory: RefCounted, machines: RefCounted, displays: Array =
 		var stock: Dictionary = frame.stock[place]
 		stock.available = int(stock.count) - int(stock.reserved)
 		for item in stock.items.values(): item.available = int(item.count) - int(item.reserved)
-	for id in machines.snapshot().definitions: frame.machines[id] = machines.status(id)
+	var devices: Dictionary = machines.snapshot()
+	for id in devices.definitions: frame.machines[id] = machines.status(id)
 	var shown := {}
+	var processing := {}
 	for binding in displays:
-		var error := _binding_error(binding, source.places, shown)
+		var error := ""
+		if binding is Dictionary and binding.get("capability") == "processing_item":
+			error = Processing.binding_error(binding,source.places,devices.definitions,processing)
+			if error.is_empty(): processing[binding.machine] = {}
+		else:
+			error = _binding_error(binding, source.places, shown)
+			if error.is_empty(): shown[binding.place] = true
 		if not error.is_empty():
 			frame.error = error
 			frame.draws = []
 			return frame
-		shown[binding.place] = true
+	var hidden := {}
+	for binding in displays:
+		if binding.capability != "processing_item": continue
+		var projected := Processing.project(binding,source,devices)
+		if not projected.error.is_empty():
+			frame.error = projected.error
+			return frame
+		processing[binding.machine] = projected
+		for lot in projected.hidden: hidden[lot] = int(hidden.get(lot,0)) + int(projected.hidden[lot])
+	for binding in displays:
+		if binding.capability == "processing_item":
+			frame.draws.append_array(processing[binding.machine].draws)
+			continue
 		var index := 0
 		for lot in source.lots:
 			if lot.place != binding.place: continue
-			for unused in mini(int(lot.count), binding.points.size() - index):
+			for unused in mini(int(lot.count) - int(hidden.get(lot.id,0)), binding.points.size() - index):
 				frame.draws.append({"item":lot.item, "pos":binding.points[index], "host":String(binding.get("host", ""))})
 				index += 1
 	return frame

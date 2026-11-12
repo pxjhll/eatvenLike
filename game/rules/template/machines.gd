@@ -8,6 +8,7 @@ const PROFILE := {"slots":1, "manual":false, "load_seconds":0.0,
 	"unload_seconds":0.0, "stir_points":[], "stir_seconds":0.0}
 
 var _inventory: RefCounted
+var _slot_targets: Dictionary = {}
 var _state: Dictionary = {"version":1, "next_run":1, "definitions":{}, "runs":[]}
 
 func _init(inventory: RefCounted) -> void:
@@ -23,8 +24,18 @@ func configure(id: String, input: String, output: String, options: Dictionary = 
 	if not error.is_empty(): return error
 	for key in ["load_seconds", "unload_seconds", "stir_seconds"]: profile[key] = float(profile[key])
 	var definition := {"input":input, "output":output, "profile":profile}
+	if _state.definitions.get(id,{}).has("slot_ceiling"): definition.slot_ceiling = _state.definitions[id].slot_ceiling
 	if _state.definitions.has(id): return "" if _state.definitions[id] == definition else "machine already configured"
 	_state.definitions[id] = definition
+	return ""
+
+func track_slots(machine: String, ceiling: int) -> String:
+	if not _state.definitions.has(machine) or ceiling < int(_state.definitions[machine].profile.slots): return "invalid tracked slot ceiling"
+	var definition: Dictionary = _state.definitions[machine]
+	if definition.has("slot_ceiling"): return "" if definition.slot_ceiling == ceiling else "slot ceiling already configured"
+	for run in _state.runs:
+		if run.machine == machine: return "cannot enable slot identities after operation history exists"
+	definition.slot_ceiling = ceiling
 	return ""
 
 func start(machine: String, consumes: Dictionary, produces: Dictionary, seconds: float, owner: int = -1) -> Dictionary:
@@ -35,7 +46,15 @@ func start(machine: String, consumes: Dictionary, produces: Dictionary, seconds:
 	var occupied := 0
 	for run in _state.runs:
 		if run.machine == machine and run.phase not in TERMINAL: occupied += 1
-	if occupied >= int(profile.slots): return {"error":"machine occupied", "id":-1}
+	if occupied >= int(_slot_targets.get(machine,profile.slots)): return {"error":"machine occupied", "id":-1}
+	var slot := -1
+	if definition.has("slot_ceiling"):
+		var used := {}
+		for other in _state.runs:
+			if other.machine == machine and other.phase not in TERMINAL: used[other.slot] = true
+		for candidate in int(_slot_targets.get(machine,profile.slots)):
+			if not used.has(candidate): slot = candidate; break
+		if slot < 0: return {"error":"no physical processing slot", "id":-1}
 	var task: Dictionary = _inventory.reserve_operation(0, definition.input, consumes, produces, owner, definition.output)
 	if not String(task.error).is_empty(): return {"error":task.error, "id":-1}
 	var run := _run()
@@ -46,8 +65,26 @@ func start(machine: String, consumes: Dictionary, produces: Dictionary, seconds:
 	run.duration = seconds
 	run.remaining = seconds
 	run.phase = "await_load" if float(profile.load_seconds) > 0.0 else ("await_operate" if profile.manual else "processing")
+	if definition.has("slot_ceiling"): run.slot = slot
 	_state.runs.append(run)
 	return {"error":"", "id":run.id}
+
+func occupied_slots(machine: String) -> int:
+	var count := 0
+	for run in _state.runs:
+		if run.machine == machine and run.phase not in TERMINAL: count += 1
+	return count
+
+func set_slots_limit(machine: String, count: int) -> String:
+	if not _state.definitions.has(machine) or count < 1: return "invalid machine slot target"
+	if _state.definitions[machine].has("slot_ceiling") and count > _state.definitions[machine].slot_ceiling: return "slot target exceeds declared physical ports"
+	_slot_targets[machine] = count
+	_sync_slot_limits()
+	return ""
+
+func _sync_slot_limits() -> void:
+	for machine in _slot_targets:
+		if _state.definitions.has(machine): _state.definitions[machine].profile.slots = maxi(int(_slot_targets[machine]),occupied_slots(machine))
 
 func engage(id: int, worker: int, work_rate: float = 1.0) -> String:
 	var run := _find(id)
@@ -102,6 +139,7 @@ func advance(dt: float, paused := false) -> String:
 		if run.remaining <= 0.000001:
 			var error := _processed(run, profile)
 			if not error.is_empty(): return error
+	_sync_slot_limits()
 	return ""
 
 func cancel(id: int) -> String:
@@ -113,6 +151,7 @@ func cancel(id: int) -> String:
 	if not error.is_empty(): return error
 	run.phase = "cancelled"
 	run.operator = -1
+	_sync_slot_limits()
 	return ""
 
 func release_employee(id: int, worker: int) -> String:
@@ -154,6 +193,7 @@ func restore(data: Dictionary) -> String:
 	var errors: Array = candidate.audit()
 	if not errors.is_empty(): return String(errors[0])
 	_state = candidate._state
+	_sync_slot_limits()
 	return ""
 
 func audit() -> Array:
@@ -162,21 +202,34 @@ func audit() -> Array:
 	var stock: Dictionary = _inventory.snapshot()
 	for id in _state.definitions:
 		var definition: Variant = _state.definitions[id]
-		if not id is String or id.is_empty() or not Inventory._shape(definition, {"input":"", "output":"", "profile":{}}): return ["invalid machine definition"]
+		var shape := {"input":"", "output":"", "profile":{}}
+		if definition is Dictionary and definition.has("slot_ceiling"): shape.slot_ceiling = 0
+		if not id is String or id.is_empty() or not Inventory._shape(definition, shape): return ["invalid machine definition"]
 		if not stock.places.has(definition.input) or not stock.places.has(definition.output): return ["unknown machine stock container"]
 		var error := _profile_error(definition.profile)
 		if not error.is_empty(): return [error]
+		if definition.has("slot_ceiling") and definition.slot_ceiling < int(definition.profile.slots): return ["slot ceiling is below occupied profile"]
 	var ids := {}
 	var claims := {}
 	var operators := {}
 	var occupied := {}
+	var occupied_ports := {}
 	for run in _state.runs:
-		if not Inventory._shape(run, _run()): return ["invalid machine run shape"]
+		if not run is Dictionary or not run.get("machine") is String or not _state.definitions.has(run.machine): return ["invalid machine run identity"]
+		var shape := _run()
+		if _state.definitions[run.machine].has("slot_ceiling"): shape.slot = 0
+		if not Inventory._shape(run, shape): return ["invalid machine run shape"]
 		if run.id < 1 or run.id >= _state.next_run or ids.has(run.id) or claims.has(run.claim) or not _state.definitions.has(run.machine): return ["invalid machine run identity"]
 		ids[run.id] = true
 		claims[run.claim] = true
 		var definition: Dictionary = _state.definitions[run.machine]
 		var profile: Dictionary = definition.profile
+		if definition.has("slot_ceiling"):
+			if run.slot < 0 or run.slot >= definition.slot_ceiling: return ["machine slot identity exceeds declared ports"]
+			if run.phase not in TERMINAL:
+				var port := String(run.machine) + ":" + str(run.slot)
+				if occupied_ports.has(port): return ["two operations occupy the same physical slot"]
+				occupied_ports[port] = true
 		var task: Dictionary = _inventory.claim(run.claim)
 		if task.is_empty() or task.kind != "operation" or task.worker != 0 or task.from != definition.input or task.to != definition.output: return ["machine claim differs from inventory"]
 		if run.phase not in TERMINAL + ["processing", "await_load", "await_operate", "await_stir", "await_unload"] + MANUAL: return ["invalid machine phase"]

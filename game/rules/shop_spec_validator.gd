@@ -354,6 +354,7 @@ static func _effects(effects: Array, p: String, c: Dictionary, errors: Array[Dic
 		if e == null: continue
 		var at := p + "[%d]" % i
 		_enum(e.kind, SpecEffect.KINDS, at + ".kind", errors)
+		if e.kind == "capacity": _error(errors,at + ".kind","Capacity effects require a shared-template binding; the legacy shop entry has no consumer.","unsupported")
 		var upgrade := attachment != "event"
 		if upgrade and e.kind in SpecEffect.ONE_SHOT:
 			_error(errors, at + ".kind", "Upgrade tracks do not execute one-shot effects.", "unsupported")

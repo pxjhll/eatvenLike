@@ -213,11 +213,11 @@ func snapshot() -> Dictionary:
 		"inventory":inventory.snapshot(), "machines":machines.snapshot(),
 		"tasks":tasks.values().duplicate(true), "actors":actors.duplicate(true), "interactions":_interactions.duplicate(true)}
 
-func validate_snapshot(data: Dictionary, dynamic: Variant = null) -> String:
-	return String(_prepare_restore(data, dynamic).error)
+func validate_snapshot(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}) -> String:
+	return String(_prepare_restore(data, dynamic, limits).error)
 
-func restore(data: Dictionary, dynamic: Variant = null) -> String:
-	var candidate := _prepare_restore(data, dynamic)
+func restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}) -> String:
+	var candidate := _prepare_restore(data, dynamic, limits)
 	if not String(candidate.error).is_empty(): return candidate.error
 	# Validation is complete before replacing any actor or service.
 	inventory = candidate.inventory
@@ -234,7 +234,7 @@ func restore(data: Dictionary, dynamic: Variant = null) -> String:
 	last_error = ""
 	return ""
 
-func _prepare_restore(data: Dictionary, dynamic: Variant = null) -> Dictionary:
+func _prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}) -> Dictionary:
 	if not Inventory._shape(data, {"version":0, "next_task":0, "ports":{}, "inventory":{}, "machines":{}, "tasks":[], "actors":[], "interactions":[]}): return {"error":"invalid capability state shape"}
 	var additions: Dictionary = _dynamic_places if dynamic == null else dynamic
 	var expected_ports := ports.duplicate(true)
@@ -247,6 +247,10 @@ func _prepare_restore(data: Dictionary, dynamic: Variant = null) -> Dictionary:
 		if not id is String or not Inventory._shape(place, {"port":Vector2.ZERO, "capacity":0, "infinite":[]}) or expected_ports.has(id) or not place.port.is_finite() or place.capacity != -1 or not place.infinite.is_empty(): return {"error":"invalid dynamic container declaration"}
 		expected_ports[id] = place.port
 		expected_places[id] = {"capacity":place.capacity, "infinite":place.infinite}
+	for id in limits.get("capacity",{}):
+		var value: Variant = limits.capacity[id]
+		if not expected_places.has(id) or additions.has(id) or Inventory.is_hand_place(id) or not value is int or value < 0: return {"error":"invalid numeric container override"}
+		expected_places[id].capacity = value
 	if data.version != 1 or data.next_task < 1 or data.ports != expected_ports: return {"error":"capability version or ports differ"}
 	var stock := Inventory.new()
 	var error := stock.restore(data.inventory)
@@ -260,7 +264,12 @@ func _prepare_restore(data: Dictionary, dynamic: Variant = null) -> Dictionary:
 	var devices := Machines.new(stock)
 	error = devices.restore(data.machines)
 	if not error.is_empty(): return {"error":error}
-	if data.machines.definitions != machines.snapshot().definitions: return {"error":"machine definitions differ from template"}
+	var expected_machines: Dictionary = machines.snapshot().definitions
+	for id in limits.get("slots",{}):
+		var value: Variant = limits.slots[id]
+		if not expected_machines.has(id) or not value is int or value < 1: return {"error":"invalid numeric machine override"}
+		expected_machines[id].profile.slots = value
+	if data.machines.definitions != expected_machines: return {"error":"machine definitions differ from template"}
 	var actors := {}
 	var deployed := {}
 	for worker in owner.workers: deployed[int(worker.id)] = true

@@ -7,6 +7,8 @@ const Contract := preload("res://game/rules/shop_content_contract.gd")
 const Restock := preload("res://game/rules/template/restock.gd")
 const ServicePolicy := preload("res://game/rules/template/service_policy.gd")
 const Dispatch := preload("res://game/rules/template/dispatch.gd")
+const Limits := preload("res://game/rules/template/numeric_limits.gd")
+const ProcessingDisplay := preload("res://game/rules/template/processing_display.gd")
 
 static func compile(template: Resource) -> Dictionary:
 	var errors: Array = []
@@ -25,7 +27,7 @@ static func compile(template: Resource) -> Dictionary:
 		if Inventory.is_hand_place(id):
 			errors.append(_error("reserved_container", path))
 			continue
-		_keys(place, ["port", "capacity", "infinite", "initial"], path, errors)
+		_keys(place, ["port", "capacity", "infinite", "initial", "capacity_binding"], path, errors)
 		if not place.get("port") is Vector2 or not Vector2(place.port).is_finite():
 			errors.append(_error("missing_port", path + ".port"))
 			continue
@@ -43,20 +45,38 @@ static func compile(template: Resource) -> Dictionary:
 			var seeded := inventory.seed(id, item, initial[item])
 			if not String(seeded.error).is_empty(): errors.append(_error("invalid_initial_stock", path + ".initial." + str(item), seeded.error))
 		definition.places[id] = {"port":place.port, "capacity":capacity, "infinite":infinite.duplicate(), "initial":initial.duplicate()}
+		var binding := Limits.compile_binding(place.get("capacity_binding",{}),capacity,0)
+		if not binding.error.is_empty(): errors.append(_error("invalid_capacity_binding",path + ".capacity_binding",binding.error))
+		elif not binding.definition.is_empty(): definition.places[id].capacity_binding = binding.definition
 	var machines := Machines.new(inventory)
+	var slot_bindings := {}
+	var processing_displays := {}
 	for id in template.machines:
 		var path := "machines." + str(id)
 		var machine: Variant = template.machines[id]
 		if not _id(id) or not machine is Dictionary:
 			errors.append(_error("invalid_machine", path))
 			continue
-		_keys(machine, ["input", "output", "profile"], path, errors)
+		_keys(machine, ["input", "output", "profile", "slots_binding", "processing_display"], path, errors)
 		if not machine.get("input") is String or not machine.get("output") is String or not machine.get("profile", {}) is Dictionary:
 			errors.append(_error("invalid_machine", path))
 			continue
 		var error := machines.configure(id, machine.input, machine.output, machine.get("profile", {}))
 		if not error.is_empty(): errors.append(_error("invalid_machine_capability", path, error))
+		else:
+			var binding := Limits.compile_binding(machine.get("slots_binding",{}),int(machines.snapshot().definitions[id].profile.slots),1)
+			if not binding.error.is_empty(): errors.append(_error("invalid_slots_binding",path + ".slots_binding",binding.error))
+			elif not binding.definition.is_empty(): slot_bindings[id] = binding.definition
+			var device: Dictionary = machines.snapshot().definitions[id]
+			if not binding.definition.is_empty(): device.slots_binding = binding.definition
+			var display := ProcessingDisplay.compile(machine.get("processing_display",{}),id,device,definition.places)
+			if not display.error.is_empty(): errors.append(_error("invalid_processing_display",path + ".processing_display",display.error))
+			elif not display.definition.is_empty():
+				processing_displays[id] = display.definition
+				machines.track_slots(id,display.definition.points.size())
 	definition.machines = machines.snapshot().definitions
+	for id in slot_bindings: definition.machines[id].slots_binding = slot_bindings[id]
+	for id in processing_displays: definition.machines[id].processing_display = processing_displays[id]
 	if not errors.is_empty(): return {"definition":{}, "errors":errors}
 	var restocks := Restock.compile(template.restocks, definition.places, definition.machines)
 	errors.append_array(restocks.errors)
@@ -68,6 +88,10 @@ static func compile(template: Resource) -> Dictionary:
 			continue
 		var recipe := _recipe(template.recipes[id], definition, "recipes." + id, errors)
 		definition.recipes[id] = recipe
+	if not errors.is_empty(): return {"definition":{}, "errors":errors}
+	for id in processing_displays:
+		var display_error := ProcessingDisplay.usage_error(processing_displays[id],definition.recipes,definition.restocks)
+		if not display_error.is_empty(): errors.append(_error("invalid_processing_display_input","machines." + id + ".processing_display",display_error))
 	if not errors.is_empty(): return {"definition":{}, "errors":errors}
 	var service := ServicePolicy.compile(template.service, definition.places, definition.recipes)
 	if not String(service.error).is_empty(): return {"definition":{}, "errors":[_error("invalid_service", "service", service.error)]}
@@ -97,7 +121,7 @@ static func _recipe(raw: Variant, definition: Dictionary, path: String, errors: 
 			errors.append(_error("duplicate_node", node_path))
 			continue
 		var capability: Variant = row.get("capability")
-		if capability not in ["source", "process"]:
+		if capability not in ["source", "process", "transfer"]:
 			errors.append(_error("unsupported_capability", node_path + ".capability"))
 			continue
 		var seconds: Variant = row.get("seconds", 0.0)
@@ -118,6 +142,19 @@ static func _recipe(raw: Variant, definition: Dictionary, path: String, errors: 
 				continue
 			node.place = row.place
 			node.produces[row.item] = 1
+		elif capability == "transfer":
+			_keys(row, ["id", "capability", "input", "place", "item", "count", "seconds", "after", "label", "timing_target", "fixed"], node_path, errors)
+			if not _id(row.get("input")) or not _id(row.get("place")) or not definition.places.has(row.place) or not _id(row.get("item")):
+				errors.append(_error("invalid_transfer", node_path)); continue
+			var count: Variant = row.get("count",1)
+			if not count is int or count < 1 or not row.get("timing_target","") is String or (node.fixed and String(row.get("timing_target","")).is_empty()):
+				errors.append(_error("invalid_transfer_parameters", node_path)); continue
+			node.place = row.place
+			node.timing_target = row.get("timing_target","")
+			node.consumes = {row.item:count}
+			node.produces = {row.item:count}
+			node.inputs = {row.item:row.input}
+			if row.item in definition.places[row.place].infinite: errors.append(_error("integrated_transfer_destination",node_path + ".place"))
 		else:
 			_keys(row, ["id", "capability", "machine", "consumes", "produces", "inputs", "seconds", "fixed", "after", "label"], node_path, errors)
 			if not _id(row.get("machine")) or not definition.machines.has(row.machine):
@@ -145,7 +182,7 @@ static func _recipe(raw: Variant, definition: Dictionary, path: String, errors: 
 		for item in node.consumes:
 			var producer: Variant = node.inputs.get(item)
 			if producer is Dictionary:
-				if not Inventory._shape(producer, {"capability":""}) or producer.capability != "integrated":
+				if node.capability != "process" or not Inventory._shape(producer, {"capability":""}) or producer.capability != "integrated":
 					errors.append(_error("invalid_integrated_binding", node_path + ".inputs." + str(item)))
 					continue
 				var input: String = definition.machines[node.machine].input
@@ -162,6 +199,8 @@ static func _recipe(raw: Variant, definition: Dictionary, path: String, errors: 
 				continue
 			if producer not in node.dependencies: node.dependencies.append(producer)
 			node.input_places[item] = nodes[producer].place
+			if node.capability == "transfer" and node.place == nodes[producer].place:
+				errors.append(_error("same_transfer_container",node_path + ".place"))
 			if not demand.has(producer): demand[producer] = {}
 			demand[producer][item] = int(demand[producer].get(item, 0)) + int(node.consumes[item])
 		for dependency in node.dependencies:

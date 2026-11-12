@@ -9,6 +9,7 @@ const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Service := preload("res://game/rules/template/service.gd")
 const Dispatch := preload("res://game/rules/template/dispatch.gd")
 const SourceDemand := preload("res://game/rules/template/source_demand.gd")
+const Limits := preload("res://game/rules/template/numeric_limits.gd")
 
 var runner: RefCounted
 var last_error := ""
@@ -38,7 +39,12 @@ func _init(owner: RefCounted, template: Resource) -> void:
 		var machine: Dictionary = _definition.machines[id]
 		last_error = runner.machines.configure(id, machine.input, machine.output, machine.profile)
 		if not last_error.is_empty(): return
+		if machine.has("slot_ceiling"):
+			last_error = runner.machines.track_slots(id,machine.slot_ceiling)
+			if not last_error.is_empty(): return
 	_restocks = Restock.new(_definition.restocks, runner)
+	last_error = Limits.sync(_definition,runner)
+	if not last_error.is_empty(): return
 	runner.dispatcher = Dispatch.new(_definition.dispatch, runner, self)
 	last_error = runner.dispatcher.last_error
 	if not last_error.is_empty(): return
@@ -46,10 +52,10 @@ func _init(owner: RefCounted, template: Resource) -> void:
 		service = Service.new(self, _definition.service)
 		last_error = service.last_error
 
-func arrive(request: Array) -> Dictionary:
+func arrive(request: Array, selected_options: Variant = null) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}
 	if service == null: return {"error":"template has no customer service capability", "id":-1}
-	return service.arrive(request)
+	return service.arrive(request,selected_options)
 
 func set_service_open(value: bool) -> String:
 	if not last_error.is_empty(): return last_error
@@ -68,8 +74,10 @@ func step(dt: float, paused := false) -> String:
 	if not last_error.is_empty(): return last_error
 	if not is_finite(dt) or dt < 0.0: return "invalid production time"
 	if paused or dt == 0.0: return ""
+	var error: String = Limits.sync(_definition,runner)
+	if not error.is_empty(): last_error = error; return error
 	_clock += dt
-	var error: String = runner.step(dt)
+	error = runner.step(dt)
 	if not error.is_empty(): last_error = error; return error
 	_reconcile()
 	if service != null:
@@ -118,10 +126,15 @@ func _pickup_seconds(producer: Dictionary) -> float:
 	return Numbers.capability_seconds(runner.owner.mods, runner.owner.tune, producer.timing_target, producer.seconds, producer.fixed)
 
 func frame(displays: Array = []) -> Dictionary:
-	var out: Dictionary = runner.frame(displays)
+	var bindings: Array = []
+	for machine in _definition.get("machines",{}).values():
+		if machine.has("processing_display"): bindings.append(machine.processing_display)
+	bindings.append_array(displays)
+	var out: Dictionary = runner.frame(bindings)
 	out.clock = _clock
 	out.units = _units.duplicate(true)
 	out.diagnostics = _diagnostics.duplicate(true)
+	if Limits.enabled(_definition): out.limits = Limits.frame(_definition,runner)
 	if service != null:
 		var service_frame: Dictionary = service.frame()
 		for key in service_frame: out[key] = service_frame[key]
@@ -139,6 +152,10 @@ func restore(data: Dictionary) -> String:
 	if (service == null) != data.service.is_empty(): return "service state differs from declared capabilities"
 	if data.version != 1 or data.signature != _definition.signature: return "production template signature differs"
 	if not is_finite(data.clock) or data.clock < 0.0 or data.next_unit < 1: return "invalid production sequence or clock"
+	var limit_values := Limits.plan(_definition,runner.owner.mods)
+	if not limit_values.error.is_empty(): return limit_values.error
+	var limit_overrides := Limits.restore_overrides(_definition,data.runner)
+	if not limit_overrides.error.is_empty(): return limit_overrides.error
 	var restored_service: RefCounted
 	var dynamic: Dictionary = {}
 	var service_stock := Inventory.new()
@@ -151,7 +168,7 @@ func restore(data: Dictionary) -> String:
 		var service_error: String = restored_service.prepare_restore(data.service, service_stock)
 		if not service_error.is_empty(): return service_error
 		dynamic = restored_service.dynamic_places()
-	var error: String = runner.validate_snapshot(data.runner, dynamic)
+	var error: String = runner.validate_snapshot(data.runner, dynamic, limit_overrides.definition)
 	if not error.is_empty(): return error
 	error = _restocks.validate_snapshot(data.restocks, data.runner.machines, data.runner.inventory)
 	if not error.is_empty(): return error
@@ -159,6 +176,9 @@ func restore(data: Dictionary) -> String:
 	var runs := {}
 	var claims := {}
 	var assigned_runs := {}
+	var assigned_bundles := {}
+	var bundles := {}
+	for bundle in data.runner.inventory.bundles: bundles[bundle.id] = bundle
 	for run in data.runner.machines.runs: runs[run.id] = run
 	for claim in data.runner.inventory.claims: claims[claim.id] = claim
 	for unit in data.units:
@@ -168,11 +188,26 @@ func restore(data: Dictionary) -> String:
 		var recipe: Dictionary = _definition.recipes[unit.recipe]
 		var done := {}
 		for id in unit.done:
-			if not id is String or done.has(id) or not recipe.nodes.has(id) or recipe.nodes[id].capability != "process" or not unit.running.has(id): return "completed node has no production run"
+			if not id is String or done.has(id) or not recipe.nodes.has(id) or recipe.nodes[id].capability == "source" or not unit.running.has(id): return "completed node has no production run"
 			done[id] = true
 		for id in unit.running:
-			if not id is String or not recipe.nodes.has(id) or recipe.nodes[id].capability != "process" or not unit.running[id] is int or not runs.has(unit.running[id]): return "production node has no machine run"
+			if not id is String or not recipe.nodes.has(id) or recipe.nodes[id].capability == "source" or not unit.running[id] is int: return "production node has no operation"
 			var node: Dictionary = recipe.nodes[id]
+			if node.capability == "transfer":
+				var bundle_id: int = unit.running[id]
+				if not bundles.has(bundle_id) or assigned_bundles.has(bundle_id): return "production transfer has no unique bundle"
+				assigned_bundles[bundle_id] = true
+				var group: Dictionary = bundles[bundle_id]
+				if not String(group.actor).begins_with("staff:") or group.claims.size() != 1: return "production transfer has an invalid carrier or shape"
+				var claim: Dictionary = claims[group.claims[0]]
+				var item: String = node.consumes.keys()[0]
+				var source: Dictionary = recipe.nodes[node.inputs[item]]
+				var source_owner: int = -1 if source.capability == "source" else int(unit.id)
+				if claim.from != source.place or claim.to != node.place or claim.item != item or claim.count != node.consumes[item] or claim.owner != source_owner or claim.allocate_owner != unit.id: return "bundle differs from production transfer"
+				if (claim.state == "dropped") != done.has(id): return "transfer completion differs from committed drop"
+				if not _dependencies_complete(recipe,node,unit): return "production transfer precedes its dependencies"
+				continue
+			if not runs.has(unit.running[id]): return "production node has no machine run"
 			var run: Dictionary = runs[unit.running[id]]
 			if assigned_runs.has(run.id): return "machine commit is assigned to more than one production node"
 			assigned_runs[run.id] = true
@@ -190,7 +225,9 @@ func restore(data: Dictionary) -> String:
 	if not error.is_empty(): return error
 	# Only the final adoption writes actor state. Failed graph checks leave all
 	# live services and actors intact.
-	error = runner.restore(data.runner, dynamic)
+	error = runner.restore(data.runner, dynamic, limit_overrides.definition)
+	if not error.is_empty(): return error
+	error = Limits.apply_plan(limit_values.definition,runner)
 	if not error.is_empty(): return error
 	_units = data.units.duplicate(true)
 	_next_unit = data.next_unit
@@ -225,6 +262,12 @@ func dispatch_facts(unit_data: Variant = null, service_data: Variant = null) -> 
 func _reconcile() -> void:
 	for unit in _units:
 		for node in unit.running.keys():
+			if _definition.recipes[unit.recipe].nodes[node].capability == "transfer":
+				var group: Dictionary = runner.inventory.bundle(unit.running[node])
+				var state: String = runner.inventory.claim(group.claims[0]).state
+				if state == "dropped" and node not in unit.done: unit.done.append(node)
+				elif state == "cancelled": unit.running.erase(node)
+				continue
 			var run: Dictionary = runner.machines.run(unit.running[node])
 			if run.get("phase", "") == "completed" and node not in unit.done: unit.done.append(node)
 			elif run.get("phase", "") == "cancelled": unit.running.erase(node)
@@ -259,9 +302,11 @@ func _allocate() -> void:
 				"operate": error = runner.operate(worker.id, candidate.run, candidate.from)
 				"transfer": error = runner.transfer(worker.id, candidate.from, candidate.to, candidate.item,
 					candidate.count, _definition.hop_seconds, candidate.owner, candidate.unit, candidate.seconds)
-				"bundle": error = runner.transfer_bundle(worker.id, candidate.entries, _definition.hop_seconds)
+				"bundle": error = runner.transfer_bundle(worker.id, candidate.entries, candidate.get("seconds",_definition.hop_seconds))
 				"interact": error = runner.interact(worker.id, candidate.from, candidate.seconds, "admit", candidate.guest)
 			if not error.is_empty(): continue
+			if candidate.has("node"):
+				_find_unit(candidate.unit).running[candidate.node] = int(runner.tasks[worker.id].bundle)
 			if service != null and candidate.category in ["admit", "deliver", "stage"]:
 				error = service.claimed(worker.id, candidate)
 				if not error.is_empty(): last_error = error; runner.cancel(worker.id)
@@ -292,7 +337,18 @@ func _candidates() -> Array:
 		var recipe: Dictionary = _definition.recipes[unit.recipe]
 		for id in recipe.order:
 			var node: Dictionary = recipe.nodes[id]
-			if node.capability != "process" or id in unit.done: continue
+			if id in unit.done: continue
+			if node.capability == "transfer":
+				if unit.running.has(id) or not _dependencies_complete(recipe,node,unit): continue
+				var item: String = node.consumes.keys()[0]
+				var source: Dictionary = recipe.nodes[node.inputs[item]]
+				var seconds: float = node.seconds if String(node.timing_target).is_empty() else Numbers.capability_seconds(runner.owner.mods,runner.owner.tune,node.timing_target,node.seconds,node.fixed)
+				transfers.append({"kind":"bundle","category":"transfer","node":id,"unit":int(unit.id),
+					"from":source.place,"to":node.place,"seconds":seconds,
+					"entries":[{"from":source.place,"to":node.place,"item":item,"count":int(node.consumes[item]),
+						"owner":-1 if source.capability == "source" else int(unit.id),"allocate_owner":int(unit.id),"pickup_seconds":_pickup_seconds(source)}]})
+				continue
+			if node.capability != "process": continue
 			var machine: Dictionary = _definition.machines[node.machine]
 			if unit.running.has(id):
 				var run: Dictionary = runner.machines.run(unit.running[id])
