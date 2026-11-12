@@ -15,8 +15,9 @@ static func build(definition: Dictionary, units: Array, stock: RefCounted, machi
 			if unit.running.has(node.id) and machines.run(unit.running[node.id]).get("phase", "") != "cancelled": continue
 			var input: String = definition.machines[node.machine].input
 			for item in node.consumes:
+				if item in definition.places[input].infinite: continue
 				var source: Dictionary = recipe.nodes[node.inputs[item]]
-				if source.capability != "source" or item in definition.places[input].infinite: continue
+				if source.capability != "source": continue
 				var need: int = int(node.consumes[item]) - int(stock.quantity(input, item, unit.id)) - int(stock.incoming(input, item, unit.id))
 				_add(result, definition, source.place, item, need)
 		var output: Dictionary = recipe.output
@@ -24,7 +25,8 @@ static func build(definition: Dictionary, units: Array, stock: RefCounted, machi
 		if source.capability != "source": continue
 		var process_inputs := {}
 		for node in recipe.nodes.values():
-			if node.capability == "process" and node.inputs.get(output.item, "") == source.id:
+			var binding: Variant = node.inputs.get(output.item, "")
+			if node.capability == "process" and binding is String and binding == source.id:
 				process_inputs[definition.machines[node.machine].input] = true
 		var covered := 0
 		for claim in outgoing.get(unit.id, []):

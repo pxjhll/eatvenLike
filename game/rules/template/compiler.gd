@@ -144,6 +144,16 @@ static func _recipe(raw: Variant, definition: Dictionary, path: String, errors: 
 			if not node.consumes.has(item): errors.append(_error("unused_input_binding", node_path + ".inputs." + str(item)))
 		for item in node.consumes:
 			var producer: Variant = node.inputs.get(item)
+			if producer is Dictionary:
+				if not Inventory._shape(producer, {"capability":""}) or producer.capability != "integrated":
+					errors.append(_error("invalid_integrated_binding", node_path + ".inputs." + str(item)))
+					continue
+				var input: String = definition.machines[node.machine].input
+				if item not in definition.places[input].infinite:
+					errors.append(_error("integrated_input_unavailable", node_path + ".inputs." + str(item)))
+					continue
+				node.input_places[item] = input
+				continue
 			if not producer is String or not nodes.has(producer):
 				errors.append(_error("missing_input_binding", node_path + ".inputs." + str(item)))
 				continue
