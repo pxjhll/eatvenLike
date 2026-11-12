@@ -101,7 +101,12 @@ func production_output(id: int) -> Dictionary:
 	var producer: Dictionary = recipe.nodes[output.node]
 	return {"place":String(producer.place), "item":String(output.item), "count":int(output.count),
 		"owner":-1 if producer.capability == "source" else id, "complete":producer.capability == "source" or output.node in unit.done,
-		"pickup_seconds":float(producer.seconds) if producer.capability == "source" else float(_definition.hop_seconds)}
+		"pickup_seconds":_pickup_seconds(producer)}
+
+func _pickup_seconds(producer: Dictionary) -> float:
+	if producer.capability != "source": return float(_definition.hop_seconds)
+	if String(producer.timing_target).is_empty(): return float(producer.seconds)
+	return Numbers.capability_seconds(runner.owner.mods, runner.owner.tune, producer.timing_target, producer.seconds, producer.fixed)
 
 func frame(displays: Array = []) -> Dictionary:
 	var out: Dictionary = runner.frame(displays)
@@ -296,7 +301,7 @@ func _candidates() -> Array:
 				var infinite: bool = item in _definition.places[producer.place].infinite
 				if not infinite and runner.inventory.quantity(producer.place, item, source_owner, true) <= 0: continue
 				transfers.append({"kind":"transfer", "category":"transfer", "from":producer.place, "to":machine.input, "item":item,
-					"count":need, "seconds":float(producer.seconds) if producer.capability == "source" else float(_definition.hop_seconds),
+					"count":need, "seconds":_pickup_seconds(producer),
 					"owner":source_owner, "unit":unit.id})
 	work.append_array(transfers)
 	return work

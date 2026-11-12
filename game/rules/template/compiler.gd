@@ -108,7 +108,11 @@ static func _recipe(raw: Variant, definition: Dictionary, path: String, errors: 
 		var node := {"id":id, "capability":capability, "seconds":float(seconds), "label":String(row.get("label", "")),
 			"dependencies":after.duplicate(), "consumes":{}, "produces":{}, "inputs":{}, "input_places":{}, "place":"", "machine":"", "fixed":bool(row.get("fixed", false))}
 		if capability == "source":
-			_keys(row, ["id", "capability", "place", "item", "seconds", "after", "label"], node_path, errors)
+			_keys(row, ["id", "capability", "place", "item", "seconds", "after", "label", "timing_target", "fixed"], node_path, errors)
+			if not row.get("timing_target", "") is String:
+				errors.append(_error("invalid_timing_target", node_path + ".timing_target"))
+				continue
+			node.timing_target = row.get("timing_target", "")
 			if not _id(row.get("item")) or not _id(row.get("place")) or not definition.places.has(row.place):
 				errors.append(_error("invalid_source", node_path))
 				continue

@@ -8,8 +8,9 @@ func _initialize() -> void:
 	var failed := 0
 	for path in OS.get_cmdline_user_args():
 		var script: Script = load("res://" + path.trim_prefix("res://"))
-		if script == null:
+		if script == null or not script.can_instantiate():
 			failed += 1
+			print("FAIL cannot load test suite: ", path)
 			continue
 		for method in script.new().get_method_list():
 			if not String(method.name).begins_with("test_"): continue
