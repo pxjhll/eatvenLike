@@ -30,19 +30,27 @@ func test_formal_shop_uses_shared_baselines_and_keeps_business_structure_after_c
 		check(ResourceLoader.exists(path),"registered global employee: "+kind.id)
 		if ResourceLoader.exists(path): check(is_same(kind,load(path)),"shop references the one global employee definition: "+kind.id)
 	check_eq(DATA.fulfillment.dine_rule,"self_pickup","original delivery policy preserved")
-	check_eq(DATA.fulfillment.flow_version,0,"no new formal menu or bundle policy")
+	check_eq(DATA.fulfillment.flow_version,1,"front production explicitly enables the shared flow protocol")
 	check_eq(DATA.save_file,LEGACY.save_file,"existing progress path retained")
 	check_eq(DATA.staff.starting,LEGACY.staff.starting,"starting identities preserved")
 	check_eq(DATA.staff.hire_pool,LEGACY.staff.hire_pool,"hire order preserved")
 	check_eq(DATA.layout.motion_units,887.0/720.0,"native art density")
 	for dish in DATA.dishes:
 		var old := LEGACY.dish(dish.id)
+		if dish.id=="plum_juice":
+			check(dish.front,"the added recipe belongs to front production")
+			continue
 		check_eq(dish.price_parts,old.price_parts,"dish price unchanged: "+dish.id)
 		check_eq(dish.steps.size(),old.steps.size(),"recipe indices preserved: "+dish.id)
 	var comparable := DATA.copy_for_editing()
 	comparable.staff.kinds = LEGACY.staff.duplicate(true).kinds
 	comparable.layout = LEGACY.layout.duplicate(true)
 	comparable.dispatch.action_version = 0
+	comparable.fulfillment.flow_version = 0
+	comparable.items.assign(comparable.items.filter(func(item: SpecItem) -> bool: return item.id!="plum_juice"))
+	comparable.dishes.assign(comparable.dishes.filter(func(dish: SpecDish) -> bool: return dish.id!="plum_juice"))
+	comparable.stations.assign(comparable.stations.filter(func(station: SpecStation) -> bool: return station.id!="plum_dispenser"))
+	for stage in comparable.stages: stage.order_weights.erase("plum_juice")
 	var content := preload("res://game/rules/shop_content_contract.gd")
 	check_eq(content.describe(comparable).structure,content.describe(LEGACY).structure,"recipe and policy structure remains compatible after numeric calibration")
 
@@ -107,7 +115,11 @@ func test_legacy_active_progress_adopts_new_ports_without_losing_goods_jobs_or_t
 		check_eq(rules.gold,old.gold,"gold retained: "+key)
 		check_eq(rules.sold,old.sold,"sales retained: "+key)
 		check_eq(rules.serve.goods,old.serve.goods,"goods identities/locations/reservations retained: "+key)
-		check_eq(rules.serve.units,old.serve.units,"production progress retained: "+key)
+		var expected_units: Array = old.serve.units.duplicate(true)
+		for unit: Dictionary in expected_units:
+			unit.flow_version = 1
+			unit.recipe_signature = preload("res://game/rules/production_plan.gd").compile(DATA,unit.dish).signature
+		check_eq(rules.serve.units,expected_units,"production progress retained with explicit flow identity: "+key)
 		check_eq(rules.serve.jobs,old.serve.jobs,"assignments retained: "+key)
 		for worker: Dictionary in rules.workers:
 			var role := Flow.role(rules,worker)

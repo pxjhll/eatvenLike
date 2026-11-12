@@ -50,7 +50,8 @@ func setup(view: Node2D, hud: Control) -> void:
 	_task_column.add_theme_constant_override("separation", 4)
 	task_scroll.add_child(_task_column)
 	var stats: HBoxContainer = hud._row(self, 10)
-	for stat in [["sold", "已售出", "drink_lemonade"], ["revenue", "营业额", "coin"], ["shelf", "货架", "shelf"]]:
+	var sold_icon: String = view.view.icon_of(view.shop.dishes[0].id) if not view.shop.dishes.is_empty() else "tag"
+	for stat in [["sold", "已售出", sold_icon], ["revenue", "营业额", "coin"], ["shelf", "货架", "shelf"]]:
 		var cell: VBoxContainer = hud._card(stats)
 		cell.get_parent().size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_stat_cells[stat[0]] = cell.get_parent()

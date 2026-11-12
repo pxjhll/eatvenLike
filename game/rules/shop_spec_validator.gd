@@ -688,7 +688,8 @@ static func _validate_serve(shop: SpecShop, c: Dictionary, errors: Array[Diction
 				if not bool(st.params.get("manual", false)): _error(errors, p, "Serve fulfillment supports staffed combine stations only.", "unsupported")
 			"topping", "dispenser":
 				_error(errors, p, "Serve fulfillment does not support this block yet.", "unsupported")
-		if st.zone == "front" and st.block != "counter": _error(errors, p, "Serve fulfillment has no front production yet.", "unsupported")
+		if st.zone == "front" and st.block != "counter" and shop.fulfillment.flow_version!=1:
+			_error(errors, p, "Front production requires flow version 1.", "unsupported")
 	if pickups<1 or (shop.fulfillment.flow_version==0 and pickups!=1): _error(errors, "stations", "Serve fulfillment needs exactly one pickup station unless flow version 1 is enabled.")
 	var dine: SpecSeatGroup = null
 	for g in shop.seat_groups:
@@ -704,13 +705,15 @@ static func _validate_serve(shop: SpecShop, c: Dictionary, errors: Array[Diction
 		var p: String = "dishes." + dish.id
 		if shop.fulfillment.flow_version==1:
 			for error: Dictionary in Production.compile(shop,dish.id).errors: _error(errors,p+"."+error.path,error.message,error.code)
-		if dish.front: _error(errors, p + ".front", "Serve fulfillment has no front recipes yet.", "unsupported")
+		if dish.front and shop.fulfillment.flow_version!=1: _error(errors, p + ".front", "Front recipes require flow version 1.", "unsupported")
 		var made := {}
 		var final := false
 		for i in dish.steps.size():
 			var s := dish.steps[i]
 			if s == null or not c.stations.has(s.station): continue
 			var st: SpecStation = c.stations[s.station]
+			if dish.front and st.zone!="front": _error(errors,"%s.steps[%d].station"%[p,i],"Front recipes must use front production stations.","unsupported")
+			elif not dish.front and st.zone=="front": _error(errors,"%s.steps[%d].station"%[p,i],"Kitchen recipes cannot implicitly require front production.","unsupported")
 			if st.block in ["supply", "batch_pot"]:
 				if not s.consumes.is_empty() or s.produces.size() != 1: _error(errors, "%s.steps[%d]" % [p, i], "Source steps produce exactly one item and consume nothing.", "unsupported")
 			elif st.block in ["hand", "combine"]:

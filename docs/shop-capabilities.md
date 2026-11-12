@@ -4,7 +4,7 @@
 
 Session startup validates both the store definition and a separately injected rules definition before loading/quarantining a save or acknowledging `fresh_shop`. Scene startup additionally checks art before Session startup. Pure ShopRules remains usable directly by rule tests; callers of that low-level API are responsible for validating configuration.
 
-`dispatch.action_version` supports 0/1 in all three modes. Version 1 requires shared movement (`layout.motion_version = 1`); each adapter retains its own existing fulfillment policies. Serve-only flow and order-bundle delivery remain restricted to serve. The three formal shops use movement/actions 1 and flow 0; version-0 behavioral baselines use frozen shop fixtures.
+`dispatch.action_version` supports 0/1 in all three modes. Version 1 requires shared movement (`layout.motion_version = 1`); each adapter retains its own existing fulfillment policies. Serve-only flow and order-bundle delivery remain restricted to serve. The three formal shops use movement/actions 1. Tea and pancake retain flow 0; stirfry uses flow 1 for front production; version-0 behavioral baselines use frozen shop fixtures.
 
 ## Fulfillment: every exported field
 
@@ -89,15 +89,23 @@ Compatibility includes the empty unzoned staff upgrade-track ID, front counter s
 
 This is a necessary structural contract, not an economic solvability proof or navigation reachability solver. Scene structure and art transforms belong to `presentation/shop/shop_scene_contract.gd`; actual business completion is covered by the rule and live fixture regressions. Tests do not re-record business baselines.
 
-## Serve mode (spec §10, v1.1 draft — first prototype)
+## Serve mode
 
-`fulfillment.handoff = "serve"` is the third execution mode, used by the 小炒饭馆 prototype (`content/shops/stirfry/shop.tres`, built by `tools/build_stirfry_shop.gd`; not in the campaign yet). Rules live in `game/rules/serve_flow.gd`; all runtime state is the single saved key `serve`.
+`fulfillment.handoff = "serve"` is the third execution mode, used by the formal third shop (`content/shops/stirfry/shop.tres`). Rules live in `game/rules/serve_flow.gd`; all runtime state is the single saved key `serve`.
 
 - **Flow.** Customers queue at the counter. A front worker takes the order only when a dine seat is free and assigns that seat; the customer then walks there (`customer_walk` px/s). The kitchen works the recipe as a dependency graph; the finished dish goes to the one `pickup` station; a front worker carries it to the seat. Eating starts only when the customer is seated **and** every order line is delivered. Payment (`on_deliver`, `dish_tenth_carry`) settles once per order when the last line arrives.
 - **Entities.** guests, orders (`lines[{dish, qty, delivered}]`), units (one per portion), goods (every physical item: where it is, which unit owns it or `-1` = shared stock, which worker reserved it), jobs (per worker). People served, orders completed, items sold and people lost are separate counters.
 - **Recipes.** `supply` and automatic `batch_pot` steps are sources (one product, no inputs). `hand` and staffed `combine` steps are work: they start only when all inputs are at that station for that unit and the station is free. Inputs for a step are fetched only after the work steps that feed it are done (no stockpiling). Shared stock from a batch pot is reserved at claim time and becomes the unit's when picked up, so one portion is never taken twice. A dish whose final item comes straight from a source (e.g. soup) is passed from the source.
-- **Roles.** Zoned shops: the counter post is front (take, serve); unposted kitchen workers flow (carry, work, pass); a worker seated at a machine only works that machine and never carries. Unzoned shops let unposted workers do everything.
+- **Roles.** Zoned shops: the counter post is front (take, serve, and flow1 front recipe production/transport); unposted kitchen workers flow (carry, work, pass); a worker seated at a machine only works that machine and never carries. Unzoned shops let unposted workers do everything.
 - **Cancel.** Recall/re-place releases every reservation and the station; an item in hand goes back to where it was picked up and keeps its owner; nothing is created or destroyed.
-- **Rejected for now:** manual-load/unload or stirred batch pots, automatic combine, topping/dispenser blocks, front recipes, more than one pickup, more than one seat group, conveyors, order options. Dispatch scores use `take / serve / carry / work / pass`.
+- **Rejected for now:** manual-load/unload or stirred batch pots, automatic combine, topping/dispenser blocks, front recipes in flow0, more than one pickup, more than one seat group, conveyors, order options. Dispatch scores use `take / serve / carry / work / pass`.
 - **Staff data.** `staff.starting_posts` gives each starting worker its own post (empty = flowing); hire costs are indexed by hires made, i.e. roster size minus starting workers (unchanged for one-worker shops).
 - **Graybox.** `tools/serve_graybox/serve_graybox.tscn` draws the raw rule state (stations, shared stock, goods, workers, guests by state) for prototype review; it is not the game UI.
+
+## Serve front production and item artwork
+
+A front direct-sale recipe uses `fulfillment.flow_version=1`, `SpecDish.front=true`, and front-zone stations. A manual drink machine reuses `block="hand"`; all recipe steps stay in the front zone. Kitchen recipes must remain in the kitchen. Existing action/movement, goods reservation, pickup, cancellation and save semantics apply. The normal pickup/payment policy still determines delivery; a front-only main dish does not implicitly gain a kitchen soup addon. Tea and pancake keep their existing adapters.
+
+Adding a recipe adds zero-count inventory slots to existing pickup/work stations during explicit content adoption. Same-content loads remain strict. Existing goods, reservations, timers, stages and active recipe identity are preserved; a flow0 reader protects flow1 saves. Additional equipment must not shift existing stage indices.
+
+`SpecItem.icon` binds the actual product texture, including an AtlasTexture region. `SpecItem.art` retains legacy scene art priority when explicitly set. `ShopView.item_art`, `item_icon` and `icon_of` feed carried goods, tables, order bubbles and HUD icons from one resolver. Missing artwork uses a neutral tag placeholder, never another shop's drink. Bind every intermediate/raw item too; reuse approved prep art where appropriate. User-supplied original sprites must remain byte-identical. Scene art and layout follow the FigCraft confirmation process.

@@ -43,10 +43,15 @@
 
 以SpecStep实际输入输出为准，不按图像的左右顺序推断工序。多路生产和整单交付只在serve的flow1中启用；single/handoff保留各自业务策略。动作1必须配运动1。缺料、工位占用、取消和存档由既有业务能力负责，不在场景脚本里另建库存或移动角色。
 
+前台直售（serve）：`flow_version=1`、菜品 `front=true`、配方仅引用 `zone="front"` 的工位；接饮品复用 `hand`，交付复用当前出餐策略。不要给前台饮品默认附上后厨例汤。加设备保留既有阶段索引。
+
+每个成品、半成品和原料都填写 `SpecItem.icon`（独立 PNG 或图集区域）；旧 `art` 只用于明确绑定的场景图。逐项检查订单气泡、员工搬运、工位产物、桌面及 HUD；缺图会显示中性占位符。设备面板另填 `SpecStation.icon`，不要借用其他店的图标。
+
 ## 5. 完整空间表
 
 - 写明网格cell/grid_size、Areas，以及staff/customer权限区域；区域对齐格子。
 - 每站配置员工工作/坐班点；顾客另配entrance、exit、pickup和足够的Queue。
+- 工位上会暂存的餐品单独配置 `Anchors/Station/Buffer`（附属位用 `Anchors/Slots/<slot>/Buffer`），放在可见台面并填写 `metadata/host`；`Nav/Work` 只表示员工脚底位置，不能代替餐品摆放点。
 - 每个座位同时具有原画坐姿点和可达接近点。根Nav可用Customers/Seats/<group>/<n>或Customers/Waiting/<group>/<n>。
 - 自取等待点覆盖最大座位容量，脚底半径12逻辑单位。家具Footprints按实际落地占地，不能用人物身体贴边来掩盖不可达。
 - `sync_shop_layouts.gd -- --shop=<资源>` 显式导出，随后 `--check`；错误时先修原模块，不在运行中静默改layout。

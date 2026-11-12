@@ -30,13 +30,14 @@
 [ext_resource type="Texture2D" path="res://art/stirfry/scene/complete_produce_group.png" id="28_talxb"]
 [ext_resource type="Texture2D" path="res://art/stirfry/scene/chopped_scallion_bowl.png" id="29_becrb"]
 [ext_resource type="Texture2D" path="res://art/stirfry/scene/loaded_ingredient_rack.png" id="30_6whsx"]
-[ext_resource type="Texture2D" path="res://art/stirfry/scene/plating_supply_group.png" id="31_wnsjs"]
 [ext_resource type="Texture2D" path="res://art/stirfry/scene/service_counter.png" id="32_ukprl"]
 [ext_resource type="Texture2D" path="res://art/stirfry/scene/red_flower_pot.png" id="33_hohv0"]
 [ext_resource type="Texture2D" path="res://art/stirfry/scene/register.png" id="34_mlsqc"]
 [ext_resource type="Texture2D" path="res://art/stirfry/scene/wood_tray.png" id="35_jaikb"]
 [ext_resource type="Texture2D" path="res://art/stirfry/scene/dining_chair.png" id="36_tbyjm"]
 [ext_resource type="Texture2D" path="res://art/stirfry/scene/dining_table.png" id="37_tbuom"]
+
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/plum_machine.tres" id="plum_machine"]
 
 [node name="StirfryArt" type="Node2D" unique_id=41972885]
 
@@ -525,18 +526,13 @@ metadata/asset_id = "prep_table"
 
 [node name="Visual" type="Node2D" parent="Sortables/PlatingTable" unique_id=275535074]
 
-[node name="PlatingSupplies" type="Sprite2D" parent="Sortables/PlatingTable/Visual" unique_id=1858963761]
-position = Vector2(-33, -144.42139)
-scale = Vector2(0.36591607, 0.36591607)
-texture = ExtResource("31_wnsjs")
-centered = false
-metadata/asset_id = "plating_supply_group"
-metadata/layout_group = "station:plating"
-metadata/unlock_rule = "plating"
-
 [node name="Anchors" type="Node2D" parent="Sortables/PlatingTable" unique_id=155020752]
 
 [node name="Station" type="Node2D" parent="Sortables/PlatingTable/Anchors" unique_id=2051195192]
+
+[node name="Buffer" type="Marker2D" parent="Sortables/PlatingTable/Anchors/Station"]
+position = Vector2(163, -58.421387)
+metadata/host = "PlatingTable"
 
 [node name="Tap" type="Node2D" parent="Sortables/PlatingTable/Anchors/Station" unique_id=92303897]
 position = Vector2(-67, -138.42139)
@@ -563,7 +559,8 @@ module_id = "ServiceCounter"
 module_kind = "counter"
 station_id = "counter"
 station_slots = Dictionary[String, String]({
-"pickup": "window"
+"pickup": "window",
+"drink": "plum_dispenser"
 })
 metadata/layout_group = "station:counter"
 metadata/unlock_rule = "counter"
@@ -585,7 +582,7 @@ centered = false
 metadata/asset_id = "red_flower_pot"
 
 [node name="Register" type="Sprite2D" parent="Sortables/ServiceCounter/Visual" unique_id=1833947896]
-position = Vector2(-227, -188)
+position = Vector2(6, -188)
 scale = Vector2(0.32542372, 0.32542372)
 texture = ExtResource("34_mlsqc")
 centered = false
@@ -609,20 +606,20 @@ metadata/unlock_rule = "window"
 [node name="Station" type="Node2D" parent="Sortables/ServiceCounter/Anchors" unique_id=40823778]
 
 [node name="Tap" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Station" unique_id=1214673781]
-position = Vector2(-330, -196)
+position = Vector2(-20, -196)
 script = ExtResource("17_8vt8w")
-size = Vector2(500, 150)
+size = Vector2(180, 150)
 
 [node name="Post" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Station" unique_id=330483624]
-position = Vector2(-254, -181)
+position = Vector2(-21, -181)
 script = ExtResource("17_8vt8w")
 size = Vector2(200, 110)
 
 [node name="PostPoint" type="Marker2D" parent="Sortables/ServiceCounter/Anchors/Station" unique_id=1193479939]
-position = Vector2(-169, -161)
+position = Vector2(64, -161)
 
 [node name="Drop" type="Node2D" parent="Sortables/ServiceCounter/Anchors" unique_id=1854993339]
-position = Vector2(-254, -181)
+position = Vector2(-21, -181)
 script = ExtResource("17_8vt8w")
 size = Vector2(200, 110)
 metadata/post = "counter"
@@ -639,7 +636,7 @@ size = Vector2(134, 110)
 [node name="Counter" type="Node2D" parent="Sortables/ServiceCounter/Anchors" unique_id=1449549890]
 
 [node name="Sale" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Counter" unique_id=1548818794]
-position = Vector2(-169, -181)
+position = Vector2(64, -181)
 
 [node name="Pickup" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Counter" unique_id=1371405853]
 position = Vector2(256, 39)
@@ -647,10 +644,10 @@ position = Vector2(256, 39)
 [node name="Nav" type="Node2D" parent="Sortables/ServiceCounter" unique_id=736451977]
 
 [node name="Work" type="Node2D" parent="Sortables/ServiceCounter/Nav" unique_id=428351853]
-position = Vector2(-169, -156)
+position = Vector2(64, -156)
 
 [node name="Post" type="Node2D" parent="Sortables/ServiceCounter/Nav" unique_id=1275454129]
-position = Vector2(-169, -161)
+position = Vector2(64, -161)
 
 [node name="Slots" type="Node2D" parent="Sortables/ServiceCounter/Nav" unique_id=1301173653]
 
@@ -721,6 +718,30 @@ position = Vector2(96, 149)
 
 [node name="15" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=1483993041]
 position = Vector2(136, 149)
+
+[node name="drink" type="Node2D" parent="Sortables/ServiceCounter/Visual/Slots"]
+
+[node name="PlumMachine" type="Sprite2D" parent="Sortables/ServiceCounter/Visual/Slots/drink"]
+position = Vector2(-227, -259)
+scale = Vector2(0.18461539, 0.18461539)
+texture = ExtResource("plum_machine")
+centered = false
+metadata/asset_id = "plum_dispenser"
+
+[node name="drink" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Slots"]
+
+[node name="Tap" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Slots/drink"]
+position = Vector2(-227, -259)
+script = ExtResource("17_8vt8w")
+size = Vector2(120, 164)
+
+[node name="Buffer" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Slots/drink"]
+position = Vector2(-75, -110)
+
+[node name="drink" type="Node2D" parent="Sortables/ServiceCounter/Nav/Slots"]
+
+[node name="Work" type="Node2D" parent="Sortables/ServiceCounter/Nav/Slots/drink"]
+position = Vector2(-74, -156)
 
 [node name="Dining" type="Node2D" parent="Sortables" unique_id=260827798]
 y_sort_enabled = true

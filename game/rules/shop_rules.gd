@@ -216,6 +216,18 @@ static func _plain(v: Variant) -> Variant:
 ## Validate and fully restore off to the side before replacing any live object.
 func load_dict(data: Dictionary, refresh_content: bool = false) -> String:
 	var candidate := ShopRules.new(shop)
+	if refresh_content:
+		# A new recipe adds item slots to existing pickup/work stations. Only
+		# content adoption fills new slots; ordinary same-content loads stay strict.
+		data = data.duplicate(true)
+		if data.get("stations") is Dictionary:
+			for id in candidate.stations:
+				var row: Variant = data.stations.get(id)
+				if not row is Dictionary: continue
+				for key in ["input", "output", "reserved_out"]:
+					if not row.get(key) is Dictionary: continue
+					for item in candidate.stations[id][key]:
+						if not row[key].has(item): row[key][item] = candidate.stations[id][key][item]
 	var rebuild_motion := movement_enabled() and not data.has("movement")
 	if rebuild_motion:
 		data = data.duplicate(true)

@@ -114,114 +114,110 @@
       }
     },
     "stirfry": {
-      "blocked_ticks": {
-
-      },
+      "blocked_ticks": {},
       "content": {
-        "gameplay": "f469f85aa1fbc5dc07a2b045f2e432f373118c2e22ba6ad9658b1fe56a00ab30",
-        "structure": "c72652c75515f3c9feff3e48b6b50b37e95f548b7f89b949952af5c302caf415",
+        "gameplay": "57a9cd174787dd0417d7a50f34489f43d4411416a7545a1b6df30fe58aaa41b5",
+        "structure": "bc6ccb6e31ba0b0c4cb270d45431f338d11745c6beb02e6b5fcd98f87f5fc9af",
         "version": 1
       },
-      "first_sale_tick": 1018,
+      "first_sale_tick": 379,
       "illegal_footprints": 0,
-      "lost": 78,
+      "lost": 69,
       "minutes": [
         {
-          "lost": 0,
-          "queue": 3,
-          "revenue": 0.0,
-          "sold": 0,
+          "lost": 2,
+          "queue": 5,
+          "revenue": 8.0,
+          "sold": 2,
           "tick": 600
         },
         {
-          "lost": 5,
+          "lost": 7,
           "queue": 5,
-          "revenue": 22.0,
-          "sold": 2,
+          "revenue": 48.0,
+          "sold": 6,
           "tick": 1200
         },
         {
           "lost": 16,
           "queue": 6,
-          "revenue": 38.0,
-          "sold": 4,
+          "revenue": 63.0,
+          "sold": 8,
           "tick": 1800
         },
         {
-          "lost": 26,
-          "queue": 6,
-          "revenue": 76.0,
-          "sold": 8,
+          "lost": 27,
+          "queue": 4,
+          "revenue": 117.0,
+          "sold": 11,
           "tick": 2400
         },
         {
-          "lost": 39,
-          "queue": 5,
-          "revenue": 105.0,
-          "sold": 10,
+          "lost": 38,
+          "queue": 6,
+          "revenue": 139.0,
+          "sold": 13,
           "tick": 3000
         },
         {
-          "lost": 45,
-          "queue": 5,
-          "revenue": 140.0,
-          "sold": 12,
+          "lost": 43,
+          "queue": 6,
+          "revenue": 159.0,
+          "sold": 16,
           "tick": 3600
         },
         {
-          "lost": 51,
+          "lost": 50,
           "queue": 6,
-          "revenue": 140.0,
-          "sold": 12,
+          "revenue": 221.0,
+          "sold": 21,
           "tick": 4200
         },
         {
-          "lost": 61,
+          "lost": 56,
           "queue": 5,
-          "revenue": 174.0,
-          "sold": 15,
+          "revenue": 243.0,
+          "sold": 23,
           "tick": 4800
         },
         {
-          "lost": 70,
-          "queue": 5,
-          "revenue": 207.0,
-          "sold": 18,
+          "lost": 59,
+          "queue": 3,
+          "revenue": 265.0,
+          "sold": 25,
           "tick": 5400
         },
         {
-          "lost": 78,
-          "queue": 4,
-          "revenue": 240.0,
-          "sold": 21,
+          "lost": 69,
+          "queue": 6,
+          "revenue": 282.0,
+          "sold": 26,
           "tick": 6000
         }
       ],
-      "orders_done": 14,
+      "orders_done": 22,
       "overspeed_samples": 0,
-      "queue_full_ticks": 2589,
+      "queue_full_ticks": 2594,
       "restore_error": "",
-      "revenue": 240.0,
-      "sale_events": 14,
+      "revenue": 282.0,
+      "sale_events": 22,
       "sale_gap_ticks": {
-        "maximum": 673,
-        "median": 334,
-        "p90": 593
+        "maximum": 525,
+        "median": 232,
+        "p90": 431
       },
-      "sold": 21,
+      "sold": 26,
       "staff": 2,
       "ticks": 6000,
       "worker_ticks": {
-        "idle": 5184,
-        "operating": 3106,
+        "idle": 3949,
+        "operating": 3850,
         "waiting": 0,
-        "walking": 3710
+        "walking": 4201
       }
     },
     "tea": {
-      "blocked_ticks": {
-
-      },
+      "blocked_ticks": {},
       "content": {
         "gameplay": "9619ca17d6f332cb061aa0c3f520bfb24ec5e860224d6ff2b71917cd6b13082a",
         "structure": "05c134dfffe0f96d5c21a25a61259132e058ff35248cd10064216752ac8064c8",

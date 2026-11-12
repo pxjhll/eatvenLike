@@ -70,8 +70,24 @@ func _business(rule: String) -> void:
 	var seen := {}
 	var every_guest_drawn := true
 	var dishes_drawn := false
+	var correct_food_art := true
+	var saw_order_art := false
+	var saw_carried_art := false
 	for unused in 2400:
 		scene._process(0.25)
+		for actor: Node2D in scene._customers.values():
+			if actor._order_cup.visible:
+				saw_order_art = true
+				correct_food_art = correct_food_art and actor._order_cup.texture.resource_path.begins_with("res://art/stirfry/items/")
+		for actor: Node2D in scene._actors.values():
+			if actor.carried.visible:
+				saw_carried_art = true
+				var path: String = actor.carried.texture.resource_path
+				correct_food_art = correct_food_art and (path.begins_with("res://art/stirfry/items/") or path=="res://art/stirfry/scene/chopped_scallion_bowl.png")
+		for sprite: Sprite2D in scene._cups:
+			if sprite.visible:
+				var path := sprite.texture.resource_path
+				correct_food_art = correct_food_art and (path.begins_with("res://art/stirfry/items/") or path=="res://art/stirfry/scene/chopped_scallion_bowl.png")
 		for g: Dictionary in scene.rules.serve.guests:
 			var id := int(g.id)
 			var key: Variant = "guest:%d"%id if spec.layout.motion_version==1 else id
@@ -95,6 +111,8 @@ func _business(rule: String) -> void:
 	_check(seen.has("queue"), rule + ": 有客人排队")
 	_check(seen.has("eating_at_seat"), rule + ": 用餐的客人坐在分到的座位上")
 	_check(dishes_drawn, rule + ": 桌上的菜摆在桌面上")
+	_check(saw_order_art and saw_carried_art, rule + ": 实际订单和搬运均出现餐品贴图")
+	_check(correct_food_art, rule + ": 订单、搬运、工位和桌面均使用小炒资源，不混入奶茶图")
 	if rule == "self_pickup": _check(seen.has("await_at_window"), rule + ": 自取的客人站在出餐口前等")
 	_check(scene.rules.sold >= 3, rule + ": 正式界面里卖出了 %d 份" % scene.rules.sold)
 	scene.rules.gold = 100000.0

@@ -2,6 +2,7 @@ extends Node2D
 ## 员工和客人（通用）：参考图的动物，脚底是排序点。端着的杯子、头顶的字、干活朝向都从外面给（店铺数据）。
 
 ## The view is orthographic, so a cup is the same size on a belt, a shelf or in a paw.
+const ItemArt := preload("res://game/rules/shop_item_art.gd")
 const CUP_HEIGHT := 52.0
 const Characters := preload("res://presentation/characters/character_library.gd")
 const Presentation := preload("res://content/characters/actor_presentation.tres")
@@ -140,8 +141,7 @@ func display(worker: Dictionary, clock: float) -> void:
 	amount.text = "×%d" % count
 	if carried.visible:
 		var art: Dictionary = item_art.call(item)
-		var texture: Texture2D = art.get("texture", null)
-		if texture == null: texture = load("res://art/reference/" + String(art.get("art", "pearl_tea")) + ".png")
+		var texture: Texture2D = ItemArt.texture_from_look(art)
 		carried.texture = texture
 		carried.modulate = art.get("tint", Color.WHITE)
 		# 按长边量：杯子还是 52 高，横着的饼、袋子不会比杯子宽一大截挡住脸
@@ -200,10 +200,9 @@ func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -
 		frame_actor.seek_phase(0.0)
 
 
-## 订单气泡里的饮品图标：art/ui/drink_<id>.png，没有就用珍珠奶茶
+## Standalone actors use existing legacy icons or a neutral placeholder.
 static func drink_icon(item: String) -> Texture2D:
-	var path := "res://art/ui/drink_%s.png" % item
-	return load(path if ResourceLoader.exists(path) else "res://art/ui/drink_pearl_milk_tea.png")
+	return ItemArt.legacy_icon(item)
 
 
 func _draw() -> void:

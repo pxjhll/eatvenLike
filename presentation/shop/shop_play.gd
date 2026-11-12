@@ -884,6 +884,9 @@ func _update_customers_motion(frame: Dictionary) -> void:
 func _serve_goods(frame: Dictionary, draws: Array) -> void:
 	var count := {}
 	for good: Dictionary in frame.serve.goods:
+		# Shared pot stock belongs inside the machine. Only allocated order
+		# products become visible loose items at workstations, pickup or tables.
+		if int(good.owner) == ServeFlow.SHARED: continue
 		var at := String(good.at)
 		var pos: Vector2
 		var host := ""
@@ -899,7 +902,9 @@ func _serve_goods(frame: Dictionary, draws: Array) -> void:
 		elif at.contains(":"):
 			continue
 		elif anchors.has("Stations/%s/Buffer" % at):
-			pos = anchors.point("Stations/%s/Buffer" % at)
+			var buffer := "Stations/%s/Buffer" % at
+			pos = anchors.point(buffer)
+			host = String(anchors.meta(buffer, "host", ""))
 		elif _layout_has(at):
 			pos = _layout_point(at)
 		else:
@@ -1110,11 +1115,7 @@ func _wait_group() -> String:
 
 ## 订单气泡里的图：店铺数据给了物品图标就用它，否则用 art/ui/drink_<id>.png
 func _order_icon(item: String) -> Texture2D:
-	var dish := shop.dish(item)
-	var key: String = dish.item if dish != null and not dish.item.is_empty() else item
-	for it in shop.items:
-		if it.id == key and it.icon != null: return it.icon
-	return Actor.drink_icon(item)
+	return view.item_icon(item)
 
 
 func _along(points: PackedVector2Array, progress: float) -> Vector2:

@@ -496,7 +496,11 @@ static func _taken(rules: ShopRules, worker: Dictionary, job: Dictionary) -> voi
 	var g := guest(rules, int(job.guest))
 	var lines: Array = [{"dish": rules._pick_dish(rules.order_weights()), "qty": 1, "delivered": 0}]
 	var f := rules.shop.fulfillment
-	if not f.addon_dish.is_empty() and lines[0].dish != f.addon_dish and rules.dish_open(f.addon_dish, false) and rules.rng.randf() < f.addon_chance:
+	var main := rules.shop.dish(String(lines[0].dish))
+	var addon := rules.shop.dish(f.addon_dish)
+	# A front-only order must not acquire an implicit kitchen dependency.
+	var same_service := addon!=null and (not main.front or addon.front)
+	if same_service and lines[0].dish != f.addon_dish and rules.dish_open(f.addon_dish, false) and rules.rng.randf() < f.addon_chance:
 		lines.append({"dish": f.addon_dish, "qty": 1, "delivered": 0})
 	var o := {"id": _next(rules), "guest": g.id, "seat": g.seat, "lines": lines, "paid": false}
 	s.orders.append(o)
@@ -720,7 +724,6 @@ static func candidates(rules: ShopRules, worker: Dictionary) -> Array:
 			if u.is_empty() or String(rules.shop.dish(String(u.dish)).item) != String(good.item): continue
 			var o := order(rules, int(u.order))
 			out.append(_scored(rules, worker, _job("serve", int(u.id), -1, String(good.item), int(good.id), pickup, SEAT + str(o.seat)), "serve", float(u.wait), "送餐"))
-	if r == "front": return out
 	var claimed := _claimed(rules)
 	for u in rules.serve.units:
 		_unit_jobs(rules, worker, r, u, claimed, out)
@@ -751,7 +754,9 @@ static func _claimed(rules: ShopRules) -> Dictionary:
 static func _unit_jobs(rules: ShopRules, worker: Dictionary, r: String, u: Dictionary, claimed: Dictionary, out: Array) -> void:
 	var shop := rules.shop
 	var dish := shop.dish(String(u.dish))
-	var flowing := r in ["kitchen", "any"]
+	if dish.front and shop.fulfillment.flow_version!=1: return
+	if (r=="front" and not dish.front) or (r=="kitchen" and dish.front): return
+	var flowing := r in ["front", "kitchen", "any"]
 	var pickup := pickup_for(shop,dish.id)
 	var all_done := true
 	for i in work_steps(shop, dish.id):

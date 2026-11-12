@@ -95,6 +95,12 @@ func test_numeric_calibration_preserves_inflight_business_and_original_file_byte
 		var before := current.copy_for_editing()
 		before.stations = legacy.stations
 		before.dishes = legacy.dishes
+		# This is a numeric migration test. Retain deliberately added recipes
+		# and equipment; front-menu adoption is covered by its own suite.
+		for station in current.stations:
+			if legacy.station(station.id)==null: before.stations.append(station.duplicate(true))
+		for dish in current.dishes:
+			if legacy.dish(dish.id)==null: before.dishes.append(dish.duplicate(true))
 		before.stages = legacy.stages
 		before.staff.hire_costs = legacy.staff.hire_costs
 		var rules := ShopRules.new(before,42)

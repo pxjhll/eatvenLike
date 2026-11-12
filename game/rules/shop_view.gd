@@ -736,25 +736,15 @@ func work_progress(worker: Dictionary) -> float:
 	return clampf(1.0 - float(worker.get("timer", 0.0)) / duration, 0.0, 1.0)
 
 
-## 物品怎么画：{art: art/reference 里的图名, tint, texture}
-## texture：写了 art 用 art/reference/<art>.png，没写 art 但有图标就用图标，都没有才用默认杯子
+const ItemArt := preload("res://game/rules/shop_item_art.gd")
+
+## Explicit scene artwork and UI icons share the same shop item data.
 func item_art(id: String) -> Dictionary:
-	var dish := shop.dish(id)
-	var key: String = dish.item if dish != null and not dish.item.is_empty() else id
-	for item in shop.items:
-		if item.id == key or item.id == id:
-			if item.art.is_empty() and item.icon != null:
-				return {"art": "", "tint": item.tint, "texture": item.icon}
-			var art: String = item.art if not item.art.is_empty() else DEFAULT_ITEM_ART
-			return {"art": art, "tint": item.tint, "texture": _art_texture(art)}
-	return {"art": DEFAULT_ITEM_ART, "tint": Color.WHITE, "texture": _art_texture(DEFAULT_ITEM_ART)}
+	return ItemArt.appearance(shop, id)
 
 
-const DEFAULT_ITEM_ART := "pearl_tea"
-
-
-func _art_texture(art: String) -> Texture2D:
-	return load("res://art/reference/" + art + ".png")
+func item_icon(id: String) -> Texture2D:
+	return ItemArt.icon(shop, id)
 
 
 ## 在这台机器前干活朝哪个方向（8 方向；-1 = 不转）
@@ -765,6 +755,7 @@ func icon_of(id: String) -> String:
 	for s in shop.stations:
 		var m := s.material(id)
 		if m != null and not m.icon.is_empty(): return m.icon
+	if ItemArt.find_item(shop, id) != null: return item_icon(id).resource_path
 	return id
 
 
