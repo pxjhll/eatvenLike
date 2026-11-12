@@ -47,9 +47,16 @@ func transfer(worker_id: int, source: String, destination: String, item: String,
 	if not is_finite(pickup_seconds) or (pickup_seconds < 0.0 and pickup_seconds != -1.0): return "invalid pickup duration"
 	var worker: Dictionary = owner.worker_by_id(worker_id)
 	if dispatcher != null and not dispatcher.allowed(worker, {"kind":"transfer", "from":source, "to":destination}): return "employee cannot perform this transfer"
-	var claim := inventory.reserve_transfer(worker_id, source, destination, item, count, owner.carry(worker), stock_owner, allocate_owner)
+	var stock := _reservation_stock()
+	var claim: Dictionary = stock.reserve_transfer(worker_id, source, destination, item, count, owner.carry(worker), stock_owner, allocate_owner)
 	if not String(claim.error).is_empty(): return claim.error
+	var context := _transport_scope(stock, [stock.claim(claim.id)], worker)
+	if not String(context.error).is_empty(): return context.error
+	if dispatcher != null:
+		error = inventory.restore(stock.snapshot())
+		if not error.is_empty(): return error
 	var task := _task("transfer", worker)
+	task.scope = context.scope
 	task.claim = claim.id
 	task.from = source
 	task.to = destination
@@ -69,7 +76,13 @@ func operate(worker_id: int, run_id: int, port: String) -> String:
 		if task.kind == "operate" and task.run == run_id: return "machine stage already assigned"
 	var worker: Dictionary = owner.worker_by_id(worker_id)
 	if dispatcher != null and not dispatcher.allowed(worker, {"kind":"operate", "machine":run.machine}): return "employee cannot operate this device"
+	var context: Dictionary = {"error":"", "scope":""} if dispatcher == null else dispatcher.context_for_claims(inventory, [inventory.claim(run.claim)])
+	if not String(context.error).is_empty(): return context.error
+	if dispatcher != null:
+		error = dispatcher.can_start(worker, context.scope, run.id)
+		if not error.is_empty(): return error
 	var task := _task("operate", worker)
+	task.scope = context.scope
 	task.run = run_id
 	task.from = port
 	task.to = port
@@ -98,9 +111,18 @@ func transfer_bundle(worker_id: int, entries: Array, hop_seconds: float) -> Stri
 	var sources: Array = []
 	for entry in entries: sources.append(String(entry.from))
 	if dispatcher != null and not dispatcher.allowed(worker, {"kind":"bundle", "froms":sources, "to":destination}): return "employee cannot collect or deliver this bundle"
-	var result: Dictionary = inventory.reserve_bundle("staff:" + str(worker_id), stock_entries, owner.carry(worker))
+	var stock := _reservation_stock()
+	var result: Dictionary = stock.reserve_bundle("staff:" + str(worker_id), stock_entries, owner.carry(worker))
 	if not String(result.error).is_empty(): return result.error
+	var claims: Array = []
+	for id in stock.bundle(result.id).claims: claims.append(stock.claim(id))
+	var context := _transport_scope(stock, claims, worker)
+	if not String(context.error).is_empty(): return context.error
+	if dispatcher != null:
+		error = inventory.restore(stock.snapshot())
+		if not error.is_empty(): return error
 	var task := _task("bundle", worker)
+	task.scope = context.scope
 	task.bundle = result.id
 	task.from = entries[0].from
 	task.to = destination
@@ -116,7 +138,12 @@ func interact(worker_id: int, port: String, seconds: float, purpose: String, sub
 	if not ports.has(port) or not is_finite(seconds) or seconds < 0.0 or purpose != "admit" or subject < 1: return "invalid public interaction"
 	var worker: Dictionary = owner.worker_by_id(worker_id)
 	if dispatcher != null and not dispatcher.allowed(worker, {"kind":"interact", "port":port}): return "employee cannot perform this interaction"
+	var context: Dictionary = {"error":"", "scope":""} if dispatcher == null else dispatcher.context_for_guest(subject)
+	if dispatcher != null:
+		error = dispatcher.can_start(worker, context.scope)
+		if not error.is_empty(): return error
 	var task := _task("interact", worker)
+	task.scope = context.scope
 	task.from = port
 	task.to = port
 	task.seconds = seconds / float(owner.skill(worker))
@@ -132,6 +159,9 @@ func take_interactions() -> Array:
 func step(dt: float, paused := false) -> String:
 	if not is_finite(dt) or dt < 0.0: return "invalid capability time"
 	if paused or dt == 0.0: return ""
+	if dispatcher != null:
+		var lease_error: String = dispatcher.reconcile()
+		if not lease_error.is_empty(): return lease_error
 	# Revoke leases before advancing any manual clock or committing a pickup.
 	for id in tasks.keys():
 		var worker: Dictionary = owner.worker_by_id(id)
@@ -150,10 +180,12 @@ func step(dt: float, paused := false) -> String:
 			continue
 		Actions.tick(worker, dt, Context.new(self))
 		if not last_error.is_empty(): return last_error
-	return ""
+	return dispatcher.reconcile() if dispatcher != null else ""
 
 func cancel(worker_id: int) -> String:
-	if not tasks.has(worker_id): return ""
+	if not tasks.has(worker_id):
+		if dispatcher != null: dispatcher.release_worker(worker_id)
+		return ""
 	var worker: Dictionary = owner.worker_by_id(worker_id)
 	if worker.is_empty(): return "assigned employee missing"
 	last_error = ""
@@ -257,7 +289,7 @@ func _prepare_restore(data: Dictionary, dynamic: Variant = null) -> Dictionary:
 	var machine_runs := {}
 	for task in data.tasks:
 		if not Inventory._shape(task, {"id":0, "worker":0, "kind":"", "claim":0, "run":0,
-			"from":"", "to":"", "seconds":0.0, "drop_seconds":0.0, "stage":"", "profile":"", "bundle":0, "picks":[], "purpose":"", "subject":0}): return {"error":"invalid capability task shape"}
+			"from":"", "to":"", "seconds":0.0, "drop_seconds":0.0, "stage":"", "profile":"", "bundle":0, "picks":[], "purpose":"", "subject":0, "scope":""}): return {"error":"invalid capability task shape"}
 		if task.id < 1 or task.id >= data.next_task or task_ids.has(task.id) or restored_tasks.has(task.worker) or not actors.has(task.worker) or task.kind not in ["transfer", "operate", "bundle", "interact"] or not expected_ports.has(task.from) or not expected_ports.has(task.to): return {"error":"invalid capability task identity or port"}
 		if task.kind == "interact":
 			if task.purpose != "admit" or task.subject < 1 or task.from != task.to or task.claim != -1 or task.run != -1 or not task.stage.is_empty(): return {"error":"invalid interaction request"}
@@ -306,7 +338,7 @@ func _prepare_restore(data: Dictionary, dynamic: Variant = null) -> Dictionary:
 			else:
 				var phase: String = "work" if action.kind == "operate" else ("pickup" if action.kind == "pickup" else "dropoff")
 				if actor.walking or actor.phase != phase or not Vector2(actor.pos).is_equal_approx(expected_ports[action.target]): return {"error":"actor operation is not at its port"}
-		if dispatcher != null and not dispatcher.allowed_task(owner.worker_by_id(task.worker), task, devices): return {"error":"restored task is not authorized for employee role or post"}
+		if dispatcher != null and not dispatcher.allowed_task(owner.worker_by_id(task.worker), task, devices, false): return {"error":"restored task is not authorized for employee role or post"}
 		restored_tasks[task.worker] = task.duplicate(true)
 		task_ids[task.id] = true
 	for actor in actors.values():
@@ -330,7 +362,7 @@ func _available_worker(id: int) -> String:
 func _task(kind: String, worker: Dictionary) -> Dictionary:
 	var profile := access_profile(worker)
 	return {"id":0, "worker":int(worker.id), "kind":kind, "claim":-1, "run":-1,
-		"from":"", "to":"", "seconds":0.0, "drop_seconds":0.0, "stage":"", "profile":profile, "bundle":-1, "picks":[], "purpose":"", "subject":-1}
+		"from":"", "to":"", "seconds":0.0, "drop_seconds":0.0, "stage":"", "profile":profile, "bundle":-1, "picks":[], "purpose":"", "subject":-1, "scope":""}
 
 func access_profile(worker: Dictionary) -> String:
 	var side: String = owner.side_of(worker)
@@ -344,7 +376,20 @@ func _start(worker: Dictionary, task: Dictionary) -> String:
 	if not error.is_empty():
 		_cancel_effect(worker)
 		return error
+	if dispatcher != null: dispatcher.started(worker, task)
 	return ""
+
+func _reservation_stock() -> RefCounted:
+	if dispatcher == null: return inventory
+	var candidate := Inventory.new()
+	candidate.restore(inventory.snapshot())
+	return candidate
+
+func _transport_scope(stock: RefCounted, claims: Array, worker: Dictionary) -> Dictionary:
+	if dispatcher == null: return {"error":"", "scope":""}
+	var context: Dictionary = dispatcher.context_for_claims(stock, claims)
+	if String(context.error).is_empty(): context.error = dispatcher.can_start(worker, context.scope)
+	return context
 
 func _sync_hand(worker: Dictionary) -> void:
 	worker.carry_item = ""
@@ -370,6 +415,7 @@ func _cancel_effect(worker: Dictionary) -> void:
 		var run: Dictionary = machines.run(task.run)
 		if run.get("operator", -1) == int(worker.id): last_error = machines.release_employee(task.run, worker.id)
 	if not last_error.is_empty(): return
+	if dispatcher != null: dispatcher.release_worker(worker.id)
 	_interaction_result(task, "cancelled")
 	tasks.erase(worker.id)
 	_clear_actor(worker)

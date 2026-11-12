@@ -38,7 +38,7 @@ func _init(owner: RefCounted, template: Resource) -> void:
 		last_error = runner.machines.configure(id, machine.input, machine.output, machine.profile)
 		if not last_error.is_empty(): return
 	_restocks = Restock.new(_definition.restocks, runner)
-	runner.dispatcher = Dispatch.new(_definition.dispatch, runner)
+	runner.dispatcher = Dispatch.new(_definition.dispatch, runner, self)
 	last_error = runner.dispatcher.last_error
 	if not last_error.is_empty(): return
 	if not _definition.service.is_empty():
@@ -76,6 +76,8 @@ func step(dt: float, paused := false) -> String:
 		if not error.is_empty(): last_error = error; return error
 	_restocks.advance()
 	_start_ready_nodes()
+	error = runner.dispatcher.reconcile()
+	if not error.is_empty(): last_error = error; return error
 	_allocate()
 	return ""
 
@@ -115,11 +117,11 @@ func snapshot() -> Dictionary:
 	return {"version":1, "signature":_definition.get("signature", ""), "clock":_clock,
 		"next_unit":_next_unit, "units":_units.duplicate(true), "runner":runner.snapshot(),
 		"restocks":_restocks.snapshot() if _restocks != null else {"version":1, "runs":{}},
-		"service":service.snapshot() if service != null else {}}
+		"service":service.snapshot() if service != null else {}, "dispatch":runner.dispatcher.snapshot() if runner.dispatcher != null else {}}
 
 func restore(data: Dictionary) -> String:
 	if not last_error.is_empty(): return last_error
-	if not Inventory._shape(data, {"version":0, "signature":"", "clock":0.0, "next_unit":0, "units":[], "runner":{}, "restocks":{}, "service":{}}): return "invalid production state shape"
+	if not Inventory._shape(data, {"version":0, "signature":"", "clock":0.0, "next_unit":0, "units":[], "runner":{}, "restocks":{}, "service":{}, "dispatch":{}}): return "invalid production state shape"
 	if (service == null) != data.service.is_empty(): return "service state differs from declared capabilities"
 	if data.version != 1 or data.signature != _definition.signature: return "production template signature differs"
 	if not is_finite(data.clock) or data.clock < 0.0 or data.next_unit < 1: return "invalid production sequence or clock"
@@ -169,6 +171,9 @@ func restore(data: Dictionary) -> String:
 	if restored_service != null:
 		error = restored_service.validate_links(data.units, data.runner, service_stock)
 		if not error.is_empty(): return error
+	var restored_dispatch := Dispatch.new(_definition.dispatch, runner, self)
+	error = restored_dispatch.prepare_restore(data.dispatch, dispatch_facts(data.units, data.service), data.runner)
+	if not error.is_empty(): return error
 	# Only the final adoption writes actor state. Failed graph checks leave all
 	# live services and actors intact.
 	error = runner.restore(data.runner, dynamic)
@@ -178,8 +183,30 @@ func restore(data: Dictionary) -> String:
 	_clock = data.clock
 	_restocks.restore_validated(data.restocks)
 	service = restored_service
+	runner.dispatcher = restored_dispatch
 	_diagnostics = []
 	return ""
+
+func dispatch_facts(unit_data: Variant = null, service_data: Variant = null) -> Dictionary:
+	var units: Array = _units if unit_data == null else unit_data
+	var state: Dictionary = ({"orders":service.orders.snapshot()} if service != null else {}) if service_data == null else service_data
+	var facts := {"units":{}, "open":{}}
+	for unit in units:
+		var token := "unit:" + str(unit.id)
+		facts.units[unit.id] = token
+		var recipe: Dictionary = _definition.recipes[unit.recipe]
+		if recipe.nodes[recipe.output.node].capability != "source" and recipe.output.node not in unit.done: facts.open[token] = true
+	if not state.is_empty():
+		for order in state.orders.orders:
+			var token := "order:" + str(order.id)
+			for line in order.lines:
+				for binding in line.units:
+					facts.units[binding.unit] = token
+					facts.open.erase("unit:" + str(binding.unit))
+			if order.state == "accepted": facts.open[token] = true
+		for guest in state.orders.guests:
+			if guest.state == "queue": facts.open["guest:" + str(guest.id)] = true
+	return facts
 
 func _reconcile() -> void:
 	for unit in _units:
@@ -212,19 +239,40 @@ func _start_ready_nodes() -> void:
 func _allocate() -> void:
 	for worker in runner.owner.workers:
 		if not runner.idle(worker.id): continue
-		for candidate in _candidates():
+		for candidate in candidates_for(worker.id):
 			var error := ""
-			if candidate.kind == "operate": error = runner.operate(worker.id, candidate.run, candidate.port)
-			else:
-				error = runner.transfer(worker.id, candidate.from, candidate.to, candidate.item,
+			match String(candidate.kind):
+				"operate": error = runner.operate(worker.id, candidate.run, candidate.from)
+				"transfer": error = runner.transfer(worker.id, candidate.from, candidate.to, candidate.item,
 					candidate.count, _definition.hop_seconds, candidate.owner, candidate.unit, candidate.seconds)
-			if error.is_empty(): break
+				"bundle": error = runner.transfer_bundle(worker.id, candidate.entries, _definition.hop_seconds)
+				"interact": error = runner.interact(worker.id, candidate.from, candidate.seconds, "admit", candidate.guest)
+			if not error.is_empty(): continue
+			if service != null and candidate.category in ["admit", "deliver", "stage"]:
+				error = service.claimed(worker.id, candidate)
+				if not error.is_empty(): last_error = error; runner.cancel(worker.id)
+			break
+
+func candidates_for(worker_id: int) -> Array:
+	var worker: Dictionary = runner.owner.worker_by_id(worker_id)
+	if worker.is_empty() or not runner._available_worker(worker_id).is_empty(): return []
+	var pool := _candidates()
+	if service != null: pool.append_array(service.candidates(worker))
+	for candidate in pool:
+		if not candidate.has("unit"): candidate.unit = -1
+		var unit := _find_unit(candidate.unit)
+		candidate.progress = 0 if unit.is_empty() else unit.done.size()
+	return runner.dispatcher.rank(worker, pool)
 
 func _candidates() -> Array:
 	var work: Array = []
 	var transfers: Array = []
 	for candidate in _restocks.candidates():
-		if candidate.kind == "operate": work.append(candidate)
+		candidate.category = "restock_operate" if candidate.kind == "operate" else "restock_transfer"
+		if candidate.kind == "operate":
+			candidate.from = candidate.port
+			candidate.to = candidate.port
+			work.append(candidate)
 		else: transfers.append(candidate)
 	for unit in _units:
 		var recipe: Dictionary = _definition.recipes[unit.recipe]
@@ -235,7 +283,8 @@ func _candidates() -> Array:
 			if unit.running.has(id):
 				var run: Dictionary = runner.machines.run(unit.running[id])
 				if String(run.get("phase", "")).begins_with("await_"):
-					work.append({"kind":"operate", "run":run.id, "port":machine.output if run.phase == "await_unload" else machine.input})
+					var port: String = machine.output if run.phase == "await_unload" else machine.input
+					work.append({"kind":"operate", "category":"operate", "run":run.id, "from":port, "to":port, "unit":int(unit.id)})
 				continue
 			if not _dependencies_complete(recipe, node, unit): continue
 			for item in node.consumes:
@@ -246,7 +295,7 @@ func _candidates() -> Array:
 				var source_owner := -1 if producer.capability == "source" else int(unit.id)
 				var infinite: bool = item in _definition.places[producer.place].infinite
 				if not infinite and runner.inventory.quantity(producer.place, item, source_owner, true) <= 0: continue
-				transfers.append({"kind":"transfer", "from":producer.place, "to":machine.input, "item":item,
+				transfers.append({"kind":"transfer", "category":"transfer", "from":producer.place, "to":machine.input, "item":item,
 					"count":need, "seconds":float(producer.seconds) if producer.capability == "source" else float(_definition.hop_seconds),
 					"owner":source_owner, "unit":unit.id})
 	work.append_array(transfers)

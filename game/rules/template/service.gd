@@ -275,11 +275,6 @@ func _admit() -> String:
 	if guest.state != "queue" or guest.claimed != -1 or not customers.ready(guest.id, "queue:0"): return ""
 	if not _policy.seats.is_empty() and _free_seat().is_empty(): return ""
 	if _policy.admission == "automatic": return _accept(guest.id)
-	for worker in _runtime.runner.owner.workers:
-		if not _eligible(worker, _policy.admission_roles): continue
-		var error: String = _runtime.runner.interact(worker.id, _policy.admission_port, _policy.admission_seconds, "admit", guest.id)
-		if not error.is_empty(): continue
-		return orders.claim_admission(guest.id, worker.id)
 	return ""
 
 func _accept(id: int, employee: int = -1) -> String:
@@ -303,6 +298,7 @@ func _accept(id: int, employee: int = -1) -> String:
 			if not String(unit.error).is_empty(): return unit.error
 			error = orders.bind_unit(admitted.id, line.id, unit.id)
 			if not error.is_empty(): return error
+	_runtime.runner.dispatcher.promote(id, admitted.id, employee)
 	if _policy.orders.pay_at == "on_take":
 		var receipt: Dictionary = orders.settle(admitted.id, _runtime.runner.owner._sales)
 		if not String(receipt.error).is_empty(): return receipt.error
@@ -321,29 +317,45 @@ func _customer_carrying(order: int) -> bool:
 	return false
 
 func _fulfill() -> String:
+	if _policy.delivery != "self_pickup": return ""
+	for order in orders.snapshot().orders:
+		if order.state == "delivered": continue
+		var guest: Dictionary = orders.guest(order.guest)
+		if _customer_carrying(order.id) or not customers.ready(guest.id, "pickup"): continue
+		var entries := _entries(order, _policy.pickup)
+		var total := 0
+		for line in order.lines: total += int(line.qty) - int(line.delivered)
+		if entries.size() != total: continue
+		var group: Dictionary = _runtime.runner.inventory.reserve_bundle("customer:" + str(guest.id), entries, _policy.customer_capacity)
+		if String(group.error).is_empty(): _deliveries.append({"order":int(order.id), "bundle":int(group.id), "phase":"collect", "left":float(_runtime._definition.hop_seconds)})
+	return ""
+
+func candidates(worker: Dictionary) -> Array:
+	var out: Array = []
+	var queue: Array = orders.queue()
+	if _policy.admission == "employee" and not queue.is_empty() and _eligible(worker, _policy.admission_roles):
+		var guest: Dictionary = orders.guest(queue[0])
+		if guest.state == "queue" and guest.claimed == -1 and customers.ready(guest.id, "queue:0") and (_policy.seats.is_empty() or not _free_seat().is_empty()):
+			out.append({"kind":"interact", "category":"admit", "guest":int(guest.id), "unit":-1,
+				"from":String(_policy.admission_port), "to":String(_policy.admission_port), "seconds":float(_policy.admission_seconds)})
+	if not _eligible(worker, _policy.delivery_roles): return out
 	for order in orders.snapshot().orders:
 		if order.state == "delivered": continue
 		var guest: Dictionary = orders.guest(order.guest)
 		if _policy.delivery == "self_pickup":
-			if _customer_carrying(order.id): continue
-			var error := _stage(order)
-			if not error.is_empty(): return error
-			if not customers.ready(guest.id, "pickup"): continue
-			var entries := _entries(order, _policy.pickup)
-			var total := 0
-			for line in order.lines: total += int(line.qty) - int(line.delivered)
-			if entries.size() != total: continue
-			var group: Dictionary = _runtime.runner.inventory.reserve_bundle("customer:" + str(guest.id), entries, _policy.customer_capacity)
-			if String(group.error).is_empty(): _deliveries.append({"order":int(order.id), "bundle":int(group.id), "phase":"collect", "left":float(_runtime._definition.hop_seconds)})
-		else:
-			if not customers.ready(guest.id, _destination(guest)): continue
-			for worker in _runtime.runner.owner.workers:
-				if not _eligible(worker, _policy.delivery_roles): continue
-				var entries := _entries(order)
-				if entries.is_empty(): break
-				entries.resize(mini(entries.size(), _runtime.runner.owner.carry(worker)))
-				var error: String = _runtime.runner.transfer_bundle(worker.id, entries, _runtime._definition.hop_seconds)
-				if error.is_empty(): _deliveries.append({"order":int(order.id), "bundle":int(_runtime.runner.tasks[worker.id].bundle), "phase":"staff", "left":0.0})
+			if not _customer_carrying(order.id): out.append_array(_stage_candidates(order))
+		elif customers.ready(guest.id, _destination(guest)):
+			var entries := _entries(order)
+			if entries.is_empty(): continue
+			entries.resize(mini(entries.size(), _runtime.runner.owner.carry(worker)))
+			out.append({"kind":"bundle", "category":"deliver", "order":int(order.id), "unit":int(entries[0].allocate_owner),
+				"from":String(entries[0].from), "to":String(entries[0].to), "entries":entries})
+	return out
+
+func claimed(worker_id: int, candidate: Dictionary) -> String:
+	if candidate.category == "admit": return orders.claim_admission(candidate.guest, worker_id)
+	if candidate.category == "deliver":
+		_deliveries.append({"order":int(candidate.order), "bundle":int(_runtime.runner.tasks[worker_id].bundle), "phase":"staff", "left":0.0})
 	return ""
 
 func _entries(order: Dictionary, staged: String = "") -> Array:
@@ -365,18 +377,18 @@ func _entries(order: Dictionary, staged: String = "") -> Array:
 			entries.append(entry)
 	return entries
 
-func _stage(order: Dictionary) -> String:
+func _stage_candidates(order: Dictionary) -> Array:
+	var out: Array = []
 	for line in order.lines:
 		for binding in line.units:
 			var output: Dictionary = _runtime.production_output(binding.unit)
 			if output.is_empty() or not output.complete: continue
 			if output.place == _policy.pickup: continue
 			if _runtime.runner.inventory.quantity(_policy.pickup, line.item, binding.unit) + _runtime.runner.inventory.incoming(_policy.pickup, line.item, binding.unit) >= binding.qty: continue
-			for worker in _runtime.runner.owner.workers:
-				if not _eligible(worker, _policy.delivery_roles): continue
-				var error: String = _runtime.runner.transfer(worker.id, output.place, _policy.pickup, line.item, binding.qty, _runtime._definition.hop_seconds, output.owner, binding.unit, output.pickup_seconds)
-				if error.is_empty(): break
-	return ""
+			out.append({"kind":"transfer", "category":"stage", "order":int(order.id), "unit":int(binding.unit),
+				"from":String(output.place), "to":String(_policy.pickup), "item":String(line.item), "count":int(binding.qty),
+				"owner":int(output.owner), "seconds":float(output.pickup_seconds)})
+	return out
 
 func _reconcile_deliveries(dt: float) -> String:
 	for delivery in _deliveries.duplicate():
