@@ -8,6 +8,7 @@ const Restock := preload("res://game/rules/template/restock.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Service := preload("res://game/rules/template/service.gd")
 const Dispatch := preload("res://game/rules/template/dispatch.gd")
+const SourceDemand := preload("res://game/rules/template/source_demand.gd")
 
 var runner: RefCounted
 var last_error := ""
@@ -74,7 +75,7 @@ func step(dt: float, paused := false) -> String:
 	if service != null:
 		error = service.advance(dt)
 		if not error.is_empty(): last_error = error; return error
-	_restocks.advance()
+	_restocks.advance(_stock_demand())
 	_start_ready_nodes()
 	error = runner.dispatcher.reconcile()
 	if not error.is_empty(): last_error = error; return error
@@ -89,6 +90,13 @@ func ready(id: int) -> bool:
 	var producer: Dictionary = recipe.nodes[output.node]
 	if producer.capability != "source" and output.node not in unit.done: return false
 	return runner.inventory.quantity(producer.place, output.item, -1 if producer.capability == "source" else id, true) >= int(output.count)
+
+func source_demand() -> Dictionary:
+	if not _definition.has("recipes"): return {}
+	return SourceDemand.build(_definition, _units, runner.inventory, runner.machines)
+
+func _stock_demand() -> Dictionary:
+	return source_demand() if _restocks.uses_demand else {}
 
 func unit(id: int) -> Dictionary:
 	return _find_unit(id).duplicate(true)
@@ -272,7 +280,7 @@ func candidates_for(worker_id: int) -> Array:
 func _candidates() -> Array:
 	var work: Array = []
 	var transfers: Array = []
-	for candidate in _restocks.candidates():
+	for candidate in _restocks.candidates(_stock_demand()):
 		candidate.category = "restock_operate" if candidate.kind == "operate" else "restock_transfer"
 		if candidate.kind == "operate":
 			candidate.from = candidate.port

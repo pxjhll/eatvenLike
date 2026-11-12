@@ -6,20 +6,23 @@ const Numbers := preload("res://game/rules/rule_numbers.gd")
 var _definition: Dictionary
 var _runner: RefCounted
 var _runs: Dictionary = {}
+var uses_demand := false
 
 func _init(definition: Dictionary, runner: RefCounted) -> void:
 	_definition = definition
 	_runner = runner
-	for id in definition: _runs[id] = -1
+	for id in definition:
+		_runs[id] = -1
+		uses_demand = uses_demand or definition[id].policy.mode == "demand"
 
-func advance() -> void:
+func advance(demand: Dictionary = {}) -> void:
 	for id in _definition:
 		var rule: Dictionary = _definition[id]
 		if int(_runs[id]) >= 0:
 			var run: Dictionary = _runner.machines.run(_runs[id])
 			if run.get("phase", "") not in ["completed", "cancelled"]: continue
 			_runs[id] = -1
-		if not _can_fill(rule): continue
+		if not _can_fill(rule, demand): continue
 		var device: Dictionary = _runner.machines.snapshot().definitions[rule.machine]
 		var ready := true
 		for item in rule.consumes:
@@ -30,7 +33,7 @@ func advance() -> void:
 		var started: Dictionary = _runner.machines.start(rule.machine, rule.consumes, rule.produces, seconds)
 		if String(started.error).is_empty(): _runs[id] = started.id
 
-func candidates() -> Array:
+func candidates(demand: Dictionary = {}) -> Array:
 	var out: Array = []
 	for id in _definition:
 		var rule: Dictionary = _definition[id]
@@ -40,7 +43,7 @@ func candidates() -> Array:
 			if String(run.get("phase", "")).begins_with("await_"):
 				out.append({"kind":"operate", "run":run.id, "port":device.output if run.phase == "await_unload" else device.input})
 			continue
-		if not _can_fill(rule): continue
+		if not _can_fill(rule, demand): continue
 		for item in rule.consumes:
 			if not rule.sources.has(item): continue
 			var need := int(rule.consumes[item]) - int(_runner.inventory.quantity(device.input, item, -1)) - int(_runner.inventory.incoming(device.input, item, -1))
@@ -75,7 +78,7 @@ func validate_snapshot(data: Dictionary, machine_state: Dictionary, stock_state:
 func restore_validated(data: Dictionary) -> void:
 	_runs = data.runs.duplicate()
 
-func _can_fill(rule: Dictionary) -> bool:
+func _can_fill(rule: Dictionary, demand: Dictionary) -> bool:
 	var device: Dictionary = _runner.machines.snapshot().definitions[rule.machine]
 	var projected := 0
 	for item in rule.produces: projected += int(_runner.inventory.quantity(device.output, item, -1))
@@ -83,6 +86,17 @@ func _can_fill(rule: Dictionary) -> bool:
 		if claim.kind != "operation" or claim.state != "reserved" or claim.to != device.output or claim.owner != -1: continue
 		for item in rule.produces: projected += int(claim.produces.get(item, 0))
 	var batch := Inventory._total(rule.produces)
+	if rule.policy.mode == "demand":
+		var item: String = rule.produces.keys()[0]
+		var need: int = int(demand.get(device.output, {}).get(item, 0))
+		var limit: int = int(rule.stock_limit)
+		var target := mini(limit, int(rule.policy.base))
+		var multiplier: int = int(rule.policy.per_waiting)
+		if need > 0 and multiplier > 0:
+			@warning_ignore("integer_division")
+			var saturated: bool = multiplier > limit / need
+			target = maxi(target, limit if saturated else need * multiplier)
+		if projected >= target and projected >= int(rule.policy.low): return false
 	var space := batch
 	if device.input == device.output:
 		var finite: Dictionary = rule.consumes.duplicate()
@@ -101,7 +115,7 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 			continue
 		var valid := true
 		for key in rule:
-			if key not in ["machine", "consumes", "produces", "sources", "seconds", "fetch_seconds", "stock_limit"]: valid = false
+			if key not in ["machine", "consumes", "produces", "sources", "seconds", "fetch_seconds", "stock_limit", "policy"]: valid = false
 		if not rule.get("machine") is String or not machines.has(rule.machine) or not rule.get("consumes", {}) is Dictionary or not rule.get("produces") is Dictionary or not rule.get("sources", {}) is Dictionary: valid = false
 		for key in ["seconds", "fetch_seconds"]:
 			var value: Variant = rule.get(key, 0.6 if key == "fetch_seconds" else 0.0)
@@ -112,6 +126,13 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 			continue
 		if not Inventory._counts_valid(rule.get("consumes", {})) or not Inventory._counts_valid(rule.produces) or rule.produces.is_empty():
 			errors.append({"code":"invalid_restock", "path":path, "message":"invalid replenishment quantities"})
+			continue
+		var policy := _policy(rule.get("policy", {}))
+		if not policy.error.is_empty() or (policy.definition.get("mode", "") == "demand" and rule.produces.size() != 1):
+			errors.append({"code":"invalid_stock_policy", "path":path + ".policy", "message":policy.error if not policy.error.is_empty() else "demand policy requires one stock item"})
+			continue
+		if policy.definition.mode == "demand" and Inventory._total(rule.produces) > int(rule.stock_limit):
+			errors.append({"code":"invalid_stock_limit", "path":path + ".stock_limit", "message":"a demand batch must fit its stock limit"})
 			continue
 		var device: Dictionary = machines[rule.machine]
 		var consumes: Dictionary = rule.get("consumes", {})
@@ -130,5 +151,19 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 			continue
 		result[id] = {"machine":rule.machine, "consumes":consumes.duplicate(), "produces":rule.produces.duplicate(),
 			"sources":sources.duplicate(), "seconds":float(rule.get("seconds", 0.0)),
-			"fetch_seconds":float(rule.get("fetch_seconds", 0.6)), "stock_limit":int(rule.stock_limit)}
+			"fetch_seconds":float(rule.get("fetch_seconds", 0.6)), "stock_limit":int(rule.stock_limit), "policy":policy.definition}
 	return {"definition":result, "errors":errors}
+
+static func _policy(raw: Variant) -> Dictionary:
+	var invalid := {"definition":{}, "error":"invalid or unsupported stock policy"}
+	if not raw is Dictionary: return invalid
+	for key in raw:
+		if key not in ["mode", "base", "per_waiting", "low"]: return invalid
+	var mode: Variant = raw.get("mode", "fill")
+	if mode not in ["fill", "demand"]: return invalid
+	var result := {"mode":mode}
+	for key in ["base", "per_waiting", "low"]:
+		var value: Variant = raw.get(key, 0)
+		if not value is int or value < 0 or (mode == "fill" and value != 0): return invalid
+		result[key] = value
+	return {"definition":result, "error":""}

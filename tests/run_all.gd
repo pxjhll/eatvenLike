@@ -3,6 +3,7 @@ extends SceneTree
 ## 失败时退出码为 1。
 
 const SUITES := [
+	preload("res://tests/test_template_stock_policy.gd"),
 	preload("res://tests/test_template_source_clocks.gd"),
 	preload("res://tests/test_template_content.gd"),
 	preload("res://tests/test_template_normalizer.gd"),

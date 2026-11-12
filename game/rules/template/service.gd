@@ -364,6 +364,9 @@ func _entries(order: Dictionary, staged: String = "") -> Array:
 	for line in order.lines:
 		for binding in line.units:
 			if binding.delivered >= binding.qty: continue
+			var destination := "guest:" + str(order.guest)
+			var assigned: int = _runtime.runner.inventory.quantity(destination, line.item, binding.unit) + _runtime.runner.inventory.incoming(destination, line.item, binding.unit)
+			if assigned >= int(binding.qty) - int(binding.delivered): continue
 			var output: Dictionary = _runtime.production_output(binding.unit)
 			if output.is_empty() or not output.complete: continue
 			var place: String = output.place if staged.is_empty() else staged
