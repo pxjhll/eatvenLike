@@ -2,6 +2,7 @@ extends RefCounted
 ## Public device stages, backed by the same inventory transactions. Automatic
 ## cooking and employee work have one clock each; views never invent progress.
 const Inventory := preload("res://game/rules/template/inventory.gd")
+const Numbers := preload("res://game/rules/rule_numbers.gd")
 const TERMINAL := ["completed", "cancelled"]
 const MANUAL := ["load", "operate", "stir", "unload"]
 const PROFILE := {"slots":1, "manual":false, "load_seconds":0.0,
@@ -14,16 +15,24 @@ var _state: Dictionary = {"version":1, "next_run":1, "definitions":{}, "runs":[]
 func _init(inventory: RefCounted) -> void:
 	_inventory = inventory
 
-func configure(id: String, input: String, output: String, options: Dictionary = {}) -> String:
+func configure(id: String, input: String, output: String, options: Dictionary = {}, work_port: String = "", stage_ports: Dictionary = {}, stage_timing: Dictionary = {}) -> String:
 	if id.is_empty() or not _inventory.snapshot().places.has(input) or not _inventory.snapshot().places.has(output): return "unknown machine container"
+	if not work_port.is_empty() and (not _inventory.snapshot().places.has(work_port) or Inventory.is_hand_place(work_port)): return "unknown machine work port"
 	var profile := PROFILE.duplicate(true)
 	for key in options:
 		if not profile.has(key): return "unsupported machine capability: " + str(key)
 		profile[key] = options[key].duplicate(true) if options[key] is Array else options[key]
 	var error := _profile_error(profile)
 	if not error.is_empty(): return error
+	error = _stage_ports_error(stage_ports,profile,_inventory.snapshot().places)
+	if not error.is_empty(): return error
+	error = _stage_timing_error(stage_timing,profile)
+	if not error.is_empty(): return error
 	for key in ["load_seconds", "unload_seconds", "stir_seconds"]: profile[key] = float(profile[key])
 	var definition := {"input":input, "output":output, "profile":profile}
+	if not work_port.is_empty(): definition.work_port = work_port
+	if not stage_ports.is_empty(): definition.stage_ports = stage_ports.duplicate()
+	if not stage_timing.is_empty(): definition.stage_timing = stage_timing.duplicate(true)
 	if _state.definitions.get(id,{}).has("slot_ceiling"): definition.slot_ceiling = _state.definitions[id].slot_ceiling
 	if _state.definitions.has(id): return "" if _state.definitions[id] == definition else "machine already configured"
 	_state.definitions[id] = definition
@@ -86,9 +95,10 @@ func _sync_slot_limits() -> void:
 	for machine in _slot_targets:
 		if _state.definitions.has(machine): _state.definitions[machine].profile.slots = maxi(int(_slot_targets[machine]),occupied_slots(machine))
 
-func engage(id: int, worker: int, work_rate: float = 1.0) -> String:
+func engage(id: int, worker: int, work_rate: float = 1.0, stage_seconds: float = -1.0) -> String:
 	var run := _find(id)
 	if run.is_empty() or worker <= 0 or not is_finite(work_rate) or work_rate <= 0.0: return "invalid machine assignment"
+	if not is_finite(stage_seconds) or (stage_seconds < 0.0 and stage_seconds != -1.0): return "invalid machine stage duration"
 	if run.phase in MANUAL: return "" if run.operator == worker else "machine stage already assigned"
 	if not String(run.phase).begins_with("await_"): return "machine needs no employee"
 	for other in _state.runs:
@@ -96,7 +106,7 @@ func engage(id: int, worker: int, work_rate: float = 1.0) -> String:
 	var phase: String = String(run.phase).trim_prefix("await_")
 	var profile: Dictionary = _state.definitions[run.machine].profile
 	if float(run.stage_total) == 0.0:
-		run.stage_total = float(run.duration) if phase == "operate" else float(profile[phase + "_seconds"])
+		run.stage_total = stage_seconds if stage_seconds >= 0.0 else (float(run.duration) if phase == "operate" else float(profile[phase + "_seconds"]))
 		run.stage_left = run.stage_total
 	run.phase = phase
 	run.operator = worker
@@ -165,6 +175,39 @@ func release_employee(id: int, worker: int) -> String:
 func run(id: int) -> Dictionary:
 	return _find(id).duplicate(true)
 
+func stage_port(id: int) -> String:
+	var run := _find(id)
+	if run.is_empty(): return ""
+	var device: Dictionary = _state.definitions[run.machine]
+	var stage: String = run.phase.trim_prefix("await_")
+	return String(device.get("stage_ports",{}).get(stage,device.get("work_port",device.output if stage == "unload" else device.input)))
+
+static func _stage_ports_error(ports: Variant, profile: Dictionary, places: Dictionary) -> String:
+	if not ports is Dictionary: return "invalid machine stage ports"
+	for stage in ports:
+		if stage not in MANUAL or not ports[stage] is String or ports[stage].is_empty() or not places.has(ports[stage]) or Inventory.is_hand_place(ports[stage]): return "unknown machine stage port"
+		if (stage == "operate" and not profile.manual) or (stage != "operate" and float(profile[stage+"_seconds"]) <= 0.0) or (stage == "stir" and profile.stir_points.is_empty()): return "port references an inactive machine stage"
+	return ""
+
+static func _stage_timing_error(bindings: Variant, profile: Dictionary) -> String:
+	if not bindings is Dictionary: return "invalid machine stage timing"
+	for stage in bindings:
+		var binding: Variant = bindings[stage]
+		if stage not in ["load","unload","stir"] or not Inventory._shape(binding,{"target":"","fixed":false}) or binding.target.is_empty(): return "invalid machine stage timing binding"
+		if float(profile[stage+"_seconds"]) <= 0.0 or (stage == "stir" and profile.stir_points.is_empty()): return "timing references an inactive machine stage"
+	return ""
+
+func stage_seconds(id: int, mods: RefCounted, tune: Dictionary) -> Dictionary:
+	var run := _find(id)
+	if run.is_empty(): return {"seconds":0.0,"error":"unknown machine operation"}
+	var stage: String = run.phase.trim_prefix("await_")
+	if stage not in MANUAL: return {"seconds":0.0,"error":"machine needs no manual stage"}
+	var device: Dictionary = _state.definitions[run.machine]
+	var seconds: float = run.duration if stage == "operate" else device.profile[stage+"_seconds"]
+	var binding: Dictionary = device.get("stage_timing",{}).get(stage,{})
+	if not binding.is_empty(): seconds = Numbers.capability_seconds(mods,tune,binding.target,seconds,binding.fixed)
+	return {"seconds":seconds,"error":"" if is_finite(seconds) and seconds >= 0.0 else "invalid effective machine stage duration"}
+
 func status(machine: String) -> Dictionary:
 	if not _state.definitions.has(machine): return {}
 	var definition: Dictionary = _state.definitions[machine]
@@ -204,9 +247,17 @@ func audit() -> Array:
 		var definition: Variant = _state.definitions[id]
 		var shape := {"input":"", "output":"", "profile":{}}
 		if definition is Dictionary and definition.has("slot_ceiling"): shape.slot_ceiling = 0
+		if definition is Dictionary and definition.has("work_port"): shape.work_port = ""
+		if definition is Dictionary and definition.has("stage_ports"): shape.stage_ports = {}
+		if definition is Dictionary and definition.has("stage_timing"): shape.stage_timing = {}
 		if not id is String or id.is_empty() or not Inventory._shape(definition, shape): return ["invalid machine definition"]
 		if not stock.places.has(definition.input) or not stock.places.has(definition.output): return ["unknown machine stock container"]
+		if definition.has("work_port") and (definition.work_port.is_empty() or not stock.places.has(definition.work_port) or Inventory.is_hand_place(definition.work_port)): return ["unknown machine work port"]
 		var error := _profile_error(definition.profile)
+		if not error.is_empty(): return [error]
+		error = _stage_ports_error(definition.get("stage_ports",{}),definition.profile,stock.places)
+		if not error.is_empty(): return [error]
+		error = _stage_timing_error(definition.get("stage_timing",{}),definition.profile)
 		if not error.is_empty(): return [error]
 		if definition.has("slot_ceiling") and definition.slot_ceiling < int(definition.profile.slots): return ["slot ceiling is below occupied profile"]
 	var ids := {}

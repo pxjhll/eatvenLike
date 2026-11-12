@@ -10,6 +10,7 @@ const Service := preload("res://game/rules/template/service.gd")
 const Dispatch := preload("res://game/rules/template/dispatch.gd")
 const SourceDemand := preload("res://game/rules/template/source_demand.gd")
 const Limits := preload("res://game/rules/template/numeric_limits.gd")
+const Clock := preload("res://game/rules/template/production_clock.gd")
 
 var runner: RefCounted
 var last_error := ""
@@ -23,7 +24,7 @@ var service: RefCounted
 
 func _init(owner: RefCounted, template: Resource) -> void:
 	runner = Runner.new(owner)
-	var compiled := Compiler.compile(template)
+	var compiled := Compiler.compile(template,Compiler.ports_from_layout(owner.nav.layout))
 	if not compiled.errors.is_empty():
 		last_error = String(compiled.errors[0].path) + ": " + String(compiled.errors[0].message)
 		return
@@ -37,12 +38,14 @@ func _init(owner: RefCounted, template: Resource) -> void:
 			if not String(seeded.error).is_empty(): last_error = seeded.error; return
 	for id in _definition.machines:
 		var machine: Dictionary = _definition.machines[id]
-		last_error = runner.machines.configure(id, machine.input, machine.output, machine.profile)
+		last_error = runner.machines.configure(id, machine.input, machine.output, machine.profile,machine.get("work_port",""),machine.get("stage_ports",{}),machine.get("stage_timing",{}))
 		if not last_error.is_empty(): return
 		if machine.has("slot_ceiling"):
 			last_error = runner.machines.track_slots(id,machine.slot_ceiling)
 			if not last_error.is_empty(): return
 	_restocks = Restock.new(_definition.restocks, runner)
+	last_error = Clock.validate(_definition,runner.owner)
+	if not last_error.is_empty(): return
 	last_error = Limits.sync(_definition,runner)
 	if not last_error.is_empty(): return
 	runner.dispatcher = Dispatch.new(_definition.dispatch, runner, self)
@@ -74,7 +77,9 @@ func step(dt: float, paused := false) -> String:
 	if not last_error.is_empty(): return last_error
 	if not is_finite(dt) or dt < 0.0: return "invalid production time"
 	if paused or dt == 0.0: return ""
-	var error: String = Limits.sync(_definition,runner)
+	var error: String = Clock.validate(_definition,runner.owner)
+	if not error.is_empty(): last_error = error; return error
+	error = Limits.sync(_definition,runner)
 	if not error.is_empty(): last_error = error; return error
 	_clock += dt
 	error = runner.step(dt)
@@ -86,6 +91,7 @@ func step(dt: float, paused := false) -> String:
 	error = _restocks.advance(_stock_demand())
 	if not error.is_empty(): last_error = error; return error
 	_start_ready_nodes()
+	if not last_error.is_empty(): return last_error
 	error = runner.dispatcher.reconcile()
 	if not error.is_empty(): last_error = error; return error
 	_allocate()
@@ -152,6 +158,8 @@ func restore(data: Dictionary) -> String:
 	if (service == null) != data.service.is_empty(): return "service state differs from declared capabilities"
 	if data.version != 1 or data.signature != _definition.signature: return "production template signature differs"
 	if not is_finite(data.clock) or data.clock < 0.0 or data.next_unit < 1: return "invalid production sequence or clock"
+	var clock_error := Clock.validate(_definition,runner.owner)
+	if not clock_error.is_empty(): return clock_error
 	var limit_values := Limits.plan(_definition,runner.owner.mods)
 	if not limit_values.error.is_empty(): return limit_values.error
 	var limit_overrides := Limits.restore_overrides(_definition,data.runner)
@@ -286,7 +294,9 @@ func _start_ready_nodes() -> void:
 				if item in _definition.places[machine.input].infinite: continue
 				if runner.inventory.quantity(machine.input, item, unit.id, true) < int(node.consumes[item]): supplied = false; break
 			if not supplied: continue
-			var seconds := Numbers.capability_seconds(runner.owner.mods, runner.owner.tune, node.machine, node.seconds, node.fixed)
+			var timing := Clock.evaluate(node,runner.owner)
+			if not timing.error.is_empty(): last_error = timing.error; return
+			var seconds: float = timing.seconds
 			var started: Dictionary = runner.machines.start(node.machine, node.consumes, node.produces, seconds, unit.id)
 			if not String(started.error).is_empty():
 				_diagnostics.append({"unit":unit.id, "node":id, "reason":started.error})
@@ -353,7 +363,7 @@ func _candidates() -> Array:
 			if unit.running.has(id):
 				var run: Dictionary = runner.machines.run(unit.running[id])
 				if String(run.get("phase", "")).begins_with("await_"):
-					var port: String = machine.output if run.phase == "await_unload" else machine.input
+					var port: String = runner.machines.stage_port(run.id)
 					work.append({"kind":"operate", "category":"operate", "run":run.id, "from":port, "to":port, "unit":int(unit.id)})
 				continue
 			if not _dependencies_complete(recipe, node, unit): continue

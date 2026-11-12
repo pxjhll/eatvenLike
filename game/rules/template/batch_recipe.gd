@@ -9,21 +9,28 @@ static func compile(raw: Variant, consumes: Dictionary, produces: Dictionary, in
 	var invalid := {"definition":{},"error":"invalid batch binding or maximum exceeds declared storage"}
 	if not raw is Dictionary: return invalid
 	if raw.is_empty(): return {"definition":{},"error":""}
-	for key in raw:
-		if key not in ["target","base","max"]: return invalid
-	if not raw.get("target") is String or raw.target.is_empty() or not raw.get("base") is int or not raw.get("max") is int: return invalid
-	if raw.base < 1 or raw.max < raw.base or raw.max > MAX_BATCH: return invalid
+	var available: bool = raw.get("mode","") == "available"
+	if available:
+		if raw.size() != 2 or not raw.get("max") is int or raw.max < 1: return invalid
+	else:
+		for key in raw:
+			if key not in ["target","base","max"]: return invalid
+		if not raw.get("target") is String or raw.target.is_empty() or not raw.get("base") is int or not raw.get("max") is int: return invalid
+		if raw.base < 1 or raw.max < raw.base: return invalid
+	if raw.max > MAX_BATCH: return invalid
 	var maximum := scale(produces, raw.max)
 	var materials := scale(consumes, raw.max)
 	if not maximum.error.is_empty() or not materials.error.is_empty(): return invalid
 	if Inventory._total(maximum.counts) > limit or (output.capacity >= 0 and Inventory._total(maximum.counts) > output.capacity): return invalid
 	for item in input.infinite: materials.counts.erase(item)
+	if available and materials.counts.is_empty(): return invalid
 	if input.capacity >= 0 and Inventory._total(materials.counts) > input.capacity: return invalid
 	return {"definition":raw.duplicate(true),"error":""}
 
 static func evaluate(rule: Dictionary, mods: RefCounted) -> Dictionary:
 	var binding: Dictionary = rule.get("batch", {})
 	if binding.is_empty(): return {"definition":rule,"error":""}
+	if binding.get("mode","") == "available": return {"definition":{},"error":"available batch requires physical stock planning"}
 	var amount: float = mods.value("batch", float(binding.base), binding.target)
 	if not is_finite(amount) or amount < 1.0 or amount > float(binding.max) or amount != floorf(amount):
 		return {"definition":{},"error":"effective batch must be a whole number within its declared range"}

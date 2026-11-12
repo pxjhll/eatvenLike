@@ -59,7 +59,10 @@ func enter(worker: Dictionary, action: Dictionary) -> void:
 	worker.task_label = action.kind
 	worker.action_left = task.drop_seconds if action.kind == "drop" else task.seconds
 	if task.kind == "bundle" and action.kind == "pickup": worker.action_left = float(action.seconds)
-	if action.kind == "operate" and task.kind == "operate": runner.last_error = runner.machines.engage(task.run, worker.id, float(runner.owner.skill(worker)))
+	if action.kind == "operate" and task.kind == "operate":
+		var timing: Dictionary = runner.machines.stage_seconds(task.run,runner.owner.mods,runner.owner.tune)
+		runner.last_error = timing.error
+		if runner.last_error.is_empty(): runner.last_error = runner.machines.engage(task.run, worker.id, float(runner.owner.skill(worker)),timing.seconds)
 
 func advance(worker: Dictionary, action: Dictionary, dt: float) -> bool:
 	if action.kind in ["move", "transport"]:

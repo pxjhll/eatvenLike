@@ -116,8 +116,8 @@ static func manual_operation_seconds(shop: SpecShop, mods: RuleModifiers, tune: 
 
 ## Public capability clocks do not infer execution policy from a shop mode or
 ## require a legacy station object. Employee rate is applied by the work stage.
-static func capability_seconds(mods: RuleModifiers, tune: Dictionary, id: String, base_seconds: float, fixed := false) -> float:
-	var machine := 1.0 if fixed else duration_mult(mods, id) / speed(mods, id)
+static func capability_seconds(mods: RuleModifiers, tune: Dictionary, id: String, base_seconds: float, fixed := false, ignore_duration := false) -> float:
+	var machine := 1.0 if fixed else (1.0 if ignore_duration else duration_mult(mods, id)) / speed(mods, id)
 	return base_seconds * machine * tuned(tune, id)
 
 

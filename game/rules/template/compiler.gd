@@ -9,8 +9,9 @@ const ServicePolicy := preload("res://game/rules/template/service_policy.gd")
 const Dispatch := preload("res://game/rules/template/dispatch.gd")
 const Limits := preload("res://game/rules/template/numeric_limits.gd")
 const ProcessingDisplay := preload("res://game/rules/template/processing_display.gd")
+const Clock := preload("res://game/rules/template/production_clock.gd")
 
-static func compile(template: Resource) -> Dictionary:
+static func compile(template: Resource, anchors: Dictionary = {}) -> Dictionary:
 	var errors: Array = []
 	if template == null or template.get_script() != Schema: return {"definition":{}, "errors":[_error("invalid_template", "template")]}
 	if template.version != 1: return {"definition":{}, "errors":[_error("unsupported_version", "version")]}
@@ -27,8 +28,13 @@ static func compile(template: Resource) -> Dictionary:
 		if Inventory.is_hand_place(id):
 			errors.append(_error("reserved_container", path))
 			continue
-		_keys(place, ["port", "capacity", "infinite", "initial", "capacity_binding"], path, errors)
-		if not place.get("port") is Vector2 or not Vector2(place.port).is_finite():
+		_keys(place, ["port", "anchor", "capacity", "infinite", "initial", "capacity_binding"], path, errors)
+		var port: Variant = place.get("port")
+		if place.has("anchor"):
+			if place.has("port") or not _id(place.anchor) or not anchors.get(place.anchor) is Vector2:
+				errors.append(_error("invalid_scene_anchor",path + ".anchor")); continue
+			port = anchors[place.anchor]
+		if not port is Vector2 or not Vector2(port).is_finite():
 			errors.append(_error("missing_port", path + ".port"))
 			continue
 		var capacity: Variant = place.get("capacity", -1)
@@ -44,7 +50,7 @@ static func compile(template: Resource) -> Dictionary:
 		for item in initial:
 			var seeded := inventory.seed(id, item, initial[item])
 			if not String(seeded.error).is_empty(): errors.append(_error("invalid_initial_stock", path + ".initial." + str(item), seeded.error))
-		definition.places[id] = {"port":place.port, "capacity":capacity, "infinite":infinite.duplicate(), "initial":initial.duplicate()}
+		definition.places[id] = {"port":port, "capacity":capacity, "infinite":infinite.duplicate(), "initial":initial.duplicate()}
 		var binding := Limits.compile_binding(place.get("capacity_binding",{}),capacity,0)
 		if not binding.error.is_empty(): errors.append(_error("invalid_capacity_binding",path + ".capacity_binding",binding.error))
 		elif not binding.definition.is_empty(): definition.places[id].capacity_binding = binding.definition
@@ -57,11 +63,11 @@ static func compile(template: Resource) -> Dictionary:
 		if not _id(id) or not machine is Dictionary:
 			errors.append(_error("invalid_machine", path))
 			continue
-		_keys(machine, ["input", "output", "profile", "slots_binding", "processing_display"], path, errors)
-		if not machine.get("input") is String or not machine.get("output") is String or not machine.get("profile", {}) is Dictionary:
+		_keys(machine, ["input", "output", "profile", "slots_binding", "processing_display", "work_port", "stage_ports", "stage_timing"], path, errors)
+		if not machine.get("input") is String or not machine.get("output") is String or not machine.get("profile", {}) is Dictionary or not machine.get("work_port","") is String or not machine.get("stage_ports",{}) is Dictionary or not machine.get("stage_timing",{}) is Dictionary:
 			errors.append(_error("invalid_machine", path))
 			continue
-		var error := machines.configure(id, machine.input, machine.output, machine.get("profile", {}))
+		var error := machines.configure(id, machine.input, machine.output, machine.get("profile", {}),machine.get("work_port",""),machine.get("stage_ports",{}),machine.get("stage_timing",{}))
 		if not error.is_empty(): errors.append(_error("invalid_machine_capability", path, error))
 		else:
 			var binding := Limits.compile_binding(machine.get("slots_binding",{}),int(machines.snapshot().definitions[id].profile.slots),1)
@@ -101,6 +107,14 @@ static func compile(template: Resource) -> Dictionary:
 	definition.dispatch = dispatch.definition
 	definition.signature = Contract._canonical(definition).sha256_text()
 	return {"definition":definition, "errors":[]}
+
+static func ports_from_layout(layout: SpecLayout) -> Dictionary:
+	var result: Dictionary = layout.points.duplicate()
+	for alias in layout.aliases:
+		result.erase(alias)
+		if layout.points.has(layout.aliases[alias]): result[alias] = layout.points[layout.aliases[alias]]
+	for post in layout.posts: result["post:"+str(post)] = layout.posts[post]
+	return result
 
 static func _recipe(raw: Variant, definition: Dictionary, path: String, errors: Array) -> Dictionary:
 	var nodes := {}
@@ -156,7 +170,7 @@ static func _recipe(raw: Variant, definition: Dictionary, path: String, errors: 
 			node.inputs = {row.item:row.input}
 			if row.item in definition.places[row.place].infinite: errors.append(_error("integrated_transfer_destination",node_path + ".place"))
 		else:
-			_keys(row, ["id", "capability", "machine", "consumes", "produces", "inputs", "seconds", "fixed", "after", "label"], node_path, errors)
+			_keys(row, ["id", "capability", "machine", "consumes", "produces", "inputs", "seconds", "fixed", "after", "label", "slot_rate"], node_path, errors)
 			if not _id(row.get("machine")) or not definition.machines.has(row.machine):
 				errors.append(_error("missing_machine", node_path + ".machine"))
 				continue
@@ -171,6 +185,9 @@ static func _recipe(raw: Variant, definition: Dictionary, path: String, errors: 
 			node.consumes = row.get("consumes", {}).duplicate()
 			node.produces = row.produces.duplicate()
 			node.inputs = row.get("inputs", {}).duplicate()
+			var clock := Clock.compile(row.get("slot_rate",{}))
+			if not clock.error.is_empty(): errors.append(_error("invalid_slot_rate",node_path + ".slot_rate",clock.error))
+			elif not clock.definition.is_empty(): node.slot_rate = clock.definition
 		nodes[id] = node
 		order.append(id)
 	var demand := {}

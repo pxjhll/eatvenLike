@@ -69,9 +69,10 @@ func operate(worker_id: int, run_id: int, port: String) -> String:
 	if not error.is_empty(): return error
 	var run: Dictionary = machines.run(run_id)
 	if not ports.has(port) or run.is_empty() or not String(run.phase).begins_with("await_"): return "invalid machine stage request"
-	var definition: Dictionary = machines.snapshot().definitions[run.machine]
-	var required_port: String = definition.output if run.phase == "await_unload" else definition.input
+	var required_port: String = machines.stage_port(run_id)
 	if port != required_port: return "operation port differs from the declared device port"
+	var timing: Dictionary = machines.stage_seconds(run_id,owner.mods,owner.tune)
+	if not timing.error.is_empty(): return timing.error
 	for task in tasks.values():
 		if task.kind == "operate" and task.run == run_id: return "machine stage already assigned"
 	var worker: Dictionary = owner.worker_by_id(worker_id)
@@ -334,8 +335,7 @@ func _prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Diction
 		elif task.kind == "operate":
 			var run: Dictionary = devices.run(task.run)
 			if run.is_empty() or machine_runs.has(task.run) or task.stage not in Machines.MANUAL: return {"error":"invalid machine task"}
-			var definition: Dictionary = data.machines.definitions[run.machine]
-			var expected_port: String = definition.output if task.stage == "unload" else definition.input
+			var expected_port: String = devices.stage_port(task.run)
 			if task.from != expected_port or task.to != expected_port: return {"error":"machine program has an unrelated port"}
 			if int(actor.action.index) == 0 or not actor.action.started:
 				if run.phase != "await_" + task.stage or run.operator != -1: return {"error":"machine stage differs from walking employee"}

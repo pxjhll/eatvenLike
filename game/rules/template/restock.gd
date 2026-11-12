@@ -5,6 +5,7 @@ const Inventory := preload("res://game/rules/template/inventory.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Batch := preload("res://game/rules/template/batch_recipe.gd")
 const Limits := preload("res://game/rules/template/numeric_limits.gd")
+const Available := preload("res://game/rules/template/available_batch.gd")
 var _definition: Dictionary
 var _runner: RefCounted
 var _runs: Dictionary = {}
@@ -24,10 +25,12 @@ func advance(demand: Dictionary = {}) -> String:
 			var run: Dictionary = _runner.machines.run(_runs[id])
 			if run.get("phase", "") not in ["completed", "cancelled"]: continue
 			_runs[id] = -1
-		var planned := Batch.evaluate(rule, _runner.owner.mods)
+		var available := Available.enabled(rule)
+		var planned := Available.plan(rule,_runner,_target(rule,demand),false) if available else Batch.evaluate(rule, _runner.owner.mods)
 		if not planned.error.is_empty(): return "restocks." + id + ": " + planned.error
+		if planned.definition.is_empty(): continue
 		rule = planned.definition
-		if not _can_fill(rule, demand): continue
+		if not available and not _can_fill(rule, demand): continue
 		var device: Dictionary = _runner.machines.snapshot().definitions[rule.machine]
 		var ready := true
 		for item in rule.consumes:
@@ -44,18 +47,20 @@ func candidates(demand: Dictionary = {}) -> Array:
 	for id in _definition:
 		var rule: Dictionary = _definition[id]
 		var device: Dictionary = _runner.machines.snapshot().definitions[rule.machine]
+		var available := Available.enabled(rule)
 		if int(_runs[id]) >= 0:
 			var run: Dictionary = _runner.machines.run(_runs[id])
 			if String(run.get("phase", "")).begins_with("await_"):
-				out.append({"kind":"operate", "run":run.id, "port":device.output if run.phase == "await_unload" else device.input})
-			continue
-		var planned := Batch.evaluate(rule, _runner.owner.mods)
+				out.append({"kind":"operate", "run":run.id, "port":_runner.machines.stage_port(run.id)})
+			if not available: continue
+		var planned := Available.plan(rule,_runner,_target(rule,demand),true) if available else Batch.evaluate(rule, _runner.owner.mods)
 		if not planned.error.is_empty(): continue
+		if planned.definition.is_empty(): continue
 		rule = planned.definition
-		if not _can_fill(rule, demand): continue
+		if not available and not _can_fill(rule, demand): continue
 		for item in rule.consumes:
 			if not rule.sources.has(item): continue
-			var need := int(rule.consumes[item]) - int(_runner.inventory.quantity(device.input, item, -1)) - int(_runner.inventory.incoming(device.input, item, -1))
+			var need := int(rule.consumes[item]) - int(_runner.inventory.quantity(device.input, item, -1, available)) - int(_runner.inventory.incoming(device.input, item, -1))
 			if need <= 0: continue
 			var source: String = rule.sources[item]
 			if item not in _runner.inventory.snapshot().places[source].infinite and _runner.inventory.quantity(source, item, -1, true) <= 0: continue
@@ -99,15 +104,7 @@ func _can_fill(rule: Dictionary, demand: Dictionary) -> bool:
 		for item in rule.produces: projected += int(claim.produces.get(item, 0))
 	var batch := Inventory._total(rule.produces)
 	if rule.policy.mode == "demand":
-		var item: String = rule.produces.keys()[0]
-		var need: int = int(demand.get(device.output, {}).get(item, 0))
-		var limit: int = int(rule.stock_limit)
-		var target := mini(limit, int(rule.policy.base))
-		var multiplier: int = int(rule.policy.per_waiting)
-		if need > 0 and multiplier > 0:
-			@warning_ignore("integer_division")
-			var saturated: bool = multiplier > limit / need
-			target = maxi(target, limit if saturated else need * multiplier)
+		var target := _target(rule,demand)
 		if projected >= target and projected >= int(rule.policy.low): return false
 	var space := batch
 	if device.input == device.output:
@@ -115,6 +112,19 @@ func _can_fill(rule: Dictionary, demand: Dictionary) -> bool:
 		for item in _runner.inventory.snapshot().places[device.input].infinite: finite.erase(item)
 		space = maxi(0, space - Inventory._total(finite))
 	return (projected == 0 or projected + batch <= int(rule.stock_limit)) and _runner.inventory.remaining_capacity(device.output) >= space
+
+func _target(rule: Dictionary, demand: Dictionary) -> int:
+	var limit: int = int(rule.stock_limit)
+	if rule.policy.mode != "demand": return limit
+	var device: Dictionary = _runner.machines.snapshot().definitions[rule.machine]
+	var need: int = int(demand.get(device.output,{}).get(rule.produces.keys()[0],0))
+	var target := mini(limit,int(rule.policy.base))
+	var multiplier: int = int(rule.policy.per_waiting)
+	if need > 0 and multiplier > 0:
+		@warning_ignore("integer_division")
+		var saturated: bool = multiplier > limit/need
+		target = maxi(target,limit if saturated else need*multiplier)
+	return target
 
 static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -> Dictionary:
 	var result := {}
