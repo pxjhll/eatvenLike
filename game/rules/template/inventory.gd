@@ -6,6 +6,7 @@ const SHARED := -1
 const ACTIVE := ["reserved", "held"]
 const Bundles := preload("res://game/rules/template/bundle_transfers.gd")
 var _capacity_targets: Dictionary = {}
+var trace: RefCounted
 
 var _state: Dictionary = {"version":1, "next_lot":1, "next_claim":1, "next_bundle":1,
 	"places":{}, "lots":[], "claims":[], "bundles":[], "created":{}, "consumed":{}}
@@ -146,6 +147,7 @@ func _pickup(id: int, grouped: bool) -> String:
 			var lot := _insert(hand, task.item, part.count, task.allocate_owner if task.allocate_owner != ANY_OWNER else owner)
 			task.held.append({"lot":lot.id, "count":part.count, "owner":owner})
 	task.state = "held"
+	_record("pickup",task.id)
 	return ""
 
 func drop(id: int) -> String:
@@ -160,6 +162,7 @@ func _drop(id: int, grouped: bool) -> String:
 	for held in task.held: _find(_state.lots, held.lot).place = task.to
 	task.state = "dropped"
 	_sync_capacity_limits()
+	_record("drop",task.id)
 	return ""
 
 func reserve_operation(worker: int, place: String, consumes: Dictionary, produces: Dictionary,
@@ -207,6 +210,7 @@ func complete_operation(id: int) -> String:
 		_add(_state.created, item, task.produces[item])
 	task.state = "completed"
 	_sync_capacity_limits()
+	_record("complete_operation",task.id)
 	return ""
 
 func cancel(id: int) -> String:
@@ -230,6 +234,7 @@ func _cancel(id: int, grouped: bool) -> String:
 				lot.owner = held.owner
 	task.state = "cancelled"
 	_sync_capacity_limits()
+	_record("cancel",task.id)
 	return ""
 
 func claim(id: int) -> Dictionary:
@@ -338,6 +343,7 @@ func _store(task: Dictionary) -> Dictionary:
 	task.id = _state.next_claim
 	_state.next_claim += 1
 	_state.claims.append(task)
+	_record("reserve_transfer" if task.kind=="transfer" else "reserve_operation",task.id)
 	return {"error":"", "id":task.id, "count":task.count}
 
 func _insert(place: String, item: String, count: int, owner: int) -> Dictionary:
@@ -448,3 +454,6 @@ static func _actor_valid(actor: String) -> bool:
 
 static func _staff_id(actor: String) -> int:
 	return int(actor.trim_prefix("staff:")) if actor.begins_with("staff:") else 0
+
+func _record(operation: String, id: int) -> void:
+	if trace!=null: trace.record("inventory."+operation,claim(id))

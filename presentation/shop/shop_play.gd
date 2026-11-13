@@ -17,7 +17,7 @@ const DefaultHud := preload("res://presentation/shop/hud/default_hud.gd")
 const ArtGroups := preload("res://presentation/shop/art_groups.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
-const ServeFlow := preload("res://game/rules/serve_flow.gd")
+const LegacyQueries := preload("res://game/rules/legacy/content_queries.gd")
 const Schema := preload("res://game/rules/shop_spec_validator.gd")
 const SceneContract := preload("res://presentation/shop/shop_scene_contract.gd")
 const Presentation := preload("res://content/characters/actor_presentation.tres")
@@ -928,12 +928,12 @@ func _serve_goods(frame: Dictionary, draws: Array) -> void:
 	for good: Dictionary in frame.serve.goods:
 		# Shared pot stock belongs inside the machine. Only allocated order
 		# products become visible loose items at workstations, pickup or tables.
-		if int(good.owner) == ServeFlow.SHARED: continue
+		if int(good.owner) == LegacyQueries.SHARED: continue
 		var at := String(good.at)
 		var pos: Vector2
 		var host := ""
-		if at.begins_with(ServeFlow.SEAT):
-			var seat := int(at.substr(ServeFlow.SEAT.length()))
+		if at.begins_with(LegacyQueries.SEAT):
+			var seat := int(at.substr(LegacyQueries.SEAT.length()))
 			var table := _serve_table(seat)
 			if table.is_empty():
 				pos = _serve_seat_point(seat) + Vector2(0, -36)
@@ -958,14 +958,14 @@ func _serve_goods(frame: Dictionary, draws: Array) -> void:
 
 ## 座位所在的桌子锚点（Tables/<组>/<座位 / per_table>）；场景没摆桌子锚点就返回空
 func _serve_table(seat: int) -> String:
-	var group := ServeFlow.seat_point(shop, seat).get_slice("/", 0)
+	var group := LegacyQueries.seat_point(shop, seat).get_slice("/", 0)
 	var per_table := maxi(1, int(anchors.meta("Tables/" + group, "per_table", 2)))
 	var path := "Tables/%s/%d" % [group, seat / per_table]
 	return path if anchors.has(path) else ""
 
 
 func _serve_seat_point(seat: int) -> Vector2:
-	var key := ServeFlow.seat_point(shop, seat)
+	var key := LegacyQueries.seat_point(shop, seat)
 	return anchors.point("Seats/" + key, _layout_point(key))
 
 
@@ -984,7 +984,7 @@ func _layout_point(key: String) -> Vector2:
 func _update_customers_serve(delta: float, frame: Dictionary) -> void:
 	var queue := anchors.points("Queue")
 	var entrance := anchors.point("Entrance", Vector2(_world_size.x / 2.0, _world_size.y))
-	var pickup_id := ServeFlow.pickup_of(shop)
+	var pickup_id := LegacyQueries.pickup_of(shop)
 	var window: Vector2 = anchors.point("Stations/%s/Waiting" % pickup_id, _layout_point(pickup_id) + Vector2(0, 90))
 	var orders := {}
 	for o: Dictionary in frame.serve.orders: orders[int(o.id)] = o
@@ -1018,12 +1018,12 @@ func _update_customers_serve(delta: float, frame: Dictionary) -> void:
 		var dish := String(o.lines[0].dish) if not o.is_empty() and not o.lines.is_empty() else ""
 		if state == "queue":
 			actor.show_order("", -1.0, rules.order_mood({"wait": g.wait}))
-		elif state in ["eating"] or (state == "to_seat" and ServeFlow.self_pickup(shop)):
+		elif state in ["eating"] or (state == "to_seat" and LegacyQueries.self_pickup(shop)):
 			actor.show_order("", -1.0)
 		else:
 			actor.show_order(dish, -1.0, rules.order_mood({"wait": g.wait, "seat": g.seat}))
 		var pose := {"pos": point, "walking": not arrived, "seated": seated, "phase": "idle", "task_label": ""}
-		if seated: pose.facing = int(anchors.meta("Seats/" + ServeFlow.seat_point(shop, int(g.seat)), "facing", 2))
+		if seated: pose.facing = int(anchors.meta("Seats/" + LegacyQueries.seat_point(shop, int(g.seat)), "facing", 2))
 		actor.display(pose, frame.clock)
 		if _z_by_y: actor.z_index = int(actor.position.y)
 	var exit := anchors.point("Exit", entrance)

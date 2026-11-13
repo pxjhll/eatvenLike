@@ -1,6 +1,6 @@
-# 公共店铺能力核心（迁移中）
+# 公共店铺能力核心
 
-本目录属于 `2026-11-12-unified-shop-template-design.md` 的实施。正式三店现由 SpecShop.runtime_template 接入同一个 Runtime，外层 ShopRules 只持有命令、购买、钱包和随机状态。U06 的迁移与正式入口说明见本文末；此前章节保留各批实施时的历史边界。
+本目录属于 `2026-11-12-unified-shop-template-design.md` 的实施。正式三店现由 SpecShop.runtime_template 接入同一个 Runtime，外层 ShopRules 只持有命令、购买、钱包和随机状态。U06/U07的正式入口与制作门禁说明见本文末；此前章节保留各批实施时的历史边界，不代表当前入口状态。
 
 ## 唯一所有权
 
@@ -458,3 +458,15 @@ customer_movement.sync_records消费统一中性intent，先校验全部请求�
 命令与整帧推进以公共事件批次提交。到店、接单、流失和销售事件来自同一服务事实；销售在整单真实交付后广播，含订单/客人/餐品/数量/收入，提前付款也不会提前广播交付。回调可以保存、读档、召回；取消仍走公共库存补偿。奖励客流也通过公共 flyer 调度入场，受同一人数上限校验；奇遇先提交全部效果再广播外部回调。
 
 U06验收见 `docs/qa/unified-shop-template.md` 最新章节。U07制作门禁和总验收仍独立待办；本阶段没有调整人物属性、速度、价格、客流、完店门槛或美术布局，没有替代完整经济/最终时长标定。
+
+## U07：制作入口与持续门禁
+
+当前制作入口为 `docs/templates/shop-intake.md`、`docs/templates/staff-intake.md` 和 `docs/shop-capabilities.md`。`content/template_shops.json` 登记三家正式店及三个示例；正式与示例campaign都必须被覆盖。新店配置显式公共模板，旧handoff字段只作兼容身份，不选择执行器。公共编译器校验能力参数；authoring.gd检查目录引用、购买阶段覆盖和规范员工引用。新增员工从全局SpecStaffKind接入已有角色视觉，不能给同一员工设置店内基础属性。
+
+`content/examples/onboarding/table.tres` 和 `self_pickup.tres` 是两份可执行灰盒制作示例，使用现有公共模块与同一松鼠/仓鼠员工资源。均声明盖饭两支合流与例汤，分别整单送桌和顾客整单自取；资源内不复制旧SpecDish.steps，也不添加业务脚本。`presentation/examples/module_shop.tscn` 复用现有模块灰盒，保留占位视觉；它证明绑定和组合，不是完成美术的新关卡，不进入正式campaign。
+
+静态门禁 `tools/check_template_boundary.py` 检查正式引用、必需实际调用、界面改账本、私有/内嵌脚本和模板目录；只对白名单共享schema/component放行。它不解析完整GDScript，实际执行证明由 `tests/render_template_authoring.gd` 补齐。普通ShopSession/ShopPlay真实推进六份配置，检查实际位置/速度/全局尺度、手持和UI一致、召回补偿、磁盘/现场读档及暂停和1/2/4倍速。
+
+诊断接口 `Runtime.set_tracing(true)` / `take_trace()` 收集实际公共事务与动作提交，包含真实员工位置和声明端口。collector有20000条上限并显式报告overflow；无回调、不参与业务决策、不写存档。失败的离线候选和幂等操作不会记为新成功，重新加载实际库存后仍绑定同一collector。普通保存恢复仍由唯一Runtime负责；召回/再部署后的活动员工顺序从runner.actors恢复，不另存第二份排序表。
+
+统一清单有headless、window、web和独立economy四种profile。前者覆盖行为/场景/存档/布局，window使用真实渲染，web比较正式与示例场景的源/导出节点；CI与Pages共用此入口。旧经济/完店目标和check参数不变，失败或超时单独报告，不能当作行为通过或自动重录基线。最终日志、截图核查和源码/保护hash证据见QA最新U07章节。

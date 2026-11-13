@@ -11,6 +11,10 @@ var prefix := "user://command-ui-%d-%d" % [OS.get_process_id(), Time.get_ticks_u
 
 class CountingStore extends ShopSave:
 	var writes := 0
+	func requires_shared_runtime() -> bool:
+		return shop.runtime_template!=null
+	func make_rules() -> ShopRules:
+		return super.make_rules() if requires_shared_runtime() else load("res://tests/fixtures/legacy_shops/reference_rules.gd").new(shop)
 	func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 		writes += 1
 		return super.save_game(rules, speed, guides)

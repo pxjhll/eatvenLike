@@ -14,6 +14,7 @@ const Clock := preload("res://game/rules/template/production_clock.gd")
 const TransportBatch := preload("res://game/rules/template/transport_batch.gd")
 const Transports := preload("res://game/rules/template/transports.gd")
 
+var _trace: RefCounted
 var runner: RefCounted
 var last_error := ""
 var _definition: Dictionary = {}
@@ -62,6 +63,14 @@ func _init(owner: RefCounted, template: Resource) -> void:
 	if not _definition.service.is_empty():
 		service = Service.new(self, _definition.service)
 		last_error = service.last_error
+
+func set_tracing(enabled: bool) -> void:
+	_trace = load("res://game/rules/template/trace.gd").new() if enabled else null
+	runner.trace = _trace
+	runner.inventory.trace = _trace
+
+func take_trace() -> Dictionary:
+	return _trace.take() if _trace!=null else {"events":[],"overflow":false}
 
 func arrive(request: Array, selected_options: Variant = null) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}
@@ -127,6 +136,7 @@ func step(dt: float, paused := false) -> String:
 	return error
 
 func _advance(dt: float, paused := false) -> String:
+	if _trace!=null: _trace.record("runtime.step",{"clock":_clock,"dt":dt,"paused":paused})
 	if not last_error.is_empty(): return last_error
 	if not is_finite(dt) or dt < 0.0: return "invalid production time"
 	if paused or dt == 0.0: return ""

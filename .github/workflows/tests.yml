@@ -7,7 +7,7 @@ on:
 
 jobs:
   headless:
-    timeout-minutes: 15
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     env:
       XDG_DATA_HOME: ${{ github.workspace }}/../shop-acceptance-userdata
@@ -28,13 +28,20 @@ jobs:
         run: python3 tools/check_shops.py --engine ./godot --profile headless --output _work/ci/headless
       - name: Web pack size and exported scene identity
         run: python3 tools/check_shops.py --engine ./godot --profile web --output _work/ci/web
-      # 真窗口 QA 要装 xvfb、跑好几分钟，只在合进 main 时跑，PR 上靠本地跑（省 Actions 分钟数）
-      - name: Shop window render and screenshot QA
+      # Window and legacy economy results remain separate from behavior acceptance.
+      - name: Actual template windows (same manifest)
         if: github.event_name == 'push'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y xvfb libgl1-mesa-dri
-          timeout 180s xvfb-run -a ./godot --path . --rendering-method gl_compatibility --audio-driver Dummy -s tests/render_work_actions.gd
+          xvfb-run -a python3 tools/check_shops.py --engine ./godot --profile window --output _work/ci/window
+      - name: Legacy economy targets (report separately)
+        id: economy
+        continue-on-error: true
+        run: python3 tools/check_shops.py --engine ./godot --profile economy --output _work/ci/economy
+      - name: Report legacy economy result
+        if: always() && steps.economy.outcome == 'failure'
+        run: echo 'Legacy economy/finish-time checks did not pass; inspect the separate economy report. Behavior acceptance does not retune these targets.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

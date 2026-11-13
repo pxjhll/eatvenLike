@@ -92,6 +92,9 @@ func commit(worker: Dictionary, action: Dictionary) -> void:
 			if runner.last_error.is_empty(): runner._finish(worker)
 		"operate": runner._finish(worker)
 
+	if runner.trace!=null and runner.last_error.is_empty():
+		runner.trace.record("action."+String(action.kind),{"worker":int(worker.id),"target":String(action.target),"pos":worker.pos,"port":runner.ports[action.target],"task":task.duplicate(true)})
+
 func cancel(worker: Dictionary, _lease: Dictionary) -> void:
 	runner._cancel_effect(worker)
 

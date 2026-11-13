@@ -36,6 +36,10 @@ func _init(shop_: SpecShop, path_ := "") -> void:
 func exists() -> bool:
 	return FileAccess.file_exists(path)
 
+func requires_shared_runtime() -> bool:
+	return true
+
+
 func make_rules() -> ShopRules:
 	return ShopRules.new(shop)
 
@@ -57,6 +61,11 @@ func delete() -> void:
 func load_game() -> ShopRules:
 	last_error = ""
 	load_error = OK
+	if requires_shared_runtime() and shop.runtime_template==null:
+		load_error = ERR_INVALID_DATA
+		last_error = "公共经营模板未初始化"
+		_write_blocked = true
+		return make_rules()
 	# Only an explicit load/retry clears the failed-quarantine seal.
 	_write_blocked = false
 	loaded_speed = 1.0
@@ -80,7 +89,7 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 	if rules == null or rules.shop == null or rules.shop.id != shop.id or not is_finite(speed) or speed <= 0.0:
 		last_error = "存档失败：店铺状态或播放速度无效"
 		return ERR_INVALID_PARAMETER
-	if not rules.runtime_error.is_empty() or (shop.runtime_template!=null and rules.runtime==null):
+	if not rules.runtime_error.is_empty() or (requires_shared_runtime() and rules.runtime==null):
 		last_error = "存档失败：公共经营模板未成功初始化"
 		return ERR_INVALID_DATA
 	var content := _content()

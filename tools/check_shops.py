@@ -29,7 +29,7 @@ def validate_manifest(data: dict, root: Path) -> None:
         if not re.fullmatch(r'[a-z][a-z0-9_]*', name) or name in ids:
             raise ValueError('job IDs must be unique identifiers')
         ids.add(name)
-        if job.get('profile') not in ['headless', 'web'] or job.get('kind') not in ['script', 'python', 'web']:
+        if job.get('profile') not in ['headless', 'window', 'economy', 'web'] or job.get('kind') not in ['script', 'python', 'web']:
             raise ValueError(f'invalid profile/kind: {name}')
         if type(job.get('timeout')) is not int or not 0 < job['timeout'] <= 600:
             raise ValueError(f'invalid timeout: {name}')
@@ -66,6 +66,11 @@ def select_jobs(data: dict, profile: str, names: list[str]) -> list[dict]:
     if not jobs:
         raise ValueError('no jobs selected')
     return jobs
+
+
+def script_command(engine: str, root: Path, job: dict) -> list[str]:
+    options=['--rendering-method','gl_compatibility','--audio-driver','Dummy'] if job['profile']=='window' else ['--headless']
+    return [engine,*options,'--path',str(root),'-s',job['script']]
 
 
 def run_command(command: list[str], root: Path, log: Path, timeout: float,
@@ -160,7 +165,7 @@ def source_hashes(root: Path) -> dict:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--engine', default='godot')
-    parser.add_argument('--profile', choices=['headless', 'web'], default='headless')
+    parser.add_argument('--profile', choices=['headless', 'window', 'economy', 'web'], default='headless')
     parser.add_argument('--only', action='append', default=[])
     parser.add_argument('--output', default='_work/shop-acceptance/' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + f'-{os.getpid()}')
     parser.add_argument('--pack', help='validate an already exported pack (web profile only)')
@@ -198,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
             result = run_web(engine, ROOT, output, job, existing)
         else:
             extra = [arg.format(output=str(output), res_output=res_output, root=str(ROOT)) for arg in job.get('args', [])]
-            command = [sys.executable, str(ROOT / job['script']), *extra] if job['kind'] == 'python' else [engine, '--headless', '--path', str(ROOT), '-s', job['script']]
+            command = [sys.executable, str(ROOT / job['script']), *extra] if job['kind'] == 'python' else script_command(engine, ROOT, job)
             if job['kind'] == 'script' and extra:
                 command.extend(['--', *extra])
             result = run_command(command, ROOT, output / f"{job['id']}.log", job['timeout'],

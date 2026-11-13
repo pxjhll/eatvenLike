@@ -2,6 +2,58 @@
   "version": 1,
   "jobs": [
     {
+      "id": "template_boundary",
+      "kind": "python",
+      "profile": "headless",
+      "script": "tools/check_template_boundary.py",
+      "args": [
+        "--output={output}/template-boundary.json"
+      ],
+      "timeout": 30,
+      "success": "TEMPLATE BOUNDARY: 0 failures"
+    },
+    {
+      "id": "template_boundary_tests",
+      "kind": "python",
+      "profile": "headless",
+      "script": "tests/test_template_boundary.py",
+      "args": [],
+      "timeout": 30,
+      "success": "^OK$"
+    },
+    {
+      "id": "template_authoring",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tools/validate_template_shops.gd",
+      "args": [],
+      "timeout": 60,
+      "success": "TEMPLATE AUTHORING: 6 shops, 0 failures"
+    },
+    {
+      "id": "template_runtime",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_template_authoring.gd",
+      "args": [
+        "--report={res_output}/runtime-proof/report.json"
+      ],
+      "timeout": 240,
+      "success": "TEMPLATE RUNTIME PROOF:.*\\b0 failures"
+    },
+    {
+      "id": "template_runtime_window",
+      "kind": "script",
+      "profile": "window",
+      "script": "tests/render_template_authoring.gd",
+      "args": [
+        "--report={res_output}/runtime-proof/report.json",
+        "--capture"
+      ],
+      "timeout": 240,
+      "success": "TEMPLATE RUNTIME PROOF:.*\\b0 failures"
+    },
+    {
       "id": "template_official_session",
       "kind": "script",
       "profile": "headless",
@@ -314,7 +366,7 @@
     {
       "id": "shared_rhythm",
       "kind": "script",
-      "profile": "headless",
+      "profile": "economy",
       "script": "tools/shop_rhythm.gd",
       "args": [
         "--check=res://tests/baselines/shared_shop_rhythm.json",
@@ -326,7 +378,7 @@
     {
       "id": "shop_progression",
       "kind": "script",
-      "profile": "headless",
+      "profile": "economy",
       "script": "tools/shop_progression.gd",
       "args": [
         "--check=res://tests/baselines/shared_shop_progression.json",

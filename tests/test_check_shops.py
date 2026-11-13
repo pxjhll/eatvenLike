@@ -94,5 +94,25 @@ class AcceptanceTests(unittest.TestCase):
             tool.select_jobs({'jobs': []}, 'headless', ['missing'])
 
 
+    def test_economy_targets_are_preserved_in_a_separate_explicit_profile(self):
+        tool=self.tool();data=json.loads((ROOT/'tests/shop_acceptance.json').read_text(encoding='utf-8-sig'))
+        jobs={job['id']:job for job in data['jobs']}
+        for name in ['shared_rhythm','shop_progression']:
+            self.assertEqual(jobs[name]['profile'],'economy')
+            self.assertTrue(any(arg.startswith('--check=') for arg in jobs[name]['args']))
+        self.assertFalse({'shared_rhythm','shop_progression'} & {j['id'] for j in tool.select_jobs(data,'headless',[])})
+        self.assertEqual({j['id'] for j in tool.select_jobs(data,'economy',[])},{'shared_rhythm','shop_progression'})
+
+    def test_actual_window_and_template_guards_are_in_the_shared_manifest(self):
+        tool=self.tool();data=json.loads((ROOT/'tests/shop_acceptance.json').read_text(encoding='utf-8-sig'))
+        tool.validate_manifest(data,ROOT)
+        jobs={job['id']:job for job in data['jobs']}
+        for name in ['template_boundary','template_authoring','template_runtime','template_runtime_window']:
+            self.assertIn(name,jobs)
+        command=tool.script_command('godot',ROOT,jobs['template_runtime_window'])
+        self.assertNotIn('--headless',command)
+        self.assertIn('--rendering-method',command)
+        self.assertIn('--headless',tool.script_command('godot',ROOT,jobs['template_runtime']))
+
 if __name__ == '__main__':
     unittest.main()

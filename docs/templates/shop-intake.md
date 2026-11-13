@@ -10,7 +10,7 @@
 | 当前批准原画 | `_work/<店铺>/references/` 内的明确文件与版本 |
 | 原画世界尺寸 / 单位密度 | 原生宽×高；密度=原生宽/720，员工128、顾客110 |
 | FigCraft布局与确认记录 | 分层预览版本、用户确认范围；不把原画确认当作后续拆图验收 |
-| 业务模式 | handoff / single / serve；选择已有策略及其支持范围 |
+| 公共模板 | `SpecShop.runtime_template` 指向独立 `SpecShopTemplate`；按能力选择接单、生产、搬运和交付 |
 | 新能力 | 已有能力能表达则组合；不能表达时单独列出前置/效果/取消/保存语义 |
 
 ## 2. 原画区域→唯一资产
@@ -41,30 +41,42 @@
 | 示例主菜 | pantry与rice_cooker | wok_a→plating | 原料→熟料→成品 | 各输入生产完成后才能合流 | window | 与soup组成整单 |
 | 示例配菜 | soup_pot | 已有批量锅能力 | 汤料→成品 | 独立支线 | side_window | 同一订单一次结算 |
 
-以SpecStep实际输入输出为准，不按图像的左右顺序推断工序。多路生产和整单交付只在serve的flow1中启用；single/handoff保留各自业务策略。动作1必须配运动1。缺料、工位占用、取消和存档由既有业务能力负责，不在场景脚本里另建库存或移动角色。
+以 `runtime_template.recipes` 的显式 source/process/transfer 节点、inputs、consumes/produces 和依赖为准，不按图像左右推断工序。线性与合流共用同一图；新店无需再复制旧 `SpecDish.steps`，菜品只保留名称、图标和报价元数据。`fulfillment.handoff` 是旧档身份元数据，不能选择执行器或限制公共组合。缺料、占用、取消和存档都由公共能力负责。
 
-前台直售（serve）：`flow_version=1`、菜品 `front=true`、配方仅引用 `zone="front"` 的工位；接饮品复用 `hand`，交付复用当前出餐策略。不要给前台饮品默认附上后厨例汤。加设备保留既有阶段索引。
+| 配置区 | 必须填写的内容 | 可运行参考 |
+|---|---|---|
+| places | 真实容器、容量/无限来源/初始量；anchor引用layout，不用工位坐标授权场景散放 | onboarding/table_template.tres |
+| machines / restocks | 人工/自动、阶段端口、装卸/搅拌、有限材料与批量配比 | 三家正式shared_production |
+| recipes | 显式输入生产者、加工依赖、合流和最终出品；按份保留owner | 两份onboarding模板的盖饭+例汤 |
+| service | 接单方式/端口；counter、table或self_pickup；收款与队列策略 | onboarding/table与self_pickup两组合 |
+| selection / arrivals | 每个购买阶段的菜单与客流、门槛、抽样时机和附加品 | 六阶段显式selection，不复制顾客循环 |
+| dispatch | roles/posts权限、跟单、坐班与assistance等已支持策略 | 三家正式数据；不添加店铺回调 |
+| presentation | stock/counters/dining/poses/conveyors显式展示绑定 | 默认库存只显示UI；手持始终来自实际lot |
+
+相对参考路径均在 `content/examples/`；完整能力以编译器和 `docs/shop-capabilities.md` 为准，未知参数直接报配置路径。
+
+前台直售使用同一source/process配方与公共交付，由dispatch权限允许前台处理相关容器和设备；selection.addon.with限制需要例汤的主菜集合。不要复制前台专属执行器。加设备保留已有阶段身份。
 
 每个成品、半成品和原料都填写 `SpecItem.icon`（独立 PNG 或图集区域）；旧 `art` 只用于明确绑定的场景图。逐项检查订单气泡、员工搬运、工位产物、桌面及 HUD；缺图会显示中性占位符。设备面板另填 `SpecStation.icon`，不要借用其他店的图标。
 
-局内节奏：先分别测开局与按正常编制的后期；观察首单、连续出单、工位候料、搬运、排队和流失。serve flow1可显式选用 `transport_helpers`（空闲岗位仅协助搬运）、`prefetch_inputs`（独立输入按订单并行准备）和 `preposition_work`（入料已有搬运预留时到站候料）；`base_scores.continuation` 优先完成半成品订单。默认关闭，不用提高全局角色速度掩盖搬运问题。
+局内节奏分别测开局和正常编制后期，记录首单、出单间隔、缺料、搬运、排队与流失。协助、跟单和兼容批量搬运只通过公共dispatch/transport_batch能力配置，不提高角色基础速度掩盖问题。旧完店目标独立报告，本轮架构验收不重调价格、客流或目标。
 
 ## 5. 完整空间表
 
 - 写明网格cell/grid_size、Areas，以及staff/customer权限区域；区域对齐格子。
 - 每站配置员工工作/坐班点；顾客另配entrance、exit、pickup和足够的Queue。
-- 工位上会暂存的餐品单独配置 `Anchors/Station/Buffer`（附属位用 `Anchors/Slots/<slot>/Buffer`），放在可见台面并填写 `metadata/host`；`Nav/Work` 只表示员工脚底位置，不能代替餐品摆放点。
+- 需要展示时才定义独立显示端口，并在template.presentation中声明用途与host。Buffer、Nav/Work或某个订单拥有物品，都不自动授权摆放库存。餐桌只在实际就座且有餐品时显示。
 - 每个座位同时具有原画坐姿点和可达接近点。根Nav可用Customers/Seats/<group>/<n>或Customers/Waiting/<group>/<n>。
 - 自取等待点覆盖最大座位容量，脚底半径12逻辑单位。家具Footprints按实际落地占地，不能用人物身体贴边来掩盖不可达。
 - `sync_shop_layouts.gd -- --shop=<资源>` 显式导出，随后 `--check`；错误时先修原模块，不在运行中静默改layout。
 
 ## 6. 接入验收
 
-1. 独立SpecShop、场景和campaign先验证，再决定正式campaign接入。
-2. 复用全局员工资源；店铺只选择名册、岗位、招募顺序和培养倍率。
-3. 跑 `tools/check_shops.py` 的headless及web档；查看每项日志和summary.json。
-4. 真窗口检查角色尺度、路径、遮挡、坐姿、携物、操作和所有声明交付。
-5. 使用原档/新档验证保存、重开、取消补偿与未来版本保护；不能以清档代替迁移。
-6. 分别验收全开/固定员工的短测与空店完店回放。写明种子、购买策略、初始员工、首单、阶段解锁、流失、销售间隔和完店目标/容差；将完店回放接入`shop_acceptance.json`。不能只以“能卖出”或录下报告判定节奏合格。三店示例见`docs/qa/shared-shop-progression.md`。
+1. 从 `content/examples/onboarding/table.tres` 或 `self_pickup.tres` 复制配置；两者共享 `presentation/examples/module_shop.tscn`，保留独立ID和save_file。`content/examples/campaign.tres` 是独立示例关卡，不加入正式关卡表。
+2. 新店只改资源、模块绑定和 `content/template_shops.json` 登记；新员工只加全局SpecStaffKind与已有视觉资源映射。不要新增私有脚本。所有正式会话缺runtime_template会在读写玩家档之前拒绝启动。
+3. 先跑 `tools/validate_template_shops.gd` 与 `tools/check_template_boundary.py`。前者校验公共能力/员工/场景，后者拦截私有脚本、旧执行器、界面改账本和遗漏模板。
+4. 用同一 `tools/check_shops.py` 分别运行 `--profile headless`、`--profile window`、`--profile web`。窗口在Linux用xvfb-run，Windows需可用的图形会话。完整清单包含真实动作轨迹，导入公共脚本本身不算调用证明。
+5. `render_template_authoring.gd` 覆盖普通Session启动、真实拿取/放下/加工、合法路径/实际速度、全局人物尺寸、库存与手持一致、召回补偿、磁盘/现场续档以及暂停和1/2/4倍速。查看报告的operations与物理端口proofs，不能只看最终销量。
+6. 旧经济/完店门槛仍由 `--profile economy` 执行，保留原check参数与基线。报告与行为验收分开；失败或超时必须如实记录，不能重录旧冻结基线或改门槛以过关。
 
-可直接加载的示例是 `tests/fixtures/onboarding/shop.tres` 和独立campaign；只依赖已有模块/动画/配方，不依赖生成器。第三店的真实美术映射见 `docs/art/stirfry-module-map.md`。
+通用示例在两个履约组合实际完成盖饭两支合流、追加例汤并整单交付；已注册松鼠的员工定义为 `content/characters/staff/squirrel.tres`，无需角色控制分支。原历史教程夹具保留为旧协议回归，不能把它的历史执行器用于新店。

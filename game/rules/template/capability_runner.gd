@@ -24,6 +24,7 @@ var _dynamic_places: Dictionary = {}
 var tasks: Dictionary = {}
 var _next_task := 1
 var last_error := ""
+var trace: RefCounted
 var _interactions: Array = []
 
 func _init(rules: RefCounted) -> void:
@@ -63,6 +64,7 @@ func transfer(worker_id: int, source: String, destination: String, item: String,
 	if dispatcher != null:
 		error = inventory.restore(stock.snapshot())
 		if not error.is_empty(): return error
+		inventory._record("reserve_transfer",claim.id)
 	var task := _task("transfer", worker)
 	task.scope = context.scope
 	task.claim = claim.id
@@ -130,6 +132,7 @@ func transfer_bundle(worker_id: int, entries: Array, hop_seconds: float) -> Stri
 	if dispatcher != null:
 		error = inventory.restore(stock.snapshot())
 		if not error.is_empty(): return error
+		for claim in inventory.bundle(result.id).claims: inventory._record("reserve_transfer",claim)
 	var task := _task("bundle", worker)
 	task.scope = context.scope
 	task.bundle = result.id
@@ -230,6 +233,7 @@ func restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {})
 	if not String(candidate.error).is_empty(): return candidate.error
 	# Validation is complete before replacing any actor or service.
 	inventory = candidate.inventory
+	inventory.trace = trace
 	machines = candidate.machines
 	tasks = candidate.tasks
 	ports = data.ports.duplicate(true)

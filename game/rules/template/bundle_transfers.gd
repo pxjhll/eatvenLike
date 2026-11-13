@@ -26,6 +26,7 @@ static func reserve(stock: RefCounted, actor: String, entries: Array, capacity: 
 		group.claims.append(int(result.id))
 	stock._state = candidate._state
 	stock._sync_capacity_limits()
+	for claim in group.claims: stock._record("reserve_transfer",claim)
 	return {"error":"", "id":group.id, "count":total}
 
 static func apply(stock: RefCounted, id: int, operation: String, child: int = -1) -> String:
@@ -35,6 +36,8 @@ static func apply(stock: RefCounted, id: int, operation: String, child: int = -1
 	var candidate: RefCounted = stock.get_script().new()
 	candidate._state = stock.snapshot()
 	var claims: Array = [child] if operation == "pickup_part" else group.claims
+	var previous := {}
+	for claim in claims: previous[claim] = stock.claim(claim).state
 	for claim in claims:
 		var error := ""
 		match operation:
@@ -44,6 +47,8 @@ static func apply(stock: RefCounted, id: int, operation: String, child: int = -1
 		if not error.is_empty(): return error
 	stock._state = candidate._state
 	stock._sync_capacity_limits()
+	for claim in claims:
+		if stock.claim(claim).state!=previous[claim]: stock._record("pickup" if operation=="pickup_part" else operation,claim)
 	return ""
 
 static func validate(stock: RefCounted) -> String:

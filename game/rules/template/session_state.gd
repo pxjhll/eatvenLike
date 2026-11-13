@@ -53,6 +53,18 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false) -> St
 			if not Shape._shape(row.standby,{"pos":Vector2.ZERO,"completed":0}) or not row.standby.pos.is_finite() or row.standby.completed<0: return "invalid standby employee"
 			worker.pos = row.standby.pos; worker.completed = row.standby.completed
 		flat.roster.append(worker)
+	# Runner actors already own active iteration order. Recall/redeploy can
+	# differ from roster order; preserve it without storing a second list.
+	var runner_data: Variant = data.runtime.get("runner")
+	if not runner_data is Dictionary: return "invalid active employee runtime"
+	var actors: Variant = runner_data.get("actors")
+	if not actors is Array: return "invalid active employee order"
+	var deployed: Array = flat.workers.duplicate()
+	flat.workers = []
+	for actor in actors:
+		if not actor is Dictionary or not actor.get("id") is int or actor.id not in deployed or actor.id in flat.workers: return "invalid active employee order"
+		flat.workers.append(int(actor.id))
+	if flat.workers.size()!=deployed.size(): return "active employees differ from roster"
 	if not data.runtime.get("clock") is float or data.runtime.clock<0.0: return "invalid public clock"
 	flat.clock = data.runtime.clock
 	# Old validator checks purchase metadata; transport clocks belong only to Runtime.

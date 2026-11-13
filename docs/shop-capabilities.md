@@ -8,7 +8,25 @@ Session startup validates both the store definition and a separately injected ru
 
 版本2业务存档把 outer 购买/钱包/RNG 与公共 runtime 的唯一活动状态分开保存。三种旧模式只在 `template/legacy_adoption.gd` 的一次性加载边界出现；正式执行不调用它们的 tick/context。公共能力配置、保存和迁移边界详见 `game/rules/template/README.md` 的 U06 节。
 
-以下表格是保留的**旧资源字段与迁移协议**，其旧方法名对应测试历史参考引擎，不能作为新店运行时接口。作者校验暂时保留旧字段约束以保护现有内容；U07继续处理制作入口与门禁，不能据此恢复旧经营分流。
+## Public authoring interface
+
+新店从 `content/examples/onboarding/table.tres` 或 `self_pickup.tres` 起步，使用同一个 `presentation/examples/module_shop.tscn`，无需新控制器。两组合均配置两支生产合流、追加例汤和整单交付；区别由 `runtime_template.service` 声明。`SpecDish` 保留价格/图标目录，显式配方不要求重复填写旧 steps。员工引用 `content/characters/staff/<id>.tres` 的全局同一资源，不能复制基础属性到店内。
+
+| 配置入口 | 公共实现与校验 |
+|---|---|
+| places / machines / restocks / recipes | 唯一容器、加工与补货；显式输入/依赖；编译器拒绝未知参数、无效端口、循环、产量不足 |
+| service / selection / arrivals | 接单、菜单阶段、客流、自取/柜台/送桌、附加品与整单结算；菜单必须引用报价目录，阶段覆盖购买阶段 |
+| dispatch / transports | 角色/岗位、跟单、协助、批量搬运及自动运输；调用同一动作和库存事务 |
+| presentation | stock/counters/dining/poses/conveyors 显式绑定；库存默认仅UI，手持来自真实拿取 |
+| layout / scene modules | 共享运动、权限、端口与排序宿主；真实场景检查路径、密度及全局人物尺度 |
+
+制作入口 `tools/validate_template_shops.gd` 检查六份已登记配置、正式/示例关卡覆盖、公共编译、全局员工引用、视觉注册、场景与真实Runtime构造。普通 `ShopSession` / `ShopSave` 缺模板时，在读写旧档前拒绝启动/保存。独立的 `tools/check_template_boundary.py` 检查旧执行器、界面改账本、私有/内嵌脚本、模板遗漏及关键公共调用；资源脚本使用明确共享白名单。它是明显绕过的静态门禁，不是完整GDScript安全分析器。
+
+`tests/render_template_authoring.gd` 通过普通会话/场景真实推进，收集实际库存与动作提交轨迹，记录员工实际位置和操作端口；不是检查导入字符串代替执行证明。`Runtime.set_tracing(true)` 启用有界诊断，`take_trace()` 消费轨迹并报告overflow；诊断不进入存档，也不接收业务回调。未启用不收集。相同种子开启/关闭轨迹后的完整状态、财务相同；失败和重复事务不生成伪成功。
+
+统一入口 `tools/check_shops.py` 分为 `headless`、`window`、`web` 和独立 `economy`。行为/场景/存档、实际窗口及导出节点为必需验收；CI使用同一清单，Pages构建使用headless+web。旧节奏/完店目标保留原check参数和基线，在economy报告失败或超时，不自动重录或调整目标。
+
+以下表格是保留的**旧资源字段与迁移协议**，其旧方法名对应测试历史参考引擎，不能作为新店运行时接口。正式制作校验使用编译后的公共能力，不再按旧mode矩阵限制组合；旧字段仍可为迁移/价格/展示元数据存在，运行时只消费明确模板。
 
 ## Fulfillment: every exported field
 

@@ -24,3 +24,19 @@ static func serving(owner: RefCounted) -> bool:
 
 static func queued(owner: RefCounted) -> bool:
 	return owner.shop.fulfillment.handoff in ["single","serve"]
+
+const SHARED := -1
+const SEAT := "seat:"
+
+static func pickup_of(shop: SpecShop) -> String:
+	for st in shop.stations:
+		if st.block == "pickup": return st.id
+	return ""
+
+static func seat_point(shop: SpecShop, seat: int) -> String:
+	for g in shop.seat_groups:
+		if g.purpose == "dine": return "%s/%d" % [g.id, seat]
+	return ""
+
+static func self_pickup(shop: SpecShop) -> bool:
+	return shop.fulfillment.dine_rule == "self_pickup"

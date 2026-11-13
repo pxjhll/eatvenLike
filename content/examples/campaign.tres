@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="SpecCampaign" format=3]
+
+[ext_resource type="Script" path="res://content/rules/spec_campaign.gd" id="campaign"]
+[ext_resource type="Script" path="res://content/rules/spec_city.gd" id="city"]
+[ext_resource type="Script" path="res://content/rules/spec_campaign_shop.gd" id="shop"]
+
+[sub_resource type="Resource" id="TableShop"]
+script = ExtResource("shop")
+id = "public_demo_table"
+display_name = "Template Table"
+shop_path = "res://content/examples/onboarding/table.tres"
+
+[sub_resource type="Resource" id="PickupShop"]
+script = ExtResource("shop")
+id = "public_demo_self_pickup"
+display_name = "Template Pickup"
+shop_path = "res://content/examples/onboarding/self_pickup.tres"
+
+[sub_resource type="Resource" id="ModularShop"]
+script = ExtResource("shop")
+id = "modular_shop_example"
+display_name = "Modular Example"
+shop_path = "res://content/examples/modular_shop.tres"
+
+[sub_resource type="Resource" id="DemoCity"]
+script = ExtResource("city")
+id = "public_examples"
+display_name = "Public Examples"
+shops = Array[ExtResource("shop")]([SubResource("TableShop"), SubResource("PickupShop"), SubResource("ModularShop")])
+
+[resource]
+script = ExtResource("campaign")
+cities = Array[ExtResource("city")]([SubResource("DemoCity")])

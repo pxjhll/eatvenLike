@@ -47,6 +47,7 @@ func start() -> Error:
 	if started: return OK
 	var error := _configuration_error()
 	if error != OK: return error
+	if store.requires_shared_runtime() and store.shop.runtime_template==null: return _fail(ERR_INVALID_DATA,"公共经营模板未初始化")
 	if profile.load_error != OK: return _fail(profile.load_error, profile.last_error)
 	var errors := SpecValidator.validate(store.shop, profile.campaign)
 	if rules != null and rules.shop != store.shop:
@@ -66,7 +67,7 @@ func start() -> Error:
 			speed = store.loaded_speed
 			guides_seen = store.loaded_guides.duplicate()
 	if not rules.runtime_error.is_empty(): return _fail(ERR_INVALID_DATA,rules.runtime_error)
-	if store.shop.runtime_template!=null and rules.runtime==null: return _fail(ERR_INVALID_DATA,"公共经营模板未初始化")
+	if store.requires_shared_runtime() and rules.runtime==null: return _fail(ERR_INVALID_DATA,"公共经营模板未初始化")
 	started = true
 	# A corrupt shop may safely start fresh while retaining its existing warning.
 	last_error = store.last_error

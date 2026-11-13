@@ -13,7 +13,7 @@
 
 不同员工可有明确的全局差异；不能为了某家店过关而给同一员工私设初始速度。实际值由全局基础值、培养和事件加成计算，原生场景密度只换算一次。
 
-示例 `hamster.tres` 将已有仓鼠动画接入为员工，选择104/1/2。`tests/fixtures/onboarding/shop.tres` 直接引用它与全局cat，未增加角色控制分支，也未制作新人物图片。
+示例 `hamster.tres` 将已有仓鼠动画接入为员工，选择104/1/2。公共示例 `content/examples/onboarding/table.tres` 与 `self_pickup.tres` 直接引用它和全局squirrel，未增加角色控制分支，也未制作新人物图片。
 
 ## 动作与资源映射表
 
@@ -41,4 +41,6 @@
 - 真实接单/制作/交付至少一单；中途召回验证库存补偿及重新上岗；保存重开后继续。
 - 同视口比较员工和顾客尺度，暂停及1/2/4倍速消费同一规则位置。
 
-独立样例验证入口：`tests/test_shop_onboarding.gd` 与 `tests/render_shop_onboarding.gd`。它们证明配置可复用，不把示例店或示例员工自动加入正式关卡。
+U07新增 `content/characters/staff/squirrel.tres`，使用112/1/2均衡档与已有松鼠视觉；两份公共示例直接引用同一个资源。员工ID、基础属性、头像/动作资源都是全局定义，正式校验会拒绝店铺内复制的员工资源。
+
+公共样例入口：`tests/test_template_onboarding.gd`、`tests/render_template_authoring.gd` 与 `tools/validate_template_shops.gd`。同一松鼠员工在送桌/自取两组合里真实工作、拿取、取消和重新部署，并通过普通ShopSave续档。历史 `test_shop_onboarding` 保留旧协议断言；不作为新店制作入口。新示例不会自动加入正式关卡。

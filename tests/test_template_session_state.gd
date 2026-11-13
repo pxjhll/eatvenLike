@@ -49,6 +49,20 @@ func test_shared_state_roundtrip_is_atomic_and_keeps_the_live_event_bus() -> voi
 		check(not owner.load_dict(invalid).is_empty(),"reject invalid runtime before adopting outer values")
 		check_eq(owner.to_dict(),saved,"rejection is atomic")
 
+func test_active_employee_order_rejects_malformed_nested_data_atomically() -> void:
+	var owner := _owner("tea")
+	var saved := owner.to_dict()
+	for payload in [null,[],1,"invalid"]:
+		var invalid := saved.duplicate(true)
+		invalid.runtime.runner = payload
+		check(not owner.load_dict(invalid).is_empty(),"malformed runner rejected without runtime error")
+		check_eq(owner.to_dict(),saved,"failed nested shape validation preserves live state")
+	for actors in [null,{},[{}],[{"id":999999}]]:
+		var invalid := saved.duplicate(true)
+		invalid.runtime.runner.actors = actors
+		check(not owner.load_dict(invalid).is_empty(),"invalid active order rejected")
+		check_eq(owner.to_dict(),saved,"invalid actor order is atomic")
+
 func test_restored_public_runtime_continues_with_the_original_owner_wallet() -> void:
 	for id in ["tea","pancake","stirfry"]:
 		var owner := _owner(id)

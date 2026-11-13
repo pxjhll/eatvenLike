@@ -151,12 +151,22 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 		_error(errors, "shop", "Shop resource is required.", "required")
 		return errors
 	_walk(shop, "", errors)
+	var public_definition := {}
 	if shop.runtime_template!=null:
-		var compiler: Script = load("res://game/rules/template/compiler.gd")
-		var compiled: Dictionary = compiler.compile(shop.runtime_template,compiler.ports_from_layout(shop.layout))
-		for row in compiled.errors: _error(errors,"runtime_template."+row.path,row.message,row.code)
-		if compiled.errors.is_empty() and (compiled.definition.service.is_empty() or compiled.definition.service.arrivals.is_empty()):
-			_error(errors,"runtime_template.service","Formal shops require an explicit service and arrival policy.","required")
+		if shop.runtime_template.get_script()!=load("res://content/rules/spec_shop_template.gd"):
+			_error(errors,"runtime_template.script","Use the shared declarative template schema; private scripts are not supported.","unsupported")
+		elif shop.layout!=null:
+			var menu: Variant = shop.runtime_template.service.get("menu",{})
+			if menu is Dictionary:
+				for id in menu:
+					if id is String and shop.dish(id)==null: _error(errors,"runtime_template.service.menu."+id,"Menu dish has no shared price/art catalog definition.","reference")
+			var compiler: Script = load("res://game/rules/template/compiler.gd")
+			var compiled: Dictionary = compiler.compile(shop.runtime_template,compiler.ports_from_layout(shop.layout))
+			for row in compiled.errors: _error(errors,"runtime_template."+row.path,row.message,row.code)
+			if compiled.errors.is_empty():
+				public_definition = compiled.definition
+				if compiled.definition.service.is_empty() or compiled.definition.service.arrivals.is_empty():
+					_error(errors,"runtime_template.service","Formal shops require an explicit service and arrival policy.","required")
 	if shop.id.strip_edges().is_empty(): _error(errors, "id", "ID must not be empty.", "id")
 	_number(shop.start_gold, "start_gold", errors)
 	_number(shop.flavor_flow, "flavor_flow", errors)
@@ -167,6 +177,7 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 		"seats": _ids(shop.seat_groups, "seat_groups", errors), "connections": _ids(shop.connections, "connections", errors),
 		"options": _ids(shop.order_options, "order_options", errors), "events": _ids(shop.events, "events", errors),
 		"guides": _ids(shop.guide, "guide", errors), "kinds": {}, "zones": {"": true}, "materials": {}, "tracks": {}, "campaign": {},
+		"public":shop.runtime_template!=null,"public_definition":public_definition,
 		"mode": shop.fulfillment.handoff if shop.fulfillment != null else "",
 		"zoned": shop.staff != null and not shop.staff.zones.is_empty(),
 	}
@@ -213,6 +224,16 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 
 static func _validate_policies(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
 	if shop.fulfillment == null: return
+	if c.public:
+		_enum(shop.fulfillment.handoff,["single","handoff","serve"],"fulfillment.handoff",errors)
+		if shop.layout==null or shop.layout.motion_version!=1: _error(errors,"layout.motion_version","Public capabilities require shared motion version 1.")
+		if shop.dispatch==null or shop.dispatch.action_version!=1: _error(errors,"dispatch.action_version","Public capabilities require shared actions version 1.")
+		_number(shop.fulfillment.seated_patience,"fulfillment.seated_patience",errors)
+		if not shop.fulfillment.mood_seconds.is_empty() and shop.fulfillment.mood_seconds.size()!=2: _error(errors,"fulfillment.mood_seconds","Use zero or two mood thresholds.")
+		for index in shop.fulfillment.mood_seconds.size():
+			_number(shop.fulfillment.mood_seconds[index],"fulfillment.mood_seconds[%d]"%index,errors)
+			if index>0 and shop.fulfillment.mood_seconds[index]<shop.fulfillment.mood_seconds[index-1]: _error(errors,"fulfillment.mood_seconds","Thresholds must be ordered.")
+		return
 	var f := shop.fulfillment
 	if f.flow_version==0 and (f.delivery_batch!="item" or not f.delivery_points.is_empty()): _error(errors,"fulfillment.flow_version","Delivery extensions require flow version 1.")
 	if f.delivery_batch=="order" and (f.handoff!="serve" or f.dine_rule!="seat_wait" or shop.dispatch==null or shop.dispatch.action_version!=1 or shop.layout==null or shop.layout.motion_version!=1):
@@ -312,7 +333,7 @@ static func _station(s: SpecStation, p: String, c: Dictionary, errors: Array[Dic
 static func _step(step: SpecStep, p: String, c: Dictionary, errors: Array[Dictionary], default_station := "") -> void:
 	_ref(step.station if not step.station.is_empty() else default_station, c.stations, p + ".station", errors)
 	if step.action.is_empty(): _error(errors, p + ".action", "Action must not be empty.")
-	if c.mode == "single" and step.action in ["take", "hand"]:
+	if not c.public and c.mode == "single" and step.action in ["take", "hand"]:
 		_error(errors, p + ".action", "Single fulfillment inserts take and hand actions; recipe steps cannot repeat them.", "unsupported")
 	_number(step.seconds, p + ".seconds", errors)
 	_number(step.repeat, p + ".repeat", errors, 0, true)
@@ -325,7 +346,7 @@ static func _dish(d: SpecDish, p: String, c: Dictionary, errors: Array[Dictionar
 	_ref(d.item, c.items, p + ".item", errors)
 	if d.price_parts.is_empty(): _error(errors, p + ".price_parts", "At least one price part is required.")
 	for part in d.price_parts: _number(d.price_parts[part], p + ".price_parts." + part, errors)
-	if d.steps.is_empty(): _error(errors, p + ".steps", "At least one recipe step is required.")
+	if d.steps.is_empty() and not c.public: _error(errors, p + ".steps", "At least one recipe step is required.")
 	for i in d.steps.size():
 		if d.steps[i] != null: _step(d.steps[i], p + ".steps[%d]" % i, c, errors)
 	_ref(d.flavor_station, c.stations, p + ".flavor_station", errors, true)
@@ -426,7 +447,7 @@ static func _stage(stage: SpecStage, p: String, c: Dictionary, errors: Array[Dic
 		if id != stage.flavor_group: _ref(id, c.dishes, p + ".order_weights." + id, errors)
 		_number(stage.order_weights[id], p + ".order_weights." + id, errors)
 		total += stage.order_weights[id]
-	if total <= 0: _error(errors, p + ".order_weights", "Menu needs a positive weight.")
+	if total <= 0 and not c.public: _error(errors, p + ".order_weights", "Menu needs a positive weight.")
 
 	for zone in stage.staff_slots:
 		_enum(zone, ["kitchen"] if c.zoned else [""], p + ".staff_slots." + zone, errors)
@@ -473,7 +494,7 @@ static func _validate_staff(shop: SpecShop, c: Dictionary, errors: Array[Diction
 	_tracks(staff.tracks, "staff.tracks", c, errors, "", "staff")
 
 static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
-	if c.mode in ["single", "serve"] and not shop.connections.is_empty():
+	if not c.public and c.mode in ["single", "serve"] and not shop.connections.is_empty():
 		_error(errors, "connections", "Conveyor dispatch requires handoff fulfillment.", "unsupported")
 	if shop.flyer != null:
 		_number(shop.flyer.wave_seconds, "flyer.wave_seconds", errors)
@@ -512,7 +533,7 @@ static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dic
 		var option := shop.order_options[i]
 		if option == null: continue
 		var p := "order_options[%d]" % i
-		if shop.fulfillment != null and shop.fulfillment.handoff != "single": _error(errors, p, "Order options require single fulfillment.", "unsupported")
+		if not c.public and shop.fulfillment != null and shop.fulfillment.handoff != "single": _error(errors, p, "Order options require single fulfillment.", "unsupported")
 		_ref(option.station, c.stations, p + ".station", errors)
 		_number(option.share, p + ".share", errors, 0, false, 1)
 		_number(option.price_mult, p + ".price_mult", errors)
@@ -616,6 +637,9 @@ static func _validate_motion(shop: SpecShop, errors: Array[Dictionary]) -> void:
 
 ## Check the necessary staged production graph, without trying to solve economy/balance.
 static func _validate_graph(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
+	if c.public:
+		if not c.public_definition.get("service",{}).is_empty(): errors.append_array(load("res://game/rules/template/authoring.gd").validate(shop,c.public_definition))
+		return
 	var counters := 0
 	var outputs := {}
 	for dish in shop.dishes:
