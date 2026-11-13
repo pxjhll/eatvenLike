@@ -67,6 +67,8 @@ var _customer_positions := {}
 var _customer_route_presentation := RoutePresentation.new()
 var _customer_orders := {}
 var _customer_entering := {}
+## Customer motion is rendered every frame; its animation clock must not use 100ms rule ticks.
+var _customer_animation_clock := 0.0
 var _known_seats := {}
 var _cups: Array[Sprite2D] = []
 var _badges := {}
@@ -331,6 +333,7 @@ func restart() -> void:
 
 
 func _reset_visuals() -> void:
+	_customer_animation_clock = 0.0
 	ui.show_selection = false
 	if _dining != null: _dining.reset()
 	var roster := all_staff()
@@ -444,7 +447,7 @@ func _refresh(delta: float) -> void:
 	if _dining != null:
 		if frame.has("movement"):
 			_dining.refresh_authoritative(rules.seat_total(),frame.movement.customers.values())
-		else: _dining.refresh(rules.seat_total(), frame.diners, _font, frame.clock, moving)
+		else: _dining.refresh(rules.seat_total(), frame.diners, _font, _customer_animation_clock, moving)
 	if frame.sold > _last_sold: _pop_income(int(frame.revenue) - _last_revenue)
 	_last_sold = frame.sold
 	_last_revenue = int(frame.revenue)
@@ -806,6 +809,10 @@ func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 	if shop.layout.motion_version==1:
 		_update_customers_motion(frame,delta)
 		return
+	_customer_animation_clock += maxf(0.0, delta) * _speed_factor
+	# Legacy display-only paths also animate independently of fixed business ticks.
+	frame = frame.duplicate()
+	frame.clock = _customer_animation_clock
 	if shop.fulfillment.handoff == "single":
 		_update_customers_single(delta, frame)
 		return
@@ -897,7 +904,9 @@ func _update_customers_motion(frame: Dictionary, delta := 0.0) -> void:
 		var point: Vector2 = row.pos
 		var pose := {"pos":point,"walking":row.walking and not row.path.is_empty(),"seated":row.seated,
 			"path":row.path,"path_index":row.path_index,"phase":"idle","task_label":"",
-			"speed":float(Presentation.customer_speed),"carry_item":row.carry_item,"carry_count":0 if row.carry_item.is_empty() else 1}
+			"carry_item":row.carry_item,"carry_count":0 if row.carry_item.is_empty() else 1}
+		# Customer clips retain their authored GIF holds; physical route speed
+		# is supplied separately to the visual position predictor below.
 		if row.get("presentation_version")==1:
 			pose.presentation_version = 1
 			pose.held_items = row.held_items

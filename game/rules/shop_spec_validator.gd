@@ -180,6 +180,7 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 		"public":shop.runtime_template!=null,"public_definition":public_definition,
 		"mode": shop.fulfillment.handoff if shop.fulfillment != null else "",
 		"zoned": shop.staff != null and not shop.staff.zones.is_empty(),
+		"retired_kinds": shop.staff.retired_kinds if shop.staff != null else {},
 	}
 	if campaign != null:
 		var cities := _ids(campaign.cities, "campaign.cities", errors, true)
@@ -401,7 +402,9 @@ static func _effects(effects: Array, p: String, c: Dictionary, errors: Array[Dic
 			"open_flavor":
 				if not c.materials.has(e.target): _ref(e.target, c.dishes, at + ".target", errors)
 			"seats": _ref(e.target, c.seats, at + ".target", errors)
-			"unlock_staff_kind": _ref(e.target, c.kinds, at + ".target", errors)
+			"unlock_staff_kind":
+				_ref(e.target, c.kinds, at + ".target", errors)
+				if c.retired_kinds.has(e.target): _error(errors, at + ".target", "Retired staff cannot be unlocked.")
 			"unlock_recipe": _ref(e.target, c.dishes, at + ".target", errors)
 			"shop_news":
 				if not c.campaign.is_empty(): _ref(e.target, c.campaign, at + ".target", errors)
@@ -473,8 +476,17 @@ static func _validate_staff(shop: SpecShop, c: Dictionary, errors: Array[Diction
 	if not staff.zones.is_empty() and (staff.zones.size() != 2 or not seen_zones.has("front") or not seen_zones.has("kitchen")):
 		_error(errors, "staff.zones", "Use no zones or exactly front and kitchen.", "unsupported")
 	_enum(staff.hire_rule, ["fewest", "cycle"], "staff.hire_rule", errors)
+	for old_id in staff.retired_kinds:
+		var at := "staff.retired_kinds." + old_id
+		_ref(old_id, c.kinds, at, errors)
+		_ref(staff.retired_kinds[old_id], c.kinds, at, errors)
+		if staff.retired_kinds.has(staff.retired_kinds[old_id]): _error(errors, at, "Replacement must be active staff, without chains or cycles.")
 	for field in ["starting", "hire_pool", "hire_order"]:
-		for i in staff.get(field).size(): _ref(staff.get(field)[i], c.kinds, "staff.%s[%d]" % [field, i], errors)
+		for i in staff.get(field).size():
+			var id: String = staff.get(field)[i]
+			var at := "staff.%s[%d]" % [field, i]
+			_ref(id, c.kinds, at, errors)
+			if staff.retired_kinds.has(id): _error(errors, at, "Retired staff cannot be active staff.")
 	if staff.starting.is_empty(): _error(errors, "staff.starting", "An initial worker is required.")
 	if staff.hire_rule == "cycle" and staff.hire_order.is_empty(): _error(errors, "staff.hire_order", "Cycle recruitment requires a nonempty order.")
 	if staff.hire_rule == "fewest" and staff.hire_pool.is_empty(): _error(errors, "staff.hire_pool", "Recruitment requires a nonempty pool.")

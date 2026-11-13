@@ -39,7 +39,7 @@ func setup(view: Node2D, hud: Control) -> void:
 	add_theme_constant_override("separation", 16)
 	var recruit: VBoxContainer = hud._card(self)
 	var recruit_line: HBoxContainer = hud._row(recruit, 12)
-	_recruit_portrait = hud._portrait(recruit_line, "raccoon", 96)
+	_recruit_portrait = hud._portrait(recruit_line, "bear", 96)
 	_recruit_label = hud._text(recruit_line, "", 24)
 	_recruit_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hire_button = hud._action(recruit_line, "招一位", view.hire_worker)
@@ -54,7 +54,7 @@ func setup(view: Node2D, hud: Control) -> void:
 	add_child(_cards)
 	var details: VBoxContainer = hud._card(self)
 	var detail_row: HBoxContainer = hud._row(details, 18)
-	_selected_portrait = hud._portrait(detail_row, "cat", 172)
+	_selected_portrait = hud._portrait(detail_row, "gray_cat", 172)
 	var body := VBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 7)

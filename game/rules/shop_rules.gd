@@ -239,6 +239,7 @@ func _restore_validated(data: Dictionary) -> void:
 				if merged.has(id): merged[id] = v[id].duplicate(true) if v[id] is Array or v[id] is Dictionary else v[id]
 		else:
 			set(key, v.duplicate(true) if v is Array or v is Dictionary else v)
+	_migrate_retired_staff()
 	nav.set_open(unlocked)
 	workers = []
 	for id in data.get("workers", []):
@@ -260,6 +261,23 @@ func _restore_validated(data: Dictionary) -> void:
 	for id in data.pending_events:
 		for ev in event_defs:
 			if ev.id == id: pending_events.append(ev)
+
+
+## Keep worker IDs, assignments and all business state; only replace retired identities.
+func _migrate_retired_staff() -> void:
+	var replacements := shop.staff.retired_kinds
+	if replacements.is_empty(): return
+	for worker in roster:
+		if not replacements.has(worker.kind): continue
+		worker.kind = replacements[worker.kind]
+		var kind := _kind(worker.kind)
+		worker.name = kind.display_name
+		worker.stats = kind.stats.duplicate(true)
+	var available: Array[String] = []
+	for id in hire_pool:
+		var replacement: String = replacements.get(id, id)
+		if replacement not in available: available.append(replacement)
+	hire_pool = available
 
 
 ## Refresh only definition caches. Jobs, timers, stock and event effects stay recorded.
@@ -288,6 +306,9 @@ func _refresh_content_values() -> void:
 			rebuilt.append_array(groups.get(entry.source_id, []))
 	mods.entries = rebuilt
 	for worker in roster: worker.stats = _kind(worker.kind).stats.duplicate(true)
+	# Newly available default kinds must also appear in older saved recruitment pools.
+	for kind in shop.staff.hire_pool:
+		if kind not in hire_pool: hire_pool.append(kind)
 	var defaults := ShopRules.new(shop)
 	for id in stations:
 		stations[id].capacity = defaults.stations[id].capacity
@@ -813,6 +834,7 @@ func _kind(kind_id: String) -> SpecStaffKind:
 
 
 func _new_worker(kind_id: String, id := -1) -> Dictionary:
+	kind_id = shop.staff.retired_kinds.get(kind_id, kind_id)
 	var kind := _kind(kind_id)
 	var worker_id := id if id > 0 else _next_staff
 	_next_staff = maxi(_next_staff, worker_id + 1)
@@ -1271,6 +1293,8 @@ func apply_effect(source: String, source_id: String, effect: SpecEffect, seconds
 			events.emit("gold_granted", {"source": source_id, "amount": effect.value})
 		"customer_wave": customer_wave(int(effect.value))
 		"unlock_staff_kind":
+			if shop.staff.retired_kinds.has(effect.target): return
+			if not shop.staff.kinds.any(func(kind: SpecStaffKind) -> bool: return kind.id == effect.target): return
 			if not effect.target in hire_pool: hire_pool.append(effect.target)
 			events.emit("staff_kind", {"kind": effect.target})
 		"unlock_recipe", "shop_news":

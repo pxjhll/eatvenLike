@@ -34,6 +34,7 @@
 
 [ext_resource type="Resource" path="res://content/shops/tea/shared_production.tres" id="u06_runtime"]
 
+[ext_resource type="Resource" path="res://content/characters/staff/parrot.tres" id="staff_parrot"]
 [sub_resource type="Resource" id="Resource_m1tbq"]
 script = ExtResource("1_tjgba")
 id = "seal_to_shelf"
@@ -1114,10 +1115,11 @@ effect_label = "员工"
 
 [sub_resource type="Resource" id="Resource_8p4c6"]
 script = ExtResource("18_tdcmu")
-kinds = Array[ExtResource("17_mx6tq")]([ExtResource("staff_cat"), ExtResource("staff_raccoon"), ExtResource("staff_fox"), ExtResource("staff_rabbit"), ExtResource("staff_gray_cat"), ExtResource("staff_bear")])
-starting = Array[String](["cat"])
+kinds = Array[ExtResource("17_mx6tq")]([ExtResource("staff_cat"), ExtResource("staff_raccoon"), ExtResource("staff_fox"), ExtResource("staff_rabbit"), ExtResource("staff_gray_cat"), ExtResource("staff_bear"), ExtResource("staff_parrot")])
+retired_kinds = Dictionary[String, String]({"cat": "gray_cat", "raccoon": "bear"})
+starting = Array[String](["gray_cat"])
 starting_post = "counter"
-hire_pool = Array[String](["cat", "raccoon", "fox", "rabbit", "gray_cat", "bear"])
+hire_pool = Array[String](["gray_cat", "bear", "rabbit", "fox", "parrot"])
 hire_cost_base = 35
 hire_cost_step = 25
 zones = Array[String](["front", "kitchen"])

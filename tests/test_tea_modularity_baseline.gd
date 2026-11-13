@@ -1,6 +1,6 @@
 extends "res://tests/test_case.gd"
 
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
 const BASELINE := "res://tests/baselines/tea_modularity.json"
 const CAPTURE := "res://tests/fixtures/legacy_shops/capture_tea.gd"
 const EXPECTED := {

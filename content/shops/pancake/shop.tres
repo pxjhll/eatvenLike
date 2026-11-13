@@ -42,6 +42,8 @@
 
 [ext_resource type="Resource" path="res://content/shops/pancake/shared_production.tres" id="u06_runtime"]
 
+[ext_resource type="Resource" path="res://content/characters/staff/fox.tres" id="staff_fox"]
+[ext_resource type="Resource" path="res://content/characters/staff/parrot.tres" id="staff_parrot"]
 [sub_resource type="Resource" id="Resource_ghdy6"]
 script = ExtResource("3_nwmtm")
 station = "soy_milk"
@@ -1149,11 +1151,11 @@ levels = Array[ExtResource("8_wn2x6")]([SubResource("Resource_c0lsj"), SubResour
 
 [sub_resource type="Resource" id="Resource_q5hjk"]
 script = ExtResource("18_5yr4h")
-kinds = Array[ExtResource("17_70k8p")]([ExtResource("staff_rabbit"), ExtResource("staff_gray_cat"), ExtResource("staff_bear")])
+kinds = Array[ExtResource("17_70k8p")]([ExtResource("staff_rabbit"), ExtResource("staff_gray_cat"), ExtResource("staff_bear"), ExtResource("staff_fox"), ExtResource("staff_parrot")])
 starting = Array[String](["rabbit"])
-hire_pool = Array[String](["rabbit", "gray_cat", "bear"])
+hire_pool = Array[String](["rabbit", "gray_cat", "bear", "fox", "parrot"])
 hire_rule = "cycle"
-hire_order = Array[String](["gray_cat", "bear", "rabbit"])
+hire_order = Array[String](["gray_cat", "bear", "rabbit", "fox", "parrot"])
 hire_costs = Array[int]([30, 100, 200])
 tracks = Array[ExtResource("9_u2yoc")]([SubResource("Resource_qwd65")])
 home_anchor = "home"

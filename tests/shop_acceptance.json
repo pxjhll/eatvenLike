@@ -382,6 +382,15 @@
       "success": "WORK ACTIONS:.*\\b0 failures"
     },
     {
+      "id": "customer_timing",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_customer_timing.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "CUSTOMER TIMING: 0 failures"
+    },
+    {
       "id": "work_actions_ui",
       "kind": "script",
       "profile": "headless",

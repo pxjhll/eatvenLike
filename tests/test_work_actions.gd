@@ -8,7 +8,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var library: Script = load("res://presentation/characters/character_library.gd")
-	for id in ["rabbit", "gray_cat", "bear", "squirrel", "dog", "sheep", "hamster"]:
+	for id in ["rabbit", "gray_cat", "bear", "fox", "parrot", "squirrel", "dog", "sheep", "hamster"]:
 		var ids: Array = library.actions(id).map(func(a): return a.id)
 		_check("walk" in ids and "idle" in ids, id + " exposes walk and idle")
 		if id in ["squirrel", "dog", "sheep", "hamster"]:
@@ -21,7 +21,7 @@ func _run() -> void:
 	var font := load("res://art/ui/graybox_font.ttf")
 	var tea: SpecShop = load("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
 	var view := ShopView.new(LegacyRules.new(tea))
-	for id in ["rabbit", "gray_cat", "bear", "squirrel", "dog", "sheep", "hamster"]:
+	for id in ["rabbit", "gray_cat", "bear", "fox", "parrot", "squirrel", "dog", "sheep", "hamster"]:
 		var actor = load("res://presentation/shop/shop_actor.gd").new()
 		actor.setup(id, font)
 		actor.work_direction = view.work_direction
@@ -39,20 +39,30 @@ func _run() -> void:
 		worker.pos = Vector2(10, 0)
 		actor.display(worker, 0.9)
 		_check(actor.frame_actor.action == "walk" and actor.frame_actor.direction == 2, "movement resumes walk facing right")
-		_check(actor.frame_actor.sprite.flip_h == (id == "dog"), "dog's left-facing source walk is corrected without changing PNGs")
-		if id in ["gray_cat", "rabbit"]:
+		_check(actor.frame_actor.sprite.flip_h == (id in ["dog", "fox"]), "left-facing source walks are corrected without changing PNGs")
+		if id in library.CUSTOMER_IDS:
+			worker.pos = Vector2(10, 10)
+			actor.display(worker, 1.0)
+			_check(actor.frame_actor.direction == 0 and actor.frame_actor.sprite.animation == "walk_front", id + " moving toward the camera uses the new authored front walk")
+			var front_phase: float = actor.frame_actor.get_phase()
+			actor.display(worker, 1.0)
+			_check(is_equal_approx(front_phase, actor.frame_actor.get_phase()), "paused simulation freezes the new customer walk")
+			worker.pos = Vector2(20, 0)
+			actor.display(worker, 1.1)
+			_check(actor.frame_actor.sprite.animation == ("walk_right" if id == "hamster" else "walk_back_right"), id + " moving away uses the authored diagonal or the existing fallback")
+		if id in library.STAFF_IDS:
 			worker.walking = false
 			worker.phase = "work"
 			worker.job = {"src": "boil"}
 			actor.display(worker, 1.2)
-			_check(actor.frame_actor.action == "work" and actor.frame_actor.sprite.animation == "work_back_right" and not actor.frame_actor.sprite.flip_h, id + " operates toward the pot")
+			_check(actor.frame_actor.action == "work" and actor.frame_actor.sprite.animation == "work_back_right" and actor.frame_actor.sprite.flip_h == (id in ["fox", "parrot"]), id + " operates toward the pot")
 			var work_phase: float = actor.frame_actor.get_phase()
 			actor.display(worker, 1.2)
 			_check(is_equal_approx(work_phase, actor.frame_actor.get_phase()), "paused clock freezes operation")
 			worker.phase = "pickup"
 			worker.job = {"src": "lemonade", "item": "lemonade"}
 			actor.display(worker, 1.4)
-			_check(actor.frame_actor.sprite.animation == "work_right" and actor.frame_actor.sprite.flip_h, id + " uses mirrored side operation at the left dispenser")
+			_check(actor.frame_actor.sprite.animation == "work_right" and actor.frame_actor.sprite.flip_h == (id != "fox"), id + " uses the source-aware side operation at the left dispenser")
 			if id == "rabbit":
 				var clips := ["work_front", "work_front", "work_right", "work_back_right", "work_back_right", "work_back_right", "work_right", "work_front"]
 				var counts := [17, 17, 14, 14, 14, 14, 14, 17]
@@ -84,8 +94,8 @@ func _run() -> void:
 	rules.gold = 1000000
 	for station in ["lemonade", "boil"]: rules.unlock(station)
 	rules.unlock_box("tea_leaf")
-	for unused in 4: rules.hire()
-	var cat: Dictionary = rules.roster.filter(func(w: Dictionary) -> bool: return w.kind == "gray_cat")[0]
+	for unused in 5: rules.hire()
+	var cat: Dictionary = rules.roster.filter(func(w: Dictionary) -> bool: return w.kind == "gray_cat")[-1]
 	_check(rules.deploy_worker(cat.id) == "", "gray cat deploys into the kitchen")
 	var operator = load("res://presentation/shop/shop_actor.gd").new()
 	operator.setup("gray_cat", font)
@@ -102,13 +112,14 @@ func _run() -> void:
 			break
 	_check(operated, "real kitchen production reaches operation")
 	operator.free()
-	var hiring := LegacyRules.new(tea)
+	var active_tea: SpecShop = load("res://content/shops/tea/shop.tres")
+	var hiring := ShopRules.new(active_tea)
 	hiring.gold = 10000
-	for id in ["raccoon", "fox", "rabbit", "gray_cat", "bear"]:
-		_check(hiring.next_hire_kind() == id and hiring.hire() == "", "recruit existing animals before new bear")
-	_check(hiring.worker_by_id(6).kind == "bear", "bear has its own staff identity")
-	var copy := LegacyRules.new(tea)
-	_check(copy.load_dict(hiring.to_dict()) == "" and copy.worker_by_id(6).kind == "bear", "bear survives save roundtrip")
+	for id in ["bear", "rabbit", "fox", "parrot", "gray_cat"]:
+		_check(hiring.next_hire_kind() == id and hiring.hire() == "", "recruit only active staff species")
+	_check(hiring.worker_by_id(2).kind == "bear", "bear has its own staff identity")
+	var copy := ShopRules.new(active_tea)
+	_check(copy.load_dict(hiring.to_dict()) == "" and copy.worker_by_id(2).kind == "bear", "bear survives save roundtrip")
 	_finish()
 
 func _finish() -> void:
