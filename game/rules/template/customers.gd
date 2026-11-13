@@ -9,11 +9,16 @@ const Presentation := preload("res://content/characters/actor_presentation.tres"
 var last_error := ""
 var _nav: RuleNav
 var _records: Array = []
+var _extra_ports: Dictionary = {}
 
-func _init(nav: RuleNav) -> void:
+func _init(nav: RuleNav, extra_ports: Dictionary = {}) -> void:
 	_nav = nav
 	if nav == null or nav.layout == null or nav.layout.motion_version != 1 or not nav.layout.actor_areas.has("customer"):
 		last_error = "customer motion requires a declared access profile"
+		return
+	for key in extra_ports:
+		if not key is String or not key.begins_with("waiting_line:") or nav.layout.customer_points.has(key) or not extra_ports[key] is Vector2 or not extra_ports[key].is_finite(): last_error = "invalid additional customer port"; return
+	_extra_ports = extra_ports.duplicate()
 
 func spawn(id: int) -> String:
 	if not last_error.is_empty(): return last_error
@@ -99,7 +104,8 @@ func _find(id: int) -> Dictionary:
 func _target(key: String) -> Dictionary:
 	if _nav == null or _nav.layout == null: return {"error":"missing customer geometry"}
 	var point: Variant
-	if key.begins_with("queue:"):
+	if _extra_ports.has(key): point = _extra_ports[key]
+	elif key.begins_with("queue:"):
 		var suffix := key.trim_prefix("queue:")
 		if not suffix.is_valid_int() or str(int(suffix)) != suffix: return {"error":"invalid customer queue port"}
 		var index := int(suffix)

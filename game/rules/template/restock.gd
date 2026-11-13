@@ -6,6 +6,7 @@ const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Batch := preload("res://game/rules/template/batch_recipe.gd")
 const Limits := preload("res://game/rules/template/numeric_limits.gd")
 const Available := preload("res://game/rules/template/available_batch.gd")
+const Requirements := preload("res://game/rules/template/requirements.gd")
 var _definition: Dictionary
 var _runner: RefCounted
 var _runs: Dictionary = {}
@@ -25,6 +26,7 @@ func advance(demand: Dictionary = {}) -> String:
 			var run: Dictionary = _runner.machines.run(_runs[id])
 			if run.get("phase", "") not in ["completed", "cancelled"]: continue
 			_runs[id] = -1
+		if rule.has("requires") and not Requirements.met(rule.requires,_runner.owner): continue
 		var available := Available.enabled(rule)
 		var planned := Available.plan(rule,_runner,_target(rule,demand),false) if available else Batch.evaluate(rule, _runner.owner.mods)
 		if not planned.error.is_empty(): return "restocks." + id + ": " + planned.error
@@ -53,6 +55,7 @@ func candidates(demand: Dictionary = {}) -> Array:
 			if String(run.get("phase", "")).begins_with("await_"):
 				out.append({"kind":"operate", "run":run.id, "port":_runner.machines.stage_port(run.id)})
 			if not available: continue
+		if rule.has("requires") and not Requirements.met(rule.requires,_runner.owner): continue
 		var planned := Available.plan(rule,_runner,_target(rule,demand),true) if available else Batch.evaluate(rule, _runner.owner.mods)
 		if not planned.error.is_empty(): continue
 		if planned.definition.is_empty(): continue
@@ -94,6 +97,13 @@ func validate_snapshot(data: Dictionary, machine_state: Dictionary, stock_state:
 
 func restore_validated(data: Dictionary) -> void:
 	_runs = data.runs.duplicate()
+
+func validate_context() -> String:
+	for rule in _definition.values():
+		if not rule.has("requires"): continue
+		var error := Requirements.reference_error(rule.requires,_runner.owner)
+		if not error.is_empty(): return error
+	return ""
 
 func _can_fill(rule: Dictionary, demand: Dictionary) -> bool:
 	var device: Dictionary = _runner.machines.snapshot().definitions[rule.machine]
@@ -137,7 +147,7 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 			continue
 		var valid := true
 		for key in rule:
-			if key not in ["machine", "consumes", "produces", "sources", "seconds", "fetch_seconds", "stock_limit", "policy", "batch", "fetch_timing_target", "fetch_fixed"]: valid = false
+			if key not in ["machine", "consumes", "produces", "sources", "seconds", "fetch_seconds", "stock_limit", "policy", "batch", "fetch_timing_target", "fetch_fixed", "requires"]: valid = false
 		if not rule.get("fetch_timing_target", "") is String or not rule.get("fetch_fixed", false) is bool: valid = false
 		elif rule.get("fetch_fixed", false) and String(rule.get("fetch_timing_target", "")).is_empty(): valid = false
 		if not rule.get("machine") is String or not machines.has(rule.machine) or not rule.get("consumes", {}) is Dictionary or not rule.get("produces") is Dictionary or not rule.get("sources", {}) is Dictionary: valid = false
@@ -184,6 +194,9 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 		if not String(rule.get("fetch_timing_target", "")).is_empty():
 			result[id].fetch_timing_target = rule.fetch_timing_target
 			result[id].fetch_fixed = bool(rule.get("fetch_fixed",false))
+		var requirements := Requirements.compile(rule.get("requires",{}))
+		if not requirements.error.is_empty(): errors.append({"code":"invalid_restock_requirements","path":path+".requires","message":requirements.error})
+		elif not rule.get("requires",{}).is_empty(): result[id].requires = requirements.definition
 	return {"definition":result, "errors":errors}
 
 static func _policy(raw: Variant) -> Dictionary:

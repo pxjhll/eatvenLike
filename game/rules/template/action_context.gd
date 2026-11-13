@@ -35,11 +35,12 @@ func ready(worker: Dictionary, action: Dictionary) -> String:
 	if action.kind in ["move", "transport"]: return ""
 	if not runner.ports.has(action.target) or worker.walking or not Vector2(worker.pos).is_equal_approx(runner.ports[action.target]): return "not at capability port"
 	if action.kind == "operate":
-		if task.kind == "interact": return ""
+		if task.kind == "interact": return "" if runner.dispatcher == null or runner.dispatcher.customer_ready(task) else "customer not at admission port"
 		if worker.action.started: return ""
 		var run: Dictionary = runner.machines.run(task.run)
 		return "" if run.get("phase", "") == "await_" + task.stage else "machine stage changed"
 	if task.kind == "bundle" and action.kind == "drop":
+		if runner.dispatcher != null and not runner.dispatcher.customer_ready(task): return "customer not at delivery port"
 		for pick in task.picks:
 			if runner.inventory.claim(pick.claim).get("state", "") != "held": return "bundle stock unavailable"
 		return ""

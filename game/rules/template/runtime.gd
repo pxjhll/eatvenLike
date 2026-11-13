@@ -44,6 +44,8 @@ func _init(owner: RefCounted, template: Resource) -> void:
 			last_error = runner.machines.track_slots(id,machine.slot_ceiling)
 			if not last_error.is_empty(): return
 	_restocks = Restock.new(_definition.restocks, runner)
+	last_error = _restocks.validate_context()
+	if not last_error.is_empty(): return
 	last_error = Clock.validate(_definition,runner.owner)
 	if not last_error.is_empty(): return
 	last_error = Limits.sync(_definition,runner)
@@ -65,6 +67,16 @@ func set_service_open(value: bool) -> String:
 	if service == null: return "template has no customer service capability"
 	return service.set_open(value)
 
+func send_flyers() -> String:
+	if not last_error.is_empty(): return last_error
+	if service == null: return "template has no customer service capability"
+	var error: String = service.send_flyers()
+	if not error.is_empty(): return error
+	# Observers may save/restore or try a second command; commit precedes emit.
+	runner.owner.events.clock = _clock
+	runner.owner.events.emit("flyer",{})
+	return ""
+
 func request_production(recipe: String) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}
 	if not _definition.recipes.has(recipe): return {"error":"unknown production recipe", "id":-1}
@@ -77,6 +89,9 @@ func step(dt: float, paused := false) -> String:
 	if not last_error.is_empty(): return last_error
 	if not is_finite(dt) or dt < 0.0: return "invalid production time"
 	if paused or dt == 0.0: return ""
+	if service != null:
+		var service_error: String = service.validate_context()
+		if not service_error.is_empty(): last_error = service_error; return service_error
 	var error: String = Clock.validate(_definition,runner.owner)
 	if not error.is_empty(): last_error = error; return error
 	error = Limits.sync(_definition,runner)
@@ -158,6 +173,9 @@ func restore(data: Dictionary) -> String:
 	if (service == null) != data.service.is_empty(): return "service state differs from declared capabilities"
 	if data.version != 1 or data.signature != _definition.signature: return "production template signature differs"
 	if not is_finite(data.clock) or data.clock < 0.0 or data.next_unit < 1: return "invalid production sequence or clock"
+	if service != null:
+		var service_error: String = service.validate_context()
+		if not service_error.is_empty(): return service_error
 	var clock_error := Clock.validate(_definition,runner.owner)
 	if not clock_error.is_empty(): return clock_error
 	var limit_values := Limits.plan(_definition,runner.owner.mods)

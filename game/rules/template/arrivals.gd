@@ -13,8 +13,9 @@ func _init(definition: Dictionary) -> void:
 	_state = {"version":1, "signature":Contract._canonical(definition).sha256_text(),
 		"open":false, "started":false, "left":float(definition.first_delay), "attempts":0}
 
-static func compile(raw: Dictionary, menu: Dictionary, capacity: int = -1) -> Dictionary:
+static func compile(raw: Dictionary, menu: Dictionary, capacity: int = -1, selected_menu := false) -> Dictionary:
 	if raw.is_empty(): return {"definition":{}, "error":""}
+	if selected_menu and raw.has("interval"): return _error("stage menu selection owns arrival intervals")
 	var result := DEFAULTS.duplicate(true)
 	for key in raw:
 		if not result.has(key): return _error("unsupported arrival parameter: " + str(key))
@@ -24,7 +25,8 @@ static func compile(raw: Dictionary, menu: Dictionary, capacity: int = -1) -> Di
 		if not (result[key] is int or result[key] is float) or not is_finite(float(result[key])) or result[key] < 0.0: return _error("invalid arrival duration")
 		result[key] = float(result[key])
 	if result.interval <= 0.0 or not result.opening is int or result.opening < 0: return _error("invalid arrival interval or opening wave")
-	if not result.choices is Array or result.choices.is_empty(): return _error("missing arrival menu choices")
+	if not result.choices is Array or (result.choices.is_empty() and not selected_menu): return _error("missing arrival menu choices")
+	if selected_menu and not result.choices.is_empty(): return _error("arrival choices conflict with dynamic menu selection")
 	var total_weight := 0.0
 	for choice in result.choices:
 		if not choice is Dictionary or choice.size() != 2 or not choice.get("request") is Array or choice.request.is_empty(): return _error("invalid arrival menu choice")

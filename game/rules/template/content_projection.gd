@@ -30,6 +30,10 @@ static func _label(path: Array) -> bool:
 	return path.size() == 5 and path[0] == "recipes" and path[2] == "nodes" and path[3] == "[]" and path[4] == "label"
 
 static func _tunable(path: Array) -> bool:
+	if path.size()==3 and path.slice(0,2)==["service","flyers"]: return path[2] in ["count","cooldown","gap","first_delay","seconds"]
+	if path == ["service","selection","addon","share"]: return true
+	if path == ["service","selection","stages","[]","interval"]: return true
+	if path.size() == 6 and path.slice(0,5) == ["service","selection","stages","[]","weights"]: return true
 	if path.size() == 5 and path.slice(0,4) == ["service","customization","options","[]"]: return path[4] in ["share","price_mult"]
 	if path.size() == 5 and path[0] == "recipes" and path[2] == "nodes" and path[3] == "[]": return path[4] == "seconds"
 	if path.size() == 4 and path[0] == "machines" and path[2] == "profile": return path[3] in ["load_seconds", "unload_seconds", "stir_seconds"]

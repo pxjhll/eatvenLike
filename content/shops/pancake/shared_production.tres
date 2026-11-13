@@ -25,6 +25,10 @@ places = {
 "anchor": "raw_ingredients",
 "infinite": ["flour"]
 },
+"front": {
+"anchor": "front_counter",
+"capacity": 0
+},
 "fryer:in": {
 "anchor": "fryer",
 "capacity": 0
@@ -204,6 +208,9 @@ restocks = {
 },
 "produces": {
 "crisp": 4
+},
+"requires": {
+"stations": ["fryer"]
 },
 "seconds": 18.0,
 "stock_limit": 8
@@ -1359,12 +1366,198 @@ recipes = {
 }
 }
 }
+service = {
+"admission": "employee",
+"admission_port": "front",
+"admission_seconds": 0.0,
+"arrivals": {
+"first_delay": 1.5,
+"pattern": "exponential"
+},
+"customization": {
+"options": [{
+"id": "bag",
+"price_mult": 1.25,
+"share": 0.4,
+"unlock": "bag"
+}],
+"variants": {
+"bacon": [{
+"options": ["bag"],
+"recipe": "bacon:bag"
+}],
+"family": [{
+"options": ["bag"],
+"recipe": "family:bag"
+}],
+"floss": [{
+"options": ["bag"],
+"recipe": "floss:bag"
+}],
+"guozi": [{
+"options": ["bag"],
+"recipe": "guozi:bag"
+}],
+"ham": [{
+"options": ["bag"],
+"recipe": "ham:bag"
+}],
+"plain": [{
+"options": ["bag"],
+"recipe": "plain:bag"
+}],
+"soy": [{
+"options": ["bag"],
+"recipe": "soy:bag"
+}]
+}
+},
+"delivery": "counter",
+"delivery_ready": "whole_order",
+"eat_seconds": 0.0,
+&"flyers": {
+"cooldown": 120.0,
+"count": 4,
+"gap": 3.0,
+"pattern": "gap",
+"when_full": "lost"
+},
+"handoff_port": "front",
+"menu": {
+"bacon": "bacon",
+"family": "family",
+"floss": "floss",
+"guozi": "guozi",
+"ham": "ham",
+"plain": "plain",
+"soy": "soy"
+},
+"orders": {
+"patience": 0.0,
+"pay_at": "on_deliver",
+"queue_release": "after_take",
+"rounding": "order_round"
+},
+"selection": {
+"addon": {
+"dish": "soy",
+"first": true,
+"share": 0.3
+},
+"gates": {
+"bacon": {
+"boxes": ["flour"],
+&"levels": {
+"topping": 3
+},
+"stations": ["raw_ingredients", "rear_equipment", "fryer", "topping", "roll"]
+},
+"family": {
+"boxes": ["flour"],
+&"levels": {
+"topping": 4
+},
+"stations": ["raw_ingredients", "rear_equipment", "fryer", "topping", "roll"]
+},
+"floss": {
+"boxes": ["flour"],
+&"levels": {
+"topping": 2
+},
+"stations": ["raw_ingredients", "rear_equipment", "fryer", "topping", "roll"]
+},
+"guozi": {
+"boxes": ["flour"],
+"stations": ["raw_ingredients", "rear_equipment", "fryer", "roll"]
+},
+"ham": {
+"boxes": ["flour"],
+&"levels": {
+"topping": 1
+},
+"stations": ["raw_ingredients", "rear_equipment", "fryer", "topping", "roll"]
+},
+"plain": {
+"boxes": ["flour"],
+"stations": ["raw_ingredients", "rear_equipment", "roll"]
+},
+"soy": {
+"boxes": [],
+"stations": ["soy_milk"]
+}
+},
+"groups": [{
+"dishes": ["ham", "floss", "bacon", "family"],
+"fallback": "guozi",
+"id": "meat"
+}],
+"order": ["soy", "plain", "guozi", "ham", "floss", "bacon", "family"],
+"stages": [{
+"interval": 10.0,
+"weights": Dictionary[String, float]({
+"soy": 1.0
+})
+}, {
+"interval": 7.5,
+"weights": Dictionary[String, float]({
+"plain": 0.6,
+"soy": 0.4
+})
+}, {
+"interval": 6.0,
+"weights": Dictionary[String, float]({
+"guozi": 0.5,
+"plain": 0.2,
+"soy": 0.3
+})
+}, {
+"interval": 4.5,
+"weights": Dictionary[String, float]({
+"guozi": 0.2,
+"meat": 0.45,
+"plain": 0.1,
+"soy": 0.25
+})
+}, {
+"interval": 4.5,
+"weights": Dictionary[String, float]({
+"guozi": 0.2,
+"meat": 0.45,
+"plain": 0.1,
+"soy": 0.25
+})
+}]
+},
+&"waiting": {
+"group": "cushion",
+"line": [Vector2(470, 1040), Vector2(380, 1050), Vector2(290, 1060), Vector2(200, 1070), Vector2(110, 1080), Vector2(110, 1140), Vector2(200, 1140), Vector2(290, 1140), Vector2(380, 1140), Vector2(470, 1140)],
+"ports": ["wait:cushion/0", "wait:cushion/1", "wait:cushion/2", "wait:cushion/3", "wait:cushion/4", "wait:cushion/5", "wait:cushion/6", "wait:cushion/7", "wait:cushion/8"],
+"retain_after_take": true,
+"stages": [{
+"seats": 0,
+"standing": 3
+}, {
+"seats": 2,
+"standing": 4
+}, {
+"seats": 5,
+"standing": 4
+}, {
+"seats": 9,
+"standing": 6
+}, {
+"seats": 9,
+"standing": 6
+}]
+}
+}
 dispatch = {
 "affinity": "exclusive",
 "help_while_waiting": true,
 "hold_machine": true,
 "roles": {
 "staff": {
+&"interact": ["front"],
 "operate": ["*"],
 "transfer_from": ["*"],
 "transfer_to": ["*"]

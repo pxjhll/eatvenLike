@@ -86,6 +86,16 @@ func rank(worker: Dictionary, candidates: Array) -> Array:
 func _facts() -> Dictionary:
 	return {"units":{}, "open":{}} if _runtime_ref == null else _runtime_ref.get_ref().dispatch_facts()
 
+func customer_ready(task: Dictionary) -> bool:
+	if _runtime_ref == null: return true
+	var runtime: RefCounted = _runtime_ref.get_ref()
+	if runtime.service == null or runtime.service.waiting == null: return true
+	if task.kind == "interact": return runtime.service.customers.ready(task.subject,"queue:0")
+	if task.to.begins_with("guest:"):
+		var id := int(task.to.trim_prefix("guest:"))
+		return runtime.service.customers.ready(id,runtime.service._destination(runtime.service.orders.guest(id)))
+	return true
+
 func context_for_candidate(candidate: Dictionary, facts: Dictionary = {}) -> Dictionary:
 	if facts.is_empty(): facts = _facts()
 	if candidate.kind == "interact":
