@@ -415,7 +415,7 @@ func _transport_scope(stock: RefCounted, claims: Array, worker: Dictionary) -> D
 func _sync_hand(worker: Dictionary) -> void:
 	worker.carry_item = ""
 	worker.carry_count = 0
-	for lot in inventory.snapshot().lots:
+	for lot in inventory.active_snapshot().lots:
 		if lot.place != "hand:" + str(worker.id): continue
 		if worker.carry_item.is_empty(): worker.carry_item = String(lot.item)
 		worker.carry_count += int(lot.count)

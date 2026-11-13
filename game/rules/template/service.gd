@@ -164,11 +164,11 @@ func validate_context() -> String:
 	var error: String = Selection.validate(_policy.selection,_runtime.runner.owner) if _policy.has("selection") else ""
 	if error.is_empty() and waiting != null: error = waiting.validate(_runtime.runner.owner,customers)
 	if error.is_empty() and flyers != null: error = flyers.values(_runtime.runner.owner.mods).error
-	if error.is_empty() and dining != null: error = dining.validate(_runtime.runner.owner,orders.snapshot())
-	if error.is_empty() and seating != null: error = seating.validate(_runtime.runner.owner,orders.snapshot())
+	if error.is_empty() and dining != null: error = dining.validate(_runtime.runner.owner,orders.active_snapshot())
+	if error.is_empty() and seating != null: error = seating.validate(_runtime.runner.owner,orders.active_snapshot())
 	if error.is_empty() and pickup_queue != null:
 		error = pickup_queue.validate(customers)
-		if error.is_empty(): error = pickup_queue.targets(orders.snapshot(),_deliveries).error
+		if error.is_empty(): error = pickup_queue.targets(orders.active_snapshot(),_deliveries).error
 	return error
 
 func send_flyers() -> String:
@@ -178,9 +178,9 @@ func send_flyers() -> String:
 	return flyers.send(arrivals.snapshot().open,_runtime.runner.owner.mods)
 
 func queue_capacity() -> int:
-	if dining != null: return dining.capacity(_runtime.runner.owner,orders.snapshot())
+	if dining != null: return dining.capacity(_runtime.runner.owner,orders.active_snapshot())
 	if seating != null: return seating.capacity(_runtime.runner.owner)
-	return waiting.capacity(_runtime.runner.owner,orders.snapshot()) if waiting != null else _runtime.runner.owner.nav.layout.customer_queue.size()
+	return waiting.capacity(_runtime.runner.owner,orders.active_snapshot()) if waiting != null else _runtime.runner.owner.nav.layout.customer_queue.size()
 
 func menu_weights() -> Dictionary:
 	return Selection.weights(_policy.selection,_runtime.runner.owner,ramp.counts() if ramp!=null else {}) if _policy.has("selection") else {}
@@ -197,10 +197,10 @@ func advance(dt: float) -> String:
 	if not error.is_empty(): return error
 	error = customers.advance(dt)
 	if not error.is_empty(): return error
-	var loss_before: int = orders.snapshot().lost
+	var loss_before: int = orders.active_snapshot().lost
 	error = orders.advance(dt)
 	if not error.is_empty(): return error
-	for unused in int(orders.snapshot().lost)-loss_before: _runtime.runner.owner.events.emit("lost",{})
+	for unused in int(orders.active_snapshot().lost)-loss_before: _runtime.runner.owner.events.emit("lost",{})
 	for event in _runtime.runner.take_interactions():
 		var guest: Dictionary = orders.guest(event.subject)
 		if guest.is_empty() or guest.claimed != event.worker or event.purpose != "admit": return "interaction has no admission claim"
@@ -211,7 +211,7 @@ func advance(dt: float) -> String:
 	if not error.is_empty(): return error
 	error = orders.advance_meals(dt, _runtime.runner.inventory)
 	if not error.is_empty(): return error
-	for guest in orders.snapshot().guests:
+	for guest in orders.active_snapshot().guests:
 		if guest.state == "leaving":
 			error = customers.request(guest.id, "exit")
 			if error.is_empty() and customers.ready(guest.id, "exit"):
@@ -234,8 +234,8 @@ func advance(dt: float) -> String:
 		if not error.is_empty(): return error
 	return _fulfill()
 
-func frame() -> Dictionary:
-	var state: Dictionary = orders.snapshot()
+func frame(active_only := false) -> Dictionary:
+	var state: Dictionary = orders.active_snapshot() if active_only else orders.snapshot()
 	var result := {"guests":state.guests, "orders":state.orders, "queue":orders.queue(), "lost":state.lost,
 		"customers":customers.snapshot().customers, "arrivals":arrivals.snapshot() if arrivals != null else {}}
 	if waiting != null: result.waiting = waiting.snapshot(); result.queue_capacity = queue_capacity()
@@ -255,7 +255,7 @@ func snapshot() -> Dictionary:
 	if dining != null: result.dining = dining.snapshot()
 	return result
 
-func prepare_restore(data: Dictionary, stock: RefCounted) -> String:
+func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := false) -> String:
 	var shape := {"version":0, "orders":{}, "customers":{}, "deliveries":[], "arrivals":{}}
 	if waiting != null: shape.waiting = {}
 	if flyers != null: shape.flyers = {}
@@ -267,7 +267,7 @@ func prepare_restore(data: Dictionary, stock: RefCounted) -> String:
 		var arrival_error: String = arrivals.restore(data.arrivals)
 		if not arrival_error.is_empty(): return arrival_error
 	if flyers != null:
-		var flyer_error: String = flyers.restore(data.flyers)
+		var flyer_error: String = flyers.restore(data.flyers,refresh_numeric)
 		if not flyer_error.is_empty(): return flyer_error
 	var error: String = orders.restore(data.orders, stock)
 	if not error.is_empty(): return error
@@ -278,7 +278,7 @@ func prepare_restore(data: Dictionary, stock: RefCounted) -> String:
 		error = seating.validate(_runtime.runner.owner,data.orders)
 		if not error.is_empty(): return error
 	if ramp != null:
-		error = ramp.restore(data.ramp,int(data.orders.next_order)-1 if _deferred() else int(data.orders.next_guest)-1)
+		error = ramp.restore(data.ramp,int(data.orders.next_order)-1 if _deferred() else int(data.orders.next_guest)-1,refresh_numeric)
 		if not error.is_empty(): return error
 	error = customers.restore(data.customers)
 	if not error.is_empty(): return error
@@ -424,13 +424,13 @@ func _unit_output(unit: Dictionary) -> Dictionary:
 
 func _sync_queue() -> String:
 	if dining != null:
-		var targets: Dictionary = dining.targets(orders.snapshot(),_called_guests())
+		var targets: Dictionary = dining.targets(orders.active_snapshot(),_called_guests())
 		for id in targets:
 			var error: String = customers.request(id,targets[id])
 			if not error.is_empty(): return error
 		return ""
 	if waiting != null:
-		var plan: Dictionary = waiting.sync(_runtime.runner.owner,orders.snapshot(),_called_guests(),_policy.admission=="automatic")
+		var plan: Dictionary = waiting.sync(_runtime.runner.owner,orders.active_snapshot(),_called_guests(),_policy.admission=="automatic")
 		if not plan.error.is_empty(): return plan.error
 		for guest in plan.targets:
 			var error: String = customers.request(guest,plan.targets[guest])
@@ -449,7 +449,7 @@ func _called_guests() -> Dictionary:
 	for delivery in _deliveries:
 		var order: Dictionary = orders.order(delivery.order)
 		if not order.is_empty(): called[order.guest] = true
-	for order in orders.snapshot().orders:
+	for order in orders.active_snapshot().orders:
 		for line in order.lines:
 			if line.delivered>0: called[order.guest] = true
 	return called
@@ -459,7 +459,7 @@ func _free_seat() -> String:
 	if seating != null: available = seating.seats(_runtime.runner.owner)
 	for seat in available:
 		var free := true
-		for guest in orders.snapshot().guests:
+		for guest in orders.active_snapshot().guests:
 			if guest.seat == seat and guest.state != "gone" and not ((dining!=null or seating!=null) and guest.state=="leaving"): free = false; break
 		if free: return seat
 	return ""
@@ -562,10 +562,10 @@ func _delivery_target(guest: Dictionary) -> String:
 
 func _pickup_target(guest: Dictionary) -> String:
 	if pickup_queue==null: return "pickup"
-	return String(pickup_queue.targets(orders.snapshot(),_deliveries).targets.get(guest.id,""))
+	return String(pickup_queue.targets(orders.active_snapshot(),_deliveries).targets.get(guest.id,""))
 
 func _sync_pickups() -> String:
-	var plan: Dictionary = pickup_queue.targets(orders.snapshot(),_deliveries)
+	var plan: Dictionary = pickup_queue.targets(orders.active_snapshot(),_deliveries)
 	if not plan.error.is_empty(): return plan.error
 	for id in plan.targets:
 		var error: String = customers.request(id,plan.targets[id])
@@ -587,7 +587,7 @@ func _customer_carrying(order: int) -> bool:
 
 func _fulfill() -> String:
 	if _policy.delivery != "self_pickup": return ""
-	for order in orders.snapshot().orders:
+	for order in orders.active_snapshot().orders:
 		if order.state == "delivered": continue
 		var guest: Dictionary = orders.guest(order.guest)
 		if _customer_carrying(order.id) or not customers.ready(guest.id, _pickup_target(guest)): continue
@@ -614,7 +614,7 @@ func candidates(worker: Dictionary) -> Array:
 			out.append({"kind":"interact", "category":"admit", "guest":int(guest.id), "unit":-1,
 				"from":String(_policy.admission_port), "to":String(_policy.admission_port), "seconds":float(_policy.admission_seconds)})
 	if not _eligible(worker, _policy.delivery_roles): return out
-	for order in orders.snapshot().orders:
+	for order in orders.active_snapshot().orders:
 		if order.state == "delivered": continue
 		var guest: Dictionary = orders.guest(order.guest)
 		if _policy.delivery == "self_pickup":
@@ -728,7 +728,7 @@ func _reconcile_delivery_records(dt: float) -> String:
 			if _policy.orders.pay_at == "on_deliver":
 				var receipt: Dictionary = orders.settle(order.id, _runtime.runner.owner._sales)
 				if not String(receipt.error).is_empty(): return receipt.error
-			_runtime.runner.owner.events.emit("sale",_sale_event(order))
+			_runtime.runner.owner.events.emit("sale",_sale_event(orders.order(order.id)))
 			if dining != null:
 				var error: String = orders.prepare_meal(guest.id,0.0 if guest.seat.is_empty() else dining.seconds(_runtime.runner.owner))
 				if not error.is_empty(): return error

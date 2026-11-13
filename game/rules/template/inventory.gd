@@ -67,6 +67,15 @@ func incoming(place: String, item: String, owner: int = ANY_OWNER) -> int:
 				if original_owner == owner: count += int(part.count)
 	return count
 
+## Shared-source demand needs allocation facts, not nested historical proofs.
+func allocated_transfers(owners: Dictionary) -> Array:
+	var result: Array = []
+	if owners.is_empty(): return result
+	for claim in _state.claims:
+		if claim.kind != "transfer" or claim.state == "cancelled" or not owners.has(claim.allocate_owner): continue
+		result.append({"allocate_owner":claim.allocate_owner,"from":claim.from,"to":claim.to,"item":claim.item,"count":claim.count})
+	return result
+
 func reserve_transfer(worker: int, source: String, destination: String, item: String,
 		requested: int, capacity: int, owner: int = ANY_OWNER, allocate_owner: int = ANY_OWNER) -> Dictionary:
 	if worker <= 0: return _failure("invalid worker")
@@ -242,6 +251,24 @@ func claim(id: int) -> Dictionary:
 
 func snapshot() -> Dictionary:
 	return _state.duplicate(true)
+
+## Detached stock/occupancy projection; terminal proofs belong to save reads.
+func active_snapshot() -> Dictionary:
+	var result := _state.duplicate()
+	result.places = _state.places.duplicate(true)
+	result.lots = _state.lots.duplicate(true)
+	result.created = _state.created.duplicate()
+	result.consumed = _state.consumed.duplicate()
+	result.claims = []
+	var groups := {}
+	for claim in _state.claims:
+		if claim.state not in ACTIVE: continue
+		result.claims.append(claim.duplicate(true))
+		groups[claim.group] = true
+	result.bundles = []
+	for group in _state.bundles:
+		if groups.has(group.id): result.bundles.append(group.duplicate(true))
+	return result
 
 func restore(data: Dictionary) -> String:
 	var candidate: RefCounted = get_script().new()

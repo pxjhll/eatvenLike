@@ -5,7 +5,7 @@ const Processing := preload("res://game/rules/template/processing_display.gd")
 ## A stock lot does not create a scene sprite. Showcase ports must be explicit.
 
 static func build(inventory: RefCounted, machines: RefCounted, displays: Array = []) -> Dictionary:
-	var source: Dictionary = inventory.snapshot()
+	var source: Dictionary = inventory.active_snapshot()
 	var frame := {"error":"", "stock":{}, "held":{}, "machines":{}, "draws":[]}
 	var lots := {}
 	for place in source.places: frame.stock[place] = {"count":0, "reserved":0, "available":0, "items":{}}
@@ -37,7 +37,7 @@ static func build(inventory: RefCounted, machines: RefCounted, displays: Array =
 		var stock: Dictionary = frame.stock[place]
 		stock.available = int(stock.count) - int(stock.reserved)
 		for item in stock.items.values(): item.available = int(item.count) - int(item.reserved)
-	var devices: Dictionary = machines.snapshot()
+	var devices: Dictionary = machines.active_snapshot()
 	for id in devices.definitions: frame.machines[id] = machines.status(id)
 	var shown := {}
 	var processing := {}

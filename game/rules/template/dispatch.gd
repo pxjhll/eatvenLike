@@ -185,7 +185,7 @@ func context_for_guest(guest: int) -> Dictionary:
 	return {"error":"", "scope":token if _facts().open.has(token) else ""}
 
 func context_for_claims(stock: RefCounted, claims: Array, facts: Dictionary = {}) -> Dictionary:
-	var source: Dictionary = stock.snapshot()
+	var source: Dictionary = stock.active_snapshot()
 	var owners := {}
 	for lot in source.lots: owners[lot.id] = lot.owner
 	var ids: Array = []

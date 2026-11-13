@@ -73,8 +73,8 @@ static func frame(definition: Dictionary, runner: RefCounted) -> Dictionary:
 	var values := plan(definition,runner.owner.mods)
 	if not values.error.is_empty(): return {"error":values.error,"capacity":{},"slots":{}}
 	var result := {"error":"","capacity":{},"slots":{}}
-	var stock: Dictionary = runner.inventory.snapshot()
-	var machines: Dictionary = runner.machines.snapshot()
+	var stock: Dictionary = runner.inventory.active_snapshot()
+	var machines: Dictionary = runner.machines.active_snapshot()
 	for id in values.definition.capacity:
 		result.capacity[id] = {"target":values.definition.capacity[id],"applied":stock.places[id].capacity,"used":runner.inventory.occupied_capacity(id)}
 	for id in values.definition.slots:

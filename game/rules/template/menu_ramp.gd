@@ -29,11 +29,14 @@ func counts() -> Dictionary:
 func snapshot() -> Dictionary:
 	return {"version":1,"counts":counts()}
 
-func restore(data: Dictionary, arrivals: int) -> String:
+func restore(data: Dictionary, arrivals: int, refresh_numeric := false) -> String:
 	if not Inventory._shape(data,{"version":0,"counts":{}}) or data.version!=1 or data.counts.size()!=_counts.size(): return "invalid menu ramp state"
 	for dish in _counts:
-		if not data.counts.has(dish) or not data.counts[dish] is int or data.counts[dish]<0 or data.counts[dish]>mini(int(_definition.orders),arrivals): return "invalid or impossible menu exposure"
+		if not data.counts.has(dish) or not data.counts[dish] is int or data.counts[dish]<0 or data.counts[dish]>arrivals: return "invalid or impossible menu exposure"
+		if not refresh_numeric and data.counts[dish]>int(_definition.orders): return "invalid or impossible menu exposure"
 	_counts = data.counts.duplicate()
+	if refresh_numeric:
+		for dish in _counts: _counts[dish] = mini(int(_counts[dish]),int(_definition.orders))
 	return ""
 
 static func _error(message: String) -> Dictionary:

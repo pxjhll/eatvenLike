@@ -83,7 +83,7 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false) -> St
 			recorded.service.arrivals.signature = candidate.runtime.service.arrivals.snapshot().signature
 			if not recorded.service.arrivals.started: recorded.service.arrivals.left = candidate.runtime.service.arrivals.snapshot().left
 		recorded.service.orders.policy = candidate.runtime.service.orders.snapshot().policy
-	error = candidate.runtime.restore(recorded)
+	error = candidate.runtime.restore(recorded,refresh and data.template!=identity)
 	if not error.is_empty(): return error
 	candidate.clock = data.runtime.clock
 	# Adopt validated outer facts and the same Runtime objects; rebind the one

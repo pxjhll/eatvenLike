@@ -158,9 +158,9 @@ func advance(dt: float, paused := false) -> String:
 	if not is_finite(dt) or dt < 0.0: return "invalid customer time"
 	if paused or dt == 0.0: return ""
 	for guest in _state.guests:
-		if guest.state != "queue": continue
+		if guest.state not in ["queue","waiting"]: continue
 		guest.wait += dt
-		if float(_policy.patience) > 0.0 and guest.wait >= float(_policy.patience) and guest.claimed == -1:
+		if guest.state == "queue" and float(_policy.patience) > 0.0 and guest.wait >= float(_policy.patience) and guest.claimed == -1:
 			guest.state = "leaving"
 			guest.queued = false
 			_state.lost += 1
@@ -246,6 +246,21 @@ func order(id: int) -> Dictionary:
 
 func snapshot() -> Dictionary:
 	return _state.duplicate(true)
+
+## Current service reads do not need departed customers and their receipts.
+## Full history remains available through snapshot() for saves and validation.
+func active_snapshot() -> Dictionary:
+	var result := _state.duplicate()
+	var active := {}
+	result.guests = []
+	for guest in _state.guests:
+		if guest.state == "gone": continue
+		active[guest.id] = true
+		result.guests.append(guest.duplicate(true))
+	result.orders = []
+	for order in _state.orders:
+		if active.has(order.guest): result.orders.append(order.duplicate(true))
+	return result
 
 func restore(data: Dictionary, inventory: RefCounted) -> String:
 	var error := _validate(data, inventory)

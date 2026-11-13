@@ -230,6 +230,14 @@ func status(machine: String) -> Dictionary:
 func snapshot() -> Dictionary:
 	return _state.duplicate(true)
 
+func active_snapshot() -> Dictionary:
+	var result := _state.duplicate()
+	result.definitions = _state.definitions.duplicate(true)
+	result.runs = []
+	for run in _state.runs:
+		if run.phase not in TERMINAL: result.runs.append(run.duplicate(true))
+	return result
+
 func restore(data: Dictionary) -> String:
 	var candidate: RefCounted = get_script().new(_inventory)
 	candidate._state = data.duplicate(true)

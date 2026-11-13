@@ -342,6 +342,16 @@ func _single() -> void:
 				line.units = [{"unit":unit_id,"qty":1,"delivered":0}]
 				order.lines.append(line); order.quote += line.price
 				guest.request.append({"dish":dish,"recipe":recipe,"item":line.item,"qty":1})
+			# Legacy paid stores the accepted total even when payment is deferred.
+			# Individual historical prices are unavailable; preserve their current
+			# proportions while retaining the authoritative locked receipt exactly.
+			var quoted: float = order.quote
+			var remaining: float = before.paid
+			for index in order.lines.size():
+				var row: Dictionary = order.lines[index]
+				row.price = remaining if index==order.lines.size()-1 else (float(before.paid)*float(row.price)/quoted if quoted>0.0 else 0.0)
+				remaining -= float(row.price)
+			order.quote = float(before.paid)
 		else:
 			var guest := Orders._guest()
 			guest.id = int(before.id); guest.wait = float(before.wait)

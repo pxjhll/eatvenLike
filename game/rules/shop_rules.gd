@@ -61,7 +61,7 @@ var sold_by_dish: Dictionary:
 	get: return _sales.sold_by_dish
 	set(value): _sales.sold_by_dish = value
 var lost: int:
-	get: return int(runtime.service.orders.snapshot().lost) if runtime!=null and runtime.service!=null else _orders_state.lost
+	get: return int(runtime.service.orders.active_snapshot().lost) if runtime!=null and runtime.service!=null else _orders_state.lost
 	set(value): _orders_state.lost = value
 var stage_index := 0
 var unlocked: Dictionary = {}
@@ -671,7 +671,7 @@ func queue_size() -> int:
 
 ## 开张以来进店的人数
 func arrivals() -> int:
-	if runtime!=null: return int(runtime.service.orders.snapshot().next_guest)-1
+	if runtime!=null: return int(runtime.service.orders.active_snapshot().next_guest)-1
 	return (_next_customer_id if _queued_arrivals() else _next_order) - 1
 
 
@@ -743,7 +743,7 @@ func seat_seconds() -> float:
 
 
 func seated_orders() -> int:
-	return runtime.service.orders.snapshot().guests.filter(func(guest: Dictionary) -> bool: return guest.queued and not guest.seat.is_empty()).size() if runtime!=null else 0
+	return runtime.service.orders.active_snapshot().guests.filter(func(guest: Dictionary) -> bool: return guest.queued and not guest.seat.is_empty()).size() if runtime!=null else 0
 
 
 func free_seats() -> int:
@@ -768,7 +768,7 @@ func order_mood(order: Dictionary) -> int:
 
 ## 还在等餐的客人：一人跟单的店是排着队的客人，跟单+递杯的店是订单
 func waiting_customers() -> Array:
-	return runtime.service.orders.snapshot().guests.filter(func(guest: Dictionary) -> bool: return guest.state in ["queue","waiting"]) if runtime!=null else []
+	return runtime.service.orders.active_snapshot().guests.filter(func(guest: Dictionary) -> bool: return guest.state in ["queue","waiting"]) if runtime!=null else []
 
 ## 等急了（心情最差）的客人有几个
 func angry_count() -> int:

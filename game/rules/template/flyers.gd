@@ -88,15 +88,18 @@ func consume() -> void:
 func snapshot() -> Dictionary:
 	return _state.duplicate(true)
 
-func restore(data: Variant) -> String:
+func restore(data: Variant, refresh_numeric := false) -> String:
 	if not Inventory._shape(data,{"version":0,"pending":0,"elapsed":0.0,"cooldown":0.0,"wave_left":0.0,"first":false}) or data.version!=1: return "invalid flyer state shape"
 	if data.pending<0 or data.pending>MAX_COUNT: return "invalid pending flyer count"
 	for key in ["elapsed","cooldown","wave_left"]:
 		if not is_finite(data[key]) or data[key]<0.0: return "invalid flyer clock"
 	if data.pending==0 and (data.elapsed!=0.0 or data.first): return "empty flyer queue has a cadence"
 	if _definition.pattern=="gap" and data.wave_left!=0.0: return "gap flyer has an unrelated spread clock"
-	if _definition.pattern=="spread" and (data.first or data.wave_left>float(_definition.seconds)): return "invalid spread wave progress"
+	if _definition.pattern=="spread" and (data.first or (not refresh_numeric and data.wave_left>float(_definition.seconds))): return "invalid spread wave progress"
 	_state = data.duplicate(true)
+	# A numeric revision may shorten the remaining campaign window, but never
+	# discards queued customers, elapsed cadence or the committed cooldown.
+	if refresh_numeric and _definition.pattern=="spread": _state.wave_left = minf(float(_state.wave_left),float(_definition.seconds))
 	return ""
 
 static func _seconds(value: Variant) -> bool:

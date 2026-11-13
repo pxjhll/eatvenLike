@@ -5,7 +5,7 @@ const Numbers := preload("res://game/rules/rule_numbers.gd")
 const TemplatePresentation := preload("res://game/rules/template/presentation.gd")
 
 static func build(runtime: RefCounted, displays: Array = [], presentation: Dictionary = {}) -> Dictionary:
-	var frame: Dictionary = runtime.frame(displays)
+	var frame: Dictionary = runtime.frame(displays,true)
 	var owner: RefCounted = runtime.runner.owner
 	frame.presentation_version = 1
 	for key in ["gold","revenue","sold","paused","stage_index","completed_at","seats","belts"]:
@@ -64,7 +64,7 @@ static func seats_used(runtime: RefCounted, group: Resource) -> int:
 		if runtime.service.waiting==null: return 0
 		return runtime.service.waiting.snapshot().leases.size()
 	var used := {}
-	for guest in runtime.service.orders.snapshot().guests:
+	for guest in runtime.service.orders.active_snapshot().guests:
 		if not guest.seat.is_empty() and guest.state not in ["leaving","gone"]: used[guest.seat] = true
 	return used.size()
 

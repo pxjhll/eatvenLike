@@ -204,7 +204,7 @@ func _pickup_seconds(producer: Dictionary) -> float:
 	if String(producer.timing_target).is_empty(): return float(producer.seconds)
 	return Numbers.capability_seconds(runner.owner.mods, runner.owner.tune, producer.timing_target, producer.seconds, producer.fixed)
 
-func frame(displays: Array = []) -> Dictionary:
+func frame(displays: Array = [], active_only := false) -> Dictionary:
 	var bindings: Array = []
 	for machine in _definition.get("machines",{}).values():
 		if machine.has("processing_display"): bindings.append(machine.processing_display)
@@ -216,7 +216,7 @@ func frame(displays: Array = []) -> Dictionary:
 	if _definition.has("transports"): out.transports = _transports.frame(runner.inventory)
 	if Limits.enabled(_definition): out.limits = Limits.frame(_definition,runner)
 	if service != null:
-		var service_frame: Dictionary = service.frame()
+		var service_frame: Dictionary = service.frame(active_only)
 		for key in service_frame: out[key] = service_frame[key]
 	return out
 
@@ -240,7 +240,7 @@ func cancel_worker(id: int) -> String:
 		if not error.is_empty(): return error
 	return runner.dispatcher.reconcile()
 
-func restore(data: Dictionary) -> String:
+func restore(data: Dictionary, refresh_numeric := false) -> String:
 	if not last_error.is_empty(): return last_error
 	var dispatch_error: String = runner.dispatcher.validate_context()
 	if not dispatch_error.is_empty(): return dispatch_error
@@ -270,7 +270,7 @@ func restore(data: Dictionary) -> String:
 		if not stock_error.is_empty(): return stock_error
 		restored_service = Service.new(self, _definition.service)
 		if not restored_service.last_error.is_empty(): return restored_service.last_error
-		var service_error: String = restored_service.prepare_restore(data.service, service_stock)
+		var service_error: String = restored_service.prepare_restore(data.service, service_stock,refresh_numeric)
 		if not service_error.is_empty(): return service_error
 		dynamic = restored_service.dynamic_places()
 	var error: String = runner.validate_snapshot(data.runner, dynamic, limit_overrides.definition)
@@ -365,7 +365,7 @@ func restore(data: Dictionary) -> String:
 
 func dispatch_facts(unit_data: Variant = null, service_data: Variant = null) -> Dictionary:
 	var units: Array = _units if unit_data == null else unit_data
-	var state: Dictionary = ({"orders":service.orders.snapshot()} if service != null else {}) if service_data == null else service_data
+	var state: Dictionary = ({"orders":service.orders.active_snapshot()} if service != null else {}) if service_data == null else service_data
 	var facts := {"units":{}, "open":{}}
 	for unit in units:
 		var token := "unit:" + str(unit.id)
@@ -387,6 +387,7 @@ func dispatch_facts(unit_data: Variant = null, service_data: Variant = null) -> 
 func _reconcile() -> void:
 	for unit in _units:
 		for node in unit.running.keys():
+			if node in unit.done: continue
 			if _definition.recipes[unit.recipe].nodes[node].capability == "transfer":
 				var group: Dictionary = runner.inventory.bundle(unit.running[node])
 				var state: String = runner.inventory.claim(group.claims[0]).state

@@ -4,8 +4,11 @@ extends RefCounted
 static func build(definition: Dictionary, units: Array, stock: RefCounted, machines: RefCounted) -> Dictionary:
 	var result := {}
 	var outgoing := {}
-	for claim in stock.snapshot().claims:
-		if claim.kind != "transfer" or claim.state == "cancelled" or claim.allocate_owner < 0: continue
+	var source_units := {}
+	for unit in units:
+		var recipe: Dictionary = definition.recipes[unit.recipe]
+		if recipe.nodes[recipe.output.node].capability == "source": source_units[unit.id] = true
+	for claim in stock.allocated_transfers(source_units):
 		if not outgoing.has(claim.allocate_owner): outgoing[claim.allocate_owner] = []
 		outgoing[claim.allocate_owner].append(claim)
 	for unit in units:

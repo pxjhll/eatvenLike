@@ -182,7 +182,7 @@ func _guide_angry_cause() -> String:
 func _guide_slow_machine() -> String:
 	if _runtime!=null:
 		var oldest := {}
-		for guest in _runtime.service.orders.snapshot().guests:
+		for guest in _runtime.service.orders.active_snapshot().guests:
 			if guest.state not in ["queue","waiting"] or guest.request.is_empty(): continue
 			if oldest.is_empty() or guest.wait>oldest.wait: oldest = guest
 		if not oldest.is_empty():
