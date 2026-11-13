@@ -20,10 +20,21 @@ func _init(definition: Dictionary, runner: RefCounted, runtime: RefCounted = nul
 	_leases = Leases.new(definition, runner)
 	for profile in definition.roles:
 		if not runner.owner.shop.layout.actor_areas.has(profile): last_error = "dispatch role has no declared access profile"; return
+	last_error = validate_context()
+
+func validate_context() -> String:
+	var owner: RefCounted = _runner_ref.get_ref().owner
+	for binding in _definition.get("station_posts",{}).values():
+		if not owner.shop.layout.posts.has(binding.post): return "station binding has no declared post anchor"
+		var count := 0
+		for worker in owner.workers:
+			if worker.deployed and worker.post==binding.post: count += 1
+		if count>1: return "station post has multiple deployed occupants"
+	return ""
 
 static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -> Dictionary:
 	for key in raw:
-		if key not in ["roles", "posts", "scores", "continuation_bonus", "travel_penalty", "affinity", "affinity_bonus", "hold_machine", "help_while_waiting"]: return _error("unsupported dispatch parameter: " + str(key))
+		if key not in ["roles", "posts", "scores", "continuation_bonus", "travel_penalty", "affinity", "affinity_bonus", "hold_machine", "help_while_waiting", "station_posts", "assistance", "batch_transfers"]: return _error("unsupported dispatch parameter: " + str(key))
 	var result := {"roles":{}, "posts":{}, "scores":SCORES.duplicate(), "continuation_bonus":0.0, "travel_penalty":0.0,
 		"affinity":"none", "affinity_bonus":100.0, "hold_machine":false, "help_while_waiting":true}
 	for key in ["continuation_bonus", "travel_penalty", "affinity_bonus"]:
@@ -56,16 +67,61 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 					seen[target] = true
 				permissions[key] = entries[id][key].duplicate()
 			result[scope][id] = permissions
+	var assistance: Variant = raw.get("assistance",{})
+	if not assistance is Dictionary: return _error("invalid assistance policy")
+	var helpers := {}
+	if not raw.get("batch_transfers",false) is bool: return _error("invalid batch transfer flag")
+	if raw.get("batch_transfers",false): result.batch_transfers = true
+	for scope in assistance:
+		if scope not in ["roles","posts"] or not assistance[scope] is Dictionary: return _error("invalid assistance scope")
+		if assistance[scope].is_empty(): continue
+		helpers[scope] = {}
+		for id in assistance[scope]:
+			if not result[scope].has(id) or not assistance[scope][id] is Dictionary: return _error("assistance needs a declared native profile")
+			var rule := {"transfer_from":[],"transfer_to":[],"wait_for_admission":false}
+			for key in assistance[scope][id]:
+				var value: Variant = assistance[scope][id][key]
+				if key=="wait_for_admission":
+					if not value is bool: return _error("invalid assistance admission guard")
+				elif key in ["transfer_from","transfer_to"]:
+					if not value is Array: return _error("invalid assistance transport permission")
+					var seen := {}
+					for target in value:
+						if not target is String or (target!="*" and not places.has(target)) or seen.has(target): return _error("invalid assistance transport target")
+						seen[target] = true
+				else: return _error("assistance only grants transport")
+				rule[key] = value.duplicate() if value is Array else value
+			helpers[scope][id] = rule
+	if not helpers.is_empty(): result.assistance = helpers
+	var bindings: Variant = raw.get("station_posts",{})
+	if not bindings is Dictionary: return _error("invalid station post bindings")
+	if not bindings.is_empty():
+		result.station_posts = {}
+		for machine in bindings:
+			var binding: Variant = bindings[machine]
+			if not machine is String or not machines.has(machine) or not binding is Dictionary or binding.size()!=2 or not binding.get("post") is String or not result.posts.has(binding.post) or not binding.get("feed") is bool: return _error("invalid machine or station post binding")
+			if not _grants(result.posts[binding.post].operate,machine): return _error("station holder has no operating permission")
+			if binding.feed:
+				for other in machines:
+					if other!=machine and machines[other].input==machines[machine].input: return _error("exclusive feed needs an unambiguous machine input")
+			result.station_posts[machine] = {"post":binding.post,"feed":binding.feed,"input":machines[machine].input}
 	return {"definition":result, "error":""}
 
 func rank(worker: Dictionary, candidates: Array) -> Array:
+	var native := _rank(worker,candidates,false)
+	if not native.is_empty() or not _help_available(worker): return native
+	return _rank(worker,candidates,true)
+
+func _rank(worker: Dictionary, candidates: Array, helping: bool) -> Array:
 	var runner: RefCounted = _runner_ref.get_ref()
 	var ranked: Array = []
 	var facts := _facts()
 	for index in candidates.size():
 		var candidate: Dictionary = candidates[index]
 		var request := request_for(candidate)
-		if request.is_empty() or not allowed(worker, request): continue
+		if request.is_empty() or not _station_allows(worker,request): continue
+		if not _permission(_native_rule(worker),request) and not (helping and _permission(_helper_rule(worker),request)): continue
+		if not _helper_rule(worker).is_empty() and not _claimable(worker,candidate): continue
 		var context := context_for_candidate(candidate, facts)
 		if not String(context.error).is_empty() or not can_start(worker, context.scope, int(candidate.get("run", -1))).is_empty(): continue
 		var path: PackedVector2Array = runner.owner.nav.path(worker.pos, runner.ports[candidate.from], runner.access_profile(worker))
@@ -83,17 +139,34 @@ func rank(worker: Dictionary, candidates: Array) -> Array:
 	for entry in ranked: result.append(entry.candidate)
 	return result
 
+func _claimable(worker: Dictionary, candidate: Dictionary) -> bool:
+	var runner: RefCounted = _runner_ref.get_ref()
+	if candidate.kind=="operate":
+		for task in runner.tasks.values():
+			if task.kind=="operate" and task.run==candidate.run: return false
+		return true
+	if candidate.kind=="interact": return true
+	# Probe the same transactions offside; candidate queries must never reserve
+	# real stock or treat an impossible whole move as available native work.
+	var stock := Inventory.new()
+	stock._state = runner.inventory.snapshot()
+	if candidate.kind=="transfer":
+		return String(stock.reserve_transfer(worker.id,candidate.from,candidate.to,candidate.item,candidate.count,runner.owner.carry(worker),candidate.get("owner",-2),candidate.get("unit",-2)).error).is_empty()
+	var entries: Array = candidate.entries.duplicate(true)
+	for entry in entries: entry.erase("pickup_seconds")
+	return String(stock.reserve_bundle("staff:"+str(worker.id),entries,runner.owner.carry(worker)).error).is_empty()
+
 func _facts() -> Dictionary:
 	return {"units":{}, "open":{}} if _runtime_ref == null else _runtime_ref.get_ref().dispatch_facts()
 
 func customer_ready(task: Dictionary) -> bool:
 	if _runtime_ref == null: return true
 	var runtime: RefCounted = _runtime_ref.get_ref()
-	if runtime.service == null or runtime.service.waiting == null: return true
+	if runtime.service == null or (runtime.service.waiting == null and runtime.service.dining == null): return true
 	if task.kind == "interact": return runtime.service.customers.ready(task.subject,"queue:0")
 	if task.to.begins_with("guest:"):
 		var id := int(task.to.trim_prefix("guest:"))
-		return runtime.service.customers.ready(id,runtime.service._destination(runtime.service.orders.guest(id)))
+		return runtime.service.customers.ready(id,runtime.service._delivery_target(runtime.service.orders.guest(id)))
 	return true
 
 func context_for_candidate(candidate: Dictionary, facts: Dictionary = {}) -> Dictionary:
@@ -201,17 +274,39 @@ func request_for(candidate: Dictionary) -> Dictionary:
 			return {"kind":"bundle", "froms":sources, "to":candidate.to}
 	return {}
 
-func allowed(worker: Dictionary, request: Dictionary) -> bool:
+func allowed(worker: Dictionary, request: Dictionary, check_priority := true) -> bool:
+	if not _station_allows(worker,request): return false
+	if _permission(_native_rule(worker),request): return true
+	if not _permission(_helper_rule(worker),request): return false
+	if not check_priority: return true
+	if not _help_available(worker): return false
+	if _runtime_ref==null: return false
+	return _rank(worker,_runtime_ref.get_ref().dispatch_candidates(worker),false).is_empty()
+
+func _native_rule(worker: Dictionary) -> Dictionary:
 	var runner: RefCounted = _runner_ref.get_ref()
-	var rule: Dictionary
 	if not String(worker.post).is_empty() and _definition.posts.has(worker.post):
-		rule = _definition.posts[worker.post]
-	elif not String(worker.post).is_empty() and not _definition.posts.is_empty(): return false
-	elif not _definition.roles.is_empty(): rule = _definition.roles.get(runner.access_profile(worker), PERMISSIONS)
-	else: return true
+		return _definition.posts[worker.post]
+	if not String(worker.post).is_empty() and not _definition.posts.is_empty(): return PERMISSIONS
+	if not _definition.roles.is_empty(): return _definition.roles.get(runner.access_profile(worker), PERMISSIONS)
+	return {"operate":["*"],"interact":["*"],"transfer_from":["*"],"transfer_to":["*"]}
+
+func _helper_rule(worker: Dictionary) -> Dictionary:
+	var helpers: Dictionary = _definition.get("assistance",{})
+	if not String(worker.post).is_empty(): return helpers.get("posts",{}).get(worker.post,{})
+	return helpers.get("roles",{}).get(_runner_ref.get_ref().access_profile(worker),{})
+
+func _help_available(worker: Dictionary) -> bool:
+	var rule := _helper_rule(worker)
+	if rule.is_empty() or _runtime_ref==null: return false
+	var service: RefCounted = _runtime_ref.get_ref().service
+	return not (rule.wait_for_admission and service!=null and service.admission_pending(worker))
+
+static func _permission(rule: Dictionary, request: Dictionary) -> bool:
+	if rule.is_empty(): return false
 	match String(request.kind):
-		"operate": return _grants(rule.operate, request.machine)
-		"interact": return _grants(rule.interact, request.port)
+		"operate": return _grants(rule.get("operate",[]), request.machine)
+		"interact": return _grants(rule.get("interact",[]), request.port)
 		"transfer": return _grants(rule.transfer_from, request.from) and _grants(rule.transfer_to, request.to)
 		"bundle":
 			if not _grants(rule.transfer_to, request.to): return false
@@ -220,18 +315,29 @@ func allowed(worker: Dictionary, request: Dictionary) -> bool:
 			return true
 	return false
 
+func _station_allows(worker: Dictionary, request: Dictionary) -> bool:
+	var runner: RefCounted = _runner_ref.get_ref()
+	for machine in _definition.get("station_posts",{}):
+		var binding: Dictionary = _definition.station_posts[machine]
+		var operation: bool = request.kind=="operate" and request.machine==machine
+		var feeding: bool = binding.feed and request.kind in ["transfer","bundle"] and request.to==binding.input
+		if not operation and not feeding: continue
+		for holder in runner.owner.workers:
+			if holder.deployed and holder.post==binding.post and holder.id!=worker.id: return false
+	return true
+
 func allowed_task(worker: Dictionary, task: Dictionary, devices: RefCounted, check_leases := true) -> bool:
 	if check_leases and not _leases.can_start(worker, task.scope, int(task.run), devices, true).is_empty(): return false
 	match String(task.kind):
 		"operate":
 			var run: Dictionary = devices.run(task.run)
-			return not run.is_empty() and allowed(worker, {"kind":"operate", "machine":run.machine})
-		"interact": return allowed(worker, {"kind":"interact", "port":task.from})
-		"transfer": return allowed(worker, {"kind":"transfer", "from":task.from, "to":task.to})
+			return not run.is_empty() and allowed(worker, {"kind":"operate", "machine":run.machine},false)
+		"interact": return allowed(worker, {"kind":"interact", "port":task.from},false)
+		"transfer": return allowed(worker, {"kind":"transfer", "from":task.from, "to":task.to},false)
 		"bundle":
 			var sources: Array = []
 			for pick in task.picks: sources.append(String(pick.from))
-			return allowed(worker, {"kind":"bundle", "froms":sources, "to":task.to})
+			return allowed(worker, {"kind":"bundle", "froms":sources, "to":task.to},false)
 	return false
 
 static func _grants(targets: Array, target: String) -> bool:

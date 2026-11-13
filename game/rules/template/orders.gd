@@ -12,6 +12,10 @@ var _state: Dictionary = {"version":1, "policy":"", "next_guest":1, "next_order"
 func _init(options: Dictionary = {}) -> void:
 	_policy = POLICY.duplicate()
 	for key in options:
+		if key=="request_at":
+			if options[key]!="admission": last_error = "invalid deferred request policy"; return
+			_policy[key] = options[key]
+			continue
 		if not _policy.has(key): last_error = "unsupported order policy"; return
 		_policy[key] = options[key]
 	if _policy.pay_at not in ["on_take", "on_deliver"] or _policy.queue_release not in ["after_take", "after_delivery"] or _policy.rounding not in ["dish_tenth_carry", "order_round"]: last_error = "unsupported order policy"; return
@@ -21,7 +25,8 @@ func _init(options: Dictionary = {}) -> void:
 
 func arrive(request: Array, capacity: int) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}
-	if not _request_valid(request) or capacity < 1: return {"error":"invalid customer request or queue capacity", "id":-1}
+	if (not _request_valid(request) and not (request.is_empty() and _policy.get("request_at")=="admission")) or capacity < 1: return {"error":"invalid customer request or queue capacity", "id":-1}
+	if _policy.get("request_at")=="admission" and not request.is_empty(): return {"error":"admission menu cannot be selected at arrival","id":-1}
 	if queue().size() >= capacity:
 		return reject_arrival()
 	var guest := _guest()
@@ -60,6 +65,7 @@ func admit(guest_id: int, quotes: Dictionary, worker: int = -1) -> Dictionary:
 	var guest := _find(_state.guests, guest_id)
 	if guest.is_empty(): return {"error":"unknown customer", "id":-1}
 	if guest.order >= 0: return {"error":"", "id":guest.order}
+	if guest.request.is_empty(): return {"error":"admission requires a selected request","id":-1}
 	if guest.state != "queue" or (guest.claimed != -1 and guest.claimed != worker): return {"error":"customer admission unavailable", "id":-1}
 	var total := 0.0
 	for index in guest.request.size():
@@ -88,6 +94,14 @@ func admit(guest_id: int, quotes: Dictionary, worker: int = -1) -> Dictionary:
 	guest.claimed = -1
 	if _policy.queue_release == "after_take": guest.queued = false
 	return {"error":"", "id":order.id}
+
+func admit_selected(guest_id: int, request: Array, quotes: Dictionary, worker: int = -1) -> Dictionary:
+	var guest := _find(_state.guests,guest_id)
+	if _policy.get("request_at")!="admission" or guest.is_empty() or guest.order!=-1 or guest.state!="queue" or not guest.request.is_empty() or not _request_valid(request): return {"error":"customer cannot commit selected admission","id":-1}
+	guest.request = request.duplicate(true)
+	var result := admit(guest_id,quotes,worker)
+	if not String(result.error).is_empty(): guest.request = []
+	return result
 
 func bind_unit(order_id: int, line_id: int, unit: int, quantity: int = 1) -> String:
 	var line := _order_line(order_id, line_id)
@@ -156,8 +170,23 @@ func assign_seat(id: int, seat: String) -> String:
 	var row := _find(_state.guests, id)
 	if row.is_empty() or row.state != "waiting" or not row.seat.is_empty() or seat.is_empty(): return "customer cannot acquire seat"
 	for other in _state.guests:
-		if other.id != id and other.seat == seat and other.state != "gone": return "seat already occupied"
+		if other.id != id and other.seat == seat and other.state not in ["leaving","gone"]: return "seat already occupied"
 	row.seat = seat
+	return ""
+
+func resolve_request(id: int, request: Array) -> String:
+	var row := _find(_state.guests,id)
+	if row.is_empty() or row.state!="queue" or row.order!=-1 or row.claimed!=-1 or not _request_valid(request) or request.size()!=row.request.size(): return "customer request is already committed or invalid"
+	for index in request.size():
+		for key in ["dish","qty","options"]:
+			if row.request[index].get(key)!=request[index].get(key): return "route resolution cannot replace selected food or quantities"
+	row.request = request.duplicate(true)
+	return ""
+
+func prepare_meal(id: int, seconds: float) -> String:
+	var row := _find(_state.guests,id)
+	if row.is_empty() or row.state!="served" or not is_finite(seconds) or seconds<0.0: return "meal duration requires actual delivery"
+	row.meal_left = seconds
 	return ""
 
 func begin_meal(id: int, seconds: float, inventory: RefCounted) -> String:
@@ -229,13 +258,17 @@ func _validate(data: Dictionary, inventory: RefCounted) -> String:
 	if data.version != 1 or data.policy != _state.policy or data.next_guest < 1 or data.next_order < 1 or data.next_line < 1 or data.lost < 0: return "order policy or sequence differs"
 	var guests := {}
 	for guest in data.guests:
-		if not Inventory._shape(guest, _guest()) or not _request_valid(guest.request): return "invalid guest state"
+		if not Inventory._shape(guest, _guest()): return "invalid guest state"
+		var unresolved: bool = _policy.get("request_at")=="admission" and guest.order==-1
+		if unresolved:
+			if not guest.request.is_empty(): return "unaccepted admission menu was selected early"
+		elif not _request_valid(guest.request): return "invalid guest request"
 		if guest.id < 1 or guest.id >= data.next_guest or guests.has(guest.id) or guest.order < -1 or guest.claimed < -1 or guest.claimed == 0 or not is_finite(guest.wait) or guest.wait < 0.0: return "invalid guest identity or values"
 		if guest.state not in ["queue", "waiting", "served", "eating", "leaving", "gone"]: return "invalid customer state"
-		if not is_finite(guest.meal_left) or guest.meal_left < 0.0 or (guest.state != "eating" and guest.meal_left != 0.0): return "invalid meal clock"
+		if not is_finite(guest.meal_left) or guest.meal_left < 0.0 or (guest.state not in ["served","eating"] and guest.meal_left != 0.0): return "invalid meal clock"
 		if guest.state not in ["leaving", "gone"] and not guest.consumption.is_empty(): return "customer has premature consumption"
 		if guest.state == "queue" and (guest.order != -1 or not guest.queued): return "queue customer has an accepted order"
-		if guest.state in ["waiting", "served"] and guest.order < 1: return "accepted customer has no order"
+		if guest.state in ["waiting", "served", "eating"] and guest.order < 1: return "accepted customer has no order"
 		if guest.state == "waiting" and guest.queued != (_policy.queue_release == "after_delivery"): return "customer queue membership differs from release policy"
 		if guest.state != "queue" and guest.claimed != -1: return "accepted customer retains an admission claim"
 		if guest.state in ["served", "eating", "leaving", "gone"] and guest.queued: return "departing customer remains queued"

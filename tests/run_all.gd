@@ -3,6 +3,8 @@ extends SceneTree
 ## 失败时退出码为 1。
 
 const SUITES := [
+	preload("res://tests/test_template_batch_transport.gd"),
+	preload("res://tests/test_template_assistance.gd"),
 	preload("res://tests/test_template_limits.gd"),
 	preload("res://tests/test_template_transfers.gd"),
 	preload("res://tests/test_template_customization.gd"),
@@ -12,6 +14,14 @@ const SUITES := [
 	preload("res://tests/test_template_stage_ports.gd"),
 	preload("res://tests/test_template_formal_pancake.gd"),
 	preload("res://tests/test_template_menu_selection.gd"),
+	preload("res://tests/test_template_menu_ramp.gd"),
+	preload("res://tests/test_template_dining.gd"),
+	preload("res://tests/test_template_tea_service.gd"),
+	preload("res://tests/test_template_deferred_menu.gd"),
+	preload("res://tests/test_template_seating.gd"),
+	preload("res://tests/test_template_stirfry_service.gd"),
+	preload("res://tests/test_template_pickup_queue.gd"),
+	preload("res://tests/test_template_station_posts.gd"),
 	preload("res://tests/test_template_pancake_service.gd"),
 	preload("res://tests/test_template_waiting.gd"),
 	preload("res://tests/test_template_flyers.gd"),

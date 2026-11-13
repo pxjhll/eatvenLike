@@ -5,6 +5,9 @@ const Customization := preload("res://game/rules/template/customization.gd")
 const Selection := preload("res://game/rules/template/menu_selection.gd")
 const Waiting := preload("res://game/rules/template/waiting.gd")
 const Flyers := preload("res://game/rules/template/flyers.gd")
+const Dining := preload("res://game/rules/template/dining.gd")
+const Seating := preload("res://game/rules/template/seating.gd")
+const PickupQueue := preload("res://game/rules/template/pickup_queue.gd")
 
 const DEFAULTS := {"menu":{}, "admission":"automatic", "admission_port":"", "admission_seconds":0.6,
 	"admission_roles":[], "delivery":"counter", "delivery_roles":[], "handoff_port":"", "pickup":"",
@@ -14,7 +17,7 @@ static func compile(raw: Dictionary, places: Dictionary, recipes: Dictionary) ->
 	if raw.is_empty(): return {"definition":{}, "error":""}
 	var result := DEFAULTS.duplicate(true)
 	for key in raw:
-		if key in ["customization","selection","delivery_ready","waiting","flyers"]: continue
+		if key in ["customization","selection","delivery_ready","waiting","flyers","dining","seating","pickup_queue"]: continue
 		if not result.has(key): return _error("unsupported service parameter: " + str(key))
 		result[key] = raw[key]
 	for key in ["admission", "delivery", "admission_port", "handoff_port", "pickup"]:
@@ -41,15 +44,19 @@ static func compile(raw: Dictionary, places: Dictionary, recipes: Dictionary) ->
 		if not dish is String or dish.is_empty() or not recipe is String or not recipes.has(recipe): return _error("invalid menu recipe binding")
 		if recipes[recipe].output.count != 1: return _error("service menu requires one product per recipe unit")
 	if not result.orders is Dictionary: return _error("invalid order policy")
+	if result.orders.has("request_at"): return _error("menu selection owns request timing")
+	var selection := Selection.compile(raw.get("selection",{}),result.menu)
+	if not selection.error.is_empty(): return selection
+	if not selection.definition.is_empty(): result.selection = selection.definition
+	if result.get("selection",{}).get("at")=="admission":
+		result.orders = result.orders.duplicate(true)
+		result.orders.request_at = "admission"
 	var orders := Orders.new(result.orders)
 	if not orders.last_error.is_empty(): return _error(orders.last_error)
 	result.orders = orders._policy.duplicate(true)
 	var customization := Customization.compile(raw.get("customization",{}),result.menu,recipes,result.orders.rounding)
 	if not customization.error.is_empty(): return customization
 	if not customization.definition.is_empty(): result.customization = customization.definition
-	var selection := Selection.compile(raw.get("selection",{}),result.menu)
-	if not selection.error.is_empty(): return selection
-	if not selection.definition.is_empty(): result.selection = selection.definition
 	var waiting := Waiting.compile(raw.get("waiting",{}))
 	if not waiting.error.is_empty(): return waiting
 	if not waiting.definition.is_empty():
@@ -60,11 +67,26 @@ static func compile(raw: Dictionary, places: Dictionary, recipes: Dictionary) ->
 		var required: bool = (key == "admission_port" and result.admission == "employee") or (key == "handoff_port" and result.delivery == "counter") or (key == "pickup" and result.delivery == "self_pickup")
 		if required and not places.has(result[key]): return _error("missing service port: " + key)
 		if not required and not result[key].is_empty(): return _error("unused service port: " + key)
-	if not result.seats is Dictionary or (result.delivery == "table" and result.seats.is_empty()) or (result.delivery == "counter" and not result.seats.is_empty()): return _error("invalid service seats")
+	if not result.seats is Dictionary or (result.delivery == "table" and result.seats.is_empty()): return _error("invalid service seats")
+	var dining := Dining.compile(raw.get("dining",{}),result.seats,result.menu,recipes)
+	if not dining.error.is_empty(): return dining
+	if not dining.definition.is_empty():
+		if result.orders.has("request_at"): return _error("dining route requires arrival-time food selection")
+		if result.delivery!="counter" or result.admission!="automatic" or result.orders.queue_release!="after_delivery" or result.orders.pay_at!="on_deliver" or result.has("waiting") or result.has("customization") or raw.has("eat_seconds"): return _error("counter dining requires automatic admission, after-delivery release, stage meal clocks and uncustomized counter receipt")
+		result.dining = dining.definition
+	if result.delivery=="counter" and not result.seats.is_empty() and not result.has("dining"): return _error("counter seats need an explicit dining capability")
+	var seating := Seating.compile(raw.get("seating",{}),result.seats)
+	if not seating.error.is_empty(): return seating
+	if not seating.definition.is_empty():
+		if result.has("dining") or result.has("waiting") or result.delivery=="counter" or raw.has("eat_seconds"): return _error("seating needs table or self-pickup delivery and one stage meal/queue policy")
+		result.seating = seating.definition
 	var seat_ports := {}
 	for seat in result.seats:
 		if not seat is String or not seat.begins_with("seat:") or seat.length() <= 5 or not result.seats[seat] is String or not places.has(result.seats[seat]) or seat_ports.has(result.seats[seat]): return _error("invalid or reused table port")
 		seat_ports[result.seats[seat]] = true
+	var pickup_queue := PickupQueue.compile(raw.get("pickup_queue",{}),result.seats,result.delivery)
+	if not pickup_queue.error.is_empty(): return pickup_queue
+	if not pickup_queue.definition.is_empty(): result.pickup_queue = pickup_queue.definition
 	for place in places:
 		if String(place).begins_with("guest:"): return _error("guest containers are managed by service")
 	if not result.arrivals is Dictionary: return _error("invalid arrival definition")

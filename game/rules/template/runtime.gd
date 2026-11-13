@@ -11,6 +11,7 @@ const Dispatch := preload("res://game/rules/template/dispatch.gd")
 const SourceDemand := preload("res://game/rules/template/source_demand.gd")
 const Limits := preload("res://game/rules/template/numeric_limits.gd")
 const Clock := preload("res://game/rules/template/production_clock.gd")
+const TransportBatch := preload("res://game/rules/template/transport_batch.gd")
 
 var runner: RefCounted
 var last_error := ""
@@ -89,6 +90,8 @@ func step(dt: float, paused := false) -> String:
 	if not last_error.is_empty(): return last_error
 	if not is_finite(dt) or dt < 0.0: return "invalid production time"
 	if paused or dt == 0.0: return ""
+	var dispatch_error: String = runner.dispatcher.validate_context()
+	if not dispatch_error.is_empty(): last_error = dispatch_error; return dispatch_error
 	if service != null:
 		var service_error: String = service.validate_context()
 		if not service_error.is_empty(): last_error = service_error; return service_error
@@ -169,6 +172,8 @@ func snapshot() -> Dictionary:
 
 func restore(data: Dictionary) -> String:
 	if not last_error.is_empty(): return last_error
+	var dispatch_error: String = runner.dispatcher.validate_context()
+	if not dispatch_error.is_empty(): return dispatch_error
 	if not Inventory._shape(data, {"version":0, "signature":"", "clock":0.0, "next_unit":0, "units":[], "runner":{}, "restocks":{}, "service":{}, "dispatch":{}}): return "invalid production state shape"
 	if (service == null) != data.service.is_empty(): return "service state differs from declared capabilities"
 	if data.version != 1 or data.signature != _definition.signature: return "production template signature differs"
@@ -203,6 +208,7 @@ func restore(data: Dictionary) -> String:
 	var claims := {}
 	var assigned_runs := {}
 	var assigned_bundles := {}
+	var assigned_transfer_claims := {}
 	var bundles := {}
 	for bundle in data.runner.inventory.bundles: bundles[bundle.id] = bundle
 	for run in data.runner.machines.runs: runs[run.id] = run
@@ -221,15 +227,21 @@ func restore(data: Dictionary) -> String:
 			var node: Dictionary = recipe.nodes[id]
 			if node.capability == "transfer":
 				var bundle_id: int = unit.running[id]
-				if not bundles.has(bundle_id) or assigned_bundles.has(bundle_id): return "production transfer has no unique bundle"
-				assigned_bundles[bundle_id] = true
+				if not bundles.has(bundle_id): return "production transfer has no bundle"
 				var group: Dictionary = bundles[bundle_id]
-				if not String(group.actor).begins_with("staff:") or group.claims.size() != 1: return "production transfer has an invalid carrier or shape"
-				var claim: Dictionary = claims[group.claims[0]]
+				if not String(group.actor).begins_with("staff:") or (group.claims.size()!=1 and not _definition.dispatch.get("batch_transfers",false)): return "production transfer has an invalid carrier or shape"
 				var item: String = node.consumes.keys()[0]
 				var source: Dictionary = recipe.nodes[node.inputs[item]]
 				var source_owner: int = -1 if source.capability == "source" else int(unit.id)
-				if claim.from != source.place or claim.to != node.place or claim.item != item or claim.count != node.consumes[item] or claim.owner != source_owner or claim.allocate_owner != unit.id: return "bundle differs from production transfer"
+				var claim := {}
+				for child in group.claims:
+					var current: Dictionary = claims[child]
+					if current.from==source.place and current.to==node.place and current.item==item and current.count==node.consumes[item] and current.owner==source_owner and current.allocate_owner==unit.id:
+						if not claim.is_empty() or assigned_transfer_claims.has(child): return "production transfer has no unique child claim"
+						claim = current
+				if claim.is_empty(): return "bundle differs from production transfer"
+				assigned_transfer_claims[claim.id] = true
+				assigned_bundles[bundle_id] = true
 				if (claim.state == "dropped") != done.has(id): return "transfer completion differs from committed drop"
 				if not _dependencies_complete(recipe,node,unit): return "production transfer precedes its dependencies"
 				continue
@@ -241,6 +253,9 @@ func restore(data: Dictionary) -> String:
 			if run.machine != node.machine or claim.owner != unit.id or claim.consumes != node.consumes or claim.produces != node.produces: return "machine run differs from production node"
 			if (run.phase == "completed") != done.has(id): return "node completion differs from committed machine state"
 			if not _dependencies_complete(recipe, node, unit): return "production run precedes its dependencies"
+	for bundle_id in assigned_bundles:
+		for child in bundles[bundle_id].claims:
+			if not assigned_transfer_claims.has(child): return "production bundle contains an unbound child claim"
 	for lot in data.runner.inventory.lots:
 		if lot.owner >= 0 and not units.has(lot.owner): return "inventory has an unknown production owner"
 	if restored_service != null:
@@ -335,6 +350,8 @@ func _allocate() -> void:
 			if not error.is_empty(): continue
 			if candidate.has("node"):
 				_find_unit(candidate.unit).running[candidate.node] = int(runner.tasks[worker.id].bundle)
+			for binding in candidate.get("nodes",[]):
+				_find_unit(binding.unit).running[binding.node] = int(runner.tasks[worker.id].bundle)
 			if service != null and candidate.category in ["admit", "deliver", "stage"]:
 				error = service.claimed(worker.id, candidate)
 				if not error.is_empty(): last_error = error; runner.cancel(worker.id)
@@ -343,13 +360,16 @@ func _allocate() -> void:
 func candidates_for(worker_id: int) -> Array:
 	var worker: Dictionary = runner.owner.worker_by_id(worker_id)
 	if worker.is_empty() or not runner._available_worker(worker_id).is_empty(): return []
+	return TransportBatch.compose(self,worker,runner.dispatcher.rank(worker, dispatch_candidates(worker)))
+
+func dispatch_candidates(worker: Dictionary) -> Array:
 	var pool := _candidates()
 	if service != null: pool.append_array(service.candidates(worker))
 	for candidate in pool:
 		if not candidate.has("unit"): candidate.unit = -1
 		var unit := _find_unit(candidate.unit)
 		candidate.progress = 0 if unit.is_empty() else unit.done.size()
-	return runner.dispatcher.rank(worker, pool)
+	return pool
 
 func _candidates() -> Array:
 	var work: Array = []

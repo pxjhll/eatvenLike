@@ -1552,6 +1552,7 @@ service = {
 }
 }
 dispatch = {
+"batch_transfers": true,
 "affinity": "exclusive",
 "help_while_waiting": true,
 "hold_machine": true,

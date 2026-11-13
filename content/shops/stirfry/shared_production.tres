@@ -1,0 +1,709 @@
+[gd_resource type="Resource" script_class="SpecShopTemplate" format=3]
+
+[ext_resource type="Script" path="res://content/rules/spec_shop_template.gd" id="1_0nknn"]
+
+[resource]
+script = ExtResource("1_0nknn")
+hop_seconds = 0.5
+places = {
+"counter": {
+"anchor": "counter",
+"capacity": 0
+},
+"pantry:out": {
+"infinite": ["tomato_egg_raw", "pepper_pork_raw", "egg_rice_raw", "kungpao_raw", "yangzhou_raw"],
+"port": Vector2(200, 660)
+},
+"plating:in": {
+"port": Vector2(720, 650)
+},
+"plating:out": {
+"port": Vector2(720, 650)
+},
+"plum_dispenser:in": {
+"port": Vector2(310, 755)
+},
+"plum_dispenser:out": {
+"port": Vector2(310, 755)
+},
+"rice_cooker:in": {
+"port": Vector2(790, 480)
+},
+"rice_cooker:out": {
+"capacity": 8,
+"initial": {
+"rice": 4
+},
+"port": Vector2(790, 480)
+},
+"seat:table/0": {
+"anchor": "table/0",
+"capacity": 0
+},
+"seat:table/1": {
+"anchor": "table/1",
+"capacity": 0
+},
+"seat:table/10": {
+"anchor": "table/10",
+"capacity": 0
+},
+"seat:table/11": {
+"anchor": "table/11",
+"capacity": 0
+},
+"seat:table/12": {
+"anchor": "table/12",
+"capacity": 0
+},
+"seat:table/13": {
+"anchor": "table/13",
+"capacity": 0
+},
+"seat:table/14": {
+"anchor": "table/14",
+"capacity": 0
+},
+"seat:table/15": {
+"anchor": "table/15",
+"capacity": 0
+},
+"seat:table/2": {
+"anchor": "table/2",
+"capacity": 0
+},
+"seat:table/3": {
+"anchor": "table/3",
+"capacity": 0
+},
+"seat:table/4": {
+"anchor": "table/4",
+"capacity": 0
+},
+"seat:table/5": {
+"anchor": "table/5",
+"capacity": 0
+},
+"seat:table/6": {
+"anchor": "table/6",
+"capacity": 0
+},
+"seat:table/7": {
+"anchor": "table/7",
+"capacity": 0
+},
+"seat:table/8": {
+"anchor": "table/8",
+"capacity": 0
+},
+"seat:table/9": {
+"anchor": "table/9",
+"capacity": 0
+},
+"soup_pot:in": {
+"port": Vector2(800, 345)
+},
+"soup_pot:out": {
+"capacity": 10,
+"initial": {
+"soup": 10
+},
+"port": Vector2(800, 345)
+},
+"window": {
+"anchor": "window"
+},
+"wok_a:in": {
+"port": Vector2(400, 340)
+},
+"wok_a:out": {
+"port": Vector2(400, 340)
+},
+"wok_b:in": {
+"port": Vector2(500, 340)
+},
+"wok_b:out": {
+"port": Vector2(500, 340)
+}
+}
+machines = {
+"plating": {
+"input": "plating:in",
+"output": "plating:out",
+"profile": {
+"manual": true
+}
+},
+"plum_dispenser": {
+"input": "plum_dispenser:in",
+"output": "plum_dispenser:out",
+"profile": {
+"manual": true
+}
+},
+"rice_cooker": {
+"input": "rice_cooker:in",
+"output": "rice_cooker:out",
+"profile": {
+"load_seconds": 0.0,
+"manual": false,
+"stir_points": [],
+"stir_seconds": 0.0,
+"unload_seconds": 0.0
+}
+},
+"soup_pot": {
+"input": "soup_pot:in",
+"output": "soup_pot:out",
+"profile": {
+"load_seconds": 0.0,
+"manual": false,
+"stir_points": [],
+"stir_seconds": 0.0,
+"unload_seconds": 0.0
+}
+},
+"wok_a": {
+"input": "wok_a:in",
+"output": "wok_a:out",
+"profile": {
+"manual": true
+}
+},
+"wok_b": {
+"input": "wok_b:in",
+"output": "wok_b:out",
+"profile": {
+"manual": true
+}
+}
+}
+restocks = {
+"rice_cooker": {
+"consumes": {},
+"machine": "rice_cooker",
+"produces": {
+"rice": 4
+},
+"requires": {
+"stations": ["rice_cooker"]
+},
+"seconds": 60.0,
+"stock_limit": 8
+},
+"soup_pot": {
+"consumes": {},
+"machine": "soup_pot",
+"produces": {
+"soup": 10
+},
+"requires": {
+"stations": ["soup_pot"]
+},
+"seconds": 60.0,
+"stock_limit": 10
+}
+}
+recipes = {
+"egg_fried_rice": {
+"nodes": [{
+&"capability": "source",
+&"fixed": false,
+"id": "step:0",
+&"item": "egg_rice_raw",
+"label": "拿料",
+&"place": "pantry:out",
+"seconds": 0.6,
+&"timing_target": "pantry"
+}, {
+&"capability": "source",
+&"fixed": true,
+"id": "step:1",
+&"item": "rice",
+"label": "盛饭",
+&"place": "rice_cooker:out",
+"seconds": 0.6,
+&"timing_target": "rice_cooker"
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"egg_rice_raw": 1,
+"rice": 1
+}),
+&"fixed": false,
+"id": "step:2",
+&"inputs": {
+"egg_rice_raw": "step:0",
+"rice": "step:1"
+},
+"label": "炒蛋炒饭",
+&"machine": "wok_b",
+&"produces": Dictionary[String, int]({
+"egg_fried_rice": 1
+}),
+"seconds": 7.0
+}],
+"output": {
+"count": 1,
+"item": "egg_fried_rice",
+"node": "step:2"
+}
+},
+"kungpao_rice": {
+"nodes": [{
+&"capability": "source",
+&"fixed": false,
+"id": "step:0",
+&"item": "kungpao_raw",
+"label": "拿料",
+&"place": "pantry:out",
+"seconds": 0.6,
+&"timing_target": "pantry"
+}, {
+&"capability": "source",
+&"fixed": true,
+"id": "step:1",
+&"item": "rice",
+"label": "盛饭",
+&"place": "rice_cooker:out",
+"seconds": 0.6,
+&"timing_target": "rice_cooker"
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"kungpao_raw": 1
+}),
+&"fixed": false,
+"id": "step:2",
+&"inputs": {
+"kungpao_raw": "step:0"
+},
+"label": "炒宫保鸡丁",
+&"machine": "wok_a",
+&"produces": Dictionary[String, int]({
+"kungpao": 1
+}),
+"seconds": 7.0
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"kungpao": 1,
+"rice": 1
+}),
+&"fixed": false,
+"id": "step:3",
+&"inputs": {
+"kungpao": "step:2",
+"rice": "step:1"
+},
+"label": "装盘",
+&"machine": "plating",
+&"produces": Dictionary[String, int]({
+"kungpao_rice": 1
+}),
+"seconds": 3.5
+}],
+"output": {
+"count": 1,
+"item": "kungpao_rice",
+"node": "step:3"
+}
+},
+"pepper_rice": {
+"nodes": [{
+&"capability": "source",
+&"fixed": false,
+"id": "step:0",
+&"item": "pepper_pork_raw",
+"label": "拿料",
+&"place": "pantry:out",
+"seconds": 0.6,
+&"timing_target": "pantry"
+}, {
+&"capability": "source",
+&"fixed": true,
+"id": "step:1",
+&"item": "rice",
+"label": "盛饭",
+&"place": "rice_cooker:out",
+"seconds": 0.6,
+&"timing_target": "rice_cooker"
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"pepper_pork_raw": 1
+}),
+&"fixed": false,
+"id": "step:2",
+&"inputs": {
+"pepper_pork_raw": "step:0"
+},
+"label": "炒青椒肉丝",
+&"machine": "wok_a",
+&"produces": Dictionary[String, int]({
+"pepper_pork": 1
+}),
+"seconds": 6.0
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"pepper_pork": 1,
+"rice": 1
+}),
+&"fixed": false,
+"id": "step:3",
+&"inputs": {
+"pepper_pork": "step:2",
+"rice": "step:1"
+},
+"label": "装盘",
+&"machine": "plating",
+&"produces": Dictionary[String, int]({
+"pepper_rice": 1
+}),
+"seconds": 3.5
+}],
+"output": {
+"count": 1,
+"item": "pepper_rice",
+"node": "step:3"
+}
+},
+"plum_juice": {
+"nodes": [{
+&"capability": "process",
+&"consumes": Dictionary[String, int]({}),
+&"fixed": false,
+"id": "step:0",
+&"inputs": {},
+"label": "接酸梅汤",
+&"machine": "plum_dispenser",
+&"produces": Dictionary[String, int]({
+"plum_juice": 1
+}),
+"seconds": 3.0
+}],
+"output": {
+"count": 1,
+"item": "plum_juice",
+"node": "step:0"
+}
+},
+"soup": {
+"nodes": [{
+&"capability": "source",
+&"fixed": true,
+"id": "step:0",
+&"item": "soup",
+"label": "盛汤",
+&"place": "soup_pot:out",
+"seconds": 3.0,
+&"timing_target": "soup_pot"
+}],
+"output": {
+"count": 1,
+"item": "soup",
+"node": "step:0"
+}
+},
+"tomato_rice": {
+"nodes": [{
+&"capability": "source",
+&"fixed": false,
+"id": "step:0",
+&"item": "tomato_egg_raw",
+"label": "拿料",
+&"place": "pantry:out",
+"seconds": 0.6,
+&"timing_target": "pantry"
+}, {
+&"capability": "source",
+&"fixed": true,
+"id": "step:1",
+&"item": "rice",
+"label": "盛饭",
+&"place": "rice_cooker:out",
+"seconds": 0.6,
+&"timing_target": "rice_cooker"
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"tomato_egg_raw": 1
+}),
+&"fixed": false,
+"id": "step:2",
+&"inputs": {
+"tomato_egg_raw": "step:0"
+},
+"label": "炒番茄炒蛋",
+&"machine": "wok_a",
+&"produces": Dictionary[String, int]({
+"tomato_egg": 1
+}),
+"seconds": 6.0
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"rice": 1,
+"tomato_egg": 1
+}),
+&"fixed": false,
+"id": "step:3",
+&"inputs": {
+"rice": "step:1",
+"tomato_egg": "step:2"
+},
+"label": "装盘",
+&"machine": "plating",
+&"produces": Dictionary[String, int]({
+"tomato_rice": 1
+}),
+"seconds": 3.5
+}],
+"output": {
+"count": 1,
+"item": "tomato_rice",
+"node": "step:3"
+}
+},
+"yangzhou_rice": {
+"nodes": [{
+&"capability": "source",
+&"fixed": false,
+"id": "step:0",
+&"item": "yangzhou_raw",
+"label": "拿料",
+&"place": "pantry:out",
+"seconds": 0.6,
+&"timing_target": "pantry"
+}, {
+&"capability": "source",
+&"fixed": true,
+"id": "step:1",
+&"item": "rice",
+"label": "盛饭",
+&"place": "rice_cooker:out",
+"seconds": 0.6,
+&"timing_target": "rice_cooker"
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"rice": 1,
+"yangzhou_raw": 1
+}),
+&"fixed": false,
+"id": "step:2",
+&"inputs": {
+"rice": "step:1",
+"yangzhou_raw": "step:0"
+},
+"label": "炒扬州炒饭",
+&"machine": "wok_b",
+&"produces": Dictionary[String, int]({
+"yangzhou_rice": 1
+}),
+"seconds": 8.0
+}],
+"output": {
+"count": 1,
+"item": "yangzhou_rice",
+"node": "step:2"
+}
+}
+}
+service = {
+"pickup_queue": {"ports": ["pickup:0", "pickup:1", "pickup:2", "pickup:3", "pickup:4", "pickup:5", "pickup:6", "pickup:7", "pickup:8", "pickup:9", "pickup:10", "pickup:11", "pickup:12", "pickup:13", "pickup:14", "pickup:15"]},
+"admission": "employee",
+"admission_port": "counter",
+"admission_seconds": 1.0,
+"arrivals": {
+"first_delay": 2.0,
+"pattern": "fixed"
+},
+"customer_capacity": 2,
+"delivery": "self_pickup",
+"flyers": {
+"cooldown": 120.0,
+"count": 4,
+"gap": 3.0,
+"pattern": "gap",
+"when_full": "lost"
+},
+"menu": {
+"egg_fried_rice": "egg_fried_rice",
+"kungpao_rice": "kungpao_rice",
+"pepper_rice": "pepper_rice",
+"plum_juice": "plum_juice",
+"soup": "soup",
+"tomato_rice": "tomato_rice",
+"yangzhou_rice": "yangzhou_rice"
+},
+"orders": {
+"patience": 60.0,
+"pay_at": "on_deliver",
+"queue_release": "after_take",
+"rounding": "dish_tenth_carry"
+},
+"pickup": "window",
+"seating": {
+"group": "table",
+"order": ["seat:table/0", "seat:table/1", "seat:table/2", "seat:table/3", "seat:table/4", "seat:table/5", "seat:table/6", "seat:table/7", "seat:table/8", "seat:table/9", "seat:table/10", "seat:table/11", "seat:table/12", "seat:table/13", "seat:table/14", "seat:table/15"],
+"stages": [{
+"seconds": 45.0,
+"standing": 6
+}, {
+"seconds": 45.0,
+"standing": 6
+}, {
+"seconds": 45.0,
+"standing": 6
+}, {
+"seconds": 45.0,
+"standing": 6
+}, {
+"seconds": 45.0,
+"standing": 6
+}, {
+"seconds": 45.0,
+"standing": 6
+}]
+},
+"seats": {
+"seat:table/0": "seat:table/0",
+"seat:table/1": "seat:table/1",
+"seat:table/10": "seat:table/10",
+"seat:table/11": "seat:table/11",
+"seat:table/12": "seat:table/12",
+"seat:table/13": "seat:table/13",
+"seat:table/14": "seat:table/14",
+"seat:table/15": "seat:table/15",
+"seat:table/2": "seat:table/2",
+"seat:table/3": "seat:table/3",
+"seat:table/4": "seat:table/4",
+"seat:table/5": "seat:table/5",
+"seat:table/6": "seat:table/6",
+"seat:table/7": "seat:table/7",
+"seat:table/8": "seat:table/8",
+"seat:table/9": "seat:table/9"
+},
+"selection": {
+"addon": {
+"dish": "soup",
+"first": false,
+"share": 0.4,
+"with": ["tomato_rice", "pepper_rice", "egg_fried_rice", "kungpao_rice", "yangzhou_rice"]
+},
+"at": "admission",
+"gates": {
+"egg_fried_rice": {
+"stations": ["wok_b", "rice_cooker"]
+},
+"kungpao_rice": {
+"stage": 4,
+"stations": ["wok_a", "rice_cooker", "plating"]
+},
+"pepper_rice": {
+"stage": 1,
+"stations": ["wok_a", "rice_cooker", "plating"]
+},
+"plum_juice": {
+"stations": ["plum_dispenser"]
+},
+"soup": {
+"stations": ["soup_pot"]
+},
+"tomato_rice": {
+"stations": ["wok_a", "rice_cooker", "plating"]
+},
+"yangzhou_rice": {
+"stage": 5,
+"stations": ["wok_b", "rice_cooker"]
+}
+},
+"order": ["tomato_rice", "pepper_rice", "egg_fried_rice", "soup", "kungpao_rice", "yangzhou_rice", "plum_juice"],
+"stages": [{
+"interval": 20.0,
+"weights": Dictionary[String, float]({
+"plum_juice": 0.25,
+"tomato_rice": 1.0
+})
+}, {
+"interval": 13.33,
+"weights": Dictionary[String, float]({
+"pepper_rice": 0.5,
+"plum_juice": 0.25,
+"tomato_rice": 0.5
+})
+}, {
+"interval": 10.91,
+"weights": Dictionary[String, float]({
+"egg_fried_rice": 0.4,
+"pepper_rice": 0.3,
+"plum_juice": 0.25,
+"tomato_rice": 0.3
+})
+}, {
+"interval": 9.23,
+"weights": Dictionary[String, float]({
+"egg_fried_rice": 0.4,
+"pepper_rice": 0.3,
+"plum_juice": 0.25,
+"tomato_rice": 0.3
+})
+}, {
+"interval": 6.67,
+"weights": Dictionary[String, float]({
+"egg_fried_rice": 0.2,
+"kungpao_rice": 0.6,
+"pepper_rice": 0.1,
+"plum_juice": 0.25,
+"tomato_rice": 0.1
+})
+}, {
+"interval": 6.32,
+"weights": Dictionary[String, float]({
+"egg_fried_rice": 0.125,
+"kungpao_rice": 0.125,
+"pepper_rice": 0.125,
+"plum_juice": 0.25,
+"tomato_rice": 0.125,
+"yangzhou_rice": 0.5
+})
+}]
+}
+}
+dispatch = {
+"batch_transfers": true,
+"assistance": {"posts": {"counter": {
+"transfer_from": ["pantry:out", "rice_cooker:out", "wok_a:out", "wok_b:out", "plating:out", "soup_pot:out"],
+"transfer_to": ["rice_cooker:in", "wok_a:in", "wok_b:in", "plating:in", "soup_pot:in", "window"],
+"wait_for_admission": true
+}}},
+"station_posts": {"wok_a": {"post": "wok_a", "feed": false}, "wok_b": {"post": "wok_b", "feed": false}},
+"affinity": "prefer",
+"posts": {
+"counter": {
+"interact": ["counter"],
+"operate": ["plum_dispenser"],
+"transfer_from": ["plum_dispenser:out"],
+"transfer_to": ["window"]
+},
+"wok_a": {
+"operate": ["wok_a"]
+},
+"wok_b": {
+"operate": ["wok_b"]
+}
+},
+"roles": {
+"staff": {
+"operate": ["rice_cooker", "wok_a", "wok_b", "plating", "soup_pot"],
+"transfer_from": ["pantry:out", "rice_cooker:out", "wok_a:out", "wok_b:out", "plating:out", "soup_pot:out"],
+"transfer_to": ["rice_cooker:in", "wok_a:in", "wok_b:in", "plating:in", "soup_pot:in", "window"]
+}
+},
+"scores": {
+"admit": 400.0,
+"stage": 300.0
+}
+}

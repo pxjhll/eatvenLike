@@ -10,12 +10,20 @@ const Customization := preload("res://game/rules/template/customization.gd")
 const Selection := preload("res://game/rules/template/menu_selection.gd")
 const Waiting := preload("res://game/rules/template/waiting.gd")
 const Flyers := preload("res://game/rules/template/flyers.gd")
+const Ramp := preload("res://game/rules/template/menu_ramp.gd")
+const Dining := preload("res://game/rules/template/dining.gd")
+const Seating := preload("res://game/rules/template/seating.gd")
+const PickupQueue := preload("res://game/rules/template/pickup_queue.gd")
 
 var orders: RefCounted
 var customers: RefCounted
 var arrivals: RefCounted
 var waiting: RefCounted
 var flyers: RefCounted
+var ramp: RefCounted
+var dining: RefCounted
+var seating: RefCounted
+var pickup_queue: RefCounted
 var last_error := ""
 var _runtime_ref: WeakRef
 var _runtime: RefCounted:
@@ -27,11 +35,14 @@ func _init(runtime: RefCounted, policy: Dictionary) -> void:
 	_runtime_ref = weakref(runtime)
 	_policy = policy.duplicate(true)
 	orders = Orders.new(policy.orders)
+	if policy.has("dining"): dining = Dining.new(policy.dining)
+	if policy.has("seating"): seating = Seating.new(policy.seating)
+	if policy.has("pickup_queue"): pickup_queue = PickupQueue.new(policy.pickup_queue)
 	if policy.has("waiting"): waiting = Waiting.new(policy.waiting)
 	customers = Customers.new(runtime.runner.owner.nav,waiting.ports() if waiting != null else {})
 	last_error = orders.last_error if not orders.last_error.is_empty() else customers.last_error
 	if not last_error.is_empty(): return
-	for target in ["entrance", "exit", "pickup", "queue:0"] + policy.seats.keys():
+	for target in ["entrance", "exit", "pickup", "queue:0"] + (dining.declared_seats() if dining!=null else policy.seats.keys()):
 		var resolved: Dictionary = customers._target(target)
 		if not String(resolved.error).is_empty(): last_error = resolved.error; return
 	for dish in policy.menu:
@@ -45,9 +56,13 @@ func _init(runtime: RefCounted, policy: Dictionary) -> void:
 		if runtime.runner.owner.shop.station(option.unlock) == null: last_error = "option unlock has no declared station"; return
 	if not policy.arrivals.is_empty(): arrivals = Arrivals.new(policy.arrivals)
 	if policy.has("flyers"): flyers = Flyers.new(policy.flyers)
+	if policy.get("selection",{}).has("ramp"): ramp = Ramp.new(policy.selection.ramp,policy.selection.order)
 	if policy.has("selection"): last_error = Selection.validate(policy.selection,runtime.runner.owner)
 	if last_error.is_empty() and waiting != null: last_error = waiting.validate(runtime.runner.owner,customers)
 	if last_error.is_empty() and flyers != null: last_error = flyers.values(runtime.runner.owner.mods).error
+	if last_error.is_empty() and dining != null: last_error = dining.validate(runtime.runner.owner)
+	if last_error.is_empty() and seating != null: last_error = seating.validate(runtime.runner.owner)
+	if last_error.is_empty() and pickup_queue != null: last_error = pickup_queue.validate(customers)
 
 func set_open(value: bool) -> String:
 	if arrivals == null: return "template has no automatic arrival capability"
@@ -60,7 +75,8 @@ func set_open(value: bool) -> String:
 
 func _automatic_arrival() -> String:
 	if orders.queue().size() >= queue_capacity(): return String(orders.reject_arrival().error)
-	var request: Array = Selection.request(_policy.selection,_runtime.runner.owner) if _policy.has("selection") else arrivals.request(_runtime.runner.owner.rng)
+	if _deferred(): return String(arrive([]).error)
+	var request: Array = Selection.request(_policy.selection,_runtime.runner.owner,ramp.counts() if ramp!=null else {}) if _policy.has("selection") else arrivals.request(_runtime.runner.owner.rng)
 	if request.is_empty(): return ""
 	var result: Dictionary = arrive(request)
 	return result.error
@@ -71,7 +87,7 @@ func _advance_arrivals(dt: float) -> String:
 		var flyer_error: String = flyers.advance(dt,arrivals.snapshot().open)
 		if not flyer_error.is_empty(): return flyer_error
 		if arrivals.snapshot().open and flyers.due(_runtime.runner.owner.mods):
-			var menu_open: bool = not _policy.has("selection") or not Selection.weights(_policy.selection,_runtime.runner.owner).is_empty()
+			var menu_open: bool = _deferred() or not _policy.has("selection") or not menu_weights().is_empty()
 			var full: bool = orders.queue().size()>=queue_capacity()
 			if menu_open and (not full or not flyers.waits_outside()):
 				flyers.consume()
@@ -85,7 +101,7 @@ func _advance_arrivals(dt: float) -> String:
 		if count > 10000: return "arrival schedule exceeds supported events per step"
 		var owner: RefCounted = _runtime.runner.owner
 		var interval: float = _policy.selection.stages[owner.stage_index].interval if _policy.has("selection") else _policy.arrivals.interval
-		var mean := Numbers.flow_interval(interval, float(owner.mods.value("flow", 1.0)), owner.tune)
+		var mean := Numbers.flow_interval(interval, flow_multiplier(), owner.tune)
 		error = arrivals.schedule_next(mean, owner.rng)
 		if not error.is_empty(): return error
 		error = _automatic_arrival()
@@ -96,6 +112,9 @@ func arrive(request: Array, selected_options: Variant = null) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}
 	var context_error := validate_context()
 	if not context_error.is_empty(): return {"error":context_error,"id":-1}
+	if _deferred():
+		if not request.is_empty() or selected_options!=null: return {"error":"food and options are selected at admission","id":-1}
+		return _enqueue([])
 	var rows: Array = []
 	var total := 0
 	for row in request:
@@ -118,9 +137,20 @@ func arrive(request: Array, selected_options: Variant = null) -> Dictionary:
 		rows[0].options = choice.ids
 		rows[0].recipe = choice.recipe
 		rows[0].item = String(_runtime._definition.recipes[choice.recipe].output.item)
+	return _enqueue(rows)
+
+func _deferred() -> bool:
+	return _policy.get("selection",{}).get("at")=="admission"
+
+func _menu_ready() -> bool:
+	return not _deferred() or not menu_weights().is_empty()
+
+func _enqueue(rows: Array) -> Dictionary:
 	var admitted: Dictionary = orders.arrive(rows, queue_capacity())
 	if not String(admitted.error).is_empty(): return admitted
+	if ramp != null and not _deferred(): ramp.admitted(menu_weights())
 	last_error = customers.spawn(admitted.id)
+	if last_error.is_empty() and dining != null: last_error = _admit()
 	if last_error.is_empty(): last_error = _sync_queue()
 	return admitted if last_error.is_empty() else {"error":last_error, "id":-1}
 
@@ -128,6 +158,11 @@ func validate_context() -> String:
 	var error: String = Selection.validate(_policy.selection,_runtime.runner.owner) if _policy.has("selection") else ""
 	if error.is_empty() and waiting != null: error = waiting.validate(_runtime.runner.owner,customers)
 	if error.is_empty() and flyers != null: error = flyers.values(_runtime.runner.owner.mods).error
+	if error.is_empty() and dining != null: error = dining.validate(_runtime.runner.owner,orders.snapshot())
+	if error.is_empty() and seating != null: error = seating.validate(_runtime.runner.owner,orders.snapshot())
+	if error.is_empty() and pickup_queue != null:
+		error = pickup_queue.validate(customers)
+		if error.is_empty(): error = pickup_queue.targets(orders.snapshot(),_deliveries).error
 	return error
 
 func send_flyers() -> String:
@@ -137,7 +172,15 @@ func send_flyers() -> String:
 	return flyers.send(arrivals.snapshot().open,_runtime.runner.owner.mods)
 
 func queue_capacity() -> int:
+	if dining != null: return dining.capacity(_runtime.runner.owner,orders.snapshot())
+	if seating != null: return seating.capacity(_runtime.runner.owner)
 	return waiting.capacity(_runtime.runner.owner,orders.snapshot()) if waiting != null else _runtime.runner.owner.nav.layout.customer_queue.size()
+
+func menu_weights() -> Dictionary:
+	return Selection.weights(_policy.selection,_runtime.runner.owner,ramp.counts() if ramp!=null else {}) if _policy.has("selection") else {}
+
+func flow_multiplier() -> float:
+	return Selection.flow_multiplier(_policy.selection,_runtime.runner.owner) if _policy.has("selection") else float(_runtime.runner.owner.mods.value("flow",1.0))
 
 func advance(dt: float) -> String:
 	if not last_error.is_empty(): return last_error
@@ -168,15 +211,19 @@ func advance(dt: float) -> String:
 				if error.is_empty(): error = orders.finish_departure(guest.id)
 		elif guest.state == "served":
 			var target := _destination(guest)
-			if customers.ready(guest.id, target): error = orders.begin_meal(guest.id, _policy.eat_seconds if not guest.seat.is_empty() else 0.0, _runtime.runner.inventory)
+			error = customers.request(guest.id,target)
+			if error.is_empty() and customers.ready(guest.id, target): error = orders.begin_meal(guest.id,_meal_seconds(guest), _runtime.runner.inventory)
 		elif guest.state == "waiting" and not _customer_carrying(guest.order):
-			if waiting == null or not _policy.waiting.retain_after_take:
-				error = customers.request(guest.id, "pickup" if _policy.delivery == "self_pickup" else _destination(guest))
+			if dining == null and (waiting == null or not _policy.waiting.retain_after_take):
+				error = customers.request(guest.id, _pickup_target(guest) if _policy.delivery == "self_pickup" else _destination(guest))
 		if not error.is_empty(): return error
 	error = _sync_queue()
 	if not error.is_empty(): return error
 	error = _admit()
 	if not error.is_empty(): return error
+	if pickup_queue != null:
+		error = _sync_pickups()
+		if not error.is_empty(): return error
 	return _fulfill()
 
 func frame() -> Dictionary:
@@ -185,6 +232,10 @@ func frame() -> Dictionary:
 		"customers":customers.snapshot().customers, "arrivals":arrivals.snapshot() if arrivals != null else {}}
 	if waiting != null: result.waiting = waiting.snapshot(); result.queue_capacity = queue_capacity()
 	if flyers != null: result.flyers = flyers.snapshot()
+	if ramp != null: result.ramp = ramp.snapshot()
+	if dining != null: result.dining = dining.snapshot(); result.queue_capacity = queue_capacity()
+	if seating != null: result.queue_capacity = queue_capacity()
+	if pickup_queue != null: result.pickup_targets = pickup_queue.targets(state,_deliveries).targets
 	return result
 
 func snapshot() -> Dictionary:
@@ -192,12 +243,16 @@ func snapshot() -> Dictionary:
 		"arrivals":arrivals.snapshot() if arrivals != null else {}}
 	if waiting != null: result.waiting = waiting.snapshot()
 	if flyers != null: result.flyers = flyers.snapshot()
+	if ramp != null: result.ramp = ramp.snapshot()
+	if dining != null: result.dining = dining.snapshot()
 	return result
 
 func prepare_restore(data: Dictionary, stock: RefCounted) -> String:
 	var shape := {"version":0, "orders":{}, "customers":{}, "deliveries":[], "arrivals":{}}
 	if waiting != null: shape.waiting = {}
 	if flyers != null: shape.flyers = {}
+	if ramp != null: shape.ramp = {}
+	if dining != null: shape.dining = {}
 	if not Inventory._shape(data,shape) or data.version != 1: return "invalid customer service state"
 	if (arrivals == null) != data.arrivals.is_empty(): return "arrival state differs from declared capabilities"
 	if arrivals != null:
@@ -208,6 +263,15 @@ func prepare_restore(data: Dictionary, stock: RefCounted) -> String:
 		if not flyer_error.is_empty(): return flyer_error
 	var error: String = orders.restore(data.orders, stock)
 	if not error.is_empty(): return error
+	if dining != null:
+		error = dining.restore(data.dining,data.orders,_runtime.runner.owner)
+		if not error.is_empty(): return error
+	if seating != null:
+		error = seating.validate(_runtime.runner.owner,data.orders)
+		if not error.is_empty(): return error
+	if ramp != null:
+		error = ramp.restore(data.ramp,data.orders.orders.size() if _deferred() else data.orders.guests.size())
+		if not error.is_empty(): return error
 	error = customers.restore(data.customers)
 	if not error.is_empty(): return error
 	var bundles := {}
@@ -217,7 +281,11 @@ func prepare_restore(data: Dictionary, stock: RefCounted) -> String:
 		if (delivery.phase == "staff") != (_policy.delivery != "self_pickup"): return "fulfillment actor differs from service policy"
 		bundles[delivery.bundle] = true
 	_deliveries = data.deliveries.duplicate(true)
+	if pickup_queue != null:
+		var pickup_plan: Dictionary = pickup_queue.targets(orders.snapshot(),_deliveries)
+		if not pickup_plan.error.is_empty(): return pickup_plan.error
 	var waiting_targets := {}
+	if dining != null: waiting_targets = dining.targets(orders.snapshot(),_called_guests())
 	if waiting != null:
 		error = waiting.restore(data.waiting,orders.snapshot(),_called_guests(),_policy.admission=="automatic")
 		if not error.is_empty(): return error
@@ -227,13 +295,14 @@ func prepare_restore(data: Dictionary, stock: RefCounted) -> String:
 	var seats := {}
 	var actors := {}
 	var queue: Array = orders.queue()
-	var maximum: int = _policy.waiting.line.size()+_policy.waiting.ports.size() if waiting != null else _runtime.runner.owner.nav.layout.customer_queue.size()
+	var maximum: int = _policy.waiting.line.size()+_policy.waiting.ports.size() if waiting != null else _runtime.runner.owner.nav.layout.customer_queue.size()+(dining.declared_seats().size() if dining!=null else 0)
 	if queue.size() > maximum: return "customer queue exceeds declared ports"
 	for guest in orders.snapshot().guests:
 		for index in guest.request.size():
 			var row: Dictionary = guest.request[index]
 			if not _policy.menu.has(row.dish): return "customer request differs from service menu"
 			var recipe: String = _policy.menu[row.dish]
+			if dining != null and guest.order>0: recipe = dining.recipe(row.dish,recipe,dining.route(guest.id).takeaway)
 			if index == 0 and _policy.has("customization"):
 				if not row.has("options"): return "customized request has no frozen selection"
 				var canonical := Customization.canonical(_policy.customization,row.options)
@@ -243,9 +312,9 @@ func prepare_restore(data: Dictionary, stock: RefCounted) -> String:
 				recipe = resolved.recipe
 			elif row.has("options"): return "unrelated request option selection"
 			if recipe != row.recipe or _runtime._definition.recipes[recipe].output.item != row.item: return "customer request differs from service menu"
-		if not guest.seat.is_empty() and (not _policy.seats.has(guest.seat) or guest.order < 1): return "customer seat differs from template"
-		if guest.order > 0 and guest.seat.is_empty() != _policy.seats.is_empty(): return "accepted customer has an inconsistent seat lease"
-		if guest.state != "gone" and not guest.seat.is_empty():
+		if not guest.seat.is_empty() and (guest.seat not in (dining.declared_seats() if dining!=null else _policy.seats.keys()) or guest.order < 1): return "customer seat differs from template"
+		if dining == null and guest.order > 0 and guest.seat.is_empty() != _policy.seats.is_empty(): return "accepted customer has an inconsistent seat lease"
+		if guest.state != "gone" and not ((dining!=null or seating!=null) and guest.state=="leaving") and not guest.seat.is_empty():
 			if seats.has(guest.seat): return "seat is leased by two customers"
 			seats[guest.seat] = guest.id
 		var actor: Dictionary = customers.record(guest.id)
@@ -258,11 +327,12 @@ func prepare_restore(data: Dictionary, stock: RefCounted) -> String:
 		if waiting_targets.has(guest.id): target = waiting_targets[guest.id]
 		if guest.state == "leaving": target = "exit"
 		elif guest.state == "waiting" and _policy.delivery == "self_pickup":
-			target = "pickup"
+			target = _pickup_target(guest)
 			for delivery in _deliveries:
 				if delivery.order == guest.order and delivery.phase in ["carry", "drop"]: target = _destination(guest)
 		if actor.target != target: return "customer movement target differs from service facts"
-		if guest.state in ["served", "eating"] and not customers.ready(guest.id, target): return "meal started before actual seating or handoff arrival"
+		if (guest.state=="eating" or (guest.state=="served" and dining==null)) and not customers.ready(guest.id, target): return "meal started before actual seating or handoff arrival"
+		if dining==null and guest.state=="served" and guest.meal_left!=0.0: return "unrelated pending meal clock"
 	if actors.size() != data.customers.customers.size(): return "orphan customer motion actor"
 	return ""
 
@@ -270,7 +340,7 @@ func dynamic_places() -> Dictionary:
 	var places := {}
 	for guest in orders.snapshot().guests:
 		if guest.order < 1: continue
-		var place: String = _policy.seats[guest.seat] if not guest.seat.is_empty() else (_policy.pickup if _policy.delivery == "self_pickup" else _policy.handoff_port)
+		var place := _guest_place(guest)
 		places["guest:" + str(guest.id)] = {"port":_runtime._definition.places[place].port, "capacity":-1, "infinite":[]}
 	return places
 
@@ -346,6 +416,12 @@ func _unit_output(unit: Dictionary) -> Dictionary:
 		"complete":node.capability == "source" or node.id in unit.done}
 
 func _sync_queue() -> String:
+	if dining != null:
+		var targets: Dictionary = dining.targets(orders.snapshot(),_called_guests())
+		for id in targets:
+			var error: String = customers.request(id,targets[id])
+			if not error.is_empty(): return error
+		return ""
 	if waiting != null:
 		var plan: Dictionary = waiting.sync(_runtime.runner.owner,orders.snapshot(),_called_guests(),_policy.admission=="automatic")
 		if not plan.error.is_empty(): return plan.error
@@ -372,16 +448,25 @@ func _called_guests() -> Dictionary:
 	return called
 
 func _free_seat() -> String:
-	for seat in _policy.seats:
+	var available: Array = dining.seats(_runtime.runner.owner) if dining!=null else _policy.seats.keys()
+	if seating != null: available = seating.seats(_runtime.runner.owner)
+	for seat in available:
 		var free := true
 		for guest in orders.snapshot().guests:
-			if guest.seat == seat and guest.state != "gone": free = false; break
+			if guest.seat == seat and guest.state != "gone" and not ((dining!=null or seating!=null) and guest.state=="leaving"): free = false; break
 		if free: return seat
 	return ""
 
 func _admit() -> String:
 	var queue: Array = orders.queue()
-	if queue.is_empty(): return ""
+	if dining != null:
+		for id in queue:
+			if orders.guest(id).state!="queue": continue
+			if _free_seat().is_empty() and not dining.takeaway_open(_runtime.runner.owner): break
+			var error := _accept(id)
+			if not error.is_empty(): return error
+		return ""
+	if queue.is_empty() or not _menu_ready(): return ""
 	var guest: Dictionary = orders.guest(queue[0])
 	if guest.state != "queue" or guest.claimed != -1 or not customers.ready(guest.id, "queue:0"): return ""
 	if not _policy.seats.is_empty() and _free_seat().is_empty(): return ""
@@ -389,23 +474,51 @@ func _admit() -> String:
 	return ""
 
 func _accept(id: int, employee: int = -1) -> String:
-	if not customers.ready(id, "queue:0"): return "customer moved before admission"
+	if dining == null and not customers.ready(id, "queue:0"): return "customer moved before admission"
 	var seat := _free_seat()
-	if not _policy.seats.is_empty() and seat.is_empty(): return "admission lost its seat"
+	if dining!=null:
+		if seat.is_empty() and not dining.takeaway_open(_runtime.runner.owner): return "admission lost its dining or takeaway route"
+	elif not _policy.seats.is_empty() and seat.is_empty(): return "admission lost its seat"
 	var quotes := {}
 	var request: Array = orders.guest(id).request
+	var rng_before: int = _runtime.runner.owner.rng.state
+	if _deferred():
+		if not _menu_ready():
+			var error: String = orders.cancel_admission(id,employee)
+			if employee>0: _runtime.runner.dispatcher.release_worker(employee)
+			return error
+		var selected := Selection.request(_policy.selection,_runtime.runner.owner,ramp.counts() if ramp!=null else {})
+		for row in selected:
+			var recipe: String = _policy.menu[row.dish]
+			request.append({"dish":String(row.dish),"recipe":recipe,"item":String(_runtime._definition.recipes[recipe].output.item),"qty":int(row.qty)})
+		if _policy.has("customization"):
+			var choice := Customization.select(_policy.customization,request[0].dish,request[0].recipe,null,_runtime.runner.owner)
+			if not choice.error.is_empty(): _runtime.runner.owner.rng.state = rng_before; return choice.error
+			request[0].options = choice.ids
+			request[0].recipe = choice.recipe
+			request[0].item = String(_runtime._definition.recipes[choice.recipe].output.item)
+	if dining != null:
+		for row in request:
+			row.recipe = dining.recipe(row.dish,_policy.menu[row.dish],seat.is_empty())
+			row.item = String(_runtime._definition.recipes[row.recipe].output.item)
+		var resolution: String = orders.resolve_request(id,request)
+		if not resolution.is_empty(): return resolution
 	for index in request.size():
 		var row: Dictionary = request[index]
 		if _policy.has("customization"):
 			quotes[index] = Customization.quote(_policy.customization,_runtime.runner.owner,row.dish,row.get("options",[]))
 		else: quotes[row.dish] = float(_runtime.runner.owner.dish_price(row.dish))
-	var admitted: Dictionary = orders.admit(id, quotes, employee)
-	if not String(admitted.error).is_empty(): return admitted.error
+	var admitted: Dictionary = orders.admit_selected(id,request,quotes,employee) if _deferred() else orders.admit(id, quotes, employee)
+	if not String(admitted.error).is_empty():
+		if _deferred(): _runtime.runner.owner.rng.state = rng_before
+		return admitted.error
+	if _deferred() and ramp!=null: ramp.admitted(menu_weights())
+	if dining != null: dining.record(id,seat.is_empty())
 	if not seat.is_empty():
 		var error: String = orders.assign_seat(id, seat)
 		if not error.is_empty(): return error
 	var guest: Dictionary = orders.guest(id)
-	var port: Vector2 = _runtime.runner.ports[_policy.seats[seat] if not seat.is_empty() else (_policy.pickup if _policy.delivery == "self_pickup" else _policy.handoff_port)]
+	var port: Vector2 = _runtime.runner.ports[_guest_place(guest)]
 	var error: String = _runtime.runner.define_dynamic_place("guest:" + str(id), port)
 	if not error.is_empty(): return error
 	var lines: Array = orders.order(admitted.id).lines
@@ -421,13 +534,38 @@ func _accept(id: int, employee: int = -1) -> String:
 	if _policy.orders.pay_at == "on_take":
 		var receipt: Dictionary = orders.settle(admitted.id, _runtime.runner.owner._sales)
 		if not String(receipt.error).is_empty(): return receipt.error
-	if waiting == null or not _policy.waiting.retain_after_take:
-		error = customers.request(guest.id, "pickup" if _policy.delivery == "self_pickup" else _destination(guest))
+	if dining == null and (waiting == null or not _policy.waiting.retain_after_take):
+		error = customers.request(guest.id, _pickup_target(guest) if _policy.delivery == "self_pickup" else _destination(guest))
 		if not error.is_empty(): return error
-	return _sync_queue() if waiting != null else ""
+	return _sync_queue() if waiting != null or dining != null else ""
+
+func _guest_place(guest: Dictionary) -> String:
+	if dining != null: return String(_policy.handoff_port)
+	return String(_policy.seats[guest.seat]) if not guest.seat.is_empty() else String(_policy.pickup if _policy.delivery=="self_pickup" else _policy.handoff_port)
+
+func _meal_seconds(guest: Dictionary) -> float:
+	if dining!=null: return float(guest.meal_left)
+	if guest.seat.is_empty(): return 0.0
+	return seating.seconds(_runtime.runner.owner) if seating!=null else float(_policy.eat_seconds)
+
+func _delivery_target(guest: Dictionary) -> String:
+	return "pickup" if dining!=null else _destination(guest)
+
+func _pickup_target(guest: Dictionary) -> String:
+	if pickup_queue==null: return "pickup"
+	return String(pickup_queue.targets(orders.snapshot(),_deliveries).targets.get(guest.id,""))
+
+func _sync_pickups() -> String:
+	var plan: Dictionary = pickup_queue.targets(orders.snapshot(),_deliveries)
+	if not plan.error.is_empty(): return plan.error
+	for id in plan.targets:
+		var error: String = customers.request(id,plan.targets[id])
+		if not error.is_empty(): return error
+	return ""
 
 func _destination(guest: Dictionary) -> String:
 	if not guest.seat.is_empty(): return guest.seat
+	if dining != null: return "exit"
 	return "exit" if _policy.delivery == "self_pickup" else "pickup"
 
 func _eligible(worker: Dictionary, roles: Array) -> bool:
@@ -443,7 +581,7 @@ func _fulfill() -> String:
 	for order in orders.snapshot().orders:
 		if order.state == "delivered": continue
 		var guest: Dictionary = orders.guest(order.guest)
-		if _customer_carrying(order.id) or not customers.ready(guest.id, "pickup"): continue
+		if _customer_carrying(order.id) or not customers.ready(guest.id, _pickup_target(guest)): continue
 		var entries := _entries(order, _policy.pickup)
 		var total := 0
 		for line in order.lines: total += int(line.qty) - int(line.delivered)
@@ -452,10 +590,16 @@ func _fulfill() -> String:
 		if String(group.error).is_empty(): _deliveries.append({"order":int(order.id), "bundle":int(group.id), "phase":"collect", "left":float(_runtime._definition.hop_seconds)})
 	return ""
 
+func admission_pending(worker: Dictionary) -> bool:
+	if _policy.admission!="employee" or not _menu_ready() or not _eligible(worker,_policy.admission_roles): return false
+	if not _runtime.runner.dispatcher.allowed(worker,{"kind":"interact","port":_policy.admission_port}): return false
+	var queue: Array = orders.queue()
+	return not queue.is_empty() and orders.guest(queue[0]).state=="queue" and (_policy.seats.is_empty() or not _free_seat().is_empty())
+
 func candidates(worker: Dictionary) -> Array:
 	var out: Array = []
 	var queue: Array = orders.queue()
-	if _policy.admission == "employee" and not queue.is_empty() and _eligible(worker, _policy.admission_roles):
+	if _policy.admission == "employee" and not queue.is_empty() and _menu_ready() and _eligible(worker, _policy.admission_roles):
 		var guest: Dictionary = orders.guest(queue[0])
 		if guest.state == "queue" and guest.claimed == -1 and (waiting != null or customers.ready(guest.id, "queue:0")) and (_policy.seats.is_empty() or not _free_seat().is_empty()):
 			out.append({"kind":"interact", "category":"admit", "guest":int(guest.id), "unit":-1,
@@ -466,7 +610,7 @@ func candidates(worker: Dictionary) -> Array:
 		var guest: Dictionary = orders.guest(order.guest)
 		if _policy.delivery == "self_pickup":
 			if not _customer_carrying(order.id): out.append_array(_stage_candidates(order))
-		elif (waiting != null and _policy.waiting.retain_after_take) or customers.ready(guest.id, _destination(guest)):
+		elif dining != null or (waiting != null and _policy.waiting.retain_after_take) or customers.ready(guest.id, _destination(guest)):
 			var entries := _entries(order)
 			if entries.is_empty(): continue
 			if _policy.get("delivery_ready","") == "whole_order":
@@ -487,7 +631,7 @@ func claimed(worker_id: int, candidate: Dictionary) -> String:
 		return _sync_queue() if waiting != null else ""
 	if candidate.category == "deliver":
 		_deliveries.append({"order":int(candidate.order), "bundle":int(_runtime.runner.tasks[worker_id].bundle), "phase":"staff", "left":0.0})
-		if waiting != null: return _sync_queue()
+		if waiting != null or dining != null: return _sync_queue()
 	return ""
 
 func _entries(order: Dictionary, staged: String = "") -> Array:
@@ -535,7 +679,7 @@ func _reconcile_deliveries(dt: float) -> String:
 		var first: Dictionary = stock.claim(group.claims[0])
 		if first.state == "cancelled": _deliveries.erase(delivery); continue
 		if delivery.phase == "collect" or delivery.phase == "drop":
-			var target := "pickup" if delivery.phase == "collect" else _destination(guest)
+			var target := _pickup_target(guest) if delivery.phase == "collect" else _destination(guest)
 			if not customers.ready(guest.id, target): continue
 			delivery.left = maxf(0.0, float(delivery.left) - dt)
 			if delivery.left > 0.000001: continue
@@ -561,5 +705,8 @@ func _reconcile_deliveries(dt: float) -> String:
 		if orders.order(order.id).state == "delivered" and _policy.orders.pay_at == "on_deliver":
 			var receipt: Dictionary = orders.settle(order.id, _runtime.runner.owner._sales)
 			if not String(receipt.error).is_empty(): return receipt.error
+			if dining != null:
+				var error: String = orders.prepare_meal(guest.id,0.0 if guest.seat.is_empty() else dining.seconds(_runtime.runner.owner))
+				if not error.is_empty(): return error
 		_deliveries.erase(delivery)
 	return ""
