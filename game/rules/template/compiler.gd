@@ -10,6 +10,8 @@ const Dispatch := preload("res://game/rules/template/dispatch.gd")
 const Limits := preload("res://game/rules/template/numeric_limits.gd")
 const ProcessingDisplay := preload("res://game/rules/template/processing_display.gd")
 const Clock := preload("res://game/rules/template/production_clock.gd")
+const Presentation := preload("res://game/rules/template/presentation.gd")
+const Transports := preload("res://game/rules/template/transports.gd")
 
 static func compile(template: Resource, anchors: Dictionary = {}) -> Dictionary:
 	var errors: Array = []
@@ -105,6 +107,19 @@ static func compile(template: Resource, anchors: Dictionary = {}) -> Dictionary:
 	var dispatch := Dispatch.compile(template.dispatch, definition.places, definition.machines)
 	if not String(dispatch.error).is_empty(): return {"definition":{}, "errors":[_error("invalid_dispatch", "dispatch", dispatch.error)]}
 	definition.dispatch = dispatch.definition
+	var transports := Transports.compile(template.transports,definition.places)
+	if not transports.error.is_empty(): return {"definition":{},"errors":[_error("invalid_transport","transports",transports.error)]}
+	if not transports.definition.is_empty(): definition.transports = transports.definition
+	for recipe in definition.recipes.values():
+		for node in recipe.nodes.values():
+			if not node.has("transport"): continue
+			if not transports.definition.has(node.transport): return {"definition":{},"errors":[_error("unknown_transport","recipes")]}
+			var route: Dictionary = transports.definition[node.transport]
+			var item: String = node.consumes.keys()[0]
+			if route.from!=recipe.nodes[node.inputs[item]].place or route.to!=node.place or route.capacity<node.consumes[item]: return {"definition":{},"errors":[_error("transport_route_mismatch","recipes")]}
+	var presentation := Presentation.compile(template.presentation,definition.places,definition.service,transports.definition)
+	if not presentation.error.is_empty(): return {"definition":{},"errors":[_error("invalid_presentation","presentation",presentation.error)]}
+	if not presentation.definition.is_empty(): definition.presentation = presentation.definition
 	definition.signature = Contract._canonical(definition).sha256_text()
 	return {"definition":definition, "errors":[]}
 
@@ -157,7 +172,10 @@ static func _recipe(raw: Variant, definition: Dictionary, path: String, errors: 
 			node.place = row.place
 			node.produces[row.item] = 1
 		elif capability == "transfer":
-			_keys(row, ["id", "capability", "input", "place", "item", "count", "seconds", "after", "label", "timing_target", "fixed"], node_path, errors)
+			_keys(row, ["id", "capability", "input", "place", "item", "count", "seconds", "after", "label", "timing_target", "fixed", "transport"], node_path, errors)
+			if row.has("transport"):
+				if not _id(row.transport): errors.append(_error("invalid_transport",node_path)); continue
+				node.transport = row.transport
 			if not _id(row.get("input")) or not _id(row.get("place")) or not definition.places.has(row.place) or not _id(row.get("item")):
 				errors.append(_error("invalid_transfer", node_path)); continue
 			var count: Variant = row.get("count",1)

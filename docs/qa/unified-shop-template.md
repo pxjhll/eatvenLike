@@ -2,7 +2,7 @@
 
 更新日期：2026-11-13。设计与任务表见 `../superpowers/specs/2026-11-12-unified-shop-template-design.md`、`../superpowers/plans/2026-11-12-unified-shop-template.md`。
 
-真实奶茶及煎饼生产两批已提交推送`54c7115`，提交前789项/包内274项证据及26份文件hash复核未变化。当前继续U04，实际煎饼菜单/资格/履约、阶段队列/购买等位垫与传单组合尚在本地。历史章节描述各批当时范围，当前以本文末章节及原U01–U07任务表为准。正式三店入口仍未切换。
+U01–U04开发期公共规则能力已提交推送`a9b7704`；U05统一快照和显示现已完成，改动保留本地。完整973项规则、原生和包内各455项核心、16项统一清单作业全部通过，三店显式展示完成窗口及包内验收。当前证据见本文末“U05收尾”及`u05-commit-ready.json`；历史章节描述各批当时范围。正式三店经营入口、命令与玩家旧档切换属于U06，尚未实施。
 
 ## 当前交付
 
@@ -545,3 +545,65 @@ collect中仍占当前位置，实际pickup提交进入carry后才腾位，后�
 报告为`transport-{tea,pancake,stirfry}-final-load.json`及对应`.log`；最终manifest为`transport-final-commit-ready.json`，复核脚本`verify_transport_evidence.py`同时检查日志错误、保护hash、源码与导出一致、所有恢复结果和47份自有文件。`transport-commit-ready.json`保留写入文档前的代码验收hash；旧pickup及更早manifest不改写。第一轮release验收在补出队列留守边界后中止，不作为最终通过证据。
 
 下一步沿原U05接正式快照与显示，再做U06正式切换/内容采用/旧档/清理、U07门禁总验收；本阶段没有新增店铺专属执行循环。
+
+## U05第一批：公共快照与真实场景接入
+
+U04五批47份已提交推送a9b7704；本批15份继续保留本地。未修改三份实际店铺Resource、人物属性/速度、美术或经济数据。原41份保护文件hash未变。U05仍在进行，正式经营入口、命令及玩家旧档尚未切换。
+
+新增scene_frame.gd将Runtime库存/机器/任务、Orders/Customers和外层唯一钱包/购买事实投影成一个数据快照。ShopView.bind_runtime显式选择其显示来源，不推进或保存仿真；默认会话保持既有协议。员工卡和场景共享派生姿态，手持来自实际lot，多个物品种类分别显示；旧job/steps不能覆盖真实手持。座位和活动统计从公共租约、顾客和时钟查询，机器进度与库存从公共Machines/Inventory查询；绑定失败保留原显示来源，返回快照不会写回、消耗RNG或移动角色。
+
+ShopPlay在公共协议下仅渲染frame.draws和权威movement。库存默认不画散落物品；只有显式stock_showcase或既有processing_display提供draws。公共堂食组件不自行制造客人或餐品。未声明的新协议货架计数牌暂不显示，避免引用旧库存；正式声明该计数与货架、传送/用餐展示是本U05的下一批工作。旧协议的正常游戏、角色与堂食行为保留，待正式迁移清理。
+
+新增13项专项。缺绑定入口、混合手持只画一种物品、座位/员工卡/活动信息仍读旧数据的RED分别保留在scene-frame-red.log、scene-frame-mixed-red.log、scene-frame-ui-red.log。最终针对性28项通过，覆盖预留→拿取→放下、库存只在UI、显式展示、绑定拒绝、快照隔离、公共顾客携带两件/实际就座/离店、暂停、真实手工进度和恢复后库存对象替换。
+
+真实场景检查对每家使用原ShopPlay/TSCN与真实店铺模板、原员工/导航/物品美术；只在测试副本中声明两个展示取放容器及其原生搬运权限，第三店固定前台菜品权重以稳定覆盖酸梅汤。未移除授权器、未改员工速度或物品显示尺寸。停止场景旧_process，明确由测试推进唯一Runtime，显示刷新不得修改仿真。这是显示迁移验收，不能称为正式ShopSession/旧档迁移。
+
+三店均真实拿取两件、放下、逐件领取混合餐品并取消，检查各个手持图标全部清除；另让一位真实前台顾客走完生产/交付/收款及用餐/离店，逐帧核对只有一个对应人物、实际位置与本店订单贴图。暂停重绘不移动顾客或提交物品，1/2/4倍速不在GUI重复应用。实际窗口由隐藏OpenGL进程渲染，Dummy音频避免环境声卡初始化干扰，最终错误日志为空；初轮音频环境错误不作为最终证据。
+
+| 最终验收 | 结果 | 日志（位于`_work/unified_shop_template_20261112/`） |
+|---|---|---|
+| 完整规则 | 957项，0失败 | `rules-scene-frame-final.log` |
+| 原生公共核心 | 442项，0失败 | `scene-frame-core-final.log` |
+| 实际Web包公共核心 | 442项，0失败 | `scene-frame-packed-final.log` |
+| 实际Web包三店显示 | 2084项检查，0失败 | `scene-frame-packed-gui-final.log` |
+| 实际三店窗口 | 2090项检查，0失败 | `scene-frame-window-final.log`、空`scene-frame-window-final-errors.log` |
+| 统一清单相关回归 | 10作业全通过 | `scene-frame-acceptance/summary.json` |
+| Web导出/源与包内场景 | 通过，17,767,328字节，source_drift为空 | `web-scene-frame-final/summary.json` |
+| 保护复核 | 41/41未变 | `protected-scene-frame.json` |
+
+相关清单作业为新template_scene_frame、runner_contract、shop_tea/pancake/stirfry、actor_presentation、shared_movement、actor_actions、session_lifecycle、presentation_boundary。实际同视口截图为`scene-frame-captures/tea.png`、`pancake.png`、`stirfry.png`，均720×1280，已检查混合物品、图层、大小、裁切及修正后的座位计数。截图是高金币/已解锁的显示验收现场，不是普通开局或节奏标定结果。
+
+最终15份文件和所有图像hash记录于`scene-frame-commit-ready.json`，复核脚本`verify_scene_frame_evidence.py`同时检查全部最终日志、两个统一清单的源码一致、实际包内测试、41份保护hash和当前分支基线a9b7704。旧U04及更早证据保持原样；本批不自动提交推送。剩余仍为原U05的显式展示配置和完整表现对照，随后U06正式切换/旧档及U07门禁验收，没有新增任务组。
+
+## U05收尾：全部显示清单完成
+
+本节为当前状态，上一节“剩余U05”是第一批的历史记录。本轮完成显式展示配置、真实自动运输、统一顾客运动接口、旧断言替换和完整表现验收；两批累计42份自有文件仍在本地，基线为a9b7704，41份保护文件hash未变化。未改人物大小/速度、价格、客流、完店门槛、美术或场景位置。
+
+新增presentation.gd严格编译stock/counters/dining/poses/conveyors，场景只提供实际端口坐标与排序宿主路径。未知字段、缺端口、缺宿主或错误座位拒绝绑定并保留原视图。多个容器可共同占用有限货架端口，计数牌和展示查询同一库存；餐品只在客人实际就座并进入eating且guest容器有实物时显示。加工仍由原processing_display投影，家具的嵌套排序坐标按真实宿主转换。
+
+三份shared_production资源已声明展示：奶茶普通货架与封口架各3点、shelf库存牌、8座姿态/餐品和现有seal_to_shelf路径；煎饼9个waiting pad姿态；第三店16座姿态及每座两餐品位置。第三店共享饭、装盘台与出餐口没有默认散落成品图标。旧断言现用真实第三店生产验证plating:out与机器UI库存为1但无自动sprite，显示不改变库存。
+
+核查发现原公共运行器还没有自动运输事实，因此新增公共transports而非虚构传送动画。transfer节点可引用路线，连接未买时由员工搬运，买后同一Runtime.step推进conveyor携带者；沿用奶茶原3秒运输、1.5秒间隔、单次1份。自动携带者复用Inventory bundle/claim及受管手持容器，保存仅增加冷却/在途引用和剩余工时，恢复交叉核对图节点和真实库存。取消归还一次，取消重试历史可恢复，缺连接上下文在时钟推进前拒绝；未启用保持旧定义签名/快照形状。线性与双输入合流组合使用同一能力。
+
+customer_movement.sync_records先验证全部中性intent，再统一更新目标/路径/离场，核心不再按handoff/serve/single选择同步循环。旧数据转换集中于legacy/customer_intents.gd，customer_ports.gd提供纯几何查询；旧sync仍为默认正式旧入口提供兼容。公共Runtime顾客已由Customers/RuleMovement持有，显示不二次推进。正式旧调用和经营入口切换是U06，不把兼容边界移位描述成旧路径已经删除。
+
+本轮新增16项规则（展示5、运输8、顾客intent3），加第一批13项共29项。缺展示/运输/同步入口、取消历史及缺连接上下文的RED日志保留在u05-*-red.log；通过后完整回归、导出和窗口均重新运行，最终证据不引用中间失败或旧957/442记录。
+
+| 最终验收 | 结果 | 证据（位于`_work/unified_shop_template_20261112/`） |
+|---|---|---|
+| 完整规则 | 973项，0失败 | `u05-rules-final.log` |
+| 原生公共核心 | 455项，0失败 | `u05-core-final.log` |
+| 实际Web包公共核心 | 455项，0失败 | `u05-packed-final.log` |
+| 实际Web包完整展示 | 23806项检查，0失败 | `u05-packed-displays-final.log/json` |
+| 实际OpenGL窗口 | 23818项检查，0失败，错误日志为空 | `u05-window-final.log/json`、`u05-window-final-errors.log` |
+| 统一清单回归 | 16项作业全通过，source_drift为空 | `u05-acceptance/summary.json` |
+| Web导出与包内场景对照 | 通过，17,796,212字节，source_drift为空 | `web-u05-final/summary.json` |
+| 保护与源码复核 | 41/41未变，当前源码与上述两清单完全一致 | `u05-commit-ready.json` |
+
+统一清单覆盖template_displays、template_scene_frame、runner_contract、authoring、layout、legacy_economy、三店场景、actor_presentation、shared_movement、actor_actions、flow_composition、scene_modules、session_lifecycle和presentation_boundary。
+
+四个真实组合完成并恢复无重复：奶茶六份普通/封口生产、真实在途和各3杯货架；奶茶两人接单/取餐/就座/消费/离店；煎饼主餐装袋/附加豆浆及十位豆浆客人的等位/离店；第三店两人主餐和例汤合流、整单两件拿取、就座/消费/离店。第三店权重固定为tomato_rice且例汤概率1仅在测试副本，正式资源抽样未改。第一批三店场景测试另覆盖暂停及1/2/4倍速，本轮进一步检查加工/运输/顾客时钟暂停、恢复前后无重复餐品和绘制不改变完整运行状态。
+
+六张同视口720×1280截图位于u05-captures：tea-conveyor、tea-shelves、tea-dining、pancake-processing、pancake-waiting、stirfry-dining，均已逐张检查真实手持/在途、货架分组、加工显示、坐姿、餐品/例汤、图层与裁切。截图使用高金币/全解锁及受控请求，属于显示验收，不能代替开局体验、经济时长或最终三店节奏标定。Godot为4.6.3；本地证据不代表远端CI或浏览器WebGL已运行。
+
+最终复核脚本verify_u05_evidence.py验证日志错误/失败计数、两份源码清单、包内/窗口四组合结果、6张截图hash、41份保护hash、42份自有文件hash和基线，生成u05-commit-ready.json。历史scene-frame-commit-ready.json等保持原样，不再冒充当前源码证据。本轮不自动提交推送。U05全部清单已完成；后续仅沿原计划推进U06正式入口/命令/内容采用/旧档和旧路径清理、U07制作门禁及总验收。

@@ -12,6 +12,7 @@ const SourceDemand := preload("res://game/rules/template/source_demand.gd")
 const Limits := preload("res://game/rules/template/numeric_limits.gd")
 const Clock := preload("res://game/rules/template/production_clock.gd")
 const TransportBatch := preload("res://game/rules/template/transport_batch.gd")
+const Transports := preload("res://game/rules/template/transports.gd")
 
 var runner: RefCounted
 var last_error := ""
@@ -22,6 +23,7 @@ var _clock := 0.0
 var _diagnostics: Array = []
 var _restocks: RefCounted
 var service: RefCounted
+var _transports: RefCounted
 
 func _init(owner: RefCounted, template: Resource) -> void:
 	runner = Runner.new(owner)
@@ -30,6 +32,9 @@ func _init(owner: RefCounted, template: Resource) -> void:
 		last_error = String(compiled.errors[0].path) + ": " + String(compiled.errors[0].message)
 		return
 	_definition = compiled.definition
+	_transports = Transports.new(_definition.get("transports",{}))
+	last_error = _transports.validate_context(owner)
+	if not last_error.is_empty(): return
 	for id in _definition.places:
 		var place: Dictionary = _definition.places[id]
 		last_error = runner.define_place(id, place.port, place.capacity, place.infinite)
@@ -92,6 +97,8 @@ func step(dt: float, paused := false) -> String:
 	if paused or dt == 0.0: return ""
 	var dispatch_error: String = runner.dispatcher.validate_context()
 	if not dispatch_error.is_empty(): last_error = dispatch_error; return dispatch_error
+	var transport_error: String = _transports.validate_context(runner.owner)
+	if not transport_error.is_empty(): last_error = transport_error; return transport_error
 	if service != null:
 		var service_error: String = service.validate_context()
 		if not service_error.is_empty(): last_error = service_error; return service_error
@@ -102,6 +109,8 @@ func step(dt: float, paused := false) -> String:
 	_clock += dt
 	error = runner.step(dt)
 	if not error.is_empty(): last_error = error; return error
+	error = _transports.advance(dt,runner.inventory)
+	if not error.is_empty(): last_error = error; return error
 	_reconcile()
 	if service != null:
 		error = service.advance(dt)
@@ -110,6 +119,7 @@ func step(dt: float, paused := false) -> String:
 	if not error.is_empty(): last_error = error; return error
 	_start_ready_nodes()
 	if not last_error.is_empty(): return last_error
+	_start_transports()
 	error = runner.dispatcher.reconcile()
 	if not error.is_empty(): last_error = error; return error
 	_allocate()
@@ -158,6 +168,7 @@ func frame(displays: Array = []) -> Dictionary:
 	out.clock = _clock
 	out.units = _units.duplicate(true)
 	out.diagnostics = _diagnostics.duplicate(true)
+	if _definition.has("transports"): out.transports = _transports.frame(runner.inventory)
 	if Limits.enabled(_definition): out.limits = Limits.frame(_definition,runner)
 	if service != null:
 		var service_frame: Dictionary = service.frame()
@@ -165,16 +176,25 @@ func frame(displays: Array = []) -> Dictionary:
 	return out
 
 func snapshot() -> Dictionary:
-	return {"version":1, "signature":_definition.get("signature", ""), "clock":_clock,
+	var result := {"version":1, "signature":_definition.get("signature", ""), "clock":_clock,
 		"next_unit":_next_unit, "units":_units.duplicate(true), "runner":runner.snapshot(),
 		"restocks":_restocks.snapshot() if _restocks != null else {"version":1, "runs":{}},
 		"service":service.snapshot() if service != null else {}, "dispatch":runner.dispatcher.snapshot() if runner.dispatcher != null else {}}
+	if _definition.has("transports"): result.transports = _transports.snapshot()
+	return result
+
+func cancel_transport(bundle: int) -> String:
+	return _transports.cancel(bundle,runner.inventory)
 
 func restore(data: Dictionary) -> String:
 	if not last_error.is_empty(): return last_error
 	var dispatch_error: String = runner.dispatcher.validate_context()
 	if not dispatch_error.is_empty(): return dispatch_error
-	if not Inventory._shape(data, {"version":0, "signature":"", "clock":0.0, "next_unit":0, "units":[], "runner":{}, "restocks":{}, "service":{}, "dispatch":{}}): return "invalid production state shape"
+	var transport_error: String = _transports.validate_context(runner.owner)
+	if not transport_error.is_empty(): return transport_error
+	var shape := {"version":0, "signature":"", "clock":0.0, "next_unit":0, "units":[], "runner":{}, "restocks":{}, "service":{}, "dispatch":{}}
+	if _definition.has("transports"): shape.transports = {}
+	if not Inventory._shape(data,shape): return "invalid production state shape"
 	if (service == null) != data.service.is_empty(): return "service state differs from declared capabilities"
 	if data.version != 1 or data.signature != _definition.signature: return "production template signature differs"
 	if not is_finite(data.clock) or data.clock < 0.0 or data.next_unit < 1: return "invalid production sequence or clock"
@@ -229,7 +249,8 @@ func restore(data: Dictionary) -> String:
 				var bundle_id: int = unit.running[id]
 				if not bundles.has(bundle_id): return "production transfer has no bundle"
 				var group: Dictionary = bundles[bundle_id]
-				if not String(group.actor).begins_with("staff:") or (group.claims.size()!=1 and not _definition.dispatch.get("batch_transfers",false)): return "production transfer has an invalid carrier or shape"
+				var conveyor: bool = String(group.actor).begins_with("conveyor:") and node.has("transport")
+				if (not String(group.actor).begins_with("staff:") and not conveyor) or (group.claims.size()!=1 and not _definition.dispatch.get("batch_transfers",false)): return "production transfer has an invalid carrier or shape"
 				var item: String = node.consumes.keys()[0]
 				var source: Dictionary = recipe.nodes[node.inputs[item]]
 				var source_owner: int = -1 if source.capability == "source" else int(unit.id)
@@ -256,6 +277,13 @@ func restore(data: Dictionary) -> String:
 	for bundle_id in assigned_bundles:
 		for child in bundles[bundle_id].claims:
 			if not assigned_transfer_claims.has(child): return "production bundle contains an unbound child claim"
+	var restored_transports := Transports.new(_definition.get("transports",{}))
+	var transport_stock := Inventory.new()
+	error = transport_stock.restore(data.runner.inventory)
+	if not error.is_empty(): return error
+	var transport_state: Dictionary = data.get("transports",{"version":1,"cooldowns":{},"flights":[]})
+	error = restored_transports.validate(transport_state,data.units,transport_stock,_definition.recipes)
+	if not error.is_empty(): return error
 	for lot in data.runner.inventory.lots:
 		if lot.owner >= 0 and not units.has(lot.owner): return "inventory has an unknown production owner"
 	if restored_service != null:
@@ -274,6 +302,8 @@ func restore(data: Dictionary) -> String:
 	_next_unit = data.next_unit
 	_clock = data.clock
 	_restocks.restore_validated(data.restocks)
+	restored_transports.restore_validated(transport_state)
+	_transports = restored_transports
 	service = restored_service
 	runner.dispatcher = restored_dispatch
 	_diagnostics = []
@@ -336,6 +366,17 @@ func _start_ready_nodes() -> void:
 				continue
 			unit.running[id] = started.id
 
+func _start_transports() -> void:
+	if not _definition.has("transports"): return
+	for unit in _units:
+		var recipe: Dictionary = _definition.recipes[unit.recipe]
+		for node in recipe.nodes.values():
+			if not node.has("transport") or node.id in unit.done or unit.running.has(node.id) or not _transports.enabled(node.transport,runner.owner) or not _dependencies_complete(recipe,node,unit): continue
+			var item: String = node.consumes.keys()[0]
+			var source: Dictionary = recipe.nodes[node.inputs[item]]
+			var result: Dictionary = _transports.start(node.transport,runner.inventory,{"from":source.place,"to":node.place,"item":item,"count":int(node.consumes[item]),"owner":-1 if source.capability=="source" else int(unit.id),"allocate_owner":int(unit.id)})
+			if result.error.is_empty(): unit.running[node.id] = int(result.id)
+
 func _allocate() -> void:
 	for worker in runner.owner.workers:
 		if not runner.idle(worker.id): continue
@@ -387,6 +428,7 @@ func _candidates() -> Array:
 			var node: Dictionary = recipe.nodes[id]
 			if id in unit.done: continue
 			if node.capability == "transfer":
+				if node.has("transport") and _transports.enabled(node.transport,runner.owner): continue
 				if unit.running.has(id) or not _dependencies_complete(recipe,node,unit): continue
 				var item: String = node.consumes.keys()[0]
 				var source: Dictionary = recipe.nodes[node.inputs[item]]

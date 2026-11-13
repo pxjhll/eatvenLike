@@ -270,7 +270,7 @@ func refresh_authoritative(seat_count: int, customers: Array) -> void:
 		var seat := int(row.seat)
 		if row.seated and row.target.begins_with("seat:"+group+"/") and seat in _available:
 			_occupied.append(seat)
-			if row.state in ["diner","eating"]:
+			if row.get("presentation_version")!=1 and row.state in ["diner","eating"]:
 				served_seats.append(seat)
 				if _cups.has(seat) and _cups[seat].get_meta("item_id","")!=String(row.dish):
 					_cups[seat].free()

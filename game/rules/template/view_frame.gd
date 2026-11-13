@@ -48,7 +48,8 @@ static func build(inventory: RefCounted, machines: RefCounted, displays: Array =
 			if error.is_empty(): processing[binding.machine] = {}
 		else:
 			error = _binding_error(binding, source.places, shown)
-			if error.is_empty(): shown[binding.place] = true
+			if error.is_empty():
+				for place in binding.get("places",[binding.get("place","")]): shown[place] = true
 		if not error.is_empty():
 			frame.error = error
 			frame.draws = []
@@ -68,19 +69,27 @@ static func build(inventory: RefCounted, machines: RefCounted, displays: Array =
 			continue
 		var index := 0
 		for lot in source.lots:
-			if lot.place != binding.place: continue
+			if lot.place not in binding.get("places",[binding.get("place","")]): continue
 			for unused in mini(int(lot.count) - int(hidden.get(lot.id,0)), binding.points.size() - index):
-				frame.draws.append({"item":lot.item, "pos":binding.points[index], "host":String(binding.get("host", ""))})
+				var draw := {"item":lot.item, "pos":binding.points[index], "host":String(binding.get("host", ""))}
+				if binding.has("height"): draw.height = binding.height
+				frame.draws.append(draw)
 				index += 1
 	return frame
 
 static func _binding_error(binding: Variant, places: Dictionary, shown: Dictionary) -> String:
 	if not binding is Dictionary: return "invalid display binding"
 	for key in binding:
-		if key not in ["capability", "place", "points", "host"]: return "unsupported display parameter: " + str(key)
+		if key not in ["capability", "place", "places", "points", "host", "height"]: return "unsupported display parameter: " + str(key)
 	if binding.get("capability", "") != "stock_showcase": return "unsupported display capability"
-	var place: Variant = binding.get("place")
-	if not place is String or not places.has(place) or Inventory.is_hand_place(place) or shown.has(place): return "invalid display container"
+	if binding.has("place")==binding.has("places"): return "showcase requires one container declaration"
+	var ids: Variant = binding.get("places",[binding.get("place")])
+	if not ids is Array or ids.is_empty(): return "invalid display containers"
+	var seen := {}
+	for place in ids:
+		if not place is String or not places.has(place) or Inventory.is_hand_place(place) or shown.has(place) or seen.has(place): return "invalid display container"
+		seen[place] = true
+	if binding.has("height") and (not (binding.height is float or binding.height is int) or not is_finite(float(binding.height)) or binding.height<=0.0): return "invalid display height"
 	var points: Variant = binding.get("points")
 	if not points is Array or points.is_empty(): return "display capability requires explicit ports"
 	for point in points:

@@ -10,3 +10,5 @@ extends Resource
 @export var recipes: Dictionary = {}
 @export var service: Dictionary = {}
 @export var dispatch: Dictionary = {}
+@export var presentation: Dictionary = {}
+@export var transports: Dictionary = {}

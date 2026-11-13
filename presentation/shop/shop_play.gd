@@ -96,6 +96,17 @@ var _startup_blocked := false
 var _startup_panel: Control
 var _transition_committed := false
 var _production_session: RefCounted
+const TemplatePresentation := preload("res://game/rules/template/presentation.gd")
+
+## Presentation dependency only; the session owns the sole simulation loop.
+func bind_runtime(runtime: RefCounted, displays: Array = []) -> String:
+	var definition: Dictionary = runtime._definition.get("presentation",{})
+	var geometry := {"ports":{},"hosts":[]}
+	for port in TemplatePresentation.port_names(definition):
+		if anchors.has(port): geometry.ports[port] = anchors.point(port)
+	for host in TemplatePresentation.host_names(definition):
+		if _sortables.get_node_or_null(host)!=null: geometry.hosts.append(host)
+	return view.bind_runtime(runtime,displays,geometry)
 
 
 func _ready() -> void:
@@ -399,7 +410,10 @@ func _refresh(delta: float) -> void:
 		_badges[id].visible = open and not working and not need.is_empty()
 		_badges[id].tooltip_text = "%s · 输入 %d · 加工 %d · 输出 %d" % [view.station_name(id), status.get("input", 0), status.get("processing", 0), status.get("output", 0)]
 	if _shelf != null:
-		_shelf.text = _t("chip_shelf", {"count": frame.shelf_count, "limit": rules.shelf_capacity()})
+		_shelf.visible = not frame.has("presentation_version") or frame.get("counters",{}).has("shelf")
+		if _shelf.visible:
+			var count: int = frame.counters.shelf.count if frame.has("presentation_version") else frame.shelf_count
+			_shelf.text = _t("chip_shelf", {"count":count,"limit":rules.shelf_capacity()})
 	if _seats != null and rules.dine_group() != null:
 		var seats := view.seats()
 		_seats.text = _t("chip_seats", {"used": seats.used, "total": seats.total})
@@ -528,6 +542,9 @@ var _put_items := {}
 
 
 func _show_put_down(worker: Dictionary) -> void:
+	if worker.get("presentation_version")==1:
+		if _put_items.has(worker.id): _put_items[worker.id].visible = false
+		return
 	var steps: Array = worker.get("steps", [])
 	var at: int = worker.get("step", 0)
 	var step: Dictionary = steps[at] if at < steps.size() else {}
@@ -710,6 +727,9 @@ func _update_pops(delta: float) -> void:
 
 func _update_cups(frame: Dictionary = {}) -> void:
 	if frame.is_empty(): frame = view.render_snapshot()
+	_draw_cups(frame.draws if frame.get("presentation_version")==1 else _legacy_cup_draws(frame))
+
+func _legacy_cup_draws(frame: Dictionary) -> Array:
 	var draws := []
 	var shelf_points := anchors.points("Shelf/shelf")
 	var shelf_items: Array = []
@@ -741,6 +761,9 @@ func _update_cups(frame: Dictionary = {}) -> void:
 				draws.append({"pos": anchors.point(path), "item": item, "host": String(anchors.meta(path, "host", ""))})
 				break
 	if shop.fulfillment.handoff == "serve": _serve_goods(frame, draws)
+	return draws
+
+func _draw_cups(draws: Array) -> void:
 	while _cups.size() < draws.size():
 		var sprite := Sprite2D.new()
 		sprite.centered = false
@@ -755,10 +778,11 @@ func _update_cups(frame: Dictionary = {}) -> void:
 		var texture: Texture2D = look.texture
 		sprite.texture = texture
 		sprite.modulate = look.get("tint", Color.WHITE)
-		sprite.scale = Vector2.ONE * Actor.CUP_HEIGHT * _actor_unit_scale / maxf(texture.get_width(), texture.get_height())
+		sprite.scale = Vector2.ONE * float(row.get("height",Actor.CUP_HEIGHT)) * _actor_unit_scale / maxf(texture.get_width(), texture.get_height())
 		# 放在家具上的杯子排在那件家具的落脚点前面一点：压得住家具，又在离镜头更近的员工后面
 		var host: Node2D = _sortables.get_node_or_null(String(row.host)) if not String(row.host).is_empty() else null
-		var sort_y: float = row.pos.y if host == null else maxf(row.pos.y, host.position.y + 1.0)
+		var host_y: float = _sortables.to_local(host.global_position).y if host!=null else row.pos.y
+		var sort_y: float = row.pos.y if host == null else maxf(row.pos.y, host_y + 1.0)
 		sprite.position = Vector2(row.pos.x, sort_y)
 		sprite.offset = Vector2(-texture.get_width() / 2.0, -texture.get_height() - (sort_y - row.pos.y) / sprite.scale.y)
 		if _z_by_y: sprite.z_index = int(sort_y)
@@ -766,6 +790,9 @@ func _update_cups(frame: Dictionary = {}) -> void:
 
 func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 	if frame.is_empty(): frame = view.render_snapshot()
+	if frame.get("presentation_version")==1:
+		_update_customers_motion(frame)
+		return
 	if shop.layout.motion_version==1:
 		_update_customers_motion(frame)
 		return
@@ -859,7 +886,16 @@ func _update_customers_motion(frame: Dictionary) -> void:
 		var pose := {"pos":point,"walking":row.walking and not row.path.is_empty(),"seated":row.seated,
 			"path":row.path,"path_index":row.path_index,"phase":"idle","task_label":"",
 			"speed":float(Presentation.customer_speed),"carry_item":row.carry_item,"carry_count":0 if row.carry_item.is_empty() else 1}
-		if row.seated:
+		if row.get("presentation_version")==1:
+			pose.presentation_version = 1
+			pose.held_items = row.held_items
+			pose.carry_count = row.carry_count
+			pose.work_station = ""
+			pose.display_progress = -1.0
+		if row.seated and row.get("presentation_version")==1:
+			pose.pos = row.get("render_pos",row.pos)
+			if row.has("facing"): pose.facing = row.facing
+		elif row.seated:
 			var seat_key: String = String(row.target).get_slice(":",1)
 			var anchor_path := "Seats/"+seat_key
 			# Sitting is an authored display offset from the reached approach port.
@@ -870,17 +906,18 @@ func _update_customers_motion(frame: Dictionary) -> void:
 		var bubble := String(row.dish)
 		if row.exiting or row.state in ["diner","eating"] or not row.carry_item.is_empty(): bubble = ""
 		var patience := -1.0
-		if shop.fulfillment.handoff=="single" and row.state=="queue" and shop.fulfillment.leave_after>0:
+		if row.has("patience"): patience = float(row.patience)
+		elif shop.fulfillment.handoff=="single" and row.state=="queue" and shop.fulfillment.leave_after>0:
 			patience = 1.0-float(row.wait)/shop.fulfillment.leave_after
-		actor.show_order(bubble,patience,rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway)
+		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway)
 		actor.display(pose,frame.clock)
 		_customer_positions[key] = row.pos
 		if _z_by_y: actor.z_index = int(actor.position.y)
 		else: actor.z_index = 1 if row.seated else 0
 
 
-## 订单明细店（serve，规格 §10）：后厨做好的、出餐口上的、桌上的实物都画出来。
-## 同一处的几份并排摆开；员工手里的由员工自己画。共享库存（饭盆）只看机器牌子上的数。
+## Compatibility rendering for pre-template records, removed at the U06 switch.
+## The normative public protocol only consumes explicitly declared frame.draws.
 func _serve_goods(frame: Dictionary, draws: Array) -> void:
 	var count := {}
 	for good: Dictionary in frame.serve.goods:

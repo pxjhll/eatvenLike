@@ -30,72 +30,49 @@ func test_missing_art_has_a_neutral_placeholder_and_preserves_explicit_tea_art()
 	var tea := ShopView.new(ShopRules.new(load("res://content/shops/tea/shop.tres")))
 	check_eq(tea.item_art("lemonade").texture.resource_path,"res://art/reference/fruit_tea.png","explicit legacy tea scene art is preserved")
 
-func test_shared_pot_stock_is_not_rendered_as_a_stack_of_order_dishes() -> void:
-	var rules := ShopRules.new(SHOP,42)
-	rules.unlock("wok_a")
+func _public_scene() -> Dictionary:
+	var owner := ShopRules.new(SHOP.copy_for_editing(),42)
+	owner.gold = 1000000.0
+	for stage in SHOP.stages.size(): check_eq(owner.unlock(SHOP.sold_at(stage)),"","actual outer purchases")
+	var runtime: RefCounted = load("res://game/rules/template/runtime.gd").new(owner,load("res://content/shops/stirfry/shared_production.tres"))
+	check_eq(runtime.last_error,"","common actual production and presentation")
 	var prepared := preload("res://presentation/shop/shop_scene_contract.gd").prepare(SHOP)
-	check_eq(prepared.errors,[],"formal scene supplies the same rendering anchors")
+	check_eq(prepared.errors,[],"same authored scene ports")
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
 	scene.shop = SHOP
-	scene.view = ShopView.new(rules)
-	scene.anchors = ShopAnchors.new(prepared.art.get_node("Anchors"))
-	var frame: Dictionary = scene.view.render_snapshot()
-	check(frame.serve.goods.any(func(good: Dictionary) -> bool: return good.owner==-1),"real opening rice stock exists")
-	var draws: Array = []
-	scene._serve_goods(frame,draws)
-	check_eq(draws,[],"shared rice stock stays inside the machine rather than becoming loose bowls")
-	var saw_product := false
-	for tick in 1800:
-		rules.step(0.1)
-		frame = scene.view.render_snapshot()
-		if not frame.serve.goods.any(func(good: Dictionary) -> bool: return good.owner!=-1 and not String(good.at).contains(":")): continue
-		var state := rules.to_dict()
-		var own: Dictionary = frame.duplicate(true)
-		own.serve.goods = own.serve.goods.filter(func(good: Dictionary) -> bool: return good.owner!=-1)
-		var expected: Array = []
-		scene._serve_goods(own,expected)
-		draws.clear()
-		scene._serve_goods(frame,draws)
-		check(not expected.is_empty(),"actual products assigned to orders remain visible")
-		check_eq(draws,expected,"shared stock never adds duplicate bowls beside real products")
-		check_eq(rules.to_dict(),state,"drawing does not delete or consume any real inventory")
-		saw_product = true
-		break
-	check(saw_product,"production reached a real owned item")
-	scene.free()
-	prepared.art.free()
-
-func test_finished_rice_waits_on_the_plating_surface_and_sorts_with_its_table() -> void:
-	var rules := ShopRules.new(SHOP,42)
-	rules.unlock("wok_a")
-	var prepared := preload("res://presentation/shop/shop_scene_contract.gd").prepare(SHOP)
-	check_eq(prepared.errors,[],"plating module is valid")
-	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	scene.shop = SHOP
-	scene.view = ShopView.new(rules)
+	scene.view = ShopView.new(owner)
 	scene.anchors = ShopAnchors.new(prepared.art.get_node("Anchors"))
 	scene._sortables = prepared.art.get_node("Sortables")
 	scene._actor_unit_scale = SHOP.layout.motion_units
-	check(scene.anchors.has("Stations/plating/Buffer"),"plating owns a product display port distinct from the worker position")
-	var found := false
-	for tick in 1800:
-		rules.step(0.1)
-		if not rules.serve.goods.any(func(good: Dictionary) -> bool: return good.at=="plating" and good.item=="tomato_rice"): continue
-		var state := rules.to_dict()
-		scene._update_cups(scene.view.render_snapshot())
-		var sprite: Sprite2D
-		for cup: Sprite2D in scene._cups:
-			if cup.visible and cup.texture.resource_path=="res://art/stirfry/items/tomato_rice.png": sprite = cup
-		check(sprite!=null,"actual completed rice remains visible while awaiting pickup")
-		if sprite!=null:
-			var bounds: Rect2 = sprite.get_rect()
-			var top_left: Vector2 = sprite.position+bounds.position*sprite.scale
-			var bottom_right: Vector2 = top_left+bounds.size*sprite.scale
-			check(Rect2(760,480,85,80).encloses(Rect2(top_left,bottom_right-top_left)),"finished dish stays inside the clear right-hand tabletop area")
-			check(is_equal_approx(sprite.position.y,prepared.art.get_node("Sortables/PlatingTable").position.y+1.0),"dish sorts in front of its host table while its visual stays on the surface")
-		check_eq(rules.to_dict(),state,"placement does not move workers or change inventory")
-		found = true
-		break
-	check(found,"real production reached a completed rice bowl at plating")
-	scene.free()
-	prepared.art.free()
+	check_eq(scene.bind_runtime(runtime),"","bind explicit display ports")
+	return {"runtime":runtime,"scene":scene,"art":prepared.art}
+
+func test_shared_pot_stock_remains_ui_inventory_without_loose_scene_dishes() -> void:
+	var fixture := _public_scene()
+	var runtime: RefCounted = fixture.runtime
+	var frame: Dictionary = fixture.scene.view.render_snapshot()
+	check(runtime.runner.inventory.quantity("rice_cooker:out","rice")>0,"real opening rice stock exists")
+	check_eq(frame.draws,[],"shared stock is not a display declaration")
+	check_eq(fixture.scene.view.machine_status("rice_cooker").output,runtime.runner.inventory.quantity("rice_cooker:out"),"UI reads the same physical pot stock")
+	var before: Dictionary = runtime.snapshot()
+	fixture.scene._update_cups(frame)
+	check_eq(runtime.snapshot(),before,"drawing cannot consume or move inventory")
+	check(fixture.scene._cups.filter(func(sprite: Sprite2D) -> bool: return sprite.visible).is_empty(),"no shared bowl stack")
+	fixture.scene.free(); fixture.art.free()
+
+func test_finished_rice_waits_in_ui_inventory_without_an_automatic_plating_sprite() -> void:
+	var fixture := _public_scene()
+	var runtime: RefCounted = fixture.runtime
+	var unit: int = runtime.request_production("tomato_rice").id
+	for tick in 2200:
+		check_eq(runtime.step(0.1),"","actual rice-and-topping production")
+		if runtime.production_output(unit).complete: break
+	check(runtime.production_output(unit).complete,"real merge reached its finished output")
+	var frame: Dictionary = fixture.scene.view.render_snapshot()
+	check_eq(frame.stock["plating:out"].items.tomato_rice.count,1,"actual owned meal remains in the common ledger")
+	check_eq(fixture.scene.view.machine_status("plating").output,1,"machine UI records the completed meal")
+	var before: Dictionary = runtime.snapshot()
+	fixture.scene._update_cups(frame)
+	check(fixture.scene._cups.filter(func(sprite: Sprite2D) -> bool: return sprite.visible).is_empty(),"a Buffer anchor cannot implicitly turn stock into a scene sprite")
+	check_eq(runtime.snapshot(),before,"hiding unconfigured stock does not delete the real product")
+	fixture.scene.free(); fixture.art.free()

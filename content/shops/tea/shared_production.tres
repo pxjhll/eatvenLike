@@ -245,6 +245,7 @@ recipes = {
 "count": 1,
 "id": "rack",
 "input": "seal",
+"transport": "seal_to_shelf",
 "item": "black_tea",
 "place": "rack",
 "seconds": 0.6
@@ -345,6 +346,7 @@ recipes = {
 "count": 1,
 "id": "rack",
 "input": "seal",
+"transport": "seal_to_shelf",
 "item": "coconut_milk_tea",
 "place": "rack",
 "seconds": 0.6
@@ -514,6 +516,7 @@ recipes = {
 "count": 1,
 "id": "rack",
 "input": "seal",
+"transport": "seal_to_shelf",
 "item": "pearl_milk_tea",
 "place": "rack",
 "seconds": 0.6
@@ -586,6 +589,7 @@ recipes = {
 "count": 1,
 "id": "rack",
 "input": "seal",
+"transport": "seal_to_shelf",
 "item": "plain_milk_tea",
 "place": "rack",
 "seconds": 0.6
@@ -686,6 +690,7 @@ recipes = {
 "count": 1,
 "id": "rack",
 "input": "seal",
+"transport": "seal_to_shelf",
 "item": "redbean_milk_tea",
 "place": "rack",
 "seconds": 0.6
@@ -786,6 +791,7 @@ recipes = {
 "count": 1,
 "id": "rack",
 "input": "seal",
+"transport": "seal_to_shelf",
 "item": "taro_milk_tea",
 "place": "rack",
 "seconds": 0.6
@@ -874,4 +880,122 @@ service = {
 },
 "arrivals": {"pattern": "fixed", "first_delay": 10.0, "opening": 3},
 "flyers": {"pattern": "spread", "seconds": 30.0, "count": 4, "cooldown": 120.0, "when_full": "wait_outside"}
+}
+
+transports = {"seal_to_shelf": {"from": "seal", "to": "rack", "connection": "seal_to_shelf", "seconds": 3.0, "interval": 1.5, "capacity": 1}}
+
+presentation = {
+"conveyors": {
+"seal_to_shelf": {
+"height": 52.0,
+"host": "BeltVertical",
+"path": ["Connections/seal_to_shelf/Path/0", "Connections/seal_to_shelf/Path/1", "Connections/seal_to_shelf/Path/2"]
+}
+},
+"counters": {
+"shelf": ["shelf:black_tea", "shelf:coconut_milk_tea", "shelf:pearl_milk_tea", "shelf:plain_milk_tea", "shelf:redbean_milk_tea", "shelf:taro_milk_tea"]
+},
+"dining": {
+"seat:dine/0": {
+"height": 36.0,
+"host": "DiningArea/Table1",
+"offsets": [Vector2(-34, -92)],
+"port": "Tables/dine/0"
+},
+"seat:dine/1": {
+"height": 36.0,
+"host": "DiningArea/Table1",
+"offsets": [Vector2(34, -92)],
+"port": "Tables/dine/0"
+},
+"seat:dine/2": {
+"height": 36.0,
+"host": "DiningArea/Table2",
+"offsets": [Vector2(-34, -92)],
+"port": "Tables/dine/1"
+},
+"seat:dine/3": {
+"height": 36.0,
+"host": "DiningArea/Table2",
+"offsets": [Vector2(34, -92)],
+"port": "Tables/dine/1"
+},
+"seat:dine/4": {
+"height": 36.0,
+"host": "DiningArea/Table3",
+"offsets": [Vector2(-34, -92)],
+"port": "Tables/dine/2"
+},
+"seat:dine/5": {
+"height": 36.0,
+"host": "DiningArea/Table3",
+"offsets": [Vector2(34, -92)],
+"port": "Tables/dine/2"
+},
+"seat:dine/6": {
+"height": 36.0,
+"host": "DiningArea/Table4",
+"offsets": [Vector2(-34, -92)],
+"port": "Tables/dine/3"
+},
+"seat:dine/7": {
+"height": 36.0,
+"host": "DiningArea/Table4",
+"offsets": [Vector2(34, -92)],
+"port": "Tables/dine/3"
+}
+},
+"poses": {
+"seat:dine/0": {
+"facing": 2,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/0"
+},
+"seat:dine/1": {
+"facing": 6,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/1"
+},
+"seat:dine/2": {
+"facing": 2,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/2"
+},
+"seat:dine/3": {
+"facing": 6,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/3"
+},
+"seat:dine/4": {
+"facing": 2,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/4"
+},
+"seat:dine/5": {
+"facing": 6,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/5"
+},
+"seat:dine/6": {
+"facing": 2,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/6"
+},
+"seat:dine/7": {
+"facing": 6,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/7"
+}
+},
+"stock": [{
+"height": 52.0,
+"host": "Rack",
+"places": ["shelf:black_tea", "shelf:coconut_milk_tea", "shelf:pearl_milk_tea", "shelf:plain_milk_tea", "shelf:redbean_milk_tea", "shelf:taro_milk_tea"],
+"ports": ["Shelf/shelf/0", "Shelf/shelf/1", "Shelf/shelf/2"]
+}, {
+"height": 52.0,
+"host": "Rack",
+"places": ["rack"],
+"ports": ["Shelf/rack/0", "Shelf/rack/1", "Shelf/rack/2"]
+}]
 }

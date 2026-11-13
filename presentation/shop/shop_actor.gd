@@ -21,6 +21,7 @@ var work_progress: Callable = func(_worker: Dictionary) -> float: return -1.0
 var progress_bar := ProgressBar.new()
 var body := Sprite2D.new()
 var carried := Sprite2D.new()
+var _held_sprites: Array[Sprite2D] = []
 var amount := Label.new()
 var task := Label.new()
 var selected := false
@@ -135,7 +136,7 @@ func display(worker: Dictionary, clock: float) -> void:
 	# 这一步把手上的东西放进机器里做了，手上就不画
 	var steps: Array = worker.get("steps", [])
 	var at: int = worker.get("step", 0)
-	var in_machine: bool = worker.get("phase", "") == "work" and at < steps.size() and (bool(steps[at].get("into_machine", false)) or bool(steps[at].get("put_down", false)))
+	var in_machine: bool = worker.get("presentation_version")!=1 and worker.get("phase", "") == "work" and at < steps.size() and (bool(steps[at].get("into_machine", false)) or bool(steps[at].get("put_down", false)))
 	carried.visible = not item.is_empty() and count > 0 and not in_machine
 	amount.visible = carried.visible and count > 1
 	amount.text = "×%d" % count
@@ -158,9 +159,31 @@ func display(worker: Dictionary, clock: float) -> void:
 				move_child(carried, frame_actor.get_index())
 			elif not behind and carried.get_index() < frame_actor.get_index():
 				move_child(carried, frame_actor.get_index())
+	_display_held_items(worker)
 	_last_pos = position
 	_last_clock = clock
 	queue_redraw()
+
+func _display_held_items(worker: Dictionary) -> void:
+	var items: Array = worker.get("held_items",[]) if worker.get("presentation_version")==1 and carried.visible else []
+	while _held_sprites.size()<maxi(0,items.size()-1):
+		var sprite := Sprite2D.new()
+		sprite.centered = false
+		add_child(sprite)
+		_held_sprites.append(sprite)
+	for index in _held_sprites.size():
+		var sprite := _held_sprites[index]
+		sprite.visible = index+1<items.size()
+		if not sprite.visible: continue
+		var look: Dictionary = item_art.call(items[index+1].item)
+		var texture: Texture2D = ItemArt.texture_from_look(look)
+		sprite.texture = texture
+		sprite.modulate = look.get("tint",Color.WHITE)
+		sprite.scale = Vector2.ONE*CUP_HEIGHT/maxf(texture.get_width(),texture.get_height())
+		sprite.position = carried.position+Vector2((index+1)*18,-(index+1)*4)
+		if frame_actor!=null:
+			if frame_actor.direction in [3,4,5]: move_child(sprite,frame_actor.get_index())
+			else: move_child(sprite,carried.get_index()+1)
 
 
 func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -> void:
@@ -184,7 +207,7 @@ func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -
 	if not walking and not worker.get("seated", false) and frame_actor.has_action("work") and (worker.get("phase", "idle") == "work" or not poured.is_empty()):
 		desired = "work"
 		# 一人跟单的店没有 job：在哪个点干活就按哪台机器的朝向
-		var station: String = poured if not poured.is_empty() else String(job.get("src", worker.get("target", "")))
+		var station: String = String(worker.work_station) if worker.get("presentation_version")==1 else (poured if not poured.is_empty() else String(job.get("src", worker.get("target", ""))))
 		var direction: int = work_direction.call(station)
 		if not worker.has("facing") and direction >= 0:
 			frame_actor.set_direction(direction)

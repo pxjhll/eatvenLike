@@ -444,7 +444,7 @@ static func _hand_place(actor: String) -> String:
 
 static func _actor_valid(actor: String) -> bool:
 	var parts := actor.split(":")
-	return parts.size() == 2 and parts[0] in ["staff", "customer"] and parts[1].is_valid_int() and int(parts[1]) > 0 and str(int(parts[1])) == parts[1]
+	return parts.size() == 2 and parts[0] in ["staff", "customer", "conveyor"] and parts[1].is_valid_int() and int(parts[1]) > 0 and str(int(parts[1])) == parts[1]
 
 static func _staff_id(actor: String) -> int:
 	return int(actor.trim_prefix("staff:")) if actor.begins_with("staff:") else 0

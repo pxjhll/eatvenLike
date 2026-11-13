@@ -1568,3 +1568,57 @@ dispatch = {
 "restock_operate": 300.0
 }
 }
+
+presentation = {
+"conveyors": {},
+"counters": {},
+"dining": {},
+"poses": {
+"wait:cushion/0": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/0"
+},
+"wait:cushion/1": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/1"
+},
+"wait:cushion/2": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/2"
+},
+"wait:cushion/3": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/3"
+},
+"wait:cushion/4": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/4"
+},
+"wait:cushion/5": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/5"
+},
+"wait:cushion/6": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/6"
+},
+"wait:cushion/7": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/7"
+},
+"wait:cushion/8": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/8"
+}
+},
+"stock": []
+}

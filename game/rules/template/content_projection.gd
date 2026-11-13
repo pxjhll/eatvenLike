@@ -7,6 +7,8 @@ static func project(template: Resource, structural: bool) -> Dictionary:
 	for key in ["version", "hop_seconds", "places", "machines", "restocks", "recipes", "service", "dispatch"]:
 		if structural and key == "hop_seconds": continue
 		data[key] = _walk(template.get(key), [key], structural)
+	if not template.presentation.is_empty(): data.presentation = _walk(template.presentation,["presentation"],structural)
+	if not template.transports.is_empty(): data.transports = _walk(template.transports,["transports"],structural)
 	return data
 
 static func _walk(value: Variant, path: Array, structural: bool) -> Variant:
@@ -30,6 +32,7 @@ static func _label(path: Array) -> bool:
 	return path.size() == 5 and path[0] == "recipes" and path[2] == "nodes" and path[3] == "[]" and path[4] == "label"
 
 static func _tunable(path: Array) -> bool:
+	if path.size()==3 and path[0]=="transports": return path[2] in ["seconds","interval"]
 	if path==["service","dining","stages","[]","seconds"]: return true
 	if path==["service","seating","stages","[]","seconds"]: return true
 	if path.size()==4 and path.slice(0,3)==["service","selection","ramp"]: return path[3] in ["start","orders"]

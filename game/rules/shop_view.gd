@@ -12,6 +12,11 @@ const CommandResult := preload("res://game/rules/rule_command_result.gd")
 const CommandText := preload("res://content/ui/rule_command_text.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Production := preload("res://game/rules/production_plan.gd")
+const SceneFrame := preload("res://game/rules/template/scene_frame.gd")
+var _runtime: RefCounted
+var _displays: Array = []
+var _presentation: Dictionary = {}
+const TemplatePresentation := preload("res://game/rules/template/presentation.gd")
 
 ## 升级效果 → 面板上“这一级做什么”的分类
 const KIND_TEXT := {"capacity": "产能升级", "price": "售价升级", "menu": "开新口味", "both": "产能售价升级"}
@@ -31,8 +36,24 @@ func command_message(status: Dictionary) -> String:
 
 # ---------- Detached presentation reads ----------
 
+## Explicit presentation dependency. The session/controller owns simulation
+## advancement and saving; binding a view never starts or replaces a loop.
+func bind_runtime(runtime: RefCounted, displays: Array = [], geometry: Dictionary = {}) -> String:
+	if runtime==null or not runtime.get("runner") is RefCounted or runtime.runner.owner!=rules: return "presentation runtime belongs to another owner"
+	if not String(runtime.last_error).is_empty(): return String(runtime.last_error)
+	var resolved := TemplatePresentation.resolve(runtime._definition.get("presentation",{}),geometry)
+	if not resolved.error.is_empty(): return resolved.error
+	var combined: Array = resolved.definition.get("stock",[])+displays
+	var frame: Dictionary = runtime.frame(combined)
+	if not String(frame.error).is_empty(): return String(frame.error)
+	_runtime = runtime
+	_displays = combined.duplicate(true)
+	_presentation = resolved.definition
+	return ""
+
 ## One caller-owned frame, in the simulation's existing iteration order.
 func render_snapshot() -> Dictionary:
+	if _runtime!=null: return SceneFrame.build(_runtime,_displays,_presentation)
 	var frame := {"clock": rules.clock, "gold": rules.gold, "revenue": rules.revenue, "sold": rules.sold,
 		"lost": rules.lost, "paused": rules.paused, "stage_index": rules.stage_index,
 		"completed_at": rules.completed_at, "shelf_count": rules.shelf_count,
@@ -65,6 +86,13 @@ func render_snapshot() -> Dictionary:
 
 
 func roster_snapshot() -> Array:
+	if _runtime!=null:
+		var active := {}
+		for worker in render_snapshot().workers: active[worker.id] = worker
+		var roster: Array = rules.roster.duplicate(true)
+		for index in roster.size():
+			if active.has(roster[index].id): roster[index] = active[roster[index].id]
+		return roster
 	return rules.roster.duplicate(true)
 
 func production_snapshot(dish_id: String) -> Dictionary:
@@ -73,14 +101,21 @@ func production_snapshot(dish_id: String) -> Dictionary:
 
 
 func deployed_snapshot() -> Array:
+	if _runtime!=null: return render_snapshot().workers
 	return rules.workers.duplicate(true)
 
 
 func worker_snapshot(id: int) -> Dictionary:
+	if _runtime!=null:
+		for worker in roster_snapshot():
+			if worker.id==id: return worker
+		return {}
 	return rules.worker_by_id(id).duplicate(true)
 
 
 func customer_snapshot(id: int) -> Dictionary:
+	if _runtime!=null:
+		return render_snapshot().movement.customers.get("guest:"+str(id),{}).duplicate(true)
 	return rules.customer(id).duplicate(true)
 
 
@@ -98,6 +133,7 @@ func progress_snapshot() -> Dictionary:
 
 
 func activity_snapshot() -> Dictionary:
+	if _runtime!=null: return SceneFrame.activity(_runtime)
 	var idle := 0
 	for worker in rules.workers:
 		if rules.worker_idle(worker): idle += 1
@@ -594,7 +630,7 @@ func seats() -> Dictionary:
 	var dine := g.purpose == "dine"
 	var total: int = int(rules.seats.get(g.id, 0))
 	var full := g.start + (ShopRules._sum(g.steps) if not g.steps.is_empty() else g.step * g.costs.size())
-	var used := rules.seats_used()
+	var used := SceneFrame.seats_used(_runtime,g) if _runtime!=null else rules.seats_used()
 	var next := rules._seat_step(g) if rules.seat_cost() >= 0 else 0
 	var status := rules.command_status("buy_seat", {})
 	return {"total": total, "max": full, "cap": rules.seat_cap(g), "used": used, "step": next, "purpose": g.purpose,
@@ -638,6 +674,12 @@ func can_buy(id: String) -> bool:
 
 ## 机器此刻在干什么：{working, progress, need（待取 n / 待操作）, input, processing, output}
 func machine_status(id: String) -> Dictionary:
+	if _runtime!=null:
+		var current: Dictionary = _runtime.runner.machines.status(id)
+		if current.is_empty(): return {}
+		if not current.need.is_empty(): current.need = text("need_operate",{},"待操作")
+		elif not current.working and current.output>0: current.need = "待取 %d"%current.output
+		return current
 	var s: Dictionary = rules.stations.get(id, {})
 	if s.is_empty(): return {}
 	var total := func(d: Dictionary) -> int:
@@ -708,6 +750,9 @@ func slots() -> Dictionary:
 
 ## 员工头顶的字：texts["task_<动作>@<机器>"] → texts["task_<动作>"] → 原样（单人模式的规则层直接给中文）
 func task_text(worker: Dictionary) -> String:
+	if worker.get("presentation_version")==1:
+		var action := String(worker.get("display_task","idle"))
+		return text("task_"+action,{}, {"operate":"加工","transfer":"搬运","bundle":"搬运","interact":"接单","idle":"空闲"}.get(action,action))
 	var label: String = worker.get("task_label", "")
 	if label.is_empty(): label = "idle"
 	var job: Dictionary = worker.get("job", {})
@@ -730,6 +775,7 @@ func worker_card(worker: Dictionary) -> Dictionary:
 
 ## 员工手上这步活的进度（0–1）；没在干活、或者活在机器上（机器自己有进度条）返回 -1
 func work_progress(worker: Dictionary) -> float:
+	if worker.get("presentation_version")==1: return float(worker.display_progress)
 	if worker.get("phase", "") != "work": return -1.0
 	var duration: float = float(worker.get("duration", 0.0))
 	if duration <= 0.0 or not worker.get("job", {}).is_empty(): return -1.0
@@ -766,6 +812,7 @@ func work_direction(station_id: String) -> int:
 
 ## 正从展示柜接现成饮品的员工：返回那台机器（动画按“干活”放）
 func pouring_station(worker: Dictionary) -> String:
+	if worker.get("presentation_version")==1: return String(worker.get("work_station","")) if worker.get("phase")=="pickup" else ""
 	if worker.get("phase", "") != "pickup": return ""
 	var job: Dictionary = worker.get("job", {})
 	for d in shop.dishes:

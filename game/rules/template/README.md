@@ -32,6 +32,7 @@
 | `dispatch.gd` | 统一角色/岗位权限；普通搬运、整组搬运、加工与接单均在领取、推进及恢复时检查 |
 | `dispatch_leases.gd` | 员工跟随归属和机器阶段租约；只保存身份引用，不复制物品或加工时钟 |
 | `view_frame.gd` | 从权威状态生成只读UI/手持/显式展示数据 |
+| `scene_frame.gd` | 将公共状态及原钱包/购买事实投影为正式场景可消费的姿态、顾客、活动和机器显示协议，不推进仿真 |
 | `processing_display.gd` | 校验台面输入/端口并投影真实加工claim；与货架展示共享同一份物品数量 |
 
 当前生产运行器的owner提供名册、导航、共享属性与修正器接口。受控测试使用既有ShopRules提供这些接口，新核心不读取它的旧库存/serve业务账本。正式切换时要移除旧账本与执行路径，不能长期并行保存两份权威状态。
@@ -405,6 +406,30 @@ dispatch = {
 三家开发期真实模板均开启批量搬运；第三店前台另配置后厨搬运协助与接单留守。本节配置仍未接入正式ShopRules、UI或玩家旧档。
 
 ## 保存边界
+
+### U05中的场景显示接入
+
+```gdscript
+var view := ShopView.new(owner)
+var error := view.bind_runtime(runtime, displays, geometry)
+var frame := view.render_snapshot()
+```
+
+绑定要求同一owner且展示定义有效，失败保留先前来源。公共帧使用presentation_version=1，包含实际stock/held/machines/draws、员工姿态和movement.customers；员工held_items与carry_count只来自真实手持lot，多个种类各画一张图。员工卡、机器面板、座位牌及活动统计复用公共来源；钱包、购买和全局属性继续由原外层持有。旧job/steps/timer不进入公共姿态，加工进度不从旧机器字典推算。调用或修改快照都不移动角色、不提交库存、不抽随机数。
+
+公共场景只消费draws及权威顾客路径/抵达；等待库存没有默认图片，桌面餐品也需显式展示能力。旧堂食组件在此协议下只管理家具/占用，不自动创建第二份食物或顾客。混合拿取和取消复用原Actor、ItemArt与库存事务，不引入场景物品账本。
+
+这仍是U05的显式显示接入点。正式ShopSession/ShopRules及存档未绑定它；开发期场景验收停止旧场景_process，只推进Runtime。不要在继续旧经营循环的同时绑定新显示，把两套状态并行当成正式集成。U06将由统一控制器接入唯一推进、命令和存档。
+
+三份真实模板已声明各自需要的presentation，三份真实场景已完成公共姿态、手持、机器/座位信息、货架计数、货架/传送/用餐和等位的完整验收。第三店共享饭与装盘台出品默认仅计入UI，不生成散落图标，旧显示断言已替换。U05已完成，默认正式入口仍待U06切换。
+
+### 显式展示与自动运输
+
+SpecShopTemplate.presentation支持stock、counters、dining、poses和conveyors。stock可将多个容器合并到一组有限展示端口，counters从同一库存按容器汇总；dining只展示真实就座、eating且顾客容器中确有的餐品，消费后消失。poses声明座位或等位垫的端口、偏移和朝向，conveyors声明自动运输路线的显示路径。场景提供geometry={ports:端口坐标字典,hosts:排序宿主路径数组}，ShopPlay.bind_runtime负责从实际场景收集；缺端口或宿主时拒绝绑定并保留原显示源。投影不推进任何时钟或修改库存。
+
+SpecShopTemplate.transports声明路线的from/to/connection/seconds/interval/capacity，transfer节点通过transport引用它。连接未购买时仍由员工执行相同节点；购买后由Runtime.step中的公共自动携带者执行。它复用Inventory的bundle/claim和hand@conveyor:<id>容器，保存的仅是路线冷却与在途bundle引用/剩余时间；取消、恢复及图节点绑定交叉验证不会复制物品。奶茶现有seal_to_shelf沿用3秒运输、1.5秒间隔与单次1份，不用显示动画替代真实搬运。
+
+customer_movement.sync_records消费统一中性intent，先校验全部请求再更新目标、路径和离场。旧三种模式记录只在legacy/customer_intents.gd转换，兼容sync暂供旧正式入口使用；公共Runtime的顾客继续由Customers和RuleMovement持有，显示只消费其快照。U06必须移除旧调用路径，不能同时推进两套顾客状态。
 
 快照包含无对象引用的状态；恢复先验证全部候选再采用。生产图、机器、库存、员工动作、路径、权限、补货引用和交付凭据各有交叉校验。
 

@@ -2,6 +2,24 @@
   "version": 1,
   "jobs": [
     {
+      "id": "template_displays",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_template_displays.gd",
+      "args": [],
+      "timeout": 180,
+      "success": "TEMPLATE DISPLAYS:.*\\b0 failures"
+    },
+    {
+      "id": "template_scene_frame",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_template_scene_frame.gd",
+      "args": [],
+      "timeout": 60,
+      "success": "TEMPLATE SCENE FRAME:.*\\b0 failures"
+    },
+    {
       "id": "runner_contract",
       "kind": "python",
       "profile": "headless",

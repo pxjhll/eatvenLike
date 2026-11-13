@@ -707,3 +707,189 @@ dispatch = {
 "stage": 300.0
 }
 }
+
+presentation = {
+"conveyors": {},
+"counters": {},
+"dining": {
+"seat:table/0": {
+"height": 52.0,
+"host": "Dining/Table01",
+"offsets": [Vector2(-28, 0), Vector2(-12, -10)],
+"port": "Tables/table/0"
+},
+"seat:table/1": {
+"height": 52.0,
+"host": "Dining/Table01",
+"offsets": [Vector2(28, 0), Vector2(44, -10)],
+"port": "Tables/table/0"
+},
+"seat:table/10": {
+"height": 52.0,
+"host": "Dining/Table06",
+"offsets": [Vector2(-28, 0), Vector2(-12, -10)],
+"port": "Tables/table/5"
+},
+"seat:table/11": {
+"height": 52.0,
+"host": "Dining/Table06",
+"offsets": [Vector2(28, 0), Vector2(44, -10)],
+"port": "Tables/table/5"
+},
+"seat:table/12": {
+"height": 52.0,
+"host": "Dining/Table07",
+"offsets": [Vector2(-28, 0), Vector2(-12, -10)],
+"port": "Tables/table/6"
+},
+"seat:table/13": {
+"height": 52.0,
+"host": "Dining/Table07",
+"offsets": [Vector2(28, 0), Vector2(44, -10)],
+"port": "Tables/table/6"
+},
+"seat:table/14": {
+"height": 52.0,
+"host": "Dining/Table08",
+"offsets": [Vector2(-28, 0), Vector2(-12, -10)],
+"port": "Tables/table/7"
+},
+"seat:table/15": {
+"height": 52.0,
+"host": "Dining/Table08",
+"offsets": [Vector2(28, 0), Vector2(44, -10)],
+"port": "Tables/table/7"
+},
+"seat:table/2": {
+"height": 52.0,
+"host": "Dining/Table02",
+"offsets": [Vector2(-28, 0), Vector2(-12, -10)],
+"port": "Tables/table/1"
+},
+"seat:table/3": {
+"height": 52.0,
+"host": "Dining/Table02",
+"offsets": [Vector2(28, 0), Vector2(44, -10)],
+"port": "Tables/table/1"
+},
+"seat:table/4": {
+"height": 52.0,
+"host": "Dining/Table03",
+"offsets": [Vector2(-28, 0), Vector2(-12, -10)],
+"port": "Tables/table/2"
+},
+"seat:table/5": {
+"height": 52.0,
+"host": "Dining/Table03",
+"offsets": [Vector2(28, 0), Vector2(44, -10)],
+"port": "Tables/table/2"
+},
+"seat:table/6": {
+"height": 52.0,
+"host": "Dining/Table04",
+"offsets": [Vector2(-28, 0), Vector2(-12, -10)],
+"port": "Tables/table/3"
+},
+"seat:table/7": {
+"height": 52.0,
+"host": "Dining/Table04",
+"offsets": [Vector2(28, 0), Vector2(44, -10)],
+"port": "Tables/table/3"
+},
+"seat:table/8": {
+"height": 52.0,
+"host": "Dining/Table05",
+"offsets": [Vector2(-28, 0), Vector2(-12, -10)],
+"port": "Tables/table/4"
+},
+"seat:table/9": {
+"height": 52.0,
+"host": "Dining/Table05",
+"offsets": [Vector2(28, 0), Vector2(44, -10)],
+"port": "Tables/table/4"
+}
+},
+"poses": {
+"seat:table/0": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/0"
+},
+"seat:table/1": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/1"
+},
+"seat:table/10": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/10"
+},
+"seat:table/11": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/11"
+},
+"seat:table/12": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/12"
+},
+"seat:table/13": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/13"
+},
+"seat:table/14": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/14"
+},
+"seat:table/15": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/15"
+},
+"seat:table/2": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/2"
+},
+"seat:table/3": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/3"
+},
+"seat:table/4": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/4"
+},
+"seat:table/5": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/5"
+},
+"seat:table/6": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/6"
+},
+"seat:table/7": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/7"
+},
+"seat:table/8": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/8"
+},
+"seat:table/9": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/table/9"
+}
+},
+"stock": []
+}
