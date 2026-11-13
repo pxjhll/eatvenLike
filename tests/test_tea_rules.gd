@@ -148,40 +148,24 @@ func test_milk_teas_need_the_whole_chain_before_they_go_on_the_menu() -> void:
 
 func test_hire_order_prices_and_roster_without_limit() -> void:
 	var rules := ShopRules.new(TEA)
-	rules.gold = 180.0
-	for expected in [[35, "raccoon", 2], [60, "fox", 3]]:
-		check_eq(rules.hire_cost(), expected[0], "招人价格按顺序涨")
-		var before := rules.gold
-		check_eq(rules.hire(), "", "招到 " + expected[1])
-		check(is_equal_approx(rules.gold, before - expected[0]), "招人扣全价")
-		check_eq(rules.worker_by_id(expected[2]).kind, expected[1], "名册 id 固定")
-	check_eq(rules.hire_cost(), 85, "第四位 85")
-	check_eq(rules.next_hire_kind(), "rabbit", "第四位是小兔子")
-	rules.gold = 84.0
-	var before := rules.to_dict()
-	check(rules.hire() != "", "钱不够招不了")
-	check_eq(rules.to_dict(), before, "招不了的时候什么都不变")
-	rules.gold = 85.0
-	check_eq(rules.hire(), "", "招到小兔子")
-	check_eq(rules.workers.size(), 1, "招来的人先进名册")
-	var rabbit := rules.worker_by_id(4)
-	check_eq(rabbit.kind, "rabbit", "4 号是小兔子")
-	check_eq(rabbit.name, "小兔子", "小兔子的名字")
-	check_eq(rabbit.source, "招募", "来源记成招募")
-	check_eq(rules.hire_cost(), 110, "名册不设上限，第五位更贵")
-	check_eq(rules.next_hire_kind(), "gray_cat", "接着是小灰猫")
-	rules.gold = 110.0
-	rules.hire()
-	check_eq(rules.next_hire_kind(), "bear", "然后是小熊")
-	rules.gold = 135.0
-	rules.hire()
-	check_eq(rules.worker_by_id(6).kind, "bear", "小熊 6 号")
-	rules.gold = 160.0
-	check_eq(rules.hire(), "", "六种都有以后从头再来")
-	check_eq(rules.worker_by_id(7).kind, "cat", "重复的种类拿新 id")
-	check_eq(rules.next_hire_kind(), "raccoon", "重复也按顺序")
+	var expected := [[35, "bear", 2], [60, "rabbit", 3], [85, "fox", 4], [110, "parrot", 5], [135, "gray_cat", 6], [160, "bear", 7]]
+	for row in expected:
+		check_eq(rules.hire_cost(), row[0], "recruitment prices retain their progression")
+		check_eq(rules.next_hire_kind(), row[1], "five-species recruitment order")
+		rules.gold = float(row[0]) - 1.0
+		var before := rules.to_dict()
+		check(rules.hire() != "", "insufficient funds reject recruitment")
+		check_eq(rules.to_dict(), before, "failed recruitment is read-only")
+		rules.gold = float(row[0])
+		check_eq(rules.hire(), "", "recruitment succeeds at the exact price")
+		check_eq(rules.gold, 0.0, "recruitment charges the full price")
+		check_eq(rules.worker_by_id(row[2]).kind, row[1], "each recruit keeps a unique worker ID")
+	check_eq(rules.workers.size(), 1, "recruits enter the roster before deployment")
+	check_eq(rules.worker_by_id(4).name, "Fox", "restored fox retains its own identity")
+	check_eq(rules.worker_by_id(5).name, "小鹦鹉", "parrot has its own identity")
+	check_eq(rules.next_hire_kind(), "rabbit", "fewest-species recruitment repeats without an identity collision")
 	var copy := ShopRules.new(TEA)
-	check_eq(copy.load_dict(rules.to_dict()), "", "有重复种类的名册能存能读")
+	check_eq(copy.load_dict(rules.to_dict()), "", "five-species roster saves and reloads")
 
 
 func test_kitchen_slots_grow_with_each_production_line() -> void:

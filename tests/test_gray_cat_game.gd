@@ -18,19 +18,19 @@ func _run() -> void:
 	_check(library.portrait("gray_cat") is AtlasTexture, "portrait uses the real gray-cat atlas")
 	_check(library.actions("gray_cat").map(func(a): return a.id) == ["walk", "idle", "work"], "authored gray-cat walk, idle and operation are advertised")
 	rules.gold = 1000
-	for kind in ["raccoon", "fox", "rabbit", "gray_cat"]:
-		_check(rules.next_hire_kind() == kind, "existing recruitment order followed by gray cat")
+	for kind in ["bear", "rabbit", "fox", "parrot", "gray_cat"]:
+		_check(rules.next_hire_kind() == kind, "only active species are recruited before another gray cat")
 		var cost: int = rules.hire_cost()
 		var gold: float = rules.gold
 		_check(rules.hire() == "" and is_equal_approx(rules.gold, gold - cost), "each recruit is paid")
-	var worker: Dictionary = rules.worker_by_id(5)
+	var worker: Dictionary = rules.worker_by_id(6)
 	_check(worker.kind == "gray_cat" and worker.name == "小灰猫", "new gray cat has its own roster identity")
-	_check(rules.next_hire_kind() == "bear", "bear follows the original five animals")
+	_check(rules.next_hire_kind() == "bear", "fewest-species recruitment continues with bear")
 	rules.gold = 1000
 	rules.unlock("lemonade")
 	rules.unlock("boil")
 	rules.unlock_box("tea_leaf")
-	_check(rules.deploy_worker(5) == "", "gray cat deploys into a real kitchen slot")
+	_check(rules.deploy_worker(6) == "", "gray cat deploys into a real kitchen slot")
 	var carried := false
 	for i in 1200:
 		rules.step(0.1)
@@ -64,7 +64,7 @@ func _run() -> void:
 		_check(actor.frame_actor.action == "idle", "stopping plays the facing's idle action")
 	actor.free()
 	rules.reset()
-	_check(rules.worker_by_id(5).is_empty() and rules.roster.size() == 1, "reset keeps only the starter (staff do not carry over)")
+	_check(rules.worker_by_id(6).is_empty() and rules.roster.size() == 1, "reset keeps only the starter (staff do not carry over)")
 	_finish()
 
 func _finish() -> void:

@@ -1154,12 +1154,25 @@ display_name = "后厨"
 levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_fab7n"), SubResource("Resource_5tji1"), SubResource("Resource_184w0"), SubResource("Resource_p887f"), SubResource("Resource_g0mkt"), SubResource("Resource_ixqvy")])
 effect_label = "员工"
 
+[sub_resource type="Resource" id="Resource_staff_parrot"]
+script = ExtResource("17_mx6tq")
+id = "parrot"
+display_name = "小鹦鹉"
+stats = Dictionary[String, float]({
+"carry": 2.0,
+"walk": 112.0,
+"work": 1.0
+})
+role = "速度型"
+description = "擅长快速搬运"
+
 [sub_resource type="Resource" id="Resource_8p4c6"]
 script = ExtResource("18_tdcmu")
-kinds = Array[ExtResource("17_mx6tq")]([SubResource("Resource_7xjsb"), SubResource("Resource_xhpol"), SubResource("Resource_8ydxu"), SubResource("Resource_h0rnc"), SubResource("Resource_fi30w"), SubResource("Resource_nh0g8")])
-starting = Array[String](["cat"])
+kinds = Array[ExtResource("17_mx6tq")]([SubResource("Resource_fi30w"), SubResource("Resource_nh0g8"), SubResource("Resource_h0rnc"), SubResource("Resource_7xjsb"), SubResource("Resource_xhpol"), SubResource("Resource_8ydxu"), SubResource("Resource_staff_parrot")])
+retired_kinds = Dictionary[String, String]({"cat": "gray_cat", "raccoon": "bear"})
+starting = Array[String](["gray_cat"])
 starting_post = "counter"
-hire_pool = Array[String](["cat", "raccoon", "fox", "rabbit", "gray_cat", "bear"])
+hire_pool = Array[String](["gray_cat", "bear", "rabbit", "fox", "parrot"])
 hire_cost_base = 35
 hire_cost_step = 25
 zones = Array[String](["front", "kitchen"])

@@ -65,6 +65,8 @@ var _customers := {}
 var _customer_positions := {}
 var _customer_orders := {}
 var _customer_entering := {}
+## Customer motion is rendered every frame; its animation clock must not use 100ms rule ticks.
+var _customer_animation_clock := 0.0
 var _known_seats := {}
 var _cups: Array[Sprite2D] = []
 var _badges := {}
@@ -312,6 +314,7 @@ func restart() -> void:
 
 
 func _reset_visuals() -> void:
+	_customer_animation_clock = 0.0
 	ui.show_selection = false
 	if _dining != null: _dining.reset()
 	var roster := all_staff()
@@ -418,7 +421,7 @@ func _refresh(delta: float) -> void:
 	_update_cups(frame)
 	_update_customers(moving, frame)
 	if _dining != null:
-		_dining.refresh(rules.seat_total(), frame.diners, _font, frame.clock, moving)
+		_dining.refresh(rules.seat_total(), frame.diners, _font, _customer_animation_clock, moving)
 	if frame.sold > _last_sold: _pop_income(int(frame.revenue) - _last_revenue)
 	_last_sold = frame.sold
 	_last_revenue = int(frame.revenue)
@@ -762,6 +765,10 @@ func _update_cups(frame: Dictionary = {}) -> void:
 
 func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 	if frame.is_empty(): frame = view.render_snapshot()
+	_customer_animation_clock += maxf(0.0, delta) * _speed_factor
+	# Keep the detached business snapshot unchanged; all customer display paths share this clock.
+	frame = frame.duplicate()
+	frame.clock = _customer_animation_clock
 	if shop.fulfillment.handoff == "single":
 		_update_customers_single(delta, frame)
 		return

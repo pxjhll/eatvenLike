@@ -76,6 +76,7 @@ jobs:
           timeout 30s ./godot --headless --path . -s tests/test_gray_cat_game.gd
           timeout 30s ./godot --headless --path . -s tests/test_work_action_atlases.gd
           timeout 30s ./godot --headless --path . -s tests/test_work_actions.gd
+          timeout 30s ./godot --headless --path . -s tests/render_customer_timing.gd
           timeout 30s ./godot --headless --path . -s tests/render_work_actions.gd
       # 真窗口 QA 要装 xvfb、跑好几分钟，只在合进 main 时跑，PR 上靠本地跑（省 Actions 分钟数）
       - name: Shop window render and screenshot QA

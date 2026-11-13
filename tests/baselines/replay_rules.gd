@@ -7,8 +7,8 @@ extends SceneTree
 ## 基准里记的时刻（分钟）
 const CHECKPOINTS := [5, 10, 20, 30, 45]
 const SHOPS := {"tea": "res://content/shops/tea/shop.tres", "pancake": "res://content/shops/pancake/shop.tres"}
-## 各店的基准文件：奶茶店仍对 main 73b0ae3 旧模拟录下的；煎饼摊改过数值，用 record_rules.gd 在通用规则上重录
-const BASELINES := {"tea": "tea_73b0ae3.json", "pancake": "pancake_rules.json"}
+## 奶茶当前五种员工由由 record_tea_staff.gd 录制；旧六种员工基准保留为历史资料。
+const BASELINES := {"tea": "tea_active_staff.json", "pancake": "pancake_rules.json"}
 const TOLERANCE := 0.05
 
 
