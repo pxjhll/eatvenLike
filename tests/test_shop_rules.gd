@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 ## 通用规则层 ShopRules（规格 §3、§7）：整店回归对旧模拟基准、加成栈、事件总线、奇遇与扩展点、干净检查。
 
@@ -12,7 +13,7 @@ func _baseline(id: String) -> Dictionary:
 
 
 func _open_tea() -> ShopRules:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	check_eq(rules.unlock("lemonade"), "", "奶茶店开张")
 	return rules
 
@@ -75,7 +76,7 @@ func test_event_bus_listeners_and_log() -> void:
 
 
 func test_rules_broadcast_sales_and_unlocks() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	var names: Array = []
 	rules.events.on("*", func(data: Dictionary) -> void:
 		if not String(data.name).begins_with("tick_") and not data.name in names: names.append(data.name))
@@ -144,7 +145,7 @@ func test_investor_card_grants_gold_after_accept() -> void:
 
 
 func test_staff_work_modifier_targets_one_worker() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	var worker: Dictionary = rules.workers[0]
 	var before := rules.skill(worker)
 	var effect := SpecEffect.make("work", "mul", 1.5, "staff:%d" % worker.id)
@@ -155,7 +156,7 @@ func test_staff_work_modifier_targets_one_worker() -> void:
 
 
 func test_luck_raises_event_chance() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	var ev := _event("lucky", [])
 	ev.chance = 0.1
 	check(is_equal_approx(rules.event_chance(ev), 0.1), "没有幸运值时按基础概率")
@@ -164,7 +165,7 @@ func test_luck_raises_event_chance() -> void:
 
 
 func test_manager_visit_opens_staff_kind_without_touching_shop_data() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	var before := PANCAKE.staff.hire_pool.duplicate()
 	rules.apply_effect("event", "manager_visit", SpecEffect.make("unlock_staff_kind", "add", 1.0, "fox"))
 	check("fox" in rules.hire_pool, "本局可招狐狸")
@@ -172,7 +173,7 @@ func test_manager_visit_opens_staff_kind_without_touching_shop_data() -> void:
 
 
 func test_customer_wave_effect_brings_customers() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	rules.unlock("soy_milk")
 	var before := rules.arrivals()
 	rules.apply_effect("event", "wave", SpecEffect.make("customer_wave", "add", 3.0))
@@ -196,7 +197,7 @@ func _scripts(dir: String) -> Array:
 
 func test_generic_code_has_no_shop_specific_names() -> void:
 	var names := {}
-	for shop: SpecShop in [TEA, PANCAKE, preload("res://tests/fixtures/noodle/shop.tres"), preload("res://content/shops/stirfry/shop.tres")]:
+	for shop: SpecShop in [TEA, PANCAKE, preload("res://tests/fixtures/noodle/shop.tres"), preload("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres")]:
 		names[shop.id] = shop.id
 		for st in shop.stations:
 			names[st.id] = shop.id
@@ -235,7 +236,7 @@ func test_deploy_to_a_kitchen_post_seats_the_worker() -> void:
 
 
 func test_reset_clears_single_mode_customers() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	rules.unlock("soy_milk")
 	rules.run(60.0)
 	check(rules.arrivals() > 0, "有客人来过")

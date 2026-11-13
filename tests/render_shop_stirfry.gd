@@ -2,8 +2,10 @@ extends SceneTree
 ## 小炒饭馆（订单明细店 serve）在正式界面里跑：客人排队 → （自取店）走到出餐口等 → 去座位坐下吃 → 离店；
 ## 后厨做好的、出餐口上的、桌上的菜都画出来。送桌和自取两种入座规则各跑一遍，全程不能有运行时报错。
 
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+## Frozen alternate-mode scene regression. Formal entry: render_template_official_session.
 const TestSession := preload("res://tests/shop_test_session.gd")
-const STIRFRY: SpecShop = preload("res://content/shops/stirfry/shop.tres")
+const STIRFRY: SpecShop = preload("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres")
 const CAMPAIGN: SpecCampaign = preload("res://tests/fixtures/stirfry/campaign.tres")
 const ServeFlow := preload("res://game/rules/serve_flow.gd")
 var errors := preload("res://tests/error_counter.gd").new()
@@ -36,7 +38,7 @@ func _business(rule: String) -> void:
 	spec.fulfillment.dine_rule = rule
 	var prefix := "user://stirfry-gui-%d-%d-%s" % [OS.get_process_id(), Time.get_ticks_usec(), rule]
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	scene.session = TestSession.make(spec, prefix, null, null, null, CAMPAIGN)
+	scene.session = TestSession.make(spec, prefix, LegacyRules.new(spec,42), null, null, CAMPAIGN)
 	for path in [scene.session.profile.path, scene.session.store.path, scene.session.tuning_path, scene.session.recording_path]:
 		if not path in paths: paths.append(path)
 	root.add_child(scene)

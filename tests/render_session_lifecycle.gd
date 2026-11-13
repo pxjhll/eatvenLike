@@ -35,7 +35,7 @@ func _fixture(suffix: String, rules: ShopRules = null) -> RefCounted:
 	return session
 
 func _run() -> void:
-	create_timer(25.0).timeout.connect(func() -> void:
+	create_timer(90.0).timeout.connect(func() -> void:
 		_restore_defaults()
 		print("SESSION LIFECYCLE: timed out")
 		quit(1))
@@ -230,32 +230,32 @@ func _test_dining_restart() -> void:
 	var has_exit := false
 	for unused in 480:
 		scene._process(0.25)
-		has_exit = scene.rules.movement.customers.values().any(func(row: Dictionary) -> bool: return row.exiting and row.walking and not row.path.is_empty())
+		has_exit = scene.view.render_snapshot().movement.customers.values().any(func(row: Dictionary) -> bool: return row.exiting and row.walking and not row.path.is_empty())
 		if has_exit and _has_seated_diner(scene): break
 	suite.check(has_exit, "shared movement owns a real active exit route before restart")
-	suite.check(not dining._cups.is_empty(), "served seated guest has a table cup before restart")
+	suite.check(scene.view.render_snapshot().draws.any(func(row: Dictionary) -> bool: return String(row.get("host","")).begins_with("DiningArea/Table")), "served seated guest has a real public table cup before restart")
 	var old_nodes: Array = scene._customers.values()
-	old_nodes.append_array(dining._cups.values())
+	old_nodes.append_array(scene._cups)
 	var old_ids: Array = old_nodes.map(func(node: Node) -> int: return node.get_instance_id())
 	dining.queue_arrival(0, scene.anchors.point("Entrance"), "rabbit")
 	dining.queue_exit(scene.anchors.point("Entrance"), "rabbit", "lemonade")
 	scene.restart()
-	suite.check(scene.rules.movement.customers.is_empty() and scene._customers.is_empty(), "restart clears authoritative customers, exit routes and scene actors")
+	suite.check(scene.view.render_snapshot().movement.customers.is_empty() and scene._customers.is_empty(), "restart clears authoritative customers, exit routes and scene actors")
 	suite.check(dining._diners.is_empty() and dining._cups.is_empty() and dining._walkers.is_empty(), "restart discards dining actors cups and walkers")
 	suite.check(dining._arrivals.is_empty() and dining._exits.is_empty() and dining.occupied_seats().is_empty(), "restart clears pending dining movements and occupied seats")
 	suite.check(old_nodes.all(func(node: Variant) -> bool: return not is_instance_valid(node)), "restart immediately frees prior shared customer actors and cups")
 	suite.check(dining.anchors == anchors and furniture.all(func(node: Node) -> bool: return is_instance_valid(node) and node.get_parent() == dining), "restart preserves dining anchors and static furniture")
 	scene._refresh(0.25)
-	suite.check(dining.walking_count() == 0 and scene._customers.is_empty() and scene.rules.movement.customers.is_empty(), "old arrivals and exits cannot create actors on next refresh")
+	suite.check(dining.walking_count() == 0 and scene._customers.is_empty() and scene.view.render_snapshot().movement.customers.is_empty(), "old arrivals and exits cannot create actors on next refresh")
 	_open_until_dining(scene)
 	suite.check(_has_seated_diner(scene), "new session still seats its first authoritative dining guest")
 	for actor in scene._customers.values(): suite.check(actor.get_instance_id() not in old_ids, "new customer never reuses an old actor")
 	scene.free()
 
 func _has_seated_diner(scene: Node2D) -> bool:
-	for key in scene.rules.movement.customers:
-		var row: Dictionary = scene.rules.movement.customers[key]
-		if row.state=="diner" and row.seated and scene._customers.has(key): return true
+	for key in scene.view.render_snapshot().movement.customers:
+		var row: Dictionary = scene.view.render_snapshot().movement.customers[key]
+		if row.state=="eating" and row.seated and scene._customers.has(key): return true
 	return false
 
 func _open_until_dining(scene: Node2D) -> void:

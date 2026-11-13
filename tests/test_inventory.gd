@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 ## Literal local ledgers: recipes and employee execution stay in ShopRules.
 
@@ -134,8 +135,8 @@ func test_stock_and_refresh_preserve_processing_and_active_work() -> void:
 func test_rules_fields_forward_assignment_nested_mutations_and_independent_owners() -> void:
 	var owner = _owner()
 	if owner == null: return
-	var rules := ShopRules.new(TEA, 42)
-	var second := ShopRules.new(TEA, 42)
+	var rules := LegacyRules.new(TEA, 42)
+	var second := LegacyRules.new(TEA, 42)
 	var backing: Variant = rules.get("_inventory")
 	check(backing != null, "Rules has private owner")
 	if backing == null: return
@@ -159,7 +160,7 @@ func test_rules_fields_forward_assignment_nested_mutations_and_independent_owner
 func test_restore_and_reset_bind_current_maps_for_actual_transfer_facades() -> void:
 	var owner = _owner()
 	if owner == null: return
-	var rules := ShopRules.new(TEA, 42)
+	var rules := LegacyRules.new(TEA, 42)
 	var stale_stations := rules.stations
 	var stale_shelf := rules.shelf_stock
 	var saved := rules.to_dict()

@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
 const MODULE := "res://game/rules/rule_orders.gd"
@@ -7,7 +8,7 @@ const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tre
 const FORWARDS := {"orders": "orders", "diners": "diners", "customers": "customers", "queue": "queue", "lost": "lost", "_next_order": "next_order", "_next_customer_id": "next_customer_id", "_order_clock": "order_clock", "_next_customer": "next_customer", "order_ramp": "order_ramp"}
 const KEYS := ["clock", "gold", "revenue", "sold", "sold_by_dish", "lost", "stage_index", "unlocked", "levels", "boxes", "completed_at", "paused", "tune", "stations", "shelf_stock", "shelf_count", "shelf_reserved_in", "shelf_reserved_out", "generated", "orders", "diners", "roster", "hire_pool", "event_ready_at", "events_seen", "belts", "belt_clock", "belt_items", "order_ramp", "flyer_wave", "flyer_wait", "flyer_clock", "flyer_pending", "flyer_ready_at", "flyer_left", "flyer_timer", "seats", "_accumulator", "_order_clock", "_next_order", "_next_staff", "_sale_carry", "_next_customer", "_courier", "customers", "queue", "_next_customer_id", "full_seconds", "pot_busy", "side_idle", "serve"]
 
-class ObserveRules extends ShopRules:
+class ObserveRules extends "res://tests/fixtures/legacy_shops/reference_rules.gd":
 	var observations := []
 	func _roll_options() -> Array:
 		observations.append(["options", _next_customer_id, customers.size(), queue.duplicate()])
@@ -22,7 +23,7 @@ class ObserveRules extends ShopRules:
 		observations.append(["quote", queue.duplicate(), c.state, gold])
 		return 17
 
-class ReserveRules extends ShopRules:
+class ReserveRules extends "res://tests/fixtures/legacy_shops/reference_rules.gd":
 	var observations := []
 	func _walk(worker: Dictionary, destination: Vector2, phase: String) -> void:
 		observations.append(["walk", shelf_reserved_out, orders[0].reserved, worker.job.kind])
@@ -166,7 +167,7 @@ func test_static_accept_and_leave_retain_unrelated_aliases() -> void:
 func test_rules_all_ten_forwarders_reset_load_reject_and_schema() -> void:
 	# This is a behavior assertion as well as guarded literal coverage: live Rules
 	# admission must be observable from the dedicated owner before any wiring exists.
-	var r := ShopRules.new(PANCAKE, 42)
+	var r := LegacyRules.new(PANCAKE, 42)
 	r._spawn_single()
 	var has_owner := false
 	for p in r.get_property_list():
@@ -201,7 +202,7 @@ func test_rules_all_ten_forwarders_reset_load_reject_and_schema() -> void:
 func test_rules_lost_callback_per_row_revival_replacement_and_snapshot() -> void:
 	var spec: SpecShop = PANCAKE.duplicate(true)
 	spec.fulfillment.leave_after = 0.1
-	var r := ShopRules.new(spec, 42)
+	var r := LegacyRules.new(spec, 42)
 	var a := _row(1, "queue", false, 0.1)
 	var b := _row(2, "queue", false, 0.1)
 	r.customers = [a, b]
@@ -224,7 +225,7 @@ func test_rules_lost_callback_reset_and_load_adopt_current_arrays() -> void:
 	for action in ["reset", "load"]:
 		var spec: SpecShop = PANCAKE.duplicate(true)
 		spec.fulfillment.leave_after = 0.1
-		var r := ShopRules.new(spec, 42)
+		var r := LegacyRules.new(spec, 42)
 		var saved := r.to_dict()
 		var c := _row(1, "queue", false, 0.1)
 		r.customers = [c]
@@ -311,7 +312,7 @@ func test_rules_locked_options_skip_rng_and_open_options_definition_order() -> v
 		last.station = "roll"
 		last.share = 0.5
 		spec.order_options.assign([first, locked, last])
-		var r := ShopRules.new(spec, 42)
+		var r := LegacyRules.new(spec, 42)
 		_open_single(r)
 		r.unlocked.bag = open_option
 		var oracle := RandomNumberGenerator.new()
@@ -325,7 +326,7 @@ func test_rules_fixed_exponential_and_flyer_first_rng() -> void:
 	for mode in ["fixed", "exponential"]:
 		var spec: SpecShop = PANCAKE.duplicate(true)
 		spec.fulfillment.arrival = mode
-		var r := ShopRules.new(spec, 42)
+		var r := LegacyRules.new(spec, 42)
 		_open_single(r)
 		r._next_customer = 0.0
 		r.flyer_left = 1
@@ -350,7 +351,7 @@ func test_rules_fixed_exponential_and_flyer_first_rng() -> void:
 		check_eq([r.rng.state, r.lost], [oracle.state, 2], "rejected arrival clock RNG " + mode)
 
 func test_rules_handoff_closed_zero_weight_rng_and_admission_clock() -> void:
-	var r := ShopRules.new(TEA, 42)
+	var r := LegacyRules.new(TEA, 42)
 	var before := r.rng.state
 	r._add_order()
 	check_eq([r.orders, r.rng.state], [[], before], "closed handoff no draw")
@@ -358,7 +359,7 @@ func test_rules_handoff_closed_zero_weight_rng_and_admission_clock() -> void:
 	r.unlock(r.next_unlock())
 	var spec: SpecShop = TEA.duplicate(true)
 	for stage in spec.stages: stage.order_weights.clear()
-	var zero := ShopRules.new(spec, 42)
+	var zero := LegacyRules.new(spec, 42)
 	zero.gold = 1000000.0
 	zero.unlock(zero.next_unlock())
 	var zero_rng := zero.rng.state

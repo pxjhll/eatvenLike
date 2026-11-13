@@ -82,18 +82,18 @@ func test_restore_preserves_live_bus_and_single_internal_dispatch() -> void:
 		rules.reset()
 		rules.add_event(ev)
 		var data := rules.to_dict()
-		data.clock = 7.25
-		data.log = [{"name": "sale", "time": 6.0, "data": {"amount": 2}}]
+		data.runtime.clock = 7.25
+		data.outer.log = [{"name": "sale", "time": 6.0, "data": {"amount": 2}}]
 		check_eq(rules.load_dict(data), "", "valid restore accepted")
 		check(rules.events == bus, "restore keeps live bus identity")
 		check_eq(bus.clock, 7.25, "restore adopts event clock")
-		check_eq(bus.log, data.log, "restore adopts exact log without new records")
+		check_eq(bus.log, data.outer.log, "restore adopts exact log without new records")
 		rules.events.emit("unlocked", {"id": "probe"})
 		check_eq(rules.pending_events.size(), 1, "only live internal dispatch runs once")
 	check_eq(seen.size(), 3, "external subscription survives all restores")
 	var before := rules.to_dict()
 	var invalid := before.duplicate(true)
-	invalid.clock = -1.0
+	invalid.runtime.clock = -1.0
 	check(not rules.load_dict(invalid).is_empty(), "invalid restore rejected")
 	check_eq(rules.to_dict(), before, "rejected restore leaves live state atomic")
 	check(rules.events == bus, "rejected restore retains live bus")

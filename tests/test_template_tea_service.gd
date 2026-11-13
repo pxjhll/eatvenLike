@@ -1,11 +1,12 @@
 extends "res://tests/test_case.gd"
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const SHOP: SpecShop = preload("res://content/shops/tea/shop.tres")
 const TEMPLATE := preload("res://content/shops/tea/shared_production.tres")
 const Runtime := preload("res://game/rules/template/runtime.gd")
 const Requirements := preload("res://game/rules/template/requirements.gd")
 
 func _owner(full := true, kitchen := true) -> ShopRules:
-	var owner := ShopRules.new(SHOP.copy_for_editing(),42)
+	var owner := TemplateOuter.owner(SHOP.copy_for_editing(),42)
 	owner.gold = 1000000.0
 	check_eq(owner.unlock("lemonade"),"","open actual tea shop")
 	if full:

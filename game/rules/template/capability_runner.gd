@@ -11,7 +11,11 @@ const ACTOR_FIELDS := ["id", "pos", "walking", "phase", "task_label", "carry_ite
 	"path", "path_index", "action_left", "completed", "target"]
 const ACTOR_OPTIONAL := ["duration", "motion", "action"]
 
-var owner: RefCounted
+var _owner_ref: WeakRef
+var _retained_owner: RefCounted
+var owner: RefCounted:
+	get: return _retained_owner if _retained_owner!=null else _owner_ref.get_ref()
+	set(value): _owner_ref = weakref(value)
 var inventory := Inventory.new()
 var machines: RefCounted
 var dispatcher: RefCounted
@@ -24,7 +28,11 @@ var _interactions: Array = []
 
 func _init(rules: RefCounted) -> void:
 	owner = rules
+	_retained_owner = rules
 	machines = Machines.new(inventory)
+
+func release_owner() -> void:
+	_retained_owner = null
 
 func define_place(id: String, port: Vector2, capacity: int = -1, infinite_items: Array = []) -> String:
 	if not port.is_finite(): return "invalid capability port"

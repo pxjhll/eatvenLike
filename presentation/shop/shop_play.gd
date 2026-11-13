@@ -180,6 +180,11 @@ func _ready() -> void:
 		if art.find_children("*", "Node2D", true, false).any(func(n: Node) -> bool: return n.get_script() == Dining) else null
 	if _dining != null and rules.dine_group() != null:
 		_dining.setup(anchors, rules.dine_group().id, view.item_art, _customer_height, _actor_unit_scale)
+	if rules.runtime!=null:
+		var binding_error := bind_runtime(rules.runtime)
+		if not binding_error.is_empty():
+			_block_startup(binding_error)
+			return
 	ui = $Overlay/UI/HUD
 	ui.setup(self)
 	_toast = ui.toast

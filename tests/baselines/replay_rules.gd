@@ -1,4 +1,5 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## 通用规则层整店回归（规格 §7）：把旧模拟基准里机器人的那串操作按原时刻在 ShopRules 上重放，
 ## 和 tests/baselines/ 里各店的基准（BASELINES）对比 5 / 10 / 20 / 30 分钟营业额、销量、完店时刻，偏差都要在 ±5% 内。
 ##   godot --headless --path . -s tests/baselines/replay_rules.gd [-- --verbose]
@@ -34,7 +35,7 @@ static func baseline(id: String) -> Dictionary:
 
 
 static func replay(shop: SpecShop, base: Dictionary) -> Dictionary:
-	var rules := ShopRules.new(shop)
+	var rules := LegacyRules.new(shop)
 	var ledger = Ledger.new()
 	var minutes: float = base.minutes
 	var actions: Array = base.actions

@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
 const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
@@ -6,7 +7,7 @@ const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tre
 
 
 func ready_rules(shop: SpecShop) -> ShopRules:
-	var rules := ShopRules.new(shop, 9)
+	var rules := LegacyRules.new(shop, 9)
 	rules.gold = 1e8
 	rules.stage_index = shop.stages.size() - 1
 	for station in shop.stations: rules.unlocked[station.id] = true
@@ -82,7 +83,7 @@ func test_manual_and_automatic_timing_snapshots_use_execution_units() -> void:
 	rules.tune.lemonade = 3.0
 	var worker: Dictionary = rules.workers[0].duplicate(true)
 	worker.stats.work = 1.0
-	var duration := rules._action_duration({"kind": "work", "src": "lemonade", "count": 1}, worker)
+	var duration: float = rules._action_duration({"kind": "work", "src": "lemonade", "count": 1}, worker)
 	check_eq(view.seconds("lemonade"), duration, "无员工加成的快照等于实际操作")
 	check(view.has_method("station_timing"), "提供带单位时间快照")
 	if not view.has_method("station_timing"): return
@@ -146,7 +147,7 @@ func test_cook_progress_captures_duration_and_accepts_old_state() -> void:
 	check(is_finite(view.machine_status("fryer").progress), "旧档无duration仍可显示")
 	check_eq(view.machine_status("fryer").progress, clampf(1.0 - 9.0 / rules.pot_seconds("fryer"), 0.0, 1.0), "旧档按当前基准回退")
 	var old := rules.to_dict()
-	var restored := ShopRules.new(PANCAKE)
+	var restored := LegacyRules.new(PANCAKE)
 	check_eq(restored.load_dict(old), "", "恢复没有本锅duration的旧状态")
 	var resumed := ShopView.new(restored)
 	var before: float = resumed.machine_status("fryer").progress

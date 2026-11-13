@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
 const MODULE := "res://game/rules/worker_state.gd"
@@ -201,7 +202,7 @@ func _open(rules: ShopRules) -> void:
 		if not worker.deployed: check_eq(rules.execute_command("deploy_worker", {"id": worker.id, "post": ""}).code, "ok", "legal deploy")
 
 func test_rules_legacy_pathless_walk_preserves_phase_and_arrival_tick() -> void:
-	var rules := ShopRules.new(PANCAKE, 42)
+	var rules := LegacyRules.new(PANCAKE, 42)
 	_open(rules)
 	for i in 400:
 		rules.step(0.1)
@@ -213,7 +214,7 @@ func test_rules_legacy_pathless_walk_preserves_phase_and_arrival_tick() -> void:
 				row.path = PackedVector2Array()
 				row.path_index = 0
 				row.phase = "wait"
-		var restored := ShopRules.new(PANCAKE, 42)
+		var restored := LegacyRules.new(PANCAKE, 42)
 		check_eq(restored.load_dict(saved), "", "legacy pathless active walk accepted")
 		var live: Dictionary = restored.workers[0]
 		check_eq(live.phase, "wait", "load does not normalize legacy phase")
@@ -234,7 +235,7 @@ func test_rules_legacy_pathless_walk_preserves_phase_and_arrival_tick() -> void:
 
 func test_rules_active_phases_save_load_continue_and_sale_callback_order() -> void:
 	for shop in [TEA, PANCAKE]:
-		var rules := ShopRules.new(shop, 42)
+		var rules := LegacyRules.new(shop, 42)
 		_open(rules)
 		var phases := {}
 		var sales: Array = []
@@ -258,7 +259,7 @@ func test_rules_active_phases_save_load_continue_and_sale_callback_order() -> vo
 				if worker.phase not in ["walk", "walk_pickup", "walk_dropoff", "pickup", "dropoff", "work"] or phases.has(worker.phase): continue
 				phases[worker.phase] = true
 				var saved := rules.to_dict()
-				var clone := ShopRules.new(shop, 42)
+				var clone := LegacyRules.new(shop, 42)
 				check_eq(clone.load_dict(saved), "", "active phase accepted " + worker.phase)
 				check_eq(clone.to_dict(), saved, "active phase exact " + worker.phase)
 				# Compare a restored simulation to the original live instance, so a
@@ -280,7 +281,7 @@ func test_rules_active_phases_save_load_continue_and_sale_callback_order() -> vo
 		check(rules.sold > 0, "reopened business " + shop.id)
 
 func test_rules_nearby_single_arrival_and_handoff_arrival_keep_full_duration() -> void:
-	var single := ShopRules.new(PANCAKE, 42)
+	var single := LegacyRules.new(PANCAKE, 42)
 	_open(single)
 	for i in 400:
 		single.step(0.1)
@@ -296,7 +297,7 @@ func test_rules_nearby_single_arrival_and_handoff_arrival_keep_full_duration() -
 		check_eq(worker.timer, worker.duration, "immediate arrival no timer decrement")
 		break
 	check(single.workers[0].order >= 0, "nearby fixture found active order")
-	var handoff := ShopRules.new(TEA, 42)
+	var handoff := LegacyRules.new(TEA, 42)
 	_open(handoff)
 	for i in 400:
 		handoff.step(0.1)
@@ -313,7 +314,7 @@ func test_rules_nearby_single_arrival_and_handoff_arrival_keep_full_duration() -
 	check(false, "handoff active walk fixture found")
 
 func test_rules_placement_callbacks_keep_deploy_before_cancel_order() -> void:
-	var rules := ShopRules.new(TEA, 42)
+	var rules := LegacyRules.new(TEA, 42)
 	_open(rules)
 	var worker: Dictionary = rules.workers[1]
 	var id: int = worker.id

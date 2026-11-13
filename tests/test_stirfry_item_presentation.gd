@@ -1,9 +1,10 @@
 extends "res://tests/test_case.gd"
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const SHOP: SpecShop = preload("res://content/shops/stirfry/shop.tres")
 const FOOD := ["rice","tomato_egg","pepper_pork","kungpao","tomato_rice","pepper_rice","kungpao_rice","egg_fried_rice","yangzhou_rice","soup"]
 
 func test_user_food_resources_drive_scene_items_order_icons_and_ui_icon_paths() -> void:
-	var view := ShopView.new(ShopRules.new(SHOP))
+	var view := ShopView.new(TemplateOuter.owner(SHOP))
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
 	scene.shop = SHOP
 	scene.view = view
@@ -21,17 +22,17 @@ func test_missing_art_has_a_neutral_placeholder_and_preserves_explicit_tea_art()
 	item.id = "unconfigured_food"
 	item.display_name = "尚未接图"
 	shop.items.append(item)
-	var view := ShopView.new(ShopRules.new(shop))
+	var view := ShopView.new(TemplateOuter.owner(shop))
 	check_eq(view.item_art(item.id).texture.resource_path,"res://art/ui/icons/tag.svg","missing scene art cannot silently become pearl milk tea")
 	if view.has_method("item_icon"):
 		check_eq(view.item_icon(item.id).resource_path,"res://art/ui/icons/tag.svg","missing order art uses the same neutral placeholder")
 	var actor := preload("res://presentation/shop/shop_actor.gd")
 	check_eq(actor.drink_icon(item.id).resource_path,"res://art/ui/icons/tag.svg","standalone actors cannot inject a tea fallback either")
-	var tea := ShopView.new(ShopRules.new(load("res://content/shops/tea/shop.tres")))
+	var tea := ShopView.new(TemplateOuter.owner(load("res://content/shops/tea/shop.tres")))
 	check_eq(tea.item_art("lemonade").texture.resource_path,"res://art/reference/fruit_tea.png","explicit legacy tea scene art is preserved")
 
 func _public_scene() -> Dictionary:
-	var owner := ShopRules.new(SHOP.copy_for_editing(),42)
+	var owner := TemplateOuter.owner(SHOP.copy_for_editing(),42)
 	owner.gold = 1000000.0
 	for stage in SHOP.stages.size(): check_eq(owner.unlock(SHOP.sold_at(stage)),"","actual outer purchases")
 	var runtime: RefCounted = load("res://game/rules/template/runtime.gd").new(owner,load("res://content/shops/stirfry/shared_production.tres"))

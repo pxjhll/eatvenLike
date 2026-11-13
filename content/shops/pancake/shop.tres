@@ -40,6 +40,8 @@
 [ext_resource type="Resource" path="res://content/characters/staff/gray_cat.tres" id="staff_gray_cat"]
 [ext_resource type="Resource" path="res://content/characters/staff/rabbit.tres" id="staff_rabbit"]
 
+[ext_resource type="Resource" path="res://content/shops/pancake/shared_production.tres" id="u06_runtime"]
+
 [sub_resource type="Resource" id="Resource_ghdy6"]
 script = ExtResource("3_nwmtm")
 station = "soy_milk"
@@ -2005,3 +2007,4 @@ scene_path = "res://presentation/shops/pancake/pancake_art.tscn"
 background_music = ExtResource("music_theme")
 save_file = "shop_pancake_v2.json"
 scale_anchor = "cup"
+runtime_template = ExtResource("u06_runtime")

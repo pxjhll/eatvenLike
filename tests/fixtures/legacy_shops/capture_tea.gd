@@ -1,4 +1,6 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 ## Frozen before extracting shared staff. Never overwrite an existing baseline.
 
 const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
@@ -37,7 +39,7 @@ func _initialize() -> void:
 	quit(1 if failed else 0)
 
 static func opened() -> ShopRules:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	assert(rules.unlock("lemonade").is_empty())
 	rules.gold = 20000.0
 	assert(rules.unlock("boil").is_empty())
@@ -92,8 +94,8 @@ static func write_save_fixtures() -> bool:
 			print("Refusing to overwrite old-save fixture: "+name)
 			return false
 	assert(DirAccess.make_dir_recursive_absolute(FIXTURES) == OK)
-	var unopened := ShopRules.new(TEA)
-	assert(ShopSave.new(TEA,FIXTURES+"unopened.json").save_game(unopened,1.5,["opening"]) == OK)
+	var unopened := LegacyRules.new(TEA)
+	assert(LegacySave.new(TEA,FIXTURES+"unopened.json").save_game(unopened,1.5,["opening"]) == OK)
 	var active := opened()
 	var seen := false
 	for unused in 1200:
@@ -102,7 +104,7 @@ static func write_save_fixtures() -> bool:
 			seen = true
 			break
 	assert(seen,"Old-save fixture must include an order and moving worker")
-	assert(ShopSave.new(TEA,FIXTURES+"active.json").save_game(active,2.0,["opening","boil"]) == OK)
+	assert(LegacySave.new(TEA,FIXTURES+"active.json").save_game(active,2.0,["opening","boil"]) == OK)
 	_write_json(FIXTURES+"continuations.json",{
 		"source":"9bc1b20364e239e8719e0511be2c1a4d824e3601",
 		"content":Content.describe(TEA),

@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 ## 奶茶店玩法跑在通用规则层上（旧 tea_shop_sim / tea_playtest_sim 的行为用例搬过来）：开店顺序、原料箱、招人和名册、
 ## 前台后厨分工、后厨名额、坐班与调岗、收回员工时放下手上的东西、各台升级效果、售价和星级、小数售价累计、
@@ -10,7 +11,7 @@ const LINES := ["boil", "seal", "mix", "press", "topping"]
 
 
 func _open() -> ShopRules:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	check_eq(rules.unlock("lemonade"), "", "柠檬水台开张")
 	return rules
 
@@ -78,7 +79,7 @@ func _kitchen_worker(rules: ShopRules) -> Dictionary:
 # ---------- 开店顺序和原料箱 ----------
 
 func test_opening_order_and_boxes() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	check_eq(int(rules.gold), 50, "开局 50 金币")
 	rules.run(20.0)
 	check_eq(rules.sold, 0, "没开张不会凭空有收入")
@@ -148,7 +149,7 @@ func test_milk_teas_need_the_whole_chain_before_they_go_on_the_menu() -> void:
 # ---------- 招人、名册、名额 ----------
 
 func test_hire_order_prices_and_roster_without_limit() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	rules.gold = 180.0
 	for expected in [[35, "raccoon", 2], [60, "fox", 3]]:
 		check_eq(rules.hire_cost(), expected[0], "招人价格按顺序涨")
@@ -181,12 +182,12 @@ func test_hire_order_prices_and_roster_without_limit() -> void:
 	check_eq(rules.hire(), "", "六种都有以后从头再来")
 	check_eq(rules.worker_by_id(7).kind, "cat", "重复的种类拿新 id")
 	check_eq(rules.next_hire_kind(), "raccoon", "重复也按顺序")
-	var copy := ShopRules.new(TEA)
+	var copy := LegacyRules.new(TEA)
 	check_eq(copy.load_dict(rules.to_dict()), "", "有重复种类的名册能存能读")
 
 
 func test_kitchen_slots_grow_with_each_production_line() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	rules.gold = 100000.0
 	for unused in 7: rules.hire()
 	check_eq(rules.staff_slots(), 1, "柠檬水阶段只有前台一人")
@@ -236,7 +237,7 @@ func test_front_and_kitchen_staff_have_their_own_duties_and_upgrades() -> void:
 	var extra: Dictionary = rules.roster.back()
 	check_eq(rules.place_worker(extra.id, "counter"), "", "第二位前台去柜台")
 	check_eq(rules.workers.filter(func(w: Dictionary) -> bool: return w.post == "counter").size(), 2, "两人在前台")
-	var copy := ShopRules.new(TEA)
+	var copy := LegacyRules.new(TEA)
 	check_eq(copy.load_dict(rules.to_dict()), "", "前台后厨升级能存")
 	check_eq(copy.levels["staff/front"], rules.levels["staff/front"], "前台升级读回来")
 	check_eq(copy.levels["staff/kitchen"], rules.levels["staff/kitchen"], "后厨升级读回来")
@@ -252,7 +253,7 @@ func test_front_and_kitchen_staff_have_their_own_duties_and_upgrades() -> void:
 
 
 func test_recall_busy_worker_and_reset_send_hired_staff_away() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	rules.gold = 500.0
 	check_eq(rules.hire(), "", "招人")
 	check(rules.deploy_worker(2).contains("后厨"), "没有煮茶机不能派后厨")
@@ -570,7 +571,7 @@ func test_flyers_bring_customers_and_have_a_cooldown() -> void:
 	check_eq(rules.upgrade("flyer"), "", "传单升级")
 	check(rules.flyer_customers() > count or rules.flyer_cooldown() < wait, "升级后的传单带更多人或冷却更短")
 	rules.send_flyers()
-	var copy := ShopRules.new(TEA)
+	var copy := LegacyRules.new(TEA)
 	check_eq(copy.load_dict(rules.to_dict()), "", "传单起效中能存能读")
 	check_eq(copy.flyer_pending, rules.flyer_pending, "读档后还要来的传单客还在")
 	check(is_equal_approx(copy.flyer_wait, rules.flyer_wait), "读档后冷却还在")
@@ -764,7 +765,7 @@ func test_star_tasks_finish_the_shop() -> void:
 
 func test_flavors_conserved_and_mid_shop_resume_is_identical() -> void:
 	var rules := _opened()
-	var resumed := ShopRules.new(TEA)
+	var resumed := LegacyRules.new(TEA)
 	for tick in 9000:
 		rules.step(0.1)
 		if tick % 100 == 0 and not _sane(rules, "整局"): return
@@ -802,7 +803,7 @@ func test_saves_follow_the_shop_data_when_machines_are_added_or_removed() -> voi
 	for key in ["unlocked", "levels", "stations"]:
 		data[key].erase("press")
 		data[key]["old_machine"] = data[key]["boil"]
-	var copy := ShopRules.new(TEA)
+	var copy := LegacyRules.new(TEA)
 	check_eq(copy.load_dict(data), "", "旧存档照样能读")
 	check(not copy.station_unlocked("press") and copy.level("press") == 1, "新加的机器用开局默认值")
 	check(not copy.unlocked.has("old_machine") and not copy.stations.has("old_machine"), "删掉的机器不留在店里")

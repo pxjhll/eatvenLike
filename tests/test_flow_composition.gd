@@ -1,4 +1,6 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 const MODULE := "res://game/rules/production_plan.gd"
 const Fixture := preload("res://tests/fixtures/flow_shop.gd")
 const Serve := preload("res://game/rules/serve_flow.gd")
@@ -141,7 +143,7 @@ func test_bundle_collects_distinct_goods_from_two_ports_and_pays_once() -> void:
 	check_eq(saved.serve.orders_done,1,"one fulfilled order")
 	var order: Dictionary = saved.serve.orders.filter(func(o: Dictionary) -> bool: return o.paid)[0]
 	check(order.lines.all(func(line: Dictionary) -> bool: return line.delivered==line.qty),"event snapshot never sees a half-committed bundle")
-	check_eq(ShopRules.new(rules.shop).load_dict(saved),"","event snapshot has valid goods and claims")
+	check_eq(LegacyRules.new(rules.shop).load_dict(saved),"","event snapshot has valid goods and claims")
 
 func test_capacity_or_missing_dish_prevents_partial_order_reservation() -> void:
 	var rules := _opened()
@@ -186,7 +188,7 @@ func test_active_bundle_positions_pickups_and_drop_resume_exactly_from_save() ->
 			if seen.has(key): continue
 			seen[key] = true
 			var state := rules.to_dict()
-			var clone := ShopRules.new(rules.shop)
+			var clone := LegacyRules.new(rules.shop)
 			var error := clone.load_dict(state)
 			check_eq(error,"","bundle phase is a valid save: "+key)
 			if not error.is_empty(): return
@@ -216,7 +218,7 @@ func test_cancel_after_first_or_second_item_returns_each_id_to_its_own_port() ->
 					var good := Serve._good(rules,int(entry.id))
 					check_eq([good.at,good.res],[entry.from,-1],"each item returns to its own original pickup")
 				check_eq(worker.carry_count,0,"hands clear once")
-				check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","cancelled bundle can immediately save")
+				check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","cancelled bundle can immediately save")
 				found = true
 				break
 			if found: break
@@ -253,7 +255,7 @@ func test_recipe_signatures_and_old_indexed_units_adopt_without_repeating_work()
 	for unit: Dictionary in old.serve.units:
 		unit.erase("recipe_signature")
 		unit.erase("flow_version")
-	var clone := ShopRules.new(rules.shop)
+	var clone := LegacyRules.new(rules.shop)
 	check_eq(clone.load_dict(old),"","legacy units with unchanged recipe indices are adoptable")
 	check_eq(clone.to_dict(),state,"adoption only restores missing recipe identities")
 	for tick in 30:
@@ -296,10 +298,10 @@ func test_future_flow_and_changed_recipe_files_are_protected_in_place() -> void:
 		elif changed=="flow_version": data.serve.units[0].flow_version = 2
 		var original := _write_file(path,data,shop)
 		if changed=="recipe": shop.dish("tomato_rice").steps.reverse()
-		var reader := ShopSave.new(shop,path)
+		var reader := LegacySave.new(shop,path)
 		reader.load_game()
 		check_eq(reader.load_error,ERR_UNAVAILABLE,"future/incompatible flow is protected: "+changed)
-		check_eq(reader.save_game(ShopRules.new(shop)),ERR_UNAVAILABLE,"cannot overwrite protected flow")
+		check_eq(reader.save_game(LegacyRules.new(shop)),ERR_UNAVAILABLE,"cannot overwrite protected flow")
 		check(FileAccess.file_exists(path),"original flow file kept at original path")
 		if FileAccess.file_exists(path): check_eq(FileAccess.get_file_as_string(path),original,"original bytes preserved")
 
@@ -314,7 +316,7 @@ func test_legacy_units_get_a_verified_backup_before_first_replacement() -> void:
 	var path := "user://flow-adopt-%d-%d.json"%[OS.get_process_id(),Time.get_ticks_usec()]
 	paths.append(path)
 	var original := _write_file(path,old,rules.shop)
-	var reader := ShopSave.new(rules.shop,path)
+	var reader := LegacySave.new(rules.shop,path)
 	var adopted := reader.load_game()
 	check_eq(reader.load_error,OK,"unchanged legacy recipe indices can be adopted")
 	check_eq(reader.save_game(adopted),OK,"adopted flow saves")
@@ -343,7 +345,7 @@ func test_two_employees_cannot_claim_the_same_bundle_and_expired_capacity_keeps_
 	check(Serve.job_of(rules,second).is_empty(),"stale second proposal cannot reserve any member")
 	for entry: Dictionary in candidate.goods: check_eq(Serve._good(rules,int(entry.id)).res,first.id,"every member has exactly one owner")
 	first.stats.carry = 1.0
-	check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","historical reservation capacity survives a later modifier reduction")
+	check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","historical reservation capacity survives a later modifier reduction")
 	rules.run(60.0)
 	check(rules.sold>=2,"already reserved batch is not discarded when capacity decreases")
 
@@ -363,7 +365,7 @@ func test_blocked_between_pickups_keeps_one_item_and_resumes_or_cancels_cleanly(
 			check_eq(worker.pos,position,"blocked carrier cannot cross the wall to side pickup")
 			check_eq(worker.carry_count,1,"only the item actually collected is carried")
 			check_eq(Serve._good(rules,id).at,"hand:"+str(worker.id),"same first object stays in hand")
-			check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","blocked partial collection saves")
+			check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","blocked partial collection saves")
 			rules.shop.layout.obstacles.clear()
 			rules.nav.set_open(rules.unlocked)
 			rules.run(60.0)

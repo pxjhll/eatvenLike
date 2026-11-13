@@ -1,4 +1,6 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 const SHOP := "res://tests/fixtures/onboarding/shop.tres"
 const CAMPAIGN := "res://tests/fixtures/onboarding/campaign.tres"
 const STAFF := "res://content/characters/staff/hamster.tres"
@@ -53,7 +55,7 @@ func test_new_employee_completes_real_composite_orders_and_exact_save_continuati
 	check(sold and worked and carried_two,"new staff produces and delivers a real main-plus-side order")
 	var path := "user://onboarding-%d.json"%Time.get_ticks_usec()
 	paths.append(path)
-	var store := ShopSave.new(rules.shop,path)
+	var store := LegacySave.new(rules.shop,path)
 	check_eq(store.save_game(rules),OK,"new shop saves through existing path")
 	var resumed := store.load_game()
 	check_eq(store.load_error,OK,"new shop reopens")
@@ -86,4 +88,4 @@ func test_demo_cancel_compensates_existing_bundle_and_retains_real_goods() -> vo
 	check(cancelled,"real demo reaches partially collected bundle")
 	rules.run(90.0)
 	check(rules.serve.orders_done>0,"demo keeps selling after compensation")
-	check_eq(ShopRules.new(rules.shop,42).load_dict(rules.to_dict()),"","cancelled demo remains independently valid")
+	check_eq(LegacyRules.new(rules.shop,42).load_dict(rules.to_dict()),"","cancelled demo remains independently valid")

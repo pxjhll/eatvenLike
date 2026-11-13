@@ -1,4 +1,5 @@
 extends RefCounted
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Controlled geometry on the real three business modes; never edits shared resources.
 const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
 const SINGLE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
@@ -43,7 +44,7 @@ static func definition(mode := "serve", units := 1.0) -> SpecShop:
 
 static func opened(mode := "serve", units := 1.0) -> ShopRules:
 	var shop := definition(mode,units)
-	var rules := ShopRules.new(shop,42)
+	var rules := LegacyRules.new(shop,42)
 	rules.gold = 100000.0
 	rules.unlock(shop.goals.opening_station)
 	return rules

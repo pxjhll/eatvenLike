@@ -1,6 +1,7 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Formal third shop: real legacy file, generic session, world poses and speed UI.
-const DATA: SpecShop = preload("res://content/shops/stirfry/shop.tres")
+const DATA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres")
 const TestSession := preload("res://tests/shop_test_session.gd")
 const Campaign := preload("res://tests/fixtures/stirfry/campaign.tres")
 var scene: Node2D
@@ -88,7 +89,7 @@ func _run() -> void:
 	scene.execute_command("set_paused",{"paused":false})
 	for speed in [1,2,4]:
 		_check(scene._speed_factor==speed,"speed UI selects "+str(speed))
-		var oracle := ShopRules.new(DATA,11)
+		var oracle := LegacyRules.new(DATA,11)
 		_check(oracle.load_dict(scene.rules.to_dict()).is_empty(),"speed oracle loads exact state")
 		scene._process(0.1)
 		oracle.step(0.1*speed)
@@ -114,7 +115,7 @@ func _run() -> void:
 	_check(scene.rules!=null and scene.rules.to_dict()==state,"close and reopen is exact")
 	if scene.rules!=null:
 		_check(scene._speed_factor==2,"session playback speed is preserved")
-		var oracle := ShopRules.new(DATA,11)
+		var oracle := LegacyRules.new(DATA,11)
 		_check(oracle.load_dict(state).is_empty(),"saved formal state independently loads")
 		for tick in 80:
 			scene._process(0.1)

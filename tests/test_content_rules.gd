@@ -1,17 +1,18 @@
 extends "res://tests/test_case.gd"
-const TEA = preload("res://content/shops/tea/shop.tres")
-const PANCAKE = preload("res://content/shops/pancake/shop.tres")
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const TEA = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
+const PANCAKE = preload("res://tests/fixtures/legacy_shops/current/pancake/shop.tres")
 
 func test_numeric_refresh() -> void:
 	for original in [TEA, PANCAKE]:
-		var old := ShopRules.new(original)
+		var old := LegacyRules.new(original)
 		old.unlock(old.next_unlock())
 		old.run(12.0)
 		var saved := old.to_dict()
 		var updated: SpecShop = original.copy_for_editing()
 		updated.staff.kinds[0].stats["speed"] = 19.0
 		updated.stations[0].params["capacity"] = 81
-		var resumed := ShopRules.new(updated)
+		var resumed := LegacyRules.new(updated)
 		var result: Variant = resumed.callv("load_dict", [saved, true])
 		check_eq(result, "", "numeric refresh accepted")
 		check_eq(resumed.roster[0].stats, updated.staff.kinds[0].stats, "current worker stats")
@@ -44,7 +45,7 @@ func test_fingerprints() -> void:
 
 func test_refresh_preserves_progress_effects_and_aliases() -> void:
 	for original in [TEA, PANCAKE]:
-		var old := ShopRules.new(original)
+		var old := LegacyRules.new(original)
 		old.unlock(old.next_unlock())
 		old.run(25.0)
 		# Capture during recorded manual work rather than relying on a fixed frame.
@@ -64,7 +65,7 @@ func test_refresh_preserves_progress_effects_and_aliases() -> void:
 		for station in updated.stations:
 			for track in station.tracks:
 				for effect in track.base_effects: effect.value += 2.0
-		var resumed := ShopRules.new(updated)
+		var resumed := LegacyRules.new(updated)
 		var bus := resumed.events
 		check_eq(resumed.load_dict(saved, true), "", "refresh succeeds")
 		check(resumed.events == bus, "bus retained")
@@ -95,7 +96,7 @@ func test_new_removed_sources_and_one_shot() -> void:
 			station = entry
 			break
 	station.tracks[0].base_effects.clear()
-	var old := ShopRules.new(before)
+	var old := LegacyRules.new(before)
 	old.mods.add("event", "finite", "batch", "set", 71, station.id, [], "", 9.0)
 	var saved := old.to_dict()
 	var after: SpecShop = before.copy_for_editing()
@@ -109,7 +110,7 @@ func test_new_removed_sources_and_one_shot() -> void:
 	reward.kind = "grant_gold"
 	reward.value = 999999
 	target.tracks[0].base_effects.append(reward)
-	var resumed := ShopRules.new(after)
+	var resumed := LegacyRules.new(after)
 	check_eq(resumed.load_dict(saved, true), "", "new source refresh")
 	check_eq(resumed.mods.value("batch", 1, station.id), 71, "new upgrade precedes finite event")
 	check_eq(resumed.gold, saved.gold, "one-shot never replayed")
@@ -117,7 +118,7 @@ func test_new_removed_sources_and_one_shot() -> void:
 	var event_entries: Array = restored.mods.filter(func(e: Dictionary) -> bool: return e.source != "upgrade")
 	check_eq(event_entries, saved.mods.filter(func(e: Dictionary) -> bool: return e.source != "upgrade"), "event duration preserved")
 	target.tracks[0].base_effects.clear()
-	var removed := ShopRules.new(after)
+	var removed := LegacyRules.new(after)
 	check_eq(removed.load_dict(restored, true), "", "removed source refresh")
 	check_eq(removed.mods.entries.filter(func(e: Dictionary) -> bool: return e.source == "upgrade" and e.source_id == station.id).size(), 0, "removed upgrade gone")
 
@@ -173,7 +174,7 @@ func test_active_automatic_duration_survives_refresh() -> void:
 	var saved := old.to_dict()
 	var updated: SpecShop = TEA.copy_for_editing()
 	updated.station(active_id).params["process_seconds"] = 987.0
-	var resumed := ShopRules.new(updated)
+	var resumed := LegacyRules.new(updated)
 	check_eq(resumed.load_dict(saved, true), "", "active automatic refresh")
 	check_eq(resumed.stations[active_id], saved.stations[active_id], "recorded automatic timing and stock exact")
 	resumed.step(0.1)

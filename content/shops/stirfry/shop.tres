@@ -43,6 +43,8 @@
 [ext_resource type="Texture2D" path="res://art/stirfry/items/tomato_rice.png" id="food_tomato_rice"]
 [ext_resource type="Texture2D" path="res://art/stirfry/items/yangzhou_rice.png" id="food_yangzhou_rice"]
 
+[ext_resource type="Resource" path="res://content/shops/stirfry/shared_production.tres" id="u06_runtime"]
+
 [sub_resource type="Resource" id="Resource_hix41"]
 script = ExtResource("3_pc7b7")
 station = "pantry"
@@ -1442,3 +1444,4 @@ goals = SubResource("Resource_bkrv3")
 layout = SubResource("Resource_2vgy6")
 scene_path = "res://presentation/shops/stirfry/stirfry_art.tscn"
 save_file = "shop_stirfry.json"
+runtime_template = ExtResource("u06_runtime")

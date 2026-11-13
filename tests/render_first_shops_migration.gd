@@ -1,4 +1,5 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Real sessions: legacy adoption, shared actors, pause/speed, save and reopen.
 const Session := preload("res://tests/shop_test_session.gd")
 var scene: Node2D
@@ -62,7 +63,7 @@ func _run() -> void:
 	root.get_node("ShopAudio")._can_play = false
 	var fixtures: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/legacy_shops/states.json"))
 	for id in ["tea","pancake"]:
-		var shop: SpecShop = load("res://content/shops/%s/shop.tres"%id)
+		var shop: SpecShop = load("res://tests/fixtures/legacy_shops/current/%s/shop.tres"%id)
 		var prefix := "user://first-migration-ui-%s-%d"%[id,Time.get_ticks_usec()]
 		prefixes.append(prefix)
 		var path := prefix+"-shop.json"
@@ -86,7 +87,7 @@ func _run() -> void:
 		scene.execute_command("set_paused",{"paused":false})
 		for speed in [1,2,4]:
 			_check(scene._speed_factor==speed,"speed UI selects %d in %s (actual %d)"%[speed,id,scene._speed_factor])
-			var oracle := ShopRules.new(shop,42)
+			var oracle := LegacyRules.new(shop,42)
 			_check(oracle.load_dict(scene.rules.to_dict()).is_empty(),"speed oracle loads")
 			scene._process(0.1)
 			oracle.step(0.1*speed)

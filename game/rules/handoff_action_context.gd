@@ -39,7 +39,7 @@ func enter(worker: Dictionary, action: Dictionary) -> void:
 		"transport": rules.begin_move(worker,rules._destination_point(worker.job),"walk_dropoff")
 		_:
 			var phase: String = {"operate":"work","pickup":"pickup","drop":"dropoff"}[action.kind]
-			var seconds := rules.shop.dispatch.hop_seconds/rules.skill(worker) if action.kind=="drop" else rules._action_duration(worker.job,worker)
+			var seconds: float = rules.shop.dispatch.hop_seconds/rules.skill(worker) if action.kind=="drop" else rules._action_duration(worker.job,worker)
 			Worker.enter_handoff_action(worker,phase,seconds)
 			if action.kind=="operate" and worker.job.kind=="work":
 				rules.stations[worker.job.src].phase = "working"

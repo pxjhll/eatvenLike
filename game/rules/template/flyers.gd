@@ -51,6 +51,14 @@ func send(open: bool, mods: RefCounted) -> String:
 	_state.wave_left = float(_definition.seconds) if _definition.pattern=="spread" else 0.0
 	return ""
 
+func enqueue(count: int) -> String:
+	if count<1 or count>MAX_COUNT or _state.pending>MAX_COUNT-count: return "pending flyer count exceeds supported range"
+	_state.pending += count
+	_state.elapsed = 0.0
+	_state.first = _definition.pattern=="gap"
+	if _definition.pattern=="spread": _state.wave_left = float(_definition.seconds)
+	return ""
+
 func advance(dt: float, open: bool) -> String:
 	if not is_finite(dt) or dt<0.0: return "invalid flyer time"
 	var elapsed: float = _state.elapsed+dt if open and _state.pending>0 else _state.elapsed

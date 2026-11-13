@@ -151,6 +151,12 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 		_error(errors, "shop", "Shop resource is required.", "required")
 		return errors
 	_walk(shop, "", errors)
+	if shop.runtime_template!=null:
+		var compiler: Script = load("res://game/rules/template/compiler.gd")
+		var compiled: Dictionary = compiler.compile(shop.runtime_template,compiler.ports_from_layout(shop.layout))
+		for row in compiled.errors: _error(errors,"runtime_template."+row.path,row.message,row.code)
+		if compiled.errors.is_empty() and (compiled.definition.service.is_empty() or compiled.definition.service.arrivals.is_empty()):
+			_error(errors,"runtime_template.service","Formal shops require an explicit service and arrival policy.","required")
 	if shop.id.strip_edges().is_empty(): _error(errors, "id", "ID must not be empty.", "id")
 	_number(shop.start_gold, "start_gold", errors)
 	_number(shop.flavor_flow, "flavor_flow", errors)

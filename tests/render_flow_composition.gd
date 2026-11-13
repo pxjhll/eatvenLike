@@ -1,4 +1,5 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Data fixture, real character factory, no production art or save files changed.
 const Fixture := preload("res://tests/fixtures/flow_shop.gd")
 var checks := 0
@@ -62,7 +63,7 @@ func _run() -> void:
 	_check(sale_states.size()==1,"one complete order emits one sale")
 	if not sale_states.is_empty():
 		_check(sale_states[0].sold==2 and sale_states[0].serve.orders_done==1,"both lines visible as one completed transaction")
-		_check(ShopRules.new(rules.shop).load_dict(sale_states[0]).is_empty(),"sale callback is independently resumable")
+		_check(LegacyRules.new(rules.shop).load_dict(sale_states[0]).is_empty(),"sale callback is independently resumable")
 	scene._sortables.free()
 	scene.ui.free()
 	scene.free()

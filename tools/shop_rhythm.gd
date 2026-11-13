@@ -47,7 +47,7 @@ static func sample(shop: SpecShop, seconds: float, seed_: int) -> Dictionary:
 			if positions.has(worker.id):
 				var allowed: float = maxf(positions[worker.id].speed,rules.walk_speed(worker))*STEP+0.01
 				if Vector2(positions[worker.id].pos).distance_to(worker.pos)>allowed: result.overspeed_samples += 1
-		for row: Dictionary in rules.movement.customers.values():
+		for row: Dictionary in (rules.runtime.service.customers.snapshot().customers if rules.runtime!=null else rules.movement.customers.values()):
 			if not rules.nav.can_stand(row.pos,"customer"): result.illegal_footprints += 1
 		if (tick+1)%600==0:
 			result.minutes.append({"tick":tick+1,"sold":rules.sold,"revenue":rules.revenue,"lost":rules.lost,"queue":rules.queue_size()})
@@ -55,7 +55,7 @@ static func sample(shop: SpecShop, seconds: float, seed_: int) -> Dictionary:
 	result.sold = rules.sold
 	result.revenue = rules.revenue
 	result.lost = rules.lost
-	result.orders_done = int(rules.serve.orders_done) if shop.fulfillment.handoff=="serve" else -1
+	result.orders_done = rules.runtime.service.orders.snapshot().orders.filter(func(order: Dictionary) -> bool: return order.state=="delivered").size() if rules.runtime!=null else -1
 	result.sale_events = sale_ticks.size()
 	if not sale_ticks.is_empty(): result.first_sale_tick = sale_ticks[0]
 	var gaps: Array[int] = []

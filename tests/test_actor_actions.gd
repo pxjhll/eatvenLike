@@ -1,4 +1,6 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 const MODULE := "res://game/rules/rule_actions.gd"
 const Context := preload("res://tests/fixtures/action_context.gd")
 const Worker := preload("res://game/rules/worker_state.gd")
@@ -33,7 +35,7 @@ func _shop() -> SpecShop:
 func _opened() -> ShopRules:
 	var shop := _shop()
 	if shop==null: return null
-	var rules := ShopRules.new(shop,42)
+	var rules := LegacyRules.new(shop,42)
 	rules.gold = 100000.0
 	rules.unlock(shop.goals.opening_station)
 	return rules
@@ -181,7 +183,7 @@ func test_real_serve_jobs_use_atoms_and_keep_the_existing_inventory_ledger() -> 
 			kinds[action.steps[action.index].kind] = true
 	check(rules.sold>=3,"real recipe and deliveries complete")
 	for kind in ["move","pickup","transport","drop","operate"]: check(kinds.has(kind),"real job uses "+kind)
-	check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","goods, orders and reservations remain consistent")
+	check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","goods, orders and reservations remain consistent")
 
 func test_action_configuration_requires_supported_business_and_shared_motion() -> void:
 	var shop := _shop()
@@ -211,12 +213,12 @@ func test_active_atoms_roundtrip_and_legacy_stage_rebuild_without_replaying_effe
 			if seen.has(kind): continue
 			seen[kind] = true
 			var data := rules.to_dict()
-			var clone := ShopRules.new(rules.shop)
+			var clone := LegacyRules.new(rules.shop)
 			check_eq(clone.load_dict(data),"","active atom loads: "+kind)
 			check_eq(clone.to_dict(),data,"active atom preserves exact state")
 			var old := data.duplicate(true)
 			for row: Dictionary in old.roster: row.erase("action")
-			var migrated := ShopRules.new(rules.shop)
+			var migrated := LegacyRules.new(rules.shop)
 			check_eq(migrated.load_dict(old),"","legacy phase can be adopted")
 			for row: Dictionary in migrated.workers:
 				if Serve.job_of(migrated,row).is_empty(): continue
@@ -277,7 +279,7 @@ func test_real_operation_pauses_on_missing_inputs_then_continues_same_reservatio
 			good.at = location
 			rules.run(40.0)
 			check(rules.sold>0,"same physical inputs resume into a sale")
-			check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","resumed inventory remains consistent")
+			check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","resumed inventory remains consistent")
 			return
 	check(false,"actual operation captured with inputs")
 
@@ -300,7 +302,7 @@ func test_real_cancel_before_and_after_pickup_preserves_goods_and_frees_job() ->
 				if good_id>=0:
 					var good := Serve._good(rules,good_id)
 					check_eq([good.at,good.res],[source,-1],"reserved or carried good is released at source")
-				check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","cancelled state immediately saves")
+				check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","cancelled state immediately saves")
 				found = true
 				break
 			if found: break
@@ -318,7 +320,7 @@ func test_old_action_file_is_backed_up_and_future_action_file_is_protected() -> 
 	var path := "user://actor-actions-%d-%d.json"%[OS.get_process_id(),Time.get_ticks_usec()]
 	paths.append(path)
 	var original := _write_file(path,old,rules.shop)
-	var store := ShopSave.new(rules.shop,path)
+	var store := LegacySave.new(rules.shop,path)
 	var adopted := store.load_game()
 	check_eq(store.load_error,OK,"old action-less file is adopted")
 	check_eq(store.save_game(adopted),OK,"adopted file can be saved")
@@ -329,7 +331,7 @@ func test_old_action_file_is_backed_up_and_future_action_file_is_protected() -> 
 	for row: Dictionary in future.roster:
 		if row.has("action"): row.action.version = 2
 	var future_text := _write_file(path,future,rules.shop)
-	var reader := ShopSave.new(rules.shop,path)
+	var reader := LegacySave.new(rules.shop,path)
 	reader.load_game()
 	check_eq(reader.load_error,ERR_UNAVAILABLE,"future action version is protected")
 	check_eq(reader.save_game(rules),ERR_UNAVAILABLE,"future action file cannot be overwritten")
@@ -351,7 +353,7 @@ func test_real_transfer_can_insert_a_wait_atom_and_resume_saved_carried_item() -
 				guard += 1
 			check_eq(worker.carry_count,1,"wait follows one actual pickup")
 			var saved := rules.to_dict()
-			var clone := ShopRules.new(rules.shop)
+			var clone := LegacyRules.new(rules.shop)
 			check_eq(clone.load_dict(saved),"","custom wait between atoms saves")
 			check_eq(clone.to_dict(),saved,"carried object and wait timer retained")
 			for advance in 150:
@@ -368,7 +370,7 @@ func test_detached_action_summary_and_simulation_speeds_keep_one_authority() -> 
 	var expected := baseline.to_dict()
 	expected.erase("_accumulator")
 	for dt in [0.1,0.2,0.4]:
-		var rules := ShopRules.new(baseline.shop,42)
+		var rules := LegacyRules.new(baseline.shop,42)
 		rules.gold = 100000.0
 		rules.unlock(rules.shop.goals.opening_station)
 		for tick in roundi(10.0/dt): rules.step(dt)
@@ -396,7 +398,7 @@ func test_business_event_snapshots_preserve_valid_committed_actions() -> void:
 		if event.name not in ["order_taken","made","picked_up","sale","eat_start"] or seen.has(event.name): return
 		seen[event.name] = true
 		var state := rules.to_dict()
-		var clone := ShopRules.new(rules.shop)
+		var clone := LegacyRules.new(rules.shop)
 		check_eq(clone.load_dict(state),"","event snapshot is a complete rule transaction: "+event.name)
 		check_eq(clone.to_dict(),state,"event snapshot retains current action without normalization")
 	rules.events.on("*",listener)
@@ -422,12 +424,12 @@ func test_blocked_real_transport_retains_carried_identity_and_resumes_after_path
 			check_eq(worker.pos,position,"blocked carrier stays on its side of the wall")
 			check_eq(worker.action_left,remaining,"blocked travel does not consume hand-action time")
 			check_eq(Serve._good(rules,id).at,"hand:"+str(worker.id),"same physical object remains in hand")
-			check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","blocked program and route save together")
+			check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","blocked program and route save together")
 			rules.shop.layout.obstacles.clear()
 			rules.nav.set_open(rules.unlocked)
 			rules.run(60.0)
 			check(rules.sold>0,"original carrier continues into a sale")
-			check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","unblocked program is consistent")
+			check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","unblocked program is consistent")
 			found = true
 			break
 		if found: break
@@ -448,6 +450,6 @@ func test_forged_transport_cursor_cannot_skip_the_physical_pickup() -> void:
 			row.target = String(job.to)
 			job.stage = "go_to"
 			preload("res://game/rules/rule_movement.gd").request(row,rules.nav,Serve._point(rules,String(job.to)),"staff")
-			check(not ShopRules.new(rules.shop).load_dict(data).is_empty(),"transport cursor needs the already picked physical object")
+			check(not LegacyRules.new(rules.shop).load_dict(data).is_empty(),"transport cursor needs the already picked physical object")
 			return
 	check(false,"real pickup captured for cursor invariant")

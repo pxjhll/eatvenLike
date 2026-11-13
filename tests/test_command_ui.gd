@@ -1,8 +1,9 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 
 const Sections := preload("res://presentation/shop/hud/station_sections.gd")
 const Result := preload("res://game/rules/rule_command_result.gd")
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
 
 class PoisonRules extends ShopRules:
 	var legacy_calls := 0
@@ -114,7 +115,7 @@ func test_read_model_material_states_ignore_localization_and_adapters() -> void:
 	check_eq(rules.legacy_calls, 0, "read models never call String adapters")
 
 func test_formatter_receives_detached_status() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	var status := rules.command_status("unlock", {"id": "lemonade"})
 	var before := status.duplicate(true)
 	var bytes := var_to_bytes(rules.to_dict())

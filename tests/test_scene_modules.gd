@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 
 const MODULE := "res://presentation/shop/modules/shop_module.gd"
 const SPACE := "res://presentation/shop/modules/module_space.gd"
@@ -236,7 +237,7 @@ func test_template_assembly_moves_all_ports_and_runs_real_parallel_delivery_with
 			if worker.walking and worker.path.size()>2: routed = true
 	check(rules.sold>=2,"module-composed shop completes real multi-item sales")
 	check(routed,"employees use grid routes around footprints")
-	var restored := ShopRules.new(shop,42)
+	var restored := LegacyRules.new(shop,42)
 	check_eq(restored.load_dict(rules.to_dict()),"","module geometry supports active save restore")
 	for tick in 100:
 		rules.step(0.1)
@@ -282,7 +283,7 @@ func test_module_visuals_follow_existing_unlocks_and_chair_count_without_changin
 	var assembled: Dictionary = load(FIXTURE).assemble()
 	owned.append(assembled.art)
 	assembled.shop.seat_groups[0].steps.assign([1,1,1,1,1])
-	var rules := ShopRules.new(assembled.shop,42)
+	var rules := LegacyRules.new(assembled.shop,42)
 	var view := ShopView.new(rules)
 	var before := var_to_bytes(rules.to_dict())
 	check(not rules.nav.can_stand(Vector2(80,700),"staff"),"table assembly reserves chair footprint as well as tabletop")

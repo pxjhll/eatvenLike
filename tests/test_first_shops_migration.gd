@@ -1,13 +1,15 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 const Fixture := preload("res://tests/fixtures/movement_shop.gd")
 const Validator := preload("res://game/rules/shop_spec_validator.gd")
 const LEGACY_TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
 const LEGACY_PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/current/pancake/shop.tres")
 var paths: Array[String] = []
 
-class QuarantineFailure extends ShopSave:
+class QuarantineFailure extends "res://tests/fixtures/legacy_shops/reference_save.gd":
 	var fail_backup := true
 	func _backup_corrupt() -> Error:
 		return ERR_CANT_CREATE if fail_backup else super._backup_corrupt()
@@ -33,7 +35,7 @@ func _shop(mode: String) -> SpecShop:
 
 func _opened(mode: String) -> ShopRules:
 	var shop := _shop(mode)
-	var rules := ShopRules.new(shop,42)
+	var rules := LegacyRules.new(shop,42)
 	rules.gold = 1000000.0
 	for index in shop.stages.size()+1:
 		var next := rules.next_unlock()
@@ -70,7 +72,7 @@ func test_controlled_business_uses_real_action_programs_and_each_phase_restores_
 				if seen.has(key): continue
 				seen[key] = true
 				var state := rules.to_dict()
-				var resumed := ShopRules.new(rules.shop,42)
+				var resumed := LegacyRules.new(rules.shop,42)
 				check_eq(resumed.load_dict(state),"","restore current "+mode+" "+key)
 				check_eq(resumed.to_dict(),state,"all serialized fields are exact: "+mode+" "+key)
 		for kind in (["move","operate","pickup","transport","drop"] if mode=="handoff" else ["move","operate","pickup","drop"]):
@@ -87,7 +89,7 @@ func test_sale_callbacks_capture_a_fully_committed_resumable_business() -> void:
 		rules.run(180.0)
 		rules.events.off("sale",listener)
 		check(not snapshots.is_empty(),"real sale callbacks: "+mode)
-		for state: Dictionary in snapshots.slice(0,4): check_eq(ShopRules.new(rules.shop,42).load_dict(state),"","sale callback must not retain terminal business lease: "+mode)
+		for state: Dictionary in snapshots.slice(0,4): check_eq(LegacyRules.new(rules.shop,42).load_dict(state),"","sale callback must not retain terminal business lease: "+mode)
 
 func test_single_cancel_releases_unfinished_material_and_resumes_paid_order_without_recharging() -> void:
 	if not _adapters(): return
@@ -114,7 +116,7 @@ func test_single_cancel_releases_unfinished_material_and_resumes_paid_order_with
 	check(found,"actual recipe reaches a material reservation")
 	rules.run(120.0)
 	check(rules.sold>0,"recalled order can finish after redeployment")
-	check_eq(ShopRules.new(rules.shop,42).load_dict(rules.to_dict()),"","cancellation leaves a valid complete state")
+	check_eq(LegacyRules.new(rules.shop,42).load_dict(rules.to_dict()),"","cancellation leaves a valid complete state")
 
 func test_first_two_formal_shops_share_staff_and_enable_the_common_protocols() -> void:
 	for shop in [TEA,PANCAKE]:
@@ -128,7 +130,7 @@ func test_every_captured_legacy_phase_adopts_without_repeating_business_effects(
 		var shop: SpecShop = TEA if pair[0]=="tea" else PANCAKE
 		for name: String in fixtures[pair[0]]:
 			var state: Dictionary = bytes_to_var(Marshalls.base64_to_raw(fixtures[pair[0]][name].state))
-			var rules := ShopRules.new(shop,42)
+			var rules := LegacyRules.new(shop,42)
 			var error := rules.load_dict(state)
 			check_eq(error,"","adopt real legacy "+pair[0]+" "+name)
 			if not error.is_empty(): continue
@@ -136,9 +138,9 @@ func test_every_captured_legacy_phase_adopts_without_repeating_business_effects(
 			check_eq(rules.stations,state.stations,"adoption does not replay inventory")
 			for worker: Dictionary in rules.workers:
 				check(rules.nav.can_stand(worker.pos,"staff"),"adopted staff footprint is legal")
-			check_eq(ShopRules.new(shop,42).load_dict(rules.to_dict()),"","adopted phase roundtrips")
+			check_eq(LegacyRules.new(shop,42).load_dict(rules.to_dict()),"","adopted phase roundtrips")
 			rules.run(15.0)
-			check_eq(ShopRules.new(shop,42).load_dict(rules.to_dict()),"","adopted phase continues: "+pair[0]+" "+name)
+			check_eq(LegacyRules.new(shop,42).load_dict(rules.to_dict()),"","adopted phase continues: "+pair[0]+" "+name)
 
 func test_malformed_business_bindings_and_effects_are_rejected_atomically() -> void:
 	for mode in ["handoff","single"]:
@@ -190,7 +192,7 @@ func test_actual_legacy_files_get_byte_exact_backup_and_new_state_roundtrips() -
 		var file := FileAccess.open(path,FileAccess.WRITE)
 		file.store_buffer(original)
 		file.close()
-		var store := ShopSave.new(shop,path)
+		var store := LegacySave.new(shop,path)
 		var rules := store.load_game()
 		check_eq(store.load_error,OK,"old active file loads: "+store.last_error)
 		check_eq(rules.clock,bytes_to_var(Marshalls.base64_to_raw(fixtures[shop.id].active.state)).clock,"old progress preserved")
@@ -201,7 +203,7 @@ func test_actual_legacy_files_get_byte_exact_backup_and_new_state_roundtrips() -
 			if name.begins_with(path.get_file()+".pre-content-"): backups.append("user://"+name)
 		check_eq(backups.size(),1,"one durable original backup")
 		if not backups.is_empty(): check_eq(FileAccess.get_file_as_bytes(backups[0]),original,"backup byte for byte")
-		var loaded := ShopSave.new(shop,path).load_game()
+		var loaded := LegacySave.new(shop,path).load_game()
 		check_eq(loaded.to_dict(),rules.to_dict(),"new state loads without relocation")
 
 func test_unmigratable_old_geometry_is_backed_up_and_does_not_lock_shop_entry() -> void:
@@ -215,7 +217,7 @@ func test_unmigratable_old_geometry_is_backed_up_and_does_not_lock_shop_entry() 
 		var file := FileAccess.open(path,FileAccess.WRITE)
 		file.store_buffer(original)
 		file.close()
-		var store := ShopSave.new(shop,path)
+		var store := LegacySave.new(shop,path)
 		var recovered := store.load_game()
 		check_eq(store.load_error,OK,"spatial migration failure does not lock shop entry")
 		check_eq(recovered.clock,0.0,"unrecoverable progress starts safe fresh business")
@@ -225,7 +227,7 @@ func test_unmigratable_old_geometry_is_backed_up_and_does_not_lock_shop_entry() 
 			if name.begins_with(path.get_file()+".corrupt-"): backups.append("user://"+name)
 		check_eq(backups.size(),1,"original is retained before fresh business starts")
 		if not backups.is_empty(): check_eq(FileAccess.get_file_as_bytes(backups[0]),original,"recoverable original remains byte exact")
-		check_eq(ShopSave.new(shop,path).load_game().clock,0.0,"repeated entry does not return to retry")
+		check_eq(LegacySave.new(shop,path).load_game().clock,0.0,"repeated entry does not return to retry")
 
 func test_legacy_position_can_adopt_a_legal_port_without_a_walkable_grid_center() -> void:
 	var shop := _shop("handoff")
@@ -235,7 +237,7 @@ func test_legacy_position_can_adopt_a_legal_port_without_a_walkable_grid_center(
 	shop.layout.actor_areas = {"staff":[Rect2i(0,0,2,1)]}
 	shop.layout.obstacles = [Rect2(0,0,25,40),Rect2(55,0,25,40)]
 	shop.layout.obstacle_stations = ["",""]
-	var rules := ShopRules.new(shop,42)
+	var rules := LegacyRules.new(shop,42)
 	var goal := Vector2(40,20)
 	check(rules.nav.can_stand(goal),"current authored port accommodates whole footprint")
 	check(not rules.nav.can_stand(Vector2(20,20)) and not rules.nav.can_stand(Vector2(60,20)),"grid centers cannot accommodate this narrow port")
@@ -258,7 +260,7 @@ func test_failed_migration_backup_retains_original_and_can_retry_after_repair() 
 	check_eq(FileAccess.get_file_as_bytes(path),original,"failed backup cannot remove old progress")
 	# Use valid fresh geometry so this checks the write seal, not state validation.
 	store.shop = TEA
-	check_eq(store.save_game(ShopRules.new(TEA)),ERR_UNAVAILABLE,"failed backup seals automatic writes")
+	check_eq(store.save_game(LegacyRules.new(TEA)),ERR_UNAVAILABLE,"failed backup seals automatic writes")
 	store.shop = shop
 	store.fail_backup = false
 	store.load_game()

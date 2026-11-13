@@ -1,11 +1,12 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
 const MODULE := "res://game/rules/machine_progress.gd"
 const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
 const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
 
-class ObservedRules extends ShopRules:
+class ObservedRules extends "res://tests/fixtures/legacy_shops/reference_rules.gd":
 	var observations := []
 	func _auto_output(id: String) -> String:
 		var s: Dictionary = stations[id]
@@ -16,7 +17,7 @@ class ObservedRules extends ShopRules:
 		observations.append(["seconds", id, s.input.duplicate(), s.processing, s.processing_item, s.phase, s.progress, s.remaining])
 		return 2.0
 
-class OrderedSingleRules extends ShopRules:
+class OrderedSingleRules extends "res://tests/fixtures/legacy_shops/reference_rules.gd":
 	var observations := []
 	func _arrivals_single() -> void:
 		observations.append("arrivals")
@@ -289,7 +290,7 @@ func test_rules_stir_facade_forwards_exact_station_points() -> void:
 	if _kernel() == null: return
 	var fixture: SpecShop = TEA.duplicate(true)
 	fixture.station("boil").params.stir_points = [0.8, 0.2]
-	var rules := ShopRules.new(fixture, 42)
+	var rules := LegacyRules.new(fixture, 42)
 	var s := _station()
 	s.progress = 0.9
 	check(rules._pause_for_stir("boil", s, 0.1), "compatibility facade returns crossing")

@@ -13,7 +13,11 @@ const CommandText := preload("res://content/ui/rule_command_text.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Production := preload("res://game/rules/production_plan.gd")
 const SceneFrame := preload("res://game/rules/template/scene_frame.gd")
-var _runtime: RefCounted
+var _runtime_binding: RefCounted
+var _follows_owner := false
+var _runtime: RefCounted:
+	get: return rules.runtime if _follows_owner else _runtime_binding
+	set(value): _runtime_binding = value
 var _displays: Array = []
 var _presentation: Dictionary = {}
 const TemplatePresentation := preload("res://game/rules/template/presentation.gd")
@@ -27,6 +31,7 @@ func _init(rules_: ShopRules, message_formatter_: Callable = Callable()) -> void
 	rules = rules_
 	shop = rules.shop
 	message_formatter = message_formatter_
+	_follows_owner = rules.runtime!=null
 
 
 func command_message(status: Dictionary) -> String:
@@ -47,6 +52,7 @@ func bind_runtime(runtime: RefCounted, displays: Array = [], geometry: Dictionar
 	var frame: Dictionary = runtime.frame(combined)
 	if not String(frame.error).is_empty(): return String(frame.error)
 	_runtime = runtime
+	_follows_owner = runtime==rules.runtime
 	_displays = combined.duplicate(true)
 	_presentation = resolved.definition
 	return ""
@@ -155,6 +161,11 @@ func guide_snapshot() -> Dictionary:
 
 
 func _guide_angry_cause() -> String:
+	if _runtime!=null:
+		if rules.angry_count()==0: return ""
+		var group := rules.buy_group()
+		if group!=null and rules.seat_cost()>=0 and rules.seats_used()>=rules.seat_count(): return "seats"
+		return "staff" if rules.workers.size()<rules.staff_slots() else "machine"
 	if shop.fulfillment.handoff == "single":
 		var group := rules.buy_group()
 		if group != null and group.purpose == "wait" and rules.seat_cost() >= 0 and int(rules.seats.get(group.id, 0)) < rules.seat_cap(group): return "seats"
@@ -169,6 +180,20 @@ func _guide_angry_cause() -> String:
 
 
 func _guide_slow_machine() -> String:
+	if _runtime!=null:
+		var oldest := {}
+		for guest in _runtime.service.orders.snapshot().guests:
+			if guest.state not in ["queue","waiting"] or guest.request.is_empty(): continue
+			if oldest.is_empty() or guest.wait>oldest.wait: oldest = guest
+		if not oldest.is_empty():
+			var recipe: Dictionary = _runtime._definition.recipes[oldest.request[0].recipe]
+			for unit in _runtime._units:
+				if unit.recipe!=oldest.request[0].recipe: continue
+				for node in recipe.nodes.values():
+					if node.capability=="process" and node.id not in unit.done: return node.machine
+			for node in recipe.nodes.values():
+				if node.capability=="process": return node.machine
+		return rules.counter_id
 	if shop.fulfillment.handoff == "single":
 		var dish := ""
 		for id in rules.queue:
@@ -641,6 +666,11 @@ func seats() -> Dictionary:
 func flyer() -> Dictionary:
 	var single := shop.fulfillment.handoff == "single"
 	var wait := maxf(0.0, rules.flyer_ready_at - rules.clock) if single else rules.flyer_wait
+	var pending := rules.flyer_left if single else rules.flyer_pending
+	var wave := rules.flyer_wave
+	if _runtime!=null and _runtime.service.flyers!=null:
+		var state: Dictionary = _runtime.service.flyers.snapshot()
+		wait = state.cooldown; pending = state.pending; wave = state.wave_left
 	var cost := rules.upgrade_cost("flyer")
 	var next_customers := rules.flyer_customers()
 	var next_cooldown := rules.flyer_cooldown()
@@ -650,7 +680,7 @@ func flyer() -> Dictionary:
 	var status := rules.command_status("send_flyers")
 	var upgrade_status := rules.command_status("upgrade", {"key": "flyer"})
 	return {"level": rules.level("flyer"), "customers": rules.flyer_customers(), "cooldown": rules.flyer_cooldown(),
-		"seconds": shop.flyer.wave_seconds, "wait": wait, "wave": rules.flyer_wave, "pending": rules.flyer_left if single else rules.flyer_pending,
+		"seconds": shop.flyer.wave_seconds, "wait": wait, "wave": wave, "pending": pending,
 		"status": status, "error": command_message(status), "queue_full": rules.queue_size() >= rules.queue_capacity(),
 		"upgradable": shop.flyer.track != null and not shop.flyer.track.levels.is_empty(), "gap": shop.flyer.gap,
 		"upgrade_cost": cost, "upgrade_status": upgrade_status, "upgrade_error": command_message(upgrade_status), "next_customers": next_customers, "next_cooldown": next_cooldown}

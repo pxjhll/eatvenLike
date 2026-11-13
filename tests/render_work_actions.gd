@@ -1,4 +1,5 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 
 const TestSession := preload("res://tests/shop_test_session.gd")
 ## Native game scene and embedded preview, using an isolated in-memory shop.
@@ -14,9 +15,9 @@ func _initialize() -> void:
 func _run() -> void:
 	DirAccess.make_dir_recursive_absolute("res://.godot/work_actions_capture")
 	root.size = Vector2i(720, 1280)
-	var tea: SpecShop = load("res://content/shops/tea/shop.tres")
+	var tea: SpecShop = load("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
 	var view = load("res://presentation/shop/shop_play.tscn").instantiate()
-	var sim := ShopRules.new(tea)
+	var sim := LegacyRules.new(tea)
 	sim.gold = 1000000
 	for station in ["lemonade", "boil", "seal", "mix", "press", "topping"]:
 		sim.unlock(station)

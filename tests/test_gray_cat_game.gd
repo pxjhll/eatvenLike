@@ -1,4 +1,5 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Import and gameplay contract for the gray-cat employee, on the shared shop rules.
 
 const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
@@ -10,7 +11,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var library: Script = load("res://presentation/characters/character_library.gd")
 	_check("gray_cat" in library.IDS, "gray cat is available in the shared character catalog")
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	_check("gray_cat" in rules.hire_pool, "gray cat is a recruitable employee")
 	if failures:
 		_finish()
@@ -38,7 +39,7 @@ func _run() -> void:
 			carried = true
 			break
 	_check(carried, "gray cat physically carries real stock")
-	var copy := ShopRules.new(TEA)
+	var copy := LegacyRules.new(TEA)
 	_check(copy.load_dict(rules.to_dict()) == "", "active gray cat saves and reloads")
 	rules.run(2.0)
 	copy.run(2.0)

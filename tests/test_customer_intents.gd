@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 const Fixture := preload("res://tests/fixtures/movement_shop.gd")
 const Motion := preload("res://game/rules/customer_movement.gd")
 var _motion: RefCounted = Motion.new()
@@ -15,7 +16,7 @@ func test_same_neutral_customer_intent_moves_identically_under_all_old_business_
 	if not _available(): return
 	var snapshots: Array = []
 	for mode in ["handoff","single","serve"]:
-		var owner := ShopRules.new(Fixture.definition(mode),42)
+		var owner := LegacyRules.new(Fixture.definition(mode),42)
 		check_eq(_motion.call("sync_records",owner,[_record()]),"","accept neutral record")
 		var start: Vector2 = owner.movement.customers["guest:9"].pos
 		check_eq(start,owner.shop.layout.customer_points.entrance,"sync alone never teleports to target")
@@ -28,7 +29,7 @@ func test_same_neutral_customer_intent_moves_identically_under_all_old_business_
 
 func test_invalid_intent_is_rejected_before_any_motion_or_actor_mutation() -> void:
 	if not _available(): return
-	var owner := ShopRules.new(Fixture.definition(),42)
+	var owner := LegacyRules.new(Fixture.definition(),42)
 	_motion.call("sync_records",owner,[_record()])
 	var before := owner.movement.duplicate(true)
 	var bad := _record()
@@ -38,7 +39,7 @@ func test_invalid_intent_is_rejected_before_any_motion_or_actor_mutation() -> vo
 
 func test_leaving_uses_same_exit_and_only_removes_actor_after_real_arrival() -> void:
 	if not _available(): return
-	var owner := ShopRules.new(Fixture.definition(),42)
+	var owner := LegacyRules.new(Fixture.definition(),42)
 	_motion.call("sync_records",owner,[_record()])
 	Motion.tick(owner,0.1)
 	_motion.call("sync_records",owner,[])

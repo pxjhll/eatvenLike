@@ -14,6 +14,7 @@ static func _role(rules: ShopRules, worker: Dictionary) -> String:
 	return "front" if worker.post==rules.counter_id else "kitchen"
 
 static func _busy(rules: ShopRules, worker: Dictionary) -> bool:
+	if rules.runtime!=null: return not rules.runtime.runner.idle(worker.id)
 	return worker.walking or worker.phase in ["work","pickup","dropoff","wait"] or not worker.job.is_empty() or not rules.serve.jobs.get(str(worker.id),{}).is_empty()
 
 static func _staff_post(rules: ShopRules, loads: Dictionary) -> Dictionary:
@@ -76,8 +77,9 @@ static func visit(rules: ShopRules, loads: Dictionary, hand_load: float, actions
 		if not next.is_empty() and pick[0]>0.25*rules.next_stage_cost() and not prefer: break
 		if not _buy(rules,pick[1],actions): break
 
-static func sample(shop: SpecShop, seconds := LIMIT, seed_ := -1) -> Dictionary:
-	var rules := ShopRules.new(shop,shop.random_seed if seed_<0 else seed_)
+static func sample(shop: SpecShop, seconds := LIMIT, seed_ := -1, factory := Callable()) -> Dictionary:
+	var selected_seed: int = shop.random_seed if seed_<0 else seed_
+	var rules: ShopRules = factory.call(shop,selected_seed) if factory.is_valid() else ShopRules.new(shop,selected_seed)
 	var actions: Array = []
 	var sales: Array = []
 	var stages: Array = []
@@ -95,11 +97,12 @@ static func sample(shop: SpecShop, seconds := LIMIT, seed_ := -1) -> Dictionary:
 	rules.events.on("sale",listener)
 	while rules.clock<seconds-0.0001 and rules.completed_at<0.0:
 		rules.step(0.1)
+		if not rules.runtime_error.is_empty(): break
 		if rules.stage_index!=last_stage:
 			last_stage = rules.stage_index
 			stages.append({"at":snappedf(rules.clock,0.1),"stage":last_stage,"gold":snappedf(rules.gold,0.01),"sold":rules.sold})
 		samples += 1
-		if not hand.is_empty() and int(rules.stations[hand].get("user",-1))!=-1: hand_busy += 1
+		if not hand.is_empty() and (rules.machine_working(hand) if rules.runtime!=null else int(rules.stations[hand].get("user",-1))!=-1): hand_busy += 1
 		for worker: Dictionary in rules.workers:
 			var role := _role(rules,worker)
 			role_ticks[role] = int(role_ticks.get(role,0))+1
@@ -125,7 +128,7 @@ static func sample(shop: SpecShop, seconds := LIMIT, seed_ := -1) -> Dictionary:
 		"first_sale_tick":sales[0] if not sales.is_empty() else -1,"maximum_sale_gap_ticks":longest_gap,
 		"revenue":rules.revenue,"sold":rules.sold,"lost":rules.lost,"staff":rules.workers.size(),
 		"role_ticks":totals,"stages":stages,"actions":actions,
-		"restore_error":ShopRules.new(shop).load_dict(rules.to_dict())}
+		"restore_error":(factory.call(shop,selected_seed) if factory.is_valid() else ShopRules.new(shop)).load_dict(rules.to_dict()) if rules.runtime_error.is_empty() else rules.runtime_error}
 
 static func target_errors(shops: Dictionary) -> Array[String]:
 	var errors: Array[String] = []

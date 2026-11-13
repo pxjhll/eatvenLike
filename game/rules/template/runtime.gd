@@ -66,12 +66,20 @@ func _init(owner: RefCounted, template: Resource) -> void:
 func arrive(request: Array, selected_options: Variant = null) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}
 	if service == null: return {"error":"template has no customer service capability", "id":-1}
-	return service.arrive(request,selected_options)
+	var bus: RefCounted = runner.owner.events
+	bus.begin_batch()
+	var result: Dictionary = service.arrive(request,selected_options)
+	bus.end_batch()
+	return result
 
 func set_service_open(value: bool) -> String:
 	if not last_error.is_empty(): return last_error
 	if service == null: return "template has no customer service capability"
-	return service.set_open(value)
+	var bus: RefCounted = runner.owner.events
+	bus.begin_batch()
+	var error: String = service.set_open(value)
+	bus.end_batch()
+	return error
 
 func send_flyers() -> String:
 	if not last_error.is_empty(): return last_error
@@ -83,6 +91,13 @@ func send_flyers() -> String:
 	runner.owner.events.emit("flyer",{})
 	return ""
 
+func enqueue_wave(count: int) -> String:
+	if not last_error.is_empty(): return last_error
+	if service==null or service.flyers==null: return "template has no flyer capability"
+	var error: String = service.flyers.enqueue(count)
+	if error.is_empty(): runner.owner.events.emit("wave",{"count":count})
+	return error
+
 func request_production(recipe: String) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}
 	if not _definition.recipes.has(recipe): return {"error":"unknown production recipe", "id":-1}
@@ -91,7 +106,27 @@ func request_production(recipe: String) -> Dictionary:
 	_units.append(unit)
 	return {"error":"", "id":unit.id}
 
+func production_for_service(recipe: String) -> Dictionary:
+	var bound := {}
+	if service!=null:
+		for order in service.orders.snapshot().orders:
+			for line in order.lines:
+				for binding in line.units: bound[binding.unit] = true
+	for unit in _units:
+		if unit.recipe==recipe and not bound.has(unit.id) and (not unit.running.is_empty() or ready(unit.id)):
+			return {"error":"","id":int(unit.id)}
+	return request_production(recipe)
+
 func step(dt: float, paused := false) -> String:
+	var bus: RefCounted = runner.owner.events
+	bus.begin_batch()
+	var error := _advance(dt,paused)
+	if runner.owner.runtime==self: runner.owner.clock = _clock
+	bus.clock = _clock
+	bus.end_batch()
+	return error
+
+func _advance(dt: float, paused := false) -> String:
 	if not last_error.is_empty(): return last_error
 	if not is_finite(dt) or dt < 0.0: return "invalid production time"
 	if paused or dt == 0.0: return ""
@@ -185,6 +220,15 @@ func snapshot() -> Dictionary:
 
 func cancel_transport(bundle: int) -> String:
 	return _transports.cancel(bundle,runner.inventory)
+
+func cancel_worker(id: int) -> String:
+	var error: String = runner.cancel(id)
+	if not error.is_empty(): return error
+	_reconcile()
+	if service!=null:
+		error = service.reconcile_cancellations()
+		if not error.is_empty(): return error
+	return runner.dispatcher.reconcile()
 
 func restore(data: Dictionary) -> String:
 	if not last_error.is_empty(): return last_error

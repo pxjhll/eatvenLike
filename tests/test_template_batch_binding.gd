@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const Schema := preload("res://content/rules/spec_shop_template.gd")
 const Runtime := preload("res://game/rules/template/runtime.gd")
 const Compiler := preload("res://game/rules/template/compiler.gd")
@@ -166,7 +167,7 @@ func test_real_milk_tea_pot_uses_original_navigation_stirring_and_employee_actio
 		"stock_limit":12,"policy":{"mode":"demand","base":1,"per_waiting":1},"batch":{"target":"boil","base":3,"max":12}}}
 	template.recipes = {"cup":{"nodes":[{"id":"stock","capability":"source","place":"out","item":"tea","seconds":shop.dispatch.hop_seconds}],
 		"output":{"node":"stock","item":"tea","count":1}}}
-	var owner := ShopRules.new(shop,42)
+	var owner := TemplateOuter.owner(shop,42)
 	check_eq(owner.pot_batch("boil"),2,"formal base effects set the initial batch to two despite the fallback base of three")
 	for station in shop.stations: owner.unlocked[station.id] = true
 	owner.nav.set_open(owner.unlocked)

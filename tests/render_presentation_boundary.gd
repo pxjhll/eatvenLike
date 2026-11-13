@@ -1,8 +1,9 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Live production controls, disposable services and fatal runtime errors.
 const Suite := preload("res://tests/test_presentation_boundary.gd")
 const TestSession := preload("res://tests/shop_test_session.gd")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/current/pancake/shop.tres")
 var suite := Suite.new()
 var errors := preload("res://tests/error_counter.gd").new()
 var paths: Array[String] = []
@@ -16,7 +17,7 @@ class SpySession extends "res://game/app/shop_session.gd":
 		commands.append({"command": command, "arguments": arguments.duplicate(true)})
 		return super.execute_command(command, arguments)
 
-class CountingStore extends ShopSave:
+class CountingStore extends "res://tests/fixtures/legacy_shops/reference_save.gd":
 	var writes := 0
 	func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 		writes += 1
@@ -36,7 +37,7 @@ func _initialize() -> void:
 
 func _open(spec: SpecShop, label: String, services := true) -> Node2D:
 	var stem := prefix + label
-	var original := TestSession.make(spec, stem, ShopRules.new(spec), CountingStore.new(spec, stem + "-shop.json"))
+	var original := TestSession.make(spec, stem, LegacyRules.new(spec), CountingStore.new(spec, stem + "-shop.json"))
 	var session := SpySession.new(original.profile, original.store, original.rules)
 	session.tuning_path = original.tuning_path
 	session.recording_path = original.recording_path

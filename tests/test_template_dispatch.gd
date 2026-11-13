@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const Fixture := preload("res://tests/fixtures/template_service.gd")
 const Production := preload("res://tests/fixtures/template_shop.gd")
 const Runtime := preload("res://game/rules/template/runtime.gd")
@@ -122,7 +123,7 @@ func test_changing_access_region_revokes_old_route_even_when_both_roles_allow_th
 	var shop: SpecShop = Fixture.owner().shop.copy_for_editing()
 	shop.staff.zones.assign(["front", "kitchen"])
 	for profile in ["front", "kitchen"]: shop.layout.actor_areas[profile] = shop.layout.actor_areas["staff"].duplicate()
-	var owner := ShopRules.new(shop, 42)
+	var owner := TemplateOuter.owner(shop, 42)
 	var worker: Dictionary = owner.workers[0]
 	worker.post = owner.counter_id
 	worker.pos = Vector2(180,480)

@@ -36,6 +36,9 @@ func _init(shop_: SpecShop, path_ := "") -> void:
 func exists() -> bool:
 	return FileAccess.file_exists(path)
 
+func make_rules() -> ShopRules:
+	return ShopRules.new(shop)
+
 
 func delete() -> void:
 	last_error = ""
@@ -59,14 +62,14 @@ func load_game() -> ShopRules:
 	loaded_speed = 1.0
 	loaded_guides = []
 	var result := _assess_existing()
-	if result.get("missing", false): return ShopRules.new(shop)
+	if result.get("missing", false): return make_rules()
 	if not result.get("error", "").is_empty():
 		last_error = result.error
 		if result.get("protected", false): load_error = ERR_UNAVAILABLE
 		else:
 			load_error = _backup_corrupt()
 			if load_error != OK: _write_blocked = true
-		return ShopRules.new(shop)
+		return make_rules()
 	loaded_speed = result.speed
 	loaded_guides = result.guides
 	return result.rules
@@ -77,12 +80,15 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 	if rules == null or rules.shop == null or rules.shop.id != shop.id or not is_finite(speed) or speed <= 0.0:
 		last_error = "存档失败：店铺状态或播放速度无效"
 		return ERR_INVALID_PARAMETER
+	if not rules.runtime_error.is_empty() or (shop.runtime_template!=null and rules.runtime==null):
+		last_error = "存档失败：公共经营模板未成功初始化"
+		return ERR_INVALID_DATA
 	var content := _content()
 	if rules.shop != shop and ContentContract.describe(rules.shop) != content:
 		last_error = "存档失败：店铺内容和存档不是同一版本，请重新进店"
 		return ERR_INVALID_PARAMETER
 	var state := rules.to_dict()
-	var state_error := ShopRules.new(shop).load_dict(state)
+	var state_error := make_rules().load_dict(state)
 	if not state_error.is_empty():
 		last_error = "存档失败：店铺状态无效：" + state_error
 		return ERR_INVALID_DATA
@@ -118,12 +124,14 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 func _assess_existing() -> Dictionary:
 	var result := _read_existing()
 	if result.get("missing", false) or not result.get("error", "").is_empty(): return result
-	var candidate := ShopRules.new(shop)
+	var candidate := make_rules()
 	# 内容改版（数值或结构）后先按当前内容校验并迁移：已删掉的机器/升级轨丢掉，其余进度保留。
 	# 校验不过才当坏档留底、这家店从空店开始；不能因为更新卡在重试界面。
-	var error := _id_map_error(result.state) if result.refresh else ""
+	var error := _id_map_error(result.state) if result.refresh and not result.state.has("runtime") else ""
 	if error.is_empty(): error = candidate.load_dict(result.state, result.refresh)
 	if not error.is_empty():
+		if shop.runtime_template!=null:
+			return {"error":"店铺状态迁移失败（%s），原存档未修改，请保留文件并重试"%error,"protected":true}
 		var reason := "店铺内容已更新，旧存档无法沿用" if result.refresh else "店铺存档状态无效"
 		return {"error": "%s（%s），原档已留底，这家店从空店开始" % [reason, error]}
 	result.rules = candidate
@@ -210,6 +218,15 @@ func _read_existing() -> Dictionary:
 	# bytes_to_var deliberately excludes objects; never use bytes_to_var_with_objects.
 	var state: Variant = bytes_to_var(bytes)
 	if not state is Dictionary: return {"error": "店铺存档状态必须是字典"}
+	if state.has("runtime") or state.has("version"):
+		if state.get("version")!=2 or not state.get("runtime") is Dictionary or state.runtime.get("version")!=1 or shop.runtime_template==null:
+			return {"error":"店铺公共运行版本不受当前程序支持，原文件未修改","protected":true}
+		var seen: Array = []
+		if wrapper.get("guides") is Array:
+			for id in wrapper.guides:
+				if id is String: seen.append(id)
+		return {"state":state,"speed":speed,"guides":seen,"refresh":refresh}
+	if shop.runtime_template!=null: refresh = true
 	if not FlowValidator.protected_file_error(state,shop).is_empty():
 		return {"error":"存档流程版本与当前配置不同，已停止写入以保留原文件","protected":true}
 	if FlowValidator.needs_adoption(state,shop): refresh = true

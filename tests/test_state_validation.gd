@@ -1,11 +1,13 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 
 const TEA = preload("res://tests/fixtures/legacy_shops/tea.tres")
 const PANCAKE = preload("res://tests/fixtures/legacy_shops/pancake.tres")
 const NOODLE = preload("res://tests/fixtures/noodle/shop.tres")
 var _paths: Array[String] = []
 
-class FailedBackup extends ShopSave:
+class FailedBackup extends "res://tests/fixtures/legacy_shops/reference_save.gd":
 	func _backup_corrupt() -> Error:
 		last_error += "；测试：备份失败"
 		return ERR_CANT_CREATE
@@ -51,7 +53,7 @@ func _rejected(rules: ShopRules, data: Dictionary, label: String) -> void:
 	events.off("validation_probe", listener)
 
 func test_empty_rng_does_not_partially_reset_live_rules() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	rules.unlock(rules.next_unlock())
 	rules.run(12.0)
 	var data := rules.to_dict()
@@ -60,14 +62,14 @@ func test_empty_rng_does_not_partially_reset_live_rules() -> void:
 	_rejected(rules, data, "rng=[]")
 
 func test_fractional_frame_accumulator_roundtrips_with_guides() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	rules.unlock(rules.next_unlock())
 	# GUI advances by fractional frame deltas, unlike the baseline's exact STEP.
 	for unused in 2: rules.step(0.25)
 	check(rules._accumulator < 0.0, "真实分帧会产生极小负余数，覆盖引导回归")
 	var before := rules.to_dict()
 	var path := _path()
-	var store := ShopSave.new(TEA, path)
+	var store := LegacySave.new(TEA, path)
 	check_eq(store.save_game(rules, 1.0, ["opening", "lost_machine"]), OK, "保存分帧状态")
 	var resumed := store.load_game()
 	check_eq(store.last_error, "", "有限浮点余数合法，不隔离正常存档")
@@ -81,7 +83,7 @@ func test_fractional_frame_accumulator_roundtrips_with_guides() -> void:
 	_rejected(rules, invalid, "超过步进浮点容差的负余数")
 
 func test_nested_invalid_states_are_rejected() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	rules.unlock(rules.next_unlock())
 	rules.run(12.0)
 	var base := rules.to_dict()
@@ -114,10 +116,10 @@ func test_nested_invalid_states_are_rejected() -> void:
 
 func test_valid_midgame_states_resume_for_all_shop_specs() -> void:
 	for shop in [TEA, PANCAKE, NOODLE]:
-		var source := ShopRules.new(shop)
+		var source := LegacyRules.new(shop)
 		source.unlock(source.next_unlock())
 		source.run(45.0)
-		var target := ShopRules.new(shop)
+		var target := LegacyRules.new(shop)
 		check_eq(target.load_dict(source.to_dict()), "", shop.id + " 恢复")
 		check(var_to_bytes(target.to_dict()) == var_to_bytes(source.to_dict()), shop.id + " 精确恢复")
 		source.run(20.0)
@@ -129,11 +131,11 @@ func test_valid_midgame_states_resume_for_all_shop_specs() -> void:
 
 func test_valid_envelope_invalid_semantics_is_quarantined() -> void:
 	var path := _path()
-	var data := ShopRules.new(TEA).to_dict()
+	var data := LegacyRules.new(TEA).to_dict()
 	data.gold = 900000.0
 	data.rng = []
 	var original := _write_payload(path, data)
-	var store := ShopSave.new(TEA, path)
+	var store := LegacySave.new(TEA, path)
 	var errors := preload("res://tests/error_counter.gd").new()
 	OS.add_logger(errors)
 	var restored := store.load_game()
@@ -150,7 +152,7 @@ func test_valid_envelope_invalid_semantics_is_quarantined() -> void:
 
 func test_failed_quarantine_blocks_later_blind_save() -> void:
 	var path := _path()
-	var data := ShopRules.new(TEA).to_dict()
+	var data := LegacyRules.new(TEA).to_dict()
 	data.rng = []
 	var original := _write_payload(path, data)
 	var store := FailedBackup.new(TEA, path)
@@ -160,17 +162,17 @@ func test_failed_quarantine_blocks_later_blind_save() -> void:
 	check_eq(FileAccess.get_file_as_string(path), original, "原始损坏文件保留")
 
 func test_direct_save_also_preserves_existing_semantic_corruption() -> void:
-	var data := ShopRules.new(TEA).to_dict()
+	var data := LegacyRules.new(TEA).to_dict()
 	data.rng = []
 	for fail_backup in [false, true]:
 		var path := _path()
 		var original := _write_payload(path, data)
-		var store: ShopSave = FailedBackup.new(TEA, path) if fail_backup else ShopSave.new(TEA, path)
-		var error := store.save_game(ShopRules.new(TEA))
+		var store: ShopSave = FailedBackup.new(TEA, path) if fail_backup else LegacySave.new(TEA, path)
+		var error := store.save_game(LegacyRules.new(TEA))
 		if fail_backup:
 			check_eq(error, ERR_CANT_CREATE, "直接保存先隔离损坏状态，报告隔离错误")
 			check_eq(FileAccess.get_file_as_string(path), original, "直接保存不覆盖无法隔离的原件")
-			check_eq(store.save_game(ShopRules.new(TEA)), ERR_UNAVAILABLE, "后续保存仍被阻止")
+			check_eq(store.save_game(LegacyRules.new(TEA)), ERR_UNAVAILABLE, "后续保存仍被阻止")
 		else:
 			check_eq(error, OK, "隔离后直接保存成功")
 			var found := false
@@ -187,8 +189,8 @@ func test_successful_restore_binds_event_callback_to_live_rules() -> void:
 	event.chance = 1.0
 	event.effects.append(SpecEffect.make("grant_gold", "add", 7.0))
 	shop.events.append(event)
-	var source := ShopRules.new(shop)
-	var target := ShopRules.new(shop)
+	var source := LegacyRules.new(shop)
+	var target := LegacyRules.new(shop)
 	check_eq(target.load_dict(source.to_dict()), "", "恢复事件定义")
 	var before := target.gold
 	target.events.emit("restore_probe")
@@ -196,7 +198,7 @@ func test_successful_restore_binds_event_callback_to_live_rules() -> void:
 	check(target.event_ready_at.has(event.id), "冷却写入 live rules")
 
 func test_nested_field_types_and_references_are_rejected_without_errors() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	rules.gold = 100000.0
 	while not rules.next_unlock().is_empty(): rules.unlock(rules.next_unlock())
 	for id in rules.boxes: rules.unlock_box(id)
@@ -233,7 +235,7 @@ func test_nested_field_types_and_references_are_rejected_without_errors() -> voi
 	_rejected(rules, data, "position nonfinite")
 
 func test_active_job_and_belt_storage_references_must_exist() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	rules.unlock(rules.next_unlock())
 	var base := rules.to_dict()
 	var data := base.duplicate(true)
@@ -244,7 +246,7 @@ func test_active_job_and_belt_storage_references_must_exist() -> void:
 	_rejected(rules, data, "传送带缺少时钟")
 
 func test_operation_jobs_require_matching_machine_and_worker_phase() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	rules.unlock(rules.next_unlock())
 	var base := rules.to_dict()
 	for kind in ["pot_take", "pot_start", "stir", "work"]:
@@ -272,12 +274,12 @@ func test_operation_jobs_require_matching_machine_and_worker_phase() -> void:
 		pot.phase = "awaiting_take" if kind == "pot_take" else "stir"
 		data.roster[0].job = {"kind": kind, "src": pot_id, "dst": pot_id, "item": pot.output.keys()[0], "count": 1, "priority": 1.0, "belt": "", "order_id": -1}
 		data.roster[0].phase = "work"
-		check_eq(ShopRules.new(TEA).load_dict(data), "", "合法批量锅工序可恢复 " + kind)
+		check_eq(LegacyRules.new(TEA).load_dict(data), "", "合法批量锅工序可恢复 " + kind)
 		pot.phase = "idle"
 		_rejected(rules, data, kind + " requires matching pot phase")
 
 func test_single_steps_require_declared_actions_and_terminal_handoff() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	rules.unlock(rules.next_unlock())
 	rules.run(3.0)
 	var base := rules.to_dict()
@@ -294,7 +296,7 @@ func test_single_steps_require_declared_actions_and_terminal_handoff() -> void:
 	_rejected(rules, data, "missing terminal handoff")
 
 func test_active_manual_work_requires_real_output_slot_without_processing_count() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	rules.gold = 10000000.0
 	while not rules.next_unlock().is_empty(): rules.unlock(rules.next_unlock())
 	for id in rules.boxes: rules.unlock_box(id)
@@ -317,11 +319,11 @@ func test_active_manual_work_requires_real_output_slot_without_processing_count(
 	check(not snapshot.is_empty(), "真实营业进入员工加料工序")
 	if snapshot.is_empty(): return
 	check_eq(snapshot.stations[station_id].processing, 0, "员工工序没有自动机 processing 计数")
-	var restored := ShopRules.new(TEA)
+	var restored := LegacyRules.new(TEA)
 	check_eq(restored.load_dict(snapshot), "", "合法员工工序存档可恢复")
 	var fallback := snapshot.duplicate(true)
 	fallback.stations[station_id].processing_item = ""
-	var fallback_rules := ShopRules.new(TEA)
+	var fallback_rules := LegacyRules.new(TEA)
 	check_eq(fallback_rules.load_dict(fallback), "", "空产出仍允许原来的输入槽回退")
 	var errors := preload("res://tests/error_counter.gd").new()
 	OS.add_logger(errors)

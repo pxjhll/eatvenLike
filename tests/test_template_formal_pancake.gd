@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const PATH := "res://content/shops/pancake/shared_production.tres"
 const SHOP: SpecShop = preload("res://content/shops/pancake/shop.tres")
 const Runtime := preload("res://game/rules/template/runtime.gd")
@@ -8,7 +9,7 @@ func _template() -> Resource:
 	return load(PATH) if ResourceLoader.exists(PATH) else null
 
 func _owner() -> ShopRules:
-	var owner := ShopRules.new(SHOP.copy_for_editing(),42)
+	var owner := TemplateOuter.owner(SHOP.copy_for_editing(),42)
 	owner.gold = 100000.0
 	for id in ["soy_milk","rear_equipment","fryer","topping","bag"]: check_eq(owner.unlock(id),"","open actual station: "+id)
 	check_eq(owner.unlock_box("flour"),"","buy actual flour box through public command")

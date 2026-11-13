@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## 界面快照 ShopView（规格 §6.2.1）：奶茶店整局对旧模拟录下的界面数据（tests/baselines/tea_ui_73b0ae3.json），
 ## 界面读到的目标、瓶颈提示、机器面板数字（解锁、等级、升级价、售价预览、原料箱）都一样。
 
@@ -40,7 +41,7 @@ static func _same(a: Variant, b: Variant) -> bool:
 func test_tea_snapshot_matches_old_ui_data_through_whole_shop() -> void:
 	var base: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/tea_73b0ae3.json"))
 	var recorded: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/tea_ui_73b0ae3.json"))
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	var view := ShopView.new(rules)
 	var actions: Array = base.actions
 	var next_action := 0
@@ -65,7 +66,7 @@ func test_tea_snapshot_matches_old_ui_data_through_whole_shop() -> void:
 
 
 func test_buffs_list_timed_modifiers() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	var view := ShopView.new(rules)
 	check_eq(view.buffs().size(), 0, "开局没有进行中加成")
 	rules.apply_effect("event", "influencer", SpecEffect.make("flow", "mul", 2.0), 60.0)
@@ -76,10 +77,10 @@ func test_buffs_list_timed_modifiers() -> void:
 
 func test_item_art_uses_item_icon_when_no_scene_art() -> void:
 	var pancake: SpecShop = load("res://tests/fixtures/legacy_shops/pancake.tres")
-	var view := ShopView.new(ShopRules.new(pancake))
+	var view := ShopView.new(LegacyRules.new(pancake))
 	for item in pancake.items:
 		if not item.art.is_empty() or item.icon == null: continue
 		check(view.item_art(item.id).texture == item.icon, "%s 拿在手上画自己的图标" % item.id)
 	check(view.item_art("guozi").texture == pancake.items.filter(func(i): return i.id == "guozi")[0].icon, "按菜品 id 也找到图标")
-	var tea_view := ShopView.new(ShopRules.new(TEA))
+	var tea_view := ShopView.new(LegacyRules.new(TEA))
 	check(tea_view.item_art("lemonade").texture != null, "奶茶店照旧用场景图")

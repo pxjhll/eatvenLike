@@ -1,4 +1,5 @@
 extends RefCounted
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Copies of existing content with controlled geometry. No production assets.
 const MovementShop := preload("res://tests/fixtures/movement_shop.gd")
 
@@ -28,7 +29,7 @@ static func definition() -> SpecShop:
 static func opened(shop: SpecShop = null) -> ShopRules:
 	if shop==null: shop = definition()
 	if shop==null: return null
-	var rules := ShopRules.new(shop,42)
+	var rules := LegacyRules.new(shop,42)
 	rules.gold = 1000000.0
 	for guard in shop.stages.size()+1:
 		var next := rules.next_unlock()

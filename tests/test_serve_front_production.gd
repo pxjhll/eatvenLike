@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 const Fixture := preload("res://tests/fixtures/movement_shop.gd")
 const Schema := preload("res://game/rules/shop_spec_validator.gd")
 const Flow := preload("res://game/rules/serve_flow.gd")
@@ -40,7 +41,7 @@ func definition() -> SpecShop:
 
 func opened() -> ShopRules:
 	var shop := definition()
-	var rules := ShopRules.new(shop,42)
+	var rules := LegacyRules.new(shop,42)
 	rules.gold = 1000000.0
 	rules.unlock(shop.goals.opening_station)
 	for unused in shop.stages.size():
@@ -81,7 +82,7 @@ func test_front_worker_produces_and_delivers_without_using_kitchen_or_kitchen_ad
 	check_eq(wrong_roles,{},"kitchen never reserves a front-only drink")
 	check(not extra_lines,"front-only sale cannot be held by a kitchen soup addon")
 	check(made>=2,"front-only machine completes repeated real sales")
-	check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","front sale state independently restores")
+	check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","front sale state independently restores")
 
 func test_cancelled_front_carry_returns_exact_good_and_does_not_duplicate_income() -> void:
 	var rules := opened()
@@ -105,7 +106,7 @@ func test_cancelled_front_carry_returns_exact_good_and_does_not_duplicate_income
 	check(found,"actual front production reached carried goods")
 	rules.run(120.0)
 	check(rules.sold_by_dish.front_drink>0,"recalled product is eventually sold")
-	check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","recall leaves a valid resumable ledger")
+	check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","recall leaves a valid resumable ledger")
 
 func test_front_actions_save_and_continue_exactly_during_work_and_delivery() -> void:
 	var rules := opened()
@@ -120,7 +121,7 @@ func test_front_actions_save_and_continue_exactly_during_work_and_delivery() -> 
 			if seen.has(kind): continue
 			seen[kind] = true
 			var state := rules.to_dict()
-			var clone := ShopRules.new(rules.shop)
+			var clone := LegacyRules.new(rules.shop)
 			check_eq(clone.load_dict(state),"","front action restores: "+kind)
 			check_eq(clone.to_dict(),state,"front action keeps inventory, reservation and timer: "+kind)
 			for step in 30:
@@ -147,7 +148,7 @@ func test_front_delivery_waits_for_a_real_route_without_creating_a_sale() -> voi
 			check_eq(worker.pos,point,"front carrier cannot cross a blocked delivery route")
 			check_eq(Flow._good(rules,id).at,"hand:"+str(worker.id),"same produced drink remains in hand")
 			check_eq(rules.revenue,revenue,"blocked delivery cannot credit a sale")
-			check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","blocked front delivery is resumable")
+			check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","blocked front delivery is resumable")
 			rules.shop.layout.obstacles.clear()
 			rules.nav.set_open(rules.unlocked)
 			rules.run(90.0)
@@ -175,10 +176,10 @@ func test_mixed_menu_keeps_front_and_kitchen_work_independent() -> void:
 	check_eq(wrong_roles,{},"mixed orders respect each production region")
 	check(rules.sold_by_dish.front_drink>=2,"front drink sells alongside kitchen food")
 	check(rules.sold_by_dish.tomato_rice>=2,"kitchen food is not starved by front production")
-	check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","mixed menu remains resumable")
+	check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","mixed menu remains resumable")
 
 func test_formal_stirfry_has_front_drink_without_shifting_existing_stages() -> void:
-	var shop: SpecShop = load("res://content/shops/stirfry/shop.tres")
+	var shop: SpecShop = load("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres")
 	var legacy: SpecShop = load("res://tests/fixtures/stirfry_modularity/legacy_shop.tres")
 	var station := shop.station("plum_dispenser")
 	var dish := shop.dish("plum_juice")
@@ -204,7 +205,7 @@ func test_formal_stirfry_has_front_drink_without_shifting_existing_stages() -> v
 	art.free()
 
 func test_added_recipe_adopts_existing_station_slots_without_mutating_saved_progress() -> void:
-	var current: SpecShop = load("res://content/shops/stirfry/shop.tres")
+	var current: SpecShop = load("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres")
 	var old := current.copy_for_editing()
 	old.fulfillment.flow_version = 0
 	old.items.assign(old.items.filter(func(item: SpecItem) -> bool: return item.id!="plum_juice"))
@@ -212,7 +213,7 @@ func test_added_recipe_adopts_existing_station_slots_without_mutating_saved_prog
 	old.stations.assign(old.stations.filter(func(station: SpecStation) -> bool: return station.id!="plum_dispenser"))
 	old.layout.points.erase("plum_dispenser")
 	for stage in old.stages: stage.order_weights.erase("plum_juice")
-	var previous := ShopRules.new(old,42)
+	var previous := LegacyRules.new(old,42)
 	previous.unlock("wok_a")
 	var found := false
 	for tick in 1800:
@@ -220,7 +221,7 @@ func test_added_recipe_adopts_existing_station_slots_without_mutating_saved_prog
 		if previous.serve.jobs.is_empty(): continue
 		var saved := previous.to_dict()
 		var original := saved.duplicate(true)
-		var migrated := ShopRules.new(current)
+		var migrated := LegacyRules.new(current)
 		check(not migrated.load_dict(saved).is_empty(),"ordinary load refuses missing existing pickup slots")
 		check_eq(migrated.load_dict(saved,true),"","content adoption fills newly introduced recipe slots")
 		check_eq(saved,original,"adoption leaves the supplied old snapshot unchanged")
@@ -230,7 +231,7 @@ func test_added_recipe_adopts_existing_station_slots_without_mutating_saved_prog
 		check_eq(migrated.serve.jobs,previous.serve.jobs,"existing jobs survive")
 		check_eq(migrated.stations.window.input.plum_juice,0,"new recipe starts with no fabricated output")
 		check(migrated.station_unlocked("plum_dispenser"),"new basic front station becomes available")
-		var resumed := ShopRules.new(current)
+		var resumed := LegacyRules.new(current)
 		check_eq(resumed.load_dict(migrated.to_dict()),"","adopted action state restores independently")
 		for step in 100:
 			migrated.step(0.1)

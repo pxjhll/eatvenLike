@@ -1,4 +1,5 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Real actor factory consumes action snapshots; no GUI callback owns business.
 const Fixture := preload("res://tests/fixtures/movement_shop.gd")
 const Adapter := preload("res://game/rules/serve_action_context.gd")
@@ -20,7 +21,7 @@ func _run() -> void:
 	root.get_node("ShopAudio")._can_play = false
 	var shop := Fixture.definition()
 	shop.dispatch.action_version = 1
-	var rules := ShopRules.new(shop,42)
+	var rules := LegacyRules.new(shop,42)
 	rules.gold = 100000.0
 	rules.unlock(shop.goals.opening_station)
 	var scene: Node2D = load("res://presentation/shop/shop_play.gd").new()
@@ -64,7 +65,7 @@ func _run() -> void:
 		if seen.size()==6 and rules.sold>0: break
 	for kind in ["move","pickup","operate","transport","drop","wait"]: _check(seen.has(kind),"actual action pose covered: "+kind)
 	_check(rules.sold>0,"real composed actions complete a sale")
-	_check(ShopRules.new(shop).load_dict(rules.to_dict()).is_empty(),"rendered actions remain valid saved rules")
+	_check(LegacyRules.new(shop).load_dict(rules.to_dict()).is_empty(),"rendered actions remain valid saved rules")
 	scene._sortables.free()
 	scene.ui.free()
 	scene.free()

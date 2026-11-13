@@ -4,7 +4,11 @@
 
 Session startup validates both the store definition and a separately injected rules definition before loading/quarantining a save or acknowledging `fresh_shop`. Scene startup additionally checks art before Session startup. Pure ShopRules remains usable directly by rule tests; callers of that low-level API are responsible for validating configuration.
 
-`dispatch.action_version` supports 0/1 in all three modes. Version 1 requires shared movement (`layout.motion_version = 1`); each adapter retains its own existing fulfillment policies. Serve-only flow and order-bundle delivery remain restricted to serve. The three formal shops use movement/actions 1. Tea and pancake retain flow 0; stirfry uses flow 1 for front production; version-0 behavioral baselines use frozen shop fixtures.
+正式三店现在必须通过 `SpecShop.runtime_template` 显式声明公共能力，`shop_spec_validator.gd` 会编译模板并要求服务和自动客流。经营推进统一为 `ShopRules._tick → Runtime.step`；`fulfillment.handoff` 不选择正式执行器。ShopSession/ShopPlay 自动消费该 Runtime，模板构造失败禁止启动或保存。
+
+版本2业务存档把 outer 购买/钱包/RNG 与公共 runtime 的唯一活动状态分开保存。三种旧模式只在 `template/legacy_adoption.gd` 的一次性加载边界出现；正式执行不调用它们的 tick/context。公共能力配置、保存和迁移边界详见 `game/rules/template/README.md` 的 U06 节。
+
+以下表格是保留的**旧资源字段与迁移协议**，其旧方法名对应测试历史参考引擎，不能作为新店运行时接口。作者校验暂时保留旧字段约束以保护现有内容；U07继续处理制作入口与门禁，不能据此恢复旧经营分流。
 
 ## Fulfillment: every exported field
 

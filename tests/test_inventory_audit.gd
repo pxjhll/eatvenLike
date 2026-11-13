@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
 const AUDIT_PATH := "res://game/rules/inventory_audit.gd"
@@ -31,7 +32,7 @@ func _inspect(audit: Variant, inventory: RefCounted, workers: Array = [], belts:
 	return audit.inspect(inventory, workers, belts, orders, mode, "supply", "counter")
 
 func test_public_api_and_literal_bad_counter() -> void:
-	var rules := ShopRules.new(SHOPS[0], 42)
+	var rules := LegacyRules.new(SHOPS[0], 42)
 	if not rules.has_method("inventory_diagnostics"):
 		check(false, "ShopRules.inventory_diagnostics must exist")
 		return
@@ -162,7 +163,7 @@ func test_reports_are_fresh_detached_data_and_reads_preserve_live_state() -> voi
 	check_eq(owner.stations.machine.reserved_out.cup, 4, "editing report cannot change stock")
 	check_eq(fresh, [_row("reservation_mismatch", "stations.machine.reserved_out.cup", 0, 4)], "earlier fresh result is independent of caller edits")
 	check_eq(_inspect(audit, owner), fresh, "new result is independent")
-	var rules := ShopRules.new(SHOPS[0], 42)
+	var rules := LegacyRules.new(SHOPS[0], 42)
 	if not rules.has_method("inventory_diagnostics"):
 		check(false, "ShopRules.inventory_diagnostics must exist")
 		return
@@ -218,7 +219,7 @@ func test_three_real_shops_keep_invariants_during_work_recall_load_and_reopen() 
 	var audit = _audit()
 	if audit == null: return
 	for shop in SHOPS:
-		var rules := ShopRules.new(shop, 42)
+		var rules := LegacyRules.new(shop, 42)
 		if not rules.has_method("inventory_diagnostics"):
 			check(false, "ShopRules.inventory_diagnostics must exist")
 			return

@@ -33,6 +33,9 @@ extends Resource
 @export var save_file: String = ""
 ## 人物大小按哪个锚点量
 @export var scale_anchor: String = ""
+## Formal shops declare one shared capability template. Legacy format fields
+## are retained only for authoring identity and old-state conversion.
+@export var runtime_template: Resource
 
 
 ## Editable variants must own external definitions too. Resource.duplicate(true)

@@ -1,4 +1,5 @@
 extends SceneTree
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 ## U05 full display acceptance on the actual three scenes and templates.
 const TestSession := preload("res://tests/shop_test_session.gd")
 const Runtime := preload("res://game/rules/template/runtime.gd")
@@ -19,7 +20,7 @@ func _check(value: bool, message: String) -> void:
 
 func _setup(id: String) -> Dictionary:
 	var shop: SpecShop = load("res://content/shops/"+id+"/shop.tres").copy_for_editing()
-	var owner := ShopRules.new(shop,42)
+	var owner := TemplateOuter.owner(shop,42)
 	owner.gold = 1000000.0
 	if id=="tea":
 		for machine in ["lemonade","boil","seal","mix","press","topping"]: _check(owner.unlock(machine).is_empty(),"actual tea purchases")
@@ -35,7 +36,7 @@ func _setup(id: String) -> Dictionary:
 		if not worker.deployed: _check(owner.deploy_worker(worker.id).is_empty(),"deploy actual employee")
 	while owner.seat_cost()>=0: _check(owner.buy_seat().is_empty(),"buy actual complete seat pool")
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	scene.session = TestSession.make(shop,"user://u05-display-%s-%d"%[id,Time.get_ticks_usec()],owner)
+	scene.session = TestSession.make(owner.shop,"user://u05-display-%s-%d"%[id,Time.get_ticks_usec()],owner)
 	for path in [scene.session.profile.path,scene.session.store.path,scene.session.tuning_path,scene.session.recording_path]: paths.append(path)
 	root.add_child(scene); scene.set_process(false)
 	_check(not scene._startup_blocked,"actual "+id+" scene")

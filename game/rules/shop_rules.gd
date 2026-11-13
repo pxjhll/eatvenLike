@@ -1,5 +1,6 @@
 class_name ShopRules
 extends RefCounted
+const LegacyQueries := preload("res://game/rules/legacy/content_queries.gd")
 const FulfillmentPlan := preload("res://game/rules/fulfillment_plan.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Sampling := preload("res://game/rules/rule_sampling.gd")
@@ -13,17 +14,13 @@ const InventoryAudit := preload("res://game/rules/inventory_audit.gd")
 const WorkerState := preload("res://game/rules/worker_state.gd")
 const Sales := preload("res://game/rules/rule_sales.gd")
 const OrderState := preload("res://game/rules/rule_orders.gd")
-const Completion := preload("res://game/rules/fulfillment_completion.gd")
-const MachineProgress := preload("res://game/rules/machine_progress.gd")
-const DispatchPolicy := preload("res://game/rules/dispatch_policy.gd")
-const ServeFlow := preload("res://game/rules/serve_flow.gd")
 const Movement := preload("res://game/rules/rule_movement.gd")
 const CustomerMovement := preload("res://game/rules/customer_movement.gd")
 const MovementAdoption := preload("res://game/rules/movement_adoption.gd")
-const Actions := preload("res://game/rules/rule_actions.gd")
-const HandoffContext := preload("res://game/rules/handoff_action_context.gd")
-const SingleContext := preload("res://game/rules/single_action_context.gd")
 var movement: Dictionary = {}
+var runtime: RefCounted
+var runtime_error := ""
+var _runtime_template: Resource
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -64,7 +61,7 @@ var sold_by_dish: Dictionary:
 	get: return _sales.sold_by_dish
 	set(value): _sales.sold_by_dish = value
 var lost: int:
-	get: return _orders_state.lost
+	get: return int(runtime.service.orders.snapshot().lost) if runtime!=null and runtime.service!=null else _orders_state.lost
 	set(value): _orders_state.lost = value
 var stage_index := 0
 var unlocked: Dictionary = {}
@@ -185,6 +182,10 @@ const BY_DATA_ID := ["sold_by_dish", "unlocked", "levels", "boxes", "stations", 
 
 
 func to_dict() -> Dictionary:
+	if runtime!=null: return load("res://game/rules/template/session_state.gd").save(self)
+	return _legacy_dict()
+
+func _legacy_dict() -> Dictionary:
 	var out := {"shop": shop.id}
 	for key in STATE_KEYS:
 		var v: Variant = get(key)
@@ -216,68 +217,14 @@ static func _plain(v: Variant) -> Variant:
 
 ## Validate and fully restore off to the side before replacing any live object.
 func load_dict(data: Dictionary, refresh_content: bool = false) -> String:
-	var candidate := ShopRules.new(shop)
-	if refresh_content:
-		# A new recipe adds item slots to existing pickup/work stations. Only
-		# content adoption fills new slots; ordinary same-content loads stay strict.
-		data = data.duplicate(true)
-		if data.get("stations") is Dictionary:
-			for id in candidate.stations:
-				var row: Variant = data.stations.get(id)
-				if not row is Dictionary: continue
-				for key in ["input", "output", "reserved_out"]:
-					if not row.get(key) is Dictionary: continue
-					for item in candidate.stations[id][key]:
-						if not row[key].has(item): row[key][item] = candidate.stations[id][key][item]
-	var rebuild_motion := movement_enabled() and not data.has("movement")
-	if rebuild_motion:
-		data = data.duplicate(true)
-		data.movement = {"version":1,"customers":{}}
-	# Saves written before the serve mode existed carry no serve state.
-	if not data.has("serve"):
-		data = data.duplicate()
-		data.serve = ServeFlow.empty_state()
-	# Definitions registered by campaign/session code are data, not saved objects.
-	candidate.event_defs = event_defs.duplicate()
-	var error := StateValidator.new().validate(data, candidate.to_dict(), shop, chains, candidate.event_defs)
-	if not error.is_empty(): return error
-	candidate._restore_validated(data)
-	if movement_enabled():
-		candidate.movement = data.movement.duplicate(true)
-		if rebuild_motion:
-			error = MovementAdoption.workers(candidate)
-			if not error.is_empty(): return error
-			CustomerMovement.sync(candidate,true)
-	if refresh_content: candidate._refresh_content_values()
-	if shop.fulfillment.flow_version==1: ServeFlow.restore_flow(candidate)
-	if shop.dispatch.action_version==1:
-		match shop.fulfillment.handoff:
-			"serve": ServeFlow.restore_actions(candidate)
-			"handoff":
-				for worker: Dictionary in candidate.workers:
-					if not worker.job.is_empty() and not worker.has("action"): HandoffContext.new(candidate).restore(worker)
-			"single":
-				for worker: Dictionary in candidate.workers:
-					if not worker.has("action") and (worker.walking or worker.phase=="work" or not worker.chore.is_empty() or worker.order>=0): SingleContext.new(candidate).restore(worker)
-	if rebuild_motion:
-		error = StateValidator.new().validate(candidate.to_dict(),ShopRules.new(shop).to_dict(),shop,candidate.chains,candidate.event_defs)
-		if not error.is_empty(): return "movement adoption: "+error
-	for key in STATE_KEYS: set(key, candidate.get(key))
-	workers = candidate.workers
-	movement = candidate.movement
-	nav = candidate.nav
-	rng = candidate.rng
-	event_rng = candidate.event_rng
-	mods = candidate.mods
-	# Keep the live bus and its subscribers; only adopt the validated history.
-	candidate.events.off("*", candidate._on_broadcast)
-	events.log = candidate.events.log
-	events.clock = candidate.events.clock
-	event_defs = candidate.event_defs
-	pending_events = candidate.pending_events
-	events.on("*", _on_broadcast)
-	return ""
+	if data.has("version") or data.has("runtime"):
+		return load("res://game/rules/template/session_state.gd").restore(self,data,refresh_content)
+	if _runtime_template!=null:
+		return load("res://game/rules/template/legacy_adoption.gd").new().adopt(self,data,refresh_content)
+	return _load_legacy_dict(data,refresh_content)
 
+func _load_legacy_dict(data: Dictionary, refresh_content: bool = false) -> String:
+	return load("res://game/rules/legacy/state_decoder.gd").restore(self,data,refresh_content)
 
 func _restore_validated(data: Dictionary) -> void:
 	for key in STATE_KEYS:
@@ -363,6 +310,8 @@ func _derive_roles() -> void:
 
 
 func reset(seed := -1) -> void:
+	runtime = null
+	runtime_error = ""
 	movement = {}
 	clock = 0.0
 	gold = float(shop.start_gold)
@@ -436,10 +385,7 @@ func reset(seed := -1) -> void:
 	side_idle = {}
 	for ev in shop.events: add_event(ev)
 	events.on("*", _on_broadcast)
-	serve = ServeFlow.empty_state()
-	if _serving():
-		for st in shop.stations:
-			if station_unlocked(st.id): ServeFlow.seed_stock(self, st.id)
+	serve = {"guests":[],"orders":[],"units":[],"goods":[],"jobs":{},"next_id":1,"served":0,"orders_done":0,"items_sold":0}
 	for index in shop.staff.starting.size():
 		var worker := _new_worker(shop.staff.starting[index])
 		worker.deployed = true
@@ -449,7 +395,17 @@ func reset(seed := -1) -> void:
 		# 每位开局员工可以有自己的岗位（starting_posts，空 = 流动），没写就都用 starting_post
 		var post: String = shop.staff.starting_posts[index] if index < shop.staff.starting_posts.size() else shop.staff.starting_post
 		if not post.is_empty(): _seat_at(worker, post)
-	if movement_enabled(): CustomerMovement.sync(self)
+	var template: Resource = shop.runtime_template if shop.runtime_template!=null else _runtime_template
+	if movement_enabled(): movement = {"version":1,"customers":{}}
+	if template!=null: runtime_error = enable_runtime(template)
+
+func enable_runtime(template: Resource, open_service := true) -> String:
+	var candidate: RefCounted = load("res://game/rules/template/runtime.gd").new(self,template)
+	if not candidate.last_error.is_empty(): return candidate.last_error
+	runtime = candidate
+	runtime.runner.release_owner()
+	_runtime_template = template
+	return runtime.set_service_open(is_open()) if open_service else ""
 
 
 func _build_stations() -> void:
@@ -576,23 +532,8 @@ func _box_ready(item: String) -> bool:
 
 ## 菜在不在菜单上：工序用到的机器都开了、要买的原料箱买了、口味开了；后厨菜还要有人在后厨。
 func dish_open(dish_id: String, needs_kitchen_hand := true) -> bool:
-	var dish := shop.dish(dish_id)
-	for s in dish.steps:
-		var st := shop.station(s.station)
-		if st == null: continue
-		if st.block == "pickup": continue
-		if not station_unlocked(s.station) and st.companion_of.is_empty(): return false
-		if not st.companion_of.is_empty() and not station_unlocked(st.companion_of): return false
-		for item in s.consumes:
-			if not _box_ready(item): return false
-		if st.block == "supply":
-			for item in s.produces:
-				if not _box_ready(item): return false
-	if not flavor_open(dish): return false
-	if shop.recipe_stage_of(dish_id) > stage_index: return false
-	if shop.fulfillment.handoff == "handoff" and needs_kitchen_hand and not dish.front and kitchen_staff() <= 0: return false
-	return true
-
+	if runtime!=null: return runtime.service.menu_weights().has(dish_id)
+	return LegacyQueries.dish_open(self,dish_id,needs_kitchen_hand)
 
 func menu() -> Array[String]:
 	var out: Array[String] = []
@@ -607,13 +548,11 @@ func is_open() -> bool:
 
 ## 交接方式 serve：前厅接单分座、后厨按配方合流、送餐到座（§10）
 func _serving() -> bool:
-	return shop.fulfillment.handoff == "serve"
-
+	return LegacyQueries.serving(self)
 
 ## 顾客先排队、再被员工接走的店（一人跟单、送桌）：客流按“下一位多久到”计时，传单逐个放人
 func _queued_arrivals() -> bool:
-	return shop.fulfillment.handoff in ["single", "serve"]
-
+	return LegacyQueries.queued(self)
 
 func current_stage() -> SpecStage:
 	return shop.stages[stage_index]
@@ -637,58 +576,34 @@ func run(seconds: float) -> void:
 
 
 func _tick() -> void:
-	clock += STEP
-	events.clock = clock
-	if movement_enabled():
-		CustomerMovement.sync(self)
-		CustomerMovement.tick(self,STEP)
-		CustomerMovement.sync(self)
-	for e in mods.tick(STEP): events.emit("modifier_ended", e)
-	# 整秒 / 整分钟广播：按时间触发的奇遇听这两个
-	if int(round(clock * 10.0)) % 10 == 0: events.emit("tick_second", {"time": clock})
-	if int(round(clock * 10.0)) % 600 == 0: events.emit("tick_minute", {"time": clock})
-	match shop.fulfillment.handoff:
-		"single": _tick_single()
-		"serve": ServeFlow.tick(self, STEP)
-		_: _tick_handoff()
-	if movement_enabled(): CustomerMovement.sync(self)
-	_track_bottleneck()
-	if completed_at < 0.0 and shop_complete():
-		completed_at = clock
-		events.emit("completed", {})
+	var bus := events
+	bus.begin_batch()
+	_tick_runtime()
+	bus.end_batch()
 
+func _tick_runtime() -> void:
+	if runtime!=null:
+		var advancing := runtime
+		for entry in mods.tick(STEP): events.emit("modifier_ended",entry)
+		runtime_error = runtime.set_service_open(is_open())
+		if not runtime_error.is_empty(): return
+		runtime_error = runtime.step(STEP)
+		if runtime!=advancing: return
+		clock = runtime._clock
+		events.clock = clock
+		if not runtime_error.is_empty(): return
+		_track_bottleneck()
+		if int(round(clock*10.0))%10==0: events.emit("tick_second",{"time":clock})
+		if int(round(clock*10.0))%600==0: events.emit("tick_minute",{"time":clock})
+		if completed_at<0.0 and shop_complete():
+			completed_at = clock
+			events.emit("completed",{})
+		return
+	runtime_error = "ShopRules requires an explicit shared runtime template"
 
 # =====================================================================
 # 交接方式 handoff：后厨跟单 + 前厅递杯（奶茶店）
 # =====================================================================
-
-func _tick_handoff() -> void:
-	_drop_stuck_tickets()
-	flyer_wait = maxf(0.0, flyer_wait - STEP)
-	_flyer_entry_wave()
-	_orders_state.advance_handoff(STEP)
-	if is_open() and _order_clock >= _order_interval():
-		_order_clock = 0.0
-		if orders.size() < queue_capacity(): _add_order()
-	_update_machines()
-	_update_belt_items()
-	for worker in workers:
-		if worker.phase == "idle":
-			worker.fatigue = maxf(0, worker.fatigue - STEP * shop.dispatch.fatigue_recover)
-		else:
-			worker.fatigue = minf(1, worker.fatigue + STEP * shop.dispatch.fatigue_gain)
-			_update_worker(worker)
-	_allocate()
-	_run_belts()
-	if movement_enabled():
-		for index in range(diners.size()-1,-1,-1):
-			if not CustomerMovement.ready(self,"diner:%d"%int(diners[index].seat)): continue
-			diners[index].left -= STEP
-			if diners[index].left <= 0.000001: diners.remove_at(index)
-	else: _orders_state.advance_diners(STEP)
-	if not shop.fulfillment.takeaway_station.is_empty() and station_unlocked(shop.fulfillment.takeaway_station):
-		_orders_state.overflow_to_takeaway(free_seats())
-
 
 # ---------- 客流 ----------
 
@@ -710,6 +625,10 @@ func _order_interval() -> float:
 
 ## 现在平均几秒来一位客人（一人跟单的店不算机器等级带来的客流）
 func customer_interval() -> float:
+	if runtime!=null and runtime.service!=null:
+		var policy: Dictionary = runtime._definition.service
+		var interval: float = policy.selection.stages[stage_index].interval if policy.has("selection") else policy.arrivals.interval
+		return Numbers.flow_interval(interval,runtime.service.flow_multiplier(),tune)
 	if shop.fulfillment.handoff != "single": return _order_interval()
 	return Numbers.flow_interval(current_stage().customer_interval, mods.value("flow", 1.0), tune)
 
@@ -740,6 +659,7 @@ func order_weights() -> Dictionary:
 
 
 func queue_capacity() -> int:
+	if runtime!=null: return runtime.service.queue_capacity()
 	if shop.fulfillment.handoff == "single": return current_stage().queue_capacity + wait_seats()
 	if _serving(): return current_stage().queue_capacity
 	return current_stage().queue_capacity + seated_orders()
@@ -747,47 +667,16 @@ func queue_capacity() -> int:
 
 ## 排队人数（站位 + 等位）
 func queue_size() -> int:
-	if _serving(): return ServeFlow.queue_size(self)
-	return queue.size() if shop.fulfillment.handoff == "single" else orders.size()
-
+	return runtime.service.orders.queue().size() if runtime!=null else 0
 
 ## 开张以来进店的人数
 func arrivals() -> int:
+	if runtime!=null: return int(runtime.service.orders.snapshot().next_guest)-1
 	return (_next_customer_id if _queued_arrivals() else _next_order) - 1
 
 
 func _pick_dish(weights: Dictionary) -> String:
 	return Sampling.choose(weights, rng)
-
-
-func _add_order() -> void:
-	if not is_open(): return
-	var weights := order_weights()
-	var total := 0.0
-	for dish in weights: total += weights[dish]
-	if total <= 0: return
-	var selected := _pick_dish(weights)
-	var seat := -1
-	var takeaway := false
-	var takeaway_open: bool = not shop.fulfillment.takeaway_station.is_empty() and station_unlocked(shop.fulfillment.takeaway_station)
-	if shop.fulfillment.dine_rule == "seat_first":
-		var spare := _spare_seats()
-		seat = _first_open_seat() if spare > 0 else -1
-		takeaway = takeaway_open and spare <= 0
-	_orders_state.admit_handoff(selected, seat, takeaway, weights, shop.fulfillment.ramp_orders, takeaway_open)
-	if movement_enabled(): CustomerMovement.sync(self)
-	events.emit("arrived", {"dish": selected})
-
-
-func _flyer_entry_wave() -> void:
-	if flyer_wave > 0.0: flyer_wave = maxf(0.0, flyer_wave - STEP)
-	if flyer_pending <= 0: return
-	flyer_clock += STEP
-	if flyer_clock < shop.flyer.wave_seconds / maxf(1.0, float(flyer_customers())): return
-	if orders.size() >= queue_capacity(): return
-	flyer_clock = 0.0
-	flyer_pending -= 1
-	_add_order()
 
 
 # ---------- 座位 ----------
@@ -854,52 +743,24 @@ func seat_seconds() -> float:
 
 
 func seated_orders() -> int:
-	var count := 0
-	for order in orders:
-		if int(order.get("seat", -1)) >= 0: count += 1
-	return count
+	return runtime.service.orders.snapshot().guests.filter(func(guest: Dictionary) -> bool: return guest.queued and not guest.seat.is_empty()).size() if runtime!=null else 0
 
 
 func free_seats() -> int:
-	var promised := 0
-	for worker in workers:
-		if worker.job.is_empty() or worker.job.kind != "serve" or _to_go(worker.job): continue
-		if int(_order_by_id(worker.job.order_id).get("seat", -1)) < 0: promised += 1
-	return seat_total() - diners.size() - promised - seated_orders()
-
-
-func _spare_seats() -> int:
-	var waiting := 0
-	for order in orders:
-		if int(order.get("seat", -1)) < 0 and not order.get("takeaway", false) and not order.reserved: waiting += 1
-	return free_seats() - waiting
-
-
-func _first_open_seat() -> int:
-	var taken: Array = diners.map(func(diner: Dictionary) -> int: return diner.seat)
-	for order in orders:
-		if int(order.get("seat", -1)) >= 0: taken.append(int(order.seat))
-	var seat := 0
-	while seat in taken: seat += 1
-	return seat
+	return maxi(0,seat_total()-seats_used())
 
 
 func _order_by_id(id: int) -> Dictionary:
 	return _orders_state.handoff_order(id)
 
 
-func _to_go(job: Dictionary) -> bool:
-	if job.src in [pickup_id, RACK]: return true
-	for order in orders:
-		if order.id == job.order_id: return order.get("takeaway", false)
-	return false
-
-
 func order_mood(order: Dictionary) -> int:
 	var f := shop.fulfillment
 	if f.mood_seconds.size() < 2: return 0
 	var patience := mods.value("patience", 1.0)
-	var wait: float = order.wait * (f.seated_patience if int(order.get("seat", -1)) >= 0 else 1.0) / patience
+	var seat: Variant = order.get("seat",-1)
+	var seated: bool = not seat.is_empty() if seat is String else int(seat)>=0
+	var wait: float = order.wait * (f.seated_patience if seated else 1.0) / patience
 	return 2 if wait >= f.mood_seconds[1] else (1 if wait >= f.mood_seconds[0] else 0)
 
 
@@ -907,14 +768,7 @@ func order_mood(order: Dictionary) -> int:
 
 ## 还在等餐的客人：一人跟单的店是排着队的客人，跟单+递杯的店是订单
 func waiting_customers() -> Array:
-	if _serving(): return serve.guests.filter(func(g: Dictionary) -> bool: return g.state != "eating")
-	if shop.fulfillment.handoff != "single": return orders
-	var out: Array = []
-	for id in queue:
-		var c := customer(id)
-		if not c.is_empty(): out.append(c)
-	return out
-
+	return runtime.service.orders.snapshot().guests.filter(func(guest: Dictionary) -> bool: return guest.state in ["queue","waiting"]) if runtime!=null else []
 
 ## 等急了（心情最差）的客人有几个
 func angry_count() -> int:
@@ -926,11 +780,13 @@ func angry_count() -> int:
 
 ## 这个员工现在手上没活（没跟单、没杂活、没在搬东西）
 func worker_idle(worker: Dictionary) -> bool:
+	if runtime!=null: return runtime.runner.idle(worker.id)
 	return worker.job.is_empty() and worker.phase in ["idle", "wait"] and int(worker.get("order", -1)) < 0
 
 
 ## 这台机器正在自己做东西（锅在煮、自动机器在转；做好等人拿不算）
 func machine_working(id: String) -> bool:
+	if runtime!=null: return bool(runtime.runner.machines.status(id).get("working",false))
 	if not station_unlocked(id): return false
 	var station: Dictionary = stations[id]
 	if _queued_arrivals(): return station.phase == "cook"
@@ -946,15 +802,7 @@ func seat_count() -> int:
 
 ## 那组座位现在坐了几个人：堂食 = 在吃的 + 坐着等的，等位 = 点完单在坐垫上等的
 func seats_used() -> int:
-	var g := buy_group()
-	if g == null: return 0
-	if g.purpose == "dine" and _serving(): return ServeFlow.seats_taken(self).size()
-	if g.purpose == "dine": return diners.size() + seated_orders()
-	var paid := 0
-	for c in customers:
-		if c.state == "paid": paid += 1
-	return mini(wait_seats(), paid)
-
+	return load("res://game/rules/template/scene_frame.gd").seats_used(runtime,buy_group()) if runtime!=null else 0
 
 # ---------- 员工 ----------
 
@@ -993,16 +841,10 @@ func movement_enabled() -> bool:
 
 
 func begin_move(worker: Dictionary, goal: Vector2, phase: String) -> void:
-	if not movement_enabled():
-		WorkerState.begin_walk(worker,nav.path(worker.pos,goal),phase)
-		return
-	var profile := "staff"
-	if _serving():
-		var role := ServeFlow.role(self,worker)
-		if shop.layout.actor_areas.has(role): profile = role
+	var side := side_of(worker)
+	var profile := side if shop.layout.actor_areas.has(side) else "staff"
 	Movement.request(worker,nav,goal,profile)
 	worker.phase = phase
-
 
 func advance_move(worker: Dictionary, dt: float) -> bool:
 	if not movement_enabled(): return WorkerState.advance_walk(worker,walk_speed(worker)*dt)
@@ -1012,16 +854,8 @@ func advance_move(worker: Dictionary, dt: float) -> bool:
 
 
 func _rebuild_move(worker: Dictionary) -> void:
-	var goal: Vector2
-	if not worker.path.is_empty(): goal = worker.path[-1]
-	elif _serving():
-		var job := ServeFlow.job_of(self,worker)
-		goal = nav.post(worker.post) if job.get("stage","")=="home" else ServeFlow._point(self,job.to if job.get("stage","")=="go_to" else job.get("from",worker.post))
-	elif not worker.job.is_empty():
-		goal = _destination_point(worker.job) if worker.phase=="walk_dropoff" else _source_point(worker.job)
-	else: goal = nav.point(worker.target)
+	var goal: Vector2 = worker.path[-1] if not worker.path.is_empty() else nav.point(worker.target)
 	begin_move(worker,goal,worker.phase)
-
 
 func skill(worker: Dictionary) -> float:
 	return Numbers.skill(shop, mods, tune, worker)
@@ -1163,26 +997,7 @@ func no_kitchen_carrier() -> bool:
 
 ## 放下手上的活：预留全部释放，拿在手上的东西放回原处，跟的单留给别人接（§3.6 预留与回收）。
 func _cancel_job(worker: Dictionary) -> void:
-	if _serving():
-		ServeFlow.cancel(self, worker)
-		return
-	if shop.dispatch.action_version==1:
-		if shop.fulfillment.handoff=="single":
-			if not Actions.cancel(worker,SingleContext.new(self)): SingleContext.new(self).cancel(worker,{})
-			return
-		if Actions.cancel(worker,HandoffContext.new(self)): return
-	_cancel_handoff_assignment(worker)
-
-
-func _cancel_handoff_assignment(worker: Dictionary) -> void:
-	var job: Dictionary = worker.job
-	if not job.is_empty():
-		var clear_processing_item: bool = _is_operation(job) and shop.station(job.src).block == "topping"
-		_inventory.cancel(job, worker.carry_count, supply_id, counter_id, clear_processing_item)
-		if job.kind == "serve":
-			_orders_state.set_handoff_reserved(job.order_id, false)
-	WorkerState.cancel_assignment(worker)
-
+	if runtime!=null: runtime_error = runtime.cancel_worker(worker.id)
 
 ## Evaluate a next-level snapshot without borrowing any live mutable data.
 func preview(key: String, evaluator: Callable) -> Variant:
@@ -1224,24 +1039,6 @@ func _stock(station: Dictionary) -> int:
 	return Inventory.stock(station)
 
 
-func _pause_for_stir(id: String, station: Dictionary, before: float) -> bool:
-	return MachineProgress.pause_for_stir(station, before, shop.station(id).params.get("stir_points", []))
-
-
-func _update_machines() -> void:
-	for st in shop.stations:
-		if not st.block in ["batch_pot", "pickup"] and not st.id in autos: continue
-		if st.block == "pickup" and st.id != pickup_id: continue
-		var key := st.id
-		if not station_unlocked(key): continue
-		var station: Dictionary = stations[key]
-		var input_item := MachineProgress.advance_handoff(station, st.block, STEP,
-			st.params.get("stir_points", []) if st.block == "batch_pot" else [])
-		if not input_item.is_empty():
-			station.processing_item = input_item if st.block == "pickup" else _auto_output(key)
-			MachineProgress.begin_automatic(station, machine_seconds(key))
-
-
 func _auto_output(id: String) -> String:
 	for key in station_output:
 		if key.begins_with(id + "|"): return station_output[key]
@@ -1259,13 +1056,6 @@ func _cup(item: String) -> String:
 	return item
 
 
-func _return_slots(source: String) -> int:
-	var count := 0
-	for worker in workers:
-		if not worker.job.is_empty() and worker.job.src == source: count += worker.carry_count
-	return count
-
-
 func dish_cap() -> int:
 	var cap: int = int(shop.station(pickup_id).params.get("zones", {}).get("dine", 0)) if not pickup_id.is_empty() else 0
 	if bool(shop.station(pickup_id).params.get("dine_at_least_queue", false)) if not pickup_id.is_empty() else false:
@@ -1278,50 +1068,6 @@ func shelf_capacity() -> int:
 	for id in kitchen_dishes:
 		if dish_open(id): flavors += 1
 	return dish_cap() * maxi(1, flavors)
-
-
-func _shelf_item_free(item: String) -> int:
-	var committed: int = shelf_stock.get(item, 0)
-	for worker in workers:
-		if worker.job.is_empty() or _cup(worker.job.item) != item: continue
-		if worker.job.dst == SHELF: committed += worker.job.count
-		if worker.job.src == SHELF: committed += worker.carry_count
-	for shipment in belt_items:
-		if shipment.dst == SHELF and shipment.item == item: committed += shipment.count
-	return dish_cap() - committed
-
-
-func _free(destination: String) -> int:
-	if destination == COUNTER or destination == counter_id: return 3
-	if destination == SHELF: return shelf_capacity() - shelf_count - shelf_reserved_in - _return_slots(destination)
-	var station: Dictionary = stations[destination]
-	return station.capacity - _stock(station) - station.reserved_in - _return_slots(destination)
-
-
-func _input_item(station: String, item: String) -> bool:
-	return station_input.get(station, "") == item and shop.station(station).block in ["batch_pot", "topping"]
-
-
-func _available(source: String, item: String) -> int:
-	if source == supply_id or source == SUPPLY: return UNLIMITED
-	if source == SHELF:
-		var reserved := 0
-		for worker in workers:
-			if not worker.job.is_empty() and worker.job.src == SHELF and worker.job.item == item and worker.carry_count == 0: reserved += worker.job.count
-		return int(shelf_stock.get(item, 0)) - reserved
-	var station: Dictionary = stations[source]
-	var stock: Dictionary = station.input if _input_item(source, item) else station.output
-	return int(stock.get(item, 0)) - int(station.reserved_out.get(item, 0))
-
-
-func _candidate(kind: String, source: String, destination: String, item: String, worker: Dictionary, priority: float, belt := "") -> Dictionary:
-	var job := DispatchPolicy.transport_candidate(kind, source, destination, item,
-		carry(worker), _available(source, item), _free(destination), priority, belt)
-	if job.is_empty(): return {}
-	if destination == SHELF:
-		job.count = mini(job.count, _shelf_item_free(_cup(item)))
-		if job.count <= 0: return {}
-	return job
 
 
 func _is_operation(job: Dictionary) -> bool:
@@ -1342,456 +1088,13 @@ func _destination_point(job: Dictionary) -> Vector2:
 
 
 func inventory_diagnostics() -> Array:
-	return InventoryAudit.inspect(_inventory, workers, belt_items, orders,
-		shop.fulfillment.handoff, supply_id, counter_id)
-
-
-func _reserve(worker: Dictionary, job: Dictionary) -> void:
-	var ticket: Dictionary = job.get("ticket", {})
-	job.erase("ticket")
-	if job.kind == "work" and shop.station(job.src).block == "topping":
-		var flavor: String = ticket.get("dish", worker.ticket.get("dish", ""))
-		stations[job.src].processing_item = flavor if not flavor.is_empty() else _seated_flavor(job.src)
-	_inventory.reserve(job, supply_id, counter_id)
-	if job.kind == "serve":
-		_orders_state.set_handoff_reserved(job.order_id, true)
-	worker.job = job
-	worker.task_label = job.kind
-	if not ticket.is_empty(): worker.ticket = ticket
-	if shop.dispatch.action_version==1:
-		Actions.start(worker,HandoffContext.plan(job),HandoffContext.new(self))
-	else: _walk(worker, _source_point(job), "walk_pickup")
-	if movement_enabled(): CustomerMovement.sync(self)
-
-
-func _walk(worker: Dictionary, destination: Vector2, phase: String) -> void:
-	begin_move(worker,destination,phase)
-
-
-func _take(job: Dictionary) -> void:
-	_inventory.take(job, supply_id)
-
-
-func _refresh_after_pickup(station: Dictionary) -> void:
-	Inventory.refresh_after_pickup(station)
-
-
-func _deliver(destination: String, item: String, count: int) -> void:
-	var key := _cup(item) if destination in [SHELF, pickup_id] else item
-	_inventory.deliver(destination, key, count)
-
-
-func _action_duration(job: Dictionary, worker: Dictionary) -> float:
-	var hop := shop.dispatch.hop_seconds
-	if job.get("pour", "") != "":
-		var total := 0.0
-		for s in shop.dish(job.item).steps:
-			var st := shop.station(s.station)
-			total += manual_operation_seconds(s.station, st.params.get("seconds", s.seconds), worker, s.fixed)
-		return total
-	match job.kind:
-		"work":
-			var st := shop.station(job.src)
-			return manual_operation_seconds(job.src, float(st.params.get("seconds", 0.0)) * job.count, worker)
-		"stir": return float(shop.station(job.src).params.get("stir_seconds", 1.0)) / skill(worker)
-		"load": return hop / skill(worker) / speed(supply_id)
-	return hop / skill(worker)
-
-
-func _update_worker(worker: Dictionary) -> void:
-	if shop.dispatch.action_version==1:
-		Actions.tick(worker,STEP,HandoffContext.new(self))
-		return
-	var job: Dictionary = worker.job
-	if worker.walking:
-		if not advance_move(worker,STEP): return
-		if worker.phase == "walk_pickup":
-			WorkerState.enter_handoff_action(worker, "work" if _is_operation(job) else "pickup",
-				_action_duration(job, worker))
-			if job.kind == "work":
-				stations[job.src].phase = "working"
-				stations[job.src].duration = worker.action_left
-		else:
-			WorkerState.enter_handoff_action(worker, "dropoff", shop.dispatch.hop_seconds / skill(worker))
-		return
-	if movement_enabled() and worker.phase=="dropoff" and job.get("kind","")=="serve" and not CustomerMovement.ready(self,"order:%d"%int(job.order_id)): return
-	var action_done := WorkerState.tick_handoff_action(worker, STEP)
-	if worker.phase == "work" and job.kind == "work":
-		stations[job.src].progress = 1.0 - worker.action_left / stations[job.src].duration
-	if not action_done: return
-	match worker.phase:
-		"pickup":
-			_take(job)
-			worker.carry_item = job.item
-			worker.carry_count = job.count
-			_walk(worker, _destination_point(job), "walk_dropoff")
-		"work":
-			var station: Dictionary = stations[job.src]
-			if Completion.consumes_handoff_source(job): _take(job)
-			Completion.complete_handoff_work(station, job, pot_seconds(job.src) if job.kind == "pot_start" else 0.0)
-			_finish(worker)
-		"dropoff":
-			if job.kind == "serve":
-				if movement_enabled(): _finish(worker)
-				_record_sale(job)
-				_orders_state.remove_handoff(job.order_id)
-			else:
-				_deliver(job.dst, job.item, job.count)
-			if not (movement_enabled() and job.kind=="serve"): _finish(worker)
-
-
-func _complete_topping(_id: String, station: Dictionary, job: Dictionary) -> void:
-	Completion.complete_topping(station, job)
-
-
-func _finish(worker: Dictionary) -> void:
-	var job: Dictionary = worker.job
-	if not worker.ticket.is_empty() and not job.is_empty():
-		var ticket: Dictionary = worker.ticket
-		var chain: Array = chains[ticket.dish]
-		var at: String = chain[ticket.at]
-		var done := false
-		if ticket.phase == "carry":
-			if job.src == at and not _is_operation(job):
-				if ticket.at >= chain.size() - 1: done = true
-				else:
-					ticket.at += 1
-					ticket.phase = "work" if _manual(chain[ticket.at]) else "carry"
-		else:
-			if job.kind == "work": ticket.phase = "carry"
-			elif job.src == at: done = true
-		ticket.wait = 0.0
-		if done: worker.ticket = {}
-	WorkerState.finish_handoff(worker)
-
-
-func _manual(id: String) -> bool:
-	return shop.station(id).block == "topping"
-
-
-func _record_sale(job: Dictionary) -> void:
-	var diner_seat := -1
-	if not _to_go(job):
-		var seat := int(_order_by_id(job.order_id).get("seat", -1))
-		if seat < 0: seat = _first_open_seat()
-		_orders_state.add_diner(seat, job.item, seat_seconds())
-		diner_seat = seat
-	if movement_enabled():
-		_orders_state.remove_handoff(job.order_id)
-		CustomerMovement.handoff_sale(self,int(job.order_id),diner_seat)
-	_sales.count_handoff(job.item, job.count)
-	events.emit("sale", _sales.credit_handoff(job, dish_price(job.item)))
-
+	return runtime.runner.inventory.audit() if runtime!=null else []
 
 # ---------- 调度（§3.6） ----------
 
-func _score(name: String) -> float:
-	return float(shop.dispatch.base_scores.get(name, 0.0))
-
-
-func _allocate() -> void:
-	var d := shop.dispatch
-	for unused in workers.size():
-		var best := {"score": -INF, "worker": {}, "job": {}}
-		for worker in workers:
-			if worker.phase != "idle": continue
-			for job in _jobs(worker):
-				if job.is_empty(): continue
-				var to_source := nav.path(worker.pos, _source_point(job))
-				var to_target := nav.path(_source_point(job), _destination_point(job))
-				if to_source.is_empty() or to_target.is_empty(): continue
-				var travel: float = (RuleNav.length(to_source) + RuleNav.length(to_target)) / walk_speed(worker)
-				var work_time: float = _action_duration(job, worker) if job.kind == "work" else 2.0 * d.hop_seconds / skill(worker)
-				DispatchPolicy.consider(best, worker, job,
-					DispatchPolicy.score(d, worker, job, travel, work_time))
-		if best.job.is_empty(): break
-		_reserve(best.worker, best.job)
-
-
-func _jobs(worker: Dictionary) -> Array:
-	var result: Array = []
-	for post in seatables:
-		if not station_unlocked(post) or (not worker.post.is_empty() and worker.post != post): continue
-		if post_owner(post, worker.id) != -1: continue
-		var station: Dictionary = stations[post]
-		if station.work_reserved: continue
-		var st := shop.station(post)
-		var kind := ""
-		var item: String = station_input.get(post, "")
-		var count := 0
-		var priority := _score("chore")
-		if st.block == "topping" and _available(post, item) > 0:
-			kind = "work"
-			count = mini(carry(worker), _available(post, item))
-			priority = _score("topping")
-		elif st.block == "batch_pot" and station.processing == 0 and _available(post, item) >= pot_batch(post):
-			kind = "pot_start"
-			count = pot_batch(post)
-		elif st.block == "batch_pot" and station.phase == "stir":
-			kind = "stir"
-			count = station.processing
-			item = station.output.keys()[0]
-			priority = _score("stir")
-		elif st.block == "batch_pot" and station.phase == "awaiting_take" and station.processing > 0:
-			kind = "pot_take"
-			count = station.processing
-			item = station.output.keys()[0]
-		if not kind.is_empty() and count > 0:
-			result.append({"kind": kind, "src": post, "dst": post, "item": item, "count": count, "priority": priority, "belt": "", "order_id": -1})
-	if worker.post in seatables: return _follow_seated(worker, result)
-	if not worker.post.is_empty() and worker.post != counter_id: return result
-	if worker.post.is_empty(): return _follow_jobs(worker, result)
-	# 前厅：只递杯
-	var seats_left := free_seats()
-	for order in orders:
-		if order.reserved: continue
-		var source: String = RACK if order.takeaway else SHELF
-		var pour := ""
-		if order.dish in front_dishes:
-			source = RACK if order.takeaway and _available(RACK, order.dish) > 0 else supply_id
-			if source == supply_id: pour = shop.dish(order.dish).steps[0].station
-		var standing_dine_in: bool = not order.takeaway and int(order.seat) < 0
-		if standing_dine_in and seats_left <= 0: continue
-		var serve := _candidate("serve", source, counter_id, order.dish, worker, _score("serve"))
-		if serve.is_empty(): continue
-		if standing_dine_in: seats_left -= 1
-		DispatchPolicy.serve_candidate(serve, order, pour, shop.dispatch)
-		result.append(serve)
-	return result
-
-
-func _follow_seated(worker: Dictionary, result: Array) -> Array:
-	if shop.station(worker.post).block == "batch_pot": return _pot_jobs(worker, result, worker.post)
-	var jobs := result.filter(func(job: Dictionary) -> bool: return not job.is_empty() and job.kind == "work" and not _seated_flavor(worker.post).is_empty())
-	for job in jobs: job.count = 1
-	return jobs
-
-
-func _seated_flavor(post: String) -> String:
-	var made := {}
-	for worker in workers:
-		if worker.ticket.is_empty() or chains[worker.ticket.dish][worker.ticket.at] != post or worker.ticket.phase != "work": continue
-		if not worker.job.is_empty() and worker.job.src == post: continue
-		var dish: String = worker.ticket.dish
-		if not made.has(dish): made[dish] = int(stations[post].output.get(dish, 0)) - int(stations[post].reserved_out.get(dish, 0))
-		made[dish] -= worker.ticket.count
-		if made[dish] < 0: return dish
-	return ""
-
-
-func _first_pot() -> String:
-	return pots[0] if not pots.is_empty() else ""
-
-
-func _follow_jobs(worker: Dictionary, result: Array) -> Array:
-	var pot := _first_pot()
-	if pot.is_empty() or not station_unlocked(pot):
-		var packs: Array = []
-		_append_pack_jobs(worker, packs)
-		return packs
-	var pot_jobs: Array = _pot_jobs(worker, result, pot) if post_owner(pot) == -1 else []
-	if not worker.ticket.is_empty():
-		var job := _ticket_job(worker, worker.ticket)
-		if not job.is_empty(): return [job]
-		return pot_jobs if worker.ticket.at == 0 and worker.ticket.phase == "carry" else []
-	var jobs: Array = pot_jobs
-	_append_pack_jobs(worker, jobs)
-	jobs.append(_new_ticket_job(worker, pot_jobs))
-	return jobs
-
-
-func _pot_short(pot: String) -> bool:
-	var need := 0
-	for worker in workers:
-		if not worker.ticket.is_empty() and worker.ticket.at == 0 and worker.ticket.phase == "carry" and chains[worker.ticket.dish][0] == pot: need += worker.ticket.count
-	for order in open_orders():
-		var start := _start_stage(order.dish, 1)
-		if start.at == 0 and start.phase == "carry" and chains[order.dish][0] == pot: need += 1
-	var station: Dictionary = stations[pot]
-	var out: String = station.output.keys()[0]
-	return int(station.output[out]) - int(station.reserved_out.get(out, 0)) + station.processing < need
-
-
-func _pot_jobs(worker: Dictionary, result: Array, pot: String) -> Array:
-	var short := _pot_short(pot)
-	var jobs: Array = []
-	for job in result:
-		if job.is_empty() or not job.kind in ["pot_start", "stir", "pot_take"] or job.src != pot: continue
-		if short: job.priority += _score("pot_short_bonus")
-		jobs.append(job)
-	var input: String = station_input.get(pot, "")
-	if not input.is_empty() and _box_ready(input):
-		jobs.append(_candidate("load", supply_id, pot, input, worker, _score("load_short") if short else _score("load")))
-	return jobs
-
-
 ## 外带：从出餐口取杯送去加工（封口），加工好的送到外带架。
-func _append_pack_jobs(worker: Dictionary, result: Array) -> void:
-	if pickup_id.is_empty() or not station_unlocked(pickup_id): return
-	if _courier or not _belted(pickup_id, RACK):
-		for dish in dish_ids:
-			result.append(_candidate("carry_to_rack", pickup_id, RACK, dish, worker, _score("to_rack")))
-	if _courier: return
-	for dish in kitchen_dishes:
-		var need := _pack_need(dish)
-		if need <= 0: continue
-		var job := _candidate("carry_to_process", SHELF, pickup_id, dish, worker, _score("to_process"))
-		if job.is_empty(): continue
-		job.count = mini(job.count, need)
-		result.append(job)
-
-
-func _pack_need(dish: String) -> int:
-	var need := 0
-	for order in orders:
-		if order.takeaway and not order.reserved and order.dish == dish: need += 1
-	return need - _sealed_supply(dish)
-
-
-func _sealed_supply(dish: String) -> int:
-	var seal: Dictionary = stations[pickup_id]
-	var rack: Dictionary = stations[RACK]
-	var count: int = int(seal.input[dish]) + int(seal.output[dish]) - int(seal.reserved_out.get(dish, 0))
-	count += int(rack.output[dish]) - int(rack.reserved_out.get(dish, 0))
-	if seal.processing_item == dish: count += seal.processing
-	count += _riding_to_rack(dish)
-	for other in workers:
-		if other.job.is_empty() or _cup(other.job.item) != dish: continue
-		if other.job.kind in ["carry_to_process", "carry_to_rack"]: count += other.job.count
-	return count
-
-
-func _riding_to_rack(dish: String) -> int:
-	var count := 0
-	for shipment in belt_items:
-		if shipment.dst == RACK and shipment.item == dish: count += shipment.count
-	return count
-
-
-func _kitchen_supply() -> Dictionary:
-	var supply := {}
-	for dish in dish_ids:
-		supply[dish] = 0
-		if not dish in kitchen_dishes: continue
-		if not pickup_id.is_empty():
-			var seal: Dictionary = stations[pickup_id]
-			var rack: Dictionary = stations[RACK]
-			supply[dish] += maxi(0, _available(SHELF, dish)) + int(seal.input[dish]) + int(seal.output[dish]) - int(seal.reserved_out.get(dish, 0))
-			supply[dish] += int(rack.output[dish]) - int(rack.reserved_out.get(dish, 0))
-			if seal.processing_item == dish: supply[dish] += seal.processing
-			supply[dish] += _riding_to_rack(dish)
-		else:
-			supply[dish] += maxi(0, _available(SHELF, dish))
-	for worker in workers:
-		if not worker.ticket.is_empty(): supply[worker.ticket.dish] += worker.ticket.count
-		elif not worker.job.is_empty() and worker.job.kind == "carry_to_process" and worker.job.src == SHELF: supply[worker.job.item] += worker.job.count
-		elif not worker.job.is_empty() and worker.job.kind == "carry_to_rack": supply[worker.job.item] += worker.job.count
-	return supply
-
-
-func open_orders() -> Array:
-	var supply := _kitchen_supply()
-	var result: Array = []
-	for order in orders:
-		if order.reserved or not order.dish in kitchen_dishes: continue
-		if supply[order.dish] > 0: supply[order.dish] -= 1
-		else: result.append(order)
-	return result
-
-
 ## 一站上没人跟着的现成物品（被收回的单留下的）。
-func _loose(station_id: String, dish := "", output := false) -> int:
-	var station: Dictionary = stations[station_id]
-	var st := shop.station(station_id)
-	var count := 0
-	var waiting := 0
-	if st.block != "topping":
-		var input: String = station_input.get(station_id, "")
-		var out := _auto_output(station_id)
-		count = int(station.input.get(input, 0)) + int(station.output.get(out, 0)) - int(station.reserved_out.get(out, 0)) + station.processing
-		for worker in workers:
-			if worker.ticket.is_empty() or chains[worker.ticket.dish][worker.ticket.at] != station_id or worker.ticket.phase != "carry": continue
-			if worker.job.is_empty() or worker.job.src != station_id: waiting += worker.ticket.count
-	elif not output:
-		var input: String = station_input.get(station_id, "")
-		count = int(station.input.get(input, 0)) - int(station.reserved_out.get(input, 0))
-		for worker in workers:
-			if worker.ticket.is_empty() or chains[worker.ticket.dish][worker.ticket.at] != station_id or worker.ticket.phase != "work": continue
-			if worker.job.is_empty(): waiting += worker.ticket.count
-	else:
-		count = int(station.output.get(dish, 0)) - int(station.reserved_out.get(dish, 0))
-		for worker in workers:
-			if worker.ticket.is_empty() or worker.ticket.dish != dish or chains[worker.ticket.dish][worker.ticket.at] != station_id: continue
-			if worker.job.is_empty() or worker.job.kind == "work": waiting += worker.ticket.count
-	return count - waiting
-
-
 ## 从工序链上最靠后的现成物品那一步接着做（§3.6）。
-func _start_stage(dish: String, count: int) -> Dictionary:
-	var chain: Array = chains[dish]
-	if shop.dispatch.resume_from_stock:
-		for i in range(chain.size() - 1, 0, -1):
-			var id: String = chain[i]
-			if _manual(id):
-				if _loose(id, dish, true) >= count: return {"at": i, "phase": "carry"}
-				if _loose(id) >= count: return {"at": i, "phase": "work"}
-			elif _loose(id) >= count: return {"at": i, "phase": "carry"}
-	return {"at": 0, "phase": "carry"}
-
-
-func _exact(job: Dictionary, count: int) -> Dictionary:
-	return DispatchPolicy.exact_count(job, count)
-
-
-func _final_job(source: String, item: String, dish: String, count: int, worker: Dictionary) -> Dictionary:
-	if not pickup_id.is_empty() and station_unlocked(pickup_id) and _pack_need(dish) >= count:
-		var job := _exact(_candidate("carry_to_process", source, pickup_id, item, worker, _score("follow_step")), count)
-		if not job.is_empty(): return job
-	return _exact(_candidate("carry_to_shelf", source, SHELF, item, worker, _score("follow_step")), count)
-
-
-func _ticket_job(worker: Dictionary, ticket: Dictionary) -> Dictionary:
-	var dish: String = ticket.dish
-	var count: int = ticket.count
-	var chain: Array = chains[dish]
-	var at: String = chain[ticket.at]
-	var item: String = station_output.get(at + "|" + dish, "")
-	if ticket.phase == "carry":
-		if ticket.at >= chain.size() - 1: return _final_job(at, item, dish, count, worker)
-		return _exact(_candidate("transfer", at, chain[ticket.at + 1], item, worker, _score("follow_step")), count)
-	# 手工台：有人坐班就等他做好再搬走；没人就自己做
-	if post_owner(at) != -1: return _final_job(at, dish, dish, count, worker)
-	var input: String = station_input.get(at, "")
-	if stations[at].work_reserved or _available(at, input) < count: return {}
-	return {"kind": "work", "src": at, "dst": at, "item": input, "count": count, "priority": _score("follow_step"), "belt": "", "order_id": -1}
-
-
-func _new_ticket_job(worker: Dictionary, pot_jobs: Array) -> Dictionary:
-	var open := open_orders()
-	if open.is_empty(): return {}
-	var dish: String = open[0].dish
-	var count := 0
-	for order in open:
-		if order.dish != dish or count >= carry(worker): break
-		count += 1
-	var start := _start_stage(dish, count)
-	var ticket := {"dish": dish, "count": count, "at": start.at, "phase": start.phase, "wait": 0.0}
-	var job := _ticket_job(worker, ticket)
-	if job.is_empty() and start.at == 0 and start.phase == "carry":
-		job = DispatchPolicy.fallback_pot_choice(pot_jobs)
-	if job.is_empty(): return {}
-	job.priority = _score("follow") + DispatchPolicy.wait_bonus(shop.dispatch, open[0].wait)
-	job["ticket"] = ticket
-	return job
-
-
-func _drop_stuck_tickets() -> void:
-	for worker in workers:
-		if worker.ticket.is_empty() or not worker.job.is_empty() or (worker.ticket.at == 0 and worker.ticket.phase == "carry"): continue
-		worker.ticket.wait += STEP
-		if worker.ticket.wait >= shop.dispatch.ticket_give_up: worker.ticket = {}
-
-
 # ---------- 连接（传送带） ----------
 
 func _connection(id: String) -> SpecConnection:
@@ -1826,33 +1129,6 @@ func _belted(source: String, destination: String) -> bool:
 	return false
 
 
-func _update_belt_items() -> void:
-	for index in range(belt_items.size() - 1, -1, -1):
-		var shipment: Dictionary = belt_items[index]
-		shipment.progress = minf(1, shipment.progress + STEP / shipment.duration)
-		if shipment.progress >= 1:
-			_deliver(shipment.dst, shipment.item, shipment.count)
-			belt_items.remove_at(index)
-
-
-func _run_belts() -> void:
-	for id in belts:
-		belt_clock[id] = maxf(0.0, belt_clock[id] - STEP)
-		if belt_clock[id] > 0.0: continue
-		var c := _connection(id)
-		var courier := {"id": -1, "post": "", "courier": true, "job": {}, "ticket": {}}
-		_courier = true
-		var options: Array = []
-		_append_pack_jobs(courier, options)
-		_courier = false
-		var best := DispatchPolicy.route_choice(options, c.from, c.to)
-		if best.is_empty(): continue
-		_inventory.reserve(best, supply_id, counter_id)
-		_take(best)
-		belt_items.append({"route": id, "item": best.item, "count": best.count, "progress": 0.0, "duration": c.seconds, "dst": best.dst})
-		belt_clock[id] = c.interval
-
-
 # =====================================================================
 # 交接方式 single：一人从收钱跟到递餐（煎饼摊）
 # =====================================================================
@@ -1868,43 +1144,6 @@ var _next_customer_id: int:
 	set(value): _orders_state.next_customer_id = value
 
 
-func _tick_single() -> void:
-	if is_open(): _arrivals_single()
-	_customers_single()
-	for st in shop.stations:
-		if st.block != "batch_pot" or not station_unlocked(st.id): continue
-		var pot: Dictionary = stations[st.id]
-		MachineProgress.advance_single(pot, STEP)
-	for worker in workers: _staff_tick(worker)
-
-
-func _arrivals_single() -> void:
-	_next_customer -= STEP
-	if flyer_left > 0:
-		flyer_timer -= STEP
-		if flyer_timer <= 0.0:
-			flyer_left -= 1
-			flyer_timer = shop.flyer.gap
-			_spawn_single()
-	if _next_customer <= 0.0:
-		var interval := customer_interval()
-		_next_customer = Sampling.interval(shop.fulfillment.arrival, interval, rng)
-		_spawn_single()
-
-
-func _spawn_single() -> void:
-	if queue.size() >= queue_capacity():
-		_orders_state.reject_single()
-		events.emit("lost", {})
-		return
-	var kind := _pick_dish(order_weights())
-	var f := shop.fulfillment
-	var addon: bool = kind == f.addon_dish or (not f.addon_dish.is_empty() and rng.randf() < f.addon_chance)
-	_orders_state.admit_single(kind, addon, _roll_options())
-	if movement_enabled(): CustomerMovement.sync(self)
-	events.emit("arrived", {"dish": kind})
-
-
 ## 订单附加选项（§3.2）：机器开了的选项按比例抽；没有开着的选项就不动随机数（不改变别的店的节奏）
 func _roll_options() -> Array:
 	var out: Array = []
@@ -1912,14 +1151,6 @@ func _roll_options() -> Array:
 		if not station_unlocked(option.station): continue
 		if rng.randf() < option.share: out.append(option.id)
 	return out
-
-
-func _customers_single() -> void:
-	var patience := shop.fulfillment.leave_after * mods.value("patience", 1.0)
-	for c in customers.duplicate():
-		if _orders_state.advance_single_customer(c, STEP, patience):
-			events.emit("lost", {})
-		_orders_state.remove_leaving_single(c)
 
 
 func customer(id: int) -> Dictionary:
@@ -1930,169 +1161,7 @@ func _order_steps(c: Dictionary) -> Array:
 	return FulfillmentPlan.single_steps(shop, counter_id, c)
 
 
-func _staff_tick(s: Dictionary) -> void:
-	if shop.dispatch.action_version==1:
-		if s.has("action"):
-			Actions.tick(s,STEP,SingleContext.new(self))
-			if s.get("action",{}).get("reason","")=="material unavailable":
-				var pending: Dictionary = s.action
-				s.erase("action")
-				WorkerState.wait_single(s,"等待原料")
-				if not _try_pot_chore(s,true): s.action = pending
-		if not s.has("action"): _decide_single(s)
-		return
-	if s.walking:
-		if s.target == shop.staff.home_anchor and s.order < 0 and s.chore.is_empty() and _find_job_single(s): return
-		_walk_single(s)
-		return
-	if s.phase == "work":
-		if not WorkerState.tick_single_work(s, STEP): return
-		_finish_work_single(s)
-	_decide_single(s)
-
-
 ## 沿寻路路线走（格子寻路的店绕开桌子，直线走的店路线就是起点到终点）
-func _walk_single(s: Dictionary) -> void:
-	# 旧存档读进来时没有路线：现算一条
-	if s.path.is_empty() and not movement_enabled():
-		WorkerState.assign_path(s, nav.path(s.pos, nav.point(s.target)))
-	if not advance_move(s,STEP): return
-	_arrived_single(s)
-
-
-func _go(s: Dictionary, point: String, label: String) -> void:
-	s.target = point
-	s.task_label = label
-	if shop.dispatch.action_version==1:
-		Actions.start(s,SingleContext.plan(s,shop),SingleContext.new(self))
-		return
-	var goal := nav.point(point)
-	if s.pos.distance_to(goal) < 1.0 and not movement_enabled():
-		WorkerState.arrive(s)
-		_arrived_single(s)
-	else:
-		begin_move(s,goal,"walk")
-
-
-func _work_single(s: Dictionary, seconds: float) -> void:
-	WorkerState.begin_single_work(s, seconds)
-
-
-func _decide_single(s: Dictionary) -> void:
-	if s.phase == "work" or s.walking: return
-	if not s.chore.is_empty(): return
-	if s.order >= 0:
-		_go(s, s.steps[s.step].point, s.steps[s.step].label)
-		return
-	if _find_job_single(s): return
-	var home := shop.staff.home_anchor
-	if s.target != home and _crowded(s): _go(s, home, "待命")
-	WorkerState.standby_single(s)
-
-
-func _crowded(s: Dictionary) -> bool:
-	for o in workers:
-		if o.id != s.id and Vector2(o.pos).distance_to(s.pos) < 60.0: return true
-	return false
-
-
-func _find_job_single(s: Dictionary) -> bool:
-	if shop.dispatch.chores_first and _try_pot_chore(s, false): return true
-	if movement_enabled() and (queue.is_empty() or not CustomerMovement.ready(self,"customer:%d"%int(queue[0]))): return false
-	var c := _orders_state.claim_single()
-	if c.is_empty(): return false
-	WorkerState.claim_single_order(s, c.id, _order_steps(c))
-	_go(s, s.steps[0].point, s.steps[0].label)
-	return true
-
-
-func _try_pot_chore(s: Dictionary, blocked: bool) -> bool:
-	for id in pots:
-		if not station_unlocked(id): continue
-		var pot: Dictionary = stations[id]
-		if pot.user != -1: continue
-		var rule: SpecStockRule = shop.station(id).stock[0] if not shop.station(id).stock.is_empty() else null
-		if pot.phase == "done":
-			pot.user = s.id
-			s.chore = "unload:" + id
-			_go(s, id, String(shop.station(id).params.get("unload_label", "出锅")))
-			return true
-		if pot.phase == "idle" and rule != null and (pot.stock < rule.low or blocked) and pot.stock < rule.cap:
-			pot.user = s.id
-			s.chore = "load:" + id
-			_go(s, id, String(shop.station(id).params.get("load_label", "下锅")))
-			return true
-	return false
-
-
-func _arrived_single(s: Dictionary) -> void:
-	if not s.chore.is_empty():
-		var parts: PackedStringArray = s.chore.split(":")
-		var params: Dictionary = shop.station(parts[1]).params
-		_work_single(s, float(params.get("load_seconds" if parts[0] == "load" else "unload_seconds", 0.0)))
-		return
-	if s.order < 0:
-		WorkerState.standby_single(s)
-		return
-	var st: Dictionary = s.steps[s.step]
-	if movement_enabled() and st.action in ["take","hand"] and not CustomerMovement.ready(self,"customer:%d"%int(s.order)):
-		WorkerState.wait_single(s,"等待")
-		return
-	var station := shop.station(st.station)
-	if station.block == "hand" and int(station.params.get("users", 0)) > 0:
-		var busy: Dictionary = stations[st.station]
-		if busy.user != -1 and busy.user != s.id:
-			WorkerState.wait_single(s, "等" + station.display_name)
-			return
-		busy.user = s.id
-		_work_single(s, manual_operation_seconds(st.station, st.seconds, s, st.get("fixed", false)))
-	elif station.block == "batch_pot":
-		var pot: Dictionary = stations[st.station]
-		if pot.stock < 1:
-			WorkerState.wait_single(s, "等" + (_item_name(station.stock[0].item) if not station.stock.is_empty() else station.display_name))
-			_try_pot_chore(s, true)
-			return
-		pot.stock -= 1
-		_work_single(s, manual_operation_seconds(st.station, st.seconds, s, st.get("fixed", false)))
-	else:
-		_work_single(s, manual_operation_seconds(st.station, st.seconds, s, st.get("fixed", false)))
-	s.task_label = st.label
-
-
-func _finish_work_single(s: Dictionary) -> void:
-	WorkerState.finish_single_work(s)
-	if not s.chore.is_empty():
-		var parts: PackedStringArray = s.chore.split(":")
-		var pot: Dictionary = stations[parts[1]]
-		if parts[0] == "load":
-			Completion.complete_single_chore(s, pot, true, pot_seconds(parts[1]), 0, 0)
-		else:
-			Completion.complete_single_chore(s, pot, false, 0.0, pot_batch(parts[1]), shop.station(parts[1]).stock[0].cap)
-		return
-	var c := customer(s.order)
-	var st: Dictionary = s.steps[s.step]
-	match st.action:
-		"take":
-			# 接了单客人就离队去等（state 仍叫 paid）；钱在 pay_at 说的时候进账
-			_orders_state.dequeue_single(c.id)
-			_sales.accept_single(c, order_price_single(c), shop.fulfillment.pay_at == "on_take")
-			Completion.advance_single_step(s, {}, false)
-			if movement_enabled(): CustomerMovement.sync(self)
-		"hand":
-			if shop.dispatch.action_version==1:
-				var payload := _sales.complete_single(c,shop.fulfillment.addon_dish,shop.fulfillment.pay_at=="on_take")
-				WorkerState.finish_single_order(s)
-				CustomerMovement.single_sale(self,int(c.id),String(c.kind))
-				events.emit("sale",payload)
-				return
-			events.emit("sale", _sales.complete_single(c, shop.fulfillment.addon_dish, shop.fulfillment.pay_at == "on_take"))
-			WorkerState.finish_single_order(s)
-			return
-		_:
-			var station := shop.station(st.station)
-			Completion.advance_single_step(s, stations[st.station], station.block == "hand" and int(station.params.get("users", 0)) > 0)
-
-
 func _item_name(id: String) -> String:
 	for item in shop.items:
 		if item.id == id: return item.display_name
@@ -2192,13 +1261,7 @@ func send_flyers() -> String:
 
 ## 来一波客人（一次性效果 customer_wave）：按传单的入场方式进店。
 func customer_wave(count: int) -> void:
-	if _queued_arrivals():
-		flyer_left += count
-	else:
-		flyer_pending += count
-		if flyer_wave <= 0.0: flyer_wave = shop.flyer.wave_seconds
-	events.emit("wave", {"count": count})
-
+	if runtime!=null and count>0: runtime_error = runtime.enqueue_wave(count)
 
 ## 执行一条效果（奇遇、培养、永久加成、回访）：一次性效果当场生效，持续类放进加成栈。
 func apply_effect(source: String, source_id: String, effect: SpecEffect, seconds := -1.0) -> void:
@@ -2227,12 +1290,13 @@ const HINT_SMOOTH := 0.1 / 20.0
 
 
 func _track_bottleneck() -> void:
-	var standing := queue_size() - (seated_orders() if not _queued_arrivals() else 0)
-	full_seconds = full_seconds + STEP if is_open() and standing >= current_stage().queue_capacity else 0.0
+	var standing := queue_size() if runtime!=null else queue_size() - (seated_orders() if not _queued_arrivals() else 0)
+	full_seconds = full_seconds + STEP if is_open() and standing >= (queue_capacity() if runtime!=null else current_stage().queue_capacity) else 0.0
 	for id in pots:
 		var pot: Dictionary = stations[id]
 		var busy := 0.0
-		if _queued_arrivals(): busy = 1.0 if pot.phase == "cook" else 0.0
+		if runtime!=null: busy = 1.0 if machine_working(id) else 0.0
+		elif _queued_arrivals(): busy = 1.0 if pot.phase == "cook" else 0.0
 		elif int(pot.processing) > 0 and pot.phase != "awaiting_take": busy = 1.0
 		pot_busy[id] = lerpf(float(pot_busy.get(id, 0.0)), busy, HINT_SMOOTH)
 	var idle := {}
@@ -2290,11 +1354,14 @@ func _roll_event(ev: SpecEvent, data: Dictionary) -> void:
 
 ## 奇遇发生：没有选项就直接生效，有选项就排进卡片队列等玩家选。
 func trigger_event(ev: SpecEvent) -> void:
+	var bus := events
+	bus.begin_batch()
 	event_ready_at[ev.id] = clock + ev.cooldown
 	if ev.once and not ev.id in events_seen: events_seen.append(ev.id)
 	events.emit("event_started", {"id": ev.id, "speaker": ev.speaker})
 	if ev.choices.is_empty(): _apply_event(ev)
 	else: pending_events.append(ev)
+	bus.end_batch()
 
 
 ## 玩家在卡片上选了第 choice 个选项。选项 {"label", "cost", "accept": true/false}；accept 为 false = 拒绝。
@@ -2426,6 +1493,12 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 					params.required = seat_cost()
 		"send_flyers":
 			if not is_open(): code = CommandResult.SHOP_NOT_OPEN
+			elif runtime!=null:
+				var current: Dictionary = runtime.service.flyers.snapshot()
+				if current.wave_left>0.0:
+					code = CommandResult.FLYER_ACTIVE; params.seconds = ceili(current.wave_left)
+				elif current.cooldown>0.0:
+					code = CommandResult.FLYER_COOLDOWN; params.seconds = ceili(current.cooldown)
 			elif _queued_arrivals():
 				if flyer_ready_at - clock > 0.0:
 					code = CommandResult.FLYER_COOLDOWN
@@ -2527,6 +1600,8 @@ func _placement_status(id: int, post: String, point: Vector2) -> Dictionary:
 func execute_command(command: String, arguments: Dictionary = {}) -> Dictionary:
 	var status := command_status(command, arguments)
 	if not CommandResult.is_ok(status): return status
+	var bus := events
+	bus.begin_batch()
 	match command:
 		"set_paused": paused = status.params.value
 		"set_tuning": tune[arguments.key] = status.params.value
@@ -2558,6 +1633,7 @@ func execute_command(command: String, arguments: Dictionary = {}) -> Dictionary:
 			gold -= int(option.get("cost", 0))
 			if bool(option.get("accept", true)): _apply_event(event)
 			events.emit("event_answered", {"id": event.id, "choice": arguments.choice})
+	bus.end_batch()
 	return status
 
 
@@ -2573,28 +1649,18 @@ func _recipe_stage(id: String) -> int:
 
 func _commit_unlock(id: String) -> void:
 	var recipe := _recipe_stage(id)
-	var stage := recipe if recipe >= 0 else shop.stage_of(id)
-	var previously_unlocked := unlocked.duplicate() if _serving() else {}
+	var stage := recipe if recipe>=0 else shop.stage_of(id)
 	gold -= shop.stages[stage].cost
 	for key in shop.stages[stage].stations:
 		unlocked[key] = true
 		for st in shop.stations:
-			if st.companion_of == key: unlocked[st.id] = true
-		for rule in shop.station(key).stock:
-			stations[key].stock = rule.start
-	stage_index = maxi(stage_index, stage)
+			if st.companion_of==key: unlocked[st.id] = true
+	stage_index = maxi(stage_index,stage)
 	nav.set_open(unlocked)
-	if _serving():
-		for st in shop.stations:
-			if station_unlocked(st.id) and not previously_unlocked.get(st.id, false): ServeFlow.seed_stock(self, st.id)
-	if _queued_arrivals():
-		if id == shop.goals.opening_station and recipe < 0: _next_customer = shop.fulfillment.first_customer_delay
-	elif orders.is_empty():
-		for unused in shop.fulfillment.opening_customers: _add_order()
-	var message := {"station": id, "stage": stage}
-	if recipe >= 0: message.dish = shop.stages[stage].dish
-	events.emit("unlocked", message)
-
+	if runtime!=null: runtime_error = runtime.set_service_open(is_open())
+	var message := {"station":id,"stage":stage}
+	if recipe>=0: message.dish = shop.stages[stage].dish
+	events.emit("unlocked",message)
 
 func _commit_unlock_box(material: String) -> void:
 	gold -= shop.station(supply_id).material(material).box_cost
@@ -2617,17 +1683,7 @@ func _commit_buy_seat() -> void:
 
 
 func _commit_send_flyers() -> void:
-	if _queued_arrivals():
-		flyer_left += flyer_customers()
-		flyer_timer = 0.0
-		flyer_ready_at = clock + flyer_cooldown()
-	else:
-		flyer_wave = shop.flyer.wave_seconds
-		flyer_wait = flyer_cooldown()
-		flyer_pending += flyer_customers()
-		flyer_clock = 0.0
-	events.emit("flyer", {})
-
+	if runtime!=null: runtime_error = runtime.send_flyers()
 
 func _commit_hire() -> void:
 	gold -= hire_cost()

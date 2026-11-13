@@ -1,6 +1,8 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 const TOOL := "res://tools/shop_progression.gd"
-const SHOP: SpecShop = preload("res://content/shops/stirfry/shop.tres")
+const SHOP: SpecShop = preload("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres")
 var paths: Array[String] = []
 
 func cleanup() -> void:
@@ -15,7 +17,7 @@ func _tool() -> Script:
 func test_busy_kitchen_can_recruit_even_when_dedicated_front_is_idle() -> void:
 	var tool := _tool()
 	if tool==null: return
-	var rules := ShopRules.new(SHOP,11)
+	var rules := LegacyRules.new(SHOP,11)
 	rules.unlock("wok_a")
 	rules.gold = rules.hire_cost()
 	var before := rules.workers.size()
@@ -31,12 +33,12 @@ func test_progression_starts_empty_and_records_replayable_commands_without_editi
 	if tool==null: return
 	var contract := preload("res://game/rules/shop_content_contract.gd")
 	var before := contract.describe(SHOP)
-	var first: Dictionary = tool.sample(SHOP,60.0)
-	var second: Dictionary = tool.sample(SHOP,60.0)
+	var first: Dictionary = tool.sample(SHOP,60.0,-1,func(shop: SpecShop,seed_: int) -> ShopRules: return LegacyRules.new(shop,seed_))
+	var second: Dictionary = tool.sample(SHOP,60.0,-1,func(shop: SpecShop,seed_: int) -> ShopRules: return LegacyRules.new(shop,seed_))
 	check_eq(first,second,"identical seed and purchase policy reproduce the complete report")
 	check_eq(contract.describe(SHOP),before,"sampling never mutates authored shop data")
 	check_eq(first.actions[0],[1.0,"unlock wok_a"],"opening is a real first purchase from empty business")
-	var replay := ShopRules.new(SHOP,SHOP.random_seed)
+	var replay := LegacyRules.new(SHOP,SHOP.random_seed)
 	var index := 0
 	while replay.clock<60.0-0.0001:
 		replay.step(0.1)
@@ -50,7 +52,7 @@ func test_progression_starts_empty_and_records_replayable_commands_without_editi
 func test_unzoned_shop_can_recruit_into_its_shared_staff_slots() -> void:
 	var tool := _tool()
 	if tool==null: return
-	var rules := ShopRules.new(load("res://content/shops/pancake/shop.tres"))
+	var rules := LegacyRules.new(load("res://tests/fixtures/legacy_shops/current/pancake/shop.tres"))
 	rules.gold = 1000000.0
 	rules.unlock(rules.next_unlock())
 	rules.unlock(rules.next_unlock())
@@ -88,7 +90,7 @@ func test_completion_gate_cannot_hide_a_slow_or_missing_secondary_seed() -> void
 
 func test_numeric_calibration_preserves_inflight_business_and_original_file_bytes() -> void:
 	for id in ["tea","pancake","stirfry"]:
-		var current: SpecShop = load("res://content/shops/%s/shop.tres"%id)
+		var current: SpecShop = load("res://tests/fixtures/legacy_shops/current/%s/shop.tres"%id)
 		var old_path := "res://tests/fixtures/stirfry_modularity/legacy_shop.tres" if id=="stirfry" else "res://tests/fixtures/legacy_shops/%s.tres"%id
 		var legacy: SpecShop = load(old_path).duplicate(true)
 		# Same modern protocols/geometry/employee baseline, pre-calibration numbers.
@@ -103,7 +105,7 @@ func test_numeric_calibration_preserves_inflight_business_and_original_file_byte
 			if legacy.dish(dish.id)==null: before.dishes.append(dish.duplicate(true))
 		before.stages = legacy.stages
 		before.staff.hire_costs = legacy.staff.hire_costs
-		var rules := ShopRules.new(before,42)
+		var rules := LegacyRules.new(before,42)
 		rules.gold = 1000000.0
 		for unused in before.stages.size()+1:
 			var next := rules.next_unlock()
@@ -121,9 +123,9 @@ func test_numeric_calibration_preserves_inflight_business_and_original_file_byte
 		var saved := rules.to_dict()
 		var path := "user://calibration-%s-%d.json"%[id,Time.get_ticks_usec()]
 		paths.append(path)
-		check_eq(ShopSave.new(before,path).save_game(rules),OK,"pre-calibration modern business saves: "+id)
+		check_eq(LegacySave.new(before,path).save_game(rules),OK,"pre-calibration modern business saves: "+id)
 		var bytes := FileAccess.get_file_as_bytes(path)
-		var store := ShopSave.new(current,path)
+		var store := LegacySave.new(current,path)
 		var resumed := store.load_game()
 		check_eq(store.load_error,OK,"numeric calibration retains valid progress: "+id)
 		check_eq(FileAccess.get_file_as_bytes(path),bytes,"opening remains read-only: "+id)
@@ -139,4 +141,4 @@ func test_numeric_calibration_preserves_inflight_business_and_original_file_byte
 		if not backups.is_empty(): check_eq(FileAccess.get_file_as_bytes(backups[0]),bytes,"original business retained byte for byte: "+id)
 		resumed.run(120.0)
 		check(resumed.sold>rules.sold,"updated business continues actual sales: "+id)
-		check_eq(ShopRules.new(current).load_dict(resumed.to_dict()),"","continued state independently reloads: "+id)
+		check_eq(LegacyRules.new(current).load_dict(resumed.to_dict()),"","continued state independently reloads: "+id)

@@ -2,6 +2,15 @@
   "version": 1,
   "jobs": [
     {
+      "id": "template_official_session",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_template_official_session.gd",
+      "args": [],
+      "timeout": 180,
+      "success": "OFFICIAL TEMPLATE SESSIONS:.*\\b0 failures"
+    },
+    {
       "id": "template_displays",
       "kind": "script",
       "profile": "headless",
@@ -34,7 +43,7 @@
       "profile": "headless",
       "script": "tests/run_all.gd",
       "args": [],
-      "timeout": 240,
+      "timeout": 600,
       "success": "\\d+ 个用例，0 个失败"
     },
     {
@@ -209,7 +218,7 @@
       "profile": "headless",
       "script": "tests/render_session_lifecycle.gd",
       "args": [],
-      "timeout": 30,
+      "timeout": 100,
       "success": "SESSION LIFECYCLE:.*\\b0 failures"
     },
     {

@@ -1,4 +1,6 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 
 const WorkerState := preload("res://game/rules/worker_state.gd")
 const MODULE := "res://game/rules/rule_movement.gd"
@@ -224,7 +226,7 @@ func test_motion_roundtrip_legacy_rebuild_and_detached_view() -> void:
 		var data := rules.to_dict()
 		check(data.has("movement"),"authoritative movement must be saved: "+mode)
 		if not data.has("movement"): return
-		var clone := ShopRules.new(rules.shop)
+		var clone := LegacyRules.new(rules.shop)
 		check_eq(clone.load_dict(data),"","active movement loads")
 		check_eq(clone.to_dict(),data,"roundtrip does not normalize active positions")
 		for tick in 30:
@@ -239,7 +241,7 @@ func test_motion_roundtrip_legacy_rebuild_and_detached_view() -> void:
 		var old := data.duplicate(true)
 		old.erase("movement")
 		for worker: Dictionary in old.roster: worker.erase("motion")
-		var migrated := ShopRules.new(rules.shop)
+		var migrated := LegacyRules.new(rules.shop)
 		check_eq(migrated.load_dict(old),"","old state without positions can continue")
 		check_eq(migrated.gold,data.gold,"migration retains money")
 		check_eq(migrated.sold,data.sold,"migration retains sales")
@@ -247,7 +249,7 @@ func test_motion_roundtrip_legacy_rebuild_and_detached_view() -> void:
 		check(not migrated.movement.customers.is_empty(),"legacy migration builds movement records")
 		var bad := data.duplicate(true)
 		bad.movement.version = 2
-		check(not ShopRules.new(rules.shop).load_dict(bad).is_empty(),"future movement versions are rejected")
+		check(not LegacyRules.new(rules.shop).load_dict(bad).is_empty(),"future movement versions are rejected")
 
 func test_invalid_new_spatial_contract_is_rejected_before_runtime() -> void:
 	var validator := preload("res://game/rules/shop_spec_validator.gd")
@@ -292,7 +294,7 @@ func test_movement_file_migration_backs_up_old_state_and_protects_future_state()
 	var path := "user://movement-%d-%d.json"%[OS.get_process_id(),Time.get_ticks_usec()]
 	save_paths.append(path)
 	var original := _write_state(path,old,rules.shop)
-	var store := ShopSave.new(rules.shop,path)
+	var store := LegacySave.new(rules.shop,path)
 	var migrated := store.load_game()
 	check_eq(store.load_error,OK,"legacy movement file loads")
 	check_eq(migrated.gold,rules.gold,"file migration keeps progress")
@@ -300,12 +302,12 @@ func test_movement_file_migration_backs_up_old_state_and_protects_future_state()
 	var backups := Array(DirAccess.get_files_at("user://")).filter(func(file: String) -> bool: return file.begins_with(path.get_file()+".pre-content-"))
 	check_eq(backups.size(),1,"old file has one durable backup")
 	if backups.size()==1: check_eq(FileAccess.get_file_as_string("user://"+backups[0]),original,"backup preserves original bytes")
-	var reloaded := ShopSave.new(rules.shop,path).load_game()
+	var reloaded := LegacySave.new(rules.shop,path).load_game()
 	check_eq(reloaded.to_dict(),migrated.to_dict(),"new format file retains authoritative positions")
 	var future := migrated.to_dict()
 	future.movement.version = 2
 	var future_text := _write_state(path,future,rules.shop)
-	var reader := ShopSave.new(rules.shop,path)
+	var reader := LegacySave.new(rules.shop,path)
 	reader.load_game()
 	check_eq(reader.load_error,ERR_UNAVAILABLE,"future movement file requires a compatible program")
 	check_eq(reader.save_game(rules),ERR_UNAVAILABLE,"future movement file cannot be overwritten")
@@ -333,7 +335,7 @@ func test_malformed_motion_rejects_atomically_and_blocked_state_resumes() -> voi
 	rules.nav.set_open(rules.unlocked)
 	rules.run(2.0)
 	var blocked := rules.to_dict()
-	var clone := ShopRules.new(rules.shop)
+	var clone := LegacyRules.new(rules.shop)
 	check_eq(clone.load_dict(blocked),"","blocked pending route can save and load")
 	check_eq(clone.to_dict(),blocked,"blocked path roundtrip is exact")
 	rules.shop.layout.obstacles.clear()
@@ -352,7 +354,7 @@ func test_motion_is_valid_at_synchronous_business_events() -> void:
 			if event.name not in ["order_taken","picked_up","seated","eat_start","sale","lost","left"] or captured.has(event.name): return
 			captured[event.name] = true
 			var state := rules.to_dict()
-			var restored := ShopRules.new(rules.shop)
+			var restored := LegacyRules.new(rules.shop)
 			check_eq(restored.load_dict(state),"","event snapshot independently validates: "+event.name+" "+mode)
 			check_eq(restored.to_dict(),state,"event snapshot preserves position and job")
 		rules.events.on("*",callback)
@@ -371,7 +373,7 @@ func test_recalling_walking_serve_employee_cancels_pending_motion_and_keeps_save
 			check_eq(worker.pos,position,"cancellation does not teleport employee")
 			check(Serve.job_of(rules,worker).is_empty(),"assignment reservation is released")
 			check(not worker.has("motion"),"cancellation removes pending route request")
-			check_eq(ShopRules.new(rules.shop).load_dict(rules.to_dict()),"","cancelled movement can immediately save")
+			check_eq(LegacyRules.new(rules.shop).load_dict(rules.to_dict()),"","cancelled movement can immediately save")
 			return
 	check(false,"real walking assignment found for cancellation")
 

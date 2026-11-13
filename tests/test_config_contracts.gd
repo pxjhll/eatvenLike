@@ -1,9 +1,11 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 
 const Profile := preload("res://game/app/profile.gd")
 const Session := preload("res://game/app/shop_session.gd")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/current/pancake/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
 const VALIDATOR := "res://game/rules/shop_spec_validator.gd"
 var paths: Array[String] = []
 
@@ -35,7 +37,7 @@ func test_invalid_configuration_never_reads_quarantines_or_overwrites_shop() -> 
 		profile.save()
 		var bad: SpecShop = PANCAKE.copy_for_editing()
 		bad.dispatch.shortage_per = 23.0
-		var store := ShopSave.new(bad, _path("shop"))
+		var store := LegacySave.new(bad, _path("shop"))
 		var file := FileAccess.open(store.path, FileAccess.WRITE)
 		file.store_string("uninterpretable existing shop bytes")
 		file.close()
@@ -99,7 +101,7 @@ func test_single_fixed_and_exponential_arrivals_are_real_and_resume_exactly() ->
 		shop.fulfillment.leave_after = 0.0
 		shop.stages[0].queue_capacity = 1000
 		shop.stages[0].customer_interval = 2.0
-		var rules := ShopRules.new(shop)
+		var rules := LegacyRules.new(shop)
 		rules.unlock(shop.goals.opening_station)
 		rules.run(30.0)
 		var times := _arrival_times(rules)
@@ -109,7 +111,7 @@ func test_single_fixed_and_exponential_arrivals_are_real_and_resume_exactly() ->
 		if policy == "fixed": check(gaps.all(func(g): return absf(g - 2.0) < 0.11), "fixed arrivals use configured interval: " + str(gaps))
 		else: check(gaps.any(func(g): return absf(g - gaps[0]) > 0.11), "exponential arrivals vary")
 		histories.append(times)
-		var store := ShopSave.new(shop, _path(policy))
+		var store := LegacySave.new(shop, _path(policy))
 		check_eq(store.save_game(rules), OK, "save midgame")
 		var resumed := store.load_game()
 		rules.run(30.0)
@@ -137,7 +139,7 @@ func test_fixed_arrival_does_not_consume_an_interval_random_draw() -> void:
 		shop.fulfillment.addon_chance = 0.0
 		shop.fulfillment.first_customer_delay = 0.0
 		shop.order_options.clear()
-		var rules := ShopRules.new(shop)
+		var rules := LegacyRules.new(shop)
 		rules.unlock(shop.goals.opening_station)
 		var expected := RandomNumberGenerator.new()
 		expected.seed = rules.rng.seed
@@ -215,7 +217,7 @@ func test_unsafe_recipe_and_presentation_nested_shapes_fail_before_session_io() 
 		var profile := Profile.new(_path("bad-profile"))
 		profile.fresh_shop = true
 		profile.save()
-		var store := ShopSave.new(shop, _path("bad-shop"))
+		var store := LegacySave.new(shop, _path("bad-shop"))
 		var file := FileAccess.open(store.path, FileAccess.WRITE)
 		file.store_string("original invalid save")
 		file.close()
@@ -266,7 +268,7 @@ func _reject_before_io(shop: SpecShop) -> void:
 		if profile.shop != shop.id: check_eq(profile.select_shop(shop.id), OK, "select configured shop before probing startup")
 		profile.fresh_shop = fresh
 		profile.save()
-		var store := ShopSave.new(shop, _path("review-shop"))
+		var store := LegacySave.new(shop, _path("review-shop"))
 		var file := FileAccess.open(store.path, FileAccess.WRITE)
 		file.store_string("original shop bytes must not be interpreted")
 		file.close()
@@ -305,7 +307,7 @@ func test_flavor_group_cannot_assume_listed_stations_mean_an_available_dish() ->
 	bad.stages[0].flavor_fallback = bad.stages[0].dish
 	var v := _validator()
 	check_eq(v.validate(bad), [], "explicit fallback repairs opening menu")
-	var rules := ShopRules.new(bad)
+	var rules := LegacyRules.new(bad)
 	rules.unlock(bad.goals.opening_station)
 	check(not rules.order_weights().is_empty(), "repaired opening menu evaluates without nil access")
 
@@ -327,7 +329,7 @@ func test_effect_attachment_and_scope_match_real_consumers() -> void:
 	event.effects.append(SpecEffect.make("grant_gold", "add", 777.0))
 	var v := _validator()
 	check_eq(v.validate(good), [], "event global/dish price and gold effects supported")
-	var rules := ShopRules.new(good)
+	var rules := LegacyRules.new(good)
 	var before_price := rules.raw_price(good.dishes[0].id)
 	var other_price := rules.raw_price(good.dishes[1].id)
 	var gold := rules.gold
@@ -347,14 +349,14 @@ func test_staff_effect_selectors_use_canonical_runtime_worker_ids() -> void:
 		var good: SpecShop = PANCAKE.copy_for_editing()
 		var event := _event_effect(good, SpecEffect.make("walk", "mul", 3.0, target))
 		check_eq(v.validate(good), [], "supported staff selector " + target)
-		var rules := ShopRules.new(good)
+		var rules := LegacyRules.new(good)
 		var before := rules.walk_speed(rules.workers[0])
 		rules.trigger_event(event)
 		check(is_equal_approx(rules.walk_speed(rules.workers[0]), before * 3.0), "supported selector changes real walk speed after native density conversion")
 	var tea: SpecShop = TEA.copy_for_editing()
 	var event := _event_effect(tea, SpecEffect.make("work", "mul", 2.0, "front"))
 	check_eq(v.validate(tea), [], "zone selector supported")
-	var rules := ShopRules.new(tea)
+	var rules := LegacyRules.new(tea)
 	var before := rules.skill(rules.workers[0])
 	rules.trigger_event(event)
 	check_eq(rules.skill(rules.workers[0]), before * 2.0, "zone effect changes actual worker skill")
@@ -396,7 +398,7 @@ func test_valid_event_choice_and_implicit_staff_track_target_are_effective() -> 
 	event.effects.append(SpecEffect.make("walk", "mul", 2.0, "staff:1"))
 	check_eq(v.validate(good), [], "choice event with one-shot and ongoing effect is valid")
 	var profile := Profile.new(_path("valid-choice-profile"))
-	var session := Session.new(profile, ShopSave.new(good, _path("valid-choice-shop")))
+	var session := Session.new(profile, LegacySave.new(good, _path("valid-choice-shop")))
 	check_eq(session.start(), OK, "configured choice event passes actual Session startup")
 	var rules: ShopRules = session.rules
 	if rules == null: return
@@ -416,8 +418,8 @@ func test_valid_event_choice_and_implicit_staff_track_target_are_effective() -> 
 	if track == null: return
 	track.base_effects.append(SpecEffect.make("work", "mul", 2.0))
 	check_eq(v.validate(tea), [], "staff track inherits its actual zone target")
-	var baseline := ShopRules.new(TEA)
-	var modified := ShopRules.new(tea)
+	var baseline := LegacyRules.new(TEA)
+	var modified := LegacyRules.new(tea)
 	check_eq(modified.skill(modified.workers[0]), baseline.skill(baseline.workers[0]) * 2.0, "implicit staff track zone changes actual skill")
 
 func test_later_flavor_group_does_not_assume_a_preopened_stage_was_purchased() -> void:
@@ -469,7 +471,7 @@ func test_unzoned_front_base_capacity_controls_actual_counter_placement() -> voi
 		shop.staff.front_base_slots = capacity
 		shop.stages[0].staff_slots[""] = 2
 		var profile := Profile.new(_path("counter-capacity-profile"))
-		var session := Session.new(profile, ShopSave.new(shop, _path("counter-capacity-shop")))
+		var session := Session.new(profile, LegacySave.new(shop, _path("counter-capacity-shop")))
 		check_eq(session.start(), OK, "effective unzoned counter capacity passes Session schema gate")
 		var rules: ShopRules = session.rules
 		if rules == null: continue
@@ -488,7 +490,7 @@ func test_supported_staff_capacity_sources_change_real_session_limits() -> void:
 	var single: SpecShop = PANCAKE.copy_for_editing()
 	single.stages[0].staff_slots[""] = 6
 	var profile := Profile.new(_path("unified-capacity-profile"))
-	var session := Session.new(profile, ShopSave.new(single, _path("unified-capacity-shop")))
+	var session := Session.new(profile, LegacySave.new(single, _path("unified-capacity-shop")))
 	check_eq(session.start(), OK, "unified capacity config starts")
 	if session.rules == null: return
 	check_eq(session.rules.unlock(single.goals.opening_station), "", "open actual unified shop")
@@ -499,7 +501,7 @@ func test_supported_staff_capacity_sources_change_real_session_limits() -> void:
 	var event := _event_effect(zoned, SpecEffect.make("staff_slot", "add", 2, "front"))
 	profile = Profile.new(_path("zoned-capacity-profile"))
 	check_eq(profile.select_shop(zoned.id), OK, "select real zoned shop")
-	session = Session.new(profile, ShopSave.new(zoned, _path("zoned-capacity-shop")))
+	session = Session.new(profile, LegacySave.new(zoned, _path("zoned-capacity-shop")))
 	check_eq(session.start(), OK, "supported zoned capacity config starts")
 	if session.rules == null: return
 	check_eq(session.rules.kitchen_slots(), 4, "kitchen stage capacity changes actual limit")

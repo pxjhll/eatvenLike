@@ -1,4 +1,5 @@
 extends RefCounted
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const Production := preload("res://tests/fixtures/template_shop.gd")
 const Actors := preload("res://tests/fixtures/movement_shop.gd")
 const Runtime := preload("res://game/rules/template/runtime.gd")
@@ -26,7 +27,7 @@ static func owner() -> ShopRules:
 	shop.staff.starting.assign(["gray_cat", "gray_cat"])
 	shop.staff.starting_posts.assign(["", ""])
 	shop.layout.customer_points["seat:dine/0"] = Vector2(500,700)
-	var rules := ShopRules.new(shop,42)
+	var rules := TemplateOuter.owner(shop,42)
 	for worker in rules.workers: worker.pos = Vector2(100,100)
 	return rules
 

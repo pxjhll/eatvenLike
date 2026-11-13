@@ -1,11 +1,12 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/current/pancake/shop.tres")
 const NOODLE: SpecShop = preload("res://tests/fixtures/noodle/shop.tres")
 
 func ready_rules(definition: SpecShop) -> ShopRules:
-	var rules := ShopRules.new(definition, 9)
+	var rules := LegacyRules.new(definition, 9)
 	rules.gold = 1e8
 	rules.stage_index = definition.stages.size() - 1
 	for station in definition.stations: rules.unlocked[station.id] = true

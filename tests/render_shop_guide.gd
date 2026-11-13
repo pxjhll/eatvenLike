@@ -1,11 +1,13 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 
 const TestSession := preload("res://tests/shop_test_session.gd")
 ## 通用店铺场景里的奶茶店引导（数据驱动，§6.3），用真实点按走一遍：欢迎卡、柠檬水、第一杯、开店上手卡、
 ## 后面的开线、原料箱、后厨招人、客人等急、加料线以后的多招人；重开游戏记得看过哪些。
 ## 和旧场景的 render_guide.gd 一一对应（旧场景删掉时这个留下）。
 
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
 var view: Node2D
 var hud: Control
 var guide: Control
@@ -29,7 +31,7 @@ func _run() -> void:
 	root.size = Vector2i(720, 1280)
 	if FileAccess.file_exists(save_path): DirAccess.remove_absolute(save_path)
 	view = load("res://presentation/shop/shop_play.tscn").instantiate()
-	view.session = TestSession.make(TEA, save_path, ShopRules.new(TEA), ShopSave.new(TEA, save_path))
+	view.session = TestSession.make(TEA, save_path, LegacyRules.new(TEA), LegacySave.new(TEA, save_path))
 	root.add_child(view)
 	await process_frame
 	view.set_process(false)
@@ -66,7 +68,7 @@ func _run() -> void:
 	await _capture("done")
 	await _touch(hud.popups.get_global_transform_with_canvas() * Vector2(360, 1100))
 	_check(guide.active.is_empty() and guide.seen.has("opening") and not guide.freezes(), "点哪里都能关掉上手卡（只有触屏事件也行）")
-	var resumed := ShopSave.new(TEA, save_path)
+	var resumed := LegacySave.new(TEA, save_path)
 	resumed.load_game()
 	_check("opening" in resumed.loaded_guides, "看过的引导和店一起存")
 	_rules().gold = maxf(_rules().gold, 200)
@@ -139,18 +141,18 @@ func _run() -> void:
 	await _click(hud.tab("shop"))
 	view.free()
 	var reopened: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	reopened.session = TestSession.make(TEA, save_path, null, ShopSave.new(TEA, save_path))
+	reopened.session = TestSession.make(TEA, save_path, null, LegacySave.new(TEA, save_path))
 	reopened.session.guide_enabled = true
 	await _reopen(reopened)
 	_check(reopened.guide.active.is_empty() and reopened.guide.seen.has("lost_machine"), "重开游戏记得看过的引导")
 	reopened.free()
-	var old_save := ShopRules.new(TEA)
+	var old_save := LegacyRules.new(TEA)
 	old_save.unlock("lemonade")
 	old_save.hire()
 	old_save.deploy_worker(old_save.roster[1].id)
-	ShopSave.new(TEA, save_path).save_game(old_save, 1.0, [])
+	LegacySave.new(TEA, save_path).save_game(old_save, 1.0, [])
 	var veteran: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	veteran.session = TestSession.make(TEA, save_path, null, ShopSave.new(TEA, save_path))
+	veteran.session = TestSession.make(TEA, save_path, null, LegacySave.new(TEA, save_path))
 	veteran.session.guide_enabled = true
 	await _reopen(veteran)
 	_check(veteran.guide.active.is_empty() and veteran.guide.seen.has("opening"), "已经开过张的存档跳过开场")

@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
 const SHOPS := [preload("res://tests/fixtures/legacy_shops/tea.tres"), preload("res://tests/fixtures/legacy_shops/pancake.tres"), preload("res://tests/fixtures/noodle/shop.tres")]
@@ -173,7 +174,7 @@ func test_all_three_shops_planning_leaves_live_state_rng_events_and_inputs_uncha
 	if planner == null: return
 	for source in SHOPS:
 		var shop: SpecShop = source.duplicate(true)
-		var rules := ShopRules.new(shop, 42)
+		var rules := LegacyRules.new(shop, 42)
 		rules.gold = 1e8
 		if not rules.next_unlock().is_empty(): rules.unlock(rules.next_unlock())
 		rules.run(10.0)

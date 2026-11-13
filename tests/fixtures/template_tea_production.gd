@@ -1,4 +1,5 @@
 extends RefCounted
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 ## Explicit installed-material production fixture, not a formal shop entry or
 ## automatic legacy conversion. Purchasing and service are intentionally absent.
 const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
@@ -6,7 +7,7 @@ const Schema := preload("res://content/rules/spec_shop_template.gd")
 
 static func owner() -> ShopRules:
 	var shop: SpecShop = TEA.copy_for_editing()
-	var rules := ShopRules.new(shop,42)
+	var rules := TemplateOuter.owner(shop,42)
 	for station in shop.stations: rules.unlocked[station.id] = true
 	rules.nav.set_open(rules.unlocked)
 	return rules

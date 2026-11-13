@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const Fixture := preload("res://tests/fixtures/template_shop.gd")
 const Actors := preload("res://tests/fixtures/movement_shop.gd")
 const PATH := "res://game/rules/template/runtime.gd"
@@ -9,7 +10,7 @@ func _runtime(template: Resource) -> RefCounted:
 	var shop := Actors.definition("handoff")
 	shop.staff.starting.assign(["gray_cat", "gray_cat"])
 	shop.staff.starting_posts.assign(["", ""])
-	var rules := ShopRules.new(shop, 42)
+	var rules := TemplateOuter.owner(shop, 42)
 	for worker in rules.workers: worker.pos = Vector2(100,100)
 	return load(PATH).new(rules, template)
 

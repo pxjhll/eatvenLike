@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const PATH := "res://content/shops/stirfry/shared_production.tres"
 const SHOP: SpecShop = preload("res://content/shops/stirfry/shop.tres")
 const Runtime := preload("res://game/rules/template/runtime.gd")
@@ -8,7 +9,7 @@ func _template() -> Resource:
 	return load(PATH).duplicate_deep(Resource.DEEP_DUPLICATE_ALL) if ResourceLoader.exists(PATH) else null
 
 func _owner() -> ShopRules:
-	var owner := ShopRules.new(SHOP.copy_for_editing(),42)
+	var owner := TemplateOuter.owner(SHOP.copy_for_editing(),42)
 	owner.gold = 1000000.0
 	for index in SHOP.stages.size(): check_eq(owner.unlock(SHOP.sold_at(index)),"","prepare actual shop stage via public unlock")
 	return owner

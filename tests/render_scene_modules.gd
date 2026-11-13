@@ -1,4 +1,5 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Full generic scene and real sessions over the independent module assembly.
 const Fixture := preload("res://tests/fixtures/module_shop.gd")
 const TestSession := preload("res://tests/shop_test_session.gd")
@@ -104,7 +105,7 @@ func _run() -> void:
 	_check(seated and held_two and routed and scene.rules.sold>=2,"full module scene routes, seats and serves real bundles")
 	_check(scene.save_now(false)==OK,"module shop saves through actual store")
 	var saved: Dictionary = scene.rules.to_dict()
-	var oracle := ShopRules.new(spec,42)
+	var oracle := LegacyRules.new(spec,42)
 	_check(oracle.load_dict(saved).is_empty(),"module save independently validates")
 	scene.free()
 	_open()

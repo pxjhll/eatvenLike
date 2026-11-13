@@ -52,3 +52,7 @@ func test_rhythm_cli_rejects_invalid_parameters_before_overwriting_any_report() 
 		check_eq(OS.execute(OS.get_executable_path(),command,output,true),1,"invalid CLI request fails")
 		check_eq(FileAccess.get_file_as_string(path),"sentinel","invalid request cannot write")
 	DirAccess.remove_absolute(path)
+func test_public_diagnostics_count_completed_orders_from_the_actual_shared_service() -> void:
+	var report: Dictionary = _tool().sample(SHOP,60.0,42)
+	check(report.sale_events>0,"actual public sales occurred")
+	check_eq(report.orders_done,report.sale_events,"diagnostic counts actual delivered public orders")

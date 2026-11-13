@@ -1,11 +1,12 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Real scene factories, with the same rabbit rendered in every shop.
 
 const Session := preload("res://tests/shop_test_session.gd")
 const Presentation := preload("res://content/characters/actor_presentation.tres")
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
-const STIRFRY: SpecShop = preload("res://content/shops/stirfry/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/current/pancake/shop.tres")
+const STIRFRY: SpecShop = preload("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres")
 var errors := preload("res://tests/error_counter.gd").new()
 var failures := 0
 var checks := 0
@@ -25,7 +26,7 @@ func _run() -> void:
 		var baseline := {}
 		for spec: SpecShop in [TEA,PANCAKE,STIRFRY]:
 			var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-			scene.session = Session.make(spec,"actor-scale-%s-%d"%[spec.id,OS.get_process_id()],ShopRules.new(spec))
+			scene.session = Session.make(spec,"actor-scale-%s-%d"%[spec.id,OS.get_process_id()],LegacyRules.new(spec))
 			for path: String in [scene.session.profile.path,scene.session.store.path,scene.session.tuning_path,scene.session.recording_path]:
 				if not path in paths: paths.append(path)
 			scene.set_process(false)

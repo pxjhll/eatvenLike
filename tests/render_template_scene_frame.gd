@@ -1,4 +1,5 @@
 extends SceneTree
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 ## Real shop scenes consume the public presentation protocol. Simulation stays
 ## explicitly owned by this test until the formal controller migrates in U06.
 const TestSession := preload("res://tests/shop_test_session.gd")
@@ -29,7 +30,7 @@ func _run() -> void:
 
 func _shop(id: String) -> void:
 	var shop: SpecShop = load("res://content/shops/"+id+"/shop.tres").copy_for_editing()
-	var owner := ShopRules.new(shop,42)
+	var owner := TemplateOuter.owner(shop,42)
 	owner.gold = 1000000.0
 	if id=="tea":
 		for machine in ["lemonade","boil","seal","mix","press","topping"]: _check(owner.unlock(machine).is_empty(),"prepare tea purchase")
@@ -40,7 +41,7 @@ func _shop(id: String) -> void:
 	else:
 		for stage in shop.stages.size(): _check(owner.unlock(shop.sold_at(stage)).is_empty(),"prepare actual stage "+id)
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	scene.session = TestSession.make(shop,"user://scene-frame-%s-%d"%[id,Time.get_ticks_usec()],owner)
+	scene.session = TestSession.make(owner.shop,"user://scene-frame-%s-%d"%[id,Time.get_ticks_usec()],owner)
 	for path in [scene.session.profile.path,scene.session.store.path,scene.session.tuning_path,scene.session.recording_path]: paths.append(path)
 	root.add_child(scene)
 	scene.set_process(false)

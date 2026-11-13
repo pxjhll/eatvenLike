@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 const Fixture := preload("res://tests/fixtures/movement_shop.gd")
 const Flow := preload("res://game/rules/serve_flow.gd")
 const Schema := preload("res://game/rules/shop_spec_validator.gd")
@@ -16,7 +17,7 @@ func _definition() -> SpecShop:
 	return shop
 
 func _opened(shop: SpecShop) -> ShopRules:
-	var rules := ShopRules.new(shop,42)
+	var rules := LegacyRules.new(shop,42)
 	rules.unlock("wok_a")
 	return rules
 
@@ -73,7 +74,7 @@ func test_idle_front_assists_real_kitchen_transport_without_cooking_or_stealing_
 	check_eq(violations,{},"helping never gives the front employee kitchen cooking work")
 	check(native_priority,"real queued guests exercise native priority")
 	check(rules.sold>=3,"cooperative production completes repeated real sales")
-	check_eq(ShopRules.new(shop).load_dict(rules.to_dict()),"","shared reservations remain valid")
+	check_eq(LegacyRules.new(shop).load_dict(rules.to_dict()),"","shared reservations remain valid")
 
 func test_helping_carry_restores_exactly_and_recall_returns_the_reserved_object() -> void:
 	var shop := _definition()
@@ -85,14 +86,14 @@ func test_helping_carry_restores_exactly_and_recall_returns_the_reserved_object(
 			var job := Flow.job_of(rules,worker)
 			if Flow.role(rules,worker)!="front" or job.get("kind","") not in ["carry","pass"] or worker.carry_count!=1: continue
 			var snapshot := rules.to_dict()
-			var clone := ShopRules.new(shop)
+			var clone := LegacyRules.new(shop)
 			check_eq(clone.load_dict(snapshot),"","partially carried helper object restores")
 			for step in 40:
 				rules.step(0.1)
 				clone.step(0.1)
 			check_eq(clone.to_dict(),rules.to_dict(),"helper has exact independent continuation")
 			# Restore the captured partial carry before exercising compensation.
-			var recalled := ShopRules.new(shop)
+			var recalled := LegacyRules.new(shop)
 			check_eq(recalled.load_dict(snapshot),"","partial carry can be recalled independently")
 			var id := int(job.good)
 			var from := String(job.from)
@@ -102,7 +103,7 @@ func test_helping_carry_restores_exactly_and_recall_returns_the_reserved_object(
 			check_eq(good.at,from,"same object returns to its actual source")
 			check_eq(good.res,-1,"helper reservation is released")
 			check_eq(recalled.revenue,revenue,"recall cannot produce extra income")
-			check_eq(ShopRules.new(shop).load_dict(recalled.to_dict()),"","recalled state remains valid")
+			check_eq(LegacyRules.new(shop).load_dict(recalled.to_dict()),"","recalled state remains valid")
 			return
 	check(false,"captured a real helper carrying a kitchen product")
 
@@ -170,17 +171,17 @@ func test_prepositioned_work_waits_for_real_inputs_and_recovers_after_helper_rec
 			var step := int(job.step)
 			check(step not in unit.done,"missing physical inputs cannot finish the recipe")
 			var saved := rules.to_dict()
-			var clone := ShopRules.new(shop)
+			var clone := LegacyRules.new(shop)
 			check_eq(clone.load_dict(saved),"","prepositioned work independently restores")
 			for sample in 30:
 				rules.step(0.1)
 				clone.step(0.1)
 			check_eq(clone.to_dict(),rules.to_dict(),"waiting and arrival resume identically")
-			var cancelled := ShopRules.new(shop)
+			var cancelled := LegacyRules.new(shop)
 			check_eq(cancelled.load_dict(saved),"","recall starts from the same waiting state")
 			check_eq(cancelled.recall_worker(inbound.id),"","inbound helper can be recalled")
 			cancelled.run(0.3)
-			check_eq(ShopRules.new(shop).load_dict(cancelled.to_dict()),"","vanished incoming reservation leaves a valid state")
+			check_eq(LegacyRules.new(shop).load_dict(cancelled.to_dict()),"","vanished incoming reservation leaves a valid state")
 			cancelled.run(150.0)
 			check(cancelled.sold>0,"remaining employee can recover without a permanent workbench deadlock")
 			found = true
@@ -205,16 +206,16 @@ func test_independent_rice_input_can_arrive_before_cooking_but_cannot_start_plat
 			var unit := Flow.unit(rules,int(good.owner))
 			if 2 in unit.done: continue
 			check(3 not in unit.done,"parallel rice preparation cannot skip cooking dependencies")
-			check_eq(ShopRules.new(shop).load_dict(rules.to_dict()),"","early reserved ingredients preserve a valid ledger")
+			check_eq(LegacyRules.new(shop).load_dict(rules.to_dict()),"","early reserved ingredients preserve a valid ledger")
 			found = true
 			break
 		if found: break
 	check(found,"actual rice reached the combine station before the cooked branch completed")
 
 func test_formal_opening_has_bounded_waits_and_legal_movement_across_three_seeds() -> void:
-	var shop: SpecShop = load("res://content/shops/stirfry/shop.tres")
+	var shop: SpecShop = load("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres")
 	for seed_ in [11,42,84]:
-		var rules := ShopRules.new(shop,seed_)
+		var rules := LegacyRules.new(shop,seed_)
 		rules.unlock("wok_a")
 		var sales: Array[float] = []
 		var record := func(_sale: Dictionary) -> void: sales.append(rules.clock)
@@ -237,4 +238,4 @@ func test_formal_opening_has_bounded_waits_and_legal_movement_across_three_seeds
 		if not gaps.is_empty(): check(gaps[(gaps.size()-1)/2]<=25.0,"opening sale cadence stays within its target: seed "+str(seed_))
 		check_eq(rules.lost,0,"opening demand fits the initial crew: seed "+str(seed_))
 		check_eq([illegal,overspeed],[0,0],"rhythm never uses clipping or faster movement: seed "+str(seed_))
-		check_eq(ShopRules.new(shop).load_dict(rules.to_dict()),"","opening trace remains independently resumable: seed "+str(seed_))
+		check_eq(LegacyRules.new(shop).load_dict(rules.to_dict()),"","opening trace remains independently resumable: seed "+str(seed_))

@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const Runtime := preload("res://game/rules/template/runtime.gd")
 const Compiler := preload("res://game/rules/template/compiler.gd")
 const Fixture := preload("res://tests/fixtures/template_service.gd")
@@ -276,7 +277,7 @@ func test_actual_tea_six_stage_weights_exposure_and_rng_match_original_rule_quer
 	# claim that the formal tea service or old saves have switched entry points.
 	tea.staff.starting.assign(["gray_cat","gray_cat"])
 	tea.staff.starting_posts.assign(["counter",""])
-	var owner := ShopRules.new(tea,42)
+	var owner := TemplateOuter.owner(tea,42)
 	owner.gold = 1000000.0
 	var raw := {"order":[],"gates":{
 		"lemonade":{"stations":["lemonade"]},

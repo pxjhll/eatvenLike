@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const PATH := "res://game/rules/template/recipe_normalizer.gd"
 const Compiler := preload("res://game/rules/template/compiler.gd")
 const Runtime := preload("res://game/rules/template/runtime.gd")
@@ -35,7 +36,7 @@ func test_normalized_formal_recipes_run_with_real_shop_navigation_and_the_common
 func _exercise_products(authored: SpecShop, template: Resource, dishes: Array, receiving_port: String) -> void:
 	for dish_id in dishes:
 		var shop: SpecShop = authored.copy_for_editing()
-		var owner := ShopRules.new(shop,42)
+		var owner := TemplateOuter.owner(shop,42)
 		for station in shop.stations: owner.unlocked[station.id] = true
 		owner.nav.set_open(owner.unlocked)
 		var test_template: Resource = template.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
@@ -161,7 +162,7 @@ func test_batch_parameters_are_validated_before_coercion_or_copying() -> void:
 func test_normalized_batch_fetch_keeps_fixed_machine_effects_and_target_tuning() -> void:
 	var result := _normalize(STIRFRY, ["soup"])
 	if result.is_empty() or not result.errors.is_empty(): return
-	var owner := ShopRules.new(STIRFRY.copy_for_editing(),42)
+	var owner := TemplateOuter.owner(STIRFRY.copy_for_editing(),42)
 	owner.tune["soup_pot"] = 2.0
 	owner.apply_effect("event", "soup_speed", SpecEffect.make("speed", "mul", 5.0, "soup_pot"))
 	var runtime := Runtime.new(owner, result.template)

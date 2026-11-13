@@ -1,4 +1,6 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 
 const TestSession := preload("res://tests/shop_test_session.gd")
 ## 奶茶店跑在通用店铺场景里，用真实点按走一遍（旧 render_shop_ui / render_tea_business / render_tuning 搬过来）：
@@ -7,7 +9,7 @@ const TestSession := preload("res://tests/shop_test_session.gd")
 ## 菜单暂停、换页不改暂停、Esc 收面板；重开先确认、取消不动、确认才重开；调参面板改得动、还原得回去。
 ##   godot --headless --path . -s tests/render_shop_tea.gd
 
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
 var view: Node2D
 var hud: Control
 var failures := 0
@@ -29,7 +31,7 @@ func _rules() -> ShopRules:
 func _run() -> void:
 	root.size = Vector2i(720, 1280)
 	if FileAccess.file_exists(save_path): DirAccess.remove_absolute(save_path)
-	view = _open(ShopRules.new(TEA))
+	view = _open(LegacyRules.new(TEA))
 	await process_frame
 	view.set_process(false)
 	hud = view.ui
@@ -129,7 +131,7 @@ func _run() -> void:
 	_check(view.guide_enabled and not view.recorder.enabled and not view.tuning.persist, "显式引导测试不录制、不持久化调参")
 	view.set_process(false)
 	view.free()
-	view = _open(ShopRules.new(TEA))
+	view = _open(LegacyRules.new(TEA))
 	await process_frame
 	view.set_process(false)
 	hud = view.ui
@@ -221,7 +223,7 @@ func _run() -> void:
 ## Explicit fixture services; a null rules argument reopens its isolated shop save.
 func _open(rules: ShopRules = null, guides := false) -> Node2D:
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	scene.session = TestSession.make(TEA, save_path, rules, ShopSave.new(TEA, save_path))
+	scene.session = TestSession.make(TEA, save_path, rules, LegacySave.new(TEA, save_path))
 	scene.session.guide_enabled = guides
 	root.add_child(scene)
 	return scene

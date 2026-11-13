@@ -1,4 +1,5 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## 在通用规则层上录煎饼摊的整店基准（旧模拟已删，改数值以后用它重录）：
 ##   godot --headless --path . -s tests/baselines/record_rules.gd [-- --check]
 ## 机器人和录旧基准时同一套决策（每分钟看一眼：先买新机器要的原料箱、再解锁、员工忙就招人、买最便宜的升级（机器、原料/口味、员工、传单、座位），
@@ -29,7 +30,7 @@ func _initialize() -> void:
 
 
 static func record(shop: SpecShop) -> Dictionary:
-	var rules := ShopRules.new(shop)
+	var rules := LegacyRules.new(shop)
 	var actions: Array = []
 	var unlocks := {}
 	var next_visit := 1.0

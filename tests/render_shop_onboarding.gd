@@ -1,4 +1,5 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 const SHOP: SpecShop = preload("res://tests/fixtures/onboarding/shop.tres")
 const CAMPAIGN: SpecCampaign = preload("res://tests/fixtures/onboarding/campaign.tres")
 const Session := preload("res://tests/shop_test_session.gd")
@@ -66,7 +67,7 @@ func _run() -> void:
 	scene.execute_command("set_paused",{"paused":false})
 	for speed in [1,2,4]:
 		_check(scene._speed_factor==speed,"existing speed cycle")
-		var oracle := ShopRules.new(SHOP,42)
+		var oracle := LegacyRules.new(SHOP,42)
 		_check(oracle.load_dict(scene.rules.to_dict()).is_empty(),"speed oracle loads")
 		scene._process(0.1)
 		oracle.step(0.1*speed)

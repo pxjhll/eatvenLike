@@ -1,5 +1,7 @@
 extends "res://tests/test_case.gd"
-const DATA: SpecShop = preload("res://content/shops/stirfry/shop.tres")
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
+const DATA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres")
 const LEGACY: SpecShop = preload("res://tests/fixtures/stirfry_modularity/legacy_shop.tres")
 const STATES := "res://tests/fixtures/stirfry_modularity/legacy_states.json"
 const Contract := preload("res://presentation/shop/shop_scene_contract.gd")
@@ -64,7 +66,7 @@ func test_legacy_samples_cover_real_jobs_and_validate_without_modern_protocols()
 	for key in ["closed","job_go_from","job_pick","job_go_to","job_drop","job_work","job_home","guest_to_pickup","guest_await","guest_to_seat","guest_eating","active"]:
 		check(captured.states.has(key),"captured real legacy phase: "+key)
 	for key in captured.states:
-		var rules := ShopRules.new(LEGACY,11)
+		var rules := LegacyRules.new(LEGACY,11)
 		check_eq(rules.load_dict(_state(captured.states[key])),"","frozen original state is valid: "+key)
 
 func test_multistation_module_can_bind_shared_counter_and_waiting_ports() -> void:
@@ -114,7 +116,7 @@ func test_legacy_active_progress_adopts_new_ports_without_losing_goods_jobs_or_t
 	var captured: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(STATES))
 	for key in captured.states:
 		var old: Dictionary = _state(captured.states[key])
-		var rules := ShopRules.new(DATA,11)
+		var rules := LegacyRules.new(DATA,11)
 		check_eq(rules.load_dict(old,true),"","adopt original active phase: "+key)
 		if rules.clock!=old.clock: continue
 		check_eq(rules.gold,old.gold,"gold retained: "+key)
@@ -137,7 +139,7 @@ func test_legacy_active_progress_adopts_new_ports_without_losing_goods_jobs_or_t
 				if not job.is_empty():
 					var target: Vector2 = rules.nav.post(worker.post) if job.stage=="home" else Flow._point(rules,job.to if job.stage=="go_to" else job.from)
 					check_eq(worker.motion.goal,target,"movement rebuilt for current business port: "+key)
-		var resumed := ShopRules.new(DATA,11)
+		var resumed := LegacyRules.new(DATA,11)
 		check_eq(resumed.load_dict(rules.to_dict()),"","adoption output independently validates: "+key)
 		for tick in 50:
 			rules.step(0.1)
@@ -149,7 +151,7 @@ func test_formal_geometry_and_customer_pickup_positions_cannot_enter_furniture_o
 	var prepared := Contract.prepare(DATA)
 	check_eq(prepared.errors,[],"formal scene and exported space agree")
 	if prepared.art!=null: nodes.append(prepared.art)
-	var rules := ShopRules.new(DATA,11)
+	var rules := LegacyRules.new(DATA,11)
 	for station in DATA.stations: rules.unlocked[station.id] = true
 	rules.nav.set_open(rules.unlocked)
 	check(not rules.nav.can_stand(Vector2(400,850),"staff"),"service counter is solid")
@@ -179,7 +181,7 @@ func test_real_legacy_file_preserves_original_bytes_and_progress_before_first_re
 	var captured: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(STATES))
 	var path := "user://stirfry-adopt-%d-%d.json"%[OS.get_process_id(),Time.get_ticks_usec()]
 	var original := _write(path,captured.states.mid_walk_collision)
-	var store := ShopSave.new(DATA,path)
+	var store := LegacySave.new(DATA,path)
 	var rules := store.load_game()
 	check_eq(store.load_error,OK,"valid old progress is adopted rather than quarantined")
 	check_eq(rules.clock,_state(captured.states.mid_walk_collision).clock,"actual old simulation progress retained")
@@ -189,7 +191,7 @@ func test_real_legacy_file_preserves_original_bytes_and_progress_before_first_re
 	files.append_array(backups)
 	check_eq(backups.size(),1,"one verified pre-content backup")
 	if not backups.is_empty(): check_eq(FileAccess.get_file_as_bytes(backups[0]),original,"backup is original old file, byte for byte")
-	var reopened := ShopSave.new(DATA,path)
+	var reopened := LegacySave.new(DATA,path)
 	check_eq(reopened.load_game().to_dict(),rules.to_dict(),"new protocol round trip is exact")
 	check_eq(reopened.load_error,OK,"reopen succeeds")
 
@@ -202,7 +204,7 @@ func test_impossible_adoption_keeps_old_bytes_without_permanently_locking_entry(
 	shop.layout.obstacle_stations.append("")
 	var path := "user://stirfry-no-route-%d-%d.json"%[OS.get_process_id(),Time.get_ticks_usec()]
 	var original := _write(path,captured.states.mid_walk_collision)
-	var store := ShopSave.new(shop,path)
+	var store := LegacySave.new(shop,path)
 	var recovered := store.load_game()
 	check_eq(store.load_error,OK,"unmigratable old positions cannot permanently lock entry")
 	check_eq(recovered.clock,0.0,"fresh business returned after durable old-file backup")
@@ -213,7 +215,7 @@ func test_impossible_adoption_keeps_old_bytes_without_permanently_locking_entry(
 	check_eq(backups.size(),1,"old business retained for recovery")
 	if not backups.is_empty(): check_eq(FileAccess.get_file_as_bytes(backups[0]),original,"failed adoption preserves original bytes")
 	check_eq(store.save_game(recovered),OK,"safe recovered business can save")
-	var reopened := ShopSave.new(shop,path)
+	var reopened := LegacySave.new(shop,path)
 	check_eq(reopened.load_game().to_dict(),recovered.to_dict(),"subsequent entry uses recovered business")
 	check_eq(reopened.load_error,OK,"recovered shop does not return to retry")
 
@@ -222,7 +224,7 @@ func test_legacy_routes_are_retargeted_to_current_ports_and_future_protocols_are
 	var captured: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(STATES))
 	var shop := DATA.copy_for_editing()
 	shop.layout.points.pantry += Vector2(40,0)
-	var rules := ShopRules.new(shop,11)
+	var rules := LegacyRules.new(shop,11)
 	check_eq(rules.load_dict(_state(captured.states.mid_walk_collision),true),"","port changes adopt old walking task")
 	var saw_port := false
 	for worker: Dictionary in rules.workers:
@@ -239,15 +241,15 @@ func test_legacy_routes_are_retargeted_to_current_ports_and_future_protocols_are
 	wrapper.state_sha256 = bytes.hex_encode().sha256_text()
 	var path := "user://stirfry-future-%d-%d.json"%[OS.get_process_id(),Time.get_ticks_usec()]
 	var original := _write(path,wrapper)
-	var store := ShopSave.new(shop,path)
+	var store := LegacySave.new(shop,path)
 	store.load_game()
 	check_eq(store.load_error,ERR_UNAVAILABLE,"future movement protocol is protected")
-	check(store.save_game(ShopRules.new(shop))!=OK,"future state cannot be replaced")
+	check(store.save_game(LegacyRules.new(shop))!=OK,"future state cannot be replaced")
 	check_eq(FileAccess.get_file_as_bytes(path),original,"future file remains byte-identical")
 
 func test_formal_movement_respects_speed_footprints_arrivals_and_pause_through_real_sales() -> void:
 	if not _enabled(): return
-	var rules := ShopRules.new(DATA,11)
+	var rules := LegacyRules.new(DATA,11)
 	rules.unlock("wok_a")
 	var seen := {"take":0,"made":0,"pickup":0}
 	var on_take := func(event: Dictionary) -> void:
@@ -295,7 +297,7 @@ func test_formal_movement_respects_speed_footprints_arrivals_and_pause_through_r
 
 func test_formal_full_menu_can_complete_every_recipe_with_shared_employees() -> void:
 	if not _enabled(): return
-	var rules := ShopRules.new(DATA,11)
+	var rules := LegacyRules.new(DATA,11)
 	rules.gold = 1000000.0
 	for i in DATA.stages.size()+1:
 		var next := rules.next_unlock()
@@ -312,4 +314,4 @@ func test_formal_full_menu_can_complete_every_recipe_with_shared_employees() -> 
 		if sold.size()==DATA.dishes.size(): break
 	rules.events.off("delivered",delivered)
 	for dish in DATA.dishes: check(int(sold.get(dish.id,0))>0,"formal shared system sells "+dish.id)
-	check_eq(ShopRules.new(DATA,11).load_dict(rules.to_dict()),"","full production menu state restores independently")
+	check_eq(LegacyRules.new(DATA,11).load_dict(rules.to_dict()),"","full production menu state restores independently")
