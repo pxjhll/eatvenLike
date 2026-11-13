@@ -141,7 +141,7 @@ func test_real_pickup_queue_declares_all_existing_waiting_points_in_original_ran
 	check_eq(template.service.pickup_queue.ports,expected,"reuse every original customer anchor in waiting rank order")
 	for port in expected: check(SHOP.layout.customer_points.has(port),"no invented art or geometry point")
 
-func test_real_drink_then_meal_customers_wait_separately_then_advance_and_complete_common_pickup() -> void:
+func test_real_drink_then_meal_customers_use_free_waiting_positions_and_complete_common_pickup() -> void:
 	var template := _template()
 	if template==null: return
 	check(template.service.has("pickup_queue"),"real customer waiting points must be enabled")
@@ -155,14 +155,21 @@ func test_real_drink_then_meal_customers_wait_separately_then_advance_and_comple
 	for index in 2: runtime.arrive([])
 	var saw_second := false
 	var saw_advance := false
+	var saw_front := false
 	for tick in 3000:
 		check_eq(runtime.step(0.1),"","real drink service at original scene pickup positions")
 		if runtime.service.orders.guest(1).order>0: runtime.runner.owner.stage_index = 5
 		var second: Dictionary = runtime.service.customers.record(2)
 		if second.get("target")=="pickup:1": saw_second = true
 		if saw_second and second.get("target")=="pickup:0": saw_advance = true
+		if second.get("target")=="pickup:0":
+			saw_front = true
+			var first_carrying := false
+			for delivery in runtime.service.snapshot().deliveries:
+				if delivery.order==runtime.service.orders.guest(1).order and delivery.phase in ["carry","drop"]: first_carrying = true
+			check(first_carrying or runtime.service.orders.guest(1).state in ["served","eating","leaving","gone"],"front point is reused only after the first customer actually collects their order")
 		if runtime.service.orders.guest(2).state=="gone": break
-	check(saw_second and saw_advance,"second guest physically uses two successive original waiting points")
+	check(saw_front and (not saw_second or saw_advance),"second guest uses the free front point and advances if it had to wait behind the first guest")
 	check_eq(runtime.service.orders.guest(2).state,"gone","both customers really finish pickup, meals and departure")
 	check_eq(runtime.runner.owner.sold_by_dish.plum_juice,1,"first real drink sold once")
 	check_eq(runtime.runner.owner.sold_by_dish.tomato_rice,1,"next real meal sold once")

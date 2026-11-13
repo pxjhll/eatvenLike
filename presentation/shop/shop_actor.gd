@@ -40,6 +40,15 @@ var _patience := -1.0
 var _mood := 0
 var _takeaway := false
 var _order_cup := Sprite2D.new()
+## All visible attachments share this offset; the actor root stays authoritative.
+var _visual := Node2D.new()
+
+func set_render_position(point: Vector2) -> void:
+	_visual.position = (point-position)/scale
+	queue_redraw()
+
+func render_position() -> Vector2:
+	return position+_visual.position*scale
 
 
 ## Turns a single-image animal to look right (true) or left (false). Every animal image is drawn facing right.
@@ -50,6 +59,7 @@ func face(right: bool) -> void:
 func setup(art_id: String, font: Font, height := -1.0) -> void:
 	if height < 0.0: height = Presentation.staff_height
 	_font = font
+	add_child(_visual)
 	_art = art_id
 	_height = height
 	body.texture = Characters.portrait(art_id) if art_id in Characters.IDS else load("res://art/reference/" + art_id + ".png")
@@ -57,22 +67,22 @@ func setup(art_id: String, font: Font, height := -1.0) -> void:
 	body.scale = _base_scale
 	body.centered = false
 	body.position = Vector2(-body.texture.get_width() * _base_scale.x / 2.0, -height)
-	add_child(body)
+	_visual.add_child(body)
 	if art_id in Characters.FRAME_SCENES:
 		body.visible = false
 		frame_actor = Characters.FRAME_SCENES[art_id].instantiate()
 		frame_actor.scale = Vector2.ONE * height / Characters.frame_height(art_id)
-		add_child(frame_actor)
+		_visual.add_child(frame_actor)
 	carried.centered = false
 	carried.visible = false
-	add_child(carried)
+	_visual.add_child(carried)
 	amount.position = Vector2(38, -59)
 	amount.add_theme_font_override("font", font)
 	amount.add_theme_font_size_override("font_size", 17)
 	amount.add_theme_color_override("font_color", Color("fff5d8"))
 	amount.add_theme_color_override("font_outline_color", Color("573b2b"))
 	amount.add_theme_constant_override("outline_size", 4)
-	add_child(amount)
+	_visual.add_child(amount)
 	task.position = Vector2(-78, -height - 28)
 	task.size.x = 156
 	task.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -81,17 +91,17 @@ func setup(art_id: String, font: Font, height := -1.0) -> void:
 	task.add_theme_color_override("font_color", Color("4e3425"))
 	task.add_theme_color_override("font_outline_color", Color("fff1d8"))
 	task.add_theme_constant_override("outline_size", 5)
-	add_child(task)
+	_visual.add_child(task)
 	_order_cup.centered = false
 	_order_cup.visible = false
-	add_child(_order_cup)
+	_visual.add_child(_order_cup)
 	progress_bar.max_value = 1.0
 	progress_bar.show_percentage = false
 	progress_bar.size = Vector2(84, 12)
 	progress_bar.position = Vector2(-42, -height - 18)
 	progress_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	progress_bar.visible = false
-	add_child(progress_bar)
+	_visual.add_child(progress_bar)
 
 
 func show_order(item: String, patience: float, mood := 0, takeaway := false) -> void:
@@ -113,6 +123,7 @@ func show_order(item: String, patience: float, mood := 0, takeaway := false) -> 
 
 func display(worker: Dictionary, clock: float) -> void:
 	position = worker.pos
+	_visual.position = Vector2.ZERO
 	var movement: Vector2 = position - _last_pos
 	var clock_step := maxf(0.0, clock - _last_clock) if _pose_initialized else 0.0
 	if not _pose_initialized:
@@ -124,7 +135,7 @@ func display(worker: Dictionary, clock: float) -> void:
 	var bob := sin(clock * 15.0) * 2.5 if walking and frame_actor == null else 0.0
 	if frame_actor != null:
 		_display_frames(worker, movement, clock_step)
-	var working: bool = worker.get("phase", "idle") in ["work", "pickup", "dropoff"]
+	var working: bool = worker.get("display_working",worker.get("phase", "idle") in ["work", "pickup", "dropoff"])
 	body.position.y = -body.texture.get_height() * _base_scale.y + bob
 	body.rotation = sin(clock * 10.0) * 0.025 if working else 0.0
 	task.text = task_text.call(worker)
@@ -156,9 +167,9 @@ func display(worker: Dictionary, clock: float) -> void:
 			amount.position = center + Vector2(10, 10)
 			var behind: bool = facing in [3, 4, 5]
 			if behind and carried.get_index() > frame_actor.get_index():
-				move_child(carried, frame_actor.get_index())
+				_visual.move_child(carried, frame_actor.get_index())
 			elif not behind and carried.get_index() < frame_actor.get_index():
-				move_child(carried, frame_actor.get_index())
+				_visual.move_child(carried, frame_actor.get_index())
 	_display_held_items(worker)
 	_last_pos = position
 	_last_clock = clock
@@ -169,7 +180,7 @@ func _display_held_items(worker: Dictionary) -> void:
 	while _held_sprites.size()<maxi(0,items.size()-1):
 		var sprite := Sprite2D.new()
 		sprite.centered = false
-		add_child(sprite)
+		_visual.add_child(sprite)
 		_held_sprites.append(sprite)
 	for index in _held_sprites.size():
 		var sprite := _held_sprites[index]
@@ -182,8 +193,8 @@ func _display_held_items(worker: Dictionary) -> void:
 		sprite.scale = Vector2.ONE*CUP_HEIGHT/maxf(texture.get_width(),texture.get_height())
 		sprite.position = carried.position+Vector2((index+1)*18,-(index+1)*4)
 		if frame_actor!=null:
-			if frame_actor.direction in [3,4,5]: move_child(sprite,frame_actor.get_index())
-			else: move_child(sprite,carried.get_index()+1)
+			if frame_actor.direction in [3,4,5]: _visual.move_child(sprite,frame_actor.get_index())
+			else: _visual.move_child(sprite,carried.get_index()+1)
 
 
 func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -> void:
@@ -204,7 +215,8 @@ func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -
 	var desired := "walk" if walking else "sit" if worker.get("seated", false) else "idle"
 	var job: Dictionary = worker.get("job", {})
 	var poured: String = pouring_station.call(worker)
-	if not walking and not worker.get("seated", false) and frame_actor.has_action("work") and (worker.get("phase", "idle") == "work" or not poured.is_empty()):
+	var working: bool = worker.get("display_working",worker.get("phase", "idle") in ["work","pickup","dropoff"]) if worker.get("presentation_version")==1 else (worker.get("phase", "idle") == "work" or not poured.is_empty())
+	if not walking and not worker.get("seated", false) and frame_actor.has_action("work") and working:
 		desired = "work"
 		# 一人跟单的店没有 job：在哪个点干活就按哪台机器的朝向
 		var station: String = String(worker.work_station) if worker.get("presentation_version")==1 else (poured if not poured.is_empty() else String(job.get("src", worker.get("target", ""))))
@@ -229,11 +241,11 @@ static func drink_icon(item: String) -> Texture2D:
 
 
 func _draw() -> void:
-	draw_set_transform(Vector2(0, 1), 0, Vector2(1, 0.3))
+	draw_set_transform(_visual.position+Vector2(0, 1), 0, Vector2(1, 0.3))
 	draw_circle(Vector2.ZERO, 25, Color(0.24, 0.14, 0.07, 0.18))
 	if selected:
 		draw_arc(Vector2.ZERO, 31, 0, TAU, 40, Color("e6b94f"), 6, true)
-	draw_set_transform(Vector2.ZERO)
+	draw_set_transform(_visual.position)
 	if _order_item.is_empty():
 		return
 	var top := -_height - 64.0

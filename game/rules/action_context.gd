@@ -12,6 +12,10 @@ func ready(_worker: Dictionary, _step: Dictionary) -> String:
 func enter(_worker: Dictionary, _step: Dictionary) -> void:
 	pass
 
+## Only nonbusiness steps may opt out of consuming a simulation tick.
+func immediate(_worker: Dictionary, _step: Dictionary) -> bool:
+	return false
+
 func advance(_worker: Dictionary, _step: Dictionary, _dt: float) -> bool:
 	return false
 

@@ -6,6 +6,7 @@ extends Node2D
 ## Production uses App.create_session(); tests provide an explicit isolated session.
 
 const Actor := preload("res://presentation/shop/shop_actor.gd")
+const RoutePresentation := preload("res://presentation/shop/route_presentation.gd")
 const Dining := preload("res://presentation/shop/shop_dining.gd")
 const DragController := preload("res://presentation/shop/staff_drag.gd")
 const Guide := preload("res://presentation/shop/guide_player.gd")
@@ -29,6 +30,7 @@ var session: RefCounted
 var shop: SpecShop
 var rules: ShopRules
 var view: ShopView
+var _refresh_frame: Dictionary = {}
 var anchors: ShopAnchors
 var store: ShopSave
 ## Read aliases for HUD components, populated only from a successfully started session.
@@ -62,6 +64,7 @@ var _ui_factor := 1.0
 var _actors := {}
 var _customers := {}
 var _customer_positions := {}
+var _customer_route_presentation := RoutePresentation.new()
 var _customer_orders := {}
 var _customer_entering := {}
 var _known_seats := {}
@@ -380,7 +383,9 @@ func _process(delta: float) -> void:
 func _refresh(delta: float) -> void:
 	var frame := view.render_snapshot()
 	_refresh_events()
+	_refresh_frame = frame
 	ui.refresh()
+	_refresh_frame = {}
 	var deployed := {}
 	for worker in frame.workers: deployed[int(worker.id)] = true
 	for id in _actors.keys():
@@ -796,10 +801,10 @@ func _draw_cups(draws: Array) -> void:
 func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 	if frame.is_empty(): frame = view.render_snapshot()
 	if frame.get("presentation_version")==1:
-		_update_customers_motion(frame)
+		_update_customers_motion(frame,delta)
 		return
 	if shop.layout.motion_version==1:
-		_update_customers_motion(frame)
+		_update_customers_motion(frame,delta)
 		return
 	if shop.fulfillment.handoff == "single":
 		_update_customers_single(delta, frame)
@@ -872,8 +877,10 @@ func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 		_customer_entering.erase(id)
 
 
-## Shared protocol: GUI never plans routes, integrates delta, or decides arrival.
-func _update_customers_motion(frame: Dictionary) -> void:
+## Shared protocol: roots/arrival are authoritative. Only visual attachments
+## predict the remainder of the current tick along the already approved route.
+func _update_customers_motion(frame: Dictionary, delta := 0.0) -> void:
+	_customer_route_presentation.advance(float(frame.clock),minf(delta,0.25)*_speed_factor)
 	var rows: Dictionary = frame.get("movement",{}).get("customers",{})
 	for key in _customers.keys():
 		if rows.has(key): continue
@@ -915,9 +922,11 @@ func _update_customers_motion(frame: Dictionary) -> void:
 		elif shop.fulfillment.handoff=="single" and row.state=="queue" and shop.fulfillment.leave_after>0:
 			patience = 1.0-float(row.wait)/shop.fulfillment.leave_after
 		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway)
-		actor.display(pose,frame.clock)
+		actor.display(pose,float(frame.clock)+_customer_route_presentation.age)
+		var displayed: Vector2 = pose.pos if row.seated else _customer_route_presentation.point(row,float(Presentation.customer_speed)*shop.layout.motion_units)
+		actor.set_render_position(displayed)
 		_customer_positions[key] = row.pos
-		if _z_by_y: actor.z_index = int(actor.position.y)
+		if _z_by_y: actor.z_index = int(displayed.y)
 		else: actor.z_index = 1 if row.seated else 0
 
 
@@ -1326,7 +1335,7 @@ func select_worker(id: int, from_card := false) -> void:
 
 
 func all_staff() -> Array:
-	return view.roster_snapshot()
+	return view.roster_snapshot(_refresh_frame)
 
 
 func staff_is_deployed(id: int) -> bool:

@@ -134,7 +134,11 @@ func _rank(worker: Dictionary, candidates: Array, helping: bool) -> Array:
 		if not preferred.is_empty() and preferred.scope == context.scope: score += float(_definition.affinity_bonus)
 		score -= distance / float(runner.owner.shop.layout.motion_units) * float(_definition.travel_penalty)
 		ranked.append({"score":score, "index":index, "candidate":candidate.duplicate(true)})
-	ranked.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score > b.score if a.score != b.score else a.index < b.index)
+	ranked.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if a.score != b.score: return a.score > b.score
+		var left := int(a.candidate.get("progress",0))
+		var right := int(b.candidate.get("progress",0))
+		return left > right if left != right else a.index < b.index)
 	var result: Array = []
 	for entry in ranked: result.append(entry.candidate)
 	return result

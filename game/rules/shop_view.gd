@@ -91,10 +91,11 @@ func render_snapshot() -> Dictionary:
 	return frame
 
 
-func roster_snapshot() -> Array:
+func roster_snapshot(frame: Dictionary = {}) -> Array:
 	if _runtime!=null:
 		var active := {}
-		for worker in render_snapshot().workers: active[worker.id] = worker
+		if frame.is_empty(): frame = render_snapshot()
+		for worker in frame.workers: active[worker.id] = worker
 		var roster: Array = rules.roster.duplicate(true)
 		for index in roster.size():
 			if active.has(roster[index].id): roster[index] = active[roster[index].id]

@@ -17,16 +17,23 @@ static func start(worker: Dictionary, steps: Array, context: RefCounted) -> Stri
 	return ""
 
 static func _enter(worker: Dictionary, program: Dictionary, context: RefCounted) -> bool:
-	var step: Dictionary = program.steps[program.index]
-	var reason: String = context.ready(worker,step)
-	if not reason.is_empty():
-		program.status = "blocked"
-		program.reason = reason
-		return false
-	program.status = "running"
-	program.reason = ""
-	program.started = true
-	context.enter(worker,step)
+	while program.index < program.steps.size():
+		var step: Dictionary = program.steps[program.index]
+		var reason: String = context.ready(worker,step)
+		if not reason.is_empty():
+			program.status = "blocked"
+			program.reason = reason
+			return false
+		program.status = "running"
+		program.reason = ""
+		program.started = true
+		context.enter(worker,step)
+		if step.kind not in ["move","transport"] or not context.has_method("immediate") or not context.immediate(worker,step): return true
+		program.index += 1
+		program.started = false
+		program.status = "completed" if program.index==program.steps.size() else "ready"
+		context.commit(worker,step)
+		if not is_same(worker.get("action",{}),program): return false
 	return true
 
 static func tick(worker: Dictionary, dt: float, context: RefCounted) -> bool:

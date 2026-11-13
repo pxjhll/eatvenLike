@@ -8,6 +8,25 @@ const Fixture := preload("res://tests/fixtures/movement_shop.gd")
 const Serve := preload("res://game/rules/serve_flow.gd")
 var save_paths: Array[String] = []
 
+class MeasuredNav extends RuleNav:
+	var stand_checks := 0
+	func can_stand(at: Vector2, profile := "staff") -> bool:
+		stand_checks += 1
+		return super.can_stand(at,profile)
+
+func test_detour_validates_cell_footprints_once_and_keeps_full_route_validation() -> void:
+	var layout := _layout()
+	layout.obstacles = [Rect2(80,80,40,60)]
+	var nav := MeasuredNav.new(layout)
+	var route: PackedVector2Array = nav.path(Vector2(50,110),Vector2(170,110),"staff")
+	check(route.size()>2,"real footprint-constrained detour exercises BFS")
+	var maximum: int = layout.grid_size.x*layout.grid_size.y+2*route.size()+4
+	check(nav.stand_checks<=maximum,"BFS reuses validated cell centers instead of rescanning footprints on every edge (%d>%d)"%[nav.stand_checks,maximum])
+	for index in range(1,route.size()): check(nav.segment_clear(route[index-1],route[index]),"final segments still pass full physical clearance")
+	layout.obstacles.append(Rect2(100,0,20,240))
+	nav.set_open({})
+	check(nav.path(Vector2(50,110),Vector2(170,110),"staff").is_empty(),"topology changes invalidate prevalidated cell centers")
+
 func cleanup() -> void:
 	for path in save_paths:
 		for file in DirAccess.get_files_at("user://"):

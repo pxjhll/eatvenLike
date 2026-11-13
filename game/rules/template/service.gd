@@ -255,7 +255,7 @@ func snapshot() -> Dictionary:
 	if dining != null: result.dining = dining.snapshot()
 	return result
 
-func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := false) -> String:
+func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := false, dispatch_data: Dictionary = {}) -> String:
 	var shape := {"version":0, "orders":{}, "customers":{}, "deliveries":[], "arrivals":{}}
 	if waiting != null: shape.waiting = {}
 	if flyers != null: shape.flyers = {}
@@ -293,7 +293,10 @@ func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := fal
 		var pickup_plan: Dictionary = pickup_queue.targets(orders.snapshot(),_deliveries)
 		if not pickup_plan.error.is_empty(): return pickup_plan.error
 	var waiting_targets := {}
-	if dining != null: waiting_targets = dining.targets(orders.snapshot(),_called_guests())
+	var previous_targets := {}
+	if dining != null:
+		previous_targets = dining.targets(orders.snapshot(),_called_guests([]))
+		waiting_targets = dining.targets(orders.snapshot(),_called_guests(dispatch_data.get("scopes",[])))
 	if waiting != null:
 		error = waiting.restore(data.waiting,orders.snapshot(),_called_guests(),_policy.admission=="automatic")
 		if not error.is_empty(): return error
@@ -338,7 +341,10 @@ func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := fal
 			target = _pickup_target(guest)
 			for delivery in _deliveries:
 				if delivery.order == guest.order and delivery.phase in ["carry", "drop"]: target = _destination(guest)
-		if actor.target != target: return "customer movement target differs from service facts"
+		# Older saves called the diner only after reserving finished goods. Their
+		# actual waiting route remains legal until the next normal queue sync.
+		var previous_wait: bool = guest.state=="waiting" and previous_targets.has(guest.id) and actor.target==previous_targets[guest.id]
+		if actor.target != target and not previous_wait: return "customer movement target differs from service facts"
 		if guest.state=="eating" and not customers.ready(guest.id, target): return "meal started before actual seating or handoff arrival"
 	if actors.size() != data.customers.customers.size(): return "orphan customer motion actor"
 	return ""
@@ -444,7 +450,7 @@ func _sync_queue() -> String:
 		if not error.is_empty(): return error
 	return ""
 
-func _called_guests() -> Dictionary:
+func _called_guests(scope_rows: Variant = null) -> Dictionary:
 	var called := {}
 	for delivery in _deliveries:
 		var order: Dictionary = orders.order(delivery.order)
@@ -452,6 +458,15 @@ func _called_guests() -> Dictionary:
 	for order in orders.active_snapshot().orders:
 		for line in order.lines:
 			if line.delivered>0: called[order.guest] = true
+	# A committed order follower starts the customer's counter approach while
+	# preparing, so staff and guest travel concurrently. No extra call ledger.
+	if dining!=null and _policy.delivery=="counter":
+		var rows: Variant = _runtime.runner.dispatcher.snapshot().scopes if scope_rows==null else scope_rows
+		if rows is Array:
+			for row in rows:
+				if not row is Dictionary or not row.get("scope") is String or not row.scope.begins_with("order:"): continue
+				var order: Dictionary = orders.order(int(row.scope.trim_prefix("order:")))
+				if order.get("state","")=="accepted": called[order.guest] = true
 	return called
 
 func _free_seat() -> String:

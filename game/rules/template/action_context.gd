@@ -81,6 +81,13 @@ func advance(worker: Dictionary, action: Dictionary, dt: float) -> bool:
 	worker.action_left = maxf(0.0, float(worker.action_left) - dt)
 	return worker.action_left <= 0.000001
 
+func immediate(worker: Dictionary, action: Dictionary) -> bool:
+	if action.kind not in ["move","transport"] or worker.path.is_empty(): return false
+	if not Vector2(worker.pos).is_equal_approx(runner.ports[action.target]): return false
+	worker.walking = false
+	worker.path_index = worker.path.size()
+	return true
+
 func commit(worker: Dictionary, action: Dictionary) -> void:
 	var task: Dictionary = runner.tasks[worker.id]
 	match String(action.kind):

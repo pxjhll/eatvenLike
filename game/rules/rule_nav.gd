@@ -134,6 +134,10 @@ func _crosses_rect(from: Vector2, to: Vector2, box: Rect2) -> bool:
 
 func segment_clear(from: Vector2, to: Vector2, profile := "staff") -> bool:
 	if not can_stand(from,profile) or not can_stand(to,profile): return false
+	return _segment_body_clear(from,to,profile)
+
+
+func _segment_body_clear(from: Vector2, to: Vector2, profile: String) -> bool:
 	var radius := FOOT_RADIUS * layout.motion_units
 	for box in _active:
 		if _crosses_rect(from,to,box.grow(radius)): return false
@@ -163,7 +167,10 @@ func _profile_path(from: Vector2, to: Vector2, profile: String) -> PackedVector2
 	var key := "%s:%s>%s" % [profile,start,finish]
 	if not _paths.has(key):
 		var middle := PackedVector2Array()
-		var can_step := func(a: Vector2i,b: Vector2i) -> bool: return segment_clear(grid.cell_center(a,layout.cell),grid.cell_center(b,layout.cell),profile)
+		# Both grid cell centers already passed can_stand when this profile
+		# grid was built. Arbitrary endpoints and the final route still use
+		# the complete predicate below.
+		var can_step := func(a: Vector2i,b: Vector2i) -> bool: return _segment_body_clear(grid.cell_center(a,layout.cell),grid.cell_center(b,layout.cell),profile)
 		for cell in grid.find_path(start,finish,can_step): middle.append(grid.cell_center(cell,layout.cell))
 		_paths[key] = middle
 	var middle: PackedVector2Array = _paths[key]

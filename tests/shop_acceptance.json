@@ -2,6 +2,33 @@
   "version": 1,
   "jobs": [
     {
+      "id": "customer_smoothing",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_customer_smoothing.gd",
+      "args": [],
+      "timeout": 60,
+      "success": "CUSTOMER SMOOTHING:.*\\b0 failures"
+    },
+    {
+      "id": "work_feedback",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_work_feedback.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "WORK FEEDBACK:.*\\b0 failures"
+    },
+    {
+      "id": "refresh_snapshot",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_refresh_snapshot.gd",
+      "args": [],
+      "timeout": 60,
+      "success": "REFRESH SNAPSHOT: 3 shops, 0 failures"
+    },
+    {
       "id": "template_boundary",
       "kind": "python",
       "profile": "headless",

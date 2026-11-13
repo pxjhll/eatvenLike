@@ -112,7 +112,7 @@ func _shop(id: String) -> void:
 		_check(runtime.runner.step(0.1).is_empty(),id+": reach actual mixed pickup")
 		if worker.carry_count==2: break
 	scene._refresh(0.0)
-	var hand_sprites: Array = actor.get_children().filter(func(node: Node) -> bool: return node is Sprite2D and node!=actor.body and node!=actor._order_cup and node.visible)
+	var hand_sprites: Array = actor.carried.get_parent().get_children().filter(func(node: Node) -> bool: return node is Sprite2D and node!=actor.body and node!=actor._order_cup and node.visible)
 	_check(hand_sprites.size()==2,id+": both physically held item kinds have their own art")
 	if "--capture" in OS.get_cmdline_user_args():
 		await process_frame
@@ -122,7 +122,7 @@ func _shop(id: String) -> void:
 		if not image.is_empty(): _check(image.save_png("res://_work/unified_shop_template_20261112/scene-frame-captures/"+id+".png")==OK,id+": save actual viewport")
 	_check(runtime.runner.cancel(worker.id).is_empty(),id+": mixed bundle recall")
 	scene._refresh(0.0)
-	_check(actor.get_children().filter(func(node: Node) -> bool: return node is Sprite2D and node!=actor.body and node!=actor._order_cup and node.visible).is_empty(),id+": recall hides every hand sprite")
+	_check(actor.carried.get_parent().get_children().filter(func(node: Node) -> bool: return node is Sprite2D and node!=actor.body and node!=actor._order_cup and node.visible).is_empty(),id+": recall hides every hand sprite")
 	for factor in [1.0,2.0,4.0]:
 		var clock_before: float = runtime.snapshot().clock
 		_check(runtime.step(0.1*factor).is_empty(),id+": explicit simulation speed")

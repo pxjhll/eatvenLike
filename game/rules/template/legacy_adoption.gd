@@ -703,6 +703,13 @@ func _import_bundle(worker: Dictionary, entries: Array, seconds: float) -> Strin
 
 func _program(worker: Dictionary, index: int, left: float) -> void:
 	var program: Dictionary = worker.action
+	var task: Dictionary = runtime.runner.tasks[worker.id]
+	# Creating an at-port task can now enter work immediately. Rehydrate the
+	# imported cursor before engaging its real saved stage, never leave an
+	# engaged machine behind a reconstructed walking cursor.
+	if task.kind=="operate" and runtime.runner.machines.run(task.run).get("operator",-1)==worker.id:
+		error = runtime.runner.machines.release_employee(task.run,worker.id)
+		if not error.is_empty(): return
 	var step: Dictionary = program.steps[index]
 	if step.kind not in ["move","transport"]:
 		if Vector2(worker.pos).is_equal_approx(runtime.runner.ports[step.target]):

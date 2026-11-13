@@ -24,8 +24,14 @@ static func build(runtime: RefCounted, displays: Array = [], presentation: Dicti
 		var task: Dictionary = runtime.runner.tasks.get(worker.id,{})
 		worker.display_task = task.get("kind","idle")
 		worker.work_station = ""
+		worker.display_working = worker.phase in ["work","pickup","dropoff"] and worker.get("action",{}).get("status","")!="blocked"
 		worker.display_progress = _progress(runtime,worker,task)
 		if task.get("kind")=="operate": worker.work_station = runtime.runner.machines.run(task.run).machine
+		elif worker.display_working and worker.has("action"):
+			var target: String = worker.action.steps[worker.action.index].target
+			for id in runtime._definition.machines:
+				var machine: Dictionary = runtime._definition.machines[id]
+				if target in [machine.input,machine.output,machine.get("work_port","")]: worker.work_station = id; break
 	if runtime.service==null:
 		TemplatePresentation.project(frame,presentation)
 		return frame
@@ -90,7 +96,7 @@ static func activity(runtime: RefCounted) -> Dictionary:
 		"seat_count":owner.seat_count(),"seats_used":seats_used(runtime,owner.buy_group()),"customer_interval":interval}
 
 static func _progress(runtime: RefCounted, worker: Dictionary, task: Dictionary) -> float:
-	if task.is_empty() or worker.phase not in ["work","pickup","dropoff"]: return -1.0
+	if task.is_empty() or not worker.get("display_working",false): return -1.0
 	if task.kind=="operate":
 		var run: Dictionary = runtime.runner.machines.run(task.run)
 		return clampf(1.0-float(run.stage_left)/float(run.stage_total),0.0,1.0) if run.stage_total>0.0 else -1.0
@@ -99,4 +105,4 @@ static func _progress(runtime: RefCounted, worker: Dictionary, task: Dictionary)
 		var step: Dictionary = worker.action.steps[worker.action.index]
 		for pick in task.picks:
 			if pick.claim==step.data.get("claim",-1): total = float(pick.seconds); break
-	return clampf(1.0-float(worker.action_left)/total,0.0,1.0) if total>0.0 else -1.0
+	return clampf(1.0-float(worker.action_left)/total,0.0,1.0) if total>float(runtime._definition.hop_seconds)+0.000001 else -1.0

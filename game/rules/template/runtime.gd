@@ -197,7 +197,18 @@ func production_output(id: int) -> Dictionary:
 	var producer: Dictionary = recipe.nodes[output.node]
 	return {"place":String(producer.place), "item":String(output.item), "count":int(output.count),
 		"owner":-1 if producer.capability == "source" else id, "complete":producer.capability == "source" or output.node in unit.done,
-		"pickup_seconds":_pickup_seconds(producer)}
+		"pickup_seconds":0.0 if _handoff_transfer(recipe,producer) else _pickup_seconds(producer)}
+
+func _handoff_transfer(recipe: Dictionary, node: Dictionary) -> bool:
+	return node.capability=="transfer" and recipe.output.node==node.id and service!=null and service._policy.delivery=="counter" and runner.ports[node.place].is_equal_approx(runner.ports[service._policy.handoff_port])
+
+func _manual_output_at_work_port(source: Dictionary) -> bool:
+	if source.capability!="process": return false
+	var machine: Dictionary = _definition.machines[source.machine]
+	if not machine.profile.get("manual",false): return false
+	var work: String = machine.get("work_port","")
+	var port: String = machine.get("stage_ports",{}).get("operate",machine.input if work.is_empty() else work)
+	return runner.ports[source.place].is_equal_approx(runner.ports[port])
 
 func _pickup_seconds(producer: Dictionary) -> float:
 	if producer.capability != "source": return float(_definition.hop_seconds)
@@ -270,7 +281,7 @@ func restore(data: Dictionary, refresh_numeric := false) -> String:
 		if not stock_error.is_empty(): return stock_error
 		restored_service = Service.new(self, _definition.service)
 		if not restored_service.last_error.is_empty(): return restored_service.last_error
-		var service_error: String = restored_service.prepare_restore(data.service, service_stock,refresh_numeric)
+		var service_error: String = restored_service.prepare_restore(data.service, service_stock,refresh_numeric,data.dispatch)
 		if not service_error.is_empty(): return service_error
 		dynamic = restored_service.dynamic_places()
 	var error: String = runner.validate_snapshot(data.runner, dynamic, limit_overrides.definition)
@@ -488,10 +499,14 @@ func _candidates() -> Array:
 				var item: String = node.consumes.keys()[0]
 				var source: Dictionary = recipe.nodes[node.inputs[item]]
 				var seconds: float = node.seconds if String(node.timing_target).is_empty() else Numbers.capability_seconds(runner.owner.mods,runner.owner.tune,node.timing_target,node.seconds,node.fixed)
+				var handoff := _handoff_transfer(recipe,node)
+				# Collapse only the ordinary bookkeeping hop. An explicitly long
+				# or upgrade-bound finishing action keeps its authored work clock.
+				var bookkeeping: bool = handoff and node.seconds<=_definition.hop_seconds and String(node.timing_target).is_empty()
 				transfers.append({"kind":"bundle","category":"transfer","node":id,"unit":int(unit.id),
-					"from":source.place,"to":node.place,"seconds":seconds,
+					"from":source.place,"to":node.place,"seconds":0.0 if bookkeeping else seconds,
 					"entries":[{"from":source.place,"to":node.place,"item":item,"count":int(node.consumes[item]),
-						"owner":-1 if source.capability == "source" else int(unit.id),"allocate_owner":int(unit.id),"pickup_seconds":_pickup_seconds(source)}]})
+						"owner":-1 if source.capability == "source" else int(unit.id),"allocate_owner":int(unit.id),"pickup_seconds":0.0 if handoff and _manual_output_at_work_port(source) else _pickup_seconds(source)}]})
 				continue
 			if node.capability != "process": continue
 			var machine: Dictionary = _definition.machines[node.machine]
