@@ -15,8 +15,6 @@ const WorkerState := preload("res://game/rules/worker_state.gd")
 const Sales := preload("res://game/rules/rule_sales.gd")
 const OrderState := preload("res://game/rules/rule_orders.gd")
 const Movement := preload("res://game/rules/rule_movement.gd")
-const CustomerMovement := preload("res://game/rules/customer_movement.gd")
-const MovementAdoption := preload("res://game/rules/movement_adoption.gd")
 var movement: Dictionary = {}
 var runtime: RefCounted
 var runtime_error := ""
