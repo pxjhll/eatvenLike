@@ -1,4 +1,6 @@
 extends ShopRules
+const CustomerMovement := preload("res://game/rules/customer_movement.gd")
+const MovementAdoption := preload("res://game/rules/movement_adoption.gd")
 const SingleContext := preload("res://game/rules/single_action_context.gd")
 const HandoffContext := preload("res://game/rules/handoff_action_context.gd")
 const Actions := preload("res://game/rules/rule_actions.gd")
