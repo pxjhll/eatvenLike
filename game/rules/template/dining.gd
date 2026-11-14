@@ -106,6 +106,9 @@ func targets(state: Dictionary, called: Dictionary) -> Dictionary:
 func snapshot() -> Dictionary:
 	return {"version":1,"routes":_routes.duplicate(true)}
 
+func adopt_saved_history(saved: Dictionary) -> void:
+	_routes = saved.routes
+
 func restore(data: Dictionary, state: Dictionary, owner: RefCounted) -> String:
 	if not Inventory._shape(data,{"version":0,"routes":[]}) or data.version!=1: return "invalid dining route state"
 	var routes := {}

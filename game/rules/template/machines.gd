@@ -256,11 +256,18 @@ func restore(data: Dictionary) -> String:
 	var errors: Array = candidate.audit()
 	if not errors.is_empty(): return String(errors[0])
 	_state = candidate._state
+	_index_runs()
+	_sync_slot_limits()
+	return ""
+
+func adopt_saved_history(saved: Dictionary) -> void:
+	_state.runs = saved.runs
+	_index_runs()
+
+func _index_runs() -> void:
 	_runs_by_id.clear()
 	_active_runs.clear()
 	for run in _state.runs: _remember_run(run)
-	_sync_slot_limits()
-	return ""
 
 func audit() -> Array:
 	if not Inventory._shape(_state, {"version":1, "next_run":1, "definitions":{}, "runs":[]}): return ["invalid machine state shape"]

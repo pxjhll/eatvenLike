@@ -286,6 +286,15 @@ func restore(data: Dictionary, inventory: RefCounted) -> String:
 	var error := _validate(data, inventory)
 	if not error.is_empty(): return error
 	_state = data.duplicate(true)
+	_index_orders()
+	return ""
+
+func adopt_saved_history(saved: Dictionary) -> void:
+	_state.guests = saved.guests
+	_state.orders = saved.orders
+	_index_orders()
+
+func _index_orders() -> void:
 	_guests_by_id.clear()
 	_orders_by_id.clear()
 	_present_guests.clear()
@@ -295,7 +304,6 @@ func restore(data: Dictionary, inventory: RefCounted) -> String:
 		var order: Dictionary = _state.orders[index]
 		_orders_by_id[order.id] = order
 		_order_positions[order.id] = index
-	return ""
 
 func _validate(data: Dictionary, inventory: RefCounted) -> String:
 	if not Inventory._shape(data, {"version":0, "policy":"", "next_guest":0, "next_order":0, "next_line":0, "lost":0, "guests":[], "orders":[]}): return "invalid order state shape"

@@ -226,6 +226,14 @@ func snapshot() -> Dictionary:
 func validate_snapshot(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}) -> String:
 	return String(prepare_restore(data, dynamic, limits).error)
 
+func adopt_saved_history(saved: Dictionary) -> void:
+	for id in _dynamic_places.keys():
+		if not saved.ports.has(id):
+			_dynamic_places.erase(id)
+			ports.erase(id)
+	inventory.adopt_saved_history(saved.inventory)
+	machines.adopt_saved_history(saved.machines)
+
 func restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}) -> String:
 	var candidate := prepare_restore(data, dynamic, limits)
 	if not String(candidate.error).is_empty(): return candidate.error

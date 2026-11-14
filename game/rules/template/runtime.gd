@@ -13,6 +13,7 @@ const Limits := preload("res://game/rules/template/numeric_limits.gd")
 const Clock := preload("res://game/rules/template/production_clock.gd")
 const TransportBatch := preload("res://game/rules/template/transport_batch.gd")
 const Transports := preload("res://game/rules/template/transports.gd")
+const SaveHistory := preload("res://game/rules/template/save_history.gd")
 
 var _trace: RefCounted
 var runner: RefCounted
@@ -231,13 +232,21 @@ func frame(displays: Array = [], active_only := false) -> Dictionary:
 		for key in service_frame: out[key] = service_frame[key]
 	return out
 
-func snapshot() -> Dictionary:
+func snapshot(compact_history := false) -> Dictionary:
 	var result := {"version":1, "signature":_definition.get("signature", ""), "clock":_clock,
 		"next_unit":_next_unit, "units":_units.duplicate(true), "runner":runner.snapshot(),
 		"restocks":_restocks.snapshot() if _restocks != null else {"version":1, "runs":{}},
 		"service":service.snapshot() if service != null else {}, "dispatch":runner.dispatcher.snapshot() if runner.dispatcher != null else {}}
 	if _definition.has("transports"): result.transports = _transports.snapshot()
+	if compact_history: SaveHistory.compact(result, _definition.recipes)
 	return result
+
+func adopt_saved_history(saved: Dictionary) -> void:
+	# The caller has validated and written this snapshot synchronously. Keep
+	# live actors, timers and the event bus in place while releasing history.
+	_units = saved.units
+	runner.adopt_saved_history(saved.runner)
+	service.adopt_saved_history(saved.service)
 
 func cancel_transport(bundle: int) -> String:
 	return _transports.cancel(bundle,runner.inventory)

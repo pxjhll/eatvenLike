@@ -11,7 +11,7 @@ const OUTER := ["gold","revenue","sold","sold_by_dish","stage_index","unlocked",
 	"full_seconds","pot_busy","side_idle","_accumulator","_next_staff","_sale_carry","rng","event_rng","mods","log","pending_events"]
 const PERSON := ["id","kind","name","stats","post","deployed","source","fatigue"]
 
-static func save(owner: RefCounted) -> Dictionary:
+static func save(owner: RefCounted, compact_history := false) -> Dictionary:
 	var outer := {}
 	for key in OUTER:
 		match key:
@@ -27,7 +27,7 @@ static func save(owner: RefCounted) -> Dictionary:
 		for key in PERSON: row[key] = worker[key]
 		if not worker.deployed: row.standby = {"pos":worker.pos,"completed":worker.completed}
 		outer.roster.append(row)
-	return owner._plain({"shop":owner.shop.id,"version":2,"template":Contract.describe_template(owner._runtime_template),"outer":outer,"runtime":owner.runtime.snapshot()})
+	return owner._plain({"shop":owner.shop.id,"version":2,"template":Contract.describe_template(owner._runtime_template),"outer":outer,"runtime":owner.runtime.snapshot(compact_history)})
 
 static func restore(owner: RefCounted, data: Dictionary, refresh := false) -> String:
 	if not Shape._shape(data,{"shop":"","version":0,"template":{},"outer":{},"runtime":{}}) or data.version!=2 or data.shop!=owner.shop.id: return "invalid public shop state version or identity"

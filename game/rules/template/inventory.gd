@@ -274,6 +274,12 @@ func claim(id: int) -> Dictionary:
 func snapshot() -> Dictionary:
 	return _state.duplicate(true)
 
+func adopt_saved_history(saved: Dictionary) -> void:
+	_state.places = saved.places
+	_state.claims = saved.claims
+	_state.bundles = saved.bundles
+	_index_transactions()
+
 ## Detached stock/occupancy projection; terminal proofs belong to save reads.
 func active_snapshot() -> Dictionary:
 	var result := _state.duplicate()

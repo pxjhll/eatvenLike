@@ -71,8 +71,8 @@ func _shop(row: Dictionary) -> void:
 				check(owner.deploy_worker(worker.id).is_empty(),"redeploy new employee")
 				recalled = true
 		if tick==300:
-			var saved := owner.to_dict()
 			check(scene.session.save()==OK,"actual session disk save")
+			var saved := owner.to_dict()
 			var reopened: ShopRules = scene.store.load_game()
 			check(scene.store.load_error==OK and reopened.to_dict()==saved,"ordinary disk roundtrip including active order")
 			check(owner.load_dict(saved).is_empty(),"live restore")

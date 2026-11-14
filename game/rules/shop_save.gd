@@ -98,7 +98,8 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 	if rules.shop != shop and ContentContract.describe(rules.shop) != content:
 		last_error = "存档失败：店铺内容和存档不是同一版本，请重新进店"
 		return ERR_INVALID_PARAMETER
-	var state := rules.to_dict()
+	var compact_history: bool = requires_shared_runtime() and rules.runtime != null and rules.runtime.service != null
+	var state: Dictionary = load("res://game/rules/template/session_state.gd").save(rules, true) if compact_history else rules.to_dict()
 	# Public state restores its own runtime. Custom and legacy stores keep their factory.
 	var validator := ShopRules.new(shop,-1,false) if state.has("runtime") and get_script() == load("res://game/rules/shop_save.gd") else make_rules()
 	var state_error := validator.load_dict(state)
@@ -138,6 +139,7 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 	if not template.is_empty():
 		_verified_bytes = writer.saved_bytes
 		_verified_template = template.duplicate()
+	if compact_history: rules.runtime.adopt_saved_history(state.runtime)
 	last_error = ""
 	return OK
 

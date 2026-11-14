@@ -255,6 +255,10 @@ func snapshot() -> Dictionary:
 	if dining != null: result.dining = dining.snapshot()
 	return result
 
+func adopt_saved_history(saved: Dictionary) -> void:
+	orders.adopt_saved_history(saved.orders)
+	if dining != null: dining.adopt_saved_history(saved.dining)
+
 func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := false, dispatch_data: Dictionary = {}, production: Array = []) -> String:
 	var shape := {"version":0, "orders":{}, "customers":{}, "deliveries":[], "arrivals":{}}
 	if waiting != null: shape.waiting = {}

@@ -41,8 +41,8 @@ func _shop(id: String) -> void:
 		check(owner.runtime_error.is_empty(),id+": official simulation step "+owner.runtime_error)
 		check(is_equal_approx(owner.clock,owner.runtime._clock),"one authoritative business clock")
 		if tick==300:
-			var saved := owner.to_dict()
 			check(scene.session.save()==OK,"ordinary session save")
+			var saved := owner.to_dict()
 			var disk: ShopRules = scene.store.load_game()
 			check(scene.store.load_error==OK and disk.to_dict()==saved,"actual disk state roundtrip")
 			check(owner.load_dict(saved).is_empty(),"ordinary live restore")

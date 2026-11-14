@@ -11,6 +11,47 @@ class CountingAssessment extends ShopSave:
 		assessments += 1
 		return super._assess_existing()
 
+func test_disk_save_discards_settled_history_and_preserves_active_order_continuation() -> void:
+	var owner := _owner("pancake")
+	owner.tune["fryer"] = 1.25
+	owner.run(180.0)
+	var original := owner.to_dict()
+	var departed: Array = original.runtime.service.orders.guests.filter(func(guest: Dictionary) -> bool: return guest.state == "gone")
+	check(not departed.is_empty(), "fixture has settled customers who left")
+	check(original.runtime.service.orders.orders.any(func(order: Dictionary) -> bool: return order.state == "accepted"), "fixture has an order in progress")
+	var path := "user://compact-history-%d.json" % Time.get_ticks_usec()
+	paths.append(path)
+	var payload := {"format":ShopSave.FORMAT,"version":ShopSave.VERSION,"shop":owner.shop.id,
+		"content":load("res://game/rules/shop_content_contract.gd").describe(owner.shop),"speed":2.0,"guides":["seen"]}
+	var bytes := var_to_bytes(original)
+	payload.state = Marshalls.raw_to_base64(bytes)
+	payload.state_sha256 = bytes.hex_encode().sha256_text()
+	check_eq(SaveService.new(path).save(payload), OK, "write old untrimmed save")
+	var original_file := FileAccess.get_file_as_bytes(path)
+	var store := ShopSave.new(owner.shop, path)
+	var loaded := store.load_game()
+	check_eq(store.load_error, OK, "old untrimmed save loads")
+	check_eq(loaded.to_dict(), original, "loading keeps the full original state before the first write")
+	check_eq(store.save_game(loaded, 2.0, ["seen"]), OK, "rewrite as compact save")
+	check(FileAccess.get_file_as_bytes(path).size() < original_file.size(), "compact save is smaller")
+	var reopened := store.load_game()
+	check_eq(store.load_error, OK, "compact save loads")
+	check_eq(store.loaded_guides, ["seen"], "guide history survives")
+	check_eq(store.loaded_speed, 2.0, "speed survives")
+	var saved := reopened.to_dict()
+	check_eq(saved.outer, original.outer, "player progress and tuning remain exact")
+	check(saved.runtime.service.orders.guests.size() < original.runtime.service.orders.guests.size(), "departed guests are absent")
+	check(saved.runtime.runner.inventory.claims.size() < original.runtime.runner.inventory.claims.size(), "settled stock proofs are absent")
+	check(saved.runtime.runner.machines.runs.size() < original.runtime.runner.machines.runs.size(), "settled machine runs are absent")
+	check_eq(saved.runtime.runner.tasks, original.runtime.runner.tasks, "employee tasks continue unchanged")
+	check_eq(saved.runtime.service.deliveries, original.runtime.service.deliveries, "outstanding deliveries are retained")
+	check_eq(loaded.to_dict(), saved, "successful save also releases history from the live session")
+	owner.run(90.0)
+	reopened.run(90.0)
+	check(owner.sold > original.outer.sold, "continuation completes real sales")
+	check_eq(reopened.runtime_error, "", "continued service stays valid")
+	check_eq(reopened.to_dict().outer, owner.to_dict().outer, "continuation matches uninterrupted progress and event history")
+
 func test_save_reuses_validation_only_for_exactly_the_bytes_it_wrote() -> void:
 	var shop: SpecShop = load("res://content/shops/pancake/shop.tres")
 	var owner := ShopRules.new(shop, 42)
