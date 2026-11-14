@@ -1,9 +1,12 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## 交接方式 serve（规格 §10）：订单明细 + 组合台等齐 + 共享米饭库存与预留 + 交到客人手里。全部走通用规则层，店铺只给数据。
 ## 原型阶段的用例（Notion《小炒饭馆｜设计稿 v0.3》§8）用小炒饭馆数据改回送桌（seat_wait）跑，测通用的送桌路径；
 ## 正式的小炒饭馆是客人自取（self_pickup），在后面的用例里测。
 
-const DATA: SpecShop = preload("res://content/shops/stirfry/shop.tres")
+## Original timing/phase tests remain an explicit legacy compatibility suite.
+const DATA: SpecShop = preload("res://tests/fixtures/stirfry_modularity/legacy_shop.tres")
+const FORMAL: SpecShop = preload("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres")
 ## 送桌版的小炒饭馆数据（前厅送餐到座位）
 var STIRFRY: SpecShop = _seat_wait(DATA)
 
@@ -18,7 +21,7 @@ const SceneContract := preload("res://presentation/shop/shop_scene_contract.gd")
 
 
 func _open(shop: SpecShop = null) -> ShopRules:
-	var rules := ShopRules.new(shop if shop != null else STIRFRY)
+	var rules := LegacyRules.new(shop if shop != null else STIRFRY)
 	rules.unlock("wok_a")
 	return rules
 
@@ -44,7 +47,7 @@ func _count(rules: ShopRules, item: String) -> int:
 
 ## 每件实物都在合法位置、预留都有对应的活：用存档校验器整体核一遍
 func _consistent(rules: ShopRules) -> String:
-	var copy := ShopRules.new(rules.shop)
+	var copy := LegacyRules.new(rules.shop)
 	return copy.load_dict(rules.to_dict())
 
 
@@ -53,6 +56,7 @@ func _shop_copy() -> SpecShop:
 
 
 func test_data_passes_the_capability_contract() -> void:
+	check_eq(Validator.summary(Validator.validate(FORMAL)), "", "正式共享版本数据过配置校验")
 	check_eq(Validator.summary(Validator.validate(DATA)), "", "小炒饭馆数据过配置校验")
 	check_eq(Validator.summary(Validator.validate(STIRFRY)), "", "送桌版也过配置校验")
 	check_eq(DATA.fulfillment.dine_rule, "self_pickup", "小炒饭馆是客人自取")
@@ -102,9 +106,9 @@ func test_two_staff_serve_the_first_rice_bowl_end_to_end() -> void:
 	for name in names:
 		if at < order.size() and name == order[at]: at += 1
 	check_eq(at, order.size(), "事件按 接单 → 炒浇头 → 合盘 → 送达 → 结账 → 开吃 的顺序：%s" % [names])
-	check(jobs.has("rabbit:take") and jobs.has("rabbit:serve"), "店长接单也送桌")
+	check(jobs.has("cat:take") and jobs.has("cat:serve"), "店长接单也送桌")
 	for kind in ["carry", "work", "pass"]: check(jobs.has("gray_cat:" + kind), "厨师做 " + kind)
-	check(not jobs.has("rabbit:carry") and not jobs.has("rabbit:work") and not jobs.has("gray_cat:serve") and not jobs.has("gray_cat:take"), "前厅后厨各管各的")
+	check(not jobs.has("cat:carry") and not jobs.has("cat:work") and not jobs.has("gray_cat:serve") and not jobs.has("gray_cat:take"), "前厅后厨各管各的")
 	check_eq(rules.roster.size(), 2, "没招第三人")
 	check(rules.sold >= 1 and rules.serve.served >= 1 and rules.gold >= 12.0, "收了一份钱（%d 金币）" % rules.gold)
 
@@ -247,7 +251,7 @@ func test_save_resume_and_counters() -> void:
 	var rules := _open()
 	rules.run(240.0)
 	check(rules.serve.guests.size() > 0 and rules.serve.goods.size() > 0, "店里有客人、有东西在做")
-	var copy := ShopRules.new(rules.shop)
+	var copy := LegacyRules.new(rules.shop)
 	check_eq(copy.load_dict(rules.to_dict()), "", "中途存档能读")
 	rules.run(120.0)
 	copy.run(120.0)
@@ -389,7 +393,7 @@ func test_delivery_callbacks_capture_resumable_settled_orders() -> void:
 	rules.events.off("*", listener)
 	check_eq(snapshots.map(func(s: Dictionary) -> String: return s.name), ["delivered", "sale", "eat_start"], "保留送达、结账、开吃的广播顺序")
 	for snapshot in snapshots:
-		var resumed := ShopRules.new(rules.shop)
+		var resumed := LegacyRules.new(rules.shop)
 		var error := resumed.load_dict(snapshot.state)
 		check_eq(error, "", snapshot.name + " 回调状态可以读档")
 		if not error.is_empty(): continue
@@ -493,8 +497,8 @@ func test_self_pickup_guest_collects_the_whole_order_then_eats_at_the_seat() -> 
 		if at < order.size() and name == order[at]: at += 1
 	check_eq(at, order.size(), "接单 → 到出餐口 → 端走 → 结账 → 坐下 → 开吃：%s" % [trail])
 	for state in ["to_pickup", "await", "to_seat"]: check(states.has(state), "客人经过 " + state)
-	check(not jobs.has("rabbit:serve") and not jobs.has("gray_cat:serve"), "没人送桌")
-	check(jobs.has("rabbit:take") and jobs.has("gray_cat:pass"), "店长接单，厨师把餐放上出餐口")
+	check(not jobs.has("cat:serve") and not jobs.has("gray_cat:serve"), "没人送桌")
+	check(jobs.has("cat:take") and jobs.has("gray_cat:pass"), "店长接单，厨师把餐放上出餐口")
 	check(not bad_eat, "开吃的都是整单齐的")
 	check(not bad_window, "客人没端走前，餐不会自己跑到座位上")
 	check_eq(rules.gold, 12.0, "第一单只收一次钱")
@@ -514,8 +518,8 @@ func test_self_pickup_save_resume_matches_and_seat_wait_is_unchanged() -> void:
 				saved[g.state] = rules.to_dict()
 	check_eq(saved.size(), 3, "等取餐、去座位、用餐三个时刻都存到了")
 	for key in saved:
-		var a := ShopRules.new(shop)
-		var b := ShopRules.new(shop)
+		var a := LegacyRules.new(shop)
+		var b := LegacyRules.new(shop)
 		check_eq(a.load_dict(saved[key]), "", key + " 存档能读")
 		b.load_dict(saved[key])
 		a.run(120.0)
@@ -553,7 +557,7 @@ func test_self_pickup_callbacks_capture_resumable_settled_orders() -> void:
 	rules.events.off("*", listener)
 	check_eq(snapshots.map(func(s: Dictionary) -> String: return s.name), ["picked_up", "delivered", "sale"], "端走 → 送达 → 结账 的广播顺序")
 	for snapshot in snapshots:
-		var resumed := ShopRules.new(shop)
+		var resumed := LegacyRules.new(shop)
 		var error := resumed.load_dict(snapshot.state)
 		check_eq(error, "", snapshot.name + " 回调状态可以读档")
 		if not error.is_empty(): continue
@@ -568,23 +572,26 @@ func test_self_pickup_callbacks_capture_resumable_settled_orders() -> void:
 
 ## 美术场景（Codex 出的小炒饭馆原画拼装）过场景契约，且锚点和规则层走位是同一份坐标
 func test_art_scene_passes_the_contract_and_matches_the_layout() -> void:
-	check(ResourceLoader.exists(STIRFRY.scene_path), "店铺数据指向美术场景")
-	var art: Node = load(STIRFRY.scene_path).instantiate()
-	var errors := SceneContract.validate(STIRFRY, art)
+	check(ResourceLoader.exists(FORMAL.scene_path), "店铺数据指向美术场景")
+	var art: Node = load(FORMAL.scene_path).instantiate()
+	var errors := SceneContract.validate(FORMAL, art)
 	check(errors.is_empty(), "场景契约通过：%s" % str(errors))
 	var anchors := ShopAnchors.new(art.get_node("Anchors"))
-	var layout := STIRFRY.layout
+	var layout := FORMAL.layout
 	for n in 16:
 		var key := "table/%d" % n
-		check_eq(anchors.point("Seats/table/%d" % n), layout.points[key], "座位 %d 和走位一致" % n)
+		check_eq(anchors.point("Seats/table/%d" % n), DATA.layout.points[key], "座位 %d 保留原美术坐姿点" % n)
+		check_eq(layout.points[key],layout.customer_points["seat:"+key],"员工送餐点与顾客接近点一致")
+		check_eq(layout.points[key],DATA.layout.points[key]+Vector2(0,-40),"接近点与坐姿点显式分离")
 	for post in layout.posts:
 		check_eq(anchors.point("Stations/%s/PostPoint" % post), layout.posts[post], post + " 坐班点一致")
 		check(anchors.rect("Stations/%s/Post" % post).has_point(layout.posts[post]), post + " 坐班点在坐班区里")
-	check_eq(anchors.point("Entrance"), layout.points["door"], "门口一致")
+	check_eq(anchors.point("Entrance"),DATA.layout.points["door"],"门口美术锚点保持不变")
+	check_eq(layout.points["door"],layout.customer_points.entrance,"员工和顾客共用合法门口端口")
 	var world: Vector2 = art.get_node("Anchors").get_meta("world_size")
 	for key in layout.points:
 		check(Rect2(Vector2.ZERO, world).has_point(layout.points[key]), key + " 在场景范围内")
-	for st in STIRFRY.stations:
+	for st in FORMAL.stations:
 		var tap := anchors.rect("Stations/%s/Tap" % st.id)
 		check(tap.has_area(), st.display_name + " 有点按区")
 	art.free()
@@ -592,7 +599,7 @@ func test_art_scene_passes_the_contract_and_matches_the_layout() -> void:
 
 ## 配方阶段（SpecStage.recipe_at，通用）：不开新机器，在已开机器的面板配方栏里买；买了菜才上菜单，只能按阶段顺序买
 func test_recipe_stages_are_bought_in_the_station_panel() -> void:
-	var rules := ShopRules.new(DATA)
+	var rules := LegacyRules.new(DATA)
 	var view := ShopView.new(rules)
 	check_eq(rules.unlock("wok_a"), "", "开张")
 	check_eq(rules.menu(), ["tomato_rice"] as Array[String], "开张只卖番茄炒蛋盖饭")
@@ -619,7 +626,7 @@ func test_recipe_stages_are_bought_in_the_station_panel() -> void:
 	check_eq(String(view.station("wok_a").recipes[0].state), "owned", "配方栏显示已学会")
 	check(not rules.unlock("wok_a").is_empty(), "宫保鸡丁要等炒锅B、汤桶以后才能学")
 	check_eq(rules.next_unlock(), "wok_b", "下一步开炒锅B")
-	var saved := ShopRules.new(DATA)
+	var saved := LegacyRules.new(DATA)
 	check_eq(saved.load_dict(rules.to_dict()), "", "学过配方的存档能读")
 	check_eq(saved.menu(), rules.menu(), "读档后菜单一样")
 	rules.gold = 100000.0
@@ -640,7 +647,7 @@ func test_recipe_stages_are_bought_in_the_station_panel() -> void:
 
 ## v0.3 全菜单：两口锅抢一盆饭、盖饭合盘、炒饭直接出锅、例汤附加，客人自取整单；每道菜都卖得出去，状态自洽
 func test_full_menu_sells_every_dish_with_self_pickup() -> void:
-	var rules := ShopRules.new(DATA)
+	var rules := LegacyRules.new(DATA)
 	rules.gold = 100000.0
 	for i in DATA.stages.size() + 1:
 		if rules.next_unlock().is_empty(): break

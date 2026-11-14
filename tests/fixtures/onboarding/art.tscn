@@ -1,0 +1,1004 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://presentation/shop/modules/space.tscn" id="1_sh5rt"]
+[ext_resource type="Script" path="res://presentation/shop/modules/shop_module.gd" id="2_xcpa8"]
+[ext_resource type="Script" path="res://presentation/shop/anchor_rect.gd" id="3_6hcd2"]
+[ext_resource type="PackedScene" path="res://presentation/shop/modules/counter.tscn" id="4_ix7ao"]
+[ext_resource type="PackedScene" path="res://presentation/shop/modules/entrance_queue.tscn" id="5_02xr3"]
+[ext_resource type="PackedScene" path="res://presentation/shop/modules/station.tscn" id="6_uxytc"]
+[ext_resource type="PackedScene" path="res://presentation/shop/modules/table.tscn" id="7_4i8hm"]
+
+[node name="ShopTemplate" type="Node2D" unique_id=1902049041]
+
+[node name="Anchors" type="Node2D" parent="." unique_id=78984618]
+metadata/module_version = 1
+metadata/world_size = Vector2(720, 1200)
+metadata/top_margin = 100.0
+metadata/sortables = "Sortables"
+
+[node name="Nav" type="Node2D" parent="Anchors" unique_id=196880250]
+metadata/nav = "grid"
+metadata/cell = 40.0
+metadata/grid_size = Vector2i(18, 30)
+metadata/motion_version = 1
+metadata/motion_units = 1.0
+metadata/spawn_point = "home"
+metadata/aliases = {}
+
+[node name="Points" type="Node2D" parent="Anchors/Nav" unique_id=1050334507]
+
+[node name="home" type="Node2D" parent="Anchors/Nav/Points" unique_id=889123672]
+position = Vector2(100, 100)
+
+[node name="Sortables" type="Node2D" parent="." unique_id=1629452258]
+y_sort_enabled = true
+
+[node name="Space" parent="Sortables" unique_id=18607003 instance=ExtResource("1_sh5rt")]
+script = ExtResource("2_xcpa8")
+module_id = "Space"
+module_kind = "space"
+
+[node name="Ground" parent="Sortables/Space/Visual" index="0"]
+z_index = -1
+color = Color(0.86, 0.87, 0.84, 1)
+polygon = PackedVector2Array(0, 0, 720, 0, 720, 1200, 0, 1200)
+
+[node name="0" parent="Sortables/Space/Nav/Areas" index="0"]
+script = ExtResource("3_6hcd2")
+size = Vector2(720, 1200)
+
+[node name="0" parent="Sortables/Space/Nav/Access/staff" index="0"]
+script = ExtResource("3_6hcd2")
+size = Vector2(720, 1200)
+
+[node name="0" parent="Sortables/Space/Nav/Access/customer" index="0"]
+script = ExtResource("3_6hcd2")
+size = Vector2(720, 1200)
+
+[node name="counter" parent="Sortables" unique_id=479911556 instance=ExtResource("4_ix7ao")]
+position = Vector2(100, 220)
+script = ExtResource("2_xcpa8")
+module_id = "station_counter"
+module_kind = "counter"
+station_id = "counter"
+
+[node name="Body" parent="Sortables/counter/Visual" index="0"]
+color = Color(0.46, 0.58, 0.61, 1)
+polygon = PackedVector2Array(-40, -80, 40, -80, 40, 0, -40, 0)
+
+[node name="Tap" parent="Sortables/counter/Anchors/Station" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Frame" parent="Sortables/counter/Anchors/Station" index="1"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Post" parent="Sortables/counter/Anchors/Station" index="2"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="PostPoint" parent="Sortables/counter/Anchors/Station" index="3"]
+position = Vector2(0, 40)
+
+[node name="Badge" parent="Sortables/counter/Anchors/Station" index="4"]
+position = Vector2(0, -90)
+
+[node name="Buffer" parent="Sortables/counter/Anchors/Station" index="5"]
+position = Vector2(0, -20)
+
+[node name="Put" parent="Sortables/counter/Anchors/Station" index="6"]
+position = Vector2(0, -20)
+
+[node name="Drop" parent="Sortables/counter/Anchors" index="1"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="Sale" parent="Sortables/counter/Anchors/Counter" index="0"]
+position = Vector2(0, -120)
+
+[node name="Pickup" parent="Sortables/counter/Anchors/Counter" index="1"]
+position = Vector2(0, 100)
+
+[node name="Dining" parent="Sortables/counter/Anchors/Counter" index="2"]
+position = Vector2(-40, 80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 40)
+
+[node name="Work" parent="Sortables/counter/Nav" index="0"]
+position = Vector2(0, 40)
+
+[node name="Post" parent="Sortables/counter/Nav" index="1"]
+position = Vector2(0, 40)
+
+[node name="0" parent="Sortables/counter/Nav/Footprints" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Entrance" parent="Sortables" unique_id=1691642246 instance=ExtResource("5_02xr3")]
+position = Vector2(120, 1080)
+script = ExtResource("2_xcpa8")
+module_id = "Entrance"
+module_kind = "entrance"
+
+[node name="Door" parent="Sortables/Entrance/Visual" index="0"]
+color = Color(0.36, 0.52, 0.6, 1)
+polygon = PackedVector2Array(-30, -5, 30, -5, 30, 5, -30, 5)
+
+[node name="Exit" parent="Sortables/Entrance/Anchors" index="1"]
+position = Vector2(40, 0)
+
+[node name="0" parent="Sortables/Entrance/Anchors/Queue" index="0"]
+position = Vector2(0, -80)
+
+[node name="1" parent="Sortables/Entrance/Anchors/Queue" index="1"]
+position = Vector2(80, -80)
+
+[node name="exit" parent="Sortables/Entrance/Nav/Customers" index="1"]
+position = Vector2(40, 0)
+
+[node name="pickup" parent="Sortables/Entrance/Nav/Customers" index="2"]
+position = Vector2(140, -580)
+
+[node name="pantry" parent="Sortables" unique_id=440229013 instance=ExtResource("6_uxytc")]
+position = Vector2(260, 220)
+script = ExtResource("2_xcpa8")
+module_id = "station_pantry"
+station_id = "pantry"
+
+[node name="Body" parent="Sortables/pantry/Visual" index="0"]
+color = Color(0.46, 0.58, 0.61, 1)
+polygon = PackedVector2Array(-40, -80, 40, -80, 40, 0, -40, 0)
+
+[node name="Tap" parent="Sortables/pantry/Anchors/Station" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Frame" parent="Sortables/pantry/Anchors/Station" index="1"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Post" parent="Sortables/pantry/Anchors/Station" index="2"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="PostPoint" parent="Sortables/pantry/Anchors/Station" index="3"]
+position = Vector2(0, 40)
+
+[node name="Badge" parent="Sortables/pantry/Anchors/Station" index="4"]
+position = Vector2(0, -90)
+
+[node name="Buffer" parent="Sortables/pantry/Anchors/Station" index="5"]
+position = Vector2(0, -20)
+
+[node name="Put" parent="Sortables/pantry/Anchors/Station" index="6"]
+position = Vector2(0, -20)
+
+[node name="Drop" parent="Sortables/pantry/Anchors" index="1"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="Work" parent="Sortables/pantry/Nav" index="0"]
+position = Vector2(0, 40)
+
+[node name="Post" parent="Sortables/pantry/Nav" index="1"]
+position = Vector2(0, 40)
+
+[node name="0" parent="Sortables/pantry/Nav/Footprints" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="rice_cooker" parent="Sortables" unique_id=1484677404 instance=ExtResource("6_uxytc")]
+position = Vector2(420, 220)
+script = ExtResource("2_xcpa8")
+module_id = "station_rice_cooker"
+station_id = "rice_cooker"
+
+[node name="Body" parent="Sortables/rice_cooker/Visual" index="0"]
+color = Color(0.46, 0.58, 0.61, 1)
+polygon = PackedVector2Array(-40, -80, 40, -80, 40, 0, -40, 0)
+
+[node name="Tap" parent="Sortables/rice_cooker/Anchors/Station" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Frame" parent="Sortables/rice_cooker/Anchors/Station" index="1"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Post" parent="Sortables/rice_cooker/Anchors/Station" index="2"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="PostPoint" parent="Sortables/rice_cooker/Anchors/Station" index="3"]
+position = Vector2(0, 40)
+
+[node name="Badge" parent="Sortables/rice_cooker/Anchors/Station" index="4"]
+position = Vector2(0, -90)
+
+[node name="Buffer" parent="Sortables/rice_cooker/Anchors/Station" index="5"]
+position = Vector2(0, -20)
+
+[node name="Put" parent="Sortables/rice_cooker/Anchors/Station" index="6"]
+position = Vector2(0, -20)
+
+[node name="Drop" parent="Sortables/rice_cooker/Anchors" index="1"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="Work" parent="Sortables/rice_cooker/Nav" index="0"]
+position = Vector2(0, 40)
+
+[node name="Post" parent="Sortables/rice_cooker/Nav" index="1"]
+position = Vector2(0, 40)
+
+[node name="0" parent="Sortables/rice_cooker/Nav/Footprints" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="wok_a" parent="Sortables" unique_id=1180772665 instance=ExtResource("6_uxytc")]
+position = Vector2(580, 220)
+script = ExtResource("2_xcpa8")
+module_id = "station_wok_a"
+station_id = "wok_a"
+
+[node name="Body" parent="Sortables/wok_a/Visual" index="0"]
+color = Color(0.46, 0.58, 0.61, 1)
+polygon = PackedVector2Array(-40, -80, 40, -80, 40, 0, -40, 0)
+
+[node name="Tap" parent="Sortables/wok_a/Anchors/Station" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Frame" parent="Sortables/wok_a/Anchors/Station" index="1"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Post" parent="Sortables/wok_a/Anchors/Station" index="2"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="PostPoint" parent="Sortables/wok_a/Anchors/Station" index="3"]
+position = Vector2(0, 40)
+
+[node name="Badge" parent="Sortables/wok_a/Anchors/Station" index="4"]
+position = Vector2(0, -90)
+
+[node name="Buffer" parent="Sortables/wok_a/Anchors/Station" index="5"]
+position = Vector2(0, -20)
+
+[node name="Put" parent="Sortables/wok_a/Anchors/Station" index="6"]
+position = Vector2(0, -20)
+
+[node name="Drop" parent="Sortables/wok_a/Anchors" index="1"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="Work" parent="Sortables/wok_a/Nav" index="0"]
+position = Vector2(0, 40)
+
+[node name="Post" parent="Sortables/wok_a/Nav" index="1"]
+position = Vector2(0, 40)
+
+[node name="0" parent="Sortables/wok_a/Nav/Footprints" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="plating" parent="Sortables" unique_id=910708059 instance=ExtResource("6_uxytc")]
+position = Vector2(100, 380)
+script = ExtResource("2_xcpa8")
+module_id = "station_plating"
+station_id = "plating"
+
+[node name="Body" parent="Sortables/plating/Visual" index="0"]
+color = Color(0.46, 0.58, 0.61, 1)
+polygon = PackedVector2Array(-40, -80, 40, -80, 40, 0, -40, 0)
+
+[node name="Tap" parent="Sortables/plating/Anchors/Station" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Frame" parent="Sortables/plating/Anchors/Station" index="1"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Post" parent="Sortables/plating/Anchors/Station" index="2"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="PostPoint" parent="Sortables/plating/Anchors/Station" index="3"]
+position = Vector2(0, 40)
+
+[node name="Badge" parent="Sortables/plating/Anchors/Station" index="4"]
+position = Vector2(0, -90)
+
+[node name="Buffer" parent="Sortables/plating/Anchors/Station" index="5"]
+position = Vector2(0, -20)
+
+[node name="Put" parent="Sortables/plating/Anchors/Station" index="6"]
+position = Vector2(0, -20)
+
+[node name="Drop" parent="Sortables/plating/Anchors" index="1"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="Work" parent="Sortables/plating/Nav" index="0"]
+position = Vector2(0, 40)
+
+[node name="Post" parent="Sortables/plating/Nav" index="1"]
+position = Vector2(0, 40)
+
+[node name="0" parent="Sortables/plating/Nav/Footprints" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="window" parent="Sortables" unique_id=1054876467 instance=ExtResource("6_uxytc")]
+position = Vector2(260, 380)
+script = ExtResource("2_xcpa8")
+module_id = "station_window"
+station_id = "window"
+
+[node name="Body" parent="Sortables/window/Visual" index="0"]
+color = Color(0.46, 0.58, 0.61, 1)
+polygon = PackedVector2Array(-40, -80, 40, -80, 40, 0, -40, 0)
+
+[node name="Tap" parent="Sortables/window/Anchors/Station" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Frame" parent="Sortables/window/Anchors/Station" index="1"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Post" parent="Sortables/window/Anchors/Station" index="2"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="PostPoint" parent="Sortables/window/Anchors/Station" index="3"]
+position = Vector2(0, 40)
+
+[node name="Badge" parent="Sortables/window/Anchors/Station" index="4"]
+position = Vector2(0, -90)
+
+[node name="Buffer" parent="Sortables/window/Anchors/Station" index="5"]
+position = Vector2(0, -20)
+
+[node name="Put" parent="Sortables/window/Anchors/Station" index="6"]
+position = Vector2(0, -20)
+
+[node name="Drop" parent="Sortables/window/Anchors" index="1"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="Work" parent="Sortables/window/Nav" index="0"]
+position = Vector2(0, 40)
+
+[node name="Post" parent="Sortables/window/Nav" index="1"]
+position = Vector2(0, 40)
+
+[node name="0" parent="Sortables/window/Nav/Footprints" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="wok_b" parent="Sortables" unique_id=645285796 instance=ExtResource("6_uxytc")]
+position = Vector2(420, 380)
+script = ExtResource("2_xcpa8")
+module_id = "station_wok_b"
+station_id = "wok_b"
+
+[node name="Body" parent="Sortables/wok_b/Visual" index="0"]
+color = Color(0.46, 0.58, 0.61, 1)
+polygon = PackedVector2Array(-40, -80, 40, -80, 40, 0, -40, 0)
+
+[node name="Tap" parent="Sortables/wok_b/Anchors/Station" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Frame" parent="Sortables/wok_b/Anchors/Station" index="1"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Post" parent="Sortables/wok_b/Anchors/Station" index="2"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="PostPoint" parent="Sortables/wok_b/Anchors/Station" index="3"]
+position = Vector2(0, 40)
+
+[node name="Badge" parent="Sortables/wok_b/Anchors/Station" index="4"]
+position = Vector2(0, -90)
+
+[node name="Buffer" parent="Sortables/wok_b/Anchors/Station" index="5"]
+position = Vector2(0, -20)
+
+[node name="Put" parent="Sortables/wok_b/Anchors/Station" index="6"]
+position = Vector2(0, -20)
+
+[node name="Drop" parent="Sortables/wok_b/Anchors" index="1"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="Work" parent="Sortables/wok_b/Nav" index="0"]
+position = Vector2(0, 40)
+
+[node name="Post" parent="Sortables/wok_b/Nav" index="1"]
+position = Vector2(0, 40)
+
+[node name="0" parent="Sortables/wok_b/Nav/Footprints" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="soup_pot" parent="Sortables" unique_id=1756787917 instance=ExtResource("6_uxytc")]
+position = Vector2(580, 380)
+script = ExtResource("2_xcpa8")
+module_id = "station_soup_pot"
+station_id = "soup_pot"
+
+[node name="Body" parent="Sortables/soup_pot/Visual" index="0"]
+color = Color(0.46, 0.58, 0.61, 1)
+polygon = PackedVector2Array(-40, -80, 40, -80, 40, 0, -40, 0)
+
+[node name="Tap" parent="Sortables/soup_pot/Anchors/Station" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Frame" parent="Sortables/soup_pot/Anchors/Station" index="1"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Post" parent="Sortables/soup_pot/Anchors/Station" index="2"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="PostPoint" parent="Sortables/soup_pot/Anchors/Station" index="3"]
+position = Vector2(0, 40)
+
+[node name="Badge" parent="Sortables/soup_pot/Anchors/Station" index="4"]
+position = Vector2(0, -90)
+
+[node name="Buffer" parent="Sortables/soup_pot/Anchors/Station" index="5"]
+position = Vector2(0, -20)
+
+[node name="Put" parent="Sortables/soup_pot/Anchors/Station" index="6"]
+position = Vector2(0, -20)
+
+[node name="Drop" parent="Sortables/soup_pot/Anchors" index="1"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="Work" parent="Sortables/soup_pot/Nav" index="0"]
+position = Vector2(0, 40)
+
+[node name="Post" parent="Sortables/soup_pot/Nav" index="1"]
+position = Vector2(0, 40)
+
+[node name="0" parent="Sortables/soup_pot/Nav/Footprints" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="side_window" parent="Sortables" unique_id=1922378459 instance=ExtResource("6_uxytc")]
+position = Vector2(100, 540)
+script = ExtResource("2_xcpa8")
+module_id = "station_side_window"
+station_id = "side_window"
+
+[node name="Body" parent="Sortables/side_window/Visual" index="0"]
+color = Color(0.46, 0.58, 0.61, 1)
+polygon = PackedVector2Array(-40, -80, 40, -80, 40, 0, -40, 0)
+
+[node name="Tap" parent="Sortables/side_window/Anchors/Station" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Frame" parent="Sortables/side_window/Anchors/Station" index="1"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Post" parent="Sortables/side_window/Anchors/Station" index="2"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="PostPoint" parent="Sortables/side_window/Anchors/Station" index="3"]
+position = Vector2(0, 40)
+
+[node name="Badge" parent="Sortables/side_window/Anchors/Station" index="4"]
+position = Vector2(0, -90)
+
+[node name="Buffer" parent="Sortables/side_window/Anchors/Station" index="5"]
+position = Vector2(0, -20)
+
+[node name="Put" parent="Sortables/side_window/Anchors/Station" index="6"]
+position = Vector2(0, -20)
+
+[node name="Drop" parent="Sortables/side_window/Anchors" index="1"]
+position = Vector2(-30, 10)
+script = ExtResource("3_6hcd2")
+size = Vector2(60, 60)
+
+[node name="Work" parent="Sortables/side_window/Nav" index="0"]
+position = Vector2(0, 40)
+
+[node name="Post" parent="Sortables/side_window/Nav" index="1"]
+position = Vector2(0, 40)
+
+[node name="0" parent="Sortables/side_window/Nav/Footprints" index="0"]
+position = Vector2(-40, -80)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 80)
+
+[node name="Table0" parent="Sortables" unique_id=806679757 instance=ExtResource("7_4i8hm")]
+position = Vector2(120, 680)
+script = ExtResource("2_xcpa8")
+module_id = "table_table_0"
+module_kind = "table"
+seat_group = "table"
+
+[node name="Table" parent="Sortables/Table0/Visual" index="0"]
+color = Color(0.64, 0.56, 0.43, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 0, -40, 0)
+
+[node name="0" parent="Sortables/Table0/Visual/Seats" index="0"]
+position = Vector2(-40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="1" parent="Sortables/Table0/Visual/Seats" index="1"]
+position = Vector2(40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="0" parent="Sortables/Table0/Anchors/Seats" index="0"]
+position = Vector2(-40, 20)
+metadata/facing = 1
+
+[node name="1" parent="Sortables/Table0/Anchors/Seats" index="1"]
+position = Vector2(40, 20)
+metadata/facing = 3
+
+[node name="0" parent="Sortables/Table0/Nav/Seats" index="0"]
+position = Vector2(-40, 80)
+
+[node name="1" parent="Sortables/Table0/Nav/Seats" index="1"]
+position = Vector2(40, 80)
+
+[node name="0" parent="Sortables/Table0/Nav/Footprints" index="0"]
+position = Vector2(-40, -40)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 40)
+
+[node name="1" parent="Sortables/Table0/Nav/Footprints" index="1"]
+position = Vector2(-56, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="2" parent="Sortables/Table0/Nav/Footprints" index="2"]
+position = Vector2(24, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="Table1" parent="Sortables" unique_id=57865507 instance=ExtResource("7_4i8hm")]
+position = Vector2(280, 680)
+script = ExtResource("2_xcpa8")
+module_id = "table_table_1"
+module_kind = "table"
+seat_group = "table"
+first_seat = 2
+table_index = 1
+
+[node name="Table" parent="Sortables/Table1/Visual" index="0"]
+color = Color(0.64, 0.56, 0.43, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 0, -40, 0)
+
+[node name="0" parent="Sortables/Table1/Visual/Seats" index="0"]
+position = Vector2(-40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="1" parent="Sortables/Table1/Visual/Seats" index="1"]
+position = Vector2(40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="0" parent="Sortables/Table1/Anchors/Seats" index="0"]
+position = Vector2(-40, 20)
+metadata/facing = 1
+
+[node name="1" parent="Sortables/Table1/Anchors/Seats" index="1"]
+position = Vector2(40, 20)
+metadata/facing = 3
+
+[node name="0" parent="Sortables/Table1/Nav/Seats" index="0"]
+position = Vector2(-40, 80)
+
+[node name="1" parent="Sortables/Table1/Nav/Seats" index="1"]
+position = Vector2(40, 80)
+
+[node name="0" parent="Sortables/Table1/Nav/Footprints" index="0"]
+position = Vector2(-40, -40)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 40)
+
+[node name="1" parent="Sortables/Table1/Nav/Footprints" index="1"]
+position = Vector2(-56, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="2" parent="Sortables/Table1/Nav/Footprints" index="2"]
+position = Vector2(24, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="Table2" parent="Sortables" unique_id=83456558 instance=ExtResource("7_4i8hm")]
+position = Vector2(440, 680)
+script = ExtResource("2_xcpa8")
+module_id = "table_table_2"
+module_kind = "table"
+seat_group = "table"
+first_seat = 4
+table_index = 2
+
+[node name="Table" parent="Sortables/Table2/Visual" index="0"]
+color = Color(0.64, 0.56, 0.43, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 0, -40, 0)
+
+[node name="0" parent="Sortables/Table2/Visual/Seats" index="0"]
+position = Vector2(-40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="1" parent="Sortables/Table2/Visual/Seats" index="1"]
+position = Vector2(40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="0" parent="Sortables/Table2/Anchors/Seats" index="0"]
+position = Vector2(-40, 20)
+metadata/facing = 1
+
+[node name="1" parent="Sortables/Table2/Anchors/Seats" index="1"]
+position = Vector2(40, 20)
+metadata/facing = 3
+
+[node name="0" parent="Sortables/Table2/Nav/Seats" index="0"]
+position = Vector2(-40, 80)
+
+[node name="1" parent="Sortables/Table2/Nav/Seats" index="1"]
+position = Vector2(40, 80)
+
+[node name="0" parent="Sortables/Table2/Nav/Footprints" index="0"]
+position = Vector2(-40, -40)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 40)
+
+[node name="1" parent="Sortables/Table2/Nav/Footprints" index="1"]
+position = Vector2(-56, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="2" parent="Sortables/Table2/Nav/Footprints" index="2"]
+position = Vector2(24, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="Table3" parent="Sortables" unique_id=2059099160 instance=ExtResource("7_4i8hm")]
+position = Vector2(600, 680)
+script = ExtResource("2_xcpa8")
+module_id = "table_table_3"
+module_kind = "table"
+seat_group = "table"
+first_seat = 6
+table_index = 3
+
+[node name="Table" parent="Sortables/Table3/Visual" index="0"]
+color = Color(0.64, 0.56, 0.43, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 0, -40, 0)
+
+[node name="0" parent="Sortables/Table3/Visual/Seats" index="0"]
+position = Vector2(-40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="1" parent="Sortables/Table3/Visual/Seats" index="1"]
+position = Vector2(40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="0" parent="Sortables/Table3/Anchors/Seats" index="0"]
+position = Vector2(-40, 20)
+metadata/facing = 1
+
+[node name="1" parent="Sortables/Table3/Anchors/Seats" index="1"]
+position = Vector2(40, 20)
+metadata/facing = 3
+
+[node name="0" parent="Sortables/Table3/Nav/Seats" index="0"]
+position = Vector2(-40, 80)
+
+[node name="1" parent="Sortables/Table3/Nav/Seats" index="1"]
+position = Vector2(40, 80)
+
+[node name="0" parent="Sortables/Table3/Nav/Footprints" index="0"]
+position = Vector2(-40, -40)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 40)
+
+[node name="1" parent="Sortables/Table3/Nav/Footprints" index="1"]
+position = Vector2(-56, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="2" parent="Sortables/Table3/Nav/Footprints" index="2"]
+position = Vector2(24, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="Table4" parent="Sortables" unique_id=686353835 instance=ExtResource("7_4i8hm")]
+position = Vector2(120, 880)
+script = ExtResource("2_xcpa8")
+module_id = "table_table_4"
+module_kind = "table"
+seat_group = "table"
+first_seat = 8
+table_index = 4
+
+[node name="Table" parent="Sortables/Table4/Visual" index="0"]
+color = Color(0.64, 0.56, 0.43, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 0, -40, 0)
+
+[node name="0" parent="Sortables/Table4/Visual/Seats" index="0"]
+position = Vector2(-40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="1" parent="Sortables/Table4/Visual/Seats" index="1"]
+position = Vector2(40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="0" parent="Sortables/Table4/Anchors/Seats" index="0"]
+position = Vector2(-40, 20)
+metadata/facing = 1
+
+[node name="1" parent="Sortables/Table4/Anchors/Seats" index="1"]
+position = Vector2(40, 20)
+metadata/facing = 3
+
+[node name="0" parent="Sortables/Table4/Nav/Seats" index="0"]
+position = Vector2(-40, 80)
+
+[node name="1" parent="Sortables/Table4/Nav/Seats" index="1"]
+position = Vector2(40, 80)
+
+[node name="0" parent="Sortables/Table4/Nav/Footprints" index="0"]
+position = Vector2(-40, -40)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 40)
+
+[node name="1" parent="Sortables/Table4/Nav/Footprints" index="1"]
+position = Vector2(-56, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="2" parent="Sortables/Table4/Nav/Footprints" index="2"]
+position = Vector2(24, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="Table5" parent="Sortables" unique_id=942975745 instance=ExtResource("7_4i8hm")]
+position = Vector2(280, 880)
+script = ExtResource("2_xcpa8")
+module_id = "table_table_5"
+module_kind = "table"
+seat_group = "table"
+first_seat = 10
+table_index = 5
+
+[node name="Table" parent="Sortables/Table5/Visual" index="0"]
+color = Color(0.64, 0.56, 0.43, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 0, -40, 0)
+
+[node name="0" parent="Sortables/Table5/Visual/Seats" index="0"]
+position = Vector2(-40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="1" parent="Sortables/Table5/Visual/Seats" index="1"]
+position = Vector2(40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="0" parent="Sortables/Table5/Anchors/Seats" index="0"]
+position = Vector2(-40, 20)
+metadata/facing = 1
+
+[node name="1" parent="Sortables/Table5/Anchors/Seats" index="1"]
+position = Vector2(40, 20)
+metadata/facing = 3
+
+[node name="0" parent="Sortables/Table5/Nav/Seats" index="0"]
+position = Vector2(-40, 80)
+
+[node name="1" parent="Sortables/Table5/Nav/Seats" index="1"]
+position = Vector2(40, 80)
+
+[node name="0" parent="Sortables/Table5/Nav/Footprints" index="0"]
+position = Vector2(-40, -40)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 40)
+
+[node name="1" parent="Sortables/Table5/Nav/Footprints" index="1"]
+position = Vector2(-56, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="2" parent="Sortables/Table5/Nav/Footprints" index="2"]
+position = Vector2(24, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="Table6" parent="Sortables" unique_id=878760085 instance=ExtResource("7_4i8hm")]
+position = Vector2(440, 880)
+script = ExtResource("2_xcpa8")
+module_id = "table_table_6"
+module_kind = "table"
+seat_group = "table"
+first_seat = 12
+table_index = 6
+
+[node name="Table" parent="Sortables/Table6/Visual" index="0"]
+color = Color(0.64, 0.56, 0.43, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 0, -40, 0)
+
+[node name="0" parent="Sortables/Table6/Visual/Seats" index="0"]
+position = Vector2(-40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="1" parent="Sortables/Table6/Visual/Seats" index="1"]
+position = Vector2(40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="0" parent="Sortables/Table6/Anchors/Seats" index="0"]
+position = Vector2(-40, 20)
+metadata/facing = 1
+
+[node name="1" parent="Sortables/Table6/Anchors/Seats" index="1"]
+position = Vector2(40, 20)
+metadata/facing = 3
+
+[node name="0" parent="Sortables/Table6/Nav/Seats" index="0"]
+position = Vector2(-40, 80)
+
+[node name="1" parent="Sortables/Table6/Nav/Seats" index="1"]
+position = Vector2(40, 80)
+
+[node name="0" parent="Sortables/Table6/Nav/Footprints" index="0"]
+position = Vector2(-40, -40)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 40)
+
+[node name="1" parent="Sortables/Table6/Nav/Footprints" index="1"]
+position = Vector2(-56, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="2" parent="Sortables/Table6/Nav/Footprints" index="2"]
+position = Vector2(24, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="Table7" parent="Sortables" unique_id=1542249418 instance=ExtResource("7_4i8hm")]
+position = Vector2(600, 880)
+script = ExtResource("2_xcpa8")
+module_id = "table_table_7"
+module_kind = "table"
+seat_group = "table"
+first_seat = 14
+table_index = 7
+
+[node name="Table" parent="Sortables/Table7/Visual" index="0"]
+color = Color(0.64, 0.56, 0.43, 1)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 0, -40, 0)
+
+[node name="0" parent="Sortables/Table7/Visual/Seats" index="0"]
+position = Vector2(-40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="1" parent="Sortables/Table7/Visual/Seats" index="1"]
+position = Vector2(40, 20)
+color = Color(0.38, 0.5, 0.43, 1)
+polygon = PackedVector2Array(-12, -8, 12, -8, 12, 8, -12, 8)
+
+[node name="0" parent="Sortables/Table7/Anchors/Seats" index="0"]
+position = Vector2(-40, 20)
+metadata/facing = 1
+
+[node name="1" parent="Sortables/Table7/Anchors/Seats" index="1"]
+position = Vector2(40, 20)
+metadata/facing = 3
+
+[node name="0" parent="Sortables/Table7/Nav/Seats" index="0"]
+position = Vector2(-40, 80)
+
+[node name="1" parent="Sortables/Table7/Nav/Seats" index="1"]
+position = Vector2(40, 80)
+
+[node name="0" parent="Sortables/Table7/Nav/Footprints" index="0"]
+position = Vector2(-40, -40)
+script = ExtResource("3_6hcd2")
+size = Vector2(80, 40)
+
+[node name="1" parent="Sortables/Table7/Nav/Footprints" index="1"]
+position = Vector2(-56, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[node name="2" parent="Sortables/Table7/Nav/Footprints" index="2"]
+position = Vector2(24, 8)
+script = ExtResource("3_6hcd2")
+size = Vector2(32, 24)
+
+[editable path="Sortables/Space"]
+[editable path="Sortables/counter"]
+[editable path="Sortables/Entrance"]
+[editable path="Sortables/pantry"]
+[editable path="Sortables/rice_cooker"]
+[editable path="Sortables/wok_a"]
+[editable path="Sortables/plating"]
+[editable path="Sortables/window"]
+[editable path="Sortables/wok_b"]
+[editable path="Sortables/soup_pot"]
+[editable path="Sortables/side_window"]
+[editable path="Sortables/Table0"]
+[editable path="Sortables/Table1"]
+[editable path="Sortables/Table2"]
+[editable path="Sortables/Table3"]
+[editable path="Sortables/Table4"]
+[editable path="Sortables/Table5"]
+[editable path="Sortables/Table6"]
+[editable path="Sortables/Table7"]

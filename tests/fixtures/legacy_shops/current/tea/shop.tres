@@ -1,0 +1,2361 @@
+[gd_resource type="Resource" script_class="SpecShop" format=3]
+
+[ext_resource type="Script" path="res://content/rules/spec_connection.gd" id="1_tjgba"]
+[ext_resource type="Script" path="res://content/rules/spec_dish.gd" id="2_ctjwf"]
+[ext_resource type="Script" path="res://content/rules/spec_step.gd" id="3_xwcms"]
+[ext_resource type="Script" path="res://content/rules/spec_dispatch.gd" id="4_l0xyq"]
+[ext_resource type="Script" path="res://content/rules/spec_event.gd" id="5_kou0a"]
+[ext_resource type="Script" path="res://content/rules/spec_flyer.gd" id="6_nw3d8"]
+[ext_resource type="Script" path="res://content/rules/spec_effect.gd" id="7_1v0ns"]
+[ext_resource type="Script" path="res://content/rules/spec_upgrade_level.gd" id="8_cgjme"]
+[ext_resource type="Script" path="res://content/rules/spec_upgrade_track.gd" id="9_g4hkj"]
+[ext_resource type="Script" path="res://content/rules/spec_fulfillment.gd" id="10_x4rom"]
+[ext_resource type="Script" path="res://content/rules/spec_goal_rules.gd" id="11_12epd"]
+[ext_resource type="Script" path="res://content/rules/spec_guide_step.gd" id="12_anqca"]
+[ext_resource type="Script" path="res://content/rules/spec_item.gd" id="13_l0dwn"]
+[ext_resource type="Script" path="res://content/rules/spec_layout.gd" id="14_8dy82"]
+[ext_resource type="Script" path="res://content/rules/spec_shop.gd" id="15_3rult"]
+[ext_resource type="Script" path="res://content/rules/spec_seat_group.gd" id="16_35x7t"]
+[ext_resource type="Script" path="res://content/rules/spec_order_option.gd" id="16_g4hkj"]
+[ext_resource type="Script" path="res://content/rules/spec_staff_kind.gd" id="17_mx6tq"]
+[ext_resource type="Script" path="res://content/rules/spec_staff_rules.gd" id="18_tdcmu"]
+[ext_resource type="Script" path="res://content/rules/spec_stage.gd" id="19_a4xei"]
+[ext_resource type="Script" path="res://content/rules/spec_task.gd" id="20_73lli"]
+[ext_resource type="Script" path="res://content/rules/spec_station.gd" id="21_6l0ld"]
+[ext_resource type="Script" path="res://content/rules/spec_material.gd" id="22_snoov"]
+[ext_resource type="Script" path="res://content/rules/spec_stock_rule.gd" id="23_xb1gn"]
+[ext_resource type="AudioStream" path="res://art/audio/milk_tea_afternoon.ogg" id="music_theme"]
+[ext_resource type="Resource" path="res://content/characters/staff/bear.tres" id="staff_bear"]
+[ext_resource type="Resource" path="res://content/characters/staff/cat.tres" id="staff_cat"]
+[ext_resource type="Resource" path="res://content/characters/staff/fox.tres" id="staff_fox"]
+[ext_resource type="Resource" path="res://content/characters/staff/gray_cat.tres" id="staff_gray_cat"]
+[ext_resource type="Resource" path="res://content/characters/staff/rabbit.tres" id="staff_rabbit"]
+[ext_resource type="Resource" path="res://content/characters/staff/raccoon.tres" id="staff_raccoon"]
+
+[sub_resource type="Resource" id="Resource_m1tbq"]
+script = ExtResource("1_tjgba")
+id = "seal_to_shelf"
+display_name = "封口机 → 外带格"
+from = "seal"
+to = "rack"
+cost = 250
+stage = 2
+
+[sub_resource type="Resource" id="Resource_q0qcx"]
+script = ExtResource("1_tjgba")
+id = "supply_to_boil"
+display_name = "原料柜 → 煮茶机"
+from = "supply"
+to = "boil"
+cost = 50
+stage = 1
+enabled = false
+
+[sub_resource type="Resource" id="Resource_jp4pd"]
+script = ExtResource("1_tjgba")
+id = "boil_to_seal"
+display_name = "煮茶机 → 封口机"
+from = "boil"
+to = "seal"
+cost = 60
+stage = 2
+enabled = false
+
+[sub_resource type="Resource" id="Resource_6bvuk"]
+script = ExtResource("1_tjgba")
+id = "boil_to_mix"
+display_name = "煮茶机 → 调奶台"
+from = "boil"
+to = "mix"
+cost = 150
+stage = 3
+enabled = false
+
+[sub_resource type="Resource" id="Resource_bc3ge"]
+script = ExtResource("1_tjgba")
+id = "mix_to_seal"
+display_name = "调奶台 → 封口机"
+from = "mix"
+to = "seal"
+cost = 80
+stage = 3
+enabled = false
+
+[sub_resource type="Resource" id="Resource_gjupt"]
+script = ExtResource("1_tjgba")
+id = "mix_to_topping"
+display_name = "调奶台 → 加料机"
+from = "mix"
+to = "topping"
+cost = 300
+stage = 5
+enabled = false
+
+[sub_resource type="Resource" id="Resource_gd06f"]
+script = ExtResource("1_tjgba")
+id = "topping_to_seal"
+display_name = "加料机 → 封口机"
+from = "topping"
+to = "seal"
+cost = 300
+stage = 5
+enabled = false
+
+[sub_resource type="Resource" id="Resource_ej0ks"]
+script = ExtResource("3_xwcms")
+station = "lemonade"
+action = "pour"
+seconds = 2.0
+produces = Dictionary[String, int]({
+"lemonade": 1
+})
+label = "打柠檬水"
+
+[sub_resource type="Resource" id="Resource_oybcy"]
+script = ExtResource("2_ctjwf")
+id = "lemonade"
+display_name = "柠檬水"
+item = "lemonade"
+price_parts = Dictionary[String, float]({
+"base": 12.0
+})
+steps = Array[ExtResource("3_xwcms")]([SubResource("Resource_ej0ks")])
+takeaway_process = false
+front = true
+
+[sub_resource type="Resource" id="Resource_4g1t2"]
+script = ExtResource("3_xwcms")
+station = "supply"
+action = "fetch"
+seconds = 0.6
+produces = Dictionary[String, int]({
+"tea_leaf": 1
+})
+label = "拿茶叶"
+
+[sub_resource type="Resource" id="Resource_hmhah"]
+script = ExtResource("3_xwcms")
+station = "boil"
+action = "boil"
+consumes = Dictionary[String, int]({
+"tea_leaf": 1
+})
+produces = Dictionary[String, int]({
+"tea": 1
+})
+label = "煮茶"
+
+[sub_resource type="Resource" id="Resource_uq1do"]
+script = ExtResource("3_xwcms")
+station = "seal"
+action = "place"
+consumes = Dictionary[String, int]({
+"tea": 1
+})
+produces = Dictionary[String, int]({
+"black_tea": 1
+})
+label = "放出餐口"
+
+[sub_resource type="Resource" id="Resource_py30k"]
+script = ExtResource("2_ctjwf")
+id = "black_tea"
+display_name = "红茶"
+item = "black_tea"
+price_parts = Dictionary[String, float]({
+"base": 28.0
+})
+steps = Array[ExtResource("3_xwcms")]([SubResource("Resource_4g1t2"), SubResource("Resource_hmhah"), SubResource("Resource_uq1do")])
+
+[sub_resource type="Resource" id="Resource_kuk8d"]
+script = ExtResource("3_xwcms")
+station = "mix"
+action = "mix"
+consumes = Dictionary[String, int]({
+"milk": 1,
+"tea": 1
+})
+produces = Dictionary[String, int]({
+"plain_milk_tea": 1
+})
+label = "调奶"
+
+[sub_resource type="Resource" id="Resource_cnfxr"]
+script = ExtResource("3_xwcms")
+station = "seal"
+action = "place"
+consumes = Dictionary[String, int]({
+"plain_milk_tea": 1
+})
+label = "放出餐口"
+
+[sub_resource type="Resource" id="Resource_gam32"]
+script = ExtResource("2_ctjwf")
+id = "plain_milk_tea"
+display_name = "原味奶茶"
+item = "plain_milk_tea"
+price_parts = Dictionary[String, float]({
+"base": 30.0
+})
+steps = Array[ExtResource("3_xwcms")]([SubResource("Resource_4g1t2"), SubResource("Resource_hmhah"), SubResource("Resource_kuk8d"), SubResource("Resource_cnfxr")])
+
+[sub_resource type="Resource" id="Resource_84776"]
+script = ExtResource("3_xwcms")
+station = "topping"
+action = "top"
+seconds = 2.0
+consumes = Dictionary[String, int]({
+"plain_milk_tea": 1
+})
+produces = Dictionary[String, int]({
+"pearl_milk_tea": 1
+})
+label = "加珍珠"
+
+[sub_resource type="Resource" id="Resource_e1nga"]
+script = ExtResource("3_xwcms")
+station = "seal"
+action = "place"
+consumes = Dictionary[String, int]({
+"pearl_milk_tea": 1
+})
+label = "放出餐口"
+
+[sub_resource type="Resource" id="Resource_3cbtw"]
+script = ExtResource("2_ctjwf")
+id = "pearl_milk_tea"
+display_name = "珍珠奶茶"
+item = "pearl_milk_tea"
+price_parts = Dictionary[String, float]({
+"base": 38.0
+})
+steps = Array[ExtResource("3_xwcms")]([SubResource("Resource_4g1t2"), SubResource("Resource_hmhah"), SubResource("Resource_kuk8d"), SubResource("Resource_84776"), SubResource("Resource_e1nga")])
+flavor_station = "topping"
+flavor_material = "pearl"
+topping_count = 1
+
+[sub_resource type="Resource" id="Resource_n5i3b"]
+script = ExtResource("3_xwcms")
+station = "topping"
+action = "top"
+seconds = 2.0
+consumes = Dictionary[String, int]({
+"plain_milk_tea": 1
+})
+produces = Dictionary[String, int]({
+"coconut_milk_tea": 1
+})
+label = "加椰果"
+
+[sub_resource type="Resource" id="Resource_16k7v"]
+script = ExtResource("3_xwcms")
+station = "seal"
+action = "place"
+consumes = Dictionary[String, int]({
+"coconut_milk_tea": 1
+})
+label = "放出餐口"
+
+[sub_resource type="Resource" id="Resource_mwsl7"]
+script = ExtResource("2_ctjwf")
+id = "coconut_milk_tea"
+display_name = "椰果奶茶"
+item = "coconut_milk_tea"
+price_parts = Dictionary[String, float]({
+"base": 40.0
+})
+steps = Array[ExtResource("3_xwcms")]([SubResource("Resource_4g1t2"), SubResource("Resource_hmhah"), SubResource("Resource_kuk8d"), SubResource("Resource_n5i3b"), SubResource("Resource_16k7v")])
+flavor_station = "topping"
+flavor_material = "coconut"
+topping_count = 1
+
+[sub_resource type="Resource" id="Resource_2m73d"]
+script = ExtResource("3_xwcms")
+station = "topping"
+action = "top"
+seconds = 2.0
+consumes = Dictionary[String, int]({
+"plain_milk_tea": 1
+})
+produces = Dictionary[String, int]({
+"redbean_milk_tea": 1
+})
+label = "加红豆"
+
+[sub_resource type="Resource" id="Resource_737f3"]
+script = ExtResource("3_xwcms")
+station = "seal"
+action = "place"
+consumes = Dictionary[String, int]({
+"redbean_milk_tea": 1
+})
+label = "放出餐口"
+
+[sub_resource type="Resource" id="Resource_7jc1v"]
+script = ExtResource("2_ctjwf")
+id = "redbean_milk_tea"
+display_name = "红豆奶茶"
+item = "redbean_milk_tea"
+price_parts = Dictionary[String, float]({
+"base": 42.0
+})
+steps = Array[ExtResource("3_xwcms")]([SubResource("Resource_4g1t2"), SubResource("Resource_hmhah"), SubResource("Resource_kuk8d"), SubResource("Resource_2m73d"), SubResource("Resource_737f3")])
+flavor_station = "topping"
+flavor_material = "redbean"
+topping_count = 1
+
+[sub_resource type="Resource" id="Resource_ypcwp"]
+script = ExtResource("3_xwcms")
+station = "topping"
+action = "top"
+seconds = 2.0
+consumes = Dictionary[String, int]({
+"plain_milk_tea": 1
+})
+produces = Dictionary[String, int]({
+"taro_milk_tea": 1
+})
+label = "加芋泥"
+
+[sub_resource type="Resource" id="Resource_gurkx"]
+script = ExtResource("3_xwcms")
+station = "seal"
+action = "place"
+consumes = Dictionary[String, int]({
+"taro_milk_tea": 1
+})
+label = "放出餐口"
+
+[sub_resource type="Resource" id="Resource_14e4x"]
+script = ExtResource("2_ctjwf")
+id = "taro_milk_tea"
+display_name = "芋泥奶茶"
+item = "taro_milk_tea"
+price_parts = Dictionary[String, float]({
+"base": 46.0
+})
+steps = Array[ExtResource("3_xwcms")]([SubResource("Resource_4g1t2"), SubResource("Resource_hmhah"), SubResource("Resource_kuk8d"), SubResource("Resource_ypcwp"), SubResource("Resource_gurkx")])
+flavor_station = "topping"
+flavor_material = "taro"
+topping_count = 1
+
+[sub_resource type="Resource" id="Resource_2qbme"]
+script = ExtResource("3_xwcms")
+station = "lemonade"
+action = "pour"
+seconds = 2.0
+produces = Dictionary[String, int]({
+"lemonade": 1
+})
+label = "打柠檬水"
+
+[sub_resource type="Resource" id="Resource_o0ec7"]
+script = ExtResource("3_xwcms")
+station = "press"
+action = "press"
+seconds = 4.0
+consumes = Dictionary[String, int]({
+"lemonade": 1
+})
+produces = Dictionary[String, int]({
+"lemon_tea": 1
+})
+label = "捣柠檬"
+
+[sub_resource type="Resource" id="Resource_bkbpb"]
+script = ExtResource("2_ctjwf")
+id = "lemon_tea"
+display_name = "柠檬茶"
+item = "lemon_tea"
+price_parts = Dictionary[String, float]({
+"base": 34.0
+})
+steps = Array[ExtResource("3_xwcms")]([SubResource("Resource_2qbme"), SubResource("Resource_o0ec7")])
+takeaway_process = false
+front = true
+flavor_station = "press"
+flavor_material = "lemon"
+
+[sub_resource type="Resource" id="Resource_gxbws"]
+script = ExtResource("4_l0xyq")
+action_version = 1
+base_scores = Dictionary[String, float]({
+"chore": 55.0,
+"follow": 90.0,
+"follow_step": 95.0,
+"load": 26.0,
+"load_short": 70.0,
+"pot_short_bonus": 30.0,
+"serve": 110.0,
+"stir": 80.0,
+"to_process": 100.0,
+"to_rack": 105.0,
+"topping": 72.0
+})
+wait_bonus_per_second = 0.1
+wait_bonus_cap = 20.0
+travel_penalty = 1.2
+throughput_weight = 18.0
+fatigue_weight = 0.18
+fatigue_gain = 0.004
+fatigue_recover = 0.025
+hop_seconds = 0.6
+ticket_give_up = 30.0
+
+[sub_resource type="Resource" id="Resource_pgr5n"]
+script = ExtResource("7_1v0ns")
+kind = "flyer_customers"
+op = "set"
+value = 4.0
+
+[sub_resource type="Resource" id="Resource_qkx03"]
+script = ExtResource("7_1v0ns")
+kind = "flyer_cooldown"
+op = "set"
+value = 120.0
+
+[sub_resource type="Resource" id="Resource_su02m"]
+script = ExtResource("7_1v0ns")
+kind = "flyer_customers"
+op = "set"
+value = 6.0
+
+[sub_resource type="Resource" id="Resource_523sf"]
+script = ExtResource("7_1v0ns")
+kind = "flyer_cooldown"
+op = "set"
+value = 105.0
+
+[sub_resource type="Resource" id="Resource_7ljdt"]
+script = ExtResource("8_cgjme")
+cost = 60
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_su02m"), SubResource("Resource_523sf")])
+
+[sub_resource type="Resource" id="Resource_ojgct"]
+script = ExtResource("7_1v0ns")
+kind = "flyer_customers"
+op = "set"
+value = 8.0
+
+[sub_resource type="Resource" id="Resource_q652i"]
+script = ExtResource("7_1v0ns")
+kind = "flyer_cooldown"
+op = "set"
+value = 90.0
+
+[sub_resource type="Resource" id="Resource_wjwak"]
+script = ExtResource("8_cgjme")
+cost = 210
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ojgct"), SubResource("Resource_q652i")])
+
+[sub_resource type="Resource" id="Resource_fbcvd"]
+script = ExtResource("7_1v0ns")
+kind = "flyer_customers"
+op = "set"
+value = 10.0
+
+[sub_resource type="Resource" id="Resource_bij2b"]
+script = ExtResource("7_1v0ns")
+kind = "flyer_cooldown"
+op = "set"
+value = 75.0
+
+[sub_resource type="Resource" id="Resource_acid8"]
+script = ExtResource("8_cgjme")
+cost = 630
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_fbcvd"), SubResource("Resource_bij2b")])
+
+[sub_resource type="Resource" id="Resource_8ch08"]
+script = ExtResource("9_g4hkj")
+id = "flyer"
+display_name = "传单"
+base_effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_pgr5n"), SubResource("Resource_qkx03")])
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_7ljdt"), SubResource("Resource_wjwak"), SubResource("Resource_acid8")])
+effect_label = "传单"
+
+[sub_resource type="Resource" id="Resource_86wxj"]
+script = ExtResource("6_nw3d8")
+wave_seconds = 30.0
+track = SubResource("Resource_8ch08")
+
+[sub_resource type="Resource" id="Resource_q8vau"]
+script = ExtResource("10_x4rom")
+takeaway_station = "seal"
+mood_seconds = Array[float]([15.0, 30.0])
+seated_patience = 0.5
+ramp_start = 0.25
+ramp_orders = 12
+opening_customers = 3
+
+[sub_resource type="Resource" id="Resource_ufdpv"]
+script = ExtResource("11_12epd")
+texts = Dictionary[String, String]({
+"box": "支付 {cost} 金币在原料柜解锁{name}箱",
+"box_short": "解锁{name}箱",
+"done": "经营任务已全部完成，继续营业",
+"done_short": "经营任务已全部完成",
+"drag_hint": "拖到柜台 = 前台（接待客人）；拖到工位或空地 = 后厨",
+"drop_": "恢复流动",
+"drop_boil": "坐班煮茶台",
+"drop_counter": "前台接单",
+"drop_topping": "坐班加料台",
+"hint_front": "前台跟不上，{drink}排起了长队：升级前台员工或多招一位",
+"hint_front_fix": "升级前台员工",
+"hint_machine": "{drink}做不过来：升级{name}",
+"hint_machine_fix": "升级{name}",
+"hint_no_kitchen": "没有后厨员工，{drink}做不出来：派一位员工去后厨",
+"hint_no_kitchen_fix": "派员工去后厨",
+"hint_pot": "{drink}做不过来，{name}一直在煮：升级{name}",
+"hint_pot_fix": "升级{name}",
+"hint_staff": "后厨跑不过来，{drink}排起了长队：升级后厨员工或多招一位",
+"hint_staff_fix": "升级后厨员工",
+"icon_press": "res://art/reference/brewer.png",
+"icon_topping": "res://art/reference/brewer.png",
+"need_operate": "待操作",
+"need_take": "待取茶",
+"open": "支付 {cost} 金币解锁{name}，开始营业",
+"open_short": "解锁{name}，开始营业",
+"placed_": "已安排到后厨",
+"placed_boil": "已安排到煮茶台坐班",
+"placed_counter": "已安排到前台：只负责接待客人、取杯上菜。",
+"placed_topping": "已安排到加料台坐班",
+"post_": "流动",
+"post_boil": "煮茶",
+"post_counter": "前台",
+"post_topping": "加料",
+"staff_slots": "前台 {front_used}/{front} · 后厨 {kitchen_used}/{kitchen}",
+"stage": "支付 {cost} 金币解锁{name}",
+"stage_short": "攒金币 · 解锁{name}",
+"task": "{name}（{current} / {target}）",
+"task_carry_to_process": "送去封口",
+"task_carry_to_rack": "送上外带格",
+"task_carry_to_shelf": "成品上架",
+"task_idle": "待命",
+"task_load": "补原料",
+"task_pot_start": "人工投料",
+"task_pot_take": "取出茶汤",
+"task_serve": "取杯送餐",
+"task_stir": "待操作",
+"task_transfer": "送去{to}",
+"task_transfer@topping": "送去加料",
+"task_work": "手工加料",
+"task_work@press": "捣柠檬",
+"unit": "杯"
+})
+opening_station = "lemonade"
+
+[sub_resource type="Resource" id="Resource_4p3jx"]
+script = ExtResource("12_anqca")
+id = "welcome"
+when = Array[String](["!open"])
+seen_when = Array[String](["open", "stage>=1"])
+shop_page_only = false
+skip_marks = Array[String](["opening"])
+style = "card"
+title = "欢迎，店长！"
+art = "raccoon"
+rows = [["res://art/ui/drink_lemonade.png", "招待顾客，卖饮品收金币"], ["res://art/reference/pearl_pot.png", "开通后厨生产线，做新饮品"], ["goals", "完成经营任务，把小店做大"]]
+confirm_label = "开始营业"
+cancel_label = "跳过引导"
+next = "opening"
+
+[sub_resource type="Resource" id="Resource_1wmsa"]
+script = ExtResource("12_anqca")
+id = "opening"
+seen_when = Array[String](["stage>=1", "open&staff>=opening"])
+shop_page_only = false
+cues = Array[Dictionary]([{
+"at": "ui:unlock",
+"if": ["!open", "page:station:lemonade"],
+"text": "点「解锁」，花 10 金币摆上柠檬水台"
+}, {
+"go": "shop",
+"if": ["!open", "!page:shop"]
+}, {
+"at": "frame:lemonade",
+"if": ["!open"],
+"text": "先开张！点这里摆上柠檬水台"
+}, {
+"at": "area:Guide/CounterArea",
+"if": ["sold:0"],
+"pause": false,
+"text": "小猫会自己做柠檬水、招呼客人。
+看看第一杯卖出去！"
+}, {
+"at": "ui:tab:staff",
+"if": ["staff<opening", "waiting", "!page:staff"],
+"text": "新伙伴在名册里，点「员工」"
+}, {
+"at": "ui:deploy",
+"if": ["staff<opening", "waiting"],
+"select_waiting": true,
+"text": "点「派到店内」，让伙伴一起干活"
+}, {
+"if": ["staff<opening", "!can_hire"],
+"wait": true
+}, {
+"at": "ui:tab:staff",
+"if": ["staff<opening", "!page:staff"],
+"text": "收到金币了！人手多出杯更快，点「员工」"
+}, {
+"at": "ui:hire",
+"if": ["staff<opening"],
+"text": "招一位新伙伴，招来直接上岗"
+}, {
+"then": "done"
+}])
+skip_label = "跳过引导"
+skip_marks = Array[String](["welcome"])
+
+[sub_resource type="Resource" id="Resource_ho7ym"]
+script = ExtResource("12_anqca")
+id = "done"
+trigger = "next"
+params = {
+"stage": 1
+}
+finish_marks = Array[String](["opening"])
+style = "card"
+title = "开店上手了！"
+text = "接下来自己经营：攒够 {cost} 金币，就能开{line}。
+点机器可以升级，点「员工」可以调整岗位。"
+confirm_label = "继续营业"
+
+[sub_resource type="Resource" id="Resource_tsvuk"]
+script = ExtResource("12_anqca")
+id = "line_1"
+when = Array[String](["stage>=0", "stage<1", "affordable:boil"])
+done_when = Array[String](["stage>=1", "!affordable:boil"])
+cues = Array[Dictionary]([{
+"at": "ui:unlock",
+"if": ["page:station:boil"],
+"text": "点「解锁」开通{line}"
+}, {
+"go": "shop",
+"if": ["!page:shop"]
+}, {
+"at": "frame:boil",
+"text": "金币够了！开通{line}，能卖新饮品"
+}])
+params = {
+"stage": 1
+}
+
+[sub_resource type="Resource" id="Resource_njies"]
+script = ExtResource("12_anqca")
+id = "line_2"
+when = Array[String](["stage>=1", "stage<2", "affordable:seal"])
+done_when = Array[String](["stage>=2", "!affordable:seal"])
+cues = Array[Dictionary]([{
+"at": "ui:unlock",
+"if": ["page:station:seal"],
+"text": "点「解锁」开通{line}"
+}, {
+"go": "shop",
+"if": ["!page:shop"]
+}, {
+"at": "frame:seal",
+"text": "金币够了！开通{line}，能卖新饮品"
+}])
+params = {
+"stage": 2
+}
+
+[sub_resource type="Resource" id="Resource_nwen5"]
+script = ExtResource("12_anqca")
+id = "line_3"
+when = Array[String](["stage>=2", "stage<3", "affordable:mix"])
+done_when = Array[String](["stage>=3", "!affordable:mix"])
+cues = Array[Dictionary]([{
+"at": "ui:unlock",
+"if": ["page:station:mix"],
+"text": "点「解锁」开通{line}"
+}, {
+"go": "shop",
+"if": ["!page:shop"]
+}, {
+"at": "frame:mix",
+"text": "金币够了！开通{line}，能卖新饮品"
+}])
+params = {
+"stage": 3
+}
+
+[sub_resource type="Resource" id="Resource_pkfa0"]
+script = ExtResource("12_anqca")
+id = "line_4"
+when = Array[String](["stage>=3", "stage<4", "affordable:press"])
+done_when = Array[String](["stage>=4", "!affordable:press"])
+cues = Array[Dictionary]([{
+"at": "ui:unlock",
+"if": ["page:station:press"],
+"text": "点「解锁」开通{line}"
+}, {
+"go": "shop",
+"if": ["!page:shop"]
+}, {
+"at": "frame:press",
+"text": "金币够了！开通{line}，能卖新饮品"
+}])
+params = {
+"stage": 4
+}
+
+[sub_resource type="Resource" id="Resource_h2bkm"]
+script = ExtResource("12_anqca")
+id = "line_5"
+when = Array[String](["stage>=4", "stage<5", "affordable:topping"])
+done_when = Array[String](["stage>=5", "!affordable:topping"])
+cues = Array[Dictionary]([{
+"at": "ui:unlock",
+"if": ["page:station:topping"],
+"text": "点「解锁」开通{line}"
+}, {
+"go": "shop",
+"if": ["!page:shop"]
+}, {
+"at": "frame:topping",
+"text": "金币够了！开通{line}，能卖新饮品"
+}])
+params = {
+"stage": 5
+}
+
+[sub_resource type="Resource" id="Resource_4lrgi"]
+script = ExtResource("12_anqca")
+id = "shop_done"
+when = Array[String](["complete"])
+style = "card"
+title = "首店完成！"
+title_size = 64
+medal = "medal"
+stats = [["clock", "用时", "time"], ["coin", "总营业额", "revenue"]]
+text = "第二家店还在准备中，可以继续把这家店做大。"
+confirm_label = "继续营业"
+
+[sub_resource type="Resource" id="Resource_ifvmf"]
+script = ExtResource("12_anqca")
+id = "box_tea_leaf"
+when = Array[String](["box:tea_leaf", "box_affordable"])
+done_when = Array[String](["!box:tea_leaf", "!box_affordable"])
+cues = Array[Dictionary]([{
+"at": "ui:material:tea_leaf",
+"if": ["page:station:supply"],
+"text": "解锁{box}箱，{machine}才有原料"
+}, {
+"go": "shop",
+"if": ["!page:shop"]
+}, {
+"at": "frame:supply",
+"text": "{machine}要用{box}：去原料柜解锁{box}箱"
+}])
+
+[sub_resource type="Resource" id="Resource_m6brp"]
+script = ExtResource("12_anqca")
+id = "box_milk"
+when = Array[String](["box:milk", "box_affordable"])
+done_when = Array[String](["!box:milk", "!box_affordable"])
+cues = Array[Dictionary]([{
+"at": "ui:material:milk",
+"if": ["page:station:supply"],
+"text": "解锁{box}箱，{machine}才有原料"
+}, {
+"go": "shop",
+"if": ["!page:shop"]
+}, {
+"at": "frame:supply",
+"text": "{machine}要用{box}：去原料柜解锁{box}箱"
+}])
+
+[sub_resource type="Resource" id="Resource_j7ryq"]
+script = ExtResource("12_anqca")
+id = "kitchen"
+when = Array[String](["stage>=1", "kitchen_staff:0", "no_box", "can_staff"])
+done_when = Array[String](["!kitchen_staff:0"])
+cues = Array[Dictionary]([{
+"at": "ui:tab:staff",
+"if": ["waiting", "!page:staff"],
+"text": "后厨还没人！新伙伴在名册里，点「员工」"
+}, {
+"at": "ui:deploy",
+"if": ["waiting"],
+"select_waiting": true,
+"text": "点「派到店内」，让伙伴去后厨煮茶"
+}, {
+"back": true,
+"if": ["!can_hire"]
+}, {
+"at": "ui:tab:staff",
+"if": ["!page:staff"],
+"text": "前台只管接待客人，煮茶要后厨员工：点「员工」"
+}, {
+"at": "ui:hire",
+"text": "招一位伙伴，招来直接去后厨"
+}])
+
+[sub_resource type="Resource" id="Resource_l8d5n"]
+script = ExtResource("12_anqca")
+id = "more_staff"
+when = Array[String](["stage>=5", "room", "can_staff"])
+done_when = Array[String](["hired", "!room"])
+cues = Array[Dictionary]([{
+"at": "ui:tab:staff",
+"if": ["waiting", "!page:staff"],
+"text": "加料机开通了，每杯要多走一段路。
+还有空岗位，点「员工」派伙伴上岗"
+}, {
+"at": "ui:deploy",
+"if": ["waiting"],
+"select_waiting": true,
+"text": "点「派到店内」，让伙伴一起干活"
+}, {
+"back": true,
+"if": ["!can_hire"]
+}, {
+"at": "ui:tab:staff",
+"if": ["!page:staff"],
+"text": "加料机开通了，每杯要多走一段路。
+还有空岗位，点「员工」再招一位，
+煮茶机也要升级跟上"
+}, {
+"at": "ui:hire",
+"text": "招一位新伙伴，招来直接上岗"
+}])
+
+[sub_resource type="Resource" id="Resource_tb00n"]
+script = ExtResource("12_anqca")
+id = "lost_seats"
+trigger = "angry"
+when = Array[String](["angry:seats"])
+done_when = Array[String](["!page:shop"])
+cues = Array[Dictionary]([{
+"at": "ui:chip:seats",
+"text": "有客人等急了！堂食坐满了，
+点这里加座位，客人才能坐下"
+}])
+skip_label = "知道了"
+
+[sub_resource type="Resource" id="Resource_wx7ac"]
+script = ExtResource("12_anqca")
+id = "lost_staff"
+trigger = "angry"
+when = Array[String](["angry:staff"])
+done_when = Array[String](["!page:shop"])
+cues = Array[Dictionary]([{
+"at": "ui:tab:staff",
+"text": "有客人等急了！还有空岗位，
+点「员工」招一位伙伴"
+}])
+skip_label = "知道了"
+
+[sub_resource type="Resource" id="Resource_fm6n5"]
+script = ExtResource("12_anqca")
+id = "lost_machine"
+trigger = "angry"
+when = Array[String](["angry:machine"])
+done_when = Array[String](["!page:shop"])
+cues = Array[Dictionary]([{
+"at": "station:{slow_id}",
+"text": "有客人等急了！{slow}跟不上，
+点它升级，出杯更快"
+}])
+skip_label = "知道了"
+
+[sub_resource type="Resource" id="Resource_ofbvg"]
+script = ExtResource("13_l0dwn")
+id = "tea_leaf"
+display_name = "茶叶"
+art = "pearl_tea"
+
+[sub_resource type="Resource" id="Resource_cffgs"]
+script = ExtResource("13_l0dwn")
+id = "milk"
+display_name = "牛奶"
+art = "pearl_tea"
+
+[sub_resource type="Resource" id="Resource_e8s1d"]
+script = ExtResource("13_l0dwn")
+id = "tea"
+display_name = "茶汤"
+art = "cream_tea"
+
+[sub_resource type="Resource" id="Resource_3dkr1"]
+script = ExtResource("13_l0dwn")
+id = "plain_milk_tea"
+display_name = "原味奶茶"
+art = "cream_tea"
+
+[sub_resource type="Resource" id="Resource_n745i"]
+script = ExtResource("13_l0dwn")
+id = "pearl_milk_tea"
+display_name = "珍珠奶茶"
+art = "pearl_tea"
+
+[sub_resource type="Resource" id="Resource_gc2vn"]
+script = ExtResource("13_l0dwn")
+id = "coconut_milk_tea"
+display_name = "椰果奶茶"
+art = "cream_tea"
+tint = Color(1, 0.972549, 0.8745098, 1)
+
+[sub_resource type="Resource" id="Resource_aph8w"]
+script = ExtResource("13_l0dwn")
+id = "redbean_milk_tea"
+display_name = "红豆奶茶"
+art = "pearl_tea"
+tint = Color(1, 0.84705883, 0.8117647, 1)
+
+[sub_resource type="Resource" id="Resource_e7yay"]
+script = ExtResource("13_l0dwn")
+id = "taro_milk_tea"
+display_name = "芋泥奶茶"
+art = "cream_tea"
+tint = Color(0.88235295, 0.8156863, 1, 1)
+
+[sub_resource type="Resource" id="Resource_nicqr"]
+script = ExtResource("13_l0dwn")
+id = "lemonade"
+display_name = "柠檬水"
+art = "fruit_tea"
+
+[sub_resource type="Resource" id="Resource_nyjld"]
+script = ExtResource("13_l0dwn")
+id = "black_tea"
+display_name = "红茶"
+art = "cream_tea"
+tint = Color(0.8509804, 0.5764706, 0.37254903, 1)
+
+[sub_resource type="Resource" id="Resource_jv8ei"]
+script = ExtResource("13_l0dwn")
+id = "lemon_tea"
+display_name = "柠檬茶"
+art = "fruit_tea"
+tint = Color(0.9490196, 0.7019608, 0.41568628, 1)
+
+[sub_resource type="Resource" id="Resource_x4rom"]
+script = ExtResource("14_8dy82")
+nav = "grid"
+areas = Array[Rect2i]([Rect2i(2, 13, 32, 22), Rect2i(2, 35, 32, 36)])
+obstacles = Array[Rect2]([Rect2(23, 269, 122, 348), Rect2(267, 235, 290, 70), Rect2(22, 220, 235, 75), Rect2(590, 367, 72, 213), Rect2(560, 205, 132, 185), Rect2(522, 530, 178, 154), Rect2(32, 595, 122, 185), Rect2(32, 709, 291, 148), Rect2(323, 752, 365, 105), Rect2(131, 1115, 120, 80), Rect2(470, 1115, 120, 80), Rect2(132, 1312, 120, 80), Rect2(468, 1312, 120, 80)])
+obstacle_stations = Array[String](["", "", "", "", "", "", "", "", "", "", "", "", ""])
+grid_size = Vector2i(36, 75)
+points = Dictionary[String, Vector2]({
+"belt_in": Vector2(530, 430),
+"boil": Vector2(350, 330),
+"counter": Vector2(410, 730),
+"lemonade": Vector2(190, 650),
+"mix": Vector2(480, 330),
+"press": Vector2(315, 690),
+"seal": Vector2(530, 430),
+"seal_belt": Vector2(530, 430),
+"shelf": Vector2(490, 630),
+"supply": Vector2(210, 310),
+"topping": Vector2(190, 490)
+})
+posts = Dictionary[String, Vector2]({
+"boil": Vector2(270, 330),
+"counter": Vector2(410, 730),
+"topping": Vector2(190, 410)
+})
+motion_version = 1
+actor_areas = {
+"customer": [Rect2i(2, 44, 32, 27)],
+"staff": [Rect2i(2, 13, 32, 25)]
+}
+customer_points = Dictionary[String, Vector2]({
+"entrance": Vector2(360, 1390),
+"exit": Vector2(380, 1390),
+"pickup": Vector2(635, 925),
+"seat:dine/0": Vector2(85, 1143.0834),
+"seat:dine/1": Vector2(296, 1143.0834),
+"seat:dine/2": Vector2(424, 1143.0834),
+"seat:dine/3": Vector2(635, 1143.0834),
+"seat:dine/4": Vector2(86, 1340.0834),
+"seat:dine/5": Vector2(297, 1340.0834),
+"seat:dine/6": Vector2(422, 1340.0834),
+"seat:dine/7": Vector2(633, 1340.0834)
+})
+customer_queue = Array[Vector2]([Vector2(530, 925), Vector2(425, 925), Vector2(320, 925), Vector2(215, 925), Vector2(530, 1012), Vector2(425, 1012), Vector2(320, 1012), Vector2(215, 1012)])
+
+[sub_resource type="Resource" id="Resource_poakd"]
+script = ExtResource("16_35x7t")
+id = "dine"
+start = 2
+step = 2
+costs = Array[int]([40, 154, 396])
+seconds = 40.0
+patience = 0.5
+
+[sub_resource type="Resource" id="Resource_nlrjp"]
+script = ExtResource("7_1v0ns")
+kind = "walk"
+target = "front"
+value = 1.2
+
+[sub_resource type="Resource" id="Resource_ro088"]
+script = ExtResource("8_cgjme")
+cost = 10
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_nlrjp")])
+
+[sub_resource type="Resource" id="Resource_1e8ah"]
+script = ExtResource("7_1v0ns")
+kind = "staff_slot"
+target = "front"
+op = "add"
+
+[sub_resource type="Resource" id="Resource_6u0x0"]
+script = ExtResource("8_cgjme")
+cost = 51
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_1e8ah")])
+
+[sub_resource type="Resource" id="Resource_43n6a"]
+script = ExtResource("7_1v0ns")
+kind = "work"
+target = "front"
+value = 1.25
+
+[sub_resource type="Resource" id="Resource_mflao"]
+script = ExtResource("8_cgjme")
+cost = 130
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_43n6a")])
+
+[sub_resource type="Resource" id="Resource_nl2m0"]
+script = ExtResource("7_1v0ns")
+kind = "walk"
+target = "front"
+value = 1.2
+
+[sub_resource type="Resource" id="Resource_a81lj"]
+script = ExtResource("8_cgjme")
+cost = 315
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_nl2m0")])
+
+[sub_resource type="Resource" id="Resource_j6r3h"]
+script = ExtResource("9_g4hkj")
+id = "front"
+display_name = "前台"
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_ro088"), SubResource("Resource_6u0x0"), SubResource("Resource_mflao"), SubResource("Resource_a81lj")])
+effect_label = "员工"
+
+[sub_resource type="Resource" id="Resource_1vyab"]
+script = ExtResource("7_1v0ns")
+kind = "walk"
+target = "kitchen"
+value = 1.2
+
+[sub_resource type="Resource" id="Resource_fab7n"]
+script = ExtResource("8_cgjme")
+cost = 20
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_1vyab")])
+
+[sub_resource type="Resource" id="Resource_15u5b"]
+script = ExtResource("7_1v0ns")
+kind = "work"
+target = "kitchen"
+value = 1.25
+
+[sub_resource type="Resource" id="Resource_5tji1"]
+script = ExtResource("8_cgjme")
+cost = 45
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_15u5b")])
+
+[sub_resource type="Resource" id="Resource_d0tyj"]
+script = ExtResource("7_1v0ns")
+kind = "carry"
+target = "kitchen"
+op = "add"
+
+[sub_resource type="Resource" id="Resource_184w0"]
+script = ExtResource("8_cgjme")
+cost = 101
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_d0tyj")])
+
+[sub_resource type="Resource" id="Resource_ax1jx"]
+script = ExtResource("7_1v0ns")
+kind = "walk"
+target = "kitchen"
+value = 1.2
+
+[sub_resource type="Resource" id="Resource_p887f"]
+script = ExtResource("8_cgjme")
+cost = 224
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ax1jx")])
+
+[sub_resource type="Resource" id="Resource_ukdit"]
+script = ExtResource("7_1v0ns")
+kind = "work"
+target = "kitchen"
+value = 1.25
+
+[sub_resource type="Resource" id="Resource_g0mkt"]
+script = ExtResource("8_cgjme")
+cost = 452
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ukdit")])
+
+[sub_resource type="Resource" id="Resource_qet61"]
+script = ExtResource("7_1v0ns")
+kind = "carry"
+target = "kitchen"
+op = "add"
+
+[sub_resource type="Resource" id="Resource_ixqvy"]
+script = ExtResource("8_cgjme")
+cost = 908
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_qet61")])
+
+[sub_resource type="Resource" id="Resource_ng58g"]
+script = ExtResource("9_g4hkj")
+id = "kitchen"
+display_name = "后厨"
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_fab7n"), SubResource("Resource_5tji1"), SubResource("Resource_184w0"), SubResource("Resource_p887f"), SubResource("Resource_g0mkt"), SubResource("Resource_ixqvy")])
+effect_label = "员工"
+
+[sub_resource type="Resource" id="Resource_8p4c6"]
+script = ExtResource("18_tdcmu")
+kinds = Array[ExtResource("17_mx6tq")]([ExtResource("staff_cat"), ExtResource("staff_raccoon"), ExtResource("staff_fox"), ExtResource("staff_rabbit"), ExtResource("staff_gray_cat"), ExtResource("staff_bear")])
+starting = Array[String](["cat"])
+starting_post = "counter"
+hire_pool = Array[String](["cat", "raccoon", "fox", "rabbit", "gray_cat", "bear"])
+hire_cost_base = 35
+hire_cost_step = 25
+zones = Array[String](["front", "kitchen"])
+can_drag = true
+tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_j6r3h"), SubResource("Resource_ng58g")])
+home_anchor = "counter"
+
+[sub_resource type="Resource" id="Resource_cb5lx"]
+script = ExtResource("20_73lli")
+id = "lemon30"
+display_name = "柠檬水卖出 30 杯"
+target = "lemonade"
+amount = 30.0
+
+[sub_resource type="Resource" id="Resource_w0lbb"]
+script = ExtResource("19_a4xei")
+id = "stage0"
+display_name = "开张"
+stations = Array[String](["lemonade"])
+cost = 12
+dish = "lemonade"
+customer_interval = 10.0
+order_weights = Dictionary[String, float]({
+"lemonade": 1.0
+})
+staff_slots = Dictionary[String, int]({
+"kitchen": 0
+})
+queue_capacity = 3
+seat_seconds = 20.0
+tasks = Array[ExtResource("20_73lli")]([SubResource("Resource_cb5lx")])
+
+[sub_resource type="Resource" id="Resource_at115"]
+script = ExtResource("20_73lli")
+id = "black20"
+display_name = "红茶卖出 20 杯"
+target = "black_tea"
+amount = 20.0
+
+[sub_resource type="Resource" id="Resource_uggdv"]
+script = ExtResource("19_a4xei")
+id = "stage1"
+display_name = "煮茶机"
+stations = Array[String](["boil"])
+cost = 115
+dish = "black_tea"
+unlock_note = "开始卖红茶（售价 28）。原料柜里还要解锁茶叶箱"
+customer_interval = 7.0
+order_weights = Dictionary[String, float]({
+"black_tea": 0.35,
+"lemonade": 0.65
+})
+staff_slots = Dictionary[String, int]({
+"kitchen": 1
+})
+queue_capacity = 4
+seat_seconds = 20.0
+tasks = Array[ExtResource("20_73lli")]([SubResource("Resource_at115")])
+
+[sub_resource type="Resource" id="Resource_xcf0t"]
+script = ExtResource("20_73lli")
+condition = "track_level"
+id = "lemon_star"
+display_name = "柠檬水台升 1 星（Lv4）"
+target = "lemonade"
+amount = 4.0
+
+[sub_resource type="Resource" id="Resource_ouank"]
+script = ExtResource("19_a4xei")
+id = "stage2"
+display_name = "封口机"
+stations = Array[String](["seal"])
+cost = 288
+dish = "black_tea"
+unlock_note = "开放打包外带：想外带或坐不下的客人，封好口带走"
+customer_interval = 5.5
+order_weights = Dictionary[String, float]({
+"black_tea": 0.35,
+"lemonade": 0.65
+})
+takeaway_share = 0.5
+staff_slots = Dictionary[String, int]({
+"kitchen": 1
+})
+queue_capacity = 5
+seat_seconds = 25.0
+tasks = Array[ExtResource("20_73lli")]([SubResource("Resource_xcf0t")])
+
+[sub_resource type="Resource" id="Resource_b3ogy"]
+script = ExtResource("20_73lli")
+id = "plain20"
+display_name = "原味奶茶卖出 20 杯"
+target = "plain_milk_tea"
+amount = 20.0
+
+[sub_resource type="Resource" id="Resource_p4js5"]
+script = ExtResource("20_73lli")
+condition = "track_level"
+id = "brewer_star"
+display_name = "煮茶机升 1 星（Lv4）"
+target = "boil"
+amount = 4.0
+
+[sub_resource type="Resource" id="Resource_4xnnl"]
+script = ExtResource("20_73lli")
+condition = "track_level"
+id = "seal_star"
+display_name = "封口机升 1 星（Lv5）"
+target = "seal"
+amount = 5.0
+
+[sub_resource type="Resource" id="Resource_ltpyf"]
+script = ExtResource("19_a4xei")
+id = "stage3"
+display_name = "调奶台"
+stations = Array[String](["mix"])
+cost = 345
+dish = "plain_milk_tea"
+unlock_note = "开始卖原味奶茶（售价 30）。原料柜里还要解锁牛奶箱"
+customer_interval = 5.0
+order_weights = Dictionary[String, float]({
+"black_tea": 0.25,
+"lemonade": 0.35,
+"plain_milk_tea": 0.4
+})
+takeaway_share = 0.5
+staff_slots = Dictionary[String, int]({
+"kitchen": 2
+})
+queue_capacity = 7
+seat_seconds = 30.0
+tasks = Array[ExtResource("20_73lli")]([SubResource("Resource_b3ogy"), SubResource("Resource_p4js5"), SubResource("Resource_4xnnl")])
+
+[sub_resource type="Resource" id="Resource_n2pvj"]
+script = ExtResource("20_73lli")
+id = "lemontea20"
+display_name = "柠檬茶卖出 20 杯"
+target = "lemon_tea"
+amount = 20.0
+
+[sub_resource type="Resource" id="Resource_lukse"]
+script = ExtResource("20_73lli")
+condition = "track_level"
+id = "press5"
+display_name = "手打台升到 Lv5"
+target = "press"
+amount = 5.0
+
+[sub_resource type="Resource" id="Resource_uvjpb"]
+script = ExtResource("19_a4xei")
+id = "stage4"
+display_name = "手打台"
+stations = Array[String](["press"])
+cost = 633
+dish = "lemon_tea"
+unlock_note = "开始卖柠檬茶：前台员工接一杯柠檬水，再亲手捣柠檬，外带不用封口"
+customer_interval = 4.0
+order_weights = Dictionary[String, float]({
+"black_tea": 0.2,
+"lemon_tea": 0.2,
+"lemonade": 0.3,
+"plain_milk_tea": 0.3
+})
+takeaway_share = 0.5
+staff_slots = Dictionary[String, int]({
+"kitchen": 2
+})
+queue_capacity = 8
+seat_seconds = 32.0
+tasks = Array[ExtResource("20_73lli")]([SubResource("Resource_n2pvj"), SubResource("Resource_lukse")])
+
+[sub_resource type="Resource" id="Resource_dyb47"]
+script = ExtResource("20_73lli")
+condition = "track_level"
+id = "topping4"
+display_name = "加料机升到 Lv4（四种口味全开）"
+target = "topping"
+amount = 4.0
+
+[sub_resource type="Resource" id="Resource_63bmn"]
+script = ExtResource("20_73lli")
+id = "pearl20"
+display_name = "珍珠奶茶卖出 20 杯"
+target = "pearl_milk_tea"
+amount = 20.0
+
+[sub_resource type="Resource" id="Resource_cd5ge"]
+script = ExtResource("20_73lli")
+id = "taro10"
+display_name = "芋泥奶茶卖出 10 杯"
+target = "taro_milk_tea"
+amount = 10.0
+
+[sub_resource type="Resource" id="Resource_m4scj"]
+script = ExtResource("19_a4xei")
+id = "stage5"
+display_name = "加料机"
+stations = Array[String](["topping"])
+cost = 1035
+dish = "pearl_milk_tea"
+unlock_note = "开始卖珍珠奶茶，升级加料机开放更多口味"
+customer_interval = 3.2
+order_weights = Dictionary[String, float]({
+"black_tea": 0.1,
+"coconut_milk_tea": 0.14,
+"lemon_tea": 0.12,
+"lemonade": 0.12,
+"pearl_milk_tea": 0.14,
+"plain_milk_tea": 0.1,
+"redbean_milk_tea": 0.14,
+"taro_milk_tea": 0.14
+})
+takeaway_share = 0.55
+staff_slots = Dictionary[String, int]({
+"kitchen": 5
+})
+queue_capacity = 8
+seat_seconds = 35.0
+tasks = Array[ExtResource("20_73lli")]([SubResource("Resource_dyb47"), SubResource("Resource_63bmn"), SubResource("Resource_cd5ge")])
+
+[sub_resource type="Resource" id="Resource_cliyi"]
+script = ExtResource("21_6l0ld")
+id = "counter"
+display_name = "柜台"
+block = "counter"
+params = {
+"hand_seconds": 0.6,
+"panel_title": "收银台",
+"posts": 2,
+"take_seconds": 0.0,
+"unit": "杯"
+}
+zone = "front"
+starts_unlocked = true
+description = "客人在这里点单取杯。堂食要有空座位，加座位能多坐几位"
+icon = "shop"
+
+[sub_resource type="Resource" id="Resource_wrbwp"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemonade"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_urru1"]
+script = ExtResource("8_cgjme")
+cost = 29
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_wrbwp")])
+
+[sub_resource type="Resource" id="Resource_jt77o"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemonade"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_1es01"]
+script = ExtResource("8_cgjme")
+cost = 52
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_jt77o")])
+
+[sub_resource type="Resource" id="Resource_q2lll"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemonade"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_lfvv2"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemonade"])
+value = 1.25
+
+[sub_resource type="Resource" id="Resource_w1iat"]
+script = ExtResource("8_cgjme")
+cost = 93
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_q2lll"), SubResource("Resource_lfvv2")])
+star = true
+
+[sub_resource type="Resource" id="Resource_tyn02"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemonade"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_4ygtl"]
+script = ExtResource("8_cgjme")
+cost = 168
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_tyn02")])
+
+[sub_resource type="Resource" id="Resource_u86ql"]
+script = ExtResource("9_g4hkj")
+id = "level"
+display_name = "柠檬水台"
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_urru1"), SubResource("Resource_1es01"), SubResource("Resource_w1iat"), SubResource("Resource_4ygtl")])
+effect_label = "售价"
+preview_dishes = Array[String](["lemonade"])
+preview_label = "柠檬水"
+kind = "price"
+
+[sub_resource type="Resource" id="Resource_gjncs"]
+script = ExtResource("21_6l0ld")
+id = "lemonade"
+display_name = "柠檬水台"
+block = "dispenser"
+params = {
+"facing": 6,
+"seconds": 2.0,
+"unit": "杯"
+}
+zone = "front"
+unlock_cost = 10
+tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_u86ql")])
+price_dishes = Array[String](["lemonade"])
+counts_for_flow = true
+description = "服务员到展示柜现取柠檬水，外带不用封口；升级提高柠檬水售价"
+icon = "res://art/ui/drink_lemonade.png"
+
+[sub_resource type="Resource" id="Resource_ygrx2"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["black_tea", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_wsohg"]
+script = ExtResource("8_cgjme")
+cost = 57
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ygrx2")])
+
+[sub_resource type="Resource" id="Resource_aub8f"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["black_tea", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_3arwv"]
+script = ExtResource("8_cgjme")
+cost = 103
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_aub8f")])
+
+[sub_resource type="Resource" id="Resource_k3uxj"]
+script = ExtResource("9_g4hkj")
+id = "tea_leaf"
+display_name = "茶叶"
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_wsohg"), SubResource("Resource_3arwv")])
+effect_label = "售价"
+preview_dishes = Array[String](["plain_milk_tea", "black_tea"])
+preview_label = "红茶、奶茶"
+
+[sub_resource type="Resource" id="Resource_7o5ye"]
+script = ExtResource("22_snoov")
+id = "tea_leaf"
+display_name = "茶叶"
+item = "tea_leaf"
+box_cost = 20
+box_station = "boil"
+track = SubResource("Resource_k3uxj")
+icon = "res://art/reference/tea_tin.png"
+
+[sub_resource type="Resource" id="Resource_nqjem"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_4jqex"]
+script = ExtResource("8_cgjme")
+cost = 71
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_nqjem")])
+
+[sub_resource type="Resource" id="Resource_xbti6"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_wg4du"]
+script = ExtResource("8_cgjme")
+cost = 129
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_xbti6")])
+
+[sub_resource type="Resource" id="Resource_t68n5"]
+script = ExtResource("9_g4hkj")
+id = "milk"
+display_name = "牛奶"
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_4jqex"), SubResource("Resource_wg4du")])
+effect_label = "售价"
+preview_dishes = Array[String](["plain_milk_tea"])
+preview_label = "奶茶"
+
+[sub_resource type="Resource" id="Resource_x06ba"]
+script = ExtResource("22_snoov")
+id = "milk"
+display_name = "牛奶"
+item = "milk"
+box_cost = 40
+box_station = "mix"
+track = SubResource("Resource_t68n5")
+icon = "res://art/reference/milk_bottle.png"
+
+[sub_resource type="Resource" id="Resource_5c0xc"]
+script = ExtResource("21_6l0ld")
+id = "supply"
+display_name = "原料柜"
+block = "supply"
+params = {
+"fetch_seconds": 0.6,
+"materials_label": "原料",
+"unit": "杯"
+}
+zone = "kitchen"
+starts_unlocked = true
+materials = Array[ExtResource("22_snoov")]([SubResource("Resource_7o5ye"), SubResource("Resource_x06ba")])
+description = "店里的原料柜。茶叶箱、牛奶箱跟着机器解锁，升级提高售价"
+icon = "res://art/reference/tea_tin.png"
+
+[sub_resource type="Resource" id="Resource_fc2hg"]
+script = ExtResource("23_xb1gn")
+item = "black_tea"
+base = 3
+per_waiting = 1
+
+[sub_resource type="Resource" id="Resource_purrk"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_h5fjk"]
+script = ExtResource("7_1v0ns")
+kind = "batch"
+op = "set"
+value = 2.0
+
+[sub_resource type="Resource" id="Resource_bgwt4"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+value = 1.45
+
+[sub_resource type="Resource" id="Resource_1hk0j"]
+script = ExtResource("7_1v0ns")
+kind = "batch"
+op = "set"
+value = 3.0
+
+[sub_resource type="Resource" id="Resource_76oly"]
+script = ExtResource("8_cgjme")
+cost = 23
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_bgwt4"), SubResource("Resource_1hk0j")])
+
+[sub_resource type="Resource" id="Resource_oqoq5"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+value = 1.96
+
+[sub_resource type="Resource" id="Resource_620eu"]
+script = ExtResource("7_1v0ns")
+kind = "batch"
+op = "set"
+value = 3.0
+
+[sub_resource type="Resource" id="Resource_grok8"]
+script = ExtResource("8_cgjme")
+cost = 52
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_oqoq5"), SubResource("Resource_620eu")])
+
+[sub_resource type="Resource" id="Resource_v5688"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+value = 1.96
+
+[sub_resource type="Resource" id="Resource_mp4j2"]
+script = ExtResource("7_1v0ns")
+kind = "batch"
+op = "set"
+value = 4.0
+
+[sub_resource type="Resource" id="Resource_ae368"]
+script = ExtResource("8_cgjme")
+cost = 116
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_v5688"), SubResource("Resource_mp4j2")])
+star = true
+
+[sub_resource type="Resource" id="Resource_odx33"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+value = 2.56
+
+[sub_resource type="Resource" id="Resource_er730"]
+script = ExtResource("7_1v0ns")
+kind = "batch"
+op = "set"
+value = 4.0
+
+[sub_resource type="Resource" id="Resource_m74ij"]
+script = ExtResource("8_cgjme")
+cost = 258
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_odx33"), SubResource("Resource_er730")])
+
+[sub_resource type="Resource" id="Resource_viia1"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+value = 2.56
+
+[sub_resource type="Resource" id="Resource_cyqph"]
+script = ExtResource("7_1v0ns")
+kind = "batch"
+op = "set"
+value = 5.0
+
+[sub_resource type="Resource" id="Resource_bjqmi"]
+script = ExtResource("8_cgjme")
+cost = 565
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_viia1"), SubResource("Resource_cyqph")])
+
+[sub_resource type="Resource" id="Resource_3y7hs"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+value = 3.25
+
+[sub_resource type="Resource" id="Resource_xo0ut"]
+script = ExtResource("7_1v0ns")
+kind = "batch"
+op = "set"
+value = 6.0
+
+[sub_resource type="Resource" id="Resource_4v3c2"]
+script = ExtResource("8_cgjme")
+cost = 1227
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_3y7hs"), SubResource("Resource_xo0ut")])
+
+[sub_resource type="Resource" id="Resource_2yc64"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+value = 4.0
+
+[sub_resource type="Resource" id="Resource_8m34q"]
+script = ExtResource("7_1v0ns")
+kind = "batch"
+op = "set"
+value = 6.0
+
+[sub_resource type="Resource" id="Resource_7v10f"]
+script = ExtResource("8_cgjme")
+cost = 2650
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_2yc64"), SubResource("Resource_8m34q")])
+star = true
+
+[sub_resource type="Resource" id="Resource_6ntk2"]
+script = ExtResource("9_g4hkj")
+id = "level"
+display_name = "煮茶机"
+base_effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_purrk"), SubResource("Resource_h5fjk")])
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_76oly"), SubResource("Resource_grok8"), SubResource("Resource_ae368"), SubResource("Resource_m74ij"), SubResource("Resource_bjqmi"), SubResource("Resource_4v3c2"), SubResource("Resource_7v10f")])
+effect_label = "煮茶速度"
+kind = "capacity"
+
+[sub_resource type="Resource" id="Resource_qiwxu"]
+script = ExtResource("21_6l0ld")
+id = "boil"
+display_name = "煮茶机"
+block = "batch_pot"
+params = {
+"capacity": 12,
+"cook_seconds": 30.0,
+"facing": 3,
+"frame_title": "stage",
+"load_seconds": 0.6,
+"manual_load": true,
+"manual_unload": true,
+"stir_points": [0.3333333333333333, 0.6666666666666666],
+"stir_seconds": 1.0,
+"unit": "杯"
+}
+zone = "kitchen"
+seatable = true
+seated_bonus = 1.3
+tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_6ntk2")])
+stock = Array[ExtResource("23_xb1gn")]([SubResource("Resource_fc2hg")])
+counts_for_flow = true
+description = "人工装料、煮茶、取茶；开局一锅 2 杯，升级轮流加杯和提速"
+icon = "res://art/reference/pearl_pot.png"
+
+[sub_resource type="Resource" id="Resource_wpr6n"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_ojf4a"]
+script = ExtResource("7_1v0ns")
+kind = "process_slots"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_35hqm"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+value = 1.45
+
+[sub_resource type="Resource" id="Resource_4lh0n"]
+script = ExtResource("7_1v0ns")
+kind = "process_slots"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_81ppo"]
+script = ExtResource("8_cgjme")
+cost = 17
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_35hqm"), SubResource("Resource_4lh0n")])
+
+[sub_resource type="Resource" id="Resource_hg2ww"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+value = 1.9
+
+[sub_resource type="Resource" id="Resource_kbe2e"]
+script = ExtResource("7_1v0ns")
+kind = "process_slots"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_uvvs1"]
+script = ExtResource("8_cgjme")
+cost = 41
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_hg2ww"), SubResource("Resource_kbe2e")])
+
+[sub_resource type="Resource" id="Resource_apu7y"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+value = 2.5
+
+[sub_resource type="Resource" id="Resource_5am13"]
+script = ExtResource("7_1v0ns")
+kind = "process_slots"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_0gbvm"]
+script = ExtResource("8_cgjme")
+cost = 72
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_apu7y"), SubResource("Resource_5am13")])
+
+[sub_resource type="Resource" id="Resource_xpo8d"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+value = 2.5
+
+[sub_resource type="Resource" id="Resource_xs4sk"]
+script = ExtResource("7_1v0ns")
+kind = "process_slots"
+op = "set"
+value = 2.0
+
+[sub_resource type="Resource" id="Resource_y0bc1"]
+script = ExtResource("8_cgjme")
+cost = 156
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_xpo8d"), SubResource("Resource_xs4sk")])
+star = true
+
+[sub_resource type="Resource" id="Resource_2oi6y"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+value = 3.1
+
+[sub_resource type="Resource" id="Resource_rpr48"]
+script = ExtResource("7_1v0ns")
+kind = "process_slots"
+op = "set"
+value = 2.0
+
+[sub_resource type="Resource" id="Resource_hygpt"]
+script = ExtResource("8_cgjme")
+cost = 321
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_2oi6y"), SubResource("Resource_rpr48")])
+
+[sub_resource type="Resource" id="Resource_semvr"]
+script = ExtResource("9_g4hkj")
+id = "level"
+display_name = "封口机"
+base_effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_wpr6n"), SubResource("Resource_ojf4a")])
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_81ppo"), SubResource("Resource_uvvs1"), SubResource("Resource_0gbvm"), SubResource("Resource_y0bc1"), SubResource("Resource_hygpt")])
+effect_label = "封口速度"
+kind = "capacity"
+
+[sub_resource type="Resource" id="Resource_abtgb"]
+script = ExtResource("21_6l0ld")
+id = "seal"
+display_name = "封口机"
+block = "pickup"
+params = {
+"dine_at_least_queue": true,
+"dine_per_dish": true,
+"process_into": "takeaway",
+"process_seconds": 9.0,
+"process_slots": 1,
+"slot_label": "封口位",
+"unit": "杯",
+"zones": {
+"dine": 12,
+"takeaway": 6
+}
+}
+zone = "kitchen"
+tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_semvr")])
+counts_for_flow = true
+description = "外带的杯子都要来这里封口；升级封得更快，5 级加一个封口位"
+icon = "res://art/reference/sealer.png"
+
+[sub_resource type="Resource" id="Resource_k8ju5"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_0m85s"]
+script = ExtResource("8_cgjme")
+cost = 71
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_k8ju5")])
+
+[sub_resource type="Resource" id="Resource_rj7pd"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_ylrt7"]
+script = ExtResource("8_cgjme")
+cost = 130
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_rj7pd")])
+
+[sub_resource type="Resource" id="Resource_8niis"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_kub0l"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+value = 1.25
+
+[sub_resource type="Resource" id="Resource_kd7rd"]
+script = ExtResource("8_cgjme")
+cost = 233
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_8niis"), SubResource("Resource_kub0l")])
+star = true
+
+[sub_resource type="Resource" id="Resource_tkbbj"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_6fsjj"]
+script = ExtResource("8_cgjme")
+cost = 420
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_tkbbj")])
+
+[sub_resource type="Resource" id="Resource_f84qc"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_p3x0k"]
+script = ExtResource("8_cgjme")
+cost = 754
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_f84qc")])
+
+[sub_resource type="Resource" id="Resource_uip26"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_j8s3s"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+value = 1.25
+
+[sub_resource type="Resource" id="Resource_pailp"]
+script = ExtResource("8_cgjme")
+cost = 1358
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_uip26"), SubResource("Resource_j8s3s")])
+star = true
+
+[sub_resource type="Resource" id="Resource_fiuv3"]
+script = ExtResource("9_g4hkj")
+id = "level"
+display_name = "调奶台"
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_0m85s"), SubResource("Resource_ylrt7"), SubResource("Resource_kd7rd"), SubResource("Resource_6fsjj"), SubResource("Resource_p3x0k"), SubResource("Resource_pailp")])
+effect_label = "售价"
+preview_dishes = Array[String](["plain_milk_tea"])
+preview_label = "奶茶"
+kind = "price"
+
+[sub_resource type="Resource" id="Resource_72f1v"]
+script = ExtResource("21_6l0ld")
+id = "mix"
+display_name = "调奶台"
+block = "combine"
+params = {
+"facing": 3,
+"manual": false,
+"seconds": 4.0,
+"unit": "杯"
+}
+zone = "kitchen"
+tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_fiuv3")])
+price_dishes = Array[String](["plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"])
+counts_for_flow = true
+description = "自动将茶汤调成原味奶茶；开了以后茶汤分给红茶和奶茶"
+icon = "res://art/reference/brewer.png"
+
+[sub_resource type="Resource" id="Resource_uw05n"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemon_tea"])
+op = "set"
+
+[sub_resource type="Resource" id="Resource_m73s2"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemon_tea"])
+op = "set"
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_vd0ku"]
+script = ExtResource("8_cgjme")
+cost = 71
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_m73s2")])
+
+[sub_resource type="Resource" id="Resource_pajci"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemon_tea"])
+op = "set"
+value = 1.1025
+
+[sub_resource type="Resource" id="Resource_bwn7v"]
+script = ExtResource("8_cgjme")
+cost = 129
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_pajci")])
+
+[sub_resource type="Resource" id="Resource_7nern"]
+script = ExtResource("9_g4hkj")
+id = "lemon"
+display_name = "柠檬"
+base_effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_uw05n")])
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_vd0ku"), SubResource("Resource_bwn7v")])
+effect_label = "售价"
+
+[sub_resource type="Resource" id="Resource_tbex1"]
+script = ExtResource("22_snoov")
+id = "lemon"
+display_name = "柠檬"
+item = "lemon_tea"
+track = SubResource("Resource_7nern")
+icon = "drink_lemon_tea"
+
+[sub_resource type="Resource" id="Resource_w0igs"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemon_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_lv7og"]
+script = ExtResource("8_cgjme")
+cost = 101
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_w0igs")])
+
+[sub_resource type="Resource" id="Resource_aakk8"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemon_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_ma1fs"]
+script = ExtResource("8_cgjme")
+cost = 182
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_aakk8")])
+
+[sub_resource type="Resource" id="Resource_jjx1k"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemon_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_nichh"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemon_tea"])
+value = 1.25
+
+[sub_resource type="Resource" id="Resource_8lq6c"]
+script = ExtResource("8_cgjme")
+cost = 327
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_jjx1k"), SubResource("Resource_nichh")])
+star = true
+
+[sub_resource type="Resource" id="Resource_e6p3x"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["lemon_tea"])
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_rnpc0"]
+script = ExtResource("8_cgjme")
+cost = 587
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_e6p3x")])
+
+[sub_resource type="Resource" id="Resource_i46xi"]
+script = ExtResource("9_g4hkj")
+id = "level"
+display_name = "手打台"
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_lv7og"), SubResource("Resource_ma1fs"), SubResource("Resource_8lq6c"), SubResource("Resource_rnpc0")])
+effect_label = "售价"
+preview_dishes = Array[String](["lemon_tea"])
+preview_label = "柠檬茶"
+kind = "price"
+
+[sub_resource type="Resource" id="Resource_lutj5"]
+script = ExtResource("21_6l0ld")
+id = "press"
+display_name = "手打台"
+block = "hand"
+params = {
+"facing": 6,
+"materials_label": "水果",
+"seconds": 4.0,
+"unit": "杯",
+"users": 1
+}
+zone = "front"
+materials = Array[ExtResource("22_snoov")]([SubResource("Resource_tbex1")])
+tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_i46xi")])
+price_dishes = Array[String](["lemon_tea"])
+counts_for_flow = true
+description = "前台员工接一杯柠檬水，再亲手捣柠檬，做成柠檬茶；外带不用封口；升级提高柠檬茶售价"
+icon = "drink_lemon_tea"
+
+[sub_resource type="Resource" id="Resource_y1325"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["pearl_milk_tea"])
+op = "set"
+
+[sub_resource type="Resource" id="Resource_mnnw7"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["pearl_milk_tea"])
+op = "set"
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_vwj84"]
+script = ExtResource("8_cgjme")
+cost = 57
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_mnnw7")])
+
+[sub_resource type="Resource" id="Resource_5l4xw"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["pearl_milk_tea"])
+op = "set"
+value = 1.1025
+
+[sub_resource type="Resource" id="Resource_bqrae"]
+script = ExtResource("8_cgjme")
+cost = 103
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_5l4xw")])
+
+[sub_resource type="Resource" id="Resource_107pf"]
+script = ExtResource("9_g4hkj")
+id = "pearl"
+display_name = "珍珠"
+base_effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_y1325")])
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_vwj84"), SubResource("Resource_bqrae")])
+effect_label = "售价"
+
+[sub_resource type="Resource" id="Resource_dmmhs"]
+script = ExtResource("22_snoov")
+id = "pearl"
+display_name = "珍珠"
+item = "pearl_milk_tea"
+track = SubResource("Resource_107pf")
+icon = "drink_pearl_milk_tea"
+
+[sub_resource type="Resource" id="Resource_ocn6m"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["coconut_milk_tea"])
+op = "set"
+
+[sub_resource type="Resource" id="Resource_ulweq"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["coconut_milk_tea"])
+op = "set"
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_f5gby"]
+script = ExtResource("8_cgjme")
+cost = 86
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ulweq")])
+
+[sub_resource type="Resource" id="Resource_w6r8h"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["coconut_milk_tea"])
+op = "set"
+value = 1.1025
+
+[sub_resource type="Resource" id="Resource_hgso8"]
+script = ExtResource("8_cgjme")
+cost = 155
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_w6r8h")])
+
+[sub_resource type="Resource" id="Resource_oa1x0"]
+script = ExtResource("9_g4hkj")
+id = "coconut"
+display_name = "椰果"
+base_effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ocn6m")])
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_f5gby"), SubResource("Resource_hgso8")])
+requires_level = 2
+effect_label = "售价"
+
+[sub_resource type="Resource" id="Resource_pjif7"]
+script = ExtResource("22_snoov")
+id = "coconut"
+display_name = "椰果"
+item = "coconut_milk_tea"
+track = SubResource("Resource_oa1x0")
+icon = "drink_coconut_milk_tea"
+
+[sub_resource type="Resource" id="Resource_il2xq"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["redbean_milk_tea"])
+op = "set"
+
+[sub_resource type="Resource" id="Resource_lnihg"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["redbean_milk_tea"])
+op = "set"
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_hxmgj"]
+script = ExtResource("8_cgjme")
+cost = 101
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_lnihg")])
+
+[sub_resource type="Resource" id="Resource_8o05w"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["redbean_milk_tea"])
+op = "set"
+value = 1.1025
+
+[sub_resource type="Resource" id="Resource_ufwq4"]
+script = ExtResource("8_cgjme")
+cost = 182
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_8o05w")])
+
+[sub_resource type="Resource" id="Resource_fd1fs"]
+script = ExtResource("9_g4hkj")
+id = "redbean"
+display_name = "红豆"
+base_effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_il2xq")])
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_hxmgj"), SubResource("Resource_ufwq4")])
+requires_level = 3
+effect_label = "售价"
+
+[sub_resource type="Resource" id="Resource_isw4l"]
+script = ExtResource("22_snoov")
+id = "redbean"
+display_name = "红豆"
+item = "redbean_milk_tea"
+track = SubResource("Resource_fd1fs")
+icon = "drink_redbean_milk_tea"
+
+[sub_resource type="Resource" id="Resource_7wnqj"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["taro_milk_tea"])
+op = "set"
+
+[sub_resource type="Resource" id="Resource_vuhrv"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["taro_milk_tea"])
+op = "set"
+value = 1.05
+
+[sub_resource type="Resource" id="Resource_4e24y"]
+script = ExtResource("8_cgjme")
+cost = 115
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_vuhrv")])
+
+[sub_resource type="Resource" id="Resource_lagqi"]
+script = ExtResource("7_1v0ns")
+kind = "price"
+dishes = Array[String](["taro_milk_tea"])
+op = "set"
+value = 1.1025
+
+[sub_resource type="Resource" id="Resource_7yvj0"]
+script = ExtResource("8_cgjme")
+cost = 207
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_lagqi")])
+
+[sub_resource type="Resource" id="Resource_qqh1t"]
+script = ExtResource("9_g4hkj")
+id = "taro"
+display_name = "芋泥"
+base_effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_7wnqj")])
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_4e24y"), SubResource("Resource_7yvj0")])
+requires_level = 4
+effect_label = "售价"
+
+[sub_resource type="Resource" id="Resource_gcrvl"]
+script = ExtResource("22_snoov")
+id = "taro"
+display_name = "芋泥"
+item = "taro_milk_tea"
+track = SubResource("Resource_qqh1t")
+icon = "drink_taro_milk_tea"
+
+[sub_resource type="Resource" id="Resource_18cdu"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_ji7co"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_euwds"]
+script = ExtResource("7_1v0ns")
+kind = "open_flavor"
+target = "coconut"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_5c0bn"]
+script = ExtResource("8_cgjme")
+cost = 63
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ji7co"), SubResource("Resource_euwds")])
+
+[sub_resource type="Resource" id="Resource_ev0t4"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_l0bpe"]
+script = ExtResource("7_1v0ns")
+kind = "open_flavor"
+target = "redbean"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_cog4c"]
+script = ExtResource("8_cgjme")
+cost = 132
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ev0t4"), SubResource("Resource_l0bpe")])
+
+[sub_resource type="Resource" id="Resource_lc0wt"]
+script = ExtResource("7_1v0ns")
+kind = "speed"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_2nauh"]
+script = ExtResource("7_1v0ns")
+kind = "open_flavor"
+target = "taro"
+op = "set"
+
+[sub_resource type="Resource" id="Resource_7711k"]
+script = ExtResource("8_cgjme")
+cost = 236
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_lc0wt"), SubResource("Resource_2nauh")])
+
+[sub_resource type="Resource" id="Resource_e0rlp"]
+script = ExtResource("9_g4hkj")
+id = "level"
+display_name = "加料机"
+base_effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_18cdu")])
+levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_5c0bn"), SubResource("Resource_cog4c"), SubResource("Resource_7711k")])
+effect_label = "新口味"
+kind = "menu"
+
+[sub_resource type="Resource" id="Resource_nup3k"]
+script = ExtResource("21_6l0ld")
+id = "topping"
+display_name = "加料机"
+block = "topping"
+params = {
+"facing": 5,
+"flavor_cap": 3,
+"materials_label": "配料",
+"seconds": 2.0,
+"unit": "杯",
+"users": 1
+}
+zone = "kitchen"
+seatable = true
+seated_bonus = 1.3
+materials = Array[ExtResource("22_snoov")]([SubResource("Resource_dmmhs"), SubResource("Resource_pjif7"), SubResource("Resource_isw4l"), SubResource("Resource_gcrvl")])
+tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_e0rlp")])
+counts_for_flow = true
+description = "人工加料；升级开放新口味（椰果、红豆、芋泥），每开一种来的客人更多"
+icon = "drink_pearl_milk_tea"
+
+[resource]
+script = ExtResource("15_3rult")
+id = "tea"
+display_name = "奶茶店"
+start_gold = 50
+random_seed = 20261025
+items = Array[ExtResource("13_l0dwn")]([SubResource("Resource_ofbvg"), SubResource("Resource_cffgs"), SubResource("Resource_e8s1d"), SubResource("Resource_3dkr1"), SubResource("Resource_n745i"), SubResource("Resource_gc2vn"), SubResource("Resource_aph8w"), SubResource("Resource_e7yay"), SubResource("Resource_nicqr"), SubResource("Resource_nyjld"), SubResource("Resource_jv8ei")])
+dishes = Array[ExtResource("2_ctjwf")]([SubResource("Resource_oybcy"), SubResource("Resource_py30k"), SubResource("Resource_gam32"), SubResource("Resource_3cbtw"), SubResource("Resource_mwsl7"), SubResource("Resource_7jc1v"), SubResource("Resource_14e4x"), SubResource("Resource_bkbpb")])
+stations = Array[ExtResource("21_6l0ld")]([SubResource("Resource_cliyi"), SubResource("Resource_gjncs"), SubResource("Resource_5c0xc"), SubResource("Resource_qiwxu"), SubResource("Resource_abtgb"), SubResource("Resource_72f1v"), SubResource("Resource_lutj5"), SubResource("Resource_nup3k")])
+stages = Array[ExtResource("19_a4xei")]([SubResource("Resource_w0lbb"), SubResource("Resource_uggdv"), SubResource("Resource_ouank"), SubResource("Resource_ltpyf"), SubResource("Resource_uvjpb"), SubResource("Resource_m4scj")])
+fulfillment = SubResource("Resource_q8vau")
+dispatch = SubResource("Resource_gxbws")
+flyer = SubResource("Resource_86wxj")
+seat_groups = Array[ExtResource("16_35x7t")]([SubResource("Resource_poakd")])
+staff = SubResource("Resource_8p4c6")
+connections = Array[ExtResource("1_tjgba")]([SubResource("Resource_m1tbq"), SubResource("Resource_q0qcx"), SubResource("Resource_jp4pd"), SubResource("Resource_6bvuk"), SubResource("Resource_bc3ge"), SubResource("Resource_gjupt"), SubResource("Resource_gd06f")])
+goals = SubResource("Resource_ufdpv")
+layout = SubResource("Resource_x4rom")
+guide = Array[ExtResource("12_anqca")]([SubResource("Resource_4p3jx"), SubResource("Resource_1wmsa"), SubResource("Resource_ho7ym"), SubResource("Resource_tsvuk"), SubResource("Resource_njies"), SubResource("Resource_nwen5"), SubResource("Resource_pkfa0"), SubResource("Resource_h2bkm"), SubResource("Resource_4lrgi"), SubResource("Resource_ifvmf"), SubResource("Resource_m6brp"), SubResource("Resource_j7ryq"), SubResource("Resource_l8d5n"), SubResource("Resource_tb00n"), SubResource("Resource_wx7ac"), SubResource("Resource_fm6n5")])
+flavor_flow = 0.12
+scene_path = "res://presentation/shops/tea/tea_art.tscn"
+background_music = ExtResource("music_theme")
+save_file = "shop_tea.json"
+scale_anchor = "cup"

@@ -1,41 +1,43 @@
-[gd_scene format=3 uid="uid://dhe7r2x78eyek"]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://presentation/shop/anchor_rect.gd" id="anchor"]
-[ext_resource type="Texture2D" uid="uid://b2tvut3wp1wel" path="res://art/stirfry/scene/back_wall_r00_c00.png" id="back_wall_r00_c00"]
-[ext_resource type="Texture2D" uid="uid://chagix6xu6nr1" path="res://art/stirfry/scene/chopped_scallion_bowl.png" id="chopped_scallion_bowl"]
-[ext_resource type="Texture2D" uid="uid://1qbo20s8cb1e" path="res://art/stirfry/scene/complete_chopping_board.png" id="complete_chopping_board"]
-[ext_resource type="Texture2D" path="res://art/stirfry/scene/double_stove.png" id="double_stove"]
-[ext_resource type="Texture2D" path="res://art/stirfry/scene/wok_tomato_egg.png" id="wok_tomato_egg"]
-[ext_resource type="Texture2D" path="res://art/stirfry/scene/wok_meat_vegetables.png" id="wok_meat_vegetables"]
-[ext_resource type="Texture2D" uid="uid://dknjukiep3iup" path="res://art/stirfry/scene/complete_produce_group.png" id="complete_produce_group"]
-[ext_resource type="Texture2D" uid="uid://nltjoq7bx83b" path="res://art/stirfry/scene/complete_soup_station.png" id="complete_soup_station"]
-[ext_resource type="Texture2D" uid="uid://dfut67ompigul" path="res://art/stirfry/scene/complete_steamer_station.png" id="complete_steamer_station"]
-[ext_resource type="Texture2D" uid="uid://oew0h2tu2gbb" path="res://art/stirfry/scene/dining_chair.png" id="dining_chair"]
-[ext_resource type="Texture2D" uid="uid://bolbsnbo7gxi1" path="res://art/stirfry/scene/dining_table.png" id="dining_table"]
-[ext_resource type="Texture2D" uid="uid://beqbaniw58var" path="res://art/stirfry/scene/entrance_bench.png" id="entrance_bench"]
-[ext_resource type="Texture2D" uid="uid://pmncavsw4f3t" path="res://art/stirfry/scene/entrance_mat.png" id="entrance_mat"]
-[ext_resource type="Texture2D" uid="uid://chiojrmxsqi82" path="res://art/stirfry/scene/entrance_plant.png" id="entrance_plant"]
-[ext_resource type="Texture2D" uid="uid://bou6ag0cn6xvu" path="res://art/stirfry/scene/entrance_post.png" id="entrance_post"]
-[ext_resource type="Texture2D" uid="uid://c27ejtjj2f3w1" path="res://art/stirfry/scene/front_wall_r00_c00.png" id="front_wall_r00_c00"]
-[ext_resource type="Texture2D" uid="uid://dw5vad6mjm7i3" path="res://art/stirfry/scene/hood.png" id="hood"]
-[ext_resource type="Texture2D" uid="uid://cp672fu4xevki" path="res://art/stirfry/scene/kitchen_floor_r00_c00.png" id="kitchen_floor_r00_c00"]
-[ext_resource type="Texture2D" uid="uid://bk0wl7s1fnhcx" path="res://art/stirfry/scene/loaded_ingredient_rack.png" id="loaded_ingredient_rack"]
-[ext_resource type="Texture2D" uid="uid://cg67svbuxth5x" path="res://art/stirfry/scene/outer_left_r00_c00.png" id="outer_left_r00_c00"]
-[ext_resource type="Texture2D" uid="uid://bwmwvnw6utekp" path="res://art/stirfry/scene/outer_left_r01_c00.png" id="outer_left_r01_c00"]
-[ext_resource type="Texture2D" uid="uid://djxqdblb3xtsk" path="res://art/stirfry/scene/outer_right_r00_c00.png" id="outer_right_r00_c00"]
-[ext_resource type="Texture2D" uid="uid://dys2amnqivsff" path="res://art/stirfry/scene/outer_right_r01_c00.png" id="outer_right_r01_c00"]
-[ext_resource type="Texture2D" uid="uid://bc6s3bec74akv" path="res://art/stirfry/scene/plating_supply_group.png" id="plating_supply_group"]
-[ext_resource type="Texture2D" uid="uid://sqsnvfopbcc" path="res://art/stirfry/scene/prep_table.png" id="prep_table"]
-[ext_resource type="Texture2D" uid="uid://bx8awufpkoecw" path="res://art/stirfry/scene/red_flower_pot.png" id="red_flower_pot"]
-[ext_resource type="Texture2D" uid="uid://bkshqvgkyiiqo" path="res://art/stirfry/scene/register.png" id="register"]
-[ext_resource type="Texture2D" uid="uid://bove13lana4jo" path="res://art/stirfry/scene/rice_cooker.png" id="rice_cooker"]
-[ext_resource type="Texture2D" uid="uid://d18cgs410vw2j" path="res://art/stirfry/scene/rice_sack.png" id="rice_sack"]
-[ext_resource type="Texture2D" uid="uid://rydd1ogf8ywy" path="res://art/stirfry/scene/service_counter.png" id="service_counter"]
-[ext_resource type="Texture2D" uid="uid://d0f1omuwc57nw" path="res://art/stirfry/scene/staff_gate.png" id="staff_gate"]
-[ext_resource type="Texture2D" uid="uid://dax56jiovmw4l" path="res://art/stirfry/scene/stocked_wall_shelf.png" id="stocked_wall_shelf"]
-[ext_resource type="Texture2D" uid="uid://mvf4tcebmyns" path="res://art/stirfry/scene/support_stand.png" id="support_stand"]
-[ext_resource type="Texture2D" uid="uid://q1u5dnxfnya0" path="res://art/stirfry/scene/wood_floor_r00_c00.png" id="wood_floor_r00_c00"]
-[ext_resource type="Texture2D" uid="uid://cllyhtcawxgxv" path="res://art/stirfry/scene/wood_tray.png" id="wood_tray"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/kitchen_floor_r00_c00.png" id="1_hx3mh"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/wood_floor_r00_c00.png" id="2_yjhyc"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/entrance_mat.png" id="3_mterc"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/back_wall_r00_c00.png" id="4_srhc4"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/stocked_wall_shelf.png" id="5_tn866"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/hood.png" id="6_l0u5u"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/front_wall_r00_c00.png" id="7_ytj7i"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/outer_left_r00_c00.png" id="8_bqfjn"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/outer_left_r01_c00.png" id="9_0w4mb"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/outer_right_r00_c00.png" id="10_yqulp"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/outer_right_r01_c00.png" id="11_iaeos"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/entrance_post.png" id="12_vcqpq"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/entrance_plant.png" id="13_b5eqf"]
+[ext_resource type="Script" path="res://presentation/shop/modules/shop_module.gd" id="14_4i5g1"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/support_stand.png" id="15_bbk3q"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/rice_cooker.png" id="16_exqh4"]
+[ext_resource type="Script" path="res://presentation/shop/anchor_rect.gd" id="17_8vt8w"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/double_stove.png" id="18_n1qqx"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/wok_tomato_egg.png" id="19_mqq3t"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/wok_meat_vegetables.png" id="20_s5kte"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/complete_steamer_station.png" id="21_vbdtn"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/complete_soup_station.png" id="22_wwgdb"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/staff_gate.png" id="23_64tul"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/entrance_bench.png" id="24_58q68"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/prep_table.png" id="25_crbt1"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/rice_sack.png" id="26_0wte2"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/complete_chopping_board.png" id="27_qlv0g"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/complete_produce_group.png" id="28_talxb"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/chopped_scallion_bowl.png" id="29_becrb"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/loaded_ingredient_rack.png" id="30_6whsx"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/service_counter.png" id="32_ukprl"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/red_flower_pot.png" id="33_hohv0"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/register.png" id="34_mlsqc"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/wood_tray.png" id="35_jaikb"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/dining_chair.png" id="36_tbyjm"]
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/dining_table.png" id="37_tbuom"]
+
+[ext_resource type="Texture2D" path="res://art/stirfry/scene/plum_machine.tres" id="plum_machine"]
 
 [node name="StirfryArt" type="Node2D" unique_id=41972885]
 
@@ -51,7 +53,7 @@ z_index = -20
 
 [node name="KitchenTile" type="Sprite2D" parent="Environment/Floor" unique_id=584822327]
 position = Vector2(36, 230)
-texture = ExtResource("kitchen_floor_r00_c00")
+texture = ExtResource("1_hx3mh")
 centered = false
 region_enabled = true
 region_rect = Rect2(2, 2, 815, 636)
@@ -60,7 +62,7 @@ metadata/asset_id = "kitchen_floor_r00_c00"
 
 [node name="DiningWood" type="Sprite2D" parent="Environment/Floor" unique_id=1954869824]
 position = Vector2(36, 866)
-texture = ExtResource("wood_floor_r00_c00")
+texture = ExtResource("2_yjhyc")
 centered = false
 region_enabled = true
 region_rect = Rect2(2, 2, 815, 908)
@@ -69,7 +71,7 @@ metadata/asset_id = "wood_floor_r00_c00"
 
 [node name="EntranceMat" type="Sprite2D" parent="Environment/Floor" unique_id=1504911007]
 position = Vector2(363, 1713)
-texture = ExtResource("entrance_mat")
+texture = ExtResource("3_mterc")
 centered = false
 metadata/asset_id = "entrance_mat"
 
@@ -77,7 +79,7 @@ metadata/asset_id = "entrance_mat"
 z_index = -10
 
 [node name="WallAndEave" type="Sprite2D" parent="Environment/BackWall" unique_id=1791677123]
-texture = ExtResource("back_wall_r00_c00")
+texture = ExtResource("4_srhc4")
 centered = false
 region_enabled = true
 region_rect = Rect2(2, 2, 887, 230)
@@ -87,14 +89,14 @@ metadata/asset_id = "back_wall_r00_c00"
 [node name="WallShelf" type="Sprite2D" parent="Environment/BackWall" unique_id=1156601894]
 position = Vector2(40, 104)
 scale = Vector2(0.3275862, 0.3275862)
-texture = ExtResource("stocked_wall_shelf")
+texture = ExtResource("5_tn866")
 centered = false
 metadata/asset_id = "stocked_wall_shelf"
 
 [node name="ExtractorHood" type="Sprite2D" parent="Environment/BackWall" unique_id=308027628]
 position = Vector2(306.61777, 15.947778)
 scale = Vector2(0.59555554, 0.59555554)
-texture = ExtResource("hood")
+texture = ExtResource("6_l0u5u")
 centered = false
 metadata/asset_id = "hood"
 
@@ -103,7 +105,7 @@ z_index = 10
 
 [node name="EntranceLowWall" type="Sprite2D" parent="Environment/Foreground" unique_id=754573003]
 position = Vector2(36, 1718)
-texture = ExtResource("front_wall_r00_c00")
+texture = ExtResource("7_ytj7i")
 centered = false
 region_enabled = true
 region_rect = Rect2(2, 2, 815, 44)
@@ -114,7 +116,7 @@ metadata/asset_id = "front_wall_r00_c00"
 
 [node name="Segment1" type="Sprite2D" parent="Environment/Foreground/LeftOuterWall" unique_id=1999160817]
 position = Vector2(0, 230)
-texture = ExtResource("outer_left_r00_c00")
+texture = ExtResource("8_bqfjn")
 centered = false
 region_enabled = true
 region_rect = Rect2(2, 2, 36, 1020)
@@ -123,7 +125,7 @@ metadata/asset_id = "outer_left_r00_c00"
 
 [node name="Segment2" type="Sprite2D" parent="Environment/Foreground/LeftOuterWall" unique_id=21614400]
 position = Vector2(0, 1250)
-texture = ExtResource("outer_left_r01_c00")
+texture = ExtResource("9_0w4mb")
 centered = false
 region_enabled = true
 region_rect = Rect2(2, 2, 36, 524)
@@ -134,7 +136,7 @@ metadata/asset_id = "outer_left_r01_c00"
 
 [node name="Segment1" type="Sprite2D" parent="Environment/Foreground/RightOuterWall" unique_id=1525693577]
 position = Vector2(851, 230)
-texture = ExtResource("outer_right_r00_c00")
+texture = ExtResource("10_yqulp")
 centered = false
 region_enabled = true
 region_rect = Rect2(2, 2, 36, 1020)
@@ -143,7 +145,7 @@ metadata/asset_id = "outer_right_r00_c00"
 
 [node name="Segment2" type="Sprite2D" parent="Environment/Foreground/RightOuterWall" unique_id=1388972141]
 position = Vector2(851, 1250)
-texture = ExtResource("outer_right_r01_c00")
+texture = ExtResource("11_iaeos")
 centered = false
 region_enabled = true
 region_rect = Rect2(2, 2, 36, 524)
@@ -154,19 +156,19 @@ metadata/asset_id = "outer_right_r01_c00"
 
 [node name="PostLeft" type="Sprite2D" parent="Environment/Foreground/EntranceDetails" unique_id=1975479223]
 position = Vector2(300, 1679)
-texture = ExtResource("entrance_post")
+texture = ExtResource("12_vcqpq")
 centered = false
 metadata/asset_id = "entrance_post"
 
 [node name="PostRight" type="Sprite2D" parent="Environment/Foreground/EntranceDetails" unique_id=770814376]
 position = Vector2(528, 1679)
-texture = ExtResource("entrance_post")
+texture = ExtResource("12_vcqpq")
 centered = false
 metadata/asset_id = "entrance_post"
 
 [node name="PottedPlant" type="Sprite2D" parent="Environment/Foreground/EntranceDetails" unique_id=1484077373]
 position = Vector2(61, 1648)
-texture = ExtResource("entrance_plant")
+texture = ExtResource("13_b5eqf")
 centered = false
 metadata/asset_id = "entrance_plant"
 
@@ -175,50 +177,175 @@ y_sort_enabled = true
 
 [node name="RiceCookerStand" type="Node2D" parent="Sortables" unique_id=746769214]
 position = Vector2(792, 404)
+script = ExtResource("14_4i5g1")
+module_id = "RiceCookerStand"
+station_id = "rice_cooker"
 
-[node name="Stand" type="Sprite2D" parent="Sortables/RiceCookerStand" unique_id=2063473672]
-position = Vector2(-48.6, -22.6)
+[node name="FixedVisual" type="Node2D" parent="Sortables/RiceCookerStand" unique_id=1876334867]
+
+[node name="Stand" type="Sprite2D" parent="Sortables/RiceCookerStand/FixedVisual" unique_id=2063473672]
+position = Vector2(-48.599976, -22.600006)
 scale = Vector2(0.36, 0.36)
-texture = ExtResource("support_stand")
+texture = ExtResource("15_bbk3q")
 centered = false
 metadata/asset_id = "support_stand"
 
-[node name="RiceCooker" type="Sprite2D" parent="Sortables/RiceCookerStand" unique_id=1615407739]
-position = Vector2(-37.55, -82.4)
+[node name="Visual" type="Node2D" parent="Sortables/RiceCookerStand" unique_id=487327081]
+
+[node name="RiceCooker" type="Sprite2D" parent="Sortables/RiceCookerStand/Visual" unique_id=1615407739]
+position = Vector2(-37.549988, -82.399994)
 scale = Vector2(0.33, 0.33)
-texture = ExtResource("rice_cooker")
+texture = ExtResource("16_exqh4")
 centered = false
 metadata/asset_id = "rice_cooker"
 metadata/layout_group = "station:rice_cooker"
 metadata/unlock_rule = "rice_cooker"
 
+[node name="Anchors" type="Node2D" parent="Sortables/RiceCookerStand" unique_id=218882122]
+
+[node name="Station" type="Node2D" parent="Sortables/RiceCookerStand/Anchors" unique_id=1547156241]
+
+[node name="Tap" type="Node2D" parent="Sortables/RiceCookerStand/Anchors/Station" unique_id=1257894239]
+position = Vector2(-47, -84)
+script = ExtResource("17_8vt8w")
+size = Vector2(110, 140)
+
+[node name="Nav" type="Node2D" parent="Sortables/RiceCookerStand" unique_id=1044761603]
+
+[node name="Work" type="Node2D" parent="Sortables/RiceCookerStand/Nav" unique_id=1502407201]
+position = Vector2(-2, 76)
+
+[node name="Footprints" type="Node2D" parent="Sortables/RiceCookerStand/Nav" unique_id=2064123637]
+
+[node name="stand" type="Node2D" parent="Sortables/RiceCookerStand/Nav/Footprints" unique_id=1823063206]
+position = Vector2(-42, -19)
+script = ExtResource("17_8vt8w")
+size = Vector2(85, 45)
+metadata/station = ""
+
 [node name="Wok" type="Node2D" parent="Sortables" unique_id=631265431]
 position = Vector2(453, 318.59933)
+script = ExtResource("14_4i5g1")
+module_id = "Wok"
+station_id = "wok_a"
+station_slots = Dictionary[String, String]({
+"right": "wok_b"
+})
 metadata/layout_group = "station:wok_a"
 metadata/unlock_rule = "wok_a"
 
-[node name="Stove" type="Sprite2D" parent="Sortables/Wok" unique_id=616267130]
-position = Vector2(-123.99999, -189.59933)
+[node name="Visual" type="Node2D" parent="Sortables/Wok" unique_id=1374786727]
+
+[node name="Stove" type="Sprite2D" parent="Sortables/Wok/Visual" unique_id=616267130]
+position = Vector2(-124, -189.59933)
 scale = Vector2(0.44695258, 0.44695258)
-texture = ExtResource("double_stove")
+texture = ExtResource("18_n1qqx")
 centered = false
 metadata/asset_id = "double_stove"
 
-[node name="WokLeft" type="Sprite2D" parent="Sortables/Wok"]
-position = Vector2(-123.99999, -189.59933)
+[node name="WokLeft" type="Sprite2D" parent="Sortables/Wok/Visual" unique_id=284109008]
+position = Vector2(-124, -189.59933)
 scale = Vector2(0.44695258, 0.44695258)
-texture = ExtResource("wok_tomato_egg")
+texture = ExtResource("19_mqq3t")
 centered = false
 metadata/asset_id = "wok_tomato_egg"
 
-[node name="WokRight" type="Sprite2D" parent="Sortables/Wok"]
-position = Vector2(-123.99999, -189.59933)
+[node name="Slots" type="Node2D" parent="Sortables/Wok/Visual" unique_id=1771017751]
+
+[node name="right" type="Node2D" parent="Sortables/Wok/Visual/Slots" unique_id=247630826]
+
+[node name="WokRight" type="Sprite2D" parent="Sortables/Wok/Visual/Slots/right" unique_id=120202790]
+position = Vector2(-124, -189.59933)
 scale = Vector2(0.44695258, 0.44695258)
-texture = ExtResource("wok_meat_vegetables")
+texture = ExtResource("20_s5kte")
 centered = false
 metadata/asset_id = "wok_meat_vegetables"
 metadata/layout_group = "station:wok_b"
 metadata/unlock_rule = "wok_b"
+
+[node name="Anchors" type="Node2D" parent="Sortables/Wok" unique_id=211503014]
+
+[node name="Station" type="Node2D" parent="Sortables/Wok/Anchors" unique_id=10860958]
+
+[node name="Tap" type="Node2D" parent="Sortables/Wok/Anchors/Station" unique_id=485512794]
+position = Vector2(-124, -189.59933)
+script = ExtResource("17_8vt8w")
+size = Vector2(118, 178)
+
+[node name="Frame" type="Node2D" parent="Sortables/Wok/Anchors/Station" unique_id=1273274259]
+position = Vector2(-124, -189.59933)
+script = ExtResource("17_8vt8w")
+size = Vector2(118, 178)
+
+[node name="Post" type="Node2D" parent="Sortables/Wok/Anchors/Station" unique_id=187870464]
+position = Vector2(-113, -18.599335)
+script = ExtResource("17_8vt8w")
+size = Vector2(108, 90)
+
+[node name="PostPoint" type="Marker2D" parent="Sortables/Wok/Anchors/Station" unique_id=997926359]
+position = Vector2(-53, 16.400665)
+
+[node name="Drop" type="Node2D" parent="Sortables/Wok/Anchors" unique_id=327932358]
+position = Vector2(-118, -18.599335)
+script = ExtResource("17_8vt8w")
+size = Vector2(112, 90)
+metadata/post = "wok_a"
+
+[node name="Slots" type="Node2D" parent="Sortables/Wok/Anchors" unique_id=1087438454]
+
+[node name="right" type="Node2D" parent="Sortables/Wok/Anchors/Slots" unique_id=2146341784]
+
+[node name="Tap" type="Node2D" parent="Sortables/Wok/Anchors/Slots/right" unique_id=1436214988]
+position = Vector2(-6, -189.59933)
+script = ExtResource("17_8vt8w")
+size = Vector2(118, 178)
+
+[node name="Frame" type="Node2D" parent="Sortables/Wok/Anchors/Slots/right" unique_id=1534465785]
+position = Vector2(-6, -189.59933)
+script = ExtResource("17_8vt8w")
+size = Vector2(118, 178)
+
+[node name="Post" type="Node2D" parent="Sortables/Wok/Anchors/Slots/right" unique_id=43826688]
+position = Vector2(-3, -18.599335)
+script = ExtResource("17_8vt8w")
+size = Vector2(110, 90)
+
+[node name="PostPoint" type="Marker2D" parent="Sortables/Wok/Anchors/Slots/right" unique_id=1331358197]
+position = Vector2(47, 16.400665)
+
+[node name="SlotDrops" type="Node2D" parent="Sortables/Wok/Anchors" unique_id=375301803]
+
+[node name="right" type="Node2D" parent="Sortables/Wok/Anchors/SlotDrops" unique_id=1421251184]
+position = Vector2(-3, -18.599335)
+script = ExtResource("17_8vt8w")
+size = Vector2(112, 90)
+metadata/post = "wok_b"
+
+[node name="Nav" type="Node2D" parent="Sortables/Wok" unique_id=42221712]
+
+[node name="Work" type="Node2D" parent="Sortables/Wok/Nav" unique_id=1292400366]
+position = Vector2(-53, 21.400665)
+
+[node name="Post" type="Node2D" parent="Sortables/Wok/Nav" unique_id=1479311237]
+position = Vector2(-53, 16.400665)
+
+[node name="Slots" type="Node2D" parent="Sortables/Wok/Nav" unique_id=1297660846]
+
+[node name="right" type="Node2D" parent="Sortables/Wok/Nav/Slots" unique_id=1811988696]
+
+[node name="Work" type="Node2D" parent="Sortables/Wok/Nav/Slots/right" unique_id=1391866254]
+position = Vector2(47, 21.400665)
+
+[node name="Post" type="Node2D" parent="Sortables/Wok/Nav/Slots/right" unique_id=625291883]
+position = Vector2(47, 16.400665)
+
+[node name="Footprints" type="Node2D" parent="Sortables/Wok/Nav" unique_id=2008525907]
+
+[node name="body" type="Node2D" parent="Sortables/Wok/Nav/Footprints" unique_id=272424100]
+position = Vector2(-123, -48.599335)
+script = ExtResource("17_8vt8w")
+size = Vector2(235, 50)
+metadata/station = "wok_a"
 
 [node name="Steamer" type="Node2D" parent="Sortables" unique_id=1007222597]
 position = Vector2(671, 281.2027)
@@ -226,33 +353,53 @@ position = Vector2(671, 281.2027)
 [node name="Art" type="Sprite2D" parent="Sortables/Steamer" unique_id=1016507706]
 position = Vector2(-60.000023, -174.2027)
 scale = Vector2(0.43243244, 0.43243244)
-texture = ExtResource("complete_steamer_station")
+texture = ExtResource("21_vbdtn")
 centered = false
 metadata/asset_id = "complete_steamer_station"
 
 [node name="SoupStation" type="Node2D" parent="Sortables" unique_id=2035293273]
 position = Vector2(800.5, 319.69034)
+script = ExtResource("14_4i5g1")
+module_id = "SoupStation"
+station_id = "soup_pot"
 metadata/layout_group = "station:soup_pot"
 metadata/unlock_rule = "soup_pot"
 
-[node name="Art" type="Sprite2D" parent="Sortables/SoupStation" unique_id=1403724583]
-position = Vector2(-75.50003, -188.69034)
+[node name="Visual" type="Node2D" parent="Sortables/SoupStation" unique_id=1854158300]
+
+[node name="Art" type="Sprite2D" parent="Sortables/SoupStation/Visual" unique_id=1403724583]
+position = Vector2(-75.5, -188.69034)
 scale = Vector2(0.38977006, 0.38977006)
-texture = ExtResource("complete_soup_station")
+texture = ExtResource("22_wwgdb")
 centered = false
 metadata/asset_id = "complete_soup_station"
 
-[node name="PantryRack" type="Node2D" parent="Sortables" unique_id=1207514557]
-position = Vector2(105.5, 451.79126)
-metadata/layout_group = "station:pantry"
-metadata/unlock_rule = "pantry"
+[node name="Anchors" type="Node2D" parent="Sortables/SoupStation" unique_id=1455877241]
 
-[node name="Art" type="Sprite2D" parent="Sortables/PantryRack" unique_id=1368917104]
-position = Vector2(-64.49999, -243.79123)
-scale = Vector2(0.4563107, 0.4563107)
-texture = ExtResource("loaded_ingredient_rack")
-centered = false
-metadata/asset_id = "loaded_ingredient_rack"
+[node name="Station" type="Node2D" parent="Sortables/SoupStation/Anchors" unique_id=1391830156]
+
+[node name="Tap" type="Node2D" parent="Sortables/SoupStation/Anchors/Station" unique_id=267037113]
+position = Vector2(-75.5, -188.69034)
+script = ExtResource("17_8vt8w")
+size = Vector2(153, 168)
+
+[node name="Frame" type="Node2D" parent="Sortables/SoupStation/Anchors/Station" unique_id=1145151697]
+position = Vector2(-75.5, -188.69034)
+script = ExtResource("17_8vt8w")
+size = Vector2(153, 168)
+
+[node name="Nav" type="Node2D" parent="Sortables/SoupStation" unique_id=1709470362]
+
+[node name="Work" type="Node2D" parent="Sortables/SoupStation/Nav" unique_id=1476317926]
+position = Vector2(-0.5, 25.309662)
+
+[node name="Footprints" type="Node2D" parent="Sortables/SoupStation/Nav" unique_id=1845242293]
+
+[node name="body" type="Node2D" parent="Sortables/SoupStation/Nav/Footprints" unique_id=1529906479]
+position = Vector2(-65.5, -39.69034)
+script = ExtResource("17_8vt8w")
+size = Vector2(105, 40)
+metadata/station = "soup_pot"
 
 [node name="StaffGate" type="Node2D" parent="Sortables" unique_id=588607108]
 position = Vector2(782, 852.0062)
@@ -260,7 +407,7 @@ position = Vector2(782, 852.0062)
 [node name="Art" type="Sprite2D" parent="Sortables/StaffGate" unique_id=427388242]
 position = Vector2(-69, -149.01247)
 scale = Vector2(0.34413967, 0.34413967)
-texture = ExtResource("staff_gate")
+texture = ExtResource("23_64tul")
 centered = false
 metadata/asset_id = "staff_gate"
 
@@ -269,577 +416,1139 @@ position = Vector2(213, 1759)
 
 [node name="Art" type="Sprite2D" parent="Sortables/EntranceBench" unique_id=465964367]
 position = Vector2(-65, -85)
-texture = ExtResource("entrance_bench")
+texture = ExtResource("24_58q68")
 centered = false
 metadata/asset_id = "entrance_bench"
 
 [node name="PrepTable" type="Node2D" parent="Sortables" unique_id=539734065]
 position = Vector2(203, 617.5083)
+script = ExtResource("14_4i5g1")
+module_id = "PrepTable"
+station_id = "pantry"
 
-[node name="WorkSurface" type="Sprite2D" parent="Sortables/PrepTable" unique_id=432673710]
-position = Vector2(-164, -146.35857)
+[node name="FixedVisual" type="Node2D" parent="Sortables/PrepTable" unique_id=551215389]
+
+[node name="WorkSurface" type="Sprite2D" parent="Sortables/PrepTable/FixedVisual" unique_id=432673710]
+position = Vector2(-164, -146.35858)
 scale = Vector2(0.6533865, 0.6533865)
-texture = ExtResource("prep_table")
+texture = ExtResource("25_crbt1")
 centered = false
 metadata/asset_id = "prep_table"
 
-[node name="PantrySupplies" type="Node2D" parent="Sortables/PrepTable" unique_id=1669763067]
+[node name="Visual" type="Node2D" parent="Sortables/PrepTable" unique_id=1596369816]
+
+[node name="PantrySupplies" type="Node2D" parent="Sortables/PrepTable/Visual" unique_id=1669763067]
 metadata/layout_group = "station:pantry"
 metadata/unlock_rule = "pantry"
 
-[node name="RiceSack" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=1532675641]
+[node name="RiceSack" type="Sprite2D" parent="Sortables/PrepTable/Visual/PantrySupplies" unique_id=1532675641]
 position = Vector2(-163, -165.72475)
 scale = Vector2(0.43722942, 0.43722942)
-texture = ExtResource("rice_sack")
+texture = ExtResource("26_0wte2")
 centered = false
 metadata/asset_id = "rice_sack"
 
-[node name="ChoppingBoard" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=159887730]
+[node name="ChoppingBoard" type="Sprite2D" parent="Sortables/PrepTable/Visual/PantrySupplies" unique_id=159887730]
 position = Vector2(7.2, -136.1)
 scale = Vector2(0.21, 0.21)
-texture = ExtResource("complete_chopping_board")
+texture = ExtResource("27_qlv0g")
 centered = false
 metadata/asset_id = "complete_chopping_board"
 
-[node name="ProduceGroup" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=1473067637]
+[node name="ProduceGroup" type="Sprite2D" parent="Sortables/PrepTable/Visual/PantrySupplies" unique_id=1473067637]
 position = Vector2(-52.183945, -142.5083)
 scale = Vector2(0.27759197, 0.27759197)
-texture = ExtResource("complete_produce_group")
+texture = ExtResource("28_talxb")
 centered = false
 metadata/asset_id = "complete_produce_group"
 
-[node name="PrepBowl" type="Sprite2D" parent="Sortables/PrepTable/PantrySupplies" unique_id=15688765]
+[node name="PrepBowl" type="Sprite2D" parent="Sortables/PrepTable/Visual/PantrySupplies" unique_id=15688765]
 position = Vector2(101, -122.30922)
 scale = Vector2(0.2175926, 0.2175926)
-texture = ExtResource("chopped_scallion_bowl")
+texture = ExtResource("29_becrb")
 centered = false
 metadata/asset_id = "chopped_scallion_bowl"
 
+[node name="PantryRack" type="Node2D" parent="Sortables/PrepTable/Visual" unique_id=1207514557]
+position = Vector2(-97.5, -165.71704)
+metadata/layout_group = "station:pantry"
+metadata/unlock_rule = "pantry"
+
+[node name="Art" type="Sprite2D" parent="Sortables/PrepTable/Visual/PantryRack" unique_id=1368917104]
+position = Vector2(-64.49999, -243.79123)
+scale = Vector2(0.4563107, 0.4563107)
+texture = ExtResource("30_6whsx")
+centered = false
+metadata/asset_id = "loaded_ingredient_rack"
+
+[node name="Anchors" type="Node2D" parent="Sortables/PrepTable" unique_id=173775306]
+
+[node name="Station" type="Node2D" parent="Sortables/PrepTable/Anchors" unique_id=1854681550]
+
+[node name="Tap" type="Node2D" parent="Sortables/PrepTable/Anchors/Station" unique_id=1135118784]
+position = Vector2(-164, -409.5083)
+script = ExtResource("17_8vt8w")
+size = Vector2(290, 409)
+
+[node name="Nav" type="Node2D" parent="Sortables/PrepTable" unique_id=297502717]
+
+[node name="Work" type="Node2D" parent="Sortables/PrepTable/Nav" unique_id=391772415]
+position = Vector2(-3, 42.4917)
+
+[node name="Footprints" type="Node2D" parent="Sortables/PrepTable/Nav" unique_id=1108007832]
+
+[node name="table" type="Node2D" parent="Sortables/PrepTable/Nav/Footprints" unique_id=1122239207]
+position = Vector2(-158, -57.5083)
+script = ExtResource("17_8vt8w")
+size = Vector2(325, 60)
+metadata/station = ""
+
+[node name="rack" type="Node2D" parent="Sortables/PrepTable/Nav/Footprints" unique_id=1804085693]
+position = Vector2(-158, -232.5083)
+script = ExtResource("17_8vt8w")
+size = Vector2(125, 65)
+metadata/station = "pantry"
+
 [node name="PlatingTable" type="Node2D" parent="Sortables" unique_id=1773211269]
 position = Vector2(651, 608.4214)
+script = ExtResource("14_4i5g1")
+module_id = "PlatingTable"
+station_id = "plating"
 
-[node name="WorkSurface" type="Sprite2D" parent="Sortables/PlatingTable" unique_id=907604778]
-position = Vector2(-67.00001, -119.42141)
+[node name="FixedVisual" type="Node2D" parent="Sortables/PlatingTable" unique_id=1655030134]
+
+[node name="WorkSurface" type="Sprite2D" parent="Sortables/PlatingTable/FixedVisual" unique_id=907604778]
+position = Vector2(-67, -119.42142)
 scale = Vector2(0.53386456, 0.53386456)
-texture = ExtResource("prep_table")
+texture = ExtResource("25_crbt1")
 centered = false
 metadata/asset_id = "prep_table"
 
-[node name="PlatingSupplies" type="Sprite2D" parent="Sortables/PlatingTable" unique_id=1858963761]
-position = Vector2(-33.000004, -144.4214)
-scale = Vector2(0.36591607, 0.36591607)
-texture = ExtResource("plating_supply_group")
-centered = false
-metadata/asset_id = "plating_supply_group"
-metadata/layout_group = "station:plating"
-metadata/unlock_rule = "plating"
+[node name="Visual" type="Node2D" parent="Sortables/PlatingTable" unique_id=275535074]
+
+[node name="Anchors" type="Node2D" parent="Sortables/PlatingTable" unique_id=155020752]
+
+[node name="Station" type="Node2D" parent="Sortables/PlatingTable/Anchors" unique_id=2051195192]
+
+[node name="Buffer" type="Marker2D" parent="Sortables/PlatingTable/Anchors/Station"]
+position = Vector2(163, -58.421387)
+metadata/host = "PlatingTable"
+
+[node name="Tap" type="Node2D" parent="Sortables/PlatingTable/Anchors/Station" unique_id=92303897]
+position = Vector2(-67, -138.42139)
+script = ExtResource("17_8vt8w")
+size = Vector2(268, 140)
+
+[node name="Nav" type="Node2D" parent="Sortables/PlatingTable" unique_id=112851759]
+
+[node name="Work" type="Node2D" parent="Sortables/PlatingTable/Nav" unique_id=1974184513]
+position = Vector2(69, 41.578613)
+
+[node name="Footprints" type="Node2D" parent="Sortables/PlatingTable/Nav" unique_id=1856623423]
+
+[node name="table" type="Node2D" parent="Sortables/PlatingTable/Nav/Footprints" unique_id=2002606495]
+position = Vector2(-66, -53.421387)
+script = ExtResource("17_8vt8w")
+size = Vector2(250, 60)
+metadata/station = ""
 
 [node name="ServiceCounter" type="Node2D" parent="Sortables" unique_id=564535493]
 position = Vector2(384, 911)
+script = ExtResource("14_4i5g1")
+module_id = "ServiceCounter"
+module_kind = "counter"
+station_id = "counter"
+station_slots = Dictionary[String, String]({
+"pickup": "window",
+"drink": "plum_dispenser"
+})
 metadata/layout_group = "station:counter"
 metadata/unlock_rule = "counter"
 
-[node name="CounterBody" type="Sprite2D" parent="Sortables/ServiceCounter" unique_id=1784594014]
+[node name="Visual" type="Node2D" parent="Sortables/ServiceCounter" unique_id=937514049]
+
+[node name="CounterBody" type="Sprite2D" parent="Sortables/ServiceCounter/Visual" unique_id=1784594014]
 position = Vector2(-330.27777, -145)
 scale = Vector2(0.8055556, 0.8055556)
-texture = ExtResource("service_counter")
+texture = ExtResource("32_ukprl")
 centered = false
 metadata/asset_id = "service_counter"
 
-[node name="FlowerPot" type="Sprite2D" parent="Sortables/ServiceCounter" unique_id=1674688968]
-position = Vector2(-308.00003, -187.99998)
+[node name="FlowerPot" type="Sprite2D" parent="Sortables/ServiceCounter/Visual" unique_id=1674688968]
+position = Vector2(-308.00003, -188)
 scale = Vector2(0.2798165, 0.2798165)
-texture = ExtResource("red_flower_pot")
+texture = ExtResource("33_hohv0")
 centered = false
 metadata/asset_id = "red_flower_pot"
 
-[node name="Register" type="Sprite2D" parent="Sortables/ServiceCounter" unique_id=1833947896]
-position = Vector2(-227, -188)
+[node name="Register" type="Sprite2D" parent="Sortables/ServiceCounter/Visual" unique_id=1833947896]
+position = Vector2(6, -188)
 scale = Vector2(0.32542372, 0.32542372)
-texture = ExtResource("register")
+texture = ExtResource("34_mlsqc")
 centered = false
 metadata/asset_id = "register"
 
-[node name="PickupTray" type="Sprite2D" parent="Sortables/ServiceCounter" unique_id=24546868]
-position = Vector2(222.08577, -139)
+[node name="Slots" type="Node2D" parent="Sortables/ServiceCounter/Visual" unique_id=2057277830]
+
+[node name="pickup" type="Node2D" parent="Sortables/ServiceCounter/Visual/Slots" unique_id=1101447233]
+
+[node name="PickupTray" type="Sprite2D" parent="Sortables/ServiceCounter/Visual/Slots/pickup" unique_id=24546868]
+position = Vector2(222.08575, -139)
 scale = Vector2(0.19665273, 0.19665273)
-texture = ExtResource("wood_tray")
+texture = ExtResource("35_jaikb")
 centered = false
 metadata/asset_id = "wood_tray"
 metadata/layout_group = "station:window"
 metadata/unlock_rule = "window"
+
+[node name="Anchors" type="Node2D" parent="Sortables/ServiceCounter" unique_id=1897329113]
+
+[node name="Station" type="Node2D" parent="Sortables/ServiceCounter/Anchors" unique_id=40823778]
+
+[node name="Tap" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Station" unique_id=1214673781]
+position = Vector2(-20, -196)
+script = ExtResource("17_8vt8w")
+size = Vector2(180, 150)
+
+[node name="Post" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Station" unique_id=330483624]
+position = Vector2(-21, -181)
+script = ExtResource("17_8vt8w")
+size = Vector2(200, 110)
+
+[node name="PostPoint" type="Marker2D" parent="Sortables/ServiceCounter/Anchors/Station" unique_id=1193479939]
+position = Vector2(64, -161)
+
+[node name="Drop" type="Node2D" parent="Sortables/ServiceCounter/Anchors" unique_id=1854993339]
+position = Vector2(-21, -181)
+script = ExtResource("17_8vt8w")
+size = Vector2(200, 110)
+metadata/post = "counter"
+
+[node name="Slots" type="Node2D" parent="Sortables/ServiceCounter/Anchors" unique_id=974974372]
+
+[node name="pickup" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Slots" unique_id=1741889068]
+
+[node name="Tap" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Slots/pickup" unique_id=527119547]
+position = Vector2(196, -171)
+script = ExtResource("17_8vt8w")
+size = Vector2(134, 110)
+
+[node name="Counter" type="Node2D" parent="Sortables/ServiceCounter/Anchors" unique_id=1449549890]
+
+[node name="Sale" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Counter" unique_id=1548818794]
+position = Vector2(64, -181)
+
+[node name="Pickup" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Counter" unique_id=1371405853]
+position = Vector2(256, 39)
+
+[node name="Nav" type="Node2D" parent="Sortables/ServiceCounter" unique_id=736451977]
+
+[node name="Work" type="Node2D" parent="Sortables/ServiceCounter/Nav" unique_id=428351853]
+position = Vector2(64, -156)
+
+[node name="Post" type="Node2D" parent="Sortables/ServiceCounter/Nav" unique_id=1275454129]
+position = Vector2(64, -161)
+
+[node name="Slots" type="Node2D" parent="Sortables/ServiceCounter/Nav" unique_id=1301173653]
+
+[node name="pickup" type="Node2D" parent="Sortables/ServiceCounter/Nav/Slots" unique_id=1747217105]
+
+[node name="Work" type="Node2D" parent="Sortables/ServiceCounter/Nav/Slots/pickup" unique_id=89820399]
+position = Vector2(256, -156)
+
+[node name="Footprints" type="Node2D" parent="Sortables/ServiceCounter/Nav" unique_id=1690579509]
+
+[node name="body" type="Node2D" parent="Sortables/ServiceCounter/Nav/Footprints" unique_id=1534918633]
+position = Vector2(-334, -91)
+script = ExtResource("17_8vt8w")
+size = Vector2(665, 95)
+metadata/station = ""
+
+[node name="Customers" type="Node2D" parent="Sortables/ServiceCounter/Nav" unique_id=626227699]
+
+[node name="pickup" type="Node2D" parent="Sortables/ServiceCounter/Nav/Customers" unique_id=2129429162]
+position = Vector2(256, 39)
+
+[node name="Pickup" type="Node2D" parent="Sortables/ServiceCounter/Nav" unique_id=2025252773]
+
+[node name="0" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=2037438184]
+position = Vector2(256, 39)
+
+[node name="1" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=1436049372]
+position = Vector2(216, 39)
+
+[node name="2" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=1040938413]
+position = Vector2(176, 39)
+
+[node name="3" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=1350093836]
+position = Vector2(136, 39)
+
+[node name="4" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=1936998573]
+position = Vector2(16, 69)
+
+[node name="5" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=472126129]
+position = Vector2(56, 69)
+
+[node name="6" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=2041491764]
+position = Vector2(96, 69)
+
+[node name="7" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=1165588665]
+position = Vector2(136, 69)
+
+[node name="8" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=1725738669]
+position = Vector2(16, 109)
+
+[node name="9" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=690683939]
+position = Vector2(56, 109)
+
+[node name="10" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=202033881]
+position = Vector2(96, 109)
+
+[node name="11" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=22971944]
+position = Vector2(136, 109)
+
+[node name="12" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=1533333585]
+position = Vector2(16, 149)
+
+[node name="13" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=138931529]
+position = Vector2(56, 149)
+
+[node name="14" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=1874058196]
+position = Vector2(96, 149)
+
+[node name="15" type="Node2D" parent="Sortables/ServiceCounter/Nav/Pickup" unique_id=1483993041]
+position = Vector2(136, 149)
+
+[node name="drink" type="Node2D" parent="Sortables/ServiceCounter/Visual/Slots"]
+
+[node name="PlumMachine" type="Sprite2D" parent="Sortables/ServiceCounter/Visual/Slots/drink"]
+position = Vector2(-227, -259)
+scale = Vector2(0.18461539, 0.18461539)
+texture = ExtResource("plum_machine")
+centered = false
+metadata/asset_id = "plum_dispenser"
+
+[node name="drink" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Slots"]
+
+[node name="Tap" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Slots/drink"]
+position = Vector2(-227, -259)
+script = ExtResource("17_8vt8w")
+size = Vector2(120, 164)
+
+[node name="Buffer" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Slots/drink"]
+position = Vector2(-75, -110)
+
+[node name="drink" type="Node2D" parent="Sortables/ServiceCounter/Nav/Slots"]
+
+[node name="Work" type="Node2D" parent="Sortables/ServiceCounter/Nav/Slots/drink"]
+position = Vector2(-74, -156)
 
 [node name="Dining" type="Node2D" parent="Sortables" unique_id=260827798]
 y_sort_enabled = true
 
 [node name="Table01" type="Node2D" parent="Sortables/Dining" unique_id=156579909]
 position = Vector2(216.5, 1120.3671)
+script = ExtResource("14_4i5g1")
+module_id = "Table01"
+module_kind = "table"
+seat_group = "table"
 metadata/layout_group = "dine_seats:1"
 metadata/unlock_rule = "dine_seats:1"
 
-[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table01" unique_id=470471336]
+[node name="Visual" type="Node2D" parent="Sortables/Dining/Table01" unique_id=471533575]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table01/Visual" unique_id=2032692217]
+
+[node name="0" type="Sprite2D" parent="Sortables/Dining/Table01/Visual/Seats" unique_id=470471336]
 position = Vector2(-142.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
-[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table01" unique_id=2020302753]
+[node name="1" type="Sprite2D" parent="Sortables/Dining/Table01/Visual/Seats" unique_id=2020302753]
 position = Vector2(56.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
 metadata/layout_group = "dine_seats:2"
 metadata/unlock_rule = "dine_seats:2"
 
-[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table01" unique_id=1775005714]
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table01/Visual" unique_id=1775005714]
 position = Vector2(-78.5, -138.73407)
 scale = Vector2(0.43490306, 0.43490306)
-texture = ExtResource("dining_table")
+texture = ExtResource("37_tbuom")
 centered = false
 metadata/asset_id = "dining_table"
 
+[node name="Anchors" type="Node2D" parent="Sortables/Dining/Table01" unique_id=657732850]
+
+[node name="Table" type="Node2D" parent="Sortables/Dining/Table01/Anchors" unique_id=1453429489]
+position = Vector2(0, -89.99707)
+metadata/host = "Dining/Table01"
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table01/Anchors" unique_id=557266751]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table01/Anchors/Seats" unique_id=672016565]
+position = Vector2(-95.5, -70.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table01/Anchors/Seats" unique_id=340363470]
+position = Vector2(103.5, -70.367065)
+
+[node name="Nav" type="Node2D" parent="Sortables/Dining/Table01" unique_id=1090146217]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table01/Nav" unique_id=1233125948]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table01/Nav/Seats" unique_id=1158484842]
+position = Vector2(-95.5, -110.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table01/Nav/Seats" unique_id=1711833248]
+position = Vector2(103.5, -110.367065)
+
+[node name="Footprints" type="Node2D" parent="Sortables/Dining/Table01/Nav" unique_id=754515274]
+
+[node name="table" type="Node2D" parent="Sortables/Dining/Table01/Nav/Footprints" unique_id=1871243854]
+position = Vector2(-79, -45)
+script = ExtResource("17_8vt8w")
+size = Vector2(158, 45)
+metadata/station = ""
+
+[node name="chair_left" type="Node2D" parent="Sortables/Dining/Table01/Nav/Footprints" unique_id=171270780]
+position = Vector2(-128, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
+[node name="chair_right" type="Node2D" parent="Sortables/Dining/Table01/Nav/Footprints" unique_id=872907154]
+position = Vector2(70, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
 [node name="Table02" type="Node2D" parent="Sortables/Dining" unique_id=1653283143]
 position = Vector2(668.5, 1120.3671)
+script = ExtResource("14_4i5g1")
+module_id = "Table02"
+module_kind = "table"
+seat_group = "table"
+first_seat = 2
+table_index = 1
 metadata/layout_group = "dine_seats:3"
 metadata/unlock_rule = "dine_seats:3"
 
-[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table02" unique_id=56496635]
+[node name="Visual" type="Node2D" parent="Sortables/Dining/Table02" unique_id=1024243239]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table02/Visual" unique_id=537123246]
+
+[node name="0" type="Sprite2D" parent="Sortables/Dining/Table02/Visual/Seats" unique_id=56496635]
 position = Vector2(-142.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
-[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table02" unique_id=1513345189]
+[node name="1" type="Sprite2D" parent="Sortables/Dining/Table02/Visual/Seats" unique_id=1513345189]
 position = Vector2(56.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
 metadata/layout_group = "dine_seats:4"
 metadata/unlock_rule = "dine_seats:4"
 
-[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table02" unique_id=431816221]
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table02/Visual" unique_id=431816221]
 position = Vector2(-78.5, -138.73407)
 scale = Vector2(0.43490306, 0.43490306)
-texture = ExtResource("dining_table")
+texture = ExtResource("37_tbuom")
 centered = false
 metadata/asset_id = "dining_table"
 
+[node name="Anchors" type="Node2D" parent="Sortables/Dining/Table02" unique_id=1630485073]
+
+[node name="Table" type="Node2D" parent="Sortables/Dining/Table02/Anchors" unique_id=1857361562]
+position = Vector2(0, -89.99707)
+metadata/host = "Dining/Table02"
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table02/Anchors" unique_id=283416745]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table02/Anchors/Seats" unique_id=13601485]
+position = Vector2(-94.5, -70.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table02/Anchors/Seats" unique_id=1080791031]
+position = Vector2(103.5, -70.367065)
+
+[node name="Nav" type="Node2D" parent="Sortables/Dining/Table02" unique_id=848652242]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table02/Nav" unique_id=665557479]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table02/Nav/Seats" unique_id=1676162580]
+position = Vector2(-94.5, -110.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table02/Nav/Seats" unique_id=1293335718]
+position = Vector2(103.5, -110.367065)
+
+[node name="Footprints" type="Node2D" parent="Sortables/Dining/Table02/Nav" unique_id=514653562]
+
+[node name="table" type="Node2D" parent="Sortables/Dining/Table02/Nav/Footprints" unique_id=1430463716]
+position = Vector2(-79, -45)
+script = ExtResource("17_8vt8w")
+size = Vector2(158, 45)
+metadata/station = ""
+
+[node name="chair_left" type="Node2D" parent="Sortables/Dining/Table02/Nav/Footprints" unique_id=234500182]
+position = Vector2(-128, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
+[node name="chair_right" type="Node2D" parent="Sortables/Dining/Table02/Nav/Footprints" unique_id=1021294064]
+position = Vector2(70, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
 [node name="Table03" type="Node2D" parent="Sortables/Dining" unique_id=1465079504]
 position = Vector2(216.5, 1303.3671)
+script = ExtResource("14_4i5g1")
+module_id = "Table03"
+module_kind = "table"
+seat_group = "table"
+first_seat = 4
+table_index = 2
 metadata/layout_group = "dine_seats:5"
 metadata/unlock_rule = "dine_seats:5"
 
-[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table03" unique_id=1791544574]
+[node name="Visual" type="Node2D" parent="Sortables/Dining/Table03" unique_id=1264832395]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table03/Visual" unique_id=1514699021]
+
+[node name="0" type="Sprite2D" parent="Sortables/Dining/Table03/Visual/Seats" unique_id=1791544574]
 position = Vector2(-142.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
-[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table03" unique_id=404300116]
+[node name="1" type="Sprite2D" parent="Sortables/Dining/Table03/Visual/Seats" unique_id=404300116]
 position = Vector2(56.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
 metadata/layout_group = "dine_seats:6"
 metadata/unlock_rule = "dine_seats:6"
 
-[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table03" unique_id=316518562]
-position = Vector2(-78.5, -138.73407)
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table03/Visual" unique_id=316518562]
+position = Vector2(-78.5, -138.73401)
 scale = Vector2(0.43490306, 0.43490306)
-texture = ExtResource("dining_table")
+texture = ExtResource("37_tbuom")
 centered = false
 metadata/asset_id = "dining_table"
 
+[node name="Anchors" type="Node2D" parent="Sortables/Dining/Table03" unique_id=1427790236]
+
+[node name="Table" type="Node2D" parent="Sortables/Dining/Table03/Anchors" unique_id=1665017585]
+position = Vector2(0, -89.99707)
+metadata/host = "Dining/Table03"
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table03/Anchors" unique_id=1716053895]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table03/Anchors/Seats" unique_id=646688227]
+position = Vector2(-95.5, -70.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table03/Anchors/Seats" unique_id=1967766188]
+position = Vector2(103.5, -70.367065)
+
+[node name="Nav" type="Node2D" parent="Sortables/Dining/Table03" unique_id=334584029]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table03/Nav" unique_id=1444901891]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table03/Nav/Seats" unique_id=656822886]
+position = Vector2(-95.5, -110.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table03/Nav/Seats" unique_id=1433391894]
+position = Vector2(103.5, -110.367065)
+
+[node name="Footprints" type="Node2D" parent="Sortables/Dining/Table03/Nav" unique_id=837044907]
+
+[node name="table" type="Node2D" parent="Sortables/Dining/Table03/Nav/Footprints" unique_id=379162275]
+position = Vector2(-79, -45)
+script = ExtResource("17_8vt8w")
+size = Vector2(158, 45)
+metadata/station = ""
+
+[node name="chair_left" type="Node2D" parent="Sortables/Dining/Table03/Nav/Footprints" unique_id=760778705]
+position = Vector2(-128, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
+[node name="chair_right" type="Node2D" parent="Sortables/Dining/Table03/Nav/Footprints" unique_id=1082970170]
+position = Vector2(70, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
 [node name="Table04" type="Node2D" parent="Sortables/Dining" unique_id=1679480104]
 position = Vector2(668.5, 1303.3671)
+script = ExtResource("14_4i5g1")
+module_id = "Table04"
+module_kind = "table"
+seat_group = "table"
+first_seat = 6
+table_index = 3
 metadata/layout_group = "dine_seats:7"
 metadata/unlock_rule = "dine_seats:7"
 
-[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table04" unique_id=1742667489]
+[node name="Visual" type="Node2D" parent="Sortables/Dining/Table04" unique_id=2045158308]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table04/Visual" unique_id=718755939]
+
+[node name="0" type="Sprite2D" parent="Sortables/Dining/Table04/Visual/Seats" unique_id=1742667489]
 position = Vector2(-142.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
-[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table04" unique_id=167272396]
+[node name="1" type="Sprite2D" parent="Sortables/Dining/Table04/Visual/Seats" unique_id=167272396]
 position = Vector2(56.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
 metadata/layout_group = "dine_seats:8"
 metadata/unlock_rule = "dine_seats:8"
 
-[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table04" unique_id=497655511]
-position = Vector2(-78.5, -138.73407)
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table04/Visual" unique_id=497655511]
+position = Vector2(-78.5, -138.73401)
 scale = Vector2(0.43490306, 0.43490306)
-texture = ExtResource("dining_table")
+texture = ExtResource("37_tbuom")
 centered = false
 metadata/asset_id = "dining_table"
 
+[node name="Anchors" type="Node2D" parent="Sortables/Dining/Table04" unique_id=556176345]
+
+[node name="Table" type="Node2D" parent="Sortables/Dining/Table04/Anchors" unique_id=1346679411]
+position = Vector2(0, -89.99707)
+metadata/host = "Dining/Table04"
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table04/Anchors" unique_id=230741544]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table04/Anchors/Seats" unique_id=1482500655]
+position = Vector2(-94.5, -70.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table04/Anchors/Seats" unique_id=1079719561]
+position = Vector2(103.5, -70.367065)
+
+[node name="Nav" type="Node2D" parent="Sortables/Dining/Table04" unique_id=577074078]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table04/Nav" unique_id=1061872339]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table04/Nav/Seats" unique_id=1589295902]
+position = Vector2(-94.5, -110.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table04/Nav/Seats" unique_id=1034041848]
+position = Vector2(103.5, -110.367065)
+
+[node name="Footprints" type="Node2D" parent="Sortables/Dining/Table04/Nav" unique_id=2049956945]
+
+[node name="table" type="Node2D" parent="Sortables/Dining/Table04/Nav/Footprints" unique_id=232122170]
+position = Vector2(-79, -45)
+script = ExtResource("17_8vt8w")
+size = Vector2(158, 45)
+metadata/station = ""
+
+[node name="chair_left" type="Node2D" parent="Sortables/Dining/Table04/Nav/Footprints" unique_id=414389361]
+position = Vector2(-128, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
+[node name="chair_right" type="Node2D" parent="Sortables/Dining/Table04/Nav/Footprints" unique_id=1666933077]
+position = Vector2(70, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
 [node name="Table05" type="Node2D" parent="Sortables/Dining" unique_id=17723643]
 position = Vector2(216.5, 1493.3671)
+script = ExtResource("14_4i5g1")
+module_id = "Table05"
+module_kind = "table"
+seat_group = "table"
+first_seat = 8
+table_index = 4
 metadata/layout_group = "dine_seats:9"
 metadata/unlock_rule = "dine_seats:9"
 
-[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table05" unique_id=238837930]
+[node name="Visual" type="Node2D" parent="Sortables/Dining/Table05" unique_id=1139772288]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table05/Visual" unique_id=1089528116]
+
+[node name="0" type="Sprite2D" parent="Sortables/Dining/Table05/Visual/Seats" unique_id=238837930]
 position = Vector2(-142.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
-[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table05" unique_id=105652250]
+[node name="1" type="Sprite2D" parent="Sortables/Dining/Table05/Visual/Seats" unique_id=105652250]
 position = Vector2(56.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
 metadata/layout_group = "dine_seats:10"
 metadata/unlock_rule = "dine_seats:10"
 
-[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table05" unique_id=361755642]
-position = Vector2(-78.5, -138.73407)
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table05/Visual" unique_id=361755642]
+position = Vector2(-78.5, -138.73401)
 scale = Vector2(0.43490306, 0.43490306)
-texture = ExtResource("dining_table")
+texture = ExtResource("37_tbuom")
 centered = false
 metadata/asset_id = "dining_table"
 
+[node name="Anchors" type="Node2D" parent="Sortables/Dining/Table05" unique_id=855338683]
+
+[node name="Table" type="Node2D" parent="Sortables/Dining/Table05/Anchors" unique_id=1125146483]
+position = Vector2(0, -89.99707)
+metadata/host = "Dining/Table05"
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table05/Anchors" unique_id=808773798]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table05/Anchors/Seats" unique_id=1417249479]
+position = Vector2(-95.5, -70.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table05/Anchors/Seats" unique_id=1566804771]
+position = Vector2(103.5, -70.367065)
+
+[node name="Nav" type="Node2D" parent="Sortables/Dining/Table05" unique_id=1330515084]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table05/Nav" unique_id=1101310687]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table05/Nav/Seats" unique_id=1466731229]
+position = Vector2(-95.5, -110.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table05/Nav/Seats" unique_id=2090772050]
+position = Vector2(103.5, -110.367065)
+
+[node name="Footprints" type="Node2D" parent="Sortables/Dining/Table05/Nav" unique_id=2090236007]
+
+[node name="table" type="Node2D" parent="Sortables/Dining/Table05/Nav/Footprints" unique_id=720998849]
+position = Vector2(-79, -45)
+script = ExtResource("17_8vt8w")
+size = Vector2(158, 45)
+metadata/station = ""
+
+[node name="chair_left" type="Node2D" parent="Sortables/Dining/Table05/Nav/Footprints" unique_id=115107632]
+position = Vector2(-128, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
+[node name="chair_right" type="Node2D" parent="Sortables/Dining/Table05/Nav/Footprints" unique_id=1616431316]
+position = Vector2(70, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
 [node name="Table06" type="Node2D" parent="Sortables/Dining" unique_id=467196183]
 position = Vector2(668.5, 1493.3671)
+script = ExtResource("14_4i5g1")
+module_id = "Table06"
+module_kind = "table"
+seat_group = "table"
+first_seat = 10
+table_index = 5
 metadata/layout_group = "dine_seats:11"
 metadata/unlock_rule = "dine_seats:11"
 
-[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table06" unique_id=1668644600]
+[node name="Visual" type="Node2D" parent="Sortables/Dining/Table06" unique_id=639050971]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table06/Visual" unique_id=10922145]
+
+[node name="0" type="Sprite2D" parent="Sortables/Dining/Table06/Visual/Seats" unique_id=1668644600]
 position = Vector2(-142.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
-[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table06" unique_id=1017079422]
+[node name="1" type="Sprite2D" parent="Sortables/Dining/Table06/Visual/Seats" unique_id=1017079422]
 position = Vector2(56.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
 metadata/layout_group = "dine_seats:12"
 metadata/unlock_rule = "dine_seats:12"
 
-[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table06" unique_id=957701377]
-position = Vector2(-78.5, -138.73407)
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table06/Visual" unique_id=957701377]
+position = Vector2(-78.5, -138.73401)
 scale = Vector2(0.43490306, 0.43490306)
-texture = ExtResource("dining_table")
+texture = ExtResource("37_tbuom")
 centered = false
 metadata/asset_id = "dining_table"
 
+[node name="Anchors" type="Node2D" parent="Sortables/Dining/Table06" unique_id=1108483004]
+
+[node name="Table" type="Node2D" parent="Sortables/Dining/Table06/Anchors" unique_id=1838226096]
+position = Vector2(0, -89.99707)
+metadata/host = "Dining/Table06"
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table06/Anchors" unique_id=1779244489]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table06/Anchors/Seats" unique_id=99694113]
+position = Vector2(-94.5, -70.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table06/Anchors/Seats" unique_id=938824583]
+position = Vector2(103.5, -70.367065)
+
+[node name="Nav" type="Node2D" parent="Sortables/Dining/Table06" unique_id=459611246]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table06/Nav" unique_id=1553796505]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table06/Nav/Seats" unique_id=1544273730]
+position = Vector2(-94.5, -110.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table06/Nav/Seats" unique_id=256062700]
+position = Vector2(103.5, -110.367065)
+
+[node name="Footprints" type="Node2D" parent="Sortables/Dining/Table06/Nav" unique_id=791982067]
+
+[node name="table" type="Node2D" parent="Sortables/Dining/Table06/Nav/Footprints" unique_id=1886595396]
+position = Vector2(-79, -45)
+script = ExtResource("17_8vt8w")
+size = Vector2(158, 45)
+metadata/station = ""
+
+[node name="chair_left" type="Node2D" parent="Sortables/Dining/Table06/Nav/Footprints" unique_id=1048241202]
+position = Vector2(-128, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
+[node name="chair_right" type="Node2D" parent="Sortables/Dining/Table06/Nav/Footprints" unique_id=2029225983]
+position = Vector2(70, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
 [node name="Table07" type="Node2D" parent="Sortables/Dining" unique_id=1462339376]
 position = Vector2(216.5, 1681.3671)
+script = ExtResource("14_4i5g1")
+module_id = "Table07"
+module_kind = "table"
+seat_group = "table"
+first_seat = 12
+table_index = 6
 metadata/layout_group = "dine_seats:13"
 metadata/unlock_rule = "dine_seats:13"
 
-[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table07" unique_id=1143016755]
+[node name="Visual" type="Node2D" parent="Sortables/Dining/Table07" unique_id=7808357]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table07/Visual" unique_id=829651161]
+
+[node name="0" type="Sprite2D" parent="Sortables/Dining/Table07/Visual/Seats" unique_id=1143016755]
 position = Vector2(-142.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
-[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table07" unique_id=1081834270]
+[node name="1" type="Sprite2D" parent="Sortables/Dining/Table07/Visual/Seats" unique_id=1081834270]
 position = Vector2(56.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
 metadata/layout_group = "dine_seats:14"
 metadata/unlock_rule = "dine_seats:14"
 
-[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table07" unique_id=1697360336]
-position = Vector2(-78.5, -138.73407)
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table07/Visual" unique_id=1697360336]
+position = Vector2(-78.5, -138.73401)
 scale = Vector2(0.43490306, 0.43490306)
-texture = ExtResource("dining_table")
+texture = ExtResource("37_tbuom")
 centered = false
 metadata/asset_id = "dining_table"
 
+[node name="Anchors" type="Node2D" parent="Sortables/Dining/Table07" unique_id=733959518]
+
+[node name="Table" type="Node2D" parent="Sortables/Dining/Table07/Anchors" unique_id=1126946265]
+position = Vector2(0, -89.99707)
+metadata/host = "Dining/Table07"
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table07/Anchors" unique_id=504940714]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table07/Anchors/Seats" unique_id=468868733]
+position = Vector2(-95.5, -70.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table07/Anchors/Seats" unique_id=1517088576]
+position = Vector2(103.5, -70.367065)
+
+[node name="Nav" type="Node2D" parent="Sortables/Dining/Table07" unique_id=1401969667]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table07/Nav" unique_id=266223309]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table07/Nav/Seats" unique_id=1423453070]
+position = Vector2(-95.5, -110.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table07/Nav/Seats" unique_id=353176946]
+position = Vector2(103.5, -110.367065)
+
+[node name="Footprints" type="Node2D" parent="Sortables/Dining/Table07/Nav" unique_id=903900865]
+
+[node name="table" type="Node2D" parent="Sortables/Dining/Table07/Nav/Footprints" unique_id=822083853]
+position = Vector2(-79, -45)
+script = ExtResource("17_8vt8w")
+size = Vector2(158, 45)
+metadata/station = ""
+
+[node name="chair_left" type="Node2D" parent="Sortables/Dining/Table07/Nav/Footprints" unique_id=995257965]
+position = Vector2(-128, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
+[node name="chair_right" type="Node2D" parent="Sortables/Dining/Table07/Nav/Footprints" unique_id=1956308544]
+position = Vector2(70, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
 [node name="Table08" type="Node2D" parent="Sortables/Dining" unique_id=1335396027]
 position = Vector2(668.5, 1681.3671)
+script = ExtResource("14_4i5g1")
+module_id = "Table08"
+module_kind = "table"
+seat_group = "table"
+first_seat = 14
+table_index = 7
 metadata/layout_group = "dine_seats:15"
 metadata/unlock_rule = "dine_seats:15"
 
-[node name="ChairLeft" type="Sprite2D" parent="Sortables/Dining/Table08" unique_id=1746258030]
+[node name="Visual" type="Node2D" parent="Sortables/Dining/Table08" unique_id=728136163]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table08/Visual" unique_id=1789793451]
+
+[node name="0" type="Sprite2D" parent="Sortables/Dining/Table08/Visual/Seats" unique_id=1746258030]
 position = Vector2(-142.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
-[node name="ChairRight" type="Sprite2D" parent="Sortables/Dining/Table08" unique_id=1874168561]
+[node name="1" type="Sprite2D" parent="Sortables/Dining/Table08/Visual/Seats" unique_id=1874168561]
 position = Vector2(56.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
-texture = ExtResource("dining_chair")
+texture = ExtResource("36_tbyjm")
 centered = false
 flip_h = true
 metadata/asset_id = "dining_chair"
 metadata/layout_group = "dine_seats:16"
 metadata/unlock_rule = "dine_seats:16"
 
-[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table08" unique_id=1686637293]
-position = Vector2(-78.5, -138.73407)
+[node name="Table" type="Sprite2D" parent="Sortables/Dining/Table08/Visual" unique_id=1686637293]
+position = Vector2(-78.5, -138.73401)
 scale = Vector2(0.43490306, 0.43490306)
-texture = ExtResource("dining_table")
+texture = ExtResource("37_tbuom")
 centered = false
 metadata/asset_id = "dining_table"
 
-[node name="Anchors" type="Node2D" parent="." unique_id=1156273834]
-metadata/world_size = Vector2(887, 1774)
+[node name="Anchors" type="Node2D" parent="Sortables/Dining/Table08" unique_id=446815444]
 
-[node name="Stations" type="Node2D" parent="Anchors"]
-
-[node name="counter" type="Node2D" parent="Anchors/Stations"]
-
-[node name="Tap" type="Node2D" parent="Anchors/Stations/counter"]
-position = Vector2(54, 715)
-script = ExtResource("anchor")
-size = Vector2(500, 150)
-
-[node name="Post" type="Node2D" parent="Anchors/Stations/counter"]
-position = Vector2(130, 730)
-script = ExtResource("anchor")
-size = Vector2(200, 110)
-
-[node name="PostPoint" type="Marker2D" parent="Anchors/Stations/counter"]
-position = Vector2(215, 750)
-
-[node name="pantry" type="Node2D" parent="Anchors/Stations"]
-
-[node name="Tap" type="Node2D" parent="Anchors/Stations/pantry"]
-position = Vector2(39, 208)
-script = ExtResource("anchor")
-size = Vector2(290, 409)
-
-[node name="rice_cooker" type="Node2D" parent="Anchors/Stations"]
-
-[node name="Tap" type="Node2D" parent="Anchors/Stations/rice_cooker"]
-position = Vector2(745, 320)
-script = ExtResource("anchor")
-size = Vector2(110, 140)
-
-[node name="wok_a" type="Node2D" parent="Anchors/Stations"]
-
-[node name="Tap" type="Node2D" parent="Anchors/Stations/wok_a"]
-position = Vector2(329, 129)
-script = ExtResource("anchor")
-size = Vector2(118, 178)
-
-[node name="Frame" type="Node2D" parent="Anchors/Stations/wok_a"]
-position = Vector2(329, 129)
-script = ExtResource("anchor")
-size = Vector2(118, 178)
-
-[node name="Post" type="Node2D" parent="Anchors/Stations/wok_a"]
-position = Vector2(340, 300)
-script = ExtResource("anchor")
-size = Vector2(108, 90)
-
-[node name="PostPoint" type="Marker2D" parent="Anchors/Stations/wok_a"]
-position = Vector2(400, 335)
-
-[node name="wok_b" type="Node2D" parent="Anchors/Stations"]
-
-[node name="Tap" type="Node2D" parent="Anchors/Stations/wok_b"]
-position = Vector2(447, 129)
-script = ExtResource("anchor")
-size = Vector2(118, 178)
-
-[node name="Frame" type="Node2D" parent="Anchors/Stations/wok_b"]
-position = Vector2(447, 129)
-script = ExtResource("anchor")
-size = Vector2(118, 178)
-
-[node name="Post" type="Node2D" parent="Anchors/Stations/wok_b"]
-position = Vector2(450, 300)
-script = ExtResource("anchor")
-size = Vector2(110, 90)
-
-[node name="PostPoint" type="Marker2D" parent="Anchors/Stations/wok_b"]
-position = Vector2(500, 335)
-
-[node name="soup_pot" type="Node2D" parent="Anchors/Stations"]
-
-[node name="Tap" type="Node2D" parent="Anchors/Stations/soup_pot"]
-position = Vector2(725, 131)
-script = ExtResource("anchor")
-size = Vector2(153, 168)
-
-[node name="Frame" type="Node2D" parent="Anchors/Stations/soup_pot"]
-position = Vector2(725, 131)
-script = ExtResource("anchor")
-size = Vector2(153, 168)
-
-[node name="plating" type="Node2D" parent="Anchors/Stations"]
-
-[node name="Tap" type="Node2D" parent="Anchors/Stations/plating"]
-position = Vector2(584, 470)
-script = ExtResource("anchor")
-size = Vector2(268, 140)
-
-[node name="window" type="Node2D" parent="Anchors/Stations"]
-
-[node name="Tap" type="Node2D" parent="Anchors/Stations/window"]
-position = Vector2(580, 740)
-script = ExtResource("anchor")
-size = Vector2(134, 110)
-
-[node name="Drops" type="Node2D" parent="Anchors"]
-
-[node name="0" type="Node2D" parent="Anchors/Drops"]
-position = Vector2(335, 300)
-script = ExtResource("anchor")
-size = Vector2(112, 90)
-metadata/post = "wok_a"
-
-[node name="1" type="Node2D" parent="Anchors/Drops"]
-position = Vector2(130, 730)
-script = ExtResource("anchor")
-size = Vector2(200, 110)
-metadata/post = "counter"
-
-[node name="2" type="Node2D" parent="Anchors/Drops"]
-position = Vector2(450, 300)
-script = ExtResource("anchor")
-size = Vector2(112, 90)
-metadata/post = "wok_b"
-
-[node name="Queue" type="Node2D" parent="Anchors"]
-
-[node name="0" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(215, 950)
-
-[node name="1" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(290, 950)
-
-[node name="2" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(365, 950)
-
-[node name="3" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(443, 975)
-
-[node name="4" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(443, 1045)
-
-[node name="5" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(443, 1115)
-
-[node name="6" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(443, 1185)
-
-[node name="7" type="Node2D" parent="Anchors/Queue"]
-position = Vector2(443, 1255)
-
-[node name="Seats" type="Node2D" parent="Anchors"]
-
-[node name="table" type="Node2D" parent="Anchors/Seats"]
-
-[node name="0" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(121, 1050)
-
-[node name="1" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(320, 1050)
-
-[node name="2" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(574, 1050)
-
-[node name="3" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(772, 1050)
-
-[node name="4" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(121, 1233)
-
-[node name="5" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(320, 1233)
-
-[node name="6" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(574, 1233)
-
-[node name="7" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(772, 1233)
-
-[node name="8" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(121, 1423)
-
-[node name="9" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(320, 1423)
-
-[node name="10" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(574, 1423)
-
-[node name="11" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(772, 1423)
-
-[node name="12" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(121, 1611)
-
-[node name="13" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(320, 1611)
-
-[node name="14" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(574, 1611)
-
-[node name="15" type="Node2D" parent="Anchors/Seats/table"]
-position = Vector2(772, 1611)
-
-[node name="Tables" type="Node2D" parent="Anchors"]
-
-[node name="table" type="Node2D" parent="Anchors/Tables"]
-metadata/per_table = 2
-metadata/note = "桌面中心（放菜），按座位号两人一桌：第 k 张桌 = 座位 2k、2k+1"
-
-[node name="0" type="Node2D" parent="Anchors/Tables/table"]
-position = Vector2(216.5, 1030.37)
-metadata/host = "Dining/Table01"
-
-[node name="1" type="Node2D" parent="Anchors/Tables/table"]
-position = Vector2(668.5, 1030.37)
-metadata/host = "Dining/Table02"
-
-[node name="2" type="Node2D" parent="Anchors/Tables/table"]
-position = Vector2(216.5, 1213.37)
-metadata/host = "Dining/Table03"
-
-[node name="3" type="Node2D" parent="Anchors/Tables/table"]
-position = Vector2(668.5, 1213.37)
-metadata/host = "Dining/Table04"
-
-[node name="4" type="Node2D" parent="Anchors/Tables/table"]
-position = Vector2(216.5, 1403.37)
-metadata/host = "Dining/Table05"
-
-[node name="5" type="Node2D" parent="Anchors/Tables/table"]
-position = Vector2(668.5, 1403.37)
-metadata/host = "Dining/Table06"
-
-[node name="6" type="Node2D" parent="Anchors/Tables/table"]
-position = Vector2(216.5, 1591.37)
-metadata/host = "Dining/Table07"
-
-[node name="7" type="Node2D" parent="Anchors/Tables/table"]
-position = Vector2(668.5, 1591.37)
+[node name="Table" type="Node2D" parent="Sortables/Dining/Table08/Anchors" unique_id=22343026]
+position = Vector2(0, -89.99707)
 metadata/host = "Dining/Table08"
 
-[node name="Entrance" type="Node2D" parent="Anchors"]
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table08/Anchors" unique_id=942596476]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table08/Anchors/Seats" unique_id=133558249]
+position = Vector2(-94.5, -70.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table08/Anchors/Seats" unique_id=1956161987]
+position = Vector2(103.5, -70.367065)
+
+[node name="Nav" type="Node2D" parent="Sortables/Dining/Table08" unique_id=191926815]
+
+[node name="Seats" type="Node2D" parent="Sortables/Dining/Table08/Nav" unique_id=1911037787]
+
+[node name="0" type="Node2D" parent="Sortables/Dining/Table08/Nav/Seats" unique_id=1171305491]
+position = Vector2(-94.5, -110.367065)
+
+[node name="1" type="Node2D" parent="Sortables/Dining/Table08/Nav/Seats" unique_id=354324126]
+position = Vector2(103.5, -110.367065)
+
+[node name="Footprints" type="Node2D" parent="Sortables/Dining/Table08/Nav" unique_id=172800124]
+
+[node name="table" type="Node2D" parent="Sortables/Dining/Table08/Nav/Footprints" unique_id=243192629]
+position = Vector2(-79, -45)
+script = ExtResource("17_8vt8w")
+size = Vector2(158, 45)
+metadata/station = ""
+
+[node name="chair_left" type="Node2D" parent="Sortables/Dining/Table08/Nav/Footprints" unique_id=1753946375]
+position = Vector2(-128, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
+[node name="chair_right" type="Node2D" parent="Sortables/Dining/Table08/Nav/Footprints" unique_id=1926446541]
+position = Vector2(70, -32)
+script = ExtResource("17_8vt8w")
+size = Vector2(66, 32)
+metadata/station = ""
+
+[node name="Anchors" type="Node2D" parent="." unique_id=1346247528]
+metadata/world_size = Vector2(887, 1774)
+metadata/module_version = 1
+
+[node name="Nav" type="Node2D" parent="Anchors" unique_id=2016205841]
+metadata/nav = "grid"
+metadata/cell = 20.0
+metadata/grid_size = Vector2i(45, 89)
+metadata/motion_version = 1
+metadata/motion_units = 1.2319444444444445
+metadata/spawn_point = "home"
+metadata/aliases = {}
+
+[node name="Points" type="Node2D" parent="Anchors/Nav" unique_id=1051539740]
+
+[node name="home" type="Node2D" parent="Anchors/Nav/Points" unique_id=1186882778]
+position = Vector2(450, 560)
+
+[node name="door" type="Node2D" parent="Anchors/Nav/Points" unique_id=1701565678]
+position = Vector2(443, 1730)
+
+[node name="Space" type="Node2D" parent="." unique_id=413322797]
+script = ExtResource("14_4i5g1")
+module_id = "Space"
+module_kind = "space"
+
+[node name="Visual" type="Node2D" parent="Space" unique_id=1407820574]
+
+[node name="Anchors" type="Node2D" parent="Space" unique_id=1449699249]
+
+[node name="Nav" type="Node2D" parent="Space" unique_id=494246933]
+
+[node name="Areas" type="Node2D" parent="Space/Nav" unique_id=1811287040]
+
+[node name="0" type="Node2D" parent="Space/Nav/Areas" unique_id=401539170]
+position = Vector2(40, 240)
+script = ExtResource("17_8vt8w")
+size = Vector2(800, 1520)
+
+[node name="Access" type="Node2D" parent="Space/Nav" unique_id=715844438]
+
+[node name="staff" type="Node2D" parent="Space/Nav/Access" unique_id=1778470092]
+
+[node name="0" type="Node2D" parent="Space/Nav/Access/staff" unique_id=1097108281]
+position = Vector2(40, 240)
+script = ExtResource("17_8vt8w")
+size = Vector2(800, 1520)
+
+[node name="customer" type="Node2D" parent="Space/Nav/Access" unique_id=1313201716]
+
+[node name="0" type="Node2D" parent="Space/Nav/Access/customer" unique_id=1000495433]
+position = Vector2(40, 920)
+script = ExtResource("17_8vt8w")
+size = Vector2(800, 840)
+
+[node name="Footprints" type="Node2D" parent="Space/Nav" unique_id=518119076]
+
+[node name="steamer" type="Node2D" parent="Space/Nav/Footprints" unique_id=2110849095]
+position = Vector2(620, 245)
+script = ExtResource("17_8vt8w")
+size = Vector2(100, 40)
+metadata/station = ""
+
+[node name="gate_left" type="Node2D" parent="Space/Nav/Footprints" unique_id=1674213622]
+position = Vector2(715, 815)
+script = ExtResource("17_8vt8w")
+size = Vector2(20, 40)
+metadata/station = ""
+
+[node name="gate_right" type="Node2D" parent="Space/Nav/Footprints" unique_id=989652315]
+position = Vector2(830, 815)
+script = ExtResource("17_8vt8w")
+size = Vector2(15, 40)
+metadata/station = ""
+
+[node name="front_left" type="Node2D" parent="Space/Nav/Footprints" unique_id=1177741868]
+position = Vector2(40, 1718)
+script = ExtResource("17_8vt8w")
+size = Vector2(310, 42)
+metadata/station = ""
+
+[node name="front_right" type="Node2D" parent="Space/Nav/Footprints" unique_id=1032265778]
+position = Vector2(550, 1718)
+script = ExtResource("17_8vt8w")
+size = Vector2(290, 42)
+metadata/station = ""
+
+[node name="bench" type="Node2D" parent="Space/Nav/Footprints" unique_id=764835788]
+position = Vector2(148, 1710)
+script = ExtResource("17_8vt8w")
+size = Vector2(130, 50)
+metadata/station = ""
+
+[node name="EntranceModule" type="Node2D" parent="." unique_id=582846439]
 position = Vector2(443, 1740)
+script = ExtResource("14_4i5g1")
+module_id = "EntranceModule"
+module_kind = "entrance"
+
+[node name="Visual" type="Node2D" parent="EntranceModule" unique_id=544685740]
+
+[node name="Anchors" type="Node2D" parent="EntranceModule" unique_id=259560003]
+
+[node name="Entrance" type="Node2D" parent="EntranceModule/Anchors" unique_id=1668741839]
 metadata/note = "客人从下方门口进来"
+
+[node name="Exit" type="Node2D" parent="EntranceModule/Anchors" unique_id=1746938758]
+position = Vector2(40, 0)
+
+[node name="Queue" type="Node2D" parent="EntranceModule/Anchors" unique_id=1940443185]
+
+[node name="0" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=2090197954]
+position = Vector2(-228, -790)
+
+[node name="1" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=1860269255]
+position = Vector2(-153, -790)
+
+[node name="2" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=43818206]
+position = Vector2(-78, -790)
+
+[node name="3" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=232141482]
+position = Vector2(0, -765)
+
+[node name="4" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=476140758]
+position = Vector2(0, -695)
+
+[node name="5" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=783002645]
+position = Vector2(0, -625)
+
+[node name="6" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=381350968]
+position = Vector2(0, -555)
+
+[node name="7" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=1719719602]
+position = Vector2(0, -485)
+
+[node name="Nav" type="Node2D" parent="EntranceModule" unique_id=1021200733]
+
+[node name="Customers" type="Node2D" parent="EntranceModule/Nav" unique_id=1593947286]
+
+[node name="entrance" type="Node2D" parent="EntranceModule/Nav/Customers" unique_id=1648715054]
+position = Vector2(0, -10)
+
+[node name="exit" type="Node2D" parent="EntranceModule/Nav/Customers" unique_id=1221430081]
+position = Vector2(40, -10)

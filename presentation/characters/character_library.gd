@@ -5,8 +5,8 @@ const STAFF_IDS := ["rabbit", "gray_cat", "bear", "fox", "parrot"]
 const CUSTOMER_IDS := ["squirrel", "dog", "sheep", "hamster"]
 const ARCHIVED_IDS := ["cat", "raccoon"]
 const IDS := STAFF_IDS + CUSTOMER_IDS + ARCHIVED_IDS
-## 所有店共用的人物比例，用一只杯子的高度当尺子（照奶茶店：杯 52、员工 128、客人 110）。
-## 新场景量出自己杯子的高度再乘这两个数，人物和物件的比例就和奶茶店一致。
+## 旧美术工具使用的奶茶比例尺。运行角色尺度由actor_presentation.tres统一，
+## 不再根据每家店的一只杯子或场景metadata单独设置角色大小。
 const STAFF_PER_CUP := 128.0 / 52.0
 const CUSTOMER_PER_CUP := 110.0 / 52.0
 const NAMES := {"cat": "小猫", "raccoon": "浣熊", "fox": "狐狸", "rabbit": "小兔子", "gray_cat": "小灰猫", "bear": "小熊", "parrot": "小鹦鹉", "squirrel": "小松鼠", "dog": "小狗", "sheep": "小羊", "hamster": "仓鼠"}

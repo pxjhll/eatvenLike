@@ -1,0 +1,1626 @@
+[gd_resource type="Resource" script_class="SpecShopTemplate" format=3]
+
+[ext_resource type="Script" path="res://content/rules/spec_shop_template.gd" id="1_rnpdo"]
+
+[resource]
+script = ExtResource("1_rnpdo")
+hop_seconds = 0.0
+places = {
+"bag:in": {
+"anchor": "bag",
+"capacity": 4
+},
+"bag:out": {
+"anchor": "bag",
+"capacity": 4
+},
+"crisps": {
+"anchor": "fryer.crisp",
+"capacity": 8,
+"initial": {
+"crisp": 4
+}
+},
+"flour": {
+"anchor": "raw_ingredients",
+"infinite": ["flour"]
+},
+"front": {
+"anchor": "front_counter",
+"capacity": 0
+},
+"fryer:in": {
+"anchor": "fryer",
+"capacity": 0
+},
+"fryer:work": {
+"anchor": "fryer",
+"capacity": 0
+},
+"grill:in": {
+"anchor": "rear_equipment.mix",
+"capacity": 4
+},
+"grill:out": {
+"anchor": "rear_equipment",
+"capacity": 4
+},
+"grill:work": {
+"anchor": "rear_equipment",
+"capacity": 0
+},
+"join:in": {
+"anchor": "fryer.crisp",
+"capacity": 8
+},
+"join:out": {
+"anchor": "fryer.crisp",
+"capacity": 4
+},
+"mix:work": {
+"anchor": "rear_equipment.mix",
+"capacity": 0
+},
+"pass:bacon": {
+"anchor": "front_counter",
+"capacity": 8
+},
+"pass:family": {
+"anchor": "front_counter",
+"capacity": 8
+},
+"pass:floss": {
+"anchor": "front_counter",
+"capacity": 8
+},
+"pass:guozi": {
+"anchor": "front_counter",
+"capacity": 8
+},
+"pass:ham": {
+"anchor": "front_counter",
+"capacity": 8
+},
+"pass:plain": {
+"anchor": "front_counter",
+"capacity": 8
+},
+"pass:soy": {
+"anchor": "front_counter",
+"capacity": 8
+},
+"roll:in": {
+"anchor": "roll",
+"capacity": 4
+},
+"roll:out": {
+"anchor": "roll",
+"capacity": 4
+},
+"soy:in": {
+"anchor": "soy_milk",
+"capacity": 0
+},
+"soy:out": {
+"anchor": "soy_milk",
+"capacity": 4
+},
+"topping:in": {
+"anchor": "topping",
+"capacity": 4,
+"infinite": ["ham", "floss", "bacon", "family"]
+},
+"topping:out": {
+"anchor": "topping",
+"capacity": 4
+}
+}
+machines = {
+"bag": {
+"input": "bag:in",
+"output": "bag:out",
+"processing_display": {
+"capability": "processing_item",
+"host": "bag",
+"items": ["soy", "plain", "guozi", "ham", "floss", "bacon", "family"],
+"points": [Vector2(500, 790), Vector2(510, 790), Vector2(520, 790), Vector2(530, 790)]
+},
+"profile": {
+"manual": true,
+"slots": 4
+}
+},
+"fryer": {
+"input": "fryer:in",
+"output": "crisps",
+"profile": {
+"load_seconds": 2.0,
+"unload_seconds": 2.0
+},
+"work_port": "fryer:work"
+},
+"join": {
+"input": "join:in",
+"output": "join:out",
+"profile": {
+"slots": 4
+}
+},
+"rear_equipment": {
+"input": "grill:in",
+"output": "grill:out",
+"profile": {
+"load_seconds": 1.0,
+"manual": true,
+"slots": 1
+},
+"stage_ports": {
+"load": "mix:work",
+"operate": "grill:work"
+},
+"stage_timing": {
+"load": {
+"fixed": true,
+"target": "rear_equipment"
+}
+}
+},
+"roll": {
+"input": "roll:in",
+"output": "roll:out",
+"processing_display": {
+"capability": "processing_item",
+"host": "roll",
+"items": ["pancake", "pancake_crisp", "ham_top", "floss_top", "bacon_top", "family_top"],
+"points": [Vector2(410, 790), Vector2(420, 790), Vector2(430, 790), Vector2(440, 790)]
+},
+"profile": {
+"manual": true,
+"slots": 4
+}
+},
+"soy_milk": {
+"input": "soy:in",
+"output": "soy:out",
+"profile": {
+"manual": true,
+"slots": 4
+}
+},
+"topping": {
+"input": "topping:in",
+"output": "topping:out",
+"profile": {
+"manual": true,
+"slots": 4
+}
+}
+}
+restocks = {
+"fryer": {
+"consumes": {},
+"machine": "fryer",
+"policy": {
+"base": 0,
+"low": 3,
+"mode": "demand",
+"per_waiting": 0
+},
+"produces": {
+"crisp": 4
+},
+"requires": {
+"stations": ["fryer"]
+},
+"seconds": 18.0,
+"stock_limit": 8
+}
+}
+recipes = {
+"bacon": {
+"nodes": [{
+"capability": "source",
+"id": "flour",
+"item": "flour",
+"place": "flour",
+"seconds": 1.0,
+"timing_target": "raw_ingredients"
+}, {
+"capability": "process",
+"consumes": {
+"flour": 1
+},
+"id": "grill",
+"inputs": {
+"flour": "flour"
+},
+"machine": "rear_equipment",
+"produces": {
+"pancake": 1
+},
+"seconds": 10.0
+}, {
+"after": ["grill"],
+"capability": "source",
+"fixed": true,
+"id": "crisp",
+"item": "crisp",
+"place": "crisps",
+"seconds": 0.5,
+"timing_target": "fryer"
+}, {
+"capability": "process",
+"consumes": {
+"crisp": 1,
+"pancake": 1
+},
+"fixed": true,
+"id": "join",
+"inputs": {
+"crisp": "crisp",
+"pancake": "grill"
+},
+"machine": "join",
+"produces": {
+"pancake_crisp": 1
+},
+"seconds": 0.0
+}, {
+"capability": "process",
+"consumes": {
+"bacon": 1,
+"pancake_crisp": 1
+},
+"id": "top",
+"inputs": {
+"bacon": {
+"capability": "integrated"
+},
+"pancake_crisp": "join"
+},
+"machine": "topping",
+"produces": {
+"bacon_top": 1
+},
+"seconds": 1.5
+}, {
+"capability": "process",
+"consumes": {
+"bacon_top": 1
+},
+"id": "roll",
+"inputs": {
+"bacon_top": "top"
+},
+"machine": "roll",
+"produces": {
+"bacon": 1
+},
+"seconds": 1.4
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "roll",
+"item": "bacon",
+"place": "pass:bacon",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "bacon",
+"node": "pass"
+}
+},
+"bacon:bag": {
+"nodes": [{
+"capability": "source",
+"id": "flour",
+"item": "flour",
+"place": "flour",
+"seconds": 1.0,
+"timing_target": "raw_ingredients"
+}, {
+"capability": "process",
+"consumes": {
+"flour": 1
+},
+"id": "grill",
+"inputs": {
+"flour": "flour"
+},
+"machine": "rear_equipment",
+"produces": {
+"pancake": 1
+},
+"seconds": 10.0
+}, {
+"after": ["grill"],
+"capability": "source",
+"fixed": true,
+"id": "crisp",
+"item": "crisp",
+"place": "crisps",
+"seconds": 0.5,
+"timing_target": "fryer"
+}, {
+"capability": "process",
+"consumes": {
+"crisp": 1,
+"pancake": 1
+},
+"fixed": true,
+"id": "join",
+"inputs": {
+"crisp": "crisp",
+"pancake": "grill"
+},
+"machine": "join",
+"produces": {
+"pancake_crisp": 1
+},
+"seconds": 0.0
+}, {
+"capability": "process",
+"consumes": {
+"bacon": 1,
+"pancake_crisp": 1
+},
+"id": "top",
+"inputs": {
+"bacon": {
+"capability": "integrated"
+},
+"pancake_crisp": "join"
+},
+"machine": "topping",
+"produces": {
+"bacon_top": 1
+},
+"seconds": 1.5
+}, {
+"capability": "process",
+"consumes": {
+"bacon_top": 1
+},
+"id": "roll",
+"inputs": {
+"bacon_top": "top"
+},
+"machine": "roll",
+"produces": {
+"bacon": 1
+},
+"seconds": 1.4
+}, {
+"capability": "process",
+"consumes": {
+"bacon": 1
+},
+"id": "bag",
+"inputs": {
+"bacon": "roll"
+},
+"machine": "bag",
+"produces": {
+"bagged": 1
+},
+"seconds": 0.9
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "bag",
+"item": "bagged",
+"place": "pass:bacon",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "bagged",
+"node": "pass"
+}
+},
+"family": {
+"nodes": [{
+"capability": "source",
+"id": "flour",
+"item": "flour",
+"place": "flour",
+"seconds": 1.0,
+"timing_target": "raw_ingredients"
+}, {
+"capability": "process",
+"consumes": {
+"flour": 1
+},
+"id": "grill",
+"inputs": {
+"flour": "flour"
+},
+"machine": "rear_equipment",
+"produces": {
+"pancake": 1
+},
+"seconds": 10.0
+}, {
+"after": ["grill"],
+"capability": "source",
+"fixed": true,
+"id": "crisp",
+"item": "crisp",
+"place": "crisps",
+"seconds": 0.5,
+"timing_target": "fryer"
+}, {
+"capability": "process",
+"consumes": {
+"crisp": 1,
+"pancake": 1
+},
+"fixed": true,
+"id": "join",
+"inputs": {
+"crisp": "crisp",
+"pancake": "grill"
+},
+"machine": "join",
+"produces": {
+"pancake_crisp": 1
+},
+"seconds": 0.0
+}, {
+"capability": "process",
+"consumes": {
+"family": 1,
+"pancake_crisp": 1
+},
+"id": "top",
+"inputs": {
+"family": {
+"capability": "integrated"
+},
+"pancake_crisp": "join"
+},
+"machine": "topping",
+"produces": {
+"family_top": 1
+},
+"seconds": 1.5
+}, {
+"capability": "process",
+"consumes": {
+"family_top": 1
+},
+"id": "roll",
+"inputs": {
+"family_top": "top"
+},
+"machine": "roll",
+"produces": {
+"family": 1
+},
+"seconds": 1.4
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "roll",
+"item": "family",
+"place": "pass:family",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "family",
+"node": "pass"
+}
+},
+"family:bag": {
+"nodes": [{
+"capability": "source",
+"id": "flour",
+"item": "flour",
+"place": "flour",
+"seconds": 1.0,
+"timing_target": "raw_ingredients"
+}, {
+"capability": "process",
+"consumes": {
+"flour": 1
+},
+"id": "grill",
+"inputs": {
+"flour": "flour"
+},
+"machine": "rear_equipment",
+"produces": {
+"pancake": 1
+},
+"seconds": 10.0
+}, {
+"after": ["grill"],
+"capability": "source",
+"fixed": true,
+"id": "crisp",
+"item": "crisp",
+"place": "crisps",
+"seconds": 0.5,
+"timing_target": "fryer"
+}, {
+"capability": "process",
+"consumes": {
+"crisp": 1,
+"pancake": 1
+},
+"fixed": true,
+"id": "join",
+"inputs": {
+"crisp": "crisp",
+"pancake": "grill"
+},
+"machine": "join",
+"produces": {
+"pancake_crisp": 1
+},
+"seconds": 0.0
+}, {
+"capability": "process",
+"consumes": {
+"family": 1,
+"pancake_crisp": 1
+},
+"id": "top",
+"inputs": {
+"family": {
+"capability": "integrated"
+},
+"pancake_crisp": "join"
+},
+"machine": "topping",
+"produces": {
+"family_top": 1
+},
+"seconds": 1.5
+}, {
+"capability": "process",
+"consumes": {
+"family_top": 1
+},
+"id": "roll",
+"inputs": {
+"family_top": "top"
+},
+"machine": "roll",
+"produces": {
+"family": 1
+},
+"seconds": 1.4
+}, {
+"capability": "process",
+"consumes": {
+"family": 1
+},
+"id": "bag",
+"inputs": {
+"family": "roll"
+},
+"machine": "bag",
+"produces": {
+"bagged": 1
+},
+"seconds": 0.9
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "bag",
+"item": "bagged",
+"place": "pass:family",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "bagged",
+"node": "pass"
+}
+},
+"floss": {
+"nodes": [{
+"capability": "source",
+"id": "flour",
+"item": "flour",
+"place": "flour",
+"seconds": 1.0,
+"timing_target": "raw_ingredients"
+}, {
+"capability": "process",
+"consumes": {
+"flour": 1
+},
+"id": "grill",
+"inputs": {
+"flour": "flour"
+},
+"machine": "rear_equipment",
+"produces": {
+"pancake": 1
+},
+"seconds": 10.0
+}, {
+"after": ["grill"],
+"capability": "source",
+"fixed": true,
+"id": "crisp",
+"item": "crisp",
+"place": "crisps",
+"seconds": 0.5,
+"timing_target": "fryer"
+}, {
+"capability": "process",
+"consumes": {
+"crisp": 1,
+"pancake": 1
+},
+"fixed": true,
+"id": "join",
+"inputs": {
+"crisp": "crisp",
+"pancake": "grill"
+},
+"machine": "join",
+"produces": {
+"pancake_crisp": 1
+},
+"seconds": 0.0
+}, {
+"capability": "process",
+"consumes": {
+"floss": 1,
+"pancake_crisp": 1
+},
+"id": "top",
+"inputs": {
+"floss": {
+"capability": "integrated"
+},
+"pancake_crisp": "join"
+},
+"machine": "topping",
+"produces": {
+"floss_top": 1
+},
+"seconds": 1.5
+}, {
+"capability": "process",
+"consumes": {
+"floss_top": 1
+},
+"id": "roll",
+"inputs": {
+"floss_top": "top"
+},
+"machine": "roll",
+"produces": {
+"floss": 1
+},
+"seconds": 1.4
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "roll",
+"item": "floss",
+"place": "pass:floss",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "floss",
+"node": "pass"
+}
+},
+"floss:bag": {
+"nodes": [{
+"capability": "source",
+"id": "flour",
+"item": "flour",
+"place": "flour",
+"seconds": 1.0,
+"timing_target": "raw_ingredients"
+}, {
+"capability": "process",
+"consumes": {
+"flour": 1
+},
+"id": "grill",
+"inputs": {
+"flour": "flour"
+},
+"machine": "rear_equipment",
+"produces": {
+"pancake": 1
+},
+"seconds": 10.0
+}, {
+"after": ["grill"],
+"capability": "source",
+"fixed": true,
+"id": "crisp",
+"item": "crisp",
+"place": "crisps",
+"seconds": 0.5,
+"timing_target": "fryer"
+}, {
+"capability": "process",
+"consumes": {
+"crisp": 1,
+"pancake": 1
+},
+"fixed": true,
+"id": "join",
+"inputs": {
+"crisp": "crisp",
+"pancake": "grill"
+},
+"machine": "join",
+"produces": {
+"pancake_crisp": 1
+},
+"seconds": 0.0
+}, {
+"capability": "process",
+"consumes": {
+"floss": 1,
+"pancake_crisp": 1
+},
+"id": "top",
+"inputs": {
+"floss": {
+"capability": "integrated"
+},
+"pancake_crisp": "join"
+},
+"machine": "topping",
+"produces": {
+"floss_top": 1
+},
+"seconds": 1.5
+}, {
+"capability": "process",
+"consumes": {
+"floss_top": 1
+},
+"id": "roll",
+"inputs": {
+"floss_top": "top"
+},
+"machine": "roll",
+"produces": {
+"floss": 1
+},
+"seconds": 1.4
+}, {
+"capability": "process",
+"consumes": {
+"floss": 1
+},
+"id": "bag",
+"inputs": {
+"floss": "roll"
+},
+"machine": "bag",
+"produces": {
+"bagged": 1
+},
+"seconds": 0.9
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "bag",
+"item": "bagged",
+"place": "pass:floss",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "bagged",
+"node": "pass"
+}
+},
+"guozi": {
+"nodes": [{
+"capability": "source",
+"id": "flour",
+"item": "flour",
+"place": "flour",
+"seconds": 1.0,
+"timing_target": "raw_ingredients"
+}, {
+"capability": "process",
+"consumes": {
+"flour": 1
+},
+"id": "grill",
+"inputs": {
+"flour": "flour"
+},
+"machine": "rear_equipment",
+"produces": {
+"pancake": 1
+},
+"seconds": 10.0
+}, {
+"after": ["grill"],
+"capability": "source",
+"fixed": true,
+"id": "crisp",
+"item": "crisp",
+"place": "crisps",
+"seconds": 0.5,
+"timing_target": "fryer"
+}, {
+"capability": "process",
+"consumes": {
+"crisp": 1,
+"pancake": 1
+},
+"fixed": true,
+"id": "join",
+"inputs": {
+"crisp": "crisp",
+"pancake": "grill"
+},
+"machine": "join",
+"produces": {
+"pancake_crisp": 1
+},
+"seconds": 0.0
+}, {
+"capability": "process",
+"consumes": {
+"pancake_crisp": 1
+},
+"id": "roll",
+"inputs": {
+"pancake_crisp": "join"
+},
+"machine": "roll",
+"produces": {
+"guozi": 1
+},
+"seconds": 1.4
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "roll",
+"item": "guozi",
+"place": "pass:guozi",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "guozi",
+"node": "pass"
+}
+},
+"guozi:bag": {
+"nodes": [{
+"capability": "source",
+"id": "flour",
+"item": "flour",
+"place": "flour",
+"seconds": 1.0,
+"timing_target": "raw_ingredients"
+}, {
+"capability": "process",
+"consumes": {
+"flour": 1
+},
+"id": "grill",
+"inputs": {
+"flour": "flour"
+},
+"machine": "rear_equipment",
+"produces": {
+"pancake": 1
+},
+"seconds": 10.0
+}, {
+"after": ["grill"],
+"capability": "source",
+"fixed": true,
+"id": "crisp",
+"item": "crisp",
+"place": "crisps",
+"seconds": 0.5,
+"timing_target": "fryer"
+}, {
+"capability": "process",
+"consumes": {
+"crisp": 1,
+"pancake": 1
+},
+"fixed": true,
+"id": "join",
+"inputs": {
+"crisp": "crisp",
+"pancake": "grill"
+},
+"machine": "join",
+"produces": {
+"pancake_crisp": 1
+},
+"seconds": 0.0
+}, {
+"capability": "process",
+"consumes": {
+"pancake_crisp": 1
+},
+"id": "roll",
+"inputs": {
+"pancake_crisp": "join"
+},
+"machine": "roll",
+"produces": {
+"guozi": 1
+},
+"seconds": 1.4
+}, {
+"capability": "process",
+"consumes": {
+"guozi": 1
+},
+"id": "bag",
+"inputs": {
+"guozi": "roll"
+},
+"machine": "bag",
+"produces": {
+"bagged": 1
+},
+"seconds": 0.9
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "bag",
+"item": "bagged",
+"place": "pass:guozi",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "bagged",
+"node": "pass"
+}
+},
+"ham": {
+"nodes": [{
+"capability": "source",
+"id": "flour",
+"item": "flour",
+"place": "flour",
+"seconds": 1.0,
+"timing_target": "raw_ingredients"
+}, {
+"capability": "process",
+"consumes": {
+"flour": 1
+},
+"id": "grill",
+"inputs": {
+"flour": "flour"
+},
+"machine": "rear_equipment",
+"produces": {
+"pancake": 1
+},
+"seconds": 10.0
+}, {
+"after": ["grill"],
+"capability": "source",
+"fixed": true,
+"id": "crisp",
+"item": "crisp",
+"place": "crisps",
+"seconds": 0.5,
+"timing_target": "fryer"
+}, {
+"capability": "process",
+"consumes": {
+"crisp": 1,
+"pancake": 1
+},
+"fixed": true,
+"id": "join",
+"inputs": {
+"crisp": "crisp",
+"pancake": "grill"
+},
+"machine": "join",
+"produces": {
+"pancake_crisp": 1
+},
+"seconds": 0.0
+}, {
+"capability": "process",
+"consumes": {
+"ham": 1,
+"pancake_crisp": 1
+},
+"id": "top",
+"inputs": {
+"ham": {
+"capability": "integrated"
+},
+"pancake_crisp": "join"
+},
+"machine": "topping",
+"produces": {
+"ham_top": 1
+},
+"seconds": 1.5
+}, {
+"capability": "process",
+"consumes": {
+"ham_top": 1
+},
+"id": "roll",
+"inputs": {
+"ham_top": "top"
+},
+"machine": "roll",
+"produces": {
+"ham": 1
+},
+"seconds": 1.4
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "roll",
+"item": "ham",
+"place": "pass:ham",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "ham",
+"node": "pass"
+}
+},
+"ham:bag": {
+"nodes": [{
+"capability": "source",
+"id": "flour",
+"item": "flour",
+"place": "flour",
+"seconds": 1.0,
+"timing_target": "raw_ingredients"
+}, {
+"capability": "process",
+"consumes": {
+"flour": 1
+},
+"id": "grill",
+"inputs": {
+"flour": "flour"
+},
+"machine": "rear_equipment",
+"produces": {
+"pancake": 1
+},
+"seconds": 10.0
+}, {
+"after": ["grill"],
+"capability": "source",
+"fixed": true,
+"id": "crisp",
+"item": "crisp",
+"place": "crisps",
+"seconds": 0.5,
+"timing_target": "fryer"
+}, {
+"capability": "process",
+"consumes": {
+"crisp": 1,
+"pancake": 1
+},
+"fixed": true,
+"id": "join",
+"inputs": {
+"crisp": "crisp",
+"pancake": "grill"
+},
+"machine": "join",
+"produces": {
+"pancake_crisp": 1
+},
+"seconds": 0.0
+}, {
+"capability": "process",
+"consumes": {
+"ham": 1,
+"pancake_crisp": 1
+},
+"id": "top",
+"inputs": {
+"ham": {
+"capability": "integrated"
+},
+"pancake_crisp": "join"
+},
+"machine": "topping",
+"produces": {
+"ham_top": 1
+},
+"seconds": 1.5
+}, {
+"capability": "process",
+"consumes": {
+"ham_top": 1
+},
+"id": "roll",
+"inputs": {
+"ham_top": "top"
+},
+"machine": "roll",
+"produces": {
+"ham": 1
+},
+"seconds": 1.4
+}, {
+"capability": "process",
+"consumes": {
+"ham": 1
+},
+"id": "bag",
+"inputs": {
+"ham": "roll"
+},
+"machine": "bag",
+"produces": {
+"bagged": 1
+},
+"seconds": 0.9
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "bag",
+"item": "bagged",
+"place": "pass:ham",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "bagged",
+"node": "pass"
+}
+},
+"plain": {
+"nodes": [{
+"capability": "source",
+"id": "flour",
+"item": "flour",
+"place": "flour",
+"seconds": 1.0,
+"timing_target": "raw_ingredients"
+}, {
+"capability": "process",
+"consumes": {
+"flour": 1
+},
+"id": "grill",
+"inputs": {
+"flour": "flour"
+},
+"machine": "rear_equipment",
+"produces": {
+"pancake": 1
+},
+"seconds": 10.0
+}, {
+"capability": "process",
+"consumes": {
+"pancake": 1
+},
+"id": "roll",
+"inputs": {
+"pancake": "grill"
+},
+"machine": "roll",
+"produces": {
+"plain": 1
+},
+"seconds": 1.4
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "roll",
+"item": "plain",
+"place": "pass:plain",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "plain",
+"node": "pass"
+}
+},
+"plain:bag": {
+"nodes": [{
+"capability": "source",
+"id": "flour",
+"item": "flour",
+"place": "flour",
+"seconds": 1.0,
+"timing_target": "raw_ingredients"
+}, {
+"capability": "process",
+"consumes": {
+"flour": 1
+},
+"id": "grill",
+"inputs": {
+"flour": "flour"
+},
+"machine": "rear_equipment",
+"produces": {
+"pancake": 1
+},
+"seconds": 10.0
+}, {
+"capability": "process",
+"consumes": {
+"pancake": 1
+},
+"id": "roll",
+"inputs": {
+"pancake": "grill"
+},
+"machine": "roll",
+"produces": {
+"plain": 1
+},
+"seconds": 1.4
+}, {
+"capability": "process",
+"consumes": {
+"plain": 1
+},
+"id": "bag",
+"inputs": {
+"plain": "roll"
+},
+"machine": "bag",
+"produces": {
+"bagged": 1
+},
+"seconds": 0.9
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "bag",
+"item": "bagged",
+"place": "pass:plain",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "bagged",
+"node": "pass"
+}
+},
+"soy": {
+"nodes": [{
+"capability": "process",
+"id": "soy",
+"machine": "soy_milk",
+"produces": {
+"soy": 1
+},
+"seconds": 1.5
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "soy",
+"item": "soy",
+"place": "pass:soy",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "soy",
+"node": "pass"
+}
+},
+"soy:bag": {
+"nodes": [{
+"capability": "process",
+"id": "soy",
+"machine": "soy_milk",
+"produces": {
+"soy": 1
+},
+"seconds": 1.5
+}, {
+"capability": "process",
+"consumes": {
+"soy": 1
+},
+"id": "bag",
+"inputs": {
+"soy": "soy"
+},
+"machine": "bag",
+"produces": {
+"bagged": 1
+},
+"seconds": 0.9
+}, {
+"capability": "transfer",
+"id": "pass",
+"input": "bag",
+"item": "bagged",
+"place": "pass:soy",
+"seconds": 0.0
+}],
+"output": {
+"count": 1,
+"item": "bagged",
+"node": "pass"
+}
+}
+}
+service = {
+"admission": "employee",
+"admission_port": "front",
+"admission_seconds": 0.0,
+"arrivals": {
+"first_delay": 1.5,
+"pattern": "exponential"
+},
+"customization": {
+"options": [{
+"id": "bag",
+"price_mult": 1.25,
+"share": 0.4,
+"unlock": "bag"
+}],
+"variants": {
+"bacon": [{
+"options": ["bag"],
+"recipe": "bacon:bag"
+}],
+"family": [{
+"options": ["bag"],
+"recipe": "family:bag"
+}],
+"floss": [{
+"options": ["bag"],
+"recipe": "floss:bag"
+}],
+"guozi": [{
+"options": ["bag"],
+"recipe": "guozi:bag"
+}],
+"ham": [{
+"options": ["bag"],
+"recipe": "ham:bag"
+}],
+"plain": [{
+"options": ["bag"],
+"recipe": "plain:bag"
+}],
+"soy": [{
+"options": ["bag"],
+"recipe": "soy:bag"
+}]
+}
+},
+"delivery": "counter",
+"delivery_ready": "whole_order",
+"eat_seconds": 0.0,
+&"flyers": {
+"cooldown": 120.0,
+"count": 4,
+"gap": 3.0,
+"pattern": "gap",
+"when_full": "lost"
+},
+"handoff_port": "front",
+"menu": {
+"bacon": "bacon",
+"family": "family",
+"floss": "floss",
+"guozi": "guozi",
+"ham": "ham",
+"plain": "plain",
+"soy": "soy"
+},
+"orders": {
+"patience": 0.0,
+"pay_at": "on_deliver",
+"queue_release": "after_take",
+"rounding": "order_round"
+},
+"selection": {
+"addon": {
+"dish": "soy",
+"first": true,
+"share": 0.3
+},
+"gates": {
+"bacon": {
+"boxes": ["flour"],
+&"levels": {
+"topping": 3
+},
+"stations": ["raw_ingredients", "rear_equipment", "fryer", "topping", "roll"]
+},
+"family": {
+"boxes": ["flour"],
+&"levels": {
+"topping": 4
+},
+"stations": ["raw_ingredients", "rear_equipment", "fryer", "topping", "roll"]
+},
+"floss": {
+"boxes": ["flour"],
+&"levels": {
+"topping": 2
+},
+"stations": ["raw_ingredients", "rear_equipment", "fryer", "topping", "roll"]
+},
+"guozi": {
+"boxes": ["flour"],
+"stations": ["raw_ingredients", "rear_equipment", "fryer", "roll"]
+},
+"ham": {
+"boxes": ["flour"],
+&"levels": {
+"topping": 1
+},
+"stations": ["raw_ingredients", "rear_equipment", "fryer", "topping", "roll"]
+},
+"plain": {
+"boxes": ["flour"],
+"stations": ["raw_ingredients", "rear_equipment", "roll"]
+},
+"soy": {
+"boxes": [],
+"stations": ["soy_milk"]
+}
+},
+"groups": [{
+"dishes": ["ham", "floss", "bacon", "family"],
+"fallback": "guozi",
+"id": "meat"
+}],
+"order": ["soy", "plain", "guozi", "ham", "floss", "bacon", "family"],
+"stages": [{
+"interval": 10.0,
+"weights": Dictionary[String, float]({
+"soy": 1.0
+})
+}, {
+"interval": 7.5,
+"weights": Dictionary[String, float]({
+"plain": 0.6,
+"soy": 0.4
+})
+}, {
+"interval": 6.0,
+"weights": Dictionary[String, float]({
+"guozi": 0.5,
+"plain": 0.2,
+"soy": 0.3
+})
+}, {
+"interval": 4.5,
+"weights": Dictionary[String, float]({
+"guozi": 0.2,
+"meat": 0.45,
+"plain": 0.1,
+"soy": 0.25
+})
+}, {
+"interval": 4.5,
+"weights": Dictionary[String, float]({
+"guozi": 0.2,
+"meat": 0.45,
+"plain": 0.1,
+"soy": 0.25
+})
+}]
+},
+&"waiting": {
+"group": "cushion",
+"line": [Vector2(470, 1040), Vector2(380, 1050), Vector2(290, 1060), Vector2(200, 1070), Vector2(110, 1080), Vector2(110, 1140), Vector2(200, 1140), Vector2(290, 1140), Vector2(380, 1140), Vector2(470, 1140)],
+"ports": ["wait:cushion/0", "wait:cushion/1", "wait:cushion/2", "wait:cushion/3", "wait:cushion/4", "wait:cushion/5", "wait:cushion/6", "wait:cushion/7", "wait:cushion/8"],
+"retain_after_take": true,
+"call_during_final_work": true,
+"stages": [{
+"seats": 0,
+"standing": 3
+}, {
+"seats": 2,
+"standing": 4
+}, {
+"seats": 5,
+"standing": 4
+}, {
+"seats": 9,
+"standing": 6
+}, {
+"seats": 9,
+"standing": 6
+}]
+}
+}
+dispatch = {
+"batch_transfers": true,
+"collect_at_drop_last": true,
+"affinity": "exclusive",
+"help_while_waiting": true,
+"hold_machine": true,
+"roles": {
+"staff": {
+&"interact": ["front"],
+"operate": ["*"],
+"transfer_from": ["*"],
+"transfer_to": ["*"]
+}
+},
+"scores": {
+"restock_operate": 300.0
+}
+}
+
+presentation = {
+"conveyors": {},
+"counters": {},
+"dining": {},
+"poses": {
+"wait:cushion/0": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/0"
+},
+"wait:cushion/1": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/1"
+},
+"wait:cushion/2": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/2"
+},
+"wait:cushion/3": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/3"
+},
+"wait:cushion/4": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/4"
+},
+"wait:cushion/5": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/5"
+},
+"wait:cushion/6": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/6"
+},
+"wait:cushion/7": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/7"
+},
+"wait:cushion/8": {
+"facing": 2,
+"offset": Vector2(0, 0),
+"port": "Seats/cushion/8"
+}
+},
+"stock": []
+}

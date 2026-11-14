@@ -3,6 +3,9 @@ extends RefCounted
 ## Optional visual decoration is not part of the gameplay contract.
 
 const Dining := preload("res://presentation/shop/shop_dining.gd")
+const Presentation := preload("res://content/characters/actor_presentation.tres")
+const ModuleSpace := preload("res://presentation/shop/modules/module_space.gd")
+const ModuleLayout := preload("res://presentation/shop/modules/module_layout.gd")
 
 static func prepare(shop: SpecShop) -> Dictionary:
 	var errors: Array[Dictionary] = []
@@ -25,6 +28,8 @@ static func validate(shop: SpecShop, art: Node) -> Array[Dictionary]:
 	if shop == null:
 		_error(errors, "required", "shop", "Shop data is required.")
 		return errors
+	for key in Presentation.validate():
+		_error(errors, "shared_actor_profile", "actor_presentation." + key, "Shared actor values must be finite positive numbers.")
 	if not art is Node2D:
 		_error(errors, "scene_root", "scene_path", "Art root must be Node2D.")
 		return errors
@@ -37,9 +42,24 @@ static func validate(shop: SpecShop, art: Node) -> Array[Dictionary]:
 	if root.position != Vector2.ZERO:
 		_error(errors, "transform", "Anchors.position", "Anchors must be at the world origin.")
 	_scan(root, root, errors)
+	var modules := ModuleSpace.collect(root)
+	errors.append_array(modules.errors)
+	for module in modules.modules:
+		for path in ["Anchors","Nav"]:
+			var local: Node = module.get_node_or_null(path)
+			if local!=null: _scan(local,local,errors)
+		if module.module_kind in ["station","counter"] and shop.station(module.station_id)==null:
+			_error(errors,"module_reference",module.module_id,"Module station binding must resolve in this shop.")
+		for station in module.station_slots.values():
+			if shop.station(station)==null: _error(errors,"module_reference",module.module_id,"Module slot station binding must resolve in this shop.")
+		if module.module_kind=="table":
+			var matches := shop.seat_groups.filter(func(group: SpecSeatGroup) -> bool: return group!=null and group.id==module.seat_group)
+			if matches.is_empty() or matches[0].purpose!=module.seat_purpose: _error(errors,"module_reference",module.module_id,"Module seat group and purpose must resolve in this shop.")
 	var size: Variant = root.get_meta("world_size", Vector2(720, 1500))
 	if not _positive_vector(size):
 		_error(errors, "metadata", "Anchors.world_size", "World size must be a finite positive Vector2.")
+	elif shop.layout != null and shop.layout.motion_version==1 and not is_equal_approx(shop.layout.motion_units,Presentation.scene_units(size)):
+		_error(errors,"movement_units","layout.motion_units","Movement units must equal native canvas width / shared reference width.")
 	var sortable_path: Variant = root.get_meta("sortables", "Sortables")
 	if not sortable_path is String or String(sortable_path).is_empty() or not art.get_node_or_null(NodePath(str(sortable_path))) is Node2D:
 		_error(errors, "required", "Anchors.sortables", "Sortables must reference a Node2D in this art scene.")
@@ -92,6 +112,9 @@ static func validate(shop: SpecShop, art: Node) -> Array[Dictionary]:
 			for stage in shop.stages:
 				if stage != null: count = maxi(count, stage.wait_seats)
 		if count > 0: _points(anchors, "Seats/" + group.id, count, errors)
+		if shop.fulfillment!=null and shop.fulfillment.dine_rule=="self_pickup" and shop.layout!=null and shop.layout.customer_points.has("pickup:0"):
+			for index in count:
+				if not shop.layout.customer_points.has("pickup:%d"%index): _error(errors,"required","layout.customer_points","Authored pickup slots must cover declared seat capacity.")
 	for connection in shop.connections:
 		if connection == null or not connection.enabled: continue
 		_rect(anchors, "Connections/" + connection.id + "/Frame", errors)
@@ -118,11 +141,14 @@ static func validate(shop: SpecShop, art: Node) -> Array[Dictionary]:
 			break
 	# Nav is optional for straight layouts. When authored, it must describe the
 	# same coordinates the rules use; the runtime must not silently replace data.
-	if errors.is_empty() and anchors.has("Nav") and shop.layout != null:
-		var exported := anchors.layout(shop.layout)
-		for key in ["nav", "cell", "grid_size", "areas", "obstacles", "obstacle_stations", "points", "posts"]:
-			if exported.get(key) != shop.layout.get(key):
-				_error(errors, "layout_mismatch", "Anchors.Nav." + key, "Art navigation differs from shop.layout." + key)
+	if errors.is_empty() and (anchors.has("Nav") or modules.enabled) and shop.layout != null:
+		var exported := anchors.export_layout(shop.layout)
+		errors.append_array(exported.errors)
+		if exported.layout!=null:
+			var fields: Array = ModuleLayout.FIELDS if modules.enabled else ["nav", "cell", "grid_size", "areas", "obstacles", "obstacle_stations", "points", "posts"]
+			for key: String in fields:
+				if exported.layout.get(key) != shop.layout.get(key):
+					_error(errors, "layout_mismatch", "Anchors.Nav." + key, "Art navigation differs from shop.layout." + key)
 	return errors
 
 static func _scan(node: Node, root: Node, errors: Array[Dictionary]) -> void:
@@ -137,10 +163,12 @@ static func _scan(node: Node, root: Node, errors: Array[Dictionary]) -> void:
 			_error(errors, "rectangle", path + ".size", "Interaction rectangles need finite positive size.")
 	for key in node.get_meta_list():
 		var value: Variant = node.get_meta(key)
-		if key == "per_table":
+		if key in ["customer_height", "staff_height", "customer_speed"]:
+			_error(errors, "shared_actor_profile", path + "." + key, "Use the shared actor presentation profile instead of per-shop actor values.")
+		elif key == "per_table":
 			if not _positive_number(value) or float(value) != floorf(float(value)):
 				_error(errors, "metadata", path + "." + key, "Expected a positive integer.")
-		elif key in ["customer_height", "staff_height", "customer_speed", "width", "cell"]:
+		elif key in ["width", "cell"]:
 			if not _positive_number(value): _error(errors, "metadata", path + "." + key, "Expected a finite positive number.")
 		elif key in ["top_margin", "labels_z", "facing"]:
 			if not _number(value): _error(errors, "metadata", path + "." + key, "Expected a finite number.")

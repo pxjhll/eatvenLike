@@ -1,10 +1,16 @@
 extends RefCounted
 ## Versioned canonical fingerprints of exported gameplay resources.
 const PRESENTATION := ["display_name", "description", "icon", "art", "tint", "label", "effect_label", "preview_label", "preview_dishes", "speaker", "card_text", "unlock_note", "texts", "guide", "scene_path", "save_file", "background_music", "scale_anchor"]
-const TYPES := ["SpecShop", "SpecItem", "SpecDish", "SpecStation", "SpecStage", "SpecFulfillment", "SpecDispatch", "SpecFlyer", "SpecSeatGroup", "SpecStaffRules", "SpecStaffKind", "SpecConnection", "SpecOrderOption", "SpecGoalRules", "SpecLayout", "SpecMaterial", "SpecStep", "SpecStockRule", "SpecTask", "SpecUpgradeTrack", "SpecUpgradeLevel", "SpecEffect", "SpecEvent"]
+const TYPES := ["SpecShop", "SpecShopTemplate", "SpecItem", "SpecDish", "SpecStation", "SpecStage", "SpecFulfillment", "SpecDispatch", "SpecFlyer", "SpecSeatGroup", "SpecStaffRules", "SpecStaffKind", "SpecConnection", "SpecOrderOption", "SpecGoalRules", "SpecLayout", "SpecMaterial", "SpecStep", "SpecStockRule", "SpecTask", "SpecUpgradeTrack", "SpecUpgradeLevel", "SpecEffect", "SpecEvent"]
+const TemplateSchema := preload("res://content/rules/spec_shop_template.gd")
+const TemplateProjection := preload("res://game/rules/template/content_projection.gd")
 
 static func describe(shop: SpecShop) -> Dictionary:
 	return {"version": 1, "gameplay": _canonical(_project(shop, false)).sha256_text(), "structure": _canonical(_project(shop, true)).sha256_text()}
+
+static func describe_template(template: Resource) -> Dictionary:
+	if template == null or template.get_script() != TemplateSchema: return {}
+	return {"version":1, "gameplay":_canonical(_project(template, false)).sha256_text(), "structure":_canonical(_project(template, true)).sha256_text()}
 
 static func _project(value: Variant, structural: bool, geometry := false) -> Variant:
 	if value is Resource:
@@ -12,6 +18,7 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 		if script == null: return null
 		var type_name: String = script.get_global_name()
 		if not type_name in TYPES: return null
+		if type_name == "SpecShopTemplate": return TemplateProjection.project(value, structural)
 		if structural and type_name in ["SpecEffect", "SpecUpgradeLevel"]: return null
 		var out := {"type": type_name}
 		if structural and type_name == "SpecMaterial": out["has_box"] = value.box_cost > 0
@@ -20,6 +27,14 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 			if value.block == "hand": out["locks_user"] = int(value.params.get("users", 0)) > 0
 		for prop in value.get_property_list():
 			var key: String = prop.name
+			if type_name=="SpecShop" and key=="runtime_template" and value.runtime_template==null: continue
+			if type_name == "SpecFulfillment" and value.flow_version==0 and key in ["flow_version","delivery_batch","delivery_points"]: continue
+			if type_name == "SpecDispatch" and key == "action_version" and value.action_version == 0: continue
+			if type_name == "SpecDispatch" and key == "transport_helpers" and value.transport_helpers.is_empty(): continue
+			if type_name == "SpecDispatch" and key == "preposition_work" and not value.preposition_work: continue
+			if type_name == "SpecDispatch" and key == "prefetch_inputs" and not value.prefetch_inputs: continue
+			if type_name == "SpecStaffRules" and key == "retired_kinds" and value.retired_kinds.is_empty(): continue
+			if type_name == "SpecLayout" and value.motion_version == 0 and key in ["motion_version","motion_units","actor_areas","customer_points","customer_queue"]: continue
 			if not (int(prop.usage) & PROPERTY_USAGE_SCRIPT_VARIABLE) or not (int(prop.usage) & PROPERTY_USAGE_STORAGE): continue
 			if key in PRESENTATION or (type_name == "SpecStaffKind" and key == "role"): continue
 			if structural and key in ["effects", "base_effects", "stats"]: continue

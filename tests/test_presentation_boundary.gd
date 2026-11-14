@@ -1,9 +1,10 @@
 extends "res://tests/test_case.gd"
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
 
 func test_scene_staff_rows_are_fresh_and_deeply_detached() -> void:
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	scene.rules = ShopRules.new(TEA)
+	scene.rules = LegacyRules.new(TEA)
 	scene.view = ShopView.new(scene.rules)
 	var before := var_to_bytes(scene.rules.to_dict())
 	var roster: Array = scene.all_staff()
@@ -58,7 +59,7 @@ func test_presentation_sources_use_only_detached_or_public_reads_and_owned_write
 	_audit_directory("res://presentation")
 
 func test_art_groups_follow_current_model_without_live_runtime_access() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	var view := ShopView.new(rules)
 	var art := Node2D.new()
 	Engine.get_main_loop().root.add_child(art)
@@ -80,7 +81,7 @@ func test_art_groups_follow_current_model_without_live_runtime_access() -> void:
 
 
 func test_recorder_logs_effective_legacy_tuning_without_rewriting_saved_values() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	var saved := rules.to_dict()
 	saved.tune = {"walk": 9.0, "price": 0.01, "work": 1.0, "legacy_knob": 4.5}
 	check_eq(rules.load_dict(saved), "", "finite legacy tuning remains loadable")

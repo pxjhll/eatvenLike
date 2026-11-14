@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SpecStaffKind" format=3]
+
+[ext_resource type="Script" path="res://content/rules/spec_staff_kind.gd" id="staff"]
+
+[resource]
+script = ExtResource("staff")
+id = "squirrel"
+display_name = "松鼠"
+stats = Dictionary[String, float]({"carry": 2.0, "walk": 112.0, "work": 1.0})
+role = "通用型"
+description = "复用公共行为"

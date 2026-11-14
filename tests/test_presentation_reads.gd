@@ -1,7 +1,9 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/current/pancake/shop.tres")
 const NOODLE: SpecShop = preload("res://tests/fixtures/noodle/shop.tres")
 const Session := preload("res://game/app/shop_session.gd")
 const Profile := preload("res://game/app/profile.gd")
@@ -19,7 +21,7 @@ func cleanup() -> void:
 				DirAccess.remove_absolute(path.get_base_dir().path_join(name))
 
 func _ready(definition: SpecShop) -> ShopRules:
-	var rules := ShopRules.new(definition, 9)
+	var rules := LegacyRules.new(definition, 9)
 	rules.gold = 1e8
 	for stage in definition.stages:
 		if not rules.station_unlocked(stage.stations[0]):
@@ -58,7 +60,7 @@ func _mutate(value: Variant) -> void:
 		value.append("caller_probe")
 
 func test_control_contract_and_atomic_validation() -> void:
-	var rules := ShopRules.new(TEA, 9)
+	var rules := LegacyRules.new(TEA, 9)
 	var before := rules.to_dict()
 	check_eq(rules.execute_command("set_paused", {"paused": true}).code, "ok", "canonical pause exists")
 	check(rules.paused, "pause committed")
@@ -83,12 +85,12 @@ func test_control_contract_and_atomic_validation() -> void:
 	check_eq(rules.clock, before.clock, "controls preserve clock")
 
 func test_detached_reads_exist() -> void:
-	var view := ShopView.new(ShopRules.new(TEA, 9))
+	var view := ShopView.new(LegacyRules.new(TEA, 9))
 	for method in ["render_snapshot", "roster_snapshot", "deployed_snapshot", "worker_snapshot", "customer_snapshot", "deployed_count", "is_deployed", "progress_snapshot", "activity_snapshot", "guide_snapshot", "staff_kind", "art_visible", "post_point", "navigation_point", "walkable", "tuning_limits"]:
 		check(view.has_method(method), "read API " + method)
 
 func test_session_dispatch_lifetime() -> void:
-	var rules := ShopRules.new(PANCAKE, 9)
+	var rules := LegacyRules.new(PANCAKE, 9)
 	var session := Session.new(null, null, rules)
 	check(session.has_method("execute_command"), "session owner dispatch exists")
 	if not session.has_method("execute_command"): return
@@ -125,7 +127,14 @@ func test_render_and_small_projections_detach_every_nested_container_in_three_sh
 		var event_rng_state := rules.event_rng.state
 		var frame: Dictionary = view.call("render_snapshot")
 		for key in ["clock", "gold", "revenue", "sold", "lost", "paused", "stage_index", "completed_at", "shelf_count", "workers", "roster", "stations", "shelf_stock", "orders", "customers", "queue", "diners", "belts", "belt_items", "seats"]:
-			check_eq(frame[key], rules.get(key), definition.id + " frame field " + key)
+			var expected: Variant = rules.get(key)
+			if key=="workers" and rules.movement_enabled():
+				expected = expected.duplicate(true)
+				for row: Dictionary in expected:
+					if not row.deployed: continue
+					row.speed = rules.walk_speed(row)/definition.layout.motion_units
+					row.walking = row.walking and not row.path.is_empty()
+			check_eq(frame[key], expected, definition.id + " frame field " + key)
 		check_eq(frame.stage_queue_capacity, rules.current_stage().queue_capacity, "stage capacity excludes waiting seats")
 		check_eq(frame.workers.map(func(row: Dictionary) -> int: return row.id), rules.workers.map(func(row: Dictionary) -> int: return row.id), "visual iteration order")
 		check(not is_same(frame.workers[0], worker), "worker detached")
@@ -242,8 +251,8 @@ func test_controls_preserve_active_timing_and_legacy_entries() -> void:
 func test_active_session_commands_keep_diagnostics_and_sealed_sessions_reject() -> void:
 	for departure in ["finish", "jump"]:
 		var profile := Profile.new(_path(departure + "-profile"))
-		var store := ShopSave.new(PANCAKE, _path(departure + "-shop"))
-		var rules := ShopRules.new(PANCAKE, 9)
+		var store := LegacySave.new(PANCAKE, _path(departure + "-shop"))
+		var rules := LegacyRules.new(PANCAKE, 9)
 		var session := Session.new(profile, store, rules)
 		if not session.has_method("execute_command"): return
 		store.last_error = "retained startup warning"
@@ -309,8 +318,8 @@ func test_guide_preserves_seat_staff_machine_priorities_and_slow_order_selection
 
 func test_session_rechecks_changed_configuration_before_dispatch() -> void:
 	var profile := Profile.new(_path("recheck-profile"))
-	var rules := ShopRules.new(PANCAKE, 9)
-	var session := Session.new(profile, ShopSave.new(PANCAKE, _path("recheck-shop")), rules)
+	var rules := LegacyRules.new(PANCAKE, 9)
+	var session := Session.new(profile, LegacySave.new(PANCAKE, _path("recheck-shop")), rules)
 	if not session.has_method("execute_command"): return
 	check_eq(session.start(), OK, "valid initial configuration")
 	session.persist_tuning = true

@@ -1,6 +1,5 @@
 [gd_resource type="Resource" script_class="SpecShop" format=3]
 
-[ext_resource type="AudioStream" path="res://art/audio/milk_tea_afternoon.ogg" id="music_theme"]
 [ext_resource type="Script" path="res://content/rules/spec_connection.gd" id="1_tjgba"]
 [ext_resource type="Script" path="res://content/rules/spec_dish.gd" id="2_ctjwf"]
 [ext_resource type="Script" path="res://content/rules/spec_step.gd" id="3_xwcms"]
@@ -17,6 +16,7 @@
 [ext_resource type="Script" path="res://content/rules/spec_layout.gd" id="14_8dy82"]
 [ext_resource type="Script" path="res://content/rules/spec_shop.gd" id="15_3rult"]
 [ext_resource type="Script" path="res://content/rules/spec_seat_group.gd" id="16_35x7t"]
+[ext_resource type="Script" path="res://content/rules/spec_order_option.gd" id="16_g4hkj"]
 [ext_resource type="Script" path="res://content/rules/spec_staff_kind.gd" id="17_mx6tq"]
 [ext_resource type="Script" path="res://content/rules/spec_staff_rules.gd" id="18_tdcmu"]
 [ext_resource type="Script" path="res://content/rules/spec_stage.gd" id="19_a4xei"]
@@ -24,7 +24,17 @@
 [ext_resource type="Script" path="res://content/rules/spec_station.gd" id="21_6l0ld"]
 [ext_resource type="Script" path="res://content/rules/spec_material.gd" id="22_snoov"]
 [ext_resource type="Script" path="res://content/rules/spec_stock_rule.gd" id="23_xb1gn"]
+[ext_resource type="AudioStream" path="res://art/audio/milk_tea_afternoon.ogg" id="music_theme"]
+[ext_resource type="Resource" path="res://content/characters/staff/bear.tres" id="staff_bear"]
+[ext_resource type="Resource" path="res://content/characters/staff/cat.tres" id="staff_cat"]
+[ext_resource type="Resource" path="res://content/characters/staff/fox.tres" id="staff_fox"]
+[ext_resource type="Resource" path="res://content/characters/staff/gray_cat.tres" id="staff_gray_cat"]
+[ext_resource type="Resource" path="res://content/characters/staff/rabbit.tres" id="staff_rabbit"]
+[ext_resource type="Resource" path="res://content/characters/staff/raccoon.tres" id="staff_raccoon"]
 
+[ext_resource type="Resource" path="res://content/shops/tea/shared_production.tres" id="u06_runtime"]
+
+[ext_resource type="Resource" path="res://content/characters/staff/parrot.tres" id="staff_parrot"]
 [sub_resource type="Resource" id="Resource_m1tbq"]
 script = ExtResource("1_tjgba")
 id = "seal_to_shelf"
@@ -371,6 +381,7 @@ flavor_material = "lemon"
 
 [sub_resource type="Resource" id="Resource_gxbws"]
 script = ExtResource("4_l0xyq")
+action_version = 1
 base_scores = Dictionary[String, float]({
 "chore": 55.0,
 "follow": 90.0,
@@ -542,7 +553,7 @@ id = "welcome"
 when = Array[String](["!open"])
 seen_when = Array[String](["open", "stage>=1"])
 shop_page_only = false
-skip_marks = Array[String](["opening"])
+skip_tutorial = true
 style = "card"
 title = "欢迎，店长！"
 art = "raccoon"
@@ -597,7 +608,7 @@ cues = Array[Dictionary]([{
 "then": "done"
 }])
 skip_label = "跳过引导"
-skip_marks = Array[String](["welcome"])
+skip_tutorial = true
 
 [sub_resource type="Resource" id="Resource_ho7ym"]
 script = ExtResource("12_anqca")
@@ -924,11 +935,12 @@ display_name = "柠檬茶"
 art = "fruit_tea"
 tint = Color(0.9490196, 0.7019608, 0.41568628, 1)
 
-[sub_resource type="Resource" id="Resource_45mrc"]
+[sub_resource type="Resource" id="Resource_x4rom"]
 script = ExtResource("14_8dy82")
 nav = "grid"
 areas = Array[Rect2i]([Rect2i(2, 13, 32, 22), Rect2i(2, 35, 32, 36)])
-obstacles = Array[Rect2]([Rect2(23, 269, 122, 348), Rect2(267, 235, 290, 70), Rect2(22, 220, 235, 75), Rect2(590, 367, 72, 213), Rect2(560, 205, 132, 185), Rect2(522, 530, 178, 154), Rect2(32, 595, 122, 185), Rect2(32, 709, 291, 148), Rect2(323, 752, 365, 105), Rect2(81, 1083.5, 220, 120), Rect2(420, 1083.5, 220, 120), Rect2(82, 1280.5, 220, 120), Rect2(418, 1280.5, 220, 120)])
+obstacles = Array[Rect2]([Rect2(23, 269, 122, 348), Rect2(267, 235, 290, 70), Rect2(22, 220, 235, 75), Rect2(590, 367, 72, 213), Rect2(560, 205, 132, 185), Rect2(522, 530, 178, 154), Rect2(32, 595, 122, 185), Rect2(32, 709, 291, 148), Rect2(323, 752, 365, 105), Rect2(131, 1115, 120, 80), Rect2(470, 1115, 120, 80), Rect2(132, 1312, 120, 80), Rect2(468, 1312, 120, 80)])
+obstacle_stations = Array[String](["", "", "", "", "", "", "", "", "", "", "", "", ""])
 grid_size = Vector2i(36, 75)
 points = Dictionary[String, Vector2]({
 "belt_in": Vector2(530, 430),
@@ -948,6 +960,25 @@ posts = Dictionary[String, Vector2]({
 "counter": Vector2(410, 730),
 "topping": Vector2(190, 410)
 })
+motion_version = 1
+actor_areas = {
+"customer": [Rect2i(2, 44, 32, 27)],
+"staff": [Rect2i(2, 13, 32, 25)]
+}
+customer_points = Dictionary[String, Vector2]({
+"entrance": Vector2(360, 1390),
+"exit": Vector2(380, 1390),
+"pickup": Vector2(635, 925),
+"seat:dine/0": Vector2(85, 1143.0834),
+"seat:dine/1": Vector2(296, 1143.0834),
+"seat:dine/2": Vector2(424, 1143.0834),
+"seat:dine/3": Vector2(635, 1143.0834),
+"seat:dine/4": Vector2(86, 1340.0834),
+"seat:dine/5": Vector2(297, 1340.0834),
+"seat:dine/6": Vector2(422, 1340.0834),
+"seat:dine/7": Vector2(633, 1340.0834)
+})
+customer_queue = Array[Vector2]([Vector2(530, 925), Vector2(425, 925), Vector2(320, 925), Vector2(215, 925), Vector2(530, 1012), Vector2(425, 1012), Vector2(320, 1012), Vector2(215, 1012)])
 
 [sub_resource type="Resource" id="Resource_poakd"]
 script = ExtResource("16_35x7t")
@@ -957,78 +988,6 @@ step = 2
 costs = Array[int]([40, 154, 396])
 seconds = 40.0
 patience = 0.5
-
-[sub_resource type="Resource" id="Resource_7xjsb"]
-script = ExtResource("17_mx6tq")
-id = "cat"
-display_name = "Cat"
-stats = Dictionary[String, float]({
-"carry": 2.0,
-"walk": 112.0,
-"work": 1.0
-})
-role = "速度型"
-description = "跑得快的多面手"
-
-[sub_resource type="Resource" id="Resource_xhpol"]
-script = ExtResource("17_mx6tq")
-id = "raccoon"
-display_name = "Raccoon"
-stats = Dictionary[String, float]({
-"carry": 3.0,
-"walk": 88.0,
-"work": 1.0
-})
-role = "力量型"
-description = "擅长批量搬运"
-
-[sub_resource type="Resource" id="Resource_8ydxu"]
-script = ExtResource("17_mx6tq")
-id = "fox"
-display_name = "Fox"
-stats = Dictionary[String, float]({
-"carry": 2.0,
-"walk": 96.0,
-"work": 1.6
-})
-role = "操作型"
-description = "擅长手工制作"
-
-[sub_resource type="Resource" id="Resource_h0rnc"]
-script = ExtResource("17_mx6tq")
-id = "rabbit"
-display_name = "小兔子"
-stats = Dictionary[String, float]({
-"carry": 2.0,
-"walk": 104.0,
-"work": 1.0
-})
-role = "速度型"
-description = "擅长快速搬运"
-
-[sub_resource type="Resource" id="Resource_fi30w"]
-script = ExtResource("17_mx6tq")
-id = "gray_cat"
-display_name = "小灰猫"
-stats = Dictionary[String, float]({
-"carry": 2.0,
-"walk": 112.0,
-"work": 1.0
-})
-role = "速度型"
-description = "跑得快的多面手"
-
-[sub_resource type="Resource" id="Resource_nh0g8"]
-script = ExtResource("17_mx6tq")
-id = "bear"
-display_name = "小熊"
-stats = Dictionary[String, float]({
-"carry": 3.0,
-"walk": 88.0,
-"work": 1.0
-})
-role = "力量型"
-description = "擅长批量搬运"
 
 [sub_resource type="Resource" id="Resource_nlrjp"]
 script = ExtResource("7_1v0ns")
@@ -1154,21 +1113,9 @@ display_name = "后厨"
 levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_fab7n"), SubResource("Resource_5tji1"), SubResource("Resource_184w0"), SubResource("Resource_p887f"), SubResource("Resource_g0mkt"), SubResource("Resource_ixqvy")])
 effect_label = "员工"
 
-[sub_resource type="Resource" id="Resource_staff_parrot"]
-script = ExtResource("17_mx6tq")
-id = "parrot"
-display_name = "小鹦鹉"
-stats = Dictionary[String, float]({
-"carry": 2.0,
-"walk": 112.0,
-"work": 1.0
-})
-role = "速度型"
-description = "擅长快速搬运"
-
 [sub_resource type="Resource" id="Resource_8p4c6"]
 script = ExtResource("18_tdcmu")
-kinds = Array[ExtResource("17_mx6tq")]([SubResource("Resource_fi30w"), SubResource("Resource_nh0g8"), SubResource("Resource_h0rnc"), SubResource("Resource_7xjsb"), SubResource("Resource_xhpol"), SubResource("Resource_8ydxu"), SubResource("Resource_staff_parrot")])
+kinds = Array[ExtResource("17_mx6tq")]([ExtResource("staff_cat"), ExtResource("staff_raccoon"), ExtResource("staff_fox"), ExtResource("staff_rabbit"), ExtResource("staff_gray_cat"), ExtResource("staff_bear"), ExtResource("staff_parrot")])
 retired_kinds = Dictionary[String, String]({"cat": "gray_cat", "raccoon": "bear"})
 starting = Array[String](["gray_cat"])
 starting_post = "counter"
@@ -1192,7 +1139,7 @@ script = ExtResource("19_a4xei")
 id = "stage0"
 display_name = "开张"
 stations = Array[String](["lemonade"])
-cost = 10
+cost = 12
 dish = "lemonade"
 customer_interval = 10.0
 order_weights = Dictionary[String, float]({
@@ -1217,7 +1164,7 @@ script = ExtResource("19_a4xei")
 id = "stage1"
 display_name = "煮茶机"
 stations = Array[String](["boil"])
-cost = 100
+cost = 115
 dish = "black_tea"
 unlock_note = "开始卖红茶（售价 28）。原料柜里还要解锁茶叶箱"
 customer_interval = 7.0
@@ -1245,7 +1192,7 @@ script = ExtResource("19_a4xei")
 id = "stage2"
 display_name = "封口机"
 stations = Array[String](["seal"])
-cost = 250
+cost = 288
 dish = "black_tea"
 unlock_note = "开放打包外带：想外带或坐不下的客人，封好口带走"
 customer_interval = 5.5
@@ -1289,7 +1236,7 @@ script = ExtResource("19_a4xei")
 id = "stage3"
 display_name = "调奶台"
 stations = Array[String](["mix"])
-cost = 300
+cost = 345
 dish = "plain_milk_tea"
 unlock_note = "开始卖原味奶茶（售价 30）。原料柜里还要解锁牛奶箱"
 customer_interval = 5.0
@@ -1326,7 +1273,7 @@ script = ExtResource("19_a4xei")
 id = "stage4"
 display_name = "手打台"
 stations = Array[String](["press"])
-cost = 550
+cost = 633
 dish = "lemon_tea"
 unlock_note = "开始卖柠檬茶：前台员工接一杯柠檬水，再亲手捣柠檬，外带不用封口"
 customer_interval = 4.0
@@ -1371,7 +1318,7 @@ script = ExtResource("19_a4xei")
 id = "stage5"
 display_name = "加料机"
 stations = Array[String](["topping"])
-cost = 900
+cost = 1035
 dish = "pearl_milk_tea"
 unlock_note = "开始卖珍珠奶茶，升级加料机开放更多口味"
 customer_interval = 3.2
@@ -1418,7 +1365,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_urru1"]
 script = ExtResource("8_cgjme")
-cost = 25
+cost = 29
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_wrbwp")])
 
 [sub_resource type="Resource" id="Resource_jt77o"]
@@ -1429,7 +1376,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_1es01"]
 script = ExtResource("8_cgjme")
-cost = 45
+cost = 52
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_jt77o")])
 
 [sub_resource type="Resource" id="Resource_q2lll"]
@@ -1446,7 +1393,7 @@ value = 1.25
 
 [sub_resource type="Resource" id="Resource_w1iat"]
 script = ExtResource("8_cgjme")
-cost = 81
+cost = 93
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_q2lll"), SubResource("Resource_lfvv2")])
 star = true
 
@@ -1458,7 +1405,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_4ygtl"]
 script = ExtResource("8_cgjme")
-cost = 146
+cost = 168
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_tyn02")])
 
 [sub_resource type="Resource" id="Resource_u86ql"]
@@ -1497,7 +1444,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_wsohg"]
 script = ExtResource("8_cgjme")
-cost = 50
+cost = 57
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ygrx2")])
 
 [sub_resource type="Resource" id="Resource_aub8f"]
@@ -1508,7 +1455,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_3arwv"]
 script = ExtResource("8_cgjme")
-cost = 90
+cost = 103
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_aub8f")])
 
 [sub_resource type="Resource" id="Resource_k3uxj"]
@@ -1538,7 +1485,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_4jqex"]
 script = ExtResource("8_cgjme")
-cost = 62
+cost = 71
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_nqjem")])
 
 [sub_resource type="Resource" id="Resource_xbti6"]
@@ -1549,7 +1496,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_wg4du"]
 script = ExtResource("8_cgjme")
-cost = 112
+cost = 129
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_xbti6")])
 
 [sub_resource type="Resource" id="Resource_t68n5"]
@@ -1618,7 +1565,7 @@ value = 3.0
 
 [sub_resource type="Resource" id="Resource_76oly"]
 script = ExtResource("8_cgjme")
-cost = 20
+cost = 23
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_bgwt4"), SubResource("Resource_1hk0j")])
 
 [sub_resource type="Resource" id="Resource_oqoq5"]
@@ -1635,7 +1582,7 @@ value = 3.0
 
 [sub_resource type="Resource" id="Resource_grok8"]
 script = ExtResource("8_cgjme")
-cost = 45
+cost = 52
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_oqoq5"), SubResource("Resource_620eu")])
 
 [sub_resource type="Resource" id="Resource_v5688"]
@@ -1652,7 +1599,7 @@ value = 4.0
 
 [sub_resource type="Resource" id="Resource_ae368"]
 script = ExtResource("8_cgjme")
-cost = 101
+cost = 116
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_v5688"), SubResource("Resource_mp4j2")])
 star = true
 
@@ -1670,7 +1617,7 @@ value = 4.0
 
 [sub_resource type="Resource" id="Resource_m74ij"]
 script = ExtResource("8_cgjme")
-cost = 224
+cost = 258
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_odx33"), SubResource("Resource_er730")])
 
 [sub_resource type="Resource" id="Resource_viia1"]
@@ -1687,7 +1634,7 @@ value = 5.0
 
 [sub_resource type="Resource" id="Resource_bjqmi"]
 script = ExtResource("8_cgjme")
-cost = 491
+cost = 565
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_viia1"), SubResource("Resource_cyqph")])
 
 [sub_resource type="Resource" id="Resource_3y7hs"]
@@ -1704,7 +1651,7 @@ value = 6.0
 
 [sub_resource type="Resource" id="Resource_4v3c2"]
 script = ExtResource("8_cgjme")
-cost = 1067
+cost = 1227
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_3y7hs"), SubResource("Resource_xo0ut")])
 
 [sub_resource type="Resource" id="Resource_2yc64"]
@@ -1721,7 +1668,7 @@ value = 6.0
 
 [sub_resource type="Resource" id="Resource_7v10f"]
 script = ExtResource("8_cgjme")
-cost = 2304
+cost = 2650
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_2yc64"), SubResource("Resource_8m34q")])
 star = true
 
@@ -1783,7 +1730,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_81ppo"]
 script = ExtResource("8_cgjme")
-cost = 15
+cost = 17
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_35hqm"), SubResource("Resource_4lh0n")])
 
 [sub_resource type="Resource" id="Resource_hg2ww"]
@@ -1799,7 +1746,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_uvvs1"]
 script = ExtResource("8_cgjme")
-cost = 36
+cost = 41
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_hg2ww"), SubResource("Resource_kbe2e")])
 
 [sub_resource type="Resource" id="Resource_apu7y"]
@@ -1815,7 +1762,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_0gbvm"]
 script = ExtResource("8_cgjme")
-cost = 63
+cost = 72
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_apu7y"), SubResource("Resource_5am13")])
 
 [sub_resource type="Resource" id="Resource_xpo8d"]
@@ -1832,7 +1779,7 @@ value = 2.0
 
 [sub_resource type="Resource" id="Resource_y0bc1"]
 script = ExtResource("8_cgjme")
-cost = 136
+cost = 156
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_xpo8d"), SubResource("Resource_xs4sk")])
 star = true
 
@@ -1850,7 +1797,7 @@ value = 2.0
 
 [sub_resource type="Resource" id="Resource_hygpt"]
 script = ExtResource("8_cgjme")
-cost = 279
+cost = 321
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_2oi6y"), SubResource("Resource_rpr48")])
 
 [sub_resource type="Resource" id="Resource_semvr"]
@@ -1894,7 +1841,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_0m85s"]
 script = ExtResource("8_cgjme")
-cost = 62
+cost = 71
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_k8ju5")])
 
 [sub_resource type="Resource" id="Resource_rj7pd"]
@@ -1905,7 +1852,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_ylrt7"]
 script = ExtResource("8_cgjme")
-cost = 113
+cost = 130
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_rj7pd")])
 
 [sub_resource type="Resource" id="Resource_8niis"]
@@ -1922,7 +1869,7 @@ value = 1.25
 
 [sub_resource type="Resource" id="Resource_kd7rd"]
 script = ExtResource("8_cgjme")
-cost = 203
+cost = 233
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_8niis"), SubResource("Resource_kub0l")])
 star = true
 
@@ -1934,7 +1881,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_6fsjj"]
 script = ExtResource("8_cgjme")
-cost = 365
+cost = 420
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_tkbbj")])
 
 [sub_resource type="Resource" id="Resource_f84qc"]
@@ -1945,7 +1892,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_p3x0k"]
 script = ExtResource("8_cgjme")
-cost = 656
+cost = 754
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_f84qc")])
 
 [sub_resource type="Resource" id="Resource_uip26"]
@@ -1962,7 +1909,7 @@ value = 1.25
 
 [sub_resource type="Resource" id="Resource_pailp"]
 script = ExtResource("8_cgjme")
-cost = 1181
+cost = 1358
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_uip26"), SubResource("Resource_j8s3s")])
 star = true
 
@@ -2009,7 +1956,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_vd0ku"]
 script = ExtResource("8_cgjme")
-cost = 62
+cost = 71
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_m73s2")])
 
 [sub_resource type="Resource" id="Resource_pajci"]
@@ -2021,7 +1968,7 @@ value = 1.1025
 
 [sub_resource type="Resource" id="Resource_bwn7v"]
 script = ExtResource("8_cgjme")
-cost = 112
+cost = 129
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_pajci")])
 
 [sub_resource type="Resource" id="Resource_7nern"]
@@ -2048,7 +1995,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_lv7og"]
 script = ExtResource("8_cgjme")
-cost = 88
+cost = 101
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_w0igs")])
 
 [sub_resource type="Resource" id="Resource_aakk8"]
@@ -2059,7 +2006,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_ma1fs"]
 script = ExtResource("8_cgjme")
-cost = 158
+cost = 182
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_aakk8")])
 
 [sub_resource type="Resource" id="Resource_jjx1k"]
@@ -2076,7 +2023,7 @@ value = 1.25
 
 [sub_resource type="Resource" id="Resource_8lq6c"]
 script = ExtResource("8_cgjme")
-cost = 284
+cost = 327
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_jjx1k"), SubResource("Resource_nichh")])
 star = true
 
@@ -2088,7 +2035,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_rnpc0"]
 script = ExtResource("8_cgjme")
-cost = 510
+cost = 587
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_e6p3x")])
 
 [sub_resource type="Resource" id="Resource_i46xi"]
@@ -2136,7 +2083,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_vwj84"]
 script = ExtResource("8_cgjme")
-cost = 50
+cost = 57
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_mnnw7")])
 
 [sub_resource type="Resource" id="Resource_5l4xw"]
@@ -2148,7 +2095,7 @@ value = 1.1025
 
 [sub_resource type="Resource" id="Resource_bqrae"]
 script = ExtResource("8_cgjme")
-cost = 90
+cost = 103
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_5l4xw")])
 
 [sub_resource type="Resource" id="Resource_107pf"]
@@ -2182,7 +2129,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_f5gby"]
 script = ExtResource("8_cgjme")
-cost = 75
+cost = 86
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ulweq")])
 
 [sub_resource type="Resource" id="Resource_w6r8h"]
@@ -2194,7 +2141,7 @@ value = 1.1025
 
 [sub_resource type="Resource" id="Resource_hgso8"]
 script = ExtResource("8_cgjme")
-cost = 135
+cost = 155
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_w6r8h")])
 
 [sub_resource type="Resource" id="Resource_oa1x0"]
@@ -2229,7 +2176,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_hxmgj"]
 script = ExtResource("8_cgjme")
-cost = 88
+cost = 101
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_lnihg")])
 
 [sub_resource type="Resource" id="Resource_8o05w"]
@@ -2241,7 +2188,7 @@ value = 1.1025
 
 [sub_resource type="Resource" id="Resource_ufwq4"]
 script = ExtResource("8_cgjme")
-cost = 158
+cost = 182
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_8o05w")])
 
 [sub_resource type="Resource" id="Resource_fd1fs"]
@@ -2276,7 +2223,7 @@ value = 1.05
 
 [sub_resource type="Resource" id="Resource_4e24y"]
 script = ExtResource("8_cgjme")
-cost = 100
+cost = 115
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_vuhrv")])
 
 [sub_resource type="Resource" id="Resource_lagqi"]
@@ -2288,7 +2235,7 @@ value = 1.1025
 
 [sub_resource type="Resource" id="Resource_7yvj0"]
 script = ExtResource("8_cgjme")
-cost = 180
+cost = 207
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_lagqi")])
 
 [sub_resource type="Resource" id="Resource_qqh1t"]
@@ -2326,7 +2273,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_5c0bn"]
 script = ExtResource("8_cgjme")
-cost = 55
+cost = 63
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ji7co"), SubResource("Resource_euwds")])
 
 [sub_resource type="Resource" id="Resource_ev0t4"]
@@ -2342,7 +2289,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_cog4c"]
 script = ExtResource("8_cgjme")
-cost = 115
+cost = 132
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ev0t4"), SubResource("Resource_l0bpe")])
 
 [sub_resource type="Resource" id="Resource_lc0wt"]
@@ -2358,7 +2305,7 @@ op = "set"
 
 [sub_resource type="Resource" id="Resource_7711k"]
 script = ExtResource("8_cgjme")
-cost = 205
+cost = 236
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_lc0wt"), SubResource("Resource_2nauh")])
 
 [sub_resource type="Resource" id="Resource_e0rlp"]
@@ -2409,10 +2356,11 @@ seat_groups = Array[ExtResource("16_35x7t")]([SubResource("Resource_poakd")])
 staff = SubResource("Resource_8p4c6")
 connections = Array[ExtResource("1_tjgba")]([SubResource("Resource_m1tbq"), SubResource("Resource_q0qcx"), SubResource("Resource_jp4pd"), SubResource("Resource_6bvuk"), SubResource("Resource_bc3ge"), SubResource("Resource_gjupt"), SubResource("Resource_gd06f")])
 goals = SubResource("Resource_ufdpv")
-layout = SubResource("Resource_45mrc")
+layout = SubResource("Resource_x4rom")
 guide = Array[ExtResource("12_anqca")]([SubResource("Resource_4p3jx"), SubResource("Resource_1wmsa"), SubResource("Resource_ho7ym"), SubResource("Resource_tsvuk"), SubResource("Resource_njies"), SubResource("Resource_nwen5"), SubResource("Resource_pkfa0"), SubResource("Resource_h2bkm"), SubResource("Resource_4lrgi"), SubResource("Resource_ifvmf"), SubResource("Resource_m6brp"), SubResource("Resource_j7ryq"), SubResource("Resource_l8d5n"), SubResource("Resource_tb00n"), SubResource("Resource_wx7ac"), SubResource("Resource_fm6n5")])
 flavor_flow = 0.12
-background_music = ExtResource("music_theme")
 scene_path = "res://presentation/shops/tea/tea_art.tscn"
+background_music = ExtResource("music_theme")
 save_file = "shop_tea.json"
 scale_anchor = "cup"
+runtime_template = ExtResource("u06_runtime")

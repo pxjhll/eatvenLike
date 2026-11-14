@@ -1,7 +1,8 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/current/pancake/shop.tres")
 
 class PoisonRules extends ShopRules:
 	var legacy_calls := 0
@@ -16,7 +17,7 @@ class PoisonRules extends ShopRules:
 		return "poison"
 
 func _ready(shop: SpecShop = TEA) -> ShopRules:
-	var rules := ShopRules.new(shop, 17)
+	var rules := LegacyRules.new(shop, 17)
 	rules.gold = 1e8
 	for stage in shop.stages: rules.call("execute_command", "unlock", {"id": stage.stations[0]})
 	return rules
@@ -56,7 +57,7 @@ func _api(rules: ShopRules) -> bool:
 	return exists
 
 func test_canonical_gold_stage_and_atomic_requests() -> void:
-	var rules := ShopRules.new(TEA, 17)
+	var rules := LegacyRules.new(TEA, 17)
 	if not _api(rules): return
 	rules.gold = 0.0
 	var before := var_to_bytes(rules.to_dict())
@@ -68,7 +69,7 @@ func test_canonical_gold_stage_and_atomic_requests() -> void:
 	check_eq(var_to_bytes(rules.to_dict()), before, "Checks and rejected execution leave exact state")
 
 func test_canonical_commit_once_and_detached_results() -> void:
-	var rules := ShopRules.new(TEA, 17)
+	var rules := LegacyRules.new(TEA, 17)
 	if not _api(rules): return
 	var gold := rules.gold
 	var observed: Array = []
@@ -86,7 +87,7 @@ func test_canonical_commit_once_and_detached_results() -> void:
 	check_eq(observed.size(), 1, "Reject never broadcasts")
 
 func test_all_commands_validate_schema_and_preserve_live_aliases() -> void:
-	var rules := ShopRules.new(TEA, 17)
+	var rules := LegacyRules.new(TEA, 17)
 	if not _api(rules): return
 	var commands := {"unlock": {"id": "missing"}, "unlock_box": {"material": "missing"}, "upgrade": {"key": "missing"},
 		"buy_seat": {}, "send_flyers": {}, "hire": {}, "deploy_worker": {"id": -1},
@@ -113,7 +114,7 @@ func test_all_commands_validate_schema_and_preserve_live_aliases() -> void:
 	for index in identities.size(): check(is_same(identities[index], after[index]), "Preserve live identity %d" % index)
 
 func test_all_commands_success_independent_business_outcomes() -> void:
-	var rules := ShopRules.new(TEA, 17)
+	var rules := LegacyRules.new(TEA, 17)
 	if not _api(rules): return
 	rules.gold = 1e8
 	for stage in TEA.stages:
@@ -157,7 +158,7 @@ func test_all_commands_success_independent_business_outcomes() -> void:
 	check(rules.pending_events.is_empty(), "Event consumed")
 
 func test_unlock_box_and_upgrade_failure_priority_and_text() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	if not _api(rules): return
 	_reject(rules, "unlock", {"id": "absent"}, "unknown_station", {"id": "absent"})
 	_reject(rules, "unlock", {"id": "supply"}, "station_already_unlocked")
@@ -200,7 +201,7 @@ func test_unlock_box_and_upgrade_failure_priority_and_text() -> void:
 	check_eq(rules.upgrade_error("boil"), "已满级", "Max beats insufficient gold")
 
 func test_seat_flyer_hire_and_event_rejections_both_modes() -> void:
-	var closed := ShopRules.new(TEA)
+	var closed := LegacyRules.new(TEA)
 	if not _api(closed): return
 	for command in ["buy_seat", "send_flyers"]: _reject(closed, command, {}, "shop_not_open")
 	var rules := _ready()
@@ -210,7 +211,7 @@ func test_seat_flyer_hire_and_event_rejections_both_modes() -> void:
 	rules.gold = 1e8
 	while rules.seat_cost() >= 0: rules.execute_command("buy_seat")
 	_reject(rules, "buy_seat", {}, "seats_full")
-	rules = ShopRules.new(PANCAKE)
+	rules = LegacyRules.new(PANCAKE)
 	rules.gold = 1e8
 	rules.execute_command("unlock", {"id": "soy_milk"})
 	while rules.command_status("buy_seat").code == "ok": rules.execute_command("buy_seat")
@@ -221,7 +222,7 @@ func test_seat_flyer_hire_and_event_rejections_both_modes() -> void:
 	rules.flyer_wave = 0
 	rules.flyer_wait = 2.1
 	_reject(rules, "send_flyers", {}, "flyer_cooldown", {"seconds": 3})
-	var solo := ShopRules.new(PANCAKE)
+	var solo := LegacyRules.new(PANCAKE)
 	_reject(solo, "place_worker", {"id": -1, "post": "bad"}, "reassignment_disabled")
 	solo.gold = 0
 	_reject(solo, "hire", {}, "staff_full", {"count": 1})
@@ -285,14 +286,14 @@ func test_worker_post_failures_auto_choice_and_canonical_adapter_trap() -> void:
 	check_eq(trapped.legacy_calls, 0, "Canonical paths never call String adapters")
 
 func test_connection_status_codes_priority_and_legacy_rows() -> void:
-	var rules := ShopRules.new(TEA)
+	var rules := LegacyRules.new(TEA)
 	if not _api(rules): return
 	_reject(rules, "buy_connection", {"id": "absent"}, "unknown_connection", {"id": "absent"})
 	_reject(rules, "buy_connection", {"id": "seal_to_shelf"}, "stage_required", {"stage": 2})
 	check_eq(rules.connection_error("absent"), "未知传送带", "Unknown connection legacy text")
 	var disabled_shop: SpecShop = TEA.duplicate(true)
 	disabled_shop.connections[0].enabled = false
-	var disabled := ShopRules.new(disabled_shop)
+	var disabled := LegacyRules.new(disabled_shop)
 	_reject(disabled, "buy_connection", {"id": disabled_shop.connections[0].id}, "unknown_connection")
 	rules = _ready()
 	rules.gold = 0

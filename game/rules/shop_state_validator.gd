@@ -1,4 +1,7 @@
 extends RefCounted
+const MovementValidator := preload("res://game/rules/movement_validator.gd")
+const ActionValidator := preload("res://game/rules/action_validator.gd")
+const FlowValidator := preload("res://game/rules/flow_validator.gd")
 ## Read-only save validation. Defaults describe the current data IDs; historical
 ## orphan top-level IDs are ignored exactly as in the restore merge.
 
@@ -145,7 +148,13 @@ func validate(data: Dictionary, defaults: Dictionary, shop: SpecShop, chains: Di
 		if not _routes.has(row.route) or not _items.has(row.item) or row.count <= 0 or row.duration <= 0 or row.progress < 0 or row.progress > 1: return "belt_items 状态无效"
 		if row.dst != _routes[row.route].to or not _destination(row.dst): return "belt_items 目标无效"
 		if not _delivery_slot(row.dst, row.item): return "belt_items 缺少目标物品"
-	return _serve(data)
+	error = _serve(data)
+	if not error.is_empty(): return error
+	error = FlowValidator.units(data,shop)
+	if not error.is_empty(): return error
+	error = MovementValidator.validate(data,shop)
+	if not error.is_empty(): return error
+	return ActionValidator.validate(data,shop)
 
 
 ## 送桌店（serve）的运行状态：引用都指向现有的顾客 / 订单 / 份 / 实物 / 员工，实物在合法位置，预留和手上的活对得上。
@@ -216,6 +225,10 @@ func _serve(data: Dictionary) -> String:
 		var job: Variant = s.jobs[key]
 		error = _shape(job, {"kind": "", "unit": 0, "step": 0, "item": "", "good": 0, "from": "", "to": "", "guest": 0, "stage": ""}, "serve.jobs")
 		if not error.is_empty(): return error
+		if job.kind=="bundle":
+			error = FlowValidator.bundle(data,_shop,_staff[int(key)],job)
+			if not error.is_empty(): return error
+			continue
 		if not job.kind in ["take", "work", "carry", "pass", "serve", "home"]: return "serve.jobs.kind 无效"
 		if job.kind in ["work", "carry", "pass", "serve"] and not units.has(job.unit): return "serve.jobs.unit 无效"
 		if job.kind == "take" and not guests.has(job.guest): return "serve.jobs.guest 无效"
@@ -227,13 +240,13 @@ func _serve(data: Dictionary) -> String:
 		elif job.kind == "home": stages = ["home"]
 		if not job.stage in stages: return "serve.jobs.stage 无效"
 		var walking: bool = job.stage in ["go_from", "go_to", "home"]
-		if worker.walking != walking or worker.phase != ("walk" if walking else "work"): return "serve.jobs 员工阶段不一致"
+		if not worker.has("action") and (worker.walking != walking or worker.phase != ("walk" if walking else "work")): return "serve.jobs 员工阶段不一致"
 		if job.kind != "home" and _shop.station(job.from) == null: return "serve.jobs.from 无效"
 		if job.kind == "serve":
 			if job.to != "seat:" + str(orders[units[job.unit].order].seat): return "serve.jobs.to 座位无效"
 		elif _shop.station(job.to) == null: return "serve.jobs.to 无效"
 		if job.kind in ["carry", "pass", "serve"]:
-			var carrying: bool = job.stage in ["go_to", "drop"]
+			var carrying: bool = worker.carry_count>0 if worker.has("action") else job.stage in ["go_to", "drop"]
 			if not _items.has(job.item): return "serve.jobs.item 无效"
 			if job.good == -1:
 				if carrying or _shop.station(job.from).block != "supply": return "serve.jobs.good 缺少搬运物品"
@@ -251,7 +264,12 @@ func _serve(data: Dictionary) -> String:
 			if job.from != step.station or job.to != step.station or _state.stations[step.station].user != int(key): return "serve.jobs 工序机器不一致"
 	for id in goods:
 		var g: Dictionary = goods[id]
-		if g.res != -1 and (not s.jobs.has(str(g.res)) or s.jobs[str(g.res)].good != id): return "serve.goods 预留没有对应的活"
+		if g.res != -1:
+			if not s.jobs.has(str(g.res)): return "serve.goods 预留没有对应的活"
+			var job: Dictionary = s.jobs[str(g.res)]
+			if job.kind=="bundle":
+				if not job.goods.any(func(entry: Dictionary) -> bool: return entry.id==id): return "bundle reserved item has no job reference"
+			elif job.good!=id: return "serve.goods 预留没有对应的活"
 	return ""
 
 

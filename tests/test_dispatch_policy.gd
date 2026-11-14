@@ -1,10 +1,12 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
 const MODULE := "res://game/rules/dispatch_policy.gd"
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
 
 # Instrument real queries without replacing their values or swallowing errors.
-class QueryRules extends ShopRules:
+class QueryRules extends "res://tests/fixtures/legacy_shops/reference_rules.gd":
 	var queries := []
 	func carry(worker: Dictionary) -> int:
 		queries.append("carry")
@@ -23,7 +25,7 @@ class QueryRules extends ShopRules:
 		return super._shelf_item_free(item)
 
 # Real inventory, navigation and reservation; controlled enumeration makes ties visible.
-class GreedyRules extends ShopRules:
+class GreedyRules extends "res://tests/fixtures/legacy_shops/reference_rules.gd":
 	var rounds := []
 	var selections := []
 	var offered := []
@@ -55,7 +57,7 @@ class GreedyRules extends ShopRules:
 		if mode == "stock": super._reserve(worker, job)
 		else: worker.phase = "observed"
 
-class BeltRules extends ShopRules:
+class BeltRules extends "res://tests/fixtures/legacy_shops/reference_rules.gd":
 	var observations := []
 	var worker_reserves := 0
 	func _append_pack_jobs(worker: Dictionary, result: Array) -> void:
@@ -231,7 +233,7 @@ func test_rules_serve_seat_order_pour_and_additive_bonus() -> void:
 	var fixture: SpecShop = TEA.duplicate(true)
 	fixture.dispatch = _dispatch()
 	fixture.dispatch.base_scores = {"serve": 7.0}
-	var rules := ShopRules.new(fixture, 42)
+	var rules := LegacyRules.new(fixture, 42)
 	_open(rules)
 	for group in rules.seats: rules.seats[group] = 0
 	rules.seats[rules.seats.keys()[0]] = 1
@@ -244,7 +246,7 @@ func test_rules_serve_seat_order_pour_and_additive_bonus() -> void:
 
 func test_rules_exact_facade_preserves_identity() -> void:
 	if _policy() == null: return
-	var rules := ShopRules.new(TEA, 42)
+	var rules := LegacyRules.new(TEA, 42)
 	var job := {"count": 2}
 	check(is_same(rules._exact(job, 1), job), "Rules exact forwards identity")
 	check_eq(job.count, 1, "Rules exact applies count")
@@ -289,7 +291,7 @@ func test_rules_new_ticket_fallback_overwrites_priority_without_source_mutation(
 	var fixture: SpecShop = TEA.duplicate(true)
 	fixture.dispatch = _dispatch()
 	fixture.dispatch.base_scores = {"follow": 11.0, "follow_step": 99.0}
-	var rules := ShopRules.new(fixture, 42)
+	var rules := LegacyRules.new(fixture, 42)
 	_open(rules)
 	rules.orders = [{"id": 90, "dish": "plain_milk_tea", "wait": 30.0, "reserved": false, "takeaway": false, "seat": -1}]
 	var option := {"kind": "load", "src": rules.supply_id, "dst": "boil", "item": rules.station_input.boil, "count": 1, "priority": -3.0, "belt": "", "order_id": -1, "nested": [8]}

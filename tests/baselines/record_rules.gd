@@ -1,4 +1,5 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## 在通用规则层上录煎饼摊的整店基准（旧模拟已删，改数值以后用它重录）：
 ##   godot --headless --path . -s tests/baselines/record_rules.gd [-- --check]
 ## 机器人和录旧基准时同一套决策（每分钟看一眼：先买新机器要的原料箱、再解锁、员工忙就招人、买最便宜的升级（机器、原料/口味、员工、传单、座位），
@@ -7,7 +8,8 @@ extends SceneTree
 ## --check：重录一遍和已存的比，不一致退出码 1。
 
 const Replay := preload("res://tests/baselines/replay_rules.gd")
-const SHOP: SpecShop = preload("res://content/shops/pancake/shop.tres")
+## Historical v0 economy; formal v1 rhythm is reported separately.
+const SHOP: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
 const MINUTES := 30.0
 
 
@@ -28,7 +30,7 @@ func _initialize() -> void:
 
 
 static func record(shop: SpecShop) -> Dictionary:
-	var rules := ShopRules.new(shop)
+	var rules := LegacyRules.new(shop)
 	var actions: Array = []
 	var unlocks := {}
 	var next_visit := 1.0

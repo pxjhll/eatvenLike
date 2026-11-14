@@ -7,6 +7,7 @@ const SceneContract := preload("res://presentation/shop/shop_scene_contract.gd")
 const CAMPAIGNS := [
 	preload("res://content/campaign/campaign.tres"),
 	preload("res://tests/fixtures/noodle/campaign.tres"),
+	preload("res://tests/fixtures/onboarding/campaign.tres"),
 ]
 
 func _initialize() -> void:

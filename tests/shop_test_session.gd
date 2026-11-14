@@ -14,7 +14,10 @@ static func make(spec: SpecShop, namespace_: String, rules: ShopRules = null, st
 		if not existed:
 			var result: Error = profile.select_shop(spec.id)
 			assert(result == OK, "Cannot initialize isolated profile")
-	if store == null: store = ShopSave.new(spec, prefix + "-shop.json")
+	if store == null:
+		if spec.runtime_template==null or (rules!=null and is_instance_of(rules,load("res://tests/fixtures/legacy_shops/reference_rules.gd"))):
+			store = load("res://tests/fixtures/legacy_shops/reference_save.gd").new(spec,prefix+"-shop.json")
+		else: store = ShopSave.new(spec, prefix + "-shop.json")
 	var session: RefCounted = load("res://game/app/shop_session.gd").new(profile, store, rules)
 	session.guide_enabled = false
 	session.persist_tuning = false

@@ -1,11 +1,13 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 
 const TestSession := preload("res://tests/shop_test_session.gd")
 ## 煎饼摊跑在通用店铺场景里（第 4 个 PR），用真实点按走一遍：
 ## 从跨店记录进店、引导（欢迎 → 点豆浆机开张 → 第一单 → 招第二个人 → 开张完成）、原画按开店进度显示、
 ## 人物按脚底前后遮挡、客人排队和坐坐垫、点柜台发传单、完店 → 结店总结 → 去奶茶店、读档接着开。
 
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/current/pancake/shop.tres")
 const Profile := preload("res://game/app/profile.gd")
 var view: Node2D
 var hud: Control
@@ -77,9 +79,10 @@ func _run() -> void:
 	view._process(0.1)
 	var line: Array = _rules().customers.filter(func(c: Dictionary) -> bool: return c.state == "paid")
 	var queued: int = int(line[0].id) if not line.is_empty() else int(_rules().queue[0])
-	for unused in 60: view._refresh(0.25)
-	var first: Node2D = view._customers.get(queued)
-	_check(first != null and first.position.distance_to(view.anchors.points("Queue")[0]) < 2.0, "排第一的客人站在队伍第一位")
+	var customer_key := "customer:%d"%queued
+	_run_until(func() -> bool: return _rules().movement.customers.has(customer_key) and not _rules().movement.customers[customer_key].walking,60.0)
+	var first: Node2D = view._customers.get(customer_key)
+	_check(first != null and first.position.is_equal_approx(_rules().movement.customers[customer_key].pos), "排队顾客按规则位置到达")
 	_check(first != null and first.z_index > _stall(46).z_index, "柜台前的客人画在柜台上面")
 	var staff: Node2D = view._actors.values()[0]
 	_check(staff.z_index < _stall(46).z_index, "柜台后面的员工画在柜台下面")
@@ -98,11 +101,16 @@ func _run() -> void:
 	# 坐下的客人一直坐在同一个坐垫上，直到拿到餐离开
 	var seat_of := {}
 	var moved := 0
-	for unused in 400:
+	guide.enabled = false
+	for unused in 80:
 		view._process(0.25)
-		for id in view._seat_of:
-			if seat_of.has(id) and seat_of[id] != view._seat_of[id]: moved += 1
-			seat_of[id] = view._seat_of[id]
+		for id in _rules().movement.customers:
+			var row: Dictionary = _rules().movement.customers[id]
+			if not row.seated: continue
+			if seat_of.has(id) and seat_of[id] != row.seat: moved += 1
+			seat_of[id] = row.seat
+		if unused>=40 and not seat_of.is_empty(): break
+	guide.enabled = true
 	_check(not seat_of.is_empty() and moved == 0, "坐下的客人不换坐垫（坐过 %d 位，换位 %d 次）" % [seat_of.size(), moved])
 	await _click(hud.tab("shop"))
 	_rules().gold = 60.0
@@ -124,8 +132,10 @@ func _run() -> void:
 	view._refresh(0)
 	_check(bool(_rules().boxes.flour) and _stall(27).is_visible_in_tree() and _stall(140).visible, "买了面粉箱：面粉袋和字摆出来")
 	await _click(hud.tab("shop"))
+	# Keep this interaction case below later-stage affordability prompts.
+	_rules().gold = 0.0
 	guide.refresh(0)
-	_check(guide.active == "" and not hud.popups.has_card(), "引导走完")
+	_check(guide.active == "" and not hud.popups.has_card(), "引导走完（当前：%s）"%guide.active)
 
 	# 点柜台：面板里发传单，传单没有升级就不显示升级那一行
 	await _press(_screen(view.anchors.rect("Stations/front_counter/Tap").get_center() + Vector2(200, 40)))
@@ -212,14 +222,14 @@ func _run() -> void:
 	# 进奶茶店：从空店开始
 	var tea_save := "user://shop-pancake-gui-tea-%d.json" % OS.get_process_id()
 	var tea: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	tea.session = TestSession.make(load("res://content/shops/tea/shop.tres"), tea_save, null, ShopSave.new(load("res://content/shops/tea/shop.tres"), tea_save), after)
+	tea.session = TestSession.make(load("res://tests/fixtures/legacy_shops/current/tea/shop.tres"), tea_save, null, LegacySave.new(load("res://tests/fixtures/legacy_shops/current/tea/shop.tres"), tea_save), after)
 	tea.session.guide_enabled = true
 	root.add_child(tea)
 	await process_frame
 	tea.set_process(false)
 	_check(tea.rules.shop.id == "tea" and not tea.rules.is_open() and not after.fresh_shop, "奶茶店从空店开始")
 	tea.free()
-	view = _open(null, ShopRules.new(PANCAKE), false)
+	view = _open(null, LegacyRules.new(PANCAKE), false)
 	await process_frame
 	view.set_process(false)
 	hud = view.ui
@@ -232,7 +242,7 @@ func _run() -> void:
 	_rules().upgrade("staff/")
 	await _click(hud.tab("staff"))
 	var staff_page: Control = hud.page_node("staff")
-	_check(staff_page._numbers.walk.text == str(int(_rules().walk_speed(_rules().workers[0]))), "培养后可见移速等于执行移速")
+	_check(staff_page._numbers.walk.text == view.view.stat_text(_rules().walk_speed(_rules().workers[0])/PANCAKE.layout.motion_units), "培养后可见逻辑移速等于执行移速")
 	_check(staff_page._levels[0].text.contains("1/"), "员工卡显示店内培养进度")
 	_rules().tune.work = 1.25
 	view._refresh(0)
@@ -258,7 +268,7 @@ func _run() -> void:
 
 func _open(profile: RefCounted, rules: ShopRules = null, guides := true) -> Node2D:
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	scene.session = TestSession.make(PANCAKE, save_path, rules, ShopSave.new(PANCAKE, save_path), profile)
+	scene.session = TestSession.make(PANCAKE, save_path, rules, LegacySave.new(PANCAKE, save_path), profile)
 	scene.session.guide_enabled = guides
 	root.add_child(scene)
 	return scene

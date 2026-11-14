@@ -1,4 +1,5 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## Authored actions must be usable in the shop, not just present on disk.
 var failures := 0
 
@@ -18,8 +19,8 @@ func _run() -> void:
 		_finish()
 		return
 	var font := load("res://art/ui/graybox_font.ttf")
-	var tea: SpecShop = load("res://content/shops/tea/shop.tres")
-	var view := ShopView.new(ShopRules.new(tea))
+	var tea: SpecShop = load("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
+	var view := ShopView.new(LegacyRules.new(tea))
 	for id in ["rabbit", "gray_cat", "bear", "fox", "parrot", "squirrel", "dog", "sheep", "hamster"]:
 		var actor = load("res://presentation/shop/shop_actor.gd").new()
 		actor.setup(id, font)
@@ -89,7 +90,7 @@ func _run() -> void:
 				_check(actor.frame_actor.action == "sit" and actor.frame_actor.sprite.flip_h == ((direction == 6) != (id == "dog")), "sitting faces the table on either side")
 		actor.free()
 	# Exercise a real production job, so the operation is reachable from rules state.
-	var rules := ShopRules.new(tea)
+	var rules := LegacyRules.new(tea)
 	rules.gold = 1000000
 	for station in ["lemonade", "boil"]: rules.unlock(station)
 	rules.unlock_box("tea_leaf")
@@ -111,12 +112,13 @@ func _run() -> void:
 			break
 	_check(operated, "real kitchen production reaches operation")
 	operator.free()
-	var hiring := ShopRules.new(tea)
+	var active_tea: SpecShop = load("res://content/shops/tea/shop.tres")
+	var hiring := ShopRules.new(active_tea)
 	hiring.gold = 10000
 	for id in ["bear", "rabbit", "fox", "parrot", "gray_cat"]:
 		_check(hiring.next_hire_kind() == id and hiring.hire() == "", "recruit only active staff species")
 	_check(hiring.worker_by_id(2).kind == "bear", "bear has its own staff identity")
-	var copy := ShopRules.new(tea)
+	var copy := ShopRules.new(active_tea)
 	_check(copy.load_dict(hiring.to_dict()) == "" and copy.worker_by_id(2).kind == "bear", "bear survives save roundtrip")
 	_finish()
 

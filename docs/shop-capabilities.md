@@ -4,6 +4,30 @@
 
 Session startup validates both the store definition and a separately injected rules definition before loading/quarantining a save or acknowledging `fresh_shop`. Scene startup additionally checks art before Session startup. Pure ShopRules remains usable directly by rule tests; callers of that low-level API are responsible for validating configuration.
 
+正式三店现在必须通过 `SpecShop.runtime_template` 显式声明公共能力，`shop_spec_validator.gd` 会编译模板并要求服务和自动客流。经营推进统一为 `ShopRules._tick → Runtime.step`；`fulfillment.handoff` 不选择正式执行器。ShopSession/ShopPlay 自动消费该 Runtime，模板构造失败禁止启动或保存。
+
+版本2业务存档把 outer 购买/钱包/RNG 与公共 runtime 的唯一活动状态分开保存。三种旧模式只在 `template/legacy_adoption.gd` 的一次性加载边界出现；正式执行不调用它们的 tick/context。公共能力配置、保存和迁移边界详见 `game/rules/template/README.md` 的 U06 节。
+
+## Public authoring interface
+
+新店从 `content/examples/onboarding/table.tres` 或 `self_pickup.tres` 起步，使用同一个 `presentation/examples/module_shop.tscn`，无需新控制器。两组合均配置两支生产合流、追加例汤和整单交付；区别由 `runtime_template.service` 声明。`SpecDish` 保留价格/图标目录，显式配方不要求重复填写旧 steps。员工引用 `content/characters/staff/<id>.tres` 的全局同一资源，不能复制基础属性到店内。
+
+| 配置入口 | 公共实现与校验 |
+|---|---|
+| places / machines / restocks / recipes | 唯一容器、加工与补货；显式输入/依赖；编译器拒绝未知参数、无效端口、循环、产量不足 |
+| service / selection / arrivals | 接单、菜单阶段、客流、自取/柜台/送桌、附加品与整单结算；菜单必须引用报价目录，阶段覆盖购买阶段 |
+| dispatch / transports | 角色/岗位、跟单、协助、批量搬运及自动运输；调用同一动作和库存事务 |
+| presentation | stock/counters/dining/poses/conveyors 显式绑定；库存默认仅UI，手持来自真实拿取 |
+| layout / scene modules | 共享运动、权限、端口与排序宿主；真实场景检查路径、密度及全局人物尺度 |
+
+制作入口 `tools/validate_template_shops.gd` 检查六份已登记配置、正式/示例关卡覆盖、公共编译、全局员工引用、视觉注册、场景与真实Runtime构造。普通 `ShopSession` / `ShopSave` 缺模板时，在读写旧档前拒绝启动/保存。独立的 `tools/check_template_boundary.py` 检查旧执行器、界面改账本、私有/内嵌脚本、模板遗漏及关键公共调用；资源脚本使用明确共享白名单。它是明显绕过的静态门禁，不是完整GDScript安全分析器。
+
+`tests/render_template_authoring.gd` 通过普通会话/场景真实推进，收集实际库存与动作提交轨迹，记录员工实际位置和操作端口；不是检查导入字符串代替执行证明。`Runtime.set_tracing(true)` 启用有界诊断，`take_trace()` 消费轨迹并报告overflow；诊断不进入存档，也不接收业务回调。未启用不收集。相同种子开启/关闭轨迹后的完整状态、财务相同；失败和重复事务不生成伪成功。
+
+统一入口 `tools/check_shops.py` 分为 `headless`、`window`、`web` 和独立 `economy`。行为/场景/存档、实际窗口及导出节点为必需验收；CI使用同一清单，Pages构建使用headless+web。旧节奏/完店目标保留原check参数和基线，在economy报告失败或超时，不自动重录或调整目标。
+
+以下表格是保留的**旧资源字段与迁移协议**，其旧方法名对应测试历史参考引擎，不能作为新店运行时接口。正式制作校验使用编译后的公共能力，不再按旧mode矩阵限制组合；旧字段仍可为迁移/价格/展示元数据存在，运行时只消费明确模板。
+
 ## Fulfillment: every exported field
 
 S = supported behavior; F = mode policy, reject other declarations; R = unused in this mode, retain the stated resource default.
@@ -87,15 +111,31 @@ Compatibility includes the empty unzoned staff upgrade-track ID, front counter s
 
 This is a necessary structural contract, not an economic solvability proof or navigation reachability solver. Scene structure and art transforms belong to `presentation/shop/shop_scene_contract.gd`; actual business completion is covered by the rule and live fixture regressions. Tests do not re-record business baselines.
 
-## Serve mode (spec §10, v1.1 draft — first prototype)
+## Serve mode
 
-`fulfillment.handoff = "serve"` is the third execution mode, used by the 小炒饭馆 prototype (`content/shops/stirfry/shop.tres`, built by `tools/build_stirfry_shop.gd`; not in the campaign yet). Rules live in `game/rules/serve_flow.gd`; all runtime state is the single saved key `serve`.
+`fulfillment.handoff = "serve"` is the third execution mode, used by the formal third shop (`content/shops/stirfry/shop.tres`). Rules live in `game/rules/serve_flow.gd`; all runtime state is the single saved key `serve`.
 
 - **Flow.** Customers queue at the counter. A front worker takes the order only when a dine seat is free and assigns that seat; the customer then walks there (`customer_walk` px/s). The kitchen works the recipe as a dependency graph; the finished dish goes to the one `pickup` station; a front worker carries it to the seat. Eating starts only when the customer is seated **and** every order line is delivered. Payment (`on_deliver`, `dish_tenth_carry`) settles once per order when the last line arrives.
 - **Entities.** guests, orders (`lines[{dish, qty, delivered}]`), units (one per portion), goods (every physical item: where it is, which unit owns it or `-1` = shared stock, which worker reserved it), jobs (per worker). People served, orders completed, items sold and people lost are separate counters.
-- **Recipes.** `supply` and automatic `batch_pot` steps are sources (one product, no inputs). `hand` and staffed `combine` steps are work: they start only when all inputs are at that station for that unit and the station is free. Inputs for a step are fetched only after the work steps that feed it are done (no stockpiling). Shared stock from a batch pot is reserved at claim time and becomes the unit's when picked up, so one portion is never taken twice. A dish whose final item comes straight from a source (e.g. soup) is passed from the source.
-- **Roles.** Zoned shops: the counter post is front (take, serve); unposted kitchen workers flow (carry, work, pass); a worker seated at a machine only works that machine and never carries. Unzoned shops let unposted workers do everything.
+- **Recipes.** `supply` and automatic `batch_pot` steps are sources (one product, no inputs). `hand` and staffed `combine` steps are work: they start only when all inputs are at that station for that unit and the station is free. By default, inputs for a step are fetched only after its work dependencies finish. Opt-in `prefetch_inputs` prepares independently available inputs per order while the work dependency check still blocks operation. Shared stock from a batch pot is reserved at claim time and becomes the unit's when picked up, so one portion is never taken twice. A dish whose final item comes straight from a source (e.g. soup) is passed from the source.
+- **Roles.** Zoned shops: the counter post is front (take, serve, and flow1 front recipe production/transport); unposted kitchen workers flow (carry, work, pass); a worker seated at a machine only works that machine and never carries. Unzoned shops let unposted workers do everything.
 - **Cancel.** Recall/re-place releases every reservation and the station; an item in hand goes back to where it was picked up and keeps its owner; nothing is created or destroyed.
-- **Rejected for now:** manual-load/unload or stirred batch pots, automatic combine, topping/dispenser blocks, front recipes, more than one pickup, more than one seat group, conveyors, order options. Dispatch scores use `take / serve / carry / work / pass`.
+- **Rejected for now:** manual-load/unload or stirred batch pots, automatic combine, topping/dispenser blocks, front recipes in flow0, more than one pickup, more than one seat group, conveyors, order options. Dispatch scores use `take / serve / carry / work / pass`.
 - **Staff data.** `staff.starting_posts` gives each starting worker its own post (empty = flowing); hire costs are indexed by hires made, i.e. roster size minus starting workers (unchanged for one-worker shops).
 - **Graybox.** `tools/serve_graybox/serve_graybox.tscn` draws the raw rule state (stations, shared stock, goods, workers, guests by state) for prototype review; it is not the game UI.
+
+## Serve front production and item artwork
+
+A front direct-sale recipe uses `fulfillment.flow_version=1`, `SpecDish.front=true`, and front-zone stations. A manual drink machine reuses `block="hand"`; all recipe steps stay in the front zone. Kitchen recipes must remain in the kitchen. Existing action/movement, goods reservation, pickup, cancellation and save semantics apply. The normal pickup/payment policy still determines delivery; a front-only main dish does not implicitly gain a kitchen soup addon. Tea and pancake keep their existing adapters.
+
+Adding a recipe adds zero-count inventory slots to existing pickup/work stations during explicit content adoption. Same-content loads remain strict. Existing goods, reservations, timers, stages and active recipe identity are preserved; a flow0 reader protects flow1 saves. Additional equipment must not shift existing stage indices.
+
+`SpecItem.icon` binds the actual product texture, including an AtlasTexture region. `SpecItem.art` retains legacy scene art priority when explicitly set. `ShopView.item_art`, `item_icon` and `icon_of` feed carried goods, tables, order bubbles and HUD icons from one resolver. Missing artwork uses a neutral tag placeholder, never another shop's drink. Bind every intermediate/raw item too; reuse approved prep art where appropriate. User-supplied original sprites must remain byte-identical. Scene art and layout follow the FigCraft confirmation process.
+
+## Opt-in serve logistics and preparation
+
+Serve flow1/shared actions support `dispatch.transport_helpers` (unique front/kitchen roles), `dispatch.preposition_work` and `dispatch.prefetch_inputs`. Native work is considered before assistance; counter staff also wait for approaching guests when a seat is available. Helpers execute only existing carry/pass jobs for another production region, using its existing inventory/claim ledger. A helper never acquires cooking work in the other region.
+
+`prefetch_inputs` allows independently available ingredients to be brought to an order's downstream station before all work branches finish. It does not bypass production dependencies or ownership. `preposition_work` permits a cook to move to a workbench if every missing input already has an inbound transport reservation. The normal action context blocks operation until all actual goods arrive. If a carrier is recalled and the promise disappears, the speculative work lease is cancelled so the remaining employee can fetch inputs. `base_scores.continuation` optionally prioritizes units with completed manual steps over starting more units.
+
+Defaults remain empty/false/zero and are omitted from fingerprints, preserving earlier shops and frozen saves. Enabling helpers requires zoned serve flow1 and actions1; preparation requires serve flow1/actions1. No gameplay state is stored in these flags, and no new inventory or movement implementation is introduced.

@@ -20,3 +20,12 @@ extends Resource
 @export var aliases: Dictionary[String, String] = {}
 ## 新员工出现在哪
 @export var spawn_point: String = "counter"
+
+## 0保留旧店行为；1启用规则持有的员工/顾客运动。新店必须显式给出权限和顾客端口。
+@export var motion_version: int = 0
+@export var motion_units: float = 1.0
+## 权限名 → Array[Rect2i]；与areas取交集。未登记的权限不能走。
+@export var actor_areas: Dictionary = {}
+## entrance / exit / pickup / seat:<组>/<序号> / wait:<组>/<序号>。
+@export var customer_points: Dictionary[String, Vector2] = {}
+@export var customer_queue: Array[Vector2] = []

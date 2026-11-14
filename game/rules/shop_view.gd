@@ -11,6 +11,16 @@ var message_formatter: Callable
 const CommandResult := preload("res://game/rules/rule_command_result.gd")
 const CommandText := preload("res://content/ui/rule_command_text.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
+const Production := preload("res://game/rules/production_plan.gd")
+const SceneFrame := preload("res://game/rules/template/scene_frame.gd")
+var _runtime_binding: RefCounted
+var _follows_owner := false
+var _runtime: RefCounted:
+	get: return rules.runtime if _follows_owner else _runtime_binding
+	set(value): _runtime_binding = value
+var _displays: Array = []
+var _presentation: Dictionary = {}
+const TemplatePresentation := preload("res://game/rules/template/presentation.gd")
 
 ## 升级效果 → 面板上“这一级做什么”的分类
 const KIND_TEXT := {"capacity": "产能升级", "price": "售价升级", "menu": "开新口味", "both": "产能售价升级"}
@@ -21,6 +31,7 @@ func _init(rules_: ShopRules, message_formatter_: Callable = Callable()) -> void
 	rules = rules_
 	shop = rules.shop
 	message_formatter = message_formatter_
+	_follows_owner = rules.runtime!=null
 
 
 func command_message(status: Dictionary) -> String:
@@ -30,31 +41,88 @@ func command_message(status: Dictionary) -> String:
 
 # ---------- Detached presentation reads ----------
 
+## Explicit presentation dependency. The session/controller owns simulation
+## advancement and saving; binding a view never starts or replaces a loop.
+func bind_runtime(runtime: RefCounted, displays: Array = [], geometry: Dictionary = {}) -> String:
+	if runtime==null or not runtime.get("runner") is RefCounted or runtime.runner.owner!=rules: return "presentation runtime belongs to another owner"
+	if not String(runtime.last_error).is_empty(): return String(runtime.last_error)
+	var resolved := TemplatePresentation.resolve(runtime._definition.get("presentation",{}),geometry)
+	if not resolved.error.is_empty(): return resolved.error
+	var combined: Array = resolved.definition.get("stock",[])+displays
+	var frame: Dictionary = runtime.frame(combined)
+	if not String(frame.error).is_empty(): return String(frame.error)
+	_runtime = runtime
+	_follows_owner = runtime==rules.runtime
+	_displays = combined.duplicate(true)
+	_presentation = resolved.definition
+	return ""
+
 ## One caller-owned frame, in the simulation's existing iteration order.
 func render_snapshot() -> Dictionary:
-	return {"clock": rules.clock, "gold": rules.gold, "revenue": rules.revenue, "sold": rules.sold,
+	if _runtime!=null: return SceneFrame.build(_runtime,_displays,_presentation)
+	var frame := {"clock": rules.clock, "gold": rules.gold, "revenue": rules.revenue, "sold": rules.sold,
 		"lost": rules.lost, "paused": rules.paused, "stage_index": rules.stage_index,
 		"completed_at": rules.completed_at, "shelf_count": rules.shelf_count,
 		"workers": rules.workers, "roster": rules.roster, "stations": rules.stations,
 		"shelf_stock": rules.shelf_stock, "orders": rules.orders, "customers": rules.customers,
 		"queue": rules.queue, "diners": rules.diners, "belts": rules.belts,
 		"belt_items": rules.belt_items, "seats": rules.seats, "serve": rules.serve,
-		"stage_queue_capacity": rules.current_stage().queue_capacity}.duplicate(true)
+		"stage_queue_capacity": rules.current_stage().queue_capacity}
+	if rules.movement_enabled(): frame.movement = rules.movement
+	frame = frame.duplicate(true)
+	if shop.fulfillment.flow_version==1:
+		frame.flow = {"version":1,"delivery_batch":shop.fulfillment.delivery_batch,"bundles":{}}
+		for key in rules.serve.jobs:
+			var job: Dictionary = rules.serve.jobs[key]
+			if job.kind!="bundle": continue
+			frame.flow.bundles[key] = {"order":job.order,"goods":job.goods.duplicate(true),"capacity":job.capacity,"held":rules.worker_by_id(int(key)).carry_count}
+	if shop.dispatch.action_version==1:
+		frame.actions = {}
+		for worker: Dictionary in frame.workers:
+			if not worker.has("action"): continue
+			var action: Dictionary = worker.action
+			var step: Dictionary = action.steps[action.index]
+			frame.actions[str(worker.id)] = {"status":action.status,"reason":action.reason,"kind":step.kind,"target":step.target,
+				"index":action.index,"count":action.steps.size(),"remaining":worker.action_left}
+	if rules.movement_enabled():
+		for worker: Dictionary in frame.workers:
+			worker.speed = rules.walk_speed(worker)/shop.layout.motion_units
+			worker.walking = worker.walking and not worker.path.is_empty()
+	return frame
 
 
-func roster_snapshot() -> Array:
+func roster_snapshot(frame: Dictionary = {}) -> Array:
+	if _runtime!=null:
+		var active := {}
+		if frame.is_empty(): frame = render_snapshot()
+		for worker in frame.workers: active[worker.id] = worker
+		var roster: Array = rules.roster.duplicate(true)
+		for index in roster.size():
+			if active.has(roster[index].id): roster[index] = active[roster[index].id]
+		return roster
 	return rules.roster.duplicate(true)
+
+func production_snapshot(dish_id: String) -> Dictionary:
+	if shop.fulfillment.flow_version!=1: return {}
+	return Production.compile(shop,dish_id)
 
 
 func deployed_snapshot() -> Array:
+	if _runtime!=null: return render_snapshot().workers
 	return rules.workers.duplicate(true)
 
 
 func worker_snapshot(id: int) -> Dictionary:
+	if _runtime!=null:
+		for worker in roster_snapshot():
+			if worker.id==id: return worker
+		return {}
 	return rules.worker_by_id(id).duplicate(true)
 
 
 func customer_snapshot(id: int) -> Dictionary:
+	if _runtime!=null:
+		return render_snapshot().movement.customers.get("guest:"+str(id),{}).duplicate(true)
 	return rules.customer(id).duplicate(true)
 
 
@@ -71,7 +139,8 @@ func progress_snapshot() -> Dictionary:
 	return {"levels": rules.levels.duplicate(true), "tune": rules.tune.duplicate(true)}
 
 
-func activity_snapshot() -> Dictionary:
+func activity_snapshot(frame: Dictionary = {}) -> Dictionary:
+	if _runtime!=null: return SceneFrame.activity(_runtime, frame)
 	var idle := 0
 	for worker in rules.workers:
 		if rules.worker_idle(worker): idle += 1
@@ -93,6 +162,11 @@ func guide_snapshot() -> Dictionary:
 
 
 func _guide_angry_cause() -> String:
+	if _runtime!=null:
+		if rules.angry_count()==0: return ""
+		var group := rules.buy_group()
+		if group!=null and rules.seat_cost()>=0 and rules.seats_used()>=rules.seat_count(): return "seats"
+		return "staff" if rules.workers.size()<rules.staff_slots() else "machine"
 	if shop.fulfillment.handoff == "single":
 		var group := rules.buy_group()
 		if group != null and group.purpose == "wait" and rules.seat_cost() >= 0 and int(rules.seats.get(group.id, 0)) < rules.seat_cap(group): return "seats"
@@ -107,6 +181,20 @@ func _guide_angry_cause() -> String:
 
 
 func _guide_slow_machine() -> String:
+	if _runtime!=null:
+		var oldest := {}
+		for guest in _runtime.service.orders.active_snapshot().guests:
+			if guest.state not in ["queue","waiting"] or guest.request.is_empty(): continue
+			if oldest.is_empty() or guest.wait>oldest.wait: oldest = guest
+		if not oldest.is_empty():
+			var recipe: Dictionary = _runtime._definition.recipes[oldest.request[0].recipe]
+			for unit in _runtime._units:
+				if unit.recipe!=oldest.request[0].recipe: continue
+				for node in recipe.nodes.values():
+					if node.capability=="process" and node.id not in unit.done: return node.machine
+			for node in recipe.nodes.values():
+				if node.capability=="process": return node.machine
+		return rules.counter_id
 	if shop.fulfillment.handoff == "single":
 		var dish := ""
 		for id in rules.queue:
@@ -150,6 +238,12 @@ func art_visible(rule: String) -> bool:
 	if rule.begins_with("wait_seats:"): return rules.wait_seats() >= int(rule.get_slice(":", 1))
 	if rule.begins_with("dine_seats:"): return rules.seat_total() >= int(rule.get_slice(":", 1))
 	return rules.station_unlocked(rule)
+
+
+func seat_count(group_id: String) -> int:
+	for group in shop.seat_groups:
+		if group.id==group_id: return mini(int(rules.seats.get(group_id,0)),rules.seat_cap(group))
+	return 0
 
 
 func post_point(id: String) -> Vector2:
@@ -562,7 +656,7 @@ func seats() -> Dictionary:
 	var dine := g.purpose == "dine"
 	var total: int = int(rules.seats.get(g.id, 0))
 	var full := g.start + (ShopRules._sum(g.steps) if not g.steps.is_empty() else g.step * g.costs.size())
-	var used := rules.seats_used()
+	var used := SceneFrame.seats_used(_runtime,g) if _runtime!=null else rules.seats_used()
 	var next := rules._seat_step(g) if rules.seat_cost() >= 0 else 0
 	var status := rules.command_status("buy_seat", {})
 	return {"total": total, "max": full, "cap": rules.seat_cap(g), "used": used, "step": next, "purpose": g.purpose,
@@ -573,6 +667,11 @@ func seats() -> Dictionary:
 func flyer() -> Dictionary:
 	var single := shop.fulfillment.handoff == "single"
 	var wait := maxf(0.0, rules.flyer_ready_at - rules.clock) if single else rules.flyer_wait
+	var pending := rules.flyer_left if single else rules.flyer_pending
+	var wave := rules.flyer_wave
+	if _runtime!=null and _runtime.service.flyers!=null:
+		var state: Dictionary = _runtime.service.flyers.snapshot()
+		wait = state.cooldown; pending = state.pending; wave = state.wave_left
 	var cost := rules.upgrade_cost("flyer")
 	var next_customers := rules.flyer_customers()
 	var next_cooldown := rules.flyer_cooldown()
@@ -582,7 +681,7 @@ func flyer() -> Dictionary:
 	var status := rules.command_status("send_flyers")
 	var upgrade_status := rules.command_status("upgrade", {"key": "flyer"})
 	return {"level": rules.level("flyer"), "customers": rules.flyer_customers(), "cooldown": rules.flyer_cooldown(),
-		"seconds": shop.flyer.wave_seconds, "wait": wait, "wave": rules.flyer_wave, "pending": rules.flyer_left if single else rules.flyer_pending,
+		"seconds": shop.flyer.wave_seconds, "wait": wait, "wave": wave, "pending": pending,
 		"status": status, "error": command_message(status), "queue_full": rules.queue_size() >= rules.queue_capacity(),
 		"upgradable": shop.flyer.track != null and not shop.flyer.track.levels.is_empty(), "gap": shop.flyer.gap,
 		"upgrade_cost": cost, "upgrade_status": upgrade_status, "upgrade_error": command_message(upgrade_status), "next_customers": next_customers, "next_cooldown": next_cooldown}
@@ -606,6 +705,12 @@ func can_buy(id: String) -> bool:
 
 ## 机器此刻在干什么：{working, progress, need（待取 n / 待操作）, input, processing, output}
 func machine_status(id: String) -> Dictionary:
+	if _runtime!=null:
+		var current: Dictionary = _runtime.runner.machines.status(id)
+		if current.is_empty(): return {}
+		if not current.need.is_empty(): current.need = text("need_operate",{},"待操作")
+		elif not current.working and current.output>0: current.need = "待取 %d"%current.output
+		return current
 	var s: Dictionary = rules.stations.get(id, {})
 	if s.is_empty(): return {}
 	var total := func(d: Dictionary) -> int:
@@ -676,6 +781,9 @@ func slots() -> Dictionary:
 
 ## 员工头顶的字：texts["task_<动作>@<机器>"] → texts["task_<动作>"] → 原样（单人模式的规则层直接给中文）
 func task_text(worker: Dictionary) -> String:
+	if worker.get("presentation_version")==1:
+		var action := String(worker.get("display_task","idle"))
+		return text("task_"+action,{}, {"operate":"加工","transfer":"搬运","bundle":"搬运","interact":"接单","idle":"空闲"}.get(action,action))
 	var label: String = worker.get("task_label", "")
 	if label.is_empty(): label = "idle"
 	var job: Dictionary = worker.get("job", {})
@@ -698,31 +806,22 @@ func worker_card(worker: Dictionary) -> Dictionary:
 
 ## 员工手上这步活的进度（0–1）；没在干活、或者活在机器上（机器自己有进度条）返回 -1
 func work_progress(worker: Dictionary) -> float:
+	if worker.get("presentation_version")==1: return float(worker.display_progress)
 	if worker.get("phase", "") != "work": return -1.0
 	var duration: float = float(worker.get("duration", 0.0))
 	if duration <= 0.0 or not worker.get("job", {}).is_empty(): return -1.0
 	return clampf(1.0 - float(worker.get("timer", 0.0)) / duration, 0.0, 1.0)
 
 
-## 物品怎么画：{art: art/reference 里的图名, tint, texture}
-## texture：写了 art 用 art/reference/<art>.png，没写 art 但有图标就用图标，都没有才用默认杯子
+const ItemArt := preload("res://game/rules/shop_item_art.gd")
+
+## Explicit scene artwork and UI icons share the same shop item data.
 func item_art(id: String) -> Dictionary:
-	var dish := shop.dish(id)
-	var key: String = dish.item if dish != null and not dish.item.is_empty() else id
-	for item in shop.items:
-		if item.id == key or item.id == id:
-			if item.art.is_empty() and item.icon != null:
-				return {"art": "", "tint": item.tint, "texture": item.icon}
-			var art: String = item.art if not item.art.is_empty() else DEFAULT_ITEM_ART
-			return {"art": art, "tint": item.tint, "texture": _art_texture(art)}
-	return {"art": DEFAULT_ITEM_ART, "tint": Color.WHITE, "texture": _art_texture(DEFAULT_ITEM_ART)}
+	return ItemArt.appearance(shop, id)
 
 
-const DEFAULT_ITEM_ART := "pearl_tea"
-
-
-func _art_texture(art: String) -> Texture2D:
-	return load("res://art/reference/" + art + ".png")
+func item_icon(id: String) -> Texture2D:
+	return ItemArt.icon(shop, id)
 
 
 ## 在这台机器前干活朝哪个方向（8 方向；-1 = 不转）
@@ -733,6 +832,7 @@ func icon_of(id: String) -> String:
 	for s in shop.stations:
 		var m := s.material(id)
 		if m != null and not m.icon.is_empty(): return m.icon
+	if ItemArt.find_item(shop, id) != null: return item_icon(id).resource_path
 	return id
 
 
@@ -743,6 +843,7 @@ func work_direction(station_id: String) -> int:
 
 ## 正从展示柜接现成饮品的员工：返回那台机器（动画按“干活”放）
 func pouring_station(worker: Dictionary) -> String:
+	if worker.get("presentation_version")==1: return String(worker.get("work_station","")) if worker.get("phase")=="pickup" else ""
 	if worker.get("phase", "") != "pickup": return ""
 	var job: Dictionary = worker.get("job", {})
 	for d in shop.dishes:

@@ -1,4 +1,5 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## 通用规则层整店回归（规格 §7）：把旧模拟基准里机器人的那串操作按原时刻在 ShopRules 上重放，
 ## 和 tests/baselines/ 里各店的基准（BASELINES）对比 5 / 10 / 20 / 30 分钟营业额、销量、完店时刻，偏差都要在 ±5% 内。
 ##   godot --headless --path . -s tests/baselines/replay_rules.gd [-- --verbose]
@@ -6,9 +7,9 @@ extends SceneTree
 
 ## 基准里记的时刻（分钟）
 const CHECKPOINTS := [5, 10, 20, 30, 45]
-const SHOPS := {"tea": "res://content/shops/tea/shop.tres", "pancake": "res://content/shops/pancake/shop.tres"}
-## 奶茶当前五种员工由由 record_tea_staff.gd 录制；旧六种员工基准保留为历史资料。
-const BASELINES := {"tea": "tea_active_staff.json", "pancake": "pancake_rules.json"}
+const SHOPS := {"tea": "res://tests/fixtures/legacy_shops/tea.tres", "pancake": "res://tests/fixtures/legacy_shops/pancake.tres"}
+## 各店的基准文件：奶茶店仍对 main 73b0ae3 旧模拟录下的；煎饼摊改过数值，用 record_rules.gd 在通用规则上重录
+const BASELINES := {"tea": "tea_73b0ae3.json", "pancake": "pancake_rules.json"}
 const TOLERANCE := 0.05
 
 
@@ -34,7 +35,7 @@ static func baseline(id: String) -> Dictionary:
 
 
 static func replay(shop: SpecShop, base: Dictionary) -> Dictionary:
-	var rules := ShopRules.new(shop)
+	var rules := LegacyRules.new(shop)
 	var ledger = Ledger.new()
 	var minutes: float = base.minutes
 	var actions: Array = base.actions
@@ -83,7 +84,7 @@ static func run_command(rules: ShopRules, command: String) -> String:
 		"unlock": return rules.unlock(parts[1])
 		"box": return rules.unlock_box(parts[1])
 		"hire": return rules.hire()
-		"deploy": return rules.deploy_worker(int(parts[1]))
+		"deploy": return rules.deploy_worker(int(parts[1]),parts[2] if parts.size()>2 else "")
 		"upgrade": return rules.upgrade(parts[1])
 		"material": return rules.upgrade(parts[1] + "/" + parts[2])
 		"staff": return rules.upgrade("staff/" + parts[1])
