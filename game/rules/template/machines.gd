@@ -12,6 +12,17 @@ var _inventory: RefCounted
 var _slot_targets: Dictionary = {}
 var _state: Dictionary = {"version":1, "next_run":1, "definitions":{}, "runs":[]}
 
+var _runs_by_id: Dictionary = {}
+var _active_runs: Dictionary = {}
+
+func append_run(run: Dictionary) -> void:
+	_state.runs.append(run)
+	_remember_run(run)
+
+func _remember_run(run: Dictionary) -> void:
+	_runs_by_id[run.id] = run
+	if run.phase not in TERMINAL: _active_runs[run.id] = run
+
 func _init(inventory: RefCounted) -> void:
 	_inventory = inventory
 
@@ -53,13 +64,13 @@ func start(machine: String, consumes: Dictionary, produces: Dictionary, seconds:
 	var profile: Dictionary = definition.profile
 	if seconds == 0.0 and not profile.stir_points.is_empty(): return {"error":"zero-duration process cannot require stirring", "id":-1}
 	var occupied := 0
-	for run in _state.runs:
+	for run in _active_runs.values():
 		if run.machine == machine and run.phase not in TERMINAL: occupied += 1
 	if occupied >= int(_slot_targets.get(machine,profile.slots)): return {"error":"machine occupied", "id":-1}
 	var slot := -1
 	if definition.has("slot_ceiling"):
 		var used := {}
-		for other in _state.runs:
+		for other in _active_runs.values():
 			if other.machine == machine and other.phase not in TERMINAL: used[other.slot] = true
 		for candidate in int(_slot_targets.get(machine,profile.slots)):
 			if not used.has(candidate): slot = candidate; break
@@ -75,12 +86,12 @@ func start(machine: String, consumes: Dictionary, produces: Dictionary, seconds:
 	run.remaining = seconds
 	run.phase = "await_load" if float(profile.load_seconds) > 0.0 else ("await_operate" if profile.manual else "processing")
 	if definition.has("slot_ceiling"): run.slot = slot
-	_state.runs.append(run)
+	append_run(run)
 	return {"error":"", "id":run.id}
 
 func occupied_slots(machine: String) -> int:
 	var count := 0
-	for run in _state.runs:
+	for run in _active_runs.values():
 		if run.machine == machine and run.phase not in TERMINAL: count += 1
 	return count
 
@@ -101,7 +112,7 @@ func engage(id: int, worker: int, work_rate: float = 1.0, stage_seconds: float =
 	if not is_finite(stage_seconds) or (stage_seconds < 0.0 and stage_seconds != -1.0): return "invalid machine stage duration"
 	if run.phase in MANUAL: return "" if run.operator == worker else "machine stage already assigned"
 	if not String(run.phase).begins_with("await_"): return "machine needs no employee"
-	for other in _state.runs:
+	for other in _active_runs.values():
 		if other.operator == worker: return "employee already operating"
 	var phase: String = String(run.phase).trim_prefix("await_")
 	var profile: Dictionary = _state.definitions[run.machine].profile
@@ -116,7 +127,7 @@ func engage(id: int, worker: int, work_rate: float = 1.0, stage_seconds: float =
 func advance(dt: float, paused := false) -> String:
 	if not is_finite(dt) or dt < 0.0: return "invalid machine time"
 	if paused or dt == 0.0: return ""
-	for run in _state.runs:
+	for run in _active_runs.values():
 		if run.phase in TERMINAL or String(run.phase).begins_with("await_"): continue
 		var profile: Dictionary = _state.definitions[run.machine].profile
 		if run.phase in MANUAL:
@@ -160,6 +171,7 @@ func cancel(id: int) -> String:
 	var error: String = _inventory.cancel(run.claim)
 	if not error.is_empty(): return error
 	run.phase = "cancelled"
+	_active_runs.erase(id)
 	run.operator = -1
 	_sync_slot_limits()
 	return ""
@@ -214,7 +226,7 @@ func status(machine: String) -> Dictionary:
 	var output: int = _inventory.quantity(definition.output)
 	var result := {"working":false, "progress":0.0, "input":_inventory.quantity(definition.input),
 		"processing":0, "output":output, "phase":"ready" if output > 0 else "idle", "operator":-1, "need":""}
-	for run in _state.runs:
+	for run in _active_runs.values():
 		if run.machine != machine or run.phase in TERMINAL: continue
 		result.processing += Inventory._total(_inventory.claim(run.claim).produces)
 		if result.phase not in ["idle", "ready"]: continue
@@ -234,7 +246,7 @@ func active_snapshot() -> Dictionary:
 	var result := _state.duplicate()
 	result.definitions = _state.definitions.duplicate(true)
 	result.runs = []
-	for run in _state.runs:
+	for run in _active_runs.values():
 		if run.phase not in TERMINAL: result.runs.append(run.duplicate(true))
 	return result
 
@@ -244,6 +256,9 @@ func restore(data: Dictionary) -> String:
 	var errors: Array = candidate.audit()
 	if not errors.is_empty(): return String(errors[0])
 	_state = candidate._state
+	_runs_by_id.clear()
+	_active_runs.clear()
+	for run in _state.runs: _remember_run(run)
 	_sync_slot_limits()
 	return ""
 
@@ -312,9 +327,7 @@ func audit() -> Array:
 	return _inventory.audit()
 
 func _find(id: int) -> Dictionary:
-	for run in _state.runs:
-		if run.id == id: return run
-	return {}
+	return _runs_by_id.get(id, {})
 
 func _processed(run: Dictionary, profile: Dictionary) -> String:
 	run.remaining = 0.0
@@ -327,6 +340,7 @@ func _complete(run: Dictionary) -> String:
 	var error: String = _inventory.complete_operation(run.claim)
 	if not error.is_empty(): return error
 	run.phase = "completed"
+	_active_runs.erase(run.id)
 	run.remaining = 0.0
 	run.operator = -1
 	return ""

@@ -154,8 +154,7 @@ func _claimable(worker: Dictionary, candidate: Dictionary) -> bool:
 	if candidate.kind=="interact": return true
 	# Probe the same transactions offside; candidate queries must never reserve
 	# real stock or treat an impossible whole move as available native work.
-	var stock := Inventory.new()
-	stock._state = runner.inventory.snapshot()
+	var stock: RefCounted = runner.inventory.copy_for_probe()
 	if candidate.kind=="transfer":
 		return String(stock.reserve_transfer(worker.id,candidate.from,candidate.to,candidate.item,candidate.count,runner.owner.carry(worker),candidate.get("owner",-2),candidate.get("unit",-2)).error).is_empty()
 	var entries: Array = candidate.entries.duplicate(true)

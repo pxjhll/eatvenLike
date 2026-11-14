@@ -11,6 +11,25 @@ var trace: RefCounted
 var _state: Dictionary = {"version":1, "next_lot":1, "next_claim":1, "next_bundle":1,
 	"places":{}, "lots":[], "claims":[], "bundles":[], "created":{}, "consumed":{}}
 
+var _claims_by_id: Dictionary = {}
+var _active_claims: Dictionary = {}
+var _bundles_by_id: Dictionary = {}
+
+func _index_claim(task: Dictionary) -> void:
+	_claims_by_id[task.id] = task
+	if task.state in ACTIVE: _active_claims[task.id] = task
+
+func append_bundle(group: Dictionary) -> void:
+	_state.bundles.append(group)
+	_bundles_by_id[group.id] = group
+
+func _index_transactions() -> void:
+	_claims_by_id.clear()
+	_active_claims.clear()
+	_bundles_by_id.clear()
+	for task in _state.claims: _index_claim(task)
+	for group in _state.bundles: _bundles_by_id[group.id] = group
+
 func configure(place: String, capacity: int = -1, infinite_items: Array = []) -> String:
 	if place.is_empty() or capacity < -1: return "invalid container"
 	if is_hand_place(place) and (not _actor_valid(_hand_actor(place)) or _hand_place(_hand_actor(place)) != place or capacity != -1 or not infinite_items.is_empty()): return "invalid managed hand container"
@@ -55,8 +74,8 @@ func _sync_capacity_limits() -> void:
 
 func incoming(place: String, item: String, owner: int = ANY_OWNER) -> int:
 	var count := 0
-	for task in _state.claims:
-		if task.kind != "transfer" or task.state not in ACTIVE or task.to != place or task.item != item: continue
+	for task in _active_claims.values():
+		if task.kind != "transfer" or task.to != place or task.item != item: continue
 		var assigned: int = task.allocate_owner if task.allocate_owner != ANY_OWNER else task.owner
 		if owner == ANY_OWNER or assigned == owner or (assigned == ANY_OWNER and task.minted and owner == SHARED):
 			count += int(task.count)
@@ -89,7 +108,7 @@ func reserve_bundle(actor: String, entries: Array, capacity: int) -> Dictionary:
 	return Bundles.reserve(self, actor, entries, capacity)
 
 func bundle(id: int) -> Dictionary:
-	return _find(_state.bundles, id).duplicate(true)
+	return _bundles_by_id.get(id, {}).duplicate(true)
 
 func pickup_bundle_part(id: int, child: int) -> String:
 	return Bundles.apply(self, id, "pickup_part", child)
@@ -109,8 +128,8 @@ func _reserve_actor_transfer(actor: String, source: String, destination: String,
 	if not _state.places.has(source) or not _state.places.has(destination) or source == destination: return _failure("invalid transfer containers")
 	if is_hand_place(source) or is_hand_place(destination): return _failure("hand containers are managed by pickup and drop")
 	if item in _state.places[destination].infinite: return _failure("integrated supply cannot receive finite stock")
-	for active in _state.claims:
-		if active.actor == actor and active.state in ACTIVE and (group < 1 or active.group != group): return _failure("carrier already assigned")
+	for active in _active_claims.values():
+		if active.actor == actor and (group < 1 or active.group != group): return _failure("carrier already assigned")
 	var minted: bool = item in _state.places[source].infinite
 	var amount := mini(requested, mini(capacity, _free(destination)))
 	if not minted: amount = mini(amount, quantity(source, item, owner, true))
@@ -133,7 +152,7 @@ func pickup(id: int) -> String:
 	return _pickup(id, false)
 
 func _pickup(id: int, grouped: bool) -> String:
-	var task := _find(_state.claims, id)
+	var task: Dictionary = _claims_by_id.get(id, {})
 	if task.is_empty() or task.kind != "transfer": return "unknown transfer"
 	if task.group > 0 and not grouped: return "bundle child requires bundle lifecycle"
 	if task.state in ["held", "dropped"]: return ""
@@ -163,13 +182,14 @@ func drop(id: int) -> String:
 	return _drop(id, false)
 
 func _drop(id: int, grouped: bool) -> String:
-	var task := _find(_state.claims, id)
+	var task: Dictionary = _claims_by_id.get(id, {})
 	if task.is_empty() or task.kind != "transfer": return "unknown transfer"
 	if task.group > 0 and not grouped: return "bundle child requires bundle lifecycle"
 	if task.state == "dropped": return ""
 	if task.state != "held" or not _held_valid(task): return "carried stock unavailable"
 	for held in task.held: _find(_state.lots, held.lot).place = task.to
 	task.state = "dropped"
+	_active_claims.erase(id)
 	_sync_capacity_limits()
 	_record("drop",task.id)
 	return ""
@@ -197,7 +217,7 @@ func reserve_operation(worker: int, place: String, consumes: Dictionary, produce
 	return _store(task)
 
 func complete_operation(id: int) -> String:
-	var task := _find(_state.claims, id)
+	var task: Dictionary = _claims_by_id.get(id, {})
 	if task.is_empty() or task.kind != "operation": return "unknown operation"
 	if task.state == "completed": return ""
 	if task.state != "reserved": return "operation not reserved"
@@ -218,6 +238,7 @@ func complete_operation(id: int) -> String:
 		_insert(task.to, item, task.produces[item], task.owner)
 		_add(_state.created, item, task.produces[item])
 	task.state = "completed"
+	_active_claims.erase(id)
 	_sync_capacity_limits()
 	_record("complete_operation",task.id)
 	return ""
@@ -226,7 +247,7 @@ func cancel(id: int) -> String:
 	return _cancel(id, false)
 
 func _cancel(id: int, grouped: bool) -> String:
-	var task := _find(_state.claims, id)
+	var task: Dictionary = _claims_by_id.get(id, {})
 	if task.is_empty(): return "unknown claim"
 	if task.group > 0 and not grouped: return "bundle child requires bundle lifecycle"
 	if task.state == "cancelled": return ""
@@ -242,12 +263,13 @@ func _cancel(id: int, grouped: bool) -> String:
 				lot.place = task.from
 				lot.owner = held.owner
 	task.state = "cancelled"
+	_active_claims.erase(id)
 	_sync_capacity_limits()
 	_record("cancel",task.id)
 	return ""
 
 func claim(id: int) -> Dictionary:
-	return _find(_state.claims, id).duplicate(true)
+	return _claims_by_id.get(id, {}).duplicate(true)
 
 func snapshot() -> Dictionary:
 	return _state.duplicate(true)
@@ -261,13 +283,14 @@ func active_snapshot() -> Dictionary:
 	result.consumed = _state.consumed.duplicate()
 	result.claims = []
 	var groups := {}
-	for claim in _state.claims:
-		if claim.state not in ACTIVE: continue
+	for claim in _active_claims.values():
 		result.claims.append(claim.duplicate(true))
 		groups[claim.group] = true
 	result.bundles = []
-	for group in _state.bundles:
-		if groups.has(group.id): result.bundles.append(group.duplicate(true))
+	var ids := groups.keys()
+	ids.sort()
+	for id in ids:
+		if _bundles_by_id.has(id): result.bundles.append(_bundles_by_id[id].duplicate(true))
 	return result
 
 func restore(data: Dictionary) -> String:
@@ -276,6 +299,7 @@ func restore(data: Dictionary) -> String:
 	var errors: Array = candidate.audit()
 	if not errors.is_empty(): return String(errors[0])
 	_state = candidate._state
+	_index_transactions()
 	_sync_capacity_limits()
 	return ""
 
@@ -284,10 +308,22 @@ func restore(data: Dictionary) -> String:
 func copy_for_reservation() -> RefCounted:
 	var candidate: RefCounted = get_script().new()
 	candidate._state = snapshot()
+	candidate._index_transactions()
+	return candidate
+
+## Dispatch probes need live stock and reservations only. This copy is never
+## committed, so completed claims cannot influence the cost of a probe.
+func copy_for_probe() -> RefCounted:
+	var candidate: RefCounted = get_script().new()
+	candidate._state = active_snapshot()
+	candidate._index_transactions()
 	return candidate
 
 func commit_reservation(candidate: RefCounted) -> void:
 	_state = candidate._state
+	_claims_by_id = candidate._claims_by_id
+	_active_claims = candidate._active_claims
+	_bundles_by_id = candidate._bundles_by_id
 	candidate._state = {}
 	_sync_capacity_limits()
 
@@ -391,6 +427,7 @@ func _store(task: Dictionary) -> Dictionary:
 	task.id = _state.next_claim
 	_state.next_claim += 1
 	_state.claims.append(task)
+	_index_claim(task)
 	_record("reserve_transfer" if task.kind=="transfer" else "reserve_operation",task.id)
 	return {"error":"", "id":task.id, "count":task.count}
 
@@ -419,8 +456,7 @@ func _parts(place: String, needs: Dictionary, owner: int) -> Array:
 
 func _reserved_lot(id: int) -> int:
 	var reserved := 0
-	for task in _state.claims:
-		if task.state not in ACTIVE: continue
+	for task in _active_claims.values():
 		var parts: Array = task.parts if task.state == "reserved" else task.held
 		for part in parts:
 			if part.lot == id: reserved += int(part.count)
@@ -433,8 +469,7 @@ func _free(place: String) -> int:
 
 func occupied_capacity(place: String) -> int:
 	var used := quantity(place)
-	for task in _state.claims:
-		if task.state not in ACTIVE: continue
+	for task in _active_claims.values():
 		if task.to == place: used += int(task.space)
 		if task.state == "held" and task.from == place and not task.minted: used += int(task.count)
 	return used
@@ -443,8 +478,8 @@ func _busy(worker: int) -> bool:
 	return _busy_actor("staff:" + str(worker))
 
 func _busy_actor(actor: String) -> bool:
-	for task in _state.claims:
-		if task.actor == actor and task.state in ACTIVE: return true
+	for task in _active_claims.values():
+		if task.actor == actor: return true
 	return false
 
 func _finite_inputs(place: String, consumes: Dictionary) -> Dictionary:

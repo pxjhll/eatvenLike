@@ -13,19 +13,17 @@ static func reserve(stock: RefCounted, actor: String, entries: Array, capacity: 
 		if not stock._shape(row, {"from":"", "to":"", "item":"", "count":0, "owner":0, "allocate_owner":0}) or row.count < 1: return stock._failure("invalid bundle entry")
 		total += int(row.count)
 		if total > capacity: return stock._failure("bundle exceeds carrier capacity")
-	var candidate: RefCounted = stock.get_script().new()
-	candidate._state = stock.snapshot()
+	var candidate: RefCounted = stock.copy_for_reservation()
 	var group := {"id":int(candidate._state.next_bundle), "actor":actor, "capacity":capacity, "claims":[]}
 	candidate._state.next_bundle += 1
-	candidate._state.bundles.append(group)
+	candidate.append_bundle(group)
 	for entry in entries:
 		var result: Dictionary = candidate._reserve_actor_transfer(actor, entry.from, entry.to, entry.item,
 			entry.count, capacity, entry.get("owner", stock.ANY_OWNER), entry.get("allocate_owner", stock.ANY_OWNER), group.id)
 		if not String(result.error).is_empty(): return result
 		if result.count != entry.count: return stock._failure("bundle stock or capacity unavailable")
 		group.claims.append(int(result.id))
-	stock._state = candidate._state
-	stock._sync_capacity_limits()
+	stock.commit_reservation(candidate)
 	for claim in group.claims: stock._record("reserve_transfer",claim)
 	return {"error":"", "id":group.id, "count":total}
 
@@ -33,8 +31,7 @@ static func apply(stock: RefCounted, id: int, operation: String, child: int = -1
 	var group: Dictionary = stock.bundle(id)
 	if group.is_empty(): return "unknown bundle"
 	if operation == "pickup_part" and child not in group.claims: return "transfer is outside bundle"
-	var candidate: RefCounted = stock.get_script().new()
-	candidate._state = stock.snapshot()
+	var candidate: RefCounted = stock.copy_for_reservation()
 	var claims: Array = [child] if operation == "pickup_part" else group.claims
 	var previous := {}
 	for claim in claims: previous[claim] = stock.claim(claim).state
@@ -45,8 +42,7 @@ static func apply(stock: RefCounted, id: int, operation: String, child: int = -1
 			"drop": error = candidate._drop(claim, true)
 			"cancel": error = candidate._cancel(claim, true)
 		if not error.is_empty(): return error
-	stock._state = candidate._state
-	stock._sync_capacity_limits()
+	stock.commit_reservation(candidate)
 	for claim in claims:
 		if stock.claim(claim).state!=previous[claim]: stock._record("pickup" if operation=="pickup_part" else operation,claim)
 	return ""

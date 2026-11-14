@@ -9,6 +9,24 @@ var last_error := ""
 var _policy: Dictionary
 var _state: Dictionary = {"version":1, "policy":"", "next_guest":1, "next_order":1, "next_line":1, "lost":0, "guests":[], "orders":[]}
 
+var _guests_by_id: Dictionary = {}
+var _orders_by_id: Dictionary = {}
+var _present_guests: Dictionary = {}
+var _order_positions: Dictionary = {}
+
+func _remember_guest(guest: Dictionary) -> void:
+	_guests_by_id[guest.id] = guest
+	if guest.state != "gone": _present_guests[guest.id] = guest
+
+func append_guest(guest: Dictionary) -> void:
+	_state.guests.append(guest)
+	_remember_guest(guest)
+
+func append_order(order: Dictionary) -> void:
+	_order_positions[order.id] = _state.orders.size()
+	_state.orders.append(order)
+	_orders_by_id[order.id] = order
+
 func _init(options: Dictionary = {}) -> void:
 	_policy = POLICY.duplicate()
 	for key in options:
@@ -33,7 +51,7 @@ func arrive(request: Array, capacity: int) -> Dictionary:
 	guest.id = _state.next_guest
 	_state.next_guest += 1
 	guest.request = request.duplicate(true)
-	_state.guests.append(guest)
+	append_guest(guest)
 	return {"error":"", "id":guest.id}
 
 func reject_arrival() -> Dictionary:
@@ -42,19 +60,19 @@ func reject_arrival() -> Dictionary:
 
 func queue() -> Array:
 	var out: Array = []
-	for guest in _state.guests:
+	for guest in _present_guests.values():
 		if guest.queued: out.append(guest.id)
 	return out
 
 func claim_admission(guest_id: int, worker: int) -> String:
-	var guest := _find(_state.guests, guest_id)
+	var guest: Dictionary = _guests_by_id.get(guest_id, {})
 	if guest.is_empty() or guest.state != "queue" or worker < 1: return "customer unavailable"
 	if guest.claimed not in [-1, worker]: return "customer already claimed"
 	guest.claimed = worker
 	return ""
 
 func cancel_admission(guest_id: int, worker: int) -> String:
-	var guest := _find(_state.guests, guest_id)
+	var guest: Dictionary = _guests_by_id.get(guest_id, {})
 	if guest.is_empty(): return "unknown customer"
 	if guest.claimed == -1: return ""
 	if guest.claimed != worker or guest.order >= 0: return "admission claim differs"
@@ -62,7 +80,7 @@ func cancel_admission(guest_id: int, worker: int) -> String:
 	return ""
 
 func admit(guest_id: int, quotes: Dictionary, worker: int = -1) -> Dictionary:
-	var guest := _find(_state.guests, guest_id)
+	var guest: Dictionary = _guests_by_id.get(guest_id, {})
 	if guest.is_empty(): return {"error":"unknown customer", "id":-1}
 	if guest.order >= 0: return {"error":"", "id":guest.order}
 	if guest.request.is_empty(): return {"error":"admission requires a selected request","id":-1}
@@ -88,7 +106,7 @@ func admit(guest_id: int, quotes: Dictionary, worker: int = -1) -> Dictionary:
 		if row.has("options"): line.options = row.options.duplicate()
 		line.price = float(quotes.get(index,quotes.get(row.dish)))
 		order.lines.append(line)
-	_state.orders.append(order)
+	append_order(order)
 	guest.order = order.id
 	guest.state = "waiting"
 	guest.claimed = -1
@@ -96,7 +114,7 @@ func admit(guest_id: int, quotes: Dictionary, worker: int = -1) -> Dictionary:
 	return {"error":"", "id":order.id}
 
 func admit_selected(guest_id: int, request: Array, quotes: Dictionary, worker: int = -1) -> Dictionary:
-	var guest := _find(_state.guests,guest_id)
+	var guest: Dictionary = _guests_by_id.get(guest_id, {})
 	if _policy.get("request_at")!="admission" or guest.is_empty() or guest.order!=-1 or guest.state!="queue" or not guest.request.is_empty() or not _request_valid(request): return {"error":"customer cannot commit selected admission","id":-1}
 	guest.request = request.duplicate(true)
 	var result := admit(guest_id,quotes,worker)
@@ -117,7 +135,7 @@ func bind_unit(order_id: int, line_id: int, unit: int, quantity: int = 1) -> Str
 	return ""
 
 func record_delivery(order_id: int, line_id: int, proof: int, inventory: RefCounted, economy: RefCounted) -> String:
-	var order := _find(_state.orders, order_id)
+	var order: Dictionary = _orders_by_id.get(order_id, {})
 	var line := _order_line(order_id, line_id)
 	if order.is_empty() or line.is_empty(): return "unknown order line"
 	if proof in line.claims: return ""
@@ -138,13 +156,13 @@ func record_delivery(order_id: int, line_id: int, proof: int, inventory: RefCoun
 		if row.delivered != row.qty: complete = false; break
 	if complete:
 		order.state = "delivered"
-		var guest := _find(_state.guests, order.guest)
+		var guest: Dictionary = _guests_by_id.get(order.guest, {})
 		guest.state = "served"
 		guest.queued = false
 	return ""
 
 func settle(order_id: int, economy: RefCounted) -> Dictionary:
-	var order := _find(_state.orders, order_id)
+	var order: Dictionary = _orders_by_id.get(order_id, {})
 	if order.is_empty(): return {"error":"unknown order", "income":0}
 	if order.paid: return {"error":"", "income":order.income, "duplicate":true}
 	if _policy.pay_at == "on_deliver" and order.state != "delivered": return {"error":"order not delivered", "income":0}
@@ -157,7 +175,7 @@ func settle(order_id: int, economy: RefCounted) -> Dictionary:
 func advance(dt: float, paused := false) -> String:
 	if not is_finite(dt) or dt < 0.0: return "invalid customer time"
 	if paused or dt == 0.0: return ""
-	for guest in _state.guests:
+	for guest in _present_guests.values():
 		if guest.state not in ["queue","waiting"]: continue
 		guest.wait += dt
 		if guest.state == "queue" and float(_policy.patience) > 0.0 and guest.wait >= float(_policy.patience) and guest.claimed == -1:
@@ -167,15 +185,15 @@ func advance(dt: float, paused := false) -> String:
 	return ""
 
 func assign_seat(id: int, seat: String) -> String:
-	var row := _find(_state.guests, id)
+	var row: Dictionary = _guests_by_id.get(id, {})
 	if row.is_empty() or row.state != "waiting" or not row.seat.is_empty() or seat.is_empty(): return "customer cannot acquire seat"
-	for other in _state.guests:
+	for other in _present_guests.values():
 		if other.id != id and other.seat == seat and other.state not in ["leaving","gone"]: return "seat already occupied"
 	row.seat = seat
 	return ""
 
 func resolve_request(id: int, request: Array) -> String:
-	var row := _find(_state.guests,id)
+	var row: Dictionary = _guests_by_id.get(id, {})
 	if row.is_empty() or row.state!="queue" or row.order!=-1 or row.claimed!=-1 or not _request_valid(request) or request.size()!=row.request.size(): return "customer request is already committed or invalid"
 	for index in request.size():
 		for key in ["dish","qty","options"]:
@@ -184,16 +202,16 @@ func resolve_request(id: int, request: Array) -> String:
 	return ""
 
 func prepare_meal(id: int, seconds: float) -> String:
-	var row := _find(_state.guests,id)
+	var row: Dictionary = _guests_by_id.get(id, {})
 	if row.is_empty() or row.state!="served" or not is_finite(seconds) or seconds<0.0: return "meal duration requires actual delivery"
 	row.meal_left = seconds
 	return ""
 
 func begin_meal(id: int, seconds: float, inventory: RefCounted) -> String:
-	var row := _find(_state.guests, id)
+	var row: Dictionary = _guests_by_id.get(id, {})
 	if row.is_empty() or not is_finite(seconds) or seconds < 0.0: return "invalid meal request"
 	if row.state == "eating": return ""
-	var order := _find(_state.orders, row.order)
+	var order: Dictionary = _orders_by_id.get(row.order, {})
 	if row.state != "served" or order.is_empty() or not order.paid: return "meal requires a paid and delivered order"
 	var error := _meal_stock(order, inventory)
 	if not error.is_empty(): return error
@@ -204,13 +222,13 @@ func begin_meal(id: int, seconds: float, inventory: RefCounted) -> String:
 func advance_meals(dt: float, inventory: RefCounted, paused := false) -> String:
 	if not is_finite(dt) or dt < 0.0: return "invalid meal time"
 	if paused or dt == 0.0: return ""
-	for row in _state.guests:
+	for row in _present_guests.values():
 		if row.state != "eating": continue
 		var remaining := maxf(0.0, float(row.meal_left) - dt)
 		if remaining > 0.000001:
 			row.meal_left = remaining
 			continue
-		var order := _find(_state.orders, row.order)
+		var order: Dictionary = _orders_by_id.get(row.order, {})
 		var error := _meal_stock(order, inventory)
 		if not error.is_empty(): return error
 		var candidate := Inventory.new()
@@ -231,18 +249,19 @@ func advance_meals(dt: float, inventory: RefCounted, paused := false) -> String:
 	return ""
 
 func finish_departure(id: int) -> String:
-	var row := _find(_state.guests, id)
+	var row: Dictionary = _guests_by_id.get(id, {})
 	if row.is_empty(): return "unknown customer"
 	if row.state == "gone": return ""
 	if row.state != "leaving": return "customer is not leaving"
 	row.state = "gone"
+	_present_guests.erase(id)
 	return ""
 
 func guest(id: int) -> Dictionary:
-	return _find(_state.guests, id).duplicate(true)
+	return _guests_by_id.get(id, {}).duplicate(true)
 
 func order(id: int) -> Dictionary:
-	return _find(_state.orders, id).duplicate(true)
+	return _orders_by_id.get(id, {}).duplicate(true)
 
 func snapshot() -> Dictionary:
 	return _state.duplicate(true)
@@ -251,21 +270,31 @@ func snapshot() -> Dictionary:
 ## Full history remains available through snapshot() for saves and validation.
 func active_snapshot() -> Dictionary:
 	var result := _state.duplicate()
-	var active := {}
 	result.guests = []
-	for guest in _state.guests:
-		if guest.state == "gone": continue
-		active[guest.id] = true
-		result.guests.append(guest.duplicate(true))
 	result.orders = []
-	for order in _state.orders:
-		if active.has(order.guest): result.orders.append(order.duplicate(true))
+	var orders := {}
+	for guest in _present_guests.values():
+		result.guests.append(guest.duplicate(true))
+		if _orders_by_id.has(guest.order): orders[guest.order] = _orders_by_id[guest.order]
+	# Order insertion and guest arrival can differ. Preserve the original order.
+	var ids := orders.keys()
+	ids.sort_custom(func(a: int, b: int) -> bool: return _order_positions[a] < _order_positions[b])
+	for id in ids: result.orders.append(orders[id].duplicate(true))
 	return result
 
 func restore(data: Dictionary, inventory: RefCounted) -> String:
 	var error := _validate(data, inventory)
 	if not error.is_empty(): return error
 	_state = data.duplicate(true)
+	_guests_by_id.clear()
+	_orders_by_id.clear()
+	_present_guests.clear()
+	_order_positions.clear()
+	for guest in _state.guests: _remember_guest(guest)
+	for index in _state.orders.size():
+		var order: Dictionary = _state.orders[index]
+		_orders_by_id[order.id] = order
+		_order_positions[order.id] = index
 	return ""
 
 func _validate(data: Dictionary, inventory: RefCounted) -> String:
@@ -372,7 +401,7 @@ static func _meal_stock(order: Dictionary, inventory: RefCounted) -> String:
 	return ""
 
 func _order_line(order_id: int, line_id: int) -> Dictionary:
-	var order := _find(_state.orders, order_id)
+	var order: Dictionary = _orders_by_id.get(order_id, {})
 	return {} if order.is_empty() else _find(order.lines, line_id)
 
 static func _proof_error(order: Dictionary, line: Dictionary, claim: Dictionary) -> String:

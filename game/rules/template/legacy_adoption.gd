@@ -295,7 +295,7 @@ func _create_order(id: int, dish: String, seat: String, takeaway: bool, wait: fl
 	order.id = id; order.guest = id; order.quote = line.price; order.lines = [line]
 	guest.request = [{"dish":dish,"recipe":recipe,"item":line.item,"qty":1}]
 	if service._policy.has("customization"): guest.request[0].options = selected.duplicate()
-	service.orders._state.guests.append(guest); service.orders._state.orders.append(order)
+	service.orders.append_guest(guest); service.orders.append_order(order)
 	service.orders._state.next_guest = maxi(int(service.orders._state.next_guest),id+1)
 	service.orders._state.next_order = maxi(int(service.orders._state.next_order),id+1)
 	runtime._units.append({"id":id,"recipe":recipe,"done":[],"running":{}})
@@ -364,7 +364,7 @@ func _single() -> void:
 				var dish: String = source.shop.fulfillment.addon_dish
 				var extra: String = service._policy.menu[dish]
 				guest.request.append({"dish":dish,"recipe":extra,"item":runtime._definition.recipes[extra].output.item,"qty":1})
-			orders.guests.append(guest); service.customers.spawn(guest.id)
+			service.orders.append_guest(guest); service.customers.spawn(guest.id)
 	for id in runtime._definition.restocks:
 		var rule: Dictionary = runtime._definition.restocks[id]
 		var before: Dictionary = source.stations[id]
@@ -501,7 +501,7 @@ func _serve() -> void:
 		guest.queued = guest.state=="queue"
 		if int(old.seat)>=0 and old.order>=0: guest.seat = service._policy.seating.order[int(old.seat)]
 		guest.meal_left = float(old.eat_left) if guest.state=="eating" else 0.0
-		orders.guests.append(guest)
+		service.orders.append_guest(guest)
 	for old in source.serve.orders:
 		var guest: Dictionary = service.orders._find(orders.guests,int(old.guest))
 		var order := Orders._order()
@@ -526,7 +526,7 @@ func _serve() -> void:
 			guest.request.append({"dish":line.dish,"recipe":line.recipe,"item":line.item,"qty":line.qty})
 			order.lines.append(line)
 		if order.paid: order.income = floori(order.quote)
-		orders.orders.append(order)
+		service.orders.append_order(order)
 	for guest in orders.guests:
 		service.customers.spawn(guest.id)
 		if guest.order>0:
@@ -600,7 +600,7 @@ func _history_node(unit: Dictionary, id: String) -> void:
 		run.id = int(runtime.runner.machines._state.next_run); runtime.runner.machines._state.next_run += 1
 		run.machine = node.machine; run.claim = int(claim.id); run.phase = "completed"
 		if runtime.runner.machines._state.definitions[node.machine].has("slot_ceiling"): run.slot = 0
-		runtime.runner.machines._state.runs.append(run)
+		runtime.runner.machines.append_run(run)
 		unit.running[id] = run.id
 	unit.done.append(id)
 
@@ -612,7 +612,7 @@ func _historical_transfer(from: String, to: String, item: String, count: int, ow
 	if not claim.minted: claim.parts = [{"lot":1,"count":count}]
 	var group := {"id":int(stock._state.next_bundle),"actor":actor,"capacity":count,"claims":[]}
 	stock._state.next_bundle += 1; claim.group = group.id
-	stock._store(claim); group.claims.append(int(claim.id)); stock._state.bundles.append(group)
+	stock._store(claim); group.claims.append(int(claim.id)); stock.append_bundle(group)
 	return group
 
 func _serve_job(worker: Dictionary, job: Dictionary) -> void:

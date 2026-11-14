@@ -1,7 +1,6 @@
 extends RefCounted
 ## Compose already authorized logistics into one ordinary bundle. Each entry
 ## retains its owner, allocation and pickup clock; only the walk/drop is shared.
-const Inventory := preload("res://game/rules/template/inventory.gd")
 
 static func compose(runtime: RefCounted, worker: Dictionary, ranked: Array) -> Array:
 	if not runtime._definition.dispatch.get("batch_transfers",false): return ranked
@@ -23,8 +22,7 @@ static func compose(runtime: RefCounted, worker: Dictionary, ranked: Array) -> A
 			var combined: Array = entries + [extra]
 			var context: Dictionary = runtime.runner.dispatcher.context_for_candidate({"kind":"bundle","entries":combined})
 			if not String(context.error).is_empty() or not runtime.runner.dispatcher.can_start(worker,context.scope).is_empty(): continue
-			var stock := Inventory.new()
-			stock._state = runtime.runner.inventory.snapshot()
+			var stock: RefCounted = runtime.runner.inventory.copy_for_probe()
 			var raw: Array = combined.duplicate(true)
 			for entry in raw: entry.erase("pickup_seconds")
 			if not String(stock.reserve_bundle("staff:"+str(worker.id),raw,capacity).error).is_empty(): continue
