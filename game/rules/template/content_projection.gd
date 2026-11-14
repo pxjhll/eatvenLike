@@ -1,14 +1,16 @@
 extends RefCounted
 ## Path-aware projection: quantities and dependencies are structural unless a
 ## specific clock/score field is declared tunable. Semantic item names are data.
+const FIELDS := ["version", "hop_seconds", "places", "machines", "restocks", "recipes",
+	"service", "dispatch", &"presentation", &"transports"]
 
 static func project(template: Resource, structural: bool) -> Dictionary:
 	var data := {"type":"SpecShopTemplate"}
-	for key in ["version", "hop_seconds", "places", "machines", "restocks", "recipes", "service", "dispatch"]:
+	for key in FIELDS:
 		if structural and key == "hop_seconds": continue
-		data[key] = _walk(template.get(key), [key], structural)
-	if not template.presentation.is_empty(): data.presentation = _walk(template.presentation,["presentation"],structural)
-	if not template.transports.is_empty(): data.transports = _walk(template.transports,["transports"],structural)
+		var value: Variant = template.get(key)
+		if key in ["presentation", "transports"] and value.is_empty(): continue
+		data[key] = _walk(value, [String(key)], structural)
 	return data
 
 static func _walk(value: Variant, path: Array, structural: bool) -> Variant:

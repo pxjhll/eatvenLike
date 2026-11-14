@@ -27,13 +27,13 @@ var _restocks: RefCounted
 var service: RefCounted
 var _transports: RefCounted
 
-func _init(owner: RefCounted, template: Resource) -> void:
+func _init(owner: RefCounted, template: Resource, compiled: Dictionary = {}) -> void:
 	runner = Runner.new(owner)
-	var compiled := Compiler.compile(template,Compiler.ports_from_layout(owner.nav.layout))
+	if compiled.is_empty(): compiled = Compiler.compile(template,Compiler.ports_from_layout(owner.nav.layout))
 	if not compiled.errors.is_empty():
 		last_error = String(compiled.errors[0].path) + ": " + String(compiled.errors[0].message)
 		return
-	_definition = compiled.definition
+	_definition = compiled.definition.duplicate(true)
 	_transports = Transports.new(_definition.get("transports",{}))
 	last_error = _transports.validate_context(owner)
 	if not last_error.is_empty(): return

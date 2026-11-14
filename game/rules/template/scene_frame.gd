@@ -74,8 +74,8 @@ static func seats_used(runtime: RefCounted, group: Resource) -> int:
 		if not guest.seat.is_empty() and guest.state not in ["leaving","gone"]: used[guest.seat] = true
 	return used.size()
 
-static func activity(runtime: RefCounted) -> Dictionary:
-	var frame := build(runtime)
+static func activity(runtime: RefCounted, frame: Dictionary = {}) -> Dictionary:
+	if frame.is_empty(): frame = build(runtime)
 	var owner: RefCounted = runtime.runner.owner
 	var idle := 0
 	for worker in frame.workers:

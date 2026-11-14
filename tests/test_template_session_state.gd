@@ -70,6 +70,30 @@ func test_save_reuses_validation_only_for_exactly_the_bytes_it_wrote() -> void:
 	check_eq(store.assessments, 2, "external replacement takes the full validation path")
 	check_eq(FileAccess.get_file_as_string(path), replacement, "future version remains in place")
 
+func test_save_reuses_template_preparation_and_rechecks_live_state() -> void:
+	var shop: SpecShop = load("res://content/shops/pancake/shop.tres").copy_for_editing()
+	shop.runtime_template = shop.runtime_template.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
+	var owner := ShopRules.new(shop, 42)
+	var path := "user://prepared-save-%d.json" % Time.get_ticks_usec()
+	paths.append(path)
+	var store := ShopSave.new(shop, path)
+	check_eq(store.save_game(owner), OK, "prepare and validate the initial save")
+	check_eq(store.load_game().to_dict(), owner.to_dict(), "prepared save reloads exactly")
+	check_eq(store.load_error, OK, "normal loader accepts prepared save")
+	var initial: Variant = store.get("_save_preparation")
+	check(initial is Dictionary and not initial.is_empty(), "successful validation retains the template preparation")
+	owner.gold += 5
+	check_eq(store.save_game(owner), OK, "purchases and progress can change without recompiling the template")
+	check(is_same(store.get("_save_preparation"), initial), "consecutive saves share the same preparation")
+	var valid_bytes := FileAccess.get_file_as_bytes(path)
+	owner.gold = NAN
+	check_eq(store.save_game(owner), ERR_INVALID_DATA, "an invalid live state still fails validation")
+	check_eq(FileAccess.get_file_as_bytes(path), valid_bytes, "invalid live state cannot replace the good save")
+	owner.gold = 15
+	shop.runtime_template.service.selection.stages[0].interval += 1.0
+	check_eq(store.save_game(owner), ERR_INVALID_DATA, "an in-place template change cannot reuse stale preparation")
+	check_eq(FileAccess.get_file_as_bytes(path), valid_bytes, "stale live runtime cannot replace the good save")
+
 func cleanup() -> void:
 	for path in paths:
 		for file in DirAccess.get_files_at(path.get_base_dir()):

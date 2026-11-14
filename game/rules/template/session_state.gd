@@ -6,12 +6,25 @@ const Validator := preload("res://game/rules/shop_state_validator.gd")
 const Worker := preload("res://game/rules/worker_state.gd")
 const Shape := preload("res://game/rules/template/inventory.gd")
 const Contract := preload("res://game/rules/shop_content_contract.gd")
+const Compiler := preload("res://game/rules/template/compiler.gd")
+const TemplateProjection := preload("res://game/rules/template/content_projection.gd")
 const OUTER := ["gold","revenue","sold","sold_by_dish","stage_index","unlocked","levels","boxes",
 	"completed_at","paused","tune","hire_pool","event_ready_at","events_seen","belts","seats",
 	"full_seconds","pot_busy","side_idle","_accumulator","_next_staff","_sale_carry","rng","event_rng","mods","log","pending_events"]
 const PERSON := ["id","kind","name","stats","post","deployed","source","fatigue"]
 
-static func save(owner: RefCounted, compact_history := false) -> Dictionary:
+## Reuse only the authored template and its resolved ports. The restore still
+## rebuilds and validates current gameplay against the resulting definition.
+static func prepare_save(template: SpecShopTemplate, layout: SpecLayout, previous: Dictionary) -> Dictionary:
+	var ports := Compiler.ports_from_layout(layout)
+	var inputs: Array = [ports]
+	for field in TemplateProjection.FIELDS: inputs.append(template.get(field))
+	# Binary values retain exact types and ordering, unlike JSON or Dictionary equality.
+	var source := var_to_bytes(inputs)
+	if not previous.is_empty() and source == previous.source: return previous
+	return {"source":source, "identity":Contract.describe_template(template), "compiled":Compiler.compile(template, ports)}
+
+static func save(owner: RefCounted, compact_history := false, identity: Dictionary = {}) -> Dictionary:
 	var outer := {}
 	for key in OUTER:
 		match key:
@@ -27,13 +40,14 @@ static func save(owner: RefCounted, compact_history := false) -> Dictionary:
 		for key in PERSON: row[key] = worker[key]
 		if not worker.deployed: row.standby = {"pos":worker.pos,"completed":worker.completed}
 		outer.roster.append(row)
-	return owner._plain({"shop":owner.shop.id,"version":2,"template":Contract.describe_template(owner._runtime_template),"outer":outer,"runtime":owner.runtime.snapshot(compact_history)})
+	if identity.is_empty(): identity = Contract.describe_template(owner._runtime_template)
+	return owner._plain({"shop":owner.shop.id,"version":2,"template":identity,"outer":outer,"runtime":owner.runtime.snapshot(compact_history)})
 
-static func restore(owner: RefCounted, data: Dictionary, refresh := false) -> String:
+static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepared: Dictionary = {}) -> String:
 	if not Shape._shape(data,{"shop":"","version":0,"template":{},"outer":{},"runtime":{}}) or data.version!=2 or data.shop!=owner.shop.id: return "invalid public shop state version or identity"
 	var template: Resource = owner._runtime_template
 	if template==null: return "public state requires an explicit runtime template"
-	var identity := Contract.describe_template(template)
+	var identity: Dictionary = prepared.identity if not prepared.is_empty() else Contract.describe_template(template)
 	if data.template.get("structure")!=identity.structure: return "public template structure differs"
 	if not refresh and data.template!=identity: return "public template numeric revision differs"
 	var script: Script = owner.get_script()
@@ -81,7 +95,7 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false) -> St
 	if not error.is_empty(): return error
 	candidate._restore_validated(flat)
 	if refresh: candidate._refresh_content_values()
-	error = candidate.enable_runtime(template,false)
+	error = candidate.enable_runtime(template, false, prepared.get("compiled", {}))
 	if not error.is_empty(): return error
 	var recorded: Dictionary = data.runtime.duplicate(true)
 	if refresh and data.template!=identity:

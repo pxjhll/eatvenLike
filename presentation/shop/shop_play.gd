@@ -368,11 +368,12 @@ func frozen() -> bool:
 
 func _process(delta: float) -> void:
 	if rules == null or _startup_blocked or _transition_committed: return
+	var before := rules.clock
 	if not frozen():
-		var before := rules.clock
 		rules.step(minf(delta, 0.25) * _speed_factor)
-		if recorder != null: recorder.tick(rules.clock - before)
-	_refresh(delta)
+	var frame := view.render_snapshot()
+	if recorder != null: recorder.tick(rules.clock - before, frame)
+	_refresh(delta, frame)
 	guide.refresh(delta)
 	_fit()
 	_toast_left = maxf(0, _toast_left - delta)
@@ -385,8 +386,8 @@ func _process(delta: float) -> void:
 			request_save()
 
 
-func _refresh(delta: float) -> void:
-	var frame := view.render_snapshot()
+func _refresh(delta: float, frame: Dictionary = {}) -> void:
+	if frame.is_empty(): frame = view.render_snapshot()
 	_refresh_events()
 	_refresh_frame = frame
 	ui.refresh()
@@ -646,13 +647,13 @@ func _refresh_station_signs() -> void:
 			frame.text = _t("frame_box", {"name": m.display_name, "cost": m.box_cost})
 			frame.tooltip_text = _t("frame_box_tip", {"machine": view.station_name(m.box_station)})
 			continue
-		var card := view.station(id)
-		if card.is_empty(): continue
-		frame.visible = not card.unlocked and int(card.stage) == next_stage
+		var st := shop.station(id)
+		if st == null: continue
+		frame.visible = not rules.station_unlocked(id) and shop.stage_of(id) == next_stage
 		if not frame.visible: continue
+		var card := view.station(id)
 		frame.can_unlock = card.unlock.status.code == "ok"
 		frame.tooltip_text = String(card.description) + "\n" + String(card.unlock.error)
-		var st := shop.station(id)
 		var title: String = card.unlock.title if st.params.get("frame_title", "") == "stage" else view.station_name(id)
 		frame.text = _t("frame_unlock", {"title": title, "cost": card.unlock.cost})
 	ArtGroups.refresh(art, view)

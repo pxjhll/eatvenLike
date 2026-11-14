@@ -139,8 +139,8 @@ func progress_snapshot() -> Dictionary:
 	return {"levels": rules.levels.duplicate(true), "tune": rules.tune.duplicate(true)}
 
 
-func activity_snapshot() -> Dictionary:
-	if _runtime!=null: return SceneFrame.activity(_runtime)
+func activity_snapshot(frame: Dictionary = {}) -> Dictionary:
+	if _runtime!=null: return SceneFrame.activity(_runtime, frame)
 	var idle := 0
 	for worker in rules.workers:
 		if rules.worker_idle(worker): idle += 1

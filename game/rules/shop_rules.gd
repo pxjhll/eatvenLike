@@ -424,8 +424,8 @@ func reset(seed := -1) -> void:
 	elif template!=null:
 		runtime_error = enable_runtime(template)
 
-func enable_runtime(template: Resource, open_service := true) -> String:
-	var candidate: RefCounted = load("res://game/rules/template/runtime.gd").new(self,template)
+func enable_runtime(template: Resource, open_service := true, compiled: Dictionary = {}) -> String:
+	var candidate: RefCounted = load("res://game/rules/template/runtime.gd").new(self,template,compiled)
 	if not candidate.last_error.is_empty(): return candidate.last_error
 	runtime = candidate
 	runtime.runner.release_owner()

@@ -22,6 +22,7 @@ var load_error: Error = OK
 var _content_cache: Dictionary = {}
 var _verified_bytes := PackedByteArray()
 var _verified_template: Dictionary = {}
+var _save_preparation: Dictionary = {}
 
 
 static func path_for(shop_id: String) -> String:
@@ -99,10 +100,20 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 		last_error = "存档失败：店铺内容和存档不是同一版本，请重新进店"
 		return ERR_INVALID_PARAMETER
 	var compact_history: bool = requires_shared_runtime() and rules.runtime != null and rules.runtime.service != null
-	var state: Dictionary = load("res://game/rules/template/session_state.gd").save(rules, true) if compact_history else rules.to_dict()
+	var protocol: Script = load("res://game/rules/template/session_state.gd")
+	var prepared := compact_history and shop.runtime_template != null and rules._runtime_template == shop.runtime_template
+	var identity: Dictionary = {}
+	if prepared:
+		_save_preparation = protocol.prepare_save(shop.runtime_template, shop.layout, _save_preparation)
+		identity = _save_preparation.identity
+	var state: Dictionary = protocol.save(rules, true, identity) if compact_history else rules.to_dict()
 	# Public state restores its own runtime. Custom and legacy stores keep their factory.
 	var validator := ShopRules.new(shop,-1,false) if state.has("runtime") and get_script() == load("res://game/rules/shop_save.gd") else make_rules()
-	var state_error := validator.load_dict(state)
+	var state_error: String
+	if prepared and validator.get_script() == load("res://game/rules/shop_rules.gd") and validator._runtime_template == shop.runtime_template:
+		state_error = protocol.restore(validator, state, false, _save_preparation)
+	else:
+		state_error = validator.load_dict(state)
 	if not state_error.is_empty():
 		last_error = "存档失败：店铺状态无效：" + state_error
 		return ERR_INVALID_DATA
