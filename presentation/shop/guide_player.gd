@@ -29,6 +29,7 @@ var _staff_at_start := 0
 var _bubble: PanelContainer
 var _bubble_text: Label
 var _bubble_skip: Button
+var _show_bubble := false
 
 
 func setup(view: Node2D, seen_ids: Array) -> void:
@@ -94,11 +95,12 @@ func refresh(delta: float) -> void:
 	_blocking = false
 	_hole = Rect2()
 	_point = Vector2.INF
-	_bubble.visible = false
+	_show_bubble = false
 	if enabled:
 		_pick()
 		if not active.is_empty(): _play(_step())
 	visible = enabled and not active.is_empty() and _step() != null and _step().style != "card"
+	_bubble.visible = _show_bubble and visible
 	_place_bubble()
 	queue_redraw()
 
@@ -227,6 +229,9 @@ func _skip() -> void:
 	_hud.popups.remove("guide:" + step.id)
 	seen[step.id] = true
 	for id in step.skip_marks: seen[id] = true
+	if step.skip_tutorial:
+		for tutorial_step in _order:
+			if not tutorial_step.when.has("complete"): seen[tutorial_step.id] = true
 	active = ""
 	_view.request_save()
 	refresh(0.0)
@@ -415,7 +420,7 @@ func _to_local(screen: Transform2D, rect: Rect2) -> Rect2:
 
 func _say(text: String) -> void:
 	_bubble_text.text = text
-	_bubble.visible = true
+	_show_bubble = true
 
 
 func _place_bubble() -> void:

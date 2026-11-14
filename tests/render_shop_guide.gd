@@ -163,6 +163,8 @@ func _run() -> void:
 	_check(veteran.guide.active.is_empty() and veteran.guide.seen.has("opening"), "已经开过张的存档跳过开场")
 	veteran.free()
 	await _pancake_roll_hint()
+	await _pancake_skip_tutorial(false)
+	await _pancake_skip_tutorial(true)
 	if FileAccess.file_exists(save_path): DirAccess.remove_absolute(save_path)
 	for error in errors.take():
 		failures += 1
@@ -193,10 +195,41 @@ func _pancake_roll_hint() -> void:
 	var clock := owner.clock
 	view._process(0.25)
 	_check(owner.clock > clock, "提示还在时店铺继续经营")
-	await _touch(guide._bubble_skip.get_global_transform_with_canvas() * (guide._bubble_skip.size / 2.0))
+	await _touch(guide._bubble_skip.get_global_transform_with_canvas() * (guide._bubble_skip.size / 2.0), true)
 	_check(guide.seen.has("lost_machine") and not guide.visible and not view.frozen(), "只有原生触屏事件也能关闭「知道了」")
 	view.free()
 	original_view = null
+
+func _pancake_skip_tutorial(from_opening: bool) -> void:
+	var path := save_path + "-skip-" + str(from_opening)
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	var owner := ShopRules.new(PANCAKE, 42)
+	view.session = TestSession.make(PANCAKE, path, owner)
+	view.session.guide_enabled = true
+	await _reopen(view)
+	hud = view.ui
+	guide = view.guide
+	if from_opening: await _click(hud.popups.button(hud.popups.primary_index()))
+	# Wait for containers to lay out the wrapped text and position the buttons.
+	for frame in 4: await process_frame
+	var skip: Button = guide._bubble_skip if from_opening else hud.popups.button(0)
+	await _touch(skip.get_global_transform_with_canvas() * (skip.size / 2.0), from_opening)
+	_check(guide.seen.has("welcome") and guide.seen.has("opening") and not guide.freezes(), "触屏跳过后关闭开场引导")
+	_check(not owner.is_open(), "跳过不替玩家购买设备")
+	owner.gold = 1000
+	owner.unlock("soy_milk")
+	owner.unlock("rear_equipment")
+	guide.refresh(0)
+	_check(guide.active.is_empty() and guide.seen.has("box_flour") and guide.seen.has("lost_machine"), "跳过后招人、原料箱和客人等急教程不再弹")
+	_check(not guide.seen.has("shop_done"), "仍可显示完店总结")
+	_check(view.save_now(false) == OK, "跳过教程写入存档")
+	view.free()
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	view.session = TestSession.make(PANCAKE, path)
+	view.session.guide_enabled = true
+	await _reopen(view)
+	_check(view.guide.seen.has("box_flour") and view.guide.active.is_empty(), "读档后仍然跳过教程")
+	view.free()
 
 
 ## Explicit session reopens the isolated save and enables only the tutorial.
@@ -232,7 +265,7 @@ func _click(button: Button) -> void:
 
 
 ## 只有触屏事件，没有 Godot 平常顺手生成的鼠标事件
-func _touch(point: Vector2) -> void:
+func _touch(point: Vector2, refresh_while_pressed := false) -> void:
 	var emulate := Input.is_emulating_mouse_from_touch()
 	Input.emulate_mouse_from_touch = false
 	for pressed in [true, false]:
@@ -242,6 +275,7 @@ func _touch(point: Vector2) -> void:
 		Input.parse_input_event(event)
 		Input.flush_buffered_events()
 		await process_frame
+		if pressed and refresh_while_pressed: guide.refresh(0.016)
 	Input.emulate_mouse_from_touch = emulate
 	guide.refresh(0)
 	await process_frame

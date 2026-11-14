@@ -45,6 +45,8 @@ extends Resource
 @export var skip_label: String = "以后再说"
 ## 跳过时一起记为看过的步骤
 @export var skip_marks: Array[String] = []
+## 跳过本店教程，保留完店提示。
+@export var skip_tutorial := false
 ## 结束时一起记为看过的步骤
 @export var finish_marks: Array[String] = []
 ## 卡片型（card）：标题、插画、奖牌、几行说明、统计、备注、按钮；card 确认后接着哪一步（next）

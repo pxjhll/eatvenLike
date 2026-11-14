@@ -245,14 +245,15 @@ func _input(event: InputEvent) -> void:
 		return
 	ShopAudio.unlock_from_input(event)
 	get_viewport().set_input_as_handled()
-	var primary := primary_index()
+	var selected := primary_index()
 	for index in _buttons.get_child_count():
-		if index == primary: continue
-		var other := button(index)
-		if other != null and other.is_visible_in_tree() and other.get_global_rect().has_point(event.position):
-			press(index)
-			return
-	press(primary)
+		var option := button(index)
+		if option == null or not option.is_visible_in_tree(): continue
+		var local: Vector2 = option.get_global_transform_with_canvas().affine_inverse() * event.position
+		if Rect2(Vector2.ZERO, option.size).has_point(local):
+			selected = index
+			break
+	press(selected)
 
 
 func _draw() -> void:

@@ -718,7 +718,7 @@ id = "welcome"
 when = Array[String](["!open"])
 seen_when = Array[String](["open"])
 shop_page_only = false
-skip_marks = Array[String](["opening", "hire", "done"])
+skip_tutorial = true
 style = "card"
 title = "欢迎来到煎饼果子摊"
 text = "早点摊刚支起来，先卖豆浆，攒钱再开鏊子、油锅、加料台和装袋。
@@ -751,7 +751,7 @@ cues = Array[Dictionary]([{
 看第一单卖出去"
 }])
 skip_label = "跳过引导"
-skip_marks = Array[String](["welcome"])
+skip_tutorial = true
 
 [sub_resource type="Resource" id="Resource_f53vs"]
 script = ExtResource("12_p70m1")
