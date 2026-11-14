@@ -109,6 +109,39 @@ func test_real_service_restores_during_preparation_and_actual_employee_delivery(
 		check_eq(reopened.runner.owner.gold,runtime.runner.owner.gold,"payment stays once after restore")
 		check_eq(reopened.runner.owner.revenue,runtime.runner.owner.revenue,"outer revenue stays consistent after service restore")
 
+func test_crisp_route_calls_seated_guest_during_bagging_and_restores_before_handoff() -> void:
+	var owner := _owner()
+	check_eq(owner.buy_seat(),"","install real waiting cushions")
+	var runtime := Runtime.new(owner,TEMPLATE)
+	check_eq(runtime.last_error,"","pancake service compiles")
+	check_eq(runtime.arrive([{"dish":"guozi","qty":1}],["bag"]).error,"","queue bagged crispy pancake")
+	var pickups: Array = []
+	var seated := false
+	runtime.set_tracing(true)
+	for tick in 500:
+		check_eq(runtime.step(0.1),"","run the real order through prep stations")
+		for event in runtime.take_trace().events:
+			if event.operation=="inventory.pickup" and event.facts.to in ["join:in","roll:in","bag:in"]:
+				pickups.append(event.facts.from)
+		if runtime.service.customers.ready(1,"wait:cushion/0"): seated = true
+		if runtime.service.customers.record(1).get("target")=="pickup": break
+	check(seated,"guest actually waited in the seating area")
+	check_eq(pickups,["grill:out","crisps","join:out","roll:out"],"take the pancake first, collect crisp on the way to the front, then roll and bag")
+	check_eq(runtime.service.customers.record(1).get("target"),"pickup","customer starts toward handoff")
+	check(runtime.service.snapshot().deliveries.is_empty(),"guest starts walking while the bag is still being packed")
+	check_eq(owner.sold,0,"calling a guest does not record a sale")
+
+	var reopened_owner := _owner()
+	check_eq(reopened_owner.buy_seat(),"","restore matching seat purchase")
+	var reopened := Runtime.new(reopened_owner,TEMPLATE)
+	check_eq(reopened.restore(runtime.snapshot()),"","resume with the guest already approaching")
+	_finish(runtime,1)
+	_finish(reopened,1)
+	check_eq(reopened.snapshot(),runtime.snapshot(),"handoff and departure replay exactly")
+	check_eq(owner.sold,1,"settle once after handoff")
+	check_eq(reopened_owner.sold,owner.sold,"restored order settles once")
+
+
 func test_actual_stage_weights_and_flavor_unlocks_match_original_menu_without_legacy_execution() -> void:
 	var runtime := _runtime(false)
 	if runtime == null: return

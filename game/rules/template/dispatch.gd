@@ -34,7 +34,7 @@ func validate_context() -> String:
 
 static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -> Dictionary:
 	for key in raw:
-		if key not in ["roles", "posts", "scores", "continuation_bonus", "travel_penalty", "affinity", "affinity_bonus", "hold_machine", "help_while_waiting", "station_posts", "assistance", "batch_transfers"]: return _error("unsupported dispatch parameter: " + str(key))
+		if key not in ["roles", "posts", "scores", "continuation_bonus", "travel_penalty", "affinity", "affinity_bonus", "hold_machine", "help_while_waiting", "station_posts", "assistance", "batch_transfers", "collect_at_drop_last"]: return _error("unsupported dispatch parameter: " + str(key))
 	var result := {"roles":{}, "posts":{}, "scores":SCORES.duplicate(), "continuation_bonus":0.0, "travel_penalty":0.0,
 		"affinity":"none", "affinity_bonus":100.0, "hold_machine":false, "help_while_waiting":true}
 	for key in ["continuation_bonus", "travel_penalty", "affinity_bonus"]:
@@ -70,8 +70,10 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 	var assistance: Variant = raw.get("assistance",{})
 	if not assistance is Dictionary: return _error("invalid assistance policy")
 	var helpers := {}
-	if not raw.get("batch_transfers",false) is bool: return _error("invalid batch transfer flag")
-	if raw.get("batch_transfers",false): result.batch_transfers = true
+	for key in ["batch_transfers","collect_at_drop_last"]:
+		var enabled: Variant = raw.get(key,false)
+		if not enabled is bool: return _error("invalid transport dispatch flag: " + key)
+		if enabled: result[key] = true
 	for scope in assistance:
 		if scope not in ["roles","posts"] or not assistance[scope] is Dictionary: return _error("invalid assistance scope")
 		if assistance[scope].is_empty(): continue

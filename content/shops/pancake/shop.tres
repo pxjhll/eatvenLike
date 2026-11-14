@@ -108,7 +108,7 @@ into_machine = true
 script = ExtResource("3_nwmtm")
 station = "roll"
 action = "roll"
-seconds = 2.5
+seconds = 1.4
 consumes = Dictionary[String, int]({
 "pancake": 1
 })
@@ -185,7 +185,7 @@ label = "拿薄脆"
 script = ExtResource("3_nwmtm")
 station = "roll"
 action = "roll"
-seconds = 2.5
+seconds = 1.4
 consumes = Dictionary[String, int]({
 "pancake_crisp": 1
 })
@@ -275,7 +275,7 @@ label = "加料"
 script = ExtResource("3_nwmtm")
 station = "roll"
 action = "roll"
-seconds = 2.5
+seconds = 1.4
 consumes = Dictionary[String, int]({
 "ham_top": 1
 })
@@ -369,7 +369,7 @@ label = "加料"
 script = ExtResource("3_nwmtm")
 station = "roll"
 action = "roll"
-seconds = 2.5
+seconds = 1.4
 consumes = Dictionary[String, int]({
 "floss_top": 1
 })
@@ -463,7 +463,7 @@ label = "加料"
 script = ExtResource("3_nwmtm")
 station = "roll"
 action = "roll"
-seconds = 2.5
+seconds = 1.4
 consumes = Dictionary[String, int]({
 "bacon_top": 1
 })
@@ -557,7 +557,7 @@ label = "加料"
 script = ExtResource("3_nwmtm")
 station = "roll"
 action = "roll"
-seconds = 2.5
+seconds = 1.4
 consumes = Dictionary[String, int]({
 "family_top": 1
 })
@@ -1081,7 +1081,7 @@ customer_queue = Array[Vector2]([Vector2(470, 1040), Vector2(380, 1050), Vector2
 [sub_resource type="Resource" id="Resource_tu4gf"]
 script = ExtResource("3_nwmtm")
 action = "bag"
-seconds = 2.0
+seconds = 0.9
 produces = Dictionary[String, int]({
 "bagged": 1
 })
@@ -1966,7 +1966,7 @@ display_name = "卷饼"
 block = "combine"
 params = {
 "manual": true,
-"seconds": 2.5,
+"seconds": 1.4,
 "unit": "份"
 }
 starts_unlocked = true
@@ -1980,7 +1980,7 @@ display_name = "装袋"
 block = "combine"
 params = {
 "manual": true,
-"seconds": 2.0,
+"seconds": 0.9,
 "unit": "份"
 }
 unlock_cost = 300

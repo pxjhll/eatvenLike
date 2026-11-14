@@ -12,8 +12,9 @@ static func compile(raw: Variant) -> Dictionary:
 	if not raw is Dictionary: return _error("invalid waiting policy")
 	if raw.is_empty(): return {"definition":{},"error":""}
 	for key in raw:
-		if key not in ["group","ports","line","stages","retain_after_take"]: return _error("unsupported waiting parameter: "+str(key))
+		if key not in ["group","ports","line","stages","retain_after_take","call_during_final_work"]: return _error("unsupported waiting parameter: "+str(key))
 	if not raw.get("group") is String or raw.group.is_empty() or not raw.get("ports") is Array or not raw.get("line") is Array or raw.line.is_empty() or not raw.get("stages") is Array or raw.stages.is_empty() or not raw.get("retain_after_take",false) is bool: return _error("invalid waiting definition")
+	if not raw.get("call_during_final_work",false) is bool or (raw.get("call_during_final_work",false) and not raw.get("retain_after_take",false)): return _error("early pickup call requires retained waiting")
 	var seen := {}
 	for port in raw.ports:
 		if not port is String or not port.begins_with("wait:"+raw.group+"/") or seen.has(port): return _error("invalid or repeated waiting seat port")

@@ -255,7 +255,7 @@ func snapshot() -> Dictionary:
 	if dining != null: result.dining = dining.snapshot()
 	return result
 
-func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := false, dispatch_data: Dictionary = {}) -> String:
+func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := false, dispatch_data: Dictionary = {}, production: Array = []) -> String:
 	var shape := {"version":0, "orders":{}, "customers":{}, "deliveries":[], "arrivals":{}}
 	if waiting != null: shape.waiting = {}
 	if flyers != null: shape.flyers = {}
@@ -298,11 +298,17 @@ func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := fal
 		previous_targets = dining.targets(orders.snapshot(),_called_guests([]))
 		waiting_targets = dining.targets(orders.snapshot(),_called_guests(dispatch_data.get("scopes",[])))
 	if waiting != null:
-		error = waiting.restore(data.waiting,orders.snapshot(),_called_guests(),_policy.admission=="automatic")
+		var called := _called_guests(null,production)
+		var automatic: bool = _policy.admission=="automatic"
+		error = waiting.restore(data.waiting,orders.snapshot(),called,automatic)
 		if not error.is_empty(): return error
-		var projected: Dictionary = waiting.targets(orders.snapshot(),_called_guests(),_policy.admission=="automatic")
+		var projected: Dictionary = waiting.targets(orders.snapshot(),called,automatic)
 		if not projected.error.is_empty(): return projected.error
 		waiting_targets = projected.targets
+		# Production starts after queue sync. The previous waiting target is
+		# also valid in that tick and in saves from before early pickup calls.
+		if _calls_during_final_work():
+			previous_targets = waiting.targets(orders.snapshot(),_called_guests(null,[]),automatic).targets
 	var seats := {}
 	var actors := {}
 	var queue: Array = orders.queue()
@@ -341,8 +347,7 @@ func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := fal
 			target = _pickup_target(guest)
 			for delivery in _deliveries:
 				if delivery.order == guest.order and delivery.phase in ["carry", "drop"]: target = _destination(guest)
-		# Older saves called the diner only after reserving finished goods. Their
-		# actual waiting route remains legal until the next normal queue sync.
+		# A customer may still have the previous waiting target until queue sync.
 		var previous_wait: bool = guest.state=="waiting" and previous_targets.has(guest.id) and actor.target==previous_targets[guest.id]
 		if actor.target != target and not previous_wait: return "customer movement target differs from service facts"
 		if guest.state=="eating" and not customers.ready(guest.id, target): return "meal started before actual seating or handoff arrival"
@@ -450,12 +455,13 @@ func _sync_queue() -> String:
 		if not error.is_empty(): return error
 	return ""
 
-func _called_guests(scope_rows: Variant = null) -> Dictionary:
+func _called_guests(scope_rows: Variant = null, production: Variant = null) -> Dictionary:
 	var called := {}
 	for delivery in _deliveries:
 		var order: Dictionary = orders.order(delivery.order)
 		if not order.is_empty(): called[order.guest] = true
-	for order in orders.active_snapshot().orders:
+	var active_orders: Array = orders.active_snapshot().orders
+	for order in active_orders:
 		for line in order.lines:
 			if line.delivered>0: called[order.guest] = true
 	# A committed order follower starts the customer's counter approach while
@@ -467,7 +473,34 @@ func _called_guests(scope_rows: Variant = null) -> Dictionary:
 				if not row is Dictionary or not row.get("scope") is String or not row.scope.begins_with("order:"): continue
 				var order: Dictionary = orders.order(int(row.scope.trim_prefix("order:")))
 				if order.get("state","")=="accepted": called[order.guest] = true
+	if _calls_during_final_work():
+		var recorded_units: Variant = null
+		if production is Array:
+			recorded_units = {}
+			# Restore checks the production links after rebuilding service.
+			for unit in production:
+				if unit is Dictionary and unit.get("id") is int: recorded_units[unit.id] = unit
+		for order in active_orders:
+			if order.state=="accepted" and not called.has(order.guest) and _order_finishing(order,recorded_units):
+				called[order.guest] = true
 	return called
+
+func _calls_during_final_work() -> bool:
+	return waiting!=null and _policy.delivery=="counter" and _policy.waiting.get("call_during_final_work",false)
+
+func _order_finishing(order: Dictionary, recorded_units: Variant) -> bool:
+	for line in order.lines:
+		if line.units.is_empty(): return false
+		for binding in line.units:
+			if binding.delivered>=binding.qty: continue
+			var unit: Dictionary = _runtime._find_unit(binding.unit) if recorded_units==null else recorded_units.get(binding.unit,{})
+			if not unit.get("recipe") is String or not unit.get("running") is Dictionary: return false
+			var recipe: Dictionary = _runtime._definition.recipes.get(unit.recipe,{})
+			if recipe.is_empty(): return false
+			var final: Dictionary = recipe.nodes[recipe.output.node]
+			if final.capability=="source" or unit.running.has(final.id): continue
+			if final.capability!="transfer" or not unit.running.has(final.inputs.values()[0]): return false
+	return true
 
 func _free_seat() -> String:
 	var available: Array = dining.seats(_runtime.runner.owner) if dining!=null else _policy.seats.keys()

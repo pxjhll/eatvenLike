@@ -281,7 +281,7 @@ func restore(data: Dictionary, refresh_numeric := false) -> String:
 		if not stock_error.is_empty(): return stock_error
 		restored_service = Service.new(self, _definition.service)
 		if not restored_service.last_error.is_empty(): return restored_service.last_error
-		var service_error: String = restored_service.prepare_restore(data.service, service_stock,refresh_numeric,data.dispatch)
+		var service_error: String = restored_service.prepare_restore(data.service, service_stock,refresh_numeric,data.dispatch,data.units)
 		if not service_error.is_empty(): return service_error
 		dynamic = restored_service.dynamic_places()
 	var error: String = runner.validate_snapshot(data.runner, dynamic, limit_overrides.definition)

@@ -33,6 +33,7 @@ static func _label(path: Array) -> bool:
 
 static func _tunable(path: Array) -> bool:
 	if path.size()==3 and path[0]=="transports": return path[2] in ["seconds","interval"]
+	if path==["service","waiting","call_during_final_work"]: return true
 	if path==["service","dining","stages","[]","seconds"]: return true
 	if path==["service","seating","stages","[]","seconds"]: return true
 	if path.size()==4 and path.slice(0,3)==["service","selection","ramp"]: return path[3] in ["start","orders"]
@@ -45,7 +46,7 @@ static func _tunable(path: Array) -> bool:
 	if path.size() == 5 and path[0] == "recipes" and path[2] == "nodes" and path[3] == "[]": return path[4] == "seconds"
 	if path.size() == 4 and path[0] == "machines" and path[2] == "profile": return path[3] in ["load_seconds", "unload_seconds", "stir_seconds"]
 	if path.size() == 3 and path[0] == "restocks": return path[2] in ["seconds", "fetch_seconds"]
-	if path.size() == 2 and path[0] == "dispatch": return path[1] in ["affinity_bonus", "continuation_bonus", "travel_penalty"]
+	if path.size() == 2 and path[0] == "dispatch": return path[1] in ["affinity_bonus", "continuation_bonus", "travel_penalty", "collect_at_drop_last"]
 	if path.size() == 3 and path[0] == "dispatch" and path[1] == "scores": return true
 	if path.size() == 2 and path[0] == "service": return path[1] in ["admission_seconds", "eat_seconds"]
 	if path == ["service", "orders", "patience"]: return true

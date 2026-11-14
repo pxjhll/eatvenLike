@@ -296,7 +296,7 @@ recipes = {
 "produces": {
 "bacon": 1
 },
-"seconds": 2.5
+"seconds": 1.4
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -390,7 +390,7 @@ recipes = {
 "produces": {
 "bacon": 1
 },
-"seconds": 2.5
+"seconds": 1.4
 }, {
 "capability": "process",
 "consumes": {
@@ -404,7 +404,7 @@ recipes = {
 "produces": {
 "bagged": 1
 },
-"seconds": 2.0
+"seconds": 0.9
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -498,7 +498,7 @@ recipes = {
 "produces": {
 "family": 1
 },
-"seconds": 2.5
+"seconds": 1.4
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -592,7 +592,7 @@ recipes = {
 "produces": {
 "family": 1
 },
-"seconds": 2.5
+"seconds": 1.4
 }, {
 "capability": "process",
 "consumes": {
@@ -606,7 +606,7 @@ recipes = {
 "produces": {
 "bagged": 1
 },
-"seconds": 2.0
+"seconds": 0.9
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -700,7 +700,7 @@ recipes = {
 "produces": {
 "floss": 1
 },
-"seconds": 2.5
+"seconds": 1.4
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -794,7 +794,7 @@ recipes = {
 "produces": {
 "floss": 1
 },
-"seconds": 2.5
+"seconds": 1.4
 }, {
 "capability": "process",
 "consumes": {
@@ -808,7 +808,7 @@ recipes = {
 "produces": {
 "bagged": 1
 },
-"seconds": 2.0
+"seconds": 0.9
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -884,7 +884,7 @@ recipes = {
 "produces": {
 "guozi": 1
 },
-"seconds": 2.5
+"seconds": 1.4
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -960,7 +960,7 @@ recipes = {
 "produces": {
 "guozi": 1
 },
-"seconds": 2.5
+"seconds": 1.4
 }, {
 "capability": "process",
 "consumes": {
@@ -974,7 +974,7 @@ recipes = {
 "produces": {
 "bagged": 1
 },
-"seconds": 2.0
+"seconds": 0.9
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -1068,7 +1068,7 @@ recipes = {
 "produces": {
 "ham": 1
 },
-"seconds": 2.5
+"seconds": 1.4
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -1162,7 +1162,7 @@ recipes = {
 "produces": {
 "ham": 1
 },
-"seconds": 2.5
+"seconds": 1.4
 }, {
 "capability": "process",
 "consumes": {
@@ -1176,7 +1176,7 @@ recipes = {
 "produces": {
 "bagged": 1
 },
-"seconds": 2.0
+"seconds": 0.9
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -1226,7 +1226,7 @@ recipes = {
 "produces": {
 "plain": 1
 },
-"seconds": 2.5
+"seconds": 1.4
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -1276,7 +1276,7 @@ recipes = {
 "produces": {
 "plain": 1
 },
-"seconds": 2.5
+"seconds": 1.4
 }, {
 "capability": "process",
 "consumes": {
@@ -1290,7 +1290,7 @@ recipes = {
 "produces": {
 "bagged": 1
 },
-"seconds": 2.0
+"seconds": 0.9
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -1350,7 +1350,7 @@ recipes = {
 "produces": {
 "bagged": 1
 },
-"seconds": 2.0
+"seconds": 0.9
 }, {
 "capability": "transfer",
 "id": "pass",
@@ -1533,6 +1533,7 @@ service = {
 "line": [Vector2(470, 1040), Vector2(380, 1050), Vector2(290, 1060), Vector2(200, 1070), Vector2(110, 1080), Vector2(110, 1140), Vector2(200, 1140), Vector2(290, 1140), Vector2(380, 1140), Vector2(470, 1140)],
 "ports": ["wait:cushion/0", "wait:cushion/1", "wait:cushion/2", "wait:cushion/3", "wait:cushion/4", "wait:cushion/5", "wait:cushion/6", "wait:cushion/7", "wait:cushion/8"],
 "retain_after_take": true,
+"call_during_final_work": true,
 "stages": [{
 "seats": 0,
 "standing": 3
@@ -1553,6 +1554,7 @@ service = {
 }
 dispatch = {
 "batch_transfers": true,
+"collect_at_drop_last": true,
 "affinity": "exclusive",
 "help_while_waiting": true,
 "hold_machine": true,

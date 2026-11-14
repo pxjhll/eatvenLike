@@ -31,6 +31,8 @@ static func compose(runtime: RefCounted, worker: Dictionary, ranked: Array) -> A
 			entries = combined
 			members.append(next)
 		if members.size()<2: result.append(first); continue
+		if runtime._definition.dispatch.get("collect_at_drop_last",false):
+			entries = _collect_at_drop_last(entries,runtime.runner.ports,first.to)
 		var batch := {"kind":"bundle","category":first.category,"from":entries[0].from,"to":first.to,"unit":first.unit,
 			"entries":entries,"seconds":_drop(runtime,first),"nodes":[]}
 		for member in members:
@@ -38,6 +40,17 @@ static func compose(runtime: RefCounted, worker: Dictionary, ranked: Array) -> A
 			if ranked[member].has("node"): batch.nodes.append({"unit":ranked[member].unit,"node":ranked[member].node})
 		result.append(batch)
 	return result
+
+static func _collect_at_drop_last(entries: Array, ports: Dictionary, target: String) -> Array:
+	# Keep the ranked order inside each group. Pick up any ingredient at the
+	# destination after the employee has finished visiting other stations.
+	var remote: Array = []
+	var local: Array = []
+	var drop: Vector2 = ports[target]
+	for entry in entries:
+		var source: Vector2 = ports[entry.from]
+		(local if source.is_equal_approx(drop) else remote).append(entry)
+	return remote + local
 
 static func _logistics(candidate: Dictionary) -> bool:
 	return candidate.category in ["transfer","restock_transfer","stage"] and (candidate.kind=="transfer" or (candidate.kind=="bundle" and candidate.has("node") and candidate.entries.size()==1))
