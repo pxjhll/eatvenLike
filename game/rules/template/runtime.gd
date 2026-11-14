@@ -284,9 +284,9 @@ func restore(data: Dictionary, refresh_numeric := false) -> String:
 		var service_error: String = restored_service.prepare_restore(data.service, service_stock,refresh_numeric,data.dispatch,data.units)
 		if not service_error.is_empty(): return service_error
 		dynamic = restored_service.dynamic_places()
-	var error: String = runner.validate_snapshot(data.runner, dynamic, limit_overrides.definition)
-	if not error.is_empty(): return error
-	error = _restocks.validate_snapshot(data.restocks, data.runner.machines, data.runner.inventory)
+	var restored_runner: Dictionary = runner.prepare_restore(data.runner, dynamic, limit_overrides.definition)
+	if not String(restored_runner.error).is_empty(): return restored_runner.error
+	var error: String = _restocks.validate_snapshot(data.restocks, data.runner.machines, data.runner.inventory)
 	if not error.is_empty(): return error
 	var units := {}
 	var runs := {}
@@ -343,11 +343,8 @@ func restore(data: Dictionary, refresh_numeric := false) -> String:
 		for child in bundles[bundle_id].claims:
 			if not assigned_transfer_claims.has(child): return "production bundle contains an unbound child claim"
 	var restored_transports := Transports.new(_definition.get("transports",{}))
-	var transport_stock := Inventory.new()
-	error = transport_stock.restore(data.runner.inventory)
-	if not error.is_empty(): return error
 	var transport_state: Dictionary = data.get("transports",{"version":1,"cooldowns":{},"flights":[]})
-	error = restored_transports.validate(transport_state,data.units,transport_stock,_definition.recipes)
+	error = restored_transports.validate(transport_state,data.units,restored_runner.inventory,_definition.recipes)
 	if not error.is_empty(): return error
 	for lot in data.runner.inventory.lots:
 		if lot.owner >= 0 and not units.has(lot.owner): return "inventory has an unknown production owner"
@@ -359,8 +356,7 @@ func restore(data: Dictionary, refresh_numeric := false) -> String:
 	if not error.is_empty(): return error
 	# Only the final adoption writes actor state. Failed graph checks leave all
 	# live services and actors intact.
-	error = runner.restore(data.runner, dynamic, limit_overrides.definition)
-	if not error.is_empty(): return error
+	runner.adopt_restore(data.runner, restored_runner)
 	error = Limits.apply_plan(limit_values.definition,runner)
 	if not error.is_empty(): return error
 	_units = data.units.duplicate(true)

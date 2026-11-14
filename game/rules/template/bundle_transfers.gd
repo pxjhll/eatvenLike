@@ -51,7 +51,7 @@ static func apply(stock: RefCounted, id: int, operation: String, child: int = -1
 		if stock.claim(claim).state!=previous[claim]: stock._record("pickup" if operation=="pickup_part" else operation,claim)
 	return ""
 
-static func validate(stock: RefCounted) -> String:
+static func validate(stock: RefCounted, claims_by_id: Dictionary) -> String:
 	var groups := {}
 	var children := {}
 	for group in stock._state.bundles:
@@ -62,13 +62,13 @@ static func validate(stock: RefCounted) -> String:
 		var states := {}
 		for id in group.claims:
 			if not id is int or children.has(id): return "invalid or duplicate bundle child"
-			var claim: Dictionary = stock.claim(id)
+			var claim: Dictionary = claims_by_id.get(id, {})
 			if claim.is_empty() or claim.kind != "transfer" or claim.group != group.id or claim.actor != group.actor or claim.capacity != group.capacity: return "bundle child differs from parent"
 			children[id] = true
 			total += int(claim.count)
 			states[claim.state] = true
 		if total > group.capacity: return "bundle exceeds carrier capacity"
 		if states.size() > 1 and (states.has("cancelled") or states.has("dropped")): return "bundle was partially committed"
-	for claim in stock._state.claims:
+	for claim in claims_by_id.values():
 		if claim.group > 0 and not children.has(claim.id): return "orphan bundle child"
 	return ""

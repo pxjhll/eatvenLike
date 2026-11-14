@@ -62,8 +62,7 @@ func transfer(worker_id: int, source: String, destination: String, item: String,
 	var context := _transport_scope(stock, [stock.claim(claim.id)], worker)
 	if not String(context.error).is_empty(): return context.error
 	if dispatcher != null:
-		error = inventory.restore(stock.snapshot())
-		if not error.is_empty(): return error
+		inventory.commit_reservation(stock)
 		inventory._record("reserve_transfer",claim.id)
 	var task := _task("transfer", worker)
 	task.scope = context.scope
@@ -130,8 +129,7 @@ func transfer_bundle(worker_id: int, entries: Array, hop_seconds: float) -> Stri
 	var context := _transport_scope(stock, claims, worker)
 	if not String(context.error).is_empty(): return context.error
 	if dispatcher != null:
-		error = inventory.restore(stock.snapshot())
-		if not error.is_empty(): return error
+		inventory.commit_reservation(stock)
 		for claim in inventory.bundle(result.id).claims: inventory._record("reserve_transfer",claim)
 	var task := _task("bundle", worker)
 	task.scope = context.scope
@@ -226,11 +224,15 @@ func snapshot() -> Dictionary:
 		"tasks":tasks.values().duplicate(true), "actors":actors.duplicate(true), "interactions":_interactions.duplicate(true)}
 
 func validate_snapshot(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}) -> String:
-	return String(_prepare_restore(data, dynamic, limits).error)
+	return String(prepare_restore(data, dynamic, limits).error)
 
 func restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}) -> String:
-	var candidate := _prepare_restore(data, dynamic, limits)
+	var candidate := prepare_restore(data, dynamic, limits)
 	if not String(candidate.error).is_empty(): return candidate.error
+	adopt_restore(data, candidate)
+	return ""
+
+func adopt_restore(data: Dictionary, candidate: Dictionary) -> void:
 	# Validation is complete before replacing any actor or service.
 	inventory = candidate.inventory
 	inventory.trace = trace
@@ -245,9 +247,8 @@ func restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {})
 		for key in ACTOR_OPTIONAL: worker.erase(key)
 		for key in actor: worker[key] = actor[key].duplicate(true) if actor[key] is Dictionary or actor[key] is Array else actor[key]
 	last_error = ""
-	return ""
 
-func _prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}) -> Dictionary:
+func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}) -> Dictionary:
 	if not Inventory._shape(data, {"version":0, "next_task":0, "ports":{}, "inventory":{}, "machines":{}, "tasks":[], "actors":[], "interactions":[]}): return {"error":"invalid capability state shape"}
 	var additions: Dictionary = _dynamic_places if dynamic == null else dynamic
 	var expected_ports := ports.duplicate(true)
@@ -402,9 +403,7 @@ func _start(worker: Dictionary, task: Dictionary) -> String:
 
 func _reservation_stock() -> RefCounted:
 	if dispatcher == null: return inventory
-	var candidate := Inventory.new()
-	candidate.restore(inventory.snapshot())
-	return candidate
+	return inventory.copy_for_reservation()
 
 func _transport_scope(stock: RefCounted, claims: Array, worker: Dictionary) -> Dictionary:
 	if dispatcher == null: return {"error":"", "scope":""}

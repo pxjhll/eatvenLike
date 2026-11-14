@@ -279,6 +279,18 @@ func restore(data: Dictionary) -> String:
 	_sync_capacity_limits()
 	return ""
 
+## Internal transactions start from the live ledger and use the same checked
+## reservation methods. Loading a serialized ledger still goes through restore().
+func copy_for_reservation() -> RefCounted:
+	var candidate: RefCounted = get_script().new()
+	candidate._state = snapshot()
+	return candidate
+
+func commit_reservation(candidate: RefCounted) -> void:
+	_state = candidate._state
+	candidate._state = {}
+	_sync_capacity_limits()
+
 func audit() -> Array:
 	var errors: Array = []
 	if not _shape(_state, {"version":1, "next_lot":1, "next_claim":1, "next_bundle":1, "places":{}, "lots":[], "claims":[], "bundles":[], "created":{}, "consumed":{}}): return ["invalid inventory shape"]
@@ -295,19 +307,22 @@ func audit() -> Array:
 			items[item] = true
 	var lot_ids := {}
 	var totals := {}
+	var occupancy := {}
 	for lot in _state.lots:
 		if not _shape(lot, {"id":0, "place":"", "item":"", "count":0, "owner":0}): return ["invalid lot shape"]
 		if lot.id < 1 or lot.id >= _state.next_lot or lot_ids.has(lot.id) or lot.count <= 0 or lot.owner < SHARED or lot.item.is_empty() or not _state.places.has(lot.place): return ["invalid lot identity, amount or owner"]
 		if lot.item in _state.places[lot.place].infinite: return ["infinite supply has a finite lot"]
 		lot_ids[lot.id] = lot
 		_add(totals, lot.item, lot.count)
+		_add(occupancy, lot.place, lot.count)
 	var claim_ids := {}
 	var actors := {}
 	var held_ids := {}
+	var reservations := {}
 	for task in _state.claims:
 		if not _shape(task, _task("", 0, "", "", 0)): return ["invalid claim shape"]
 		if task.id < 1 or task.id >= _state.next_claim or claim_ids.has(task.id): return ["invalid claim identity"]
-		claim_ids[task.id] = true
+		claim_ids[task.id] = task
 		if task.kind not in ["transfer", "operation"] or task.state not in ACTIVE + ["dropped", "completed", "cancelled"]: return ["invalid claim kind or state"]
 		if task.group != -1 and (task.group < 1 or task.kind != "transfer"): return ["invalid claim group"]
 		if not _state.places.has(task.from) or not _state.places.has(task.to) or task.owner < ANY_OWNER or task.allocate_owner < ANY_OWNER or task.worker < 0 or task.count < 0 or task.space < 0: return ["invalid claim values"]
@@ -332,6 +347,7 @@ func audit() -> Array:
 			if lot.is_empty() or lot.place != task.from or (task.owner != ANY_OWNER and lot.owner != task.owner): return ["reserved lot location or owner differs"]
 			if task.kind == "transfer" and lot.item != task.item: return ["reserved item differs"]
 			_add(recipe_counts, lot.item, part.count)
+			reservations[part.lot] = int(reservations.get(part.lot, 0)) + int(part.count)
 		if task.kind == "transfer" and part_total != (0 if task.minted else int(task.count)): return ["transfer reservation amount differs"]
 		if task.kind == "operation" and task.state == "reserved" and recipe_counts != _finite_inputs(task.from, task.consumes): return ["recipe reservation differs"]
 		if task.state in ACTIVE and not task.actor.is_empty():
@@ -345,15 +361,20 @@ func audit() -> Array:
 			if task.state == "held":
 				if held_ids.has(held.lot): return ["carried lot claimed twice"]
 				held_ids[held.lot] = true
-		if task.state == "held" and (held_total != task.count or not _held_valid(task)): return ["carried goods differ from claim"]
+				reservations[held.lot] = int(reservations.get(held.lot, 0)) + int(held.count)
+		if task.state == "held" and (held_total != task.count or not _held_valid(task, lot_ids)): return ["carried goods differ from claim"]
 		if task.state == "reserved" and not task.held.is_empty(): return ["unpicked claim has held goods"]
-	var group_error := Bundles.validate(self)
+		if task.state in ACTIVE:
+			_add(occupancy, task.to, task.space)
+			if task.state == "held" and not task.minted: _add(occupancy, task.from, task.count)
+	var group_error := Bundles.validate(self, claim_ids)
 	if not group_error.is_empty(): return [group_error]
 	for lot in _state.lots:
-		if _reserved_lot(lot.id) > lot.count: errors.append("stock over-reserved")
+		if int(reservations.get(lot.id, 0)) > lot.count: errors.append("stock over-reserved")
 		if is_hand_place(lot.place) and not held_ids.has(lot.id): errors.append("orphan carried lot")
 	for place in _state.places:
-		if _free(place) < 0: errors.append("container capacity exceeded")
+		var capacity: int = _state.places[place].capacity
+		if capacity >= 0 and int(occupancy.get(place, 0)) > capacity: errors.append("container capacity exceeded")
 	var all_items := totals.duplicate()
 	for item in _state.created: all_items[item] = true
 	for item in _state.consumed: all_items[item] = true
@@ -431,9 +452,9 @@ func _finite_inputs(place: String, consumes: Dictionary) -> Dictionary:
 	for item in _state.places[place].infinite: result.erase(item)
 	return result
 
-func _held_valid(task: Dictionary) -> bool:
+func _held_valid(task: Dictionary, lot_ids: Variant = null) -> bool:
 	for held in task.held:
-		var lot := _find(_state.lots, held.lot)
+		var lot: Dictionary = _find(_state.lots, held.lot) if lot_ids == null else lot_ids.get(held.lot, {})
 		if lot.is_empty() or lot.place != _hand_place(task.actor) or lot.item != task.item or lot.count != held.count: return false
 		var owner: int = task.allocate_owner if task.allocate_owner != ANY_OWNER else held.owner
 		if lot.owner != owner: return false
