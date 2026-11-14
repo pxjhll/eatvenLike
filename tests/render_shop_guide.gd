@@ -8,6 +8,11 @@ const TestSession := preload("res://tests/shop_test_session.gd")
 ## 和旧场景的 render_guide.gd 一一对应（旧场景删掉时这个留下）。
 
 const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
+const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+class RollBottleneck extends ShopView:
+	func _guide_slow_machine() -> String:
+		return "roll"
+
 var view: Node2D
 var hud: Control
 var guide: Control
@@ -157,6 +162,7 @@ func _run() -> void:
 	await _reopen(veteran)
 	_check(veteran.guide.active.is_empty() and veteran.guide.seen.has("opening"), "已经开过张的存档跳过开场")
 	veteran.free()
+	await _pancake_roll_hint()
 	if FileAccess.file_exists(save_path): DirAccess.remove_absolute(save_path)
 	for error in errors.take():
 		failures += 1
@@ -164,6 +170,33 @@ func _run() -> void:
 	OS.remove_logger(errors)
 	print("SHOP GUIDE GUI: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)
+
+func _pancake_roll_hint() -> void:
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	var owner := ShopRules.new(PANCAKE, 42)
+	owner.unlock("soy_milk")
+	view.session = TestSession.make(PANCAKE, save_path + "-pancake", owner)
+	await _reopen(view)
+	hud = view.ui
+	guide = view.guide
+	var original_view: ShopView = view.view
+	view.view = RollBottleneck.new(owner)
+	guide.enabled = true
+	for step in PANCAKE.guide:
+		if step.id != "lost_machine": guide.seen[step.id] = true
+	guide._start("lost_machine")
+	guide.refresh(0)
+	await process_frame
+	_check(not view.anchors.rect("Stations/roll/Tap").has_area(), "卷饼没有可点的区域")
+	_check(not view.frozen() and guide._point == Vector2.INF, "没有目标时不暂停，也不画指向屏幕中央的箭头")
+	_check(guide._bubble.visible and not guide._bubble_text.text.contains("点它升级"), "没有升级入口时显示一般经营提示")
+	var clock := owner.clock
+	view._process(0.25)
+	_check(owner.clock > clock, "提示还在时店铺继续经营")
+	await _touch(guide._bubble_skip.get_global_transform_with_canvas() * (guide._bubble_skip.size / 2.0))
+	_check(guide.seen.has("lost_machine") and not guide.visible and not view.frozen(), "只有原生触屏事件也能关闭「知道了」")
+	view.free()
+	original_view = null
 
 
 ## Explicit session reopens the isolated save and enables only the tutorial.

@@ -170,11 +170,18 @@ func _play(step: SpecGuideStep) -> void:
 			if not waiting.is_empty() and _view.staff_is_deployed(_view.selected_worker):
 				_view.select_worker(int(waiting[0].id), true)
 		var text := _fill(String(cue.get("text", "")), step)
-		var at := _fill(String(cue.get("at", "")), step)
+		var target := String(cue.get("at", ""))
+		var at := _fill(target, step)
+		if target == "station:{slow_id}":
+			var id := at.trim_prefix("station:")
+			var rules: ShopRules = _view.rules
+			if not rules.station_unlocked(id) or rules.upgrade_cost(id) < 0 or not _target_rect(at).has_area():
+				_say("有客人等急了！可以看看哪些设备还能升级。")
+				return
 		if cue.get("pause", true): _aim(at, text)
 		else:
 			var rect := _target_rect(at)
-			_point = rect.get_center() if rect.has_area() else size / 2.0
+			if rect.has_area(): _point = rect.get_center()
 			_say(text)
 		return
 
@@ -379,15 +386,14 @@ func _ui(name: String) -> Control:
 func _aim(at: String, text: String) -> void:
 	if at.begins_with("station:") or at.begins_with("area:"):
 		var rect: Rect2 = _view.anchors.rect("Stations/%s/Tap" % at.substr(8)) if at.begins_with("station:") else _view.anchors.rect(at.substr(5))
-		if _view.has_method("reveal_world"): _view.reveal_world(rect)
-		_hole = _world_rect(rect)
-		_blocking = true
+		if rect.has_area():
+			if _view.has_method("reveal_world"): _view.reveal_world(rect)
+			_hole = _world_rect(rect)
 	else:
 		var rect := _target_rect(at)
-		if rect.has_area():
-			_hole = rect.grow(8)
-			_blocking = true
-	_point = _hole.get_center() if _hole.has_area() else size / 2.0
+		if rect.has_area(): _hole = rect.grow(8)
+	_blocking = _hole.has_area()
+	if _blocking: _point = _hole.get_center()
 	_say(text)
 
 
