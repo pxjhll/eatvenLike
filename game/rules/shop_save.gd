@@ -20,6 +20,8 @@ var _write_blocked := false
 var load_error: Error = OK
 ## 店铺内容指纹只算一次：每次自动存档都重算整份数据很慢
 var _content_cache: Dictionary = {}
+var _verified_bytes := PackedByteArray()
+var _verified_template: Dictionary = {}
 
 
 static func path_for(shop_id: String) -> String:
@@ -97,15 +99,21 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 		last_error = "存档失败：店铺内容和存档不是同一版本，请重新进店"
 		return ERR_INVALID_PARAMETER
 	var state := rules.to_dict()
-	var state_error := make_rules().load_dict(state)
+	# Public state restores its own runtime. Custom and legacy stores keep their factory.
+	var validator := ShopRules.new(shop,-1,false) if state.has("runtime") and get_script() == load("res://game/rules/shop_save.gd") else make_rules()
+	var state_error := validator.load_dict(state)
 	if not state_error.is_empty():
 		last_error = "存档失败：店铺状态无效：" + state_error
 		return ERR_INVALID_DATA
 	if _write_blocked:
 		last_error = "坏存档留底失败，已停止写入；请检查空间或权限后重试"
 		return ERR_UNAVAILABLE
-	# Every write, including fresh intent, assesses the file currently on disk.
-	var existing := _assess_existing()
+	# Exact bytes previously written after validation need no second restore.
+	# Any external edit or template change goes through the full protection path.
+	var existing := {}
+	var template: Dictionary = state.get("template", {})
+	if _verified_bytes.is_empty() or template != _verified_template or FileAccess.get_file_as_bytes(path) != _verified_bytes:
+		existing = _assess_existing()
 	if not existing.get("error", "").is_empty():
 		last_error = existing.error
 		if existing.get("protected", false): return ERR_UNAVAILABLE
@@ -122,10 +130,14 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 	var payload := {"format": FORMAT, "version": VERSION, "shop": shop.id, "content": content, "speed": speed,
 		"state": Marshalls.raw_to_base64(bytes), "state_sha256": bytes.hex_encode().sha256_text()}
 	if not guides.is_empty(): payload.guides = guides.map(func(id: Variant) -> String: return str(id))
-	var error := SaveService.new(path).save(payload)
+	var writer := SaveService.new(path)
+	var error := writer.save(payload)
 	if error != OK:
 		last_error = "存档写入失败：%s" % error_string(error)
 		return error
+	if not template.is_empty():
+		_verified_bytes = writer.saved_bytes
+		_verified_template = template.duplicate()
 	last_error = ""
 	return OK
 

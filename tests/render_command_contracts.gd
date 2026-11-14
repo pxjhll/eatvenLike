@@ -63,7 +63,7 @@ func _run() -> void:
 		var opening: String = spec.stages[0].stations[0]
 		scene.ui.open_station(opening)
 		var button: Button = scene.ui.page_node("station").unlock_button
-		_success(scene, func() -> void: button.pressed.emit(), "unlocked", "opening " + spec.id)
+		await _success(scene, func() -> void: button.pressed.emit(), "unlocked", "opening " + spec.id)
 		suite.check(scene.rules.is_open(), "actual opening succeeds for " + spec.id)
 		scene.ui.open_page("staff")
 		scene._refresh(0.0)
@@ -99,7 +99,9 @@ func _success(scene: Node2D, action: Callable, event: String, label: String) -> 
 	action.call()
 	scene.rules.events.off(event, callback)
 	suite.check_eq(received.size(), 1, label + " emits its business event once")
-	suite.check_eq(scene.store.writes, writes + 1, label + " persists once")
+	suite.check_eq(scene.store.writes, writes, label + " does not save in the input callback")
+	for frame in 3: await process_frame
+	suite.check_eq(scene.store.writes, writes + 1, label + " persists once after the UI can draw")
 	var reloaded: ShopRules = scene.store.load_game()
 	suite.check_eq(reloaded.gold, scene.rules.gold, label + " saves actual gold")
 	suite.check_eq(reloaded.to_dict(), scene.rules.to_dict(), label + " saves actual progress")
@@ -120,7 +122,7 @@ func _test_tea(scene: Node2D, translated: String) -> void:
 	scene._refresh(0.0)
 	suite.check(not station.unlock_button.disabled and scene._station_buttons.lemonade.can_unlock, "nonempty success display enables button and frame")
 	suite.check(scene.guide._holds("affordable:lemonade"), "nonempty success display permits guide")
-	_success(scene, func() -> void: station.unlock_button.pressed.emit(), "unlocked", "opening")
+	await _success(scene, func() -> void: station.unlock_button.pressed.emit(), "unlocked", "opening")
 	suite.check_eq(rules.gold, 100000.0-opening_cost, "opening debits exactly one displayed cost")
 	_reject(scene, func() -> void: scene.station_action("unlock", "lemonade"), "repeat opening")
 	scene.ui.open_station(rules.supply_id)
@@ -131,25 +133,26 @@ func _test_tea(scene: Node2D, translated: String) -> void:
 		suite.check_eq(row.state, "box_closed", "actual material state ignores localized prefix")
 		suite.check_eq(row.error, translated, "actual material uses injected text")
 		suite.check(station.material_buttons[material.id].disabled, "locked material button stays disabled")
-	_success(scene, func() -> void: scene.station_action("unlock", "boil"), "unlocked", "boil")
+	await _success(scene, func() -> void: scene.station_action("unlock", "boil"), "unlocked", "boil")
 	suite.check(scene.guide._holds("box_affordable"), "box guide follows canonical check")
 	var box := rules.pending_box()
-	_success(scene, func() -> void: scene.station_action("box", rules.supply_id, box), "box", "box")
-	_success(scene, func() -> void: scene.station_action("upgrade", "lemonade"), "upgraded", "station upgrade")
-	_success(scene, func() -> void: scene.station_action("material", rules.supply_id, box), "upgraded", "material upgrade")
-	_success(scene, func() -> void: scene.station_action("seat", rules.counter_id), "seat", "seat")
-	_success(scene, func() -> void: scene.station_action("flyers", rules.counter_id), "flyer", "flyers")
+	await _success(scene, func() -> void: scene.station_action("box", rules.supply_id, box), "box", "box")
+	await _success(scene, func() -> void: scene.station_action("upgrade", "lemonade"), "upgraded", "station upgrade")
+	await _success(scene, func() -> void: scene.station_action("material", rules.supply_id, box), "upgraded", "material upgrade")
+	await _success(scene, func() -> void: scene.station_action("seat", rules.counter_id), "seat", "seat")
+	await _success(scene, func() -> void: scene.station_action("flyers", rules.counter_id), "flyer", "flyers")
 	_reject(scene, func() -> void: scene.station_action("flyers", rules.counter_id), "active flyers")
-	_success(scene, func() -> void: scene.station_action("flyer_upgrade", rules.counter_id), "upgraded", "flyer upgrade")
+	await _success(scene, func() -> void: scene.station_action("flyer_upgrade", rules.counter_id), "upgraded", "flyer upgrade")
 	scene.ui.open_page("staff")
-	_success(scene, scene.hire_worker, "hired", "hire")
-	_success(scene, scene.toggle_deployment, "recalled", "recall")
-	_success(scene, scene.toggle_deployment, "deployed", "deployment")
-	_success(scene, func() -> void: scene.buy_staff_upgrade("front"), "upgraded", "staff upgrade")
+	await _success(scene, scene.hire_worker, "hired", "hire")
+	await _success(scene, scene.toggle_deployment, "recalled", "recall")
+	await _success(scene, scene.toggle_deployment, "deployed", "deployment")
+	await _success(scene, func() -> void: scene.buy_staff_upgrade("front"), "upgraded", "staff upgrade")
 	for stage in TEA.stages:
 		if not rules.station_unlocked(stage.stations[0]): scene.station_action("unlock", stage.stations[0])
+	for frame in 3: await process_frame
 	var connection: SpecConnection = TEA.connections[0]
-	_success(scene, func() -> void: scene.buy_connection(connection.id), "connection", "connection")
+	await _success(scene, func() -> void: scene.buy_connection(connection.id), "connection", "connection")
 	_reject(scene, func() -> void: scene.buy_connection(connection.id), "repeat connection")
 	var event := SpecEvent.new()
 	event.id = "localized"
@@ -161,10 +164,11 @@ func _test_tea(scene: Node2D, translated: String) -> void:
 	_reject(scene, func() -> void: scene.answer_event(0, event.id), "event funds")
 	suite.check(scene.ui.popups.has_card("event:" + event.id), "failure keeps actual popup")
 	rules.gold = 10000.0
-	_success(scene, func() -> void: scene.ui.popups.button(0).pressed.emit(), "event_answered", "event answer")
+	await _success(scene, func() -> void: scene.ui.popups.button(0).pressed.emit(), "event_answered", "event answer")
 	suite.check_eq(rules.gold, 10011.0, "event cost and effect happen once")
 	suite.check(not scene.ui.popups.has_card("event:" + event.id) and rules.pending_events.is_empty(), "success consumes actual card")
 	await _test_drag(scene)
+	await _test_save_queue(scene)
 	rules.gold = 0.0
 	scene._refresh(0.0)
 	var staff: Control = scene.ui.page_node("staff")
@@ -172,6 +176,19 @@ func _test_tea(scene: Node2D, translated: String) -> void:
 	for button in staff.upgrade_buttons.values(): suite.check(button.disabled, "empty failure cannot enable staff upgrade")
 	_reject(scene, scene.hire_worker, "hire funds")
 	_reject(scene, func() -> void: scene.buy_staff_upgrade("front"), "staff upgrade funds")
+
+func _test_save_queue(scene: Node2D) -> void:
+	var writes: int = scene.store.writes
+	scene.request_save()
+	scene.request_save()
+	for frame in 3: await process_frame
+	suite.check_eq(scene.store.writes, writes + 1, "pending saves coalesce")
+	writes = scene.store.writes
+	scene.request_save()
+	suite.check_eq(scene.save_now(false), OK, "explicit save flushes immediately")
+	for frame in 3: await process_frame
+	suite.check_eq(scene.store.writes, writes + 1, "flushed request does not write again")
+
 
 func _test_drag(scene: Node2D) -> void:
 	scene.ui.open_page("shop")
@@ -209,4 +226,4 @@ func _test_drag(scene: Node2D) -> void:
 	suite.check_eq(drag._target_status().code, "ok", "validity ignores nonempty success message")
 	drag._update_ghost()
 	await process_frame
-	_success(scene, func() -> void: drag._release(screen), "placed", "valid drag release")
+	await _success(scene, func() -> void: drag._release(screen), "placed", "valid drag release")

@@ -12,9 +12,15 @@ const OUTER := ["gold","revenue","sold","sold_by_dish","stage_index","unlocked",
 const PERSON := ["id","kind","name","stats","post","deployed","source","fatigue"]
 
 static func save(owner: RefCounted) -> Dictionary:
-	var legacy: Dictionary = owner._legacy_dict()
 	var outer := {}
-	for key in OUTER: outer[key] = legacy[key]
+	for key in OUTER:
+		match key:
+			"rng": outer[key] = [owner.rng.seed, owner.rng.state]
+			"event_rng": outer[key] = [owner.event_rng.seed, owner.event_rng.state]
+			"mods": outer[key] = owner.mods.entries
+			"log": outer[key] = owner.events.log
+			"pending_events": outer[key] = owner.pending_events.map(func(event: SpecEvent) -> String: return event.id)
+			_: outer[key] = owner.get(key)
 	outer.roster = []
 	for worker in owner.roster:
 		var row := {}
@@ -30,7 +36,9 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false) -> St
 	var identity := Contract.describe_template(template)
 	if data.template.get("structure")!=identity.structure: return "public template structure differs"
 	if not refresh and data.template!=identity: return "public template numeric revision differs"
-	var candidate: RefCounted = owner.get_script().new(owner.shop)
+	var script: Script = owner.get_script()
+	# The candidate gets its runtime after the saved purchase state is restored.
+	var candidate: RefCounted = script.new(owner.shop,-1,false) if script == load("res://game/rules/shop_rules.gd") else script.new(owner.shop)
 	candidate.runtime = null
 	candidate._runtime_template = null
 	candidate.event_defs = owner.event_defs.duplicate()

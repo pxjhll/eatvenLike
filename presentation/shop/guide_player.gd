@@ -221,7 +221,7 @@ func _skip() -> void:
 	seen[step.id] = true
 	for id in step.skip_marks: seen[id] = true
 	active = ""
-	_view.save_now(false)
+	_view.request_save()
 	refresh(0.0)
 
 
@@ -231,7 +231,7 @@ func _finish() -> void:
 		seen[step.id] = true
 		for id in step.finish_marks: seen[id] = true
 	active = ""
-	_view.save_now(false)
+	_view.request_save()
 
 
 # ---------- 条件 ----------

@@ -48,6 +48,8 @@ var recorder: RefCounted
 var selected_worker := 1
 var _speed_factor := 1.0
 var _autosave_elapsed := 0.0
+var _save_pending := false
+var _save_generation := 0
 var _font: Font
 var _drag: Node2D
 var _world_size := Vector2(720, 1500)
@@ -380,7 +382,7 @@ func _process(delta: float) -> void:
 		_autosave_elapsed += delta
 		if _autosave_elapsed >= 10.0:
 			_autosave_elapsed = 0.0
-			save_now(false)
+			request_save()
 
 
 func _refresh(delta: float) -> void:
@@ -486,7 +488,7 @@ func answer_event(choice: int, id: String) -> void:
 		_show_toast(view.command_message(status))
 		return
 	ui.popups.remove("event:" + id)
-	save_now(false)
+	request_save()
 	_refresh(0.0)
 
 
@@ -1323,7 +1325,7 @@ func hire_worker() -> void:
 		selected_worker = int(all_staff().back().id)
 		var deployed: bool = staff_is_deployed(selected_worker) or (execute_command("deploy_worker", {"id": selected_worker}).code == "ok")
 		_show_toast(_t("hired_deployed") if deployed else _t("hired_roster"))
-		save_now(false)
+		request_save()
 	_refresh(0.0)
 
 
@@ -1333,7 +1335,7 @@ func buy_staff_upgrade(side: String) -> void:
 	var status := execute_command("upgrade", {"key": "staff/" + side})
 	if status.code == "ok": _bought("staff_%s/%s" % [side, info.name], gold_before)
 	_show_toast(view.command_message(status) if status.code != "ok" else _t("staff_upgraded", {"side": info.title, "name": info.name}))
-	if status.code == "ok": save_now(false)
+	if status.code == "ok": request_save()
 	_refresh(0.0)
 
 
@@ -1363,7 +1365,7 @@ func toggle_deployment() -> void:
 	var message: String = view.command_message(status) if status.code != "ok" else _t("recalled") if returning else _t("deployed")
 	if status.code == "ok" and returning and carrier_warning(): message = _t("no_carrier")
 	_show_toast(message)
-	if status.code == "ok": save_now(false)
+	if status.code == "ok": request_save()
 	_refresh(0)
 
 
@@ -1387,7 +1389,7 @@ func station_action(action: String, station: String, material := "") -> void:
 	if status.code == "ok":
 		var key := station + ("/" + material if not material.is_empty() else "")
 		_bought("%s %s Lv%d" % [action, key, rules.level(key) if rules.track_of(key) != null else 0], gold_before)
-		save_now(false)
+		request_save()
 	_refresh(0)
 
 
@@ -1399,12 +1401,26 @@ func buy_connection(id: String) -> void:
 		return
 	_bought("belt " + id, before)
 	_show_toast(_t("connection_bought", {"note": String(anchors.meta("Connections/" + id, "note", "")).get_slice("，", 0)}))
-	save_now(false)
+	request_save()
 	_refresh(0.0)
+
+
+## Merge pending background saves and let at least one frame draw the UI first.
+func request_save() -> void:
+	if _save_pending or store == null: return
+	_save_pending = true
+	var generation := _save_generation
+	var tree := get_tree()
+	await tree.process_frame
+	await tree.process_frame
+	if generation == _save_generation: save_now(false)
 
 
 func save_now(notify := true) -> Error:
 	if session == null or not session.started or _startup_blocked or _transition_committed: return ERR_UNAVAILABLE
+	_save_pending = false
+	_save_generation += 1
+	_autosave_elapsed = 0.0
 	session.speed = _speed_factor
 	var result: Error = session.save(guide.seen_list() if guide != null else [])
 	save_status = "进度已保存" if result == OK else session.last_error

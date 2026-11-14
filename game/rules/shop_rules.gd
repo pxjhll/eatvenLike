@@ -19,6 +19,7 @@ var movement: Dictionary = {}
 var runtime: RefCounted
 var runtime_error := ""
 var _runtime_template: Resource
+var _defer_runtime := false
 ## 通用店铺规则（规格 §3）。所有店跑这一份代码，店铺之间只有 SpecShop 数据不同。
 ## 这里不出现任何店铺、机器、菜品的名字：机器按工序积木类型（block）认，菜按工序链认。
 ## 两种交接方式（§3.2 handoff）：
@@ -157,11 +158,13 @@ var station_output: Dictionary = {}
 var station_input: Dictionary = {}
 
 
-func _init(shop_: SpecShop, seed := -1) -> void:
+func _init(shop_: SpecShop, seed := -1, prepare_runtime := true) -> void:
 	shop = shop_
 	nav = RuleNav.new(shop.layout)
 	_derive_roles()
+	_defer_runtime = not prepare_runtime
 	reset(seed)
+	_defer_runtime = false
 
 
 # ---------- 存档（§3.12）：整店运行状态按名字存，读回来逐帧接着跑 ----------
@@ -416,7 +419,10 @@ func reset(seed := -1) -> void:
 		if not post.is_empty(): _seat_at(worker, post)
 	var template: Resource = shop.runtime_template if shop.runtime_template!=null else _runtime_template
 	if movement_enabled(): movement = {"version":1,"customers":{}}
-	if template!=null: runtime_error = enable_runtime(template)
+	if _defer_runtime:
+		_runtime_template = template
+	elif template!=null:
+		runtime_error = enable_runtime(template)
 
 func enable_runtime(template: Resource, open_service := true) -> String:
 	var candidate: RefCounted = load("res://game/rules/template/runtime.gd").new(self,template)

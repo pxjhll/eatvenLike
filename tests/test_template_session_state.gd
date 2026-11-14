@@ -5,6 +5,30 @@ class RefuseBackup extends ShopSave:
 	func _backup_before_content_update() -> Error:
 		return ERR_FILE_CANT_WRITE
 
+class CountingAssessment extends ShopSave:
+	var assessments := 0
+	func _assess_existing() -> Dictionary:
+		assessments += 1
+		return super._assess_existing()
+
+func test_save_reuses_validation_only_for_exactly_the_bytes_it_wrote() -> void:
+	var shop: SpecShop = load("res://content/shops/pancake/shop.tres")
+	var owner := ShopRules.new(shop, 42)
+	var path := "user://verified-write-"+str(Time.get_ticks_usec())+".json"
+	paths.append(path)
+	var store := CountingAssessment.new(shop, path)
+	check_eq(store.save_game(owner), OK, "initial validated save")
+	owner.gold += 5
+	check_eq(store.save_game(owner), OK, "subsequent validated save")
+	check_eq(store.assessments, 1, "identical previously written bytes skip old-file restore")
+	var replacement := JSON.stringify({"format": ShopSave.FORMAT, "shop": shop.id, "version": ShopSave.VERSION + 1})
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	file.store_string(replacement)
+	file.close()
+	check_eq(store.save_game(owner), ERR_UNAVAILABLE, "changed file is assessed and protected")
+	check_eq(store.assessments, 2, "external replacement takes the full validation path")
+	check_eq(FileAccess.get_file_as_string(path), replacement, "future version remains in place")
+
 func cleanup() -> void:
 	for path in paths:
 		for file in DirAccess.get_files_at(path.get_base_dir()):

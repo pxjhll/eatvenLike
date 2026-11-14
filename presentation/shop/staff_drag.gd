@@ -209,7 +209,7 @@ func _release(screen: Vector2) -> void:
 		# 玩家怎么排都行；只在没人搬东西的时候提醒一句
 		if _view.carrier_warning(): message = _view._t("no_carrier")
 		_view._show_toast(message)
-		_view.save_now(false)
+		_view.request_save()
 	else:
 		_view._show_toast(_status_text(status))
 	cancel()
