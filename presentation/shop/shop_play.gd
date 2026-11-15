@@ -372,6 +372,7 @@ func _process(delta: float) -> void:
 	var before := rules.clock
 	if not frozen():
 		rules.step(minf(delta, 0.25) * _speed_factor)
+	view.observe_bottlenecks()
 	var frame := view.render_snapshot()
 	if recorder != null: recorder.tick(rules.clock - before, frame)
 	_refresh(delta, frame)
@@ -670,7 +671,7 @@ func _refresh_station_signs() -> void:
 	var hint := view.bottleneck()
 	var target := String(hint.get("target", ""))
 	# 刚堵上的时候弹一次完整原因，目标栏里留短句
-	if not hint.is_empty() and _hint_text != String(hint.text): _show_toast(String(hint.text))
+	if not hint.is_empty() and not hint.get("quiet", false) and _hint_text != String(hint.text): _show_toast(String(hint.text))
 	_hint_text = String(hint.get("text", ""))
 	var rects := anchors.station_rects()
 	_hint_ring.visible = rects.has(target)

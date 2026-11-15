@@ -13,6 +13,7 @@ const CommandText := preload("res://content/ui/rule_command_text.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Production := preload("res://game/rules/production_plan.gd")
 const Requirements := preload("res://game/rules/template/requirements.gd")
+const StaffOperationHint := preload("res://game/rules/template/staff_operation_hint.gd")
 const SceneFrame := preload("res://game/rules/template/scene_frame.gd")
 var _runtime_binding: RefCounted
 var _follows_owner := false
@@ -871,9 +872,68 @@ func pouring_station(worker: Dictionary) -> String:
 # ---------- 瓶颈提示（§3.10） ----------
 
 const HINT_AFTER := 20.0
+const OPERATION_WINDOW := 60.0
+const OPERATION_CURRENT_WAIT := 3.0
+var _operation_recent := {}
+var _operation_wait := {}
+var _operation_runtime: WeakRef
+var _operation_clock := -1.0
+var _operation_hint := {}
+
+## Explicit presentation observation, using simulation time (pause does not age
+## warnings). The actual hint queries remain pure and never mutate rule state.
+func observe_bottlenecks() -> void:
+	if _runtime == null:
+		_operation_wait.clear()
+		_operation_recent.clear()
+		_operation_hint = {}
+		return
+	if _operation_runtime == null or _operation_runtime.get_ref() != _runtime or rules.clock < _operation_clock:
+		_operation_wait.clear()
+		_operation_recent.clear()
+	_operation_runtime = weakref(_runtime)
+	_operation_clock = rules.clock
+	# Keep only bounded, merged wait episodes, not one row per frame.
+	for target in _operation_recent.keys():
+		var rows: Array = _operation_recent[target]
+		rows = rows.filter(func(row: Dictionary) -> bool: return row.end > rules.clock - OPERATION_WINDOW)
+		if rows.is_empty(): _operation_recent.erase(target)
+		else: _operation_recent[target] = rows
+	var present := {}
+	_operation_hint = {}
+	for candidate in StaffOperationHint.candidates(_runtime):
+		var key := "%s:%d:%s:%d" % [candidate.target, candidate.run, candidate.phase, candidate.stir_index]
+		present[key] = true
+		if not _operation_wait.has(key):
+			_operation_wait[key] = rules.clock
+			if not _operation_recent.has(candidate.target): _operation_recent[candidate.target] = []
+			_operation_recent[candidate.target].append({"key":key, "start":rules.clock, "end":rules.clock})
+		var rows: Array = _operation_recent.get(candidate.target, [])
+		var total := 0.0
+		var episodes := 0
+		var covered_until := -INF
+		for row in rows:
+			if row.key == key and row.start == _operation_wait[key]: row.end = rules.clock
+			var start: float = maxf(float(row.start), rules.clock - OPERATION_WINDOW)
+			if row.end <= start: continue
+			if start > covered_until: episodes += 1
+			total += maxf(0.0, float(row.end) - maxf(start, covered_until))
+			covered_until = maxf(covered_until, float(row.end))
+		var current := rules.clock - float(_operation_wait[key])
+		var repeated: bool = episodes >= 3 and total + 0.000001 >= HINT_AFTER and current + 0.000001 >= OPERATION_CURRENT_WAIT
+		if current + 0.000001 < HINT_AFTER and not repeated: continue
+		if not _operation_hint.is_empty(): continue
+		var values := {"name":station_name(candidate.target)}
+		var message := text("hint_fixed_post", values, "{name}经常在等员工操作。可安排一位员工固定岗位，并保留流动员工搬运。".format(values))
+		var action := text("hint_fixed_post_fix", values, "可固定岗位，留流动员工")
+		_operation_hint = {"key":"hint_fixed_post", "target":candidate.target, "text":message, "fix":action, "short":station_name(candidate.target) + "等操作 · " + action, "drink":"", "navigate":"staff", "quiet":true}
+	for key in _operation_wait.keys():
+		if not present.has(key): _operation_wait.erase(key)
+
 
 ## 队伍满了一阵子：哪道菜排长队、卡在哪、去哪修（target = 机器 id，或 staff_front / staff_kitchen / staff）。
 func bottleneck() -> Dictionary:
+	if not _operation_hint.is_empty(): return _operation_hint.duplicate()
 	if rules.full_seconds < HINT_AFTER: return {}
 	var waiting := {}
 	var source: Array = rules.orders if shop.fulfillment.handoff != "single" else rules.customers

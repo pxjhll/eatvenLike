@@ -265,6 +265,15 @@
       "success": "SHOP GUIDE GUI:.*\\b0 failures"
     },
     {
+      "id": "operation_hint",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_operation_hint.gd",
+      "args": [],
+      "timeout": 45,
+      "success": "OPERATION HINT UI:.*\\b0 failures"
+    },
+    {
       "id": "shop_extend",
       "kind": "script",
       "profile": "headless",
