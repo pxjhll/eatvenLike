@@ -638,10 +638,9 @@ func _refresh_station_signs() -> void:
 			frame.text = _t("frame_seat", {"step": group.step, "cost": rules.seat_cost()})
 			frame.tooltip_text = _t("frame_seat_tip") + "\n" + view.command_message(rules.command_status("buy_seat"))
 			continue
-		if id == rules.supply_id:
-			# 原料柜的框：最新那台机器要用的原料箱
-			frame.visible = not box.is_empty()
-			if box.is_empty(): continue
+		if id == rules.supply_id and not box.is_empty():
+			# 已有原料柜也能用同一个框显示待买的原料箱。
+			frame.visible = true
 			var m := shop.station(rules.supply_id).material(box)
 			frame.can_unlock = rules.command_status("unlock_box", {"material": box}).code == "ok"
 			frame.text = _t("frame_box", {"name": m.display_name, "cost": m.box_cost})

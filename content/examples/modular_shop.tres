@@ -43,7 +43,7 @@
 [ext_resource type="Texture2D" path="res://art/stirfry/items/tomato_rice.png" id="food_tomato_rice"]
 [ext_resource type="Texture2D" path="res://art/stirfry/items/yangzhou_rice.png" id="food_yangzhou_rice"]
 
-[ext_resource type="Resource" path="res://content/shops/stirfry/shared_production.tres" id="u06_runtime"]
+[ext_resource type="Resource" path="res://content/examples/modular_shop_production.tres" id="u06_runtime"]
 
 [sub_resource type="Resource" id="Resource_hix41"]
 script = ExtResource("3_pc7b7")
@@ -529,7 +529,7 @@ icon = ExtResource("food_plum_juice")
 script = ExtResource("14_tnc2d")
 nav = "grid"
 areas = Array[Rect2i]([Rect2i(2, 12, 40, 76)])
-obstacles = Array[Rect2]([Rect2(750, 385, 85, 45), Rect2(330, 270, 235, 50), Rect2(735, 280, 105, 40), Rect2(45, 560, 325, 60), Rect2(45, 385, 125, 65), Rect2(585, 555, 250, 60), Rect2(50, 820, 665, 95), Rect2(137.5, 1075.3671, 158, 45), Rect2(88.5, 1088.3671, 66, 32), Rect2(286.5, 1088.3671, 66, 32), Rect2(589.5, 1075.3671, 158, 45), Rect2(540.5, 1088.3671, 66, 32), Rect2(738.5, 1088.3671, 66, 32), Rect2(137.5, 1258.3671, 158, 45), Rect2(88.5, 1271.3671, 66, 32), Rect2(286.5, 1271.3671, 66, 32), Rect2(589.5, 1258.3671, 158, 45), Rect2(540.5, 1271.3671, 66, 32), Rect2(738.5, 1271.3671, 66, 32), Rect2(137.5, 1448.3671, 158, 45), Rect2(88.5, 1461.3671, 66, 32), Rect2(286.5, 1461.3671, 66, 32), Rect2(589.5, 1448.3671, 158, 45), Rect2(540.5, 1461.3671, 66, 32), Rect2(738.5, 1461.3671, 66, 32), Rect2(137.5, 1636.3671, 158, 45), Rect2(88.5, 1649.3671, 66, 32), Rect2(286.5, 1649.3671, 66, 32), Rect2(589.5, 1636.3671, 158, 45), Rect2(540.5, 1649.3671, 66, 32), Rect2(738.5, 1649.3671, 66, 32), Rect2(620, 245, 100, 40), Rect2(715, 815, 20, 40), Rect2(830, 815, 15, 40), Rect2(40, 1718, 310, 42), Rect2(550, 1718, 290, 42), Rect2(148, 1710, 130, 50)])
+obstacles = Array[Rect2]([Rect2(750, 385, 85, 45), Rect2(330, 270, 235, 50), Rect2(735, 280, 105, 40), Rect2(45, 560, 325, 60), Rect2(45, 385, 125, 65), Rect2(585, 555, 250, 60), Rect2(50, 820, 665, 95), Rect2(137.5, 1075.3671, 158, 45), Rect2(62.5, 1088.3671, 66, 32), Rect2(312.5, 1088.3671, 66, 32), Rect2(589.5, 1075.3671, 158, 45), Rect2(514.5, 1088.3671, 66, 32), Rect2(764.5, 1088.3671, 66, 32), Rect2(137.5, 1258.3671, 158, 45), Rect2(62.5, 1271.3671, 66, 32), Rect2(312.5, 1271.3671, 66, 32), Rect2(589.5, 1258.3671, 158, 45), Rect2(514.5, 1271.3671, 66, 32), Rect2(764.5, 1271.3671, 66, 32), Rect2(137.5, 1448.3671, 158, 45), Rect2(62.5, 1461.3671, 66, 32), Rect2(312.5, 1461.3671, 66, 32), Rect2(589.5, 1448.3671, 158, 45), Rect2(514.5, 1461.3671, 66, 32), Rect2(764.5, 1461.3671, 66, 32), Rect2(137.5, 1636.3671, 158, 45), Rect2(62.5, 1649.3671, 66, 32), Rect2(312.5, 1649.3671, 66, 32), Rect2(589.5, 1636.3671, 158, 45), Rect2(514.5, 1649.3671, 66, 32), Rect2(764.5, 1649.3671, 66, 32), Rect2(620, 245, 100, 40), Rect2(715, 815, 20, 40), Rect2(830, 815, 15, 40), Rect2(40, 1718, 310, 42), Rect2(550, 1718, 290, 42), Rect2(148, 1710, 130, 50)])
 obstacle_stations = Array[String](["", "wok_a", "soup_pot", "", "pantry", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""])
 grid_size = Vector2i(45, 89)
 points = Dictionary[String, Vector2]({
@@ -541,22 +541,22 @@ points = Dictionary[String, Vector2]({
 "plum_dispenser": Vector2(310, 755),
 "rice_cooker": Vector2(790, 480),
 "soup_pot": Vector2(800, 345),
-"table/0": Vector2(121, 1010),
-"table/1": Vector2(320, 1010),
-"table/10": Vector2(574, 1383),
-"table/11": Vector2(772, 1383),
-"table/12": Vector2(121, 1571),
-"table/13": Vector2(320, 1571),
-"table/14": Vector2(574, 1571),
-"table/15": Vector2(772, 1571),
-"table/2": Vector2(574, 1010),
-"table/3": Vector2(772, 1010),
-"table/4": Vector2(121, 1193),
-"table/5": Vector2(320, 1193),
-"table/6": Vector2(574, 1193),
-"table/7": Vector2(772, 1193),
-"table/8": Vector2(121, 1383),
-"table/9": Vector2(320, 1383),
+"table/0": Vector2(95, 1010),
+"table/1": Vector2(346, 1010),
+"table/10": Vector2(548, 1383),
+"table/11": Vector2(798, 1383),
+"table/12": Vector2(95, 1571),
+"table/13": Vector2(346, 1571),
+"table/14": Vector2(548, 1571),
+"table/15": Vector2(798, 1571),
+"table/2": Vector2(548, 1010),
+"table/3": Vector2(798, 1010),
+"table/4": Vector2(95, 1193),
+"table/5": Vector2(346, 1193),
+"table/6": Vector2(548, 1193),
+"table/7": Vector2(798, 1193),
+"table/8": Vector2(95, 1383),
+"table/9": Vector2(346, 1383),
 "window": Vector2(640, 755),
 "wok_a": Vector2(400, 340),
 "wok_b": Vector2(500, 340)
@@ -593,22 +593,22 @@ customer_points = Dictionary[String, Vector2]({
 "pickup:7": Vector2(520, 980),
 "pickup:8": Vector2(400, 1020),
 "pickup:9": Vector2(440, 1020),
-"seat:table/0": Vector2(121, 1010),
-"seat:table/1": Vector2(320, 1010),
-"seat:table/10": Vector2(574, 1383),
-"seat:table/11": Vector2(772, 1383),
-"seat:table/12": Vector2(121, 1571),
-"seat:table/13": Vector2(320, 1571),
-"seat:table/14": Vector2(574, 1571),
-"seat:table/15": Vector2(772, 1571),
-"seat:table/2": Vector2(574, 1010),
-"seat:table/3": Vector2(772, 1010),
-"seat:table/4": Vector2(121, 1193),
-"seat:table/5": Vector2(320, 1193),
-"seat:table/6": Vector2(574, 1193),
-"seat:table/7": Vector2(772, 1193),
-"seat:table/8": Vector2(121, 1383),
-"seat:table/9": Vector2(320, 1383)
+"seat:table/0": Vector2(95, 1010),
+"seat:table/1": Vector2(346, 1010),
+"seat:table/10": Vector2(548, 1383),
+"seat:table/11": Vector2(798, 1383),
+"seat:table/12": Vector2(95, 1571),
+"seat:table/13": Vector2(346, 1571),
+"seat:table/14": Vector2(548, 1571),
+"seat:table/15": Vector2(798, 1571),
+"seat:table/2": Vector2(548, 1010),
+"seat:table/3": Vector2(798, 1010),
+"seat:table/4": Vector2(95, 1193),
+"seat:table/5": Vector2(346, 1193),
+"seat:table/6": Vector2(548, 1193),
+"seat:table/7": Vector2(798, 1193),
+"seat:table/8": Vector2(95, 1383),
+"seat:table/9": Vector2(346, 1383)
 })
 customer_queue = Array[Vector2]([Vector2(215, 950), Vector2(290, 950), Vector2(365, 950), Vector2(443, 975), Vector2(443, 1045), Vector2(443, 1115), Vector2(443, 1185), Vector2(443, 1255)])
 

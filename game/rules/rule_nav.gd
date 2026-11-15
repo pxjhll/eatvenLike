@@ -115,6 +115,24 @@ func can_stand(at: Vector2, profile := "staff") -> bool:
 	return true
 
 
+## Save migration can land an actor inside a moved footprint.
+func nearest_reachable(at: Vector2, goal: Vector2, profile: String) -> Vector2:
+	if can_stand(at,profile) and not path(at,goal,profile).is_empty(): return at
+	# Include the authored destination, which may fit between grid centers.
+	var candidates: Array = [{"point":goal,"distance":goal.distance_squared_to(at)}]
+	for y in layout.grid_size.y:
+		for x in layout.grid_size.x:
+			var point := (Vector2(x,y)+Vector2.ONE*0.5)*layout.cell
+			candidates.append({"point":point,"distance":point.distance_squared_to(at)})
+	candidates.sort_custom(func(a: Dictionary,b: Dictionary) -> bool:
+		if a.distance!=b.distance: return a.distance<b.distance
+		if a.point.y!=b.point.y: return a.point.y<b.point.y
+		return a.point.x<b.point.x)
+	for row: Dictionary in candidates:
+		if can_stand(row.point,profile) and not path(row.point,goal,profile).is_empty(): return row.point
+	return Vector2.INF
+
+
 ## Slab intersection includes touching: routes conservatively keep the entire footprint clear.
 func _crosses_rect(from: Vector2, to: Vector2, box: Rect2) -> bool:
 	var enter := 0.0

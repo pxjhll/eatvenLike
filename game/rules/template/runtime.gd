@@ -269,7 +269,7 @@ func cancel_worker(id: int) -> String:
 		if not error.is_empty(): return error
 	return runner.dispatcher.reconcile()
 
-func restore(data: Dictionary, refresh_numeric := false) -> String:
+func restore(data: Dictionary, refresh_numeric := false, refresh_layout := false) -> String:
 	if not last_error.is_empty(): return last_error
 	var dispatch_error: String = runner.dispatcher.validate_context()
 	if not dispatch_error.is_empty(): return dispatch_error
@@ -299,10 +299,10 @@ func restore(data: Dictionary, refresh_numeric := false) -> String:
 		if not stock_error.is_empty(): return stock_error
 		restored_service = Service.new(self, _definition.service)
 		if not restored_service.last_error.is_empty(): return restored_service.last_error
-		var service_error: String = restored_service.prepare_restore(data.service, service_stock,refresh_numeric,data.dispatch,data.units)
+		var service_error: String = restored_service.prepare_restore(data.service, service_stock,refresh_numeric,data.dispatch,data.units,refresh_layout)
 		if not service_error.is_empty(): return service_error
 		dynamic = restored_service.dynamic_places()
-	var restored_runner: Dictionary = runner.prepare_restore(data.runner, dynamic, limit_overrides.definition)
+	var restored_runner: Dictionary = runner.prepare_restore(data.runner, dynamic, limit_overrides.definition,refresh_layout)
 	if not String(restored_runner.error).is_empty(): return restored_runner.error
 	var error: String = _restocks.validate_snapshot(data.restocks, data.runner.machines, data.runner.inventory)
 	if not error.is_empty(): return error

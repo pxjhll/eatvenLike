@@ -14,6 +14,7 @@ var target: RefCounted
 var runtime: RefCounted
 var stock: RefCounted
 var error := ""
+var refresh_layout := false
 
 func adopt(owner: RefCounted, data: Dictionary, refresh: bool) -> String:
 	var legacy_shop: Resource = owner.shop.copy_for_editing()
@@ -21,6 +22,14 @@ func adopt(owner: RefCounted, data: Dictionary, refresh: bool) -> String:
 	if refresh and not owner.shop.previous_progression.is_empty():
 		data = State.adopt_progression(owner.shop,data)
 		if data.is_empty(): return "previous legacy purchase stage is invalid"
+		var migration: Dictionary = owner.shop.previous_progression
+		refresh_layout = migration.get("refresh_layout",false) == true
+		for index in migration.get("legacy_obstacles",{}):
+			legacy_shop.layout.obstacles[index] = migration.legacy_obstacles[index]
+		for name in migration.get("legacy_customer_ports",{}):
+			var point: Vector2 = migration.legacy_customer_ports[name]
+			legacy_shop.layout.customer_points[name] = point
+			legacy_shop.layout.points[name.get_slice(":",1)] = point
 	source = owner.get_script().new(legacy_shop)
 	source.event_defs = owner.event_defs.duplicate()
 	error = source._load_legacy_dict(data,refresh)
@@ -515,7 +524,8 @@ func _serve() -> void:
 			var before: Dictionary = old.lines[index]
 			var line := Orders._line()
 			line.id = int(orders.next_line); orders.next_line += 1
-			line.dish = String(before.dish); line.recipe = service._policy.menu[line.dish]
+			line.dish = String(before.dish)
+			line.recipe = service._policy.get("previous_recipes",{}).get(line.dish,service._policy.menu[line.dish])
 			line.item = runtime._definition.recipes[line.recipe].output.item
 			line.qty = int(before.qty); line.price = float(source.dish_price(line.dish))
 			line.delivered = int(before.delivered)
@@ -758,6 +768,12 @@ func _sync_customers() -> void:
 			if old.is_empty() and not guest.seat.is_empty(): old = source.movement.get("customers",{}).get("diner:"+guest.seat.get_slice("/",1),{})
 		if not old.is_empty(): actor.pos = old.pos
 		if guest.state=="leaving": destination = "exit"
+		if refresh_layout:
+			var goal: Vector2 = service.customers._target(destination).point
+			if guest.state=="eating" and old.get("seated",false): actor.pos = goal
+			elif not target.nav.can_stand(actor.pos,"customer"):
+				actor.pos = target.nav.nearest_reachable(actor.pos,goal,"customer")
+				if not actor.pos.is_finite(): _fail("legacy customer cannot reach the relocated port"); return
 		if guest.state=="eating" and not actor.pos.is_equal_approx(service.customers._target(service._destination(guest)).point): guest.state = "served"
 		actor.target = ""
 		error = service.customers.request(guest.id,destination)

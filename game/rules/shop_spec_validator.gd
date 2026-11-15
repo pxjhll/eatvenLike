@@ -401,7 +401,11 @@ static func _effects(effects: Array, p: String, c: Dictionary, errors: Array[Dic
 		if e == null: continue
 		var at := p + "[%d]" % i
 		_enum(e.kind, SpecEffect.KINDS, at + ".kind", errors)
-		if e.kind == "capacity": _error(errors,at + ".kind","Capacity effects require a shared-template binding; the legacy shop entry has no consumer.","unsupported")
+		var id := e.target if not e.target.is_empty() else ("" if e.kind == "price" else target)
+		if e.kind=="capacity":
+			var places: Dictionary = c.public_definition.get("places",{})
+			if not places.values().any(func(place: Dictionary) -> bool: return place.has("capacity_binding") and place.capacity_binding.target==id):
+				_error(errors,at + ".kind","Capacity effects require a shared-template binding for their target.","unsupported")
 		var upgrade := attachment != "event"
 		if upgrade and e.kind in SpecEffect.ONE_SHOT:
 			_error(errors, at + ".kind", "Upgrade tracks do not execute one-shot effects.", "unsupported")
@@ -413,7 +417,6 @@ static func _effects(effects: Array, p: String, c: Dictionary, errors: Array[Dic
 		_number(e.value, at + ".value", errors, -INF)
 		if e.kind in ["speed", "duration", "flow", "walk", "work", "patience"] and e.op != "add": _number(e.value, at + ".value", errors, 0, true)
 		if e.kind in ["batch", "process_slots", "carry"] and e.op == "set": _number(e.value, at + ".value", errors, 0, true)
-		var id := e.target if not e.target.is_empty() else ("" if e.kind == "price" else target)
 		match e.kind:
 			"speed", "duration", "batch", "process_slots": _ref(id, c.stations, at + ".target", errors, true)
 			"price", "flow", "flyer_customers", "flyer_cooldown", "event_chance", "patience", "grant_gold", "customer_wave":

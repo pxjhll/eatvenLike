@@ -17,7 +17,7 @@ static func compile(raw: Dictionary, places: Dictionary, recipes: Dictionary) ->
 	if raw.is_empty(): return {"definition":{}, "error":""}
 	var result := DEFAULTS.duplicate(true)
 	for key in raw:
-		if key in ["customization","selection","delivery_ready","waiting","flyers","dining","seating","pickup_queue"]: continue
+		if key in ["customization","selection","delivery_ready","waiting","flyers","dining","seating","pickup_queue","previous_recipes"]: continue
 		if not result.has(key): return _error("unsupported service parameter: " + str(key))
 		result[key] = raw[key]
 	for key in ["admission", "delivery", "admission_port", "handoff_port", "pickup"]:
@@ -43,6 +43,17 @@ static func compile(raw: Dictionary, places: Dictionary, recipes: Dictionary) ->
 		var recipe: Variant = result.menu[dish]
 		if not dish is String or dish.is_empty() or not recipe is String or not recipes.has(recipe): return _error("invalid menu recipe binding")
 		if recipes[recipe].output.count != 1: return _error("service menu requires one product per recipe unit")
+	var previous: Variant = raw.get("previous_recipes",{})
+	if not previous is Dictionary: return _error("invalid previous menu recipes")
+	if not previous.is_empty():
+		if raw.get("customization",{}) != {} or raw.get("dining",{}) != {}: return _error("previous menu recipes require a direct dish binding")
+		for dish in previous:
+			var recipe: Variant = previous[dish]
+			if not result.menu.has(dish) or not recipe is String or not recipes.has(recipe) or recipe==result.menu[dish]:
+				return _error("previous recipe needs an existing dish and a different recipe")
+			var output: Dictionary = recipes[recipe].output
+			if output.count!=1 or output.item!=recipes[result.menu[dish]].output.item: return _error("previous recipe must yield the same menu item")
+		result.previous_recipes = previous.duplicate()
 	if not result.orders is Dictionary: return _error("invalid order policy")
 	if result.orders.has("request_at"): return _error("menu selection owns request timing")
 	var selection := Selection.compile(raw.get("selection",{}),result.menu)

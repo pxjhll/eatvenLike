@@ -7,6 +7,7 @@ const Frame := preload("res://game/rules/template/view_frame.gd")
 const Actions := preload("res://game/rules/rule_actions.gd")
 const Context := preload("res://game/rules/template/action_context.gd")
 const MotionValidation := preload("res://game/rules/movement_validator.gd")
+const Movement := preload("res://game/rules/rule_movement.gd")
 const ACTOR_FIELDS := ["id", "pos", "walking", "phase", "task_label", "carry_item", "carry_count",
 	"path", "path_index", "action_left", "completed", "target"]
 const ACTOR_OPTIONAL := ["duration", "motion", "action"]
@@ -247,17 +248,17 @@ func adopt_restore(data: Dictionary, candidate: Dictionary) -> void:
 	inventory.trace = trace
 	machines = candidate.machines
 	tasks = candidate.tasks
-	ports = data.ports.duplicate(true)
+	ports = candidate.ports.duplicate(true)
 	_dynamic_places = candidate.dynamic
 	_next_task = data.next_task
 	_interactions = data.interactions.duplicate(true)
-	for actor in data.actors:
+	for actor in candidate.actors.values():
 		var worker: Dictionary = owner.worker_by_id(actor.id)
 		for key in ACTOR_OPTIONAL: worker.erase(key)
 		for key in actor: worker[key] = actor[key].duplicate(true) if actor[key] is Dictionary or actor[key] is Array else actor[key]
 	last_error = ""
 
-func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}) -> Dictionary:
+func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}, refresh_layout := false) -> Dictionary:
 	if not Inventory._shape(data, {"version":0, "next_task":0, "ports":{}, "inventory":{}, "machines":{}, "tasks":[], "actors":[], "interactions":[]}): return {"error":"invalid capability state shape"}
 	var additions: Dictionary = _dynamic_places if dynamic == null else dynamic
 	var expected_ports := ports.duplicate(true)
@@ -274,7 +275,12 @@ func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictiona
 		var value: Variant = limits.capacity[id]
 		if not expected_places.has(id) or additions.has(id) or Inventory.is_hand_place(id) or not value is int or value < 0: return {"error":"invalid numeric container override"}
 		expected_places[id].capacity = value
-	if data.version != 1 or data.next_task < 1 or data.ports != expected_ports: return {"error":"capability version or ports differ"}
+	if data.version != 1 or data.next_task < 1: return {"error":"capability version or ports differ"}
+	if refresh_layout:
+		if data.ports.size()!=expected_ports.size(): return {"error":"capability version or ports differ"}
+		for id in expected_ports:
+			if not data.ports.get(id) is Vector2 or not data.ports[id].is_finite(): return {"error":"invalid saved capability port"}
+	elif data.ports != expected_ports: return {"error":"capability version or ports differ"}
 	var stock := Inventory.new()
 	var error := stock.restore(data.inventory)
 	if not error.is_empty(): return {"error":error}
@@ -296,7 +302,8 @@ func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictiona
 	var actors := {}
 	var deployed := {}
 	for worker in owner.workers: deployed[int(worker.id)] = true
-	for actor in data.actors:
+	for saved_actor in data.actors:
+		var actor: Variant = saved_actor.duplicate(true) if refresh_layout and saved_actor is Dictionary else saved_actor
 		error = MotionValidation._shape(actor, {"id":0, "pos":Vector2.ZERO, "walking":false, "phase":"", "task_label":"", "carry_item":"", "carry_count":0,
 			"path":PackedVector2Array(), "path_index":0, "action_left":0.0, "completed":0, "target":""})
 		if not error.is_empty(): return {"error":error}
@@ -310,7 +317,20 @@ func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictiona
 		if actor.has("motion"):
 			if not actor.motion is Dictionary: return {"error":"invalid actor motion"}
 			error = MotionValidation._record(actor, owner.nav)
+			if refresh_layout and actor.walking and MotionValidation._record(actor,owner.nav,false).is_empty() and (
+					not error.is_empty() or not owner.nav.can_stand(actor.pos,actor.motion.profile)):
+				error = Movement.relocate_saved_route(actor,owner.nav,actor.motion.goal)
 			if not error.is_empty(): return {"error":error}
+		if refresh_layout and not actor.walking and actor.phase=="idle":
+			var profile := access_profile(owner.worker_by_id(actor.id))
+			if not owner.nav.can_stand(actor.pos,profile):
+				var goal: Vector2 = owner.nav.point(owner.shop.layout.spawn_point)
+				var start: Vector2 = owner.nav.nearest_reachable(actor.pos,goal,profile)
+				if not start.is_finite(): return {"error":"employee has no reachable position in the relocated layout"}
+				actor.pos = start
+				actor.erase("motion")
+				actor.path = PackedVector2Array()
+				actor.path_index = 0
 		var held: Dictionary = Frame.build(stock, devices).held.get(actor.id, {"count":0, "items":[]})
 		if actor.carry_count != held.count or actor.carry_item != ("" if held.items.is_empty() else String(held.items[0].item)): return {"error":"actor hand differs from inventory"}
 		actors[actor.id] = actor
@@ -382,7 +402,7 @@ func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictiona
 		if not Inventory._shape(event, {"id":0, "worker":0, "purpose":"", "subject":0, "result":""}): return {"error":"invalid interaction result shape"}
 		if event.id < 1 or event.id >= data.next_task or task_ids.has(event.id) or not actors.has(event.worker) or event.purpose != "admit" or event.subject < 1 or event.result not in ["completed", "cancelled"]: return {"error":"invalid or duplicate interaction result"}
 		task_ids[event.id] = true
-	return {"error":"", "inventory":stock, "machines":devices, "tasks":restored_tasks, "dynamic":additions.duplicate(true)}
+	return {"error":"", "inventory":stock, "machines":devices, "tasks":restored_tasks, "dynamic":additions.duplicate(true), "ports":expected_ports, "actors":actors}
 
 func _available_worker(id: int) -> String:
 	var worker: Dictionary = owner.worker_by_id(id)

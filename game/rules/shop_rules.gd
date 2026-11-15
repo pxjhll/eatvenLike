@@ -951,9 +951,12 @@ func hire_cost() -> int:
 	return rules.hire_cost_base + maxi(0, _hires()) * rules.hire_cost_step
 
 
-## 已经招了几位（名册里减去开局员工）：第 n 次招人按 hire_costs[n] 收钱
+## 第 n 次招人按 hire_costs[n] 收钱。读旧档时保留原有免费员工。
 func _hires() -> int:
-	return roster.size() - shop.staff.starting.size()
+	var count := 0
+	for worker in roster:
+		if worker.source!="初始": count += 1
+	return count
 
 
 func next_hire_kind() -> String:

@@ -36,7 +36,7 @@ extends Resource
 ## Formal shops declare one shared capability template. Legacy format fields
 ## are retained only for authoring identity and old-state conversion.
 @export var runtime_template: Resource
-## One compatible prior progression, if only purchase/menu stages changed.
+## Explicit compatibility for prior purchase, menu and layout configurations.
 @export var previous_progression: Dictionary = {}
 
 

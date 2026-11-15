@@ -19,7 +19,7 @@ func test_new_shops_and_repeated_recruitment_only_offer_active_staff() -> void:
 	for shop: SpecShop in [TEA, PANCAKE, STIRFRY]:
 		check(Validator.validate(shop).is_empty(), shop.id + " content is valid")
 		var rules := ShopRules.new(shop)
-		check_eq(rules.roster.size(), 2 if shop == STIRFRY else 1, shop.id + " starter count retained")
+		check_eq(rules.roster.size(),1,shop.id + " starts with one employee")
 		check_eq(rules.post_owner(rules.counter_id) > 0, shop != PANCAKE, shop.id + " opening front post retained")
 		for worker in rules.roster: check(worker.kind in ACTIVE, shop.id + " starter has animation")
 		rules.gold = 1000000.0
@@ -108,11 +108,13 @@ func _check_identities(owner: ShopRules, before: Array, refresh := false) -> voi
 func _check_legacy_progress(owner: ShopRules, before: Dictionary) -> void:
 	var after := owner.to_dict()
 	check_eq(after.version,2,"historical format is adopted by the public protocol")
-	for key in ["gold","revenue","sold","sold_by_dish","stage_index","unlocked","levels","boxes","completed_at","seats","_next_staff","rng","event_rng","_sale_carry"]:
+	for key in ["gold","revenue","sold","stage_index","unlocked","levels","boxes","completed_at","seats","_next_staff","rng","event_rng","_sale_carry"]:
 		if key=="stage_index" and owner.shop==STIRFRY:
 			check_eq(after.outer.stage_index,owner.shop.stages.size()-1,"old final stage maps to the new final stage")
 			continue
 		check_eq(after.outer[key],before[key],owner.shop.id+": migration preserves "+key)
+	for dish in before.sold_by_dish:
+		check_eq(after.outer.sold_by_dish[dish],before.sold_by_dish[dish],owner.shop.id+": migration preserves sales of "+dish)
 	check_eq(after.runtime.clock,before.clock,"migration retains the simulation clock")
 	check_eq(owner.runtime.runner.inventory.audit(),[],"converted inventory is conserved")
 

@@ -35,6 +35,8 @@ func _public_scene() -> Dictionary:
 	var owner := TemplateOuter.owner(SHOP.copy_for_editing(),42)
 	owner.gold = 1000000.0
 	for stage in SHOP.stages.size(): check_eq(owner.unlock(SHOP.sold_at(stage)),"","actual outer purchases")
+	check_eq(owner.hire(),"","recruit the kitchen worker through the normal command")
+	check_eq(owner.deploy_worker(owner.roster.back().id),"","put the kitchen worker on duty")
 	var runtime: RefCounted = load("res://game/rules/template/runtime.gd").new(owner,load("res://content/shops/stirfry/shared_production.tres"))
 	check_eq(runtime.last_error,"","common actual production and presentation")
 	var prepared := preload("res://presentation/shop/shop_scene_contract.gd").prepare(SHOP)
@@ -61,19 +63,22 @@ func test_shared_pot_stock_remains_ui_inventory_without_loose_scene_dishes() -> 
 	check(fixture.scene._cups.filter(func(sprite: Sprite2D) -> bool: return sprite.visible).is_empty(),"no shared bowl stack")
 	fixture.scene.free(); fixture.art.free()
 
-func test_finished_rice_waits_in_ui_inventory_without_an_automatic_plating_sprite() -> void:
+func test_finished_rice_at_the_handoff_table_projects_the_actual_inventory() -> void:
 	var fixture := _public_scene()
 	var runtime: RefCounted = fixture.runtime
-	var unit: int = runtime.request_production("tomato_rice").id
+	var unit: int = runtime.request_production(runtime._definition.service.menu.tomato_rice).id
 	for tick in 2200:
 		check_eq(runtime.step(0.1),"","actual rice-and-topping production")
 		if runtime.production_output(unit).complete: break
 	check(runtime.production_output(unit).complete,"real merge reached its finished output")
 	var frame: Dictionary = fixture.scene.view.render_snapshot()
-	check_eq(frame.stock["plating:out"].items.tomato_rice.count,1,"actual owned meal remains in the common ledger")
+	check_eq(frame.stock["plating:out"].items.get("tomato_rice",{}).get("count"),1,"actual owned meal remains in the common ledger")
 	check_eq(fixture.scene.view.machine_status("plating").output,1,"machine UI records the completed meal")
 	var before: Dictionary = runtime.snapshot()
 	fixture.scene._update_cups(frame)
-	check(fixture.scene._cups.filter(func(sprite: Sprite2D) -> bool: return sprite.visible).is_empty(),"a Buffer anchor cannot implicitly turn stock into a scene sprite")
-	check_eq(runtime.snapshot(),before,"hiding unconfigured stock does not delete the real product")
+	check_eq(frame.draws[0].item,"tomato_rice","showcase reads the actual staged dish")
+	var visible: Array = fixture.scene._cups.filter(func(sprite: Sprite2D) -> bool: return sprite.visible)
+	check_eq(visible.size(),1,"one completed meal appears at the explicit showcase")
+	if not visible.is_empty(): check(is_same(visible[0].texture,fixture.scene.view.item_art("tomato_rice").texture),"render the staged dish's configured texture")
+	check_eq(runtime.snapshot(),before,"drawing the staged dish does not modify inventory")
 	fixture.scene.free(); fixture.art.free()

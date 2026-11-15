@@ -1,6 +1,8 @@
 extends "res://tests/test_case.gd"
 const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const PATH := "res://content/shops/stirfry/shared_production.tres"
+const PREVIOUS: SpecShop = preload("res://content/examples/modular_shop.tres")
+const OLD_LAYOUT: SpecLayout = preload("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres").layout
 const SHOP: SpecShop = preload("res://content/shops/stirfry/shop.tres")
 const Runtime := preload("res://game/rules/template/runtime.gd")
 
@@ -13,11 +15,13 @@ func _owner() -> ShopRules:
 	owner.gold = 1000000.0
 	for index in SHOP.stages.size(): check_eq(owner.unlock(SHOP.sold_at(index)),"","prepare actual shop stage via public unlock")
 	check_eq(owner.unlock("soup_pot"),"","opt in to soup for the service fixture")
+	check_eq(owner.hire(),"","pay for the kitchen worker")
+	check_eq(owner.deploy_worker(owner.roster.back().id),"","deploy the floating kitchen worker")
 	return owner
 
 func _runtime(template: Resource) -> RefCounted:
 	var runtime := Runtime.new(_owner(),template)
-	check_eq(runtime.last_error,"","actual seven-dish graph composes common service")
+	check_eq(runtime.last_error,"","actual eight-dish graph composes common service")
 	return runtime if runtime.last_error.is_empty() else null
 
 func _take(runtime: RefCounted) -> void:
@@ -35,55 +39,62 @@ func _finish(runtime: RefCounted) -> void:
 func test_opening_and_pantry_upgrades_unlock_one_wok_at_a_time() -> void:
 	var rules := ShopRules.new(SHOP.copy_for_editing(),42)
 	var view := ShopView.new(rules)
-	check_eq(rules.next_unlock(),"plum_dispenser","guide starts at the front drink machine")
-	check(not rules.unlock("wok_a").is_empty(),"wok A requires the shop to open")
+	check_eq(rules.roster.size(),1,"start with only the front employee")
+	check_eq(rules.workers[0].post,"counter","opening employee operates the front counter")
 	check_eq(rules.unlock("plum_dispenser"),"","open with the exact starting funds")
 	check_eq(rules.gold,0.0,"opening cost is charged")
 	check_eq(rules.menu(),["plum_juice"],"drink-only opening")
-	check(not rules.station_unlocked("wok_a") and not rules.station_unlocked("wok_b"),"both woks stay closed on opening")
-	for second in 180:
-		if rules.gold >= 80.0: break
+	check_eq(rules.next_unlock(),"rice_cooker","rice has its own purchase")
+	for second in 260:
+		if rules.gold>=130.0: break
 		rules.run(1.0)
-	check(rules.gold>=80.0 and rules.sold_by_dish.plum_juice==10,"ten real drink sales fund the first wok")
-	check(not rules.unlock("wok_b").is_empty(),"cannot skip to wok B even with enough gold")
-	check_eq(rules.unlock("wok_a"),"","open the first hot-food line")
-	check(rules.station_unlocked("wok_a") and not rules.station_unlocked("wok_b"),"first kitchen phase only has wok A")
-	check(rules.runtime.service.menu_weights().has("tomato_rice"),"the first cover rice dish can be ordered")
-	check_eq(rules.next_unlock(),"pantry","guide points to the pantry")
-	check(not view.station("wok_a").sections.has("recipes"),"wok A only shows its station controls")
-	var pantry: Dictionary = view.station("pantry")
-	check(pantry.sections.has("recipes"),"actual pantry panel shows recipe upgrades")
-	check_eq(pantry.level,1,"pantry starts at level one")
-	check_eq(pantry.get("recipes",[]).map(func(row: Dictionary) -> String: return row.dish),
-		["pepper_rice","egg_fried_rice","kungpao_rice","yangzhou_rice"],"pantry shows the four stages in acquisition order")
-	check(not rules.unlock("wok_b").is_empty(),"wok B requires the preceding pantry level")
-	rules.gold = 79.0
-	check(not rules.unlock("pantry").is_empty(),"upgrade requires enough coins")
-	rules.gold = 80.0
-	check_eq(rules.unlock("pantry"),"","buy the next pantry level")
-	check_eq(rules.gold,0.0,"charge the exact upgrade price")
-	check_eq(view.station("pantry").level,2,"purchased stage determines pantry level")
-	check(rules.runtime.service.menu_weights().has("pepper_rice"),"upgrade adds the dish to the real order pool")
-	check_eq(rules.next_unlock(),"wok_b","next machine still unlocks in order")
+	check_eq(rules.sold_by_dish.plum_juice,17,"opening front employee can earn all three costs from real sales")
+	check(not rules.unlock("wok_a").is_empty(),"first wok requires the rice supply stage")
+	var balance := rules.gold
+	check_eq(rules.unlock("rice_cooker"),"","buy independent rice cooker")
+	check_eq(rules.gold,balance-20.0,"rice cooker costs twenty coins")
+	check(not rules.station_unlocked("wok_a") and not rules.station_unlocked("pantry"),"rice purchase leaves the wok and pantry locked")
+	check_eq(rules.unlock("wok_a"),"","buy first wok")
+	check(not rules.station_unlocked("pantry") and not rules.station_unlocked("wok_b"),"first wok purchases neither pantry nor second wok")
+	check_eq(rules.menu(),["plum_juice"],"no hot orders before the kitchen has staff")
+	check_eq(rules.hire_cost(),30,"first kitchen worker is paid for through shared hiring")
+	check_eq(rules.hire(),"","hire kitchen staff")
+	check_eq(rules.menu(),["plum_juice"],"standby staff do not open a hot line")
+	check_eq(rules.deploy_worker(rules.roster.back().id),"","deploy the hired kitchen worker")
+	check(rules.menu().has("plain_fried_rice"),"rice and wok A are enough for plain fried rice")
+	for second in 180:
+		if rules.sold_by_dish.plain_fried_rice>0: break
+		rules.run(1.0)
+	check(rules.sold_by_dish.plain_fried_rice>0,"first paid kitchen worker makes and sells plain fried rice")
+	check_eq(rules.next_unlock(),"pantry","the pantry is the next separate unlock")
 	rules.gold = 1000.0
-	check(not rules.unlock("pantry").is_empty(),"egg recipe cannot be bought before wok B")
-	check_eq(rules.unlock("wok_b"),"","unlock the second wok separately")
-	check(not view.station("wok_b").sections.has("recipes"),"wok B only shows its station controls")
-	check(not rules.runtime.service.menu_weights().has("egg_fried_rice"),"equipment alone does not add fried rice")
-	check_eq(rules.unlock("pantry"),"","upgrade the pantry to add egg fried rice")
-	check_eq(view.station("pantry").level,3,"pantry shows new level")
-	check(rules.runtime.service.menu_weights().has("egg_fried_rice"),"fried rice can now be ordered")
-	check(not rules.runtime.service.menu_weights().has("yangzhou_rice"),"later fried rice stays locked")
+	check(not rules.unlock("wok_b").is_empty(),"cannot skip directly to the second wok")
+	check_eq(rules.unlock("pantry"),"","buy the pantry")
+	check(rules.menu().has("egg_fried_rice") and not rules.menu().has("yangzhou_rice"),"opening the pantry enables only egg fried rice")
+	var pantry: Dictionary = view.station("pantry")
+	check_eq(pantry.level,1,"new pantry starts at level one")
+	check_eq(pantry.get("recipes",[]).map(func(row: Dictionary) -> String: return row.dish),
+		["yangzhou_rice","pepper_rice","kungpao_rice"],"pantry previews the remaining recipe upgrades")
+	check_eq(rules.unlock("pantry"),"","upgrade the pantry for Yangzhou fried rice")
+	check(rules.menu().has("yangzhou_rice"),"Yangzhou fried rice can be ordered with the first wok")
+	check(not rules.menu().has("tomato_rice"),"covered rice still requires wok B")
+	check_eq(rules.unlock("wok_b"),"","unlock wok B separately")
+	check(rules.menu().has("tomato_rice"),"second wok offers its first covered rice")
+	check(not rules.menu().has("pepper_rice"),"pepper covered rice still needs the pantry upgrade")
+	check_eq(rules.unlock("pantry"),"","unlock pepper recipe")
+	check_eq(rules.unlock("pantry"),"","unlock Kung Pao recipe")
+	check_eq(view.station("pantry").level,4,"only the pantry unlocks the final two recipes")
+	for id in ["wok_a","wok_b"]:
+		check(not view.station(id).sections.has("recipes"),"wok only exposes its equipment upgrades")
 
 func test_pork_rib_soup_is_a_standalone_purchase() -> void:
 	var rules := ShopRules.new(SHOP.copy_for_editing(),42)
 	rules.gold = 1000.0
-	for id in ["plum_dispenser","wok_a","pantry","wok_b"]: check_eq(rules.unlock(id),"","open the prerequisite equipment")
+	for id in ["plum_dispenser","rice_cooker","wok_a"]: check_eq(rules.unlock(id),"","open the prerequisite equipment")
 	check(not rules.unlock("soup_pot").is_empty(),"pot needs the egg fried rice stage")
 	check_eq(rules.unlock("pantry"),"","unlock egg fried rice")
 	check_eq(rules.next_unlock(),"pantry","optional pot does not appear in progression")
-	check_eq(rules.unlock("pantry"),"","unlock kung pao without buying soup")
-	check_eq(rules.unlock("pantry"),"","unlock the last main without the pot")
+	for id in ["pantry","wok_b","pantry","pantry"]: check_eq(rules.unlock(id),"","finish unlocking mains without the soup pot")
 	check(not rules.station_unlocked("soup_pot"),"pot stays closed after the final main")
 	var card := ShopView.new(rules).station("soup_pot")
 	check_eq(card.unlock.dish,"排骨汤","optional purchase previews the actual soup")
@@ -106,18 +117,33 @@ func test_third_shop_uses_the_drink_and_batch_clock_baseline() -> void:
 	if template==null: return
 	check_eq(template.recipes.plum_juice.nodes[0].seconds,2.0,"two-second pour in shared production")
 	check_eq(template.restocks.rice_cooker.seconds,30.0,"automatic rice batch uses the tea-shop clock")
-	check_eq(template.restocks.rice_cooker.produces,{"rice":4},"four servings per base batch")
+	check_eq(template.restocks.rice_cooker.batch.base,4,"four servings per base batch")
 	check_eq(template.places["rice_cooker:out"].initial,{"rice":4},"initial cooked rice is already in stock")
 	check_eq(template.places["rice_cooker:out"].capacity,8,"base rice inventory cap")
 	check(SHOP.background_music!=null,"formal shop supplies music to the shared audio player")
 	for station_id in ["wok_a","wok_b"]:
 		for level in SHOP.station(station_id).tracks[0].levels:
 			for effect in level.effects:
-				check_eq(effect.kind,"speed",station_id + " current upgrade changes cook time, not dish price")
+				check(effect.kind in ["speed","batch"],station_id + " upgrades work speed and same-recipe capacity")
+
+func test_rice_upgrade_changes_real_batch_quantity_duration_and_capacity() -> void:
+	var rules := ShopRules.new(SHOP.copy_for_editing(),42)
+	rules.gold = 1000.0
+	for id in ["plum_dispenser","rice_cooker"]: check_eq(rules.unlock(id),"","buy the rice cooker independently")
+	check_eq(rules.upgrade("rice_cooker"),"","upgrade through the shared machine command")
+	rules.run(1.0)
+	var run_id: int = rules.runtime._restocks.snapshot().runs.rice_cooker
+	check(run_id>0,"the upgraded steamer actually runs")
+	if run_id<1: return
+	var run: Dictionary = rules.runtime.runner.machines.run(run_id)
+	var claim: Dictionary = rules.runtime.runner.inventory.claim(run.claim)
+	check_eq(claim.produces,{"rice":6},"first upgrade cooks six bowls")
+	check(is_equal_approx(float(run.duration),30.0/1.12),"first upgrade reduces the real cook clock")
+	check_eq(rules.runtime.runner.inventory.snapshot().places["rice_cooker:out"].capacity,12,"matching inventory capacity is applied")
 
 func _previous_shop() -> SpecShop:
 	var old_shop: SpecShop = load("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres").copy_for_editing()
-	var template := _template()
+	var template := PREVIOUS.runtime_template.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	template.recipes.plum_juice.nodes[0].seconds = 3.0
 	template.restocks.rice_cooker.seconds = 60.0
 	var soup_stage: Dictionary = template.service.selection.stages[4].duplicate(true)
@@ -151,18 +177,19 @@ func test_previous_third_shop_preserves_purchases_and_in_progress_rice() -> void
 	check_eq(saved.template.structure,SHOP.previous_progression.template_structure,"test uses the exact previous runtime structure")
 	check_eq(loaded.load_dict(saved,true),"","load a shop with already owned fried rice")
 	check_eq(loaded.gold,old_rules.gold,"saved coins survive the update")
-	check_eq(loaded.stage_index,4,"previous wok B buyers keep the already owned recipe")
+	check_eq(loaded.hire_cost(),old_rules.hire_cost(),"retaining the old free employee does not count as a paid hire")
+	check_eq(loaded.current_stage().id,"pepper","migrate to the stage that retains the already owned dishes")
 	check(loaded.station_unlocked("soup_pot"),"owners keep the former mandatory soup pot")
 	check_eq(ShopView.new(loaded).station("pantry").level,3,"migrated menu gives the corresponding pantry level")
 	check(loaded.runtime.service.menu_weights().has("egg_fried_rice"),"previous fried rice remains in the order pool")
 	check_eq(loaded.runtime.runner.machines.snapshot().runs,saved.runtime.runner.machines.runs,"already started jobs retain their times")
 	check_eq(loaded.runtime._definition.restocks.rice_cooker.seconds,30.0,"new rice batches use the new timing")
 
-func test_real_resource_keeps_self_pickup_and_declares_seven_dishes_and_purchase_pool() -> void:
+func test_real_resource_keeps_self_pickup_and_declares_eight_dishes_and_purchase_pool() -> void:
 	var template := _template()
 	if template==null: return
-	check_eq(template.recipes.size(),7,"all authored recipes preserved")
-	check_eq(template.service.menu.size(),7,"all menu products mapped")
+	check_eq(template.service.previous_recipes.size(),5,"every old hot recipe remains available to saved orders")
+	check_eq(template.service.menu.size(),8,"all menu products mapped")
 	check_eq(template.service.delivery,"self_pickup","retain actual third-shop fulfillment")
 	check_eq(template.service.selection.at,"admission","food chosen after employee work")
 	check_eq(template.service.seating.order.size(),16,"complete purchasable seat pool")
@@ -172,15 +199,100 @@ func test_real_resource_keeps_self_pickup_and_declares_seven_dishes_and_purchase
 	check_eq(runtime.service.queue_capacity(),6,"actual queue capacity instead of all eight layout ports")
 	check_eq(runtime.service.seating.seats(runtime.runner.owner).size(),6,"only six initial seats are available")
 
+func test_table_guests_face_inward_and_previous_progress_still_loads() -> void:
+	var template := _template()
+	if template == null: return
+	var previous := PREVIOUS.copy_for_editing()
+	previous.id = SHOP.id
+	previous.layout = OLD_LAYOUT
+	for index in 16:
+		var port := "table/%d" % index
+		var pose: Dictionary = template.presentation.poses["seat:" + port]
+		check_eq(pose.port,"Seats/" + port,"seated pose is attached to its own chair")
+		check_eq(pose.facing,2 if index % 2 == 0 else 6,"diner faces the table from " + port)
+		var before: Vector2 = previous.layout.customer_points["seat:" + port]
+		var after: Vector2 = SHOP.layout.customer_points["seat:" + port]
+		check_eq(after-before,Vector2(-26 if index % 2 == 0 else 26,0),"seat approach follows the chair at " + port)
+	var old_rules := ShopRules.new(previous,42)
+	check_eq(old_rules.unlock("plum_dispenser"),"","open the previous shop")
+	var checked := {"walking":false,"eating":false}
+	for tick in 1300:
+		old_rules.run(0.1)
+		var actor: Dictionary = old_rules.runtime.service.customers.record(1)
+		if not String(actor.get("target","")).begins_with("seat:"): continue
+		var phase := "walking" if actor.walking else "eating"
+		if checked[phase]: continue
+		if phase=="eating" and old_rules.runtime.service.orders.guest(1).state!="eating": continue
+		var saved := old_rules.to_dict()
+		check(SHOP.previous_progression.other_templates.has(saved.template.structure),"previous seating revision is covered by save migration")
+		var restored := ShopRules.new(SHOP.copy_for_editing(),42)
+		var error := restored.load_dict(saved,true)
+		check_eq(error,"","previous save loads with guest " + phase)
+		if not error.is_empty(): break
+		check_eq(restored.stage_index,old_rules.stage_index,"keep the purchased stage")
+		check_eq(restored.gold,old_rules.gold,"keep the saved wallet")
+		var migrated: Dictionary = restored.runtime.service.customers.record(1)
+		check_eq(migrated.motion.goal,SHOP.layout.customer_points[actor.target],"guest has the new approach point")
+		check_eq(migrated.walking,actor.walking,"guest keeps walking or remains seated")
+		for elapsed in 1200:
+			restored.run(0.1)
+			if restored.runtime.service.orders.guest(1).state=="gone": break
+		check_eq(restored.runtime.service.orders.guest(1).state,"gone","restored guest finishes the meal and leaves")
+		checked[phase] = true
+		if checked.values().all(func(done: bool) -> bool: return done): break
+	check(checked.walking and checked.eating,"both active save phases were exercised")
+	var worker_id: int = old_rules.workers[0].id
+	var old_position := Vector2(375,1110)
+	check_eq(old_rules.place_worker(worker_id,"",old_position),"","place a worker beside the original chair")
+	var restored := ShopRules.new(SHOP.copy_for_editing(),42)
+	check(not restored.nav.can_stand(old_position,"staff"),"the moved chair now blocks that position")
+	check_eq(restored.load_dict(old_rules.to_dict(),true),"","save with a worker inside a moved footprint loads")
+	check(restored.nav.can_stand(restored.worker_by_id(worker_id).pos,"staff"),"worker resumes at a clear position")
+
+func test_public_save_keeps_mid_cook_order_on_the_original_recipe() -> void:
+	var previous := PREVIOUS.copy_for_editing()
+	previous.id = SHOP.id
+	previous.layout = OLD_LAYOUT
+	var owner := ShopRules.new(previous,42)
+	owner.gold = 400.0
+	for id in ["plum_dispenser","wok_a"]: check_eq(owner.unlock(id),"","open the old covered-rice line")
+	var guest_id := -1
+	for tick in 800:
+		owner.run(0.1)
+		for guest in owner.runtime.service.orders.snapshot().guests:
+			if guest.state=="waiting" and not guest.request.is_empty() and guest.request[0].dish=="tomato_rice":
+				guest_id = guest.id
+				break
+		if guest_id>0 and owner.runtime.runner.machines.snapshot().runs.any(func(run: Dictionary) -> bool:
+				return run.machine=="wok_a" and run.phase=="operate"): break
+	check(guest_id>0,"old save contains an open order")
+	if guest_id<1: return
+	var stored := owner.to_dict()
+	check(stored.runtime.runner.machines.runs.any(func(run: Dictionary) -> bool:
+		return run.machine=="wok_a" and run.phase=="operate"),"old save cuts a live wok operation")
+	var restored := ShopRules.new(SHOP.copy_for_editing(),42)
+	var error := restored.load_dict(stored,true)
+	check_eq(error,"","current shop restores the live original recipe")
+	if not error.is_empty(): return
+	check_eq(restored.gold,owner.gold,"saved balance stays intact")
+	check(restored.station_unlocked("rice_cooker") and restored.station_unlocked("wok_b"),"the paid dish remains possible in the reordered progression")
+	check_eq(restored.runtime.service.orders.guest(guest_id).request[0].recipe,"tomato_rice","accepted dish retains its original recipe")
+	check_eq(restored.runtime.runner.machines.snapshot().runs,stored.runtime.runner.machines.runs,"an active wok keeps its existing timer")
+	check_eq(restored.runtime._definition.service.menu.tomato_rice,"tomato_rice_v2","new orders select the current recipe")
+	for elapsed in 1600:
+		restored.run(0.1)
+		if restored.runtime.service.orders.guest(guest_id).state=="gone": break
+	check_eq(restored.runtime.service.orders.guest(guest_id).state,"gone","original hot dish remains fulfillable")
+
 func test_actual_idle_counter_helps_kitchen_logistics_but_stays_for_approaching_guest() -> void:
 	var template := _template()
 	if template==null: return
 	var runtime := _runtime(template)
 	if runtime==null: return
-	var front: Dictionary = runtime.runner.owner.workers[1]
+	var front: Dictionary = runtime.runner.owner.workers[0]
 	check_eq(front.post,"counter","actual posted front employee")
-	runtime.request_production("tomato_rice")
-	runtime.request_production("tomato_rice")
+	runtime.request_production(template.service.menu.tomato_rice)
+	runtime.request_production(template.service.menu.tomato_rice)
 	var candidates: Array = runtime.candidates_for(front.id)
 	check(not candidates.is_empty(),"front can assist available kitchen transport")
 	for candidate in candidates: check(candidate.kind in ["transfer","bundle"],"helper never cooks in the kitchen")
@@ -316,7 +428,7 @@ func test_real_posted_wok_employee_cooks_while_floating_helper_can_feed_and_plat
 	if template==null: return
 	check(template.dispatch.has("station_posts"),"actual third shop needs declared wok posts")
 	if not template.dispatch.has("station_posts"): return
-	template.service.selection.stages[-1].weights = {"tomato_rice":1.0}
+	template.service.selection.stages[-1].weights = {"egg_fried_rice":1.0}
 	template.service.selection.addon.share = 0.0
 	var owner := _owner()
 	var seated := -1
@@ -339,4 +451,4 @@ func test_real_posted_wok_employee_cooks_while_floating_helper_can_feed_and_plat
 				check_eq(task.worker,seated,"floating cook cannot steal posted wok work")
 		if runtime.service.orders.guest(1).state=="gone": break
 	check(saw_operation,"real dish uses shared posted-machine operation")
-	check_eq(owner.sold_by_dish.tomato_rice,1,"material feeding, two-input plating and self-pickup still finish")
+	check_eq(owner.sold_by_dish.egg_fried_rice,1,"posted cook and logistics still deliver a two-phase fried rice")

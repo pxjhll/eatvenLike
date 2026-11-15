@@ -24,7 +24,9 @@ func _run() -> void:
 		root.size = size
 		await process_frame
 		var baseline := {}
-		for spec: SpecShop in [TEA,PANCAKE,STIRFRY]:
+		var stirfry := STIRFRY.copy_for_editing()
+		stirfry.layout = preload("res://content/shops/stirfry/shop.tres").layout
+		for spec: SpecShop in [TEA,PANCAKE,stirfry]:
 			var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
 			scene.session = Session.make(spec,"actor-scale-%s-%d"%[spec.id,OS.get_process_id()],LegacyRules.new(spec))
 			for path: String in [scene.session.profile.path,scene.session.store.path,scene.session.tuning_path,scene.session.recording_path]:

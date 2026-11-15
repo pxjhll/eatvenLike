@@ -259,7 +259,7 @@ func adopt_saved_history(saved: Dictionary) -> void:
 	orders.adopt_saved_history(saved.orders)
 	if dining != null: dining.adopt_saved_history(saved.dining)
 
-func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := false, dispatch_data: Dictionary = {}, production: Array = []) -> String:
+func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := false, dispatch_data: Dictionary = {}, production: Array = [], refresh_layout := false) -> String:
 	var shape := {"version":0, "orders":{}, "customers":{}, "deliveries":[], "arrivals":{}}
 	if waiting != null: shape.waiting = {}
 	if flyers != null: shape.flyers = {}
@@ -284,7 +284,7 @@ func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := fal
 	if ramp != null:
 		error = ramp.restore(data.ramp,int(data.orders.next_order)-1 if _deferred() else int(data.orders.next_guest)-1,refresh_numeric)
 		if not error.is_empty(): return error
-	error = customers.restore(data.customers)
+	error = customers.restore(data.customers,refresh_layout)
 	if not error.is_empty(): return error
 	var bundles := {}
 	for delivery in data.deliveries:
@@ -332,7 +332,8 @@ func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := fal
 				if not resolved.error.is_empty(): return resolved.error
 				recipe = resolved.recipe
 			elif row.has("options"): return "unrelated request option selection"
-			if recipe != row.recipe or _runtime._definition.recipes[recipe].output.item != row.item: return "customer request differs from service menu"
+			if recipe != row.recipe and _policy.get("previous_recipes",{}).get(row.dish,recipe) != row.recipe: return "customer request differs from service menu"
+			if _runtime._definition.recipes[recipe].output.item != row.item: return "customer request differs from service menu"
 		if not guest.seat.is_empty() and (guest.seat not in (dining.declared_seats() if dining!=null else _policy.seats.keys()) or guest.order < 1): return "customer seat differs from template"
 		if dining == null and guest.order > 0 and guest.seat.is_empty() != _policy.seats.is_empty(): return "accepted customer has an inconsistent seat lease"
 		if guest.state != "gone" and not ((dining!=null or seating!=null) and guest.state=="leaving") and not guest.seat.is_empty():

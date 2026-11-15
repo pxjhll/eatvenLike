@@ -333,6 +333,30 @@ price_parts = Dictionary[String, float]({
 steps = Array[ExtResource("3_pc7b7")]([SubResource("Resource_6oq1d"), SubResource("Resource_kqn1t"), SubResource("Resource_5a5cg")])
 takeaway_process = false
 
+[sub_resource type="Resource" id="PlainRiceCook"]
+script = ExtResource("3_pc7b7")
+station = "wok_a"
+action = "stir_fry"
+seconds = 5.0
+consumes = Dictionary[String, int]({
+"rice": 1
+})
+produces = Dictionary[String, int]({
+"plain_fried_rice": 1
+})
+label = "炒饭"
+
+[sub_resource type="Resource" id="PlainRiceDish"]
+script = ExtResource("2_6jyx4")
+id = "plain_fried_rice"
+display_name = "炒饭"
+item = "plain_fried_rice"
+price_parts = Dictionary[String, float]({
+"base": 10.0
+})
+steps = Array[ExtResource("3_pc7b7")]([SubResource("Resource_opwfp"), SubResource("PlainRiceCook")])
+takeaway_process = false
+
 [sub_resource type="Resource" id="PlumPour"]
 script = ExtResource("3_pc7b7")
 station = "plum_dispenser"
@@ -522,6 +546,18 @@ id = "soup"
 display_name = "排骨汤"
 icon = ExtResource("food_soup")
 
+[sub_resource type="Resource" id="PlainRiceItem"]
+script = ExtResource("13_2vgy6")
+id = "plain_fried_rice"
+display_name = "炒饭"
+icon = ExtResource("food_rice")
+
+[sub_resource type="Resource" id="FriedRiceBaseItem"]
+script = ExtResource("13_2vgy6")
+id = "fried_rice_base"
+display_name = "炒饭"
+icon = ExtResource("food_rice")
+
 [sub_resource type="Resource" id="PlumItem"]
 script = ExtResource("13_2vgy6")
 id = "plum_juice"
@@ -532,7 +568,7 @@ icon = ExtResource("food_plum_juice")
 script = ExtResource("14_tnc2d")
 nav = "grid"
 areas = Array[Rect2i]([Rect2i(2, 12, 40, 76)])
-obstacles = Array[Rect2]([Rect2(750, 385, 85, 45), Rect2(330, 270, 235, 50), Rect2(735, 280, 105, 40), Rect2(45, 560, 325, 60), Rect2(45, 385, 125, 65), Rect2(585, 555, 250, 60), Rect2(50, 820, 665, 95), Rect2(137.5, 1075.3671, 158, 45), Rect2(88.5, 1088.3671, 66, 32), Rect2(286.5, 1088.3671, 66, 32), Rect2(589.5, 1075.3671, 158, 45), Rect2(540.5, 1088.3671, 66, 32), Rect2(738.5, 1088.3671, 66, 32), Rect2(137.5, 1258.3671, 158, 45), Rect2(88.5, 1271.3671, 66, 32), Rect2(286.5, 1271.3671, 66, 32), Rect2(589.5, 1258.3671, 158, 45), Rect2(540.5, 1271.3671, 66, 32), Rect2(738.5, 1271.3671, 66, 32), Rect2(137.5, 1448.3671, 158, 45), Rect2(88.5, 1461.3671, 66, 32), Rect2(286.5, 1461.3671, 66, 32), Rect2(589.5, 1448.3671, 158, 45), Rect2(540.5, 1461.3671, 66, 32), Rect2(738.5, 1461.3671, 66, 32), Rect2(137.5, 1636.3671, 158, 45), Rect2(88.5, 1649.3671, 66, 32), Rect2(286.5, 1649.3671, 66, 32), Rect2(589.5, 1636.3671, 158, 45), Rect2(540.5, 1649.3671, 66, 32), Rect2(738.5, 1649.3671, 66, 32), Rect2(620, 245, 100, 40), Rect2(715, 815, 20, 40), Rect2(830, 815, 15, 40), Rect2(40, 1718, 310, 42), Rect2(550, 1718, 290, 42), Rect2(148, 1710, 130, 50)])
+obstacles = Array[Rect2]([Rect2(750, 385, 85, 45), Rect2(330, 270, 235, 50), Rect2(735, 280, 105, 40), Rect2(45, 560, 325, 60), Rect2(45, 385, 125, 65), Rect2(585, 555, 250, 60), Rect2(50, 820, 665, 95), Rect2(137.5, 1075.3671, 158, 45), Rect2(62.5, 1088.3671, 66, 32), Rect2(312.5, 1088.3671, 66, 32), Rect2(589.5, 1075.3671, 158, 45), Rect2(514.5, 1088.3671, 66, 32), Rect2(764.5, 1088.3671, 66, 32), Rect2(137.5, 1258.3671, 158, 45), Rect2(62.5, 1271.3671, 66, 32), Rect2(312.5, 1271.3671, 66, 32), Rect2(589.5, 1258.3671, 158, 45), Rect2(514.5, 1271.3671, 66, 32), Rect2(764.5, 1271.3671, 66, 32), Rect2(137.5, 1448.3671, 158, 45), Rect2(62.5, 1461.3671, 66, 32), Rect2(312.5, 1461.3671, 66, 32), Rect2(589.5, 1448.3671, 158, 45), Rect2(514.5, 1461.3671, 66, 32), Rect2(764.5, 1461.3671, 66, 32), Rect2(137.5, 1636.3671, 158, 45), Rect2(62.5, 1649.3671, 66, 32), Rect2(312.5, 1649.3671, 66, 32), Rect2(589.5, 1636.3671, 158, 45), Rect2(514.5, 1649.3671, 66, 32), Rect2(764.5, 1649.3671, 66, 32), Rect2(620, 245, 100, 40), Rect2(715, 815, 20, 40), Rect2(830, 815, 15, 40), Rect2(40, 1718, 310, 42), Rect2(550, 1718, 290, 42), Rect2(148, 1710, 130, 50)])
 obstacle_stations = Array[String](["", "wok_a", "soup_pot", "", "pantry", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""])
 grid_size = Vector2i(45, 89)
 points = Dictionary[String, Vector2]({
@@ -544,22 +580,22 @@ points = Dictionary[String, Vector2]({
 "plum_dispenser": Vector2(310, 755),
 "rice_cooker": Vector2(790, 480),
 "soup_pot": Vector2(800, 345),
-"table/0": Vector2(121, 1010),
-"table/1": Vector2(320, 1010),
-"table/10": Vector2(574, 1383),
-"table/11": Vector2(772, 1383),
-"table/12": Vector2(121, 1571),
-"table/13": Vector2(320, 1571),
-"table/14": Vector2(574, 1571),
-"table/15": Vector2(772, 1571),
-"table/2": Vector2(574, 1010),
-"table/3": Vector2(772, 1010),
-"table/4": Vector2(121, 1193),
-"table/5": Vector2(320, 1193),
-"table/6": Vector2(574, 1193),
-"table/7": Vector2(772, 1193),
-"table/8": Vector2(121, 1383),
-"table/9": Vector2(320, 1383),
+"table/0": Vector2(95, 1010),
+"table/1": Vector2(346, 1010),
+"table/10": Vector2(548, 1383),
+"table/11": Vector2(798, 1383),
+"table/12": Vector2(95, 1571),
+"table/13": Vector2(346, 1571),
+"table/14": Vector2(548, 1571),
+"table/15": Vector2(798, 1571),
+"table/2": Vector2(548, 1010),
+"table/3": Vector2(798, 1010),
+"table/4": Vector2(95, 1193),
+"table/5": Vector2(346, 1193),
+"table/6": Vector2(548, 1193),
+"table/7": Vector2(798, 1193),
+"table/8": Vector2(95, 1383),
+"table/9": Vector2(346, 1383),
 "window": Vector2(640, 755),
 "wok_a": Vector2(400, 340),
 "wok_b": Vector2(500, 340)
@@ -596,22 +632,22 @@ customer_points = Dictionary[String, Vector2]({
 "pickup:7": Vector2(520, 980),
 "pickup:8": Vector2(400, 1020),
 "pickup:9": Vector2(440, 1020),
-"seat:table/0": Vector2(121, 1010),
-"seat:table/1": Vector2(320, 1010),
-"seat:table/10": Vector2(574, 1383),
-"seat:table/11": Vector2(772, 1383),
-"seat:table/12": Vector2(121, 1571),
-"seat:table/13": Vector2(320, 1571),
-"seat:table/14": Vector2(574, 1571),
-"seat:table/15": Vector2(772, 1571),
-"seat:table/2": Vector2(574, 1010),
-"seat:table/3": Vector2(772, 1010),
-"seat:table/4": Vector2(121, 1193),
-"seat:table/5": Vector2(320, 1193),
-"seat:table/6": Vector2(574, 1193),
-"seat:table/7": Vector2(772, 1193),
-"seat:table/8": Vector2(121, 1383),
-"seat:table/9": Vector2(320, 1383)
+"seat:table/0": Vector2(95, 1010),
+"seat:table/1": Vector2(346, 1010),
+"seat:table/10": Vector2(548, 1383),
+"seat:table/11": Vector2(798, 1383),
+"seat:table/12": Vector2(95, 1571),
+"seat:table/13": Vector2(346, 1571),
+"seat:table/14": Vector2(548, 1571),
+"seat:table/15": Vector2(798, 1571),
+"seat:table/2": Vector2(548, 1010),
+"seat:table/3": Vector2(798, 1010),
+"seat:table/4": Vector2(95, 1193),
+"seat:table/5": Vector2(346, 1193),
+"seat:table/6": Vector2(548, 1193),
+"seat:table/7": Vector2(798, 1193),
+"seat:table/8": Vector2(95, 1383),
+"seat:table/9": Vector2(346, 1383)
 })
 customer_queue = Array[Vector2]([Vector2(215, 950), Vector2(290, 950), Vector2(365, 950), Vector2(443, 975), Vector2(443, 1045), Vector2(443, 1115), Vector2(443, 1185), Vector2(443, 1255)])
 
@@ -627,8 +663,8 @@ seconds = 45.0
 script = ExtResource("25_2xajr")
 kinds = Array[ExtResource("18_sirxl")]([ExtResource("19_of5hw"), ExtResource("20_7ma8r"), ExtResource("21_pe3d1"), ExtResource("22_30kup"), ExtResource("23_wi3ao"), ExtResource("24_e1dka"), ExtResource("staff_fox"), ExtResource("staff_parrot")])
 retired_kinds = Dictionary[String, String]({"cat": "rabbit", "dog": "gray_cat", "sheep": "bear"})
-starting = Array[String](["gray_cat", "rabbit"])
-starting_posts = Array[String](["", "counter"])
+starting = Array[String](["rabbit"])
+starting_posts = Array[String](["counter"])
 hire_pool = Array[String](["rabbit", "bear", "gray_cat", "fox", "parrot"])
 hire_costs = Array[int]([30, 60, 80, 110])
 zones = Array[String](["front", "kitchen"])
@@ -642,6 +678,34 @@ display_name = "卖出 20 份番茄炒蛋盖饭"
 target = "tomato_rice"
 amount = 20.0
 
+[sub_resource type="Resource" id="Resource_5xi1i"]
+script = ExtResource("27_gfylo")
+id = "sell_pepper"
+display_name = "卖出 20 份青椒肉丝盖饭"
+target = "pepper_rice"
+amount = 20.0
+
+[sub_resource type="Resource" id="Resource_r50en"]
+script = ExtResource("27_gfylo")
+id = "sell_egg"
+display_name = "卖出 20 份蛋炒饭"
+target = "egg_fried_rice"
+amount = 20.0
+
+[sub_resource type="Resource" id="Resource_tsirp"]
+script = ExtResource("27_gfylo")
+id = "sell_kungpao"
+display_name = "卖出 15 份宫保鸡丁盖饭"
+target = "kungpao_rice"
+amount = 15.0
+
+[sub_resource type="Resource" id="Resource_ap2ai"]
+script = ExtResource("27_gfylo")
+id = "sell_yangzhou"
+display_name = "卖出 15 份扬州炒饭"
+target = "yangzhou_rice"
+amount = 15.0
+
 [sub_resource type="Resource" id="OpeningPlum"]
 script = ExtResource("26_t20je")
 id = "open"
@@ -649,7 +713,24 @@ display_name = "酸梅汤机开张"
 stations = Array[String](["plum_dispenser"])
 cost = 12
 dish = "plum_juice"
-unlock_note = "先在前台卖酸梅汤，攒钱开启第一口炒锅"
+unlock_note = "先卖酸梅汤，攒金币买米饭锅和招后厨"
+customer_interval = 10.0
+order_weights = Dictionary[String, float]({
+"plum_juice": 1.0
+})
+staff_slots = Dictionary[String, int]({
+"kitchen": 2
+})
+queue_capacity = 6
+seat_seconds = 45.0
+
+[sub_resource type="Resource" id="OpenRiceCooker"]
+script = ExtResource("26_t20je")
+id = "rice_supply"
+display_name = "米饭锅"
+stations = Array[String](["rice_cooker"])
+cost = 20
+unlock_note = "提前蒸饭，做炒饭和盖饭都要用到"
 customer_interval = 10.0
 order_weights = Dictionary[String, float]({
 "plum_juice": 1.0
@@ -666,55 +747,62 @@ id = "hot_food"
 display_name = "炒锅 A"
 stations = Array[String](["wok_a"])
 cost = 80
-dish = "tomato_rice"
-unlock_note = "开始卖盖饭，同时开放备料柜、电饭柜和装盘台"
+dish = "plain_fried_rice"
+unlock_note = "招募并派一位流动后厨员工，即可开始卖炒饭"
 customer_interval = 13.0
 order_weights = Dictionary[String, float]({
-"plum_juice": 0.25,
-"tomato_rice": 1.0
+"plum_juice": 0.4,
+"plain_fried_rice": 1.0
 })
 staff_slots = Dictionary[String, int]({
 "kitchen": 2
 })
 queue_capacity = 6
 seat_seconds = 45.0
-tasks = Array[ExtResource("27_gfylo")]([SubResource("Resource_m6p80")])
 
-[sub_resource type="Resource" id="Resource_5xi1i"]
-script = ExtResource("27_gfylo")
-id = "sell_pepper"
-display_name = "卖出 20 份青椒肉丝盖饭"
-target = "pepper_rice"
-amount = 20.0
-
-[sub_resource type="Resource" id="Resource_qpvpo"]
+[sub_resource type="Resource" id="OpenPantry"]
 script = ExtResource("26_t20je")
-id = "pepper"
-display_name = "青椒肉丝盖饭"
-recipe_at = "pantry"
-recipe_level = 2
-cost = 80
-dish = "pepper_rice"
-unlock_note = "备料柜开放青椒肉丝配料，菜单新增青椒肉丝盖饭"
+id = "fried_rice"
+display_name = "备料柜"
+stations = Array[String](["pantry"])
+cost = 40
+dish = "egg_fried_rice"
+unlock_note = "开放鸡蛋葱花，炒锅 A 可以制作蛋炒饭"
 customer_interval = 12.0
 order_weights = Dictionary[String, float]({
-"pepper_rice": 0.5,
-"plum_juice": 0.25,
-"tomato_rice": 0.5
+"plum_juice": 0.3,
+"plain_fried_rice": 0.5,
+"egg_fried_rice": 0.8
 })
 staff_slots = Dictionary[String, int]({
 "kitchen": 3
 })
 queue_capacity = 6
 seat_seconds = 45.0
-tasks = Array[ExtResource("27_gfylo")]([SubResource("Resource_5xi1i")])
+tasks = Array[ExtResource("27_gfylo")]([SubResource("Resource_r50en")])
 
-[sub_resource type="Resource" id="Resource_r50en"]
-script = ExtResource("27_gfylo")
-id = "sell_egg"
-display_name = "卖出 20 份蛋炒饭"
-target = "egg_fried_rice"
-amount = 20.0
+[sub_resource type="Resource" id="Resource_c4ph4"]
+script = ExtResource("26_t20je")
+id = "yangzhou"
+display_name = "扬州炒饭"
+recipe_at = "pantry"
+recipe_level = 2
+cost = 80
+dish = "yangzhou_rice"
+unlock_note = "解锁扬州配料，炒锅 A 可以制作扬州炒饭"
+customer_interval = 11.0
+order_weights = Dictionary[String, float]({
+"plum_juice": 0.25,
+"plain_fried_rice": 0.3,
+"egg_fried_rice": 0.5,
+"yangzhou_rice": 0.8
+})
+staff_slots = Dictionary[String, int]({
+"kitchen": 3
+})
+queue_capacity = 6
+seat_seconds = 45.0
+tasks = Array[ExtResource("27_gfylo")]([SubResource("Resource_ap2ai")])
 
 [sub_resource type="Resource" id="OpenWokB"]
 script = ExtResource("26_t20je")
@@ -722,48 +810,47 @@ id = "wok_b"
 display_name = "炒锅 B"
 stations = Array[String](["wok_b"])
 cost = 150
-unlock_note = "开放第二口锅，可继续升级备料柜以解锁蛋炒饭"
+dish = "tomato_rice"
+unlock_note = "炒锅 B 开始制作番茄炒蛋盖饭"
 customer_interval = 11.0
 order_weights = Dictionary[String, float]({
-"pepper_rice": 0.5,
 "plum_juice": 0.25,
-"tomato_rice": 0.5
+"plain_fried_rice": 0.25,
+"egg_fried_rice": 0.35,
+"yangzhou_rice": 0.4,
+"tomato_rice": 0.8
 })
 staff_slots = Dictionary[String, int]({
 "kitchen": 4
 })
 queue_capacity = 6
 seat_seconds = 45.0
+tasks = Array[ExtResource("27_gfylo")]([SubResource("Resource_m6p80")])
 
-[sub_resource type="Resource" id="Resource_83672"]
+[sub_resource type="Resource" id="Resource_qpvpo"]
 script = ExtResource("26_t20je")
-id = "fried_rice"
-display_name = "蛋炒饭"
+id = "pepper"
+display_name = "青椒肉丝盖饭"
 recipe_at = "pantry"
 recipe_level = 3
-cost = 40
-dish = "egg_fried_rice"
-unlock_note = "备料柜开放鸡蛋葱花，菜单新增蛋炒饭"
-customer_interval = 11.0
+cost = 250
+dish = "pepper_rice"
+unlock_note = "备料柜开放青椒肉丝配料"
+customer_interval = 6.67
 order_weights = Dictionary[String, float]({
-"egg_fried_rice": 0.4,
-"pepper_rice": 0.3,
 "plum_juice": 0.25,
-"tomato_rice": 0.3
+"plain_fried_rice": 0.15,
+"egg_fried_rice": 0.2,
+"yangzhou_rice": 0.35,
+"tomato_rice": 0.35,
+"pepper_rice": 0.7
 })
 staff_slots = Dictionary[String, int]({
-"kitchen": 4
+"kitchen": 5
 })
 queue_capacity = 6
 seat_seconds = 45.0
-tasks = Array[ExtResource("27_gfylo")]([SubResource("Resource_r50en")])
-
-[sub_resource type="Resource" id="Resource_tsirp"]
-script = ExtResource("27_gfylo")
-id = "sell_kungpao"
-display_name = "卖出 15 份宫保鸡丁盖饭"
-target = "kungpao_rice"
-amount = 15.0
+tasks = Array[ExtResource("27_gfylo")]([SubResource("Resource_5xi1i")])
 
 [sub_resource type="Resource" id="Resource_6csjc"]
 script = ExtResource("26_t20je")
@@ -771,16 +858,18 @@ id = "kungpao"
 display_name = "宫保鸡丁盖饭"
 recipe_at = "pantry"
 recipe_level = 4
-cost = 250
+cost = 350
 dish = "kungpao_rice"
-unlock_note = "备料柜开放宫保鸡丁配料，菜单新增宫保鸡丁盖饭"
-customer_interval = 6.67
+unlock_note = "备料柜开放宫保鸡丁配料"
+customer_interval = 6.32
 order_weights = Dictionary[String, float]({
-"egg_fried_rice": 0.2,
-"kungpao_rice": 0.6,
-"pepper_rice": 0.1,
 "plum_juice": 0.25,
-"tomato_rice": 0.1
+"plain_fried_rice": 0.1,
+"egg_fried_rice": 0.125,
+"yangzhou_rice": 0.25,
+"tomato_rice": 0.125,
+"pepper_rice": 0.125,
+"kungpao_rice": 0.5
 })
 staff_slots = Dictionary[String, int]({
 "kitchen": 5
@@ -788,38 +877,6 @@ staff_slots = Dictionary[String, int]({
 queue_capacity = 6
 seat_seconds = 45.0
 tasks = Array[ExtResource("27_gfylo")]([SubResource("Resource_tsirp")])
-
-[sub_resource type="Resource" id="Resource_ap2ai"]
-script = ExtResource("27_gfylo")
-id = "sell_yangzhou"
-display_name = "卖出 15 份扬州炒饭"
-target = "yangzhou_rice"
-amount = 15.0
-
-[sub_resource type="Resource" id="Resource_c4ph4"]
-script = ExtResource("26_t20je")
-id = "yangzhou"
-display_name = "扬州炒饭"
-recipe_at = "pantry"
-recipe_level = 5
-cost = 350
-dish = "yangzhou_rice"
-unlock_note = "备料柜开放扬州炒饭配料，菜单新增扬州炒饭"
-customer_interval = 6.32
-order_weights = Dictionary[String, float]({
-"egg_fried_rice": 0.125,
-"kungpao_rice": 0.125,
-"pepper_rice": 0.125,
-"plum_juice": 0.25,
-"tomato_rice": 0.125,
-"yangzhou_rice": 0.5
-})
-staff_slots = Dictionary[String, int]({
-"kitchen": 5
-})
-queue_capacity = 6
-seat_seconds = 45.0
-tasks = Array[ExtResource("27_gfylo")]([SubResource("Resource_ap2ai")])
 
 [sub_resource type="Resource" id="Resource_hdm63"]
 script = ExtResource("28_vwc8l")
@@ -846,8 +903,7 @@ params = {
 "unit": "份"
 }
 zone = "kitchen"
-companion_of = "wok_a"
-description = "领取盖饭浇头和炒饭配料，在这里解锁新菜品"
+description = "领取炒饭配料和盖饭浇头，升级解锁新菜品"
 icon = "res://art/stirfry/scene/loaded_ingredient_rack.png"
 
 [sub_resource type="Resource" id="Resource_6imuh"]
@@ -862,10 +918,21 @@ kind = "batch"
 op = "set"
 value = 6.0
 
+[sub_resource type="Resource" id="RiceSpeed"]
+script = ExtResource("7_p3vft")
+kind = "speed"
+value = 1.12
+
+[sub_resource type="Resource" id="RiceCapacity1"]
+script = ExtResource("7_p3vft")
+kind = "capacity"
+op = "set"
+value = 12.0
+
 [sub_resource type="Resource" id="Resource_dnfpp"]
 script = ExtResource("8_fr6bm")
 cost = 28
-effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_b18b5")])
+effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_b18b5"), SubResource("RiceSpeed"), SubResource("RiceCapacity1")])
 
 [sub_resource type="Resource" id="Resource_rcfvy"]
 script = ExtResource("7_p3vft")
@@ -873,10 +940,16 @@ kind = "batch"
 op = "set"
 value = 8.0
 
+[sub_resource type="Resource" id="RiceCapacity2"]
+script = ExtResource("7_p3vft")
+kind = "capacity"
+op = "set"
+value = 16.0
+
 [sub_resource type="Resource" id="Resource_vnyx6"]
 script = ExtResource("8_fr6bm")
 cost = 36
-effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_rcfvy")])
+effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_rcfvy"), SubResource("RiceSpeed"), SubResource("RiceCapacity2")])
 
 [sub_resource type="Resource" id="Resource_pbibn"]
 script = ExtResource("7_p3vft")
@@ -884,10 +957,16 @@ kind = "batch"
 op = "set"
 value = 10.0
 
+[sub_resource type="Resource" id="RiceCapacity3"]
+script = ExtResource("7_p3vft")
+kind = "capacity"
+op = "set"
+value = 20.0
+
 [sub_resource type="Resource" id="Resource_sht61"]
 script = ExtResource("8_fr6bm")
 cost = 46
-effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_pbibn")])
+effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_pbibn"), SubResource("RiceSpeed"), SubResource("RiceCapacity3")])
 
 [sub_resource type="Resource" id="Resource_5tpwu"]
 script = ExtResource("7_p3vft")
@@ -895,10 +974,16 @@ kind = "batch"
 op = "set"
 value = 12.0
 
+[sub_resource type="Resource" id="RiceCapacity4"]
+script = ExtResource("7_p3vft")
+kind = "capacity"
+op = "set"
+value = 24.0
+
 [sub_resource type="Resource" id="Resource_7gson"]
 script = ExtResource("8_fr6bm")
 cost = 60
-effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_5tpwu")])
+effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_5tpwu"), SubResource("RiceSpeed"), SubResource("RiceCapacity4")])
 
 [sub_resource type="Resource" id="Resource_hn35o"]
 script = ExtResource("7_p3vft")
@@ -906,10 +991,16 @@ kind = "batch"
 op = "set"
 value = 14.0
 
+[sub_resource type="Resource" id="RiceCapacity5"]
+script = ExtResource("7_p3vft")
+kind = "capacity"
+op = "set"
+value = 28.0
+
 [sub_resource type="Resource" id="Resource_d0tha"]
 script = ExtResource("8_fr6bm")
 cost = 79
-effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_hn35o")])
+effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_hn35o"), SubResource("RiceSpeed"), SubResource("RiceCapacity5")])
 
 [sub_resource type="Resource" id="Resource_okbq1"]
 script = ExtResource("7_p3vft")
@@ -917,10 +1008,16 @@ kind = "batch"
 op = "set"
 value = 16.0
 
+[sub_resource type="Resource" id="RiceCapacity6"]
+script = ExtResource("7_p3vft")
+kind = "capacity"
+op = "set"
+value = 32.0
+
 [sub_resource type="Resource" id="Resource_2fs5y"]
 script = ExtResource("8_fr6bm")
 cost = 102
-effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_okbq1")])
+effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_okbq1"), SubResource("RiceSpeed"), SubResource("RiceCapacity6")])
 
 [sub_resource type="Resource" id="Resource_0n4pc"]
 script = ExtResource("7_p3vft")
@@ -928,10 +1025,16 @@ kind = "batch"
 op = "set"
 value = 18.0
 
+[sub_resource type="Resource" id="RiceCapacity7"]
+script = ExtResource("7_p3vft")
+kind = "capacity"
+op = "set"
+value = 36.0
+
 [sub_resource type="Resource" id="Resource_k3es8"]
 script = ExtResource("8_fr6bm")
 cost = 133
-effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_0n4pc")])
+effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_0n4pc"), SubResource("RiceSpeed"), SubResource("RiceCapacity7")])
 
 [sub_resource type="Resource" id="Resource_qw4t8"]
 script = ExtResource("9_47jng")
@@ -942,7 +1045,7 @@ levels = Array[ExtResource("8_fr6bm")]([SubResource("Resource_dnfpp"), SubResour
 [sub_resource type="Resource" id="Resource_m581v"]
 script = ExtResource("28_vwc8l")
 id = "rice_cooker"
-display_name = "电饭柜"
+display_name = "米饭锅"
 block = "batch_pot"
 params = {
 "batch": 4,
@@ -953,10 +1056,9 @@ params = {
 "unit": "份"
 }
 zone = "kitchen"
-companion_of = "wok_a"
 tracks = Array[ExtResource("9_47jng")]([SubResource("Resource_qw4t8")])
 stock = Array[ExtResource("30_w3c2t")]([SubResource("Resource_6imuh")])
-description = "每锅蒸出几份米饭放进饭盆；盖饭和炒饭都从这里盛饭"
+description = "炒饭和盖饭的米饭来源；升级增加每锅碗数并缩短蒸煮时间"
 icon = "res://art/stirfry/scene/rice_cooker.png"
 
 [sub_resource type="Resource" id="Resource_te6jf"]
@@ -984,10 +1086,16 @@ script = ExtResource("7_p3vft")
 kind = "speed"
 value = 1.15
 
+[sub_resource type="Resource" id="WokBatchTwo"]
+script = ExtResource("7_p3vft")
+kind = "batch"
+op = "set"
+value = 2.0
+
 [sub_resource type="Resource" id="Resource_towax"]
 script = ExtResource("8_fr6bm")
 cost = 28
-effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_ku34x")])
+effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_ku34x"), SubResource("WokBatchTwo")])
 
 [sub_resource type="Resource" id="Resource_tyist"]
 script = ExtResource("7_p3vft")
@@ -1068,7 +1176,7 @@ params = {
 zone = "kitchen"
 seatable = true
 tracks = Array[ExtResource("9_47jng")]([SubResource("Resource_b6f22")])
-description = "炒盖饭浇头，一次一份；升级加快炒制"
+description = "制作炒饭；升级加快炒制，4 级起可同时炒两份相同订单"
 icon = "res://art/stirfry/scene/wok_tomato_egg.png"
 
 [sub_resource type="Resource" id="Resource_gf7om"]
@@ -1145,7 +1253,7 @@ levels = Array[ExtResource("8_fr6bm")]([SubResource("Resource_uwlf1"), SubResour
 [sub_resource type="Resource" id="Resource_cs2hy"]
 script = ExtResource("28_vwc8l")
 id = "plating"
-display_name = "装盘台"
+display_name = "交餐台"
 block = "combine"
 params = {
 "manual": true,
@@ -1156,7 +1264,7 @@ zone = "kitchen"
 companion_of = "wok_a"
 tracks = Array[ExtResource("9_47jng")]([SubResource("Resource_su48r")])
 price_dishes = Array[String](["tomato_rice", "pepper_rice", "kungpao_rice"])
-description = "米饭和浇头都到齐了才装盘；升级提高三道盖饭的售价"
+description = "暂放后厨做好的菜品，等待交餐"
 icon = "res://art/stirfry/scene/prep_table.png"
 
 [sub_resource type="Resource" id="Resource_et2uw"]
@@ -1199,7 +1307,7 @@ value = 1.15
 [sub_resource type="Resource" id="Resource_bhua2"]
 script = ExtResource("8_fr6bm")
 cost = 22
-effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_r1lu1")])
+effects = Array[ExtResource("7_p3vft")]([SubResource("Resource_r1lu1"), SubResource("WokBatchTwo")])
 
 [sub_resource type="Resource" id="Resource_l36rt"]
 script = ExtResource("7_p3vft")
@@ -1260,7 +1368,7 @@ params = {
 zone = "kitchen"
 seatable = true
 tracks = Array[ExtResource("9_47jng")]([SubResource("Resource_2a5kv")])
-description = "炒制蛋炒饭和扬州炒饭；升级加快炒制"
+description = "制作盖饭；升级加快炒制，4 级起可同时炒两份相同订单"
 icon = "res://art/stirfry/scene/wok_meat_vegetables.png"
 
 [sub_resource type="Resource" id="Resource_khsfj"]
@@ -1427,10 +1535,10 @@ id = "stirfry"
 display_name = "小炒饭馆"
 start_gold = 12
 random_seed = 11
-items = Array[ExtResource("13_2vgy6")]([SubResource("Resource_fxkk4"), SubResource("Resource_i5amu"), SubResource("Resource_wyaw6"), SubResource("Resource_b0fip"), SubResource("Resource_vysub"), SubResource("Resource_aqvop"), SubResource("Resource_sjrtd"), SubResource("Resource_xt8p7"), SubResource("Resource_rwojx"), SubResource("Resource_4sto7"), SubResource("Resource_ejaim"), SubResource("Resource_qct10"), SubResource("Resource_nld4s"), SubResource("Resource_npkjl"), SubResource("Resource_o4017"), SubResource("PlumItem")])
-dishes = Array[ExtResource("2_6jyx4")]([SubResource("Resource_s34ee"), SubResource("Resource_fhr1j"), SubResource("Resource_7286g"), SubResource("Resource_4asfv"), SubResource("Resource_s6fb8"), SubResource("Resource_x2g6q"), SubResource("PlumDish")])
+items = Array[ExtResource("13_2vgy6")]([SubResource("Resource_fxkk4"), SubResource("Resource_i5amu"), SubResource("Resource_wyaw6"), SubResource("Resource_b0fip"), SubResource("Resource_vysub"), SubResource("Resource_aqvop"), SubResource("Resource_sjrtd"), SubResource("Resource_xt8p7"), SubResource("Resource_rwojx"), SubResource("Resource_4sto7"), SubResource("Resource_ejaim"), SubResource("Resource_qct10"), SubResource("Resource_nld4s"), SubResource("Resource_npkjl"), SubResource("Resource_o4017"), SubResource("PlumItem"), SubResource("PlainRiceItem"), SubResource("FriedRiceBaseItem")])
+dishes = Array[ExtResource("2_6jyx4")]([SubResource("Resource_s34ee"), SubResource("Resource_fhr1j"), SubResource("Resource_7286g"), SubResource("Resource_4asfv"), SubResource("Resource_s6fb8"), SubResource("Resource_x2g6q"), SubResource("PlumDish"), SubResource("PlainRiceDish")])
 stations = Array[ExtResource("28_vwc8l")]([SubResource("PlumStation"), SubResource("Resource_hdm63"), SubResource("Resource_gjxsh"), SubResource("Resource_m581v"), SubResource("Resource_bhr1w"), SubResource("Resource_cs2hy"), SubResource("Resource_et2uw"), SubResource("Resource_qcfq7"), SubResource("Resource_67ow5")])
-stages = Array[ExtResource("26_t20je")]([SubResource("OpeningPlum"), SubResource("Resource_dluk2"), SubResource("Resource_qpvpo"), SubResource("OpenWokB"), SubResource("Resource_83672"), SubResource("Resource_6csjc"), SubResource("Resource_c4ph4")])
+stages = Array[ExtResource("26_t20je")]([SubResource("OpeningPlum"), SubResource("OpenRiceCooker"), SubResource("Resource_dluk2"), SubResource("OpenPantry"), SubResource("Resource_c4ph4"), SubResource("OpenWokB"), SubResource("Resource_qpvpo"), SubResource("Resource_6csjc")])
 fulfillment = SubResource("Resource_k38dn")
 dispatch = SubResource("Resource_gj1mq")
 flyer = SubResource("Resource_nuxmp")
@@ -1443,14 +1551,60 @@ background_music = ExtResource("music_theme")
 save_file = "shop_stirfry.json"
 runtime_template = ExtResource("u06_runtime")
 previous_progression = {
-"current_structure": "61bc8f805f36af92f62b7113d20a7031258c361dcc3879b4b36694ef2391b698",
+"current_structure": "64ebcc3d5ed5044889c05c8c5cb8f959d993e826251c7a5a177ce3dfffcafc17",
+"grant_stage_stations": true,
+"legacy_customer_ports": {
+"seat:table/0": Vector2(121, 1010),
+"seat:table/1": Vector2(320, 1010),
+"seat:table/10": Vector2(574, 1383),
+"seat:table/11": Vector2(772, 1383),
+"seat:table/12": Vector2(121, 1571),
+"seat:table/13": Vector2(320, 1571),
+"seat:table/14": Vector2(574, 1571),
+"seat:table/15": Vector2(772, 1571),
+"seat:table/2": Vector2(574, 1010),
+"seat:table/3": Vector2(772, 1010),
+"seat:table/4": Vector2(121, 1193),
+"seat:table/5": Vector2(320, 1193),
+"seat:table/6": Vector2(574, 1193),
+"seat:table/7": Vector2(772, 1193),
+"seat:table/8": Vector2(121, 1383),
+"seat:table/9": Vector2(320, 1383)
+},
+"legacy_obstacles": {
+8: Rect2(88.5, 1088.3671, 66, 32),
+9: Rect2(286.5, 1088.3671, 66, 32),
+11: Rect2(540.5, 1088.3671, 66, 32),
+12: Rect2(738.5, 1088.3671, 66, 32),
+14: Rect2(88.5, 1271.3671, 66, 32),
+15: Rect2(286.5, 1271.3671, 66, 32),
+17: Rect2(540.5, 1271.3671, 66, 32),
+18: Rect2(738.5, 1271.3671, 66, 32),
+20: Rect2(88.5, 1461.3671, 66, 32),
+21: Rect2(286.5, 1461.3671, 66, 32),
+23: Rect2(540.5, 1461.3671, 66, 32),
+24: Rect2(738.5, 1461.3671, 66, 32),
+26: Rect2(88.5, 1649.3671, 66, 32),
+27: Rect2(286.5, 1649.3671, 66, 32),
+29: Rect2(540.5, 1649.3671, 66, 32),
+30: Rect2(738.5, 1649.3671, 66, 32)
+},
 "opening_station": "wok_a",
 "other_templates": {
+"40396afc451b498a3caa84ccb0d15a569318ec50e39b9d3df92fb6e40b61d02a": {
+"opening_station": "plum_dispenser",
+"stage_indices": PackedInt32Array(0, 5, 6, 6, 6, 7, 7)
+},
+"61bc8f805f36af92f62b7113d20a7031258c361dcc3879b4b36694ef2391b698": {
+"opening_station": "plum_dispenser",
+"stage_indices": PackedInt32Array(0, 5, 6, 6, 6, 7, 7)
+},
 "abd303aa6c8ba54aa38de5eea7137f0fe063dec1b1345834eabe77f94a687986": {
 "opening_station": "plum_dispenser",
-"stage_indices": PackedInt32Array(0, 1, 2, 3, 4, 4, 5, 6)
+"stage_indices": PackedInt32Array(0, 5, 6, 6, 6, 6, 7, 7)
 }
 },
-"stage_indices": PackedInt32Array(1, 2, 4, 4, 5, 6),
+"refresh_layout": true,
+"stage_indices": PackedInt32Array(5, 6, 6, 6, 7, 7),
 "template_structure": "8359802cfeec22c3f16ccf206cab89babf1e4043f9f05dc0ef157fbd36626b94"
 }

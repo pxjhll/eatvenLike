@@ -48,6 +48,7 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 	var template: Resource = owner._runtime_template
 	if template==null: return "public state requires an explicit runtime template"
 	var identity: Dictionary = prepared.identity if not prepared.is_empty() else Contract.describe_template(template)
+	var refresh_layout := false
 	if data.template.get("structure")!=identity.structure:
 		var previous: Dictionary = owner.shop.previous_progression
 		if not refresh or identity.structure!=previous.get("current_structure"):
@@ -58,6 +59,7 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 		if converted.is_empty(): return "previous purchase stage is invalid"
 		data = data.duplicate()
 		data.outer = converted
+		refresh_layout = previous.get("refresh_layout",false) == true
 	if not refresh and data.template!=identity: return "public template numeric revision differs"
 	var script: Script = owner.get_script()
 	# The candidate gets its runtime after the saved purchase state is restored.
@@ -114,7 +116,7 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 			recorded.service.arrivals.signature = candidate.runtime.service.arrivals.snapshot().signature
 			if not recorded.service.arrivals.started: recorded.service.arrivals.left = candidate.runtime.service.arrivals.snapshot().left
 		recorded.service.orders.policy = candidate.runtime.service.orders.snapshot().policy
-	error = candidate.runtime.restore(recorded,refresh and data.template!=identity)
+	error = candidate.runtime.restore(recorded,refresh and data.template!=identity,refresh_layout)
 	if not error.is_empty(): return error
 	candidate.clock = data.runtime.clock
 	# Adopt validated outer facts and the same Runtime objects; rebind the one
@@ -145,6 +147,12 @@ static func adopt_progression(shop: SpecShop, saved: Dictionary, source: Diction
 	result.unlocked = unlocked.duplicate()
 	result.unlocked[shop.goals.opening_station] = was_open
 	result.stage_index = indices[stage] if was_open else 0
+	if was_open and shop.previous_progression.get("grant_stage_stations",false)==true:
+		for index in result.stage_index+1:
+			for id in shop.stages[index].stations:
+				result.unlocked[id] = true
+				for station in shop.stations:
+					if station.companion_of==id: result.unlocked[station.id] = true
 	if not was_open and result.get("gold") is float:
 		result.gold = maxf(result.gold,float(shop.start_gold))
 	return result
