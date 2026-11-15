@@ -8,6 +8,7 @@ const TARGETS := {"tea":2133.1,"pancake":1365.1,"stirfry":2760.0}
 const AUDIT_SEEDS := {"stirfry":[42,84]}
 const TOLERANCE := 0.05
 const LIMIT := 5400.0
+const SAVE_INTERVAL := 10.0
 
 static func _role(rules: ShopRules, worker: Dictionary) -> String:
 	if rules.shop.staff.zones.is_empty(): return "all"
@@ -77,7 +78,7 @@ static func visit(rules: ShopRules, loads: Dictionary, hand_load: float, actions
 		if not next.is_empty() and pick[0]>0.25*rules.next_stage_cost() and not prefer: break
 		if not _buy(rules,pick[1],actions): break
 
-static func sample(shop: SpecShop, seconds := LIMIT, seed_ := -1, factory := Callable()) -> Dictionary:
+static func sample(shop: SpecShop, seconds := LIMIT, seed_ := -1, factory := Callable(), checkpoint := Callable()) -> Dictionary:
 	var selected_seed: int = shop.random_seed if seed_<0 else seed_
 	var rules: ShopRules = factory.call(shop,selected_seed) if factory.is_valid() else ShopRules.new(shop,selected_seed)
 	var actions: Array = []
@@ -92,12 +93,18 @@ static func sample(shop: SpecShop, seconds := LIMIT, seed_ := -1, factory := Cal
 	var hand_busy := 0
 	var samples := 0
 	var next_visit := 1.0
+	var next_save := SAVE_INTERVAL
+	var checkpoint_error := ""
 	var last_stage := -2
 	var listener := func(_event: Dictionary) -> void: sales.append(roundi(rules.clock*10.0))
 	rules.events.on("sale",listener)
 	while rules.clock<seconds-0.0001 and rules.completed_at<0.0:
 		rules.step(0.1)
 		if not rules.runtime_error.is_empty(): break
+		if checkpoint.is_valid() and rules.clock+0.0001>=next_save:
+			next_save += SAVE_INTERVAL
+			checkpoint_error = checkpoint.call(rules)
+			if not checkpoint_error.is_empty(): break
 		if rules.stage_index!=last_stage:
 			last_stage = rules.stage_index
 			stages.append({"at":snappedf(rules.clock,0.1),"stage":last_stage,"gold":snappedf(rules.gold,0.01),"sold":rules.sold})
@@ -128,7 +135,31 @@ static func sample(shop: SpecShop, seconds := LIMIT, seed_ := -1, factory := Cal
 		"first_sale_tick":sales[0] if not sales.is_empty() else -1,"maximum_sale_gap_ticks":longest_gap,
 		"revenue":rules.revenue,"sold":rules.sold,"lost":rules.lost,"staff":rules.workers.size(),
 		"role_ticks":totals,"stages":stages,"actions":actions,
-		"restore_error":(factory.call(shop,selected_seed) if factory.is_valid() else ShopRules.new(shop)).load_dict(rules.to_dict()) if rules.runtime_error.is_empty() else rules.runtime_error}
+		"restore_error":checkpoint_error if not checkpoint_error.is_empty() else (factory.call(shop,selected_seed) if factory.is_valid() else ShopRules.new(shop)).load_dict(rules.to_dict()) if rules.runtime_error.is_empty() else rules.runtime_error}
+
+## Exercise the same validated disk-save/committed-history path as normal 1x play.
+## Never prune runtime records directly or ignore a failed checkpoint.
+static func sample_saved(shop: SpecShop, seconds := LIMIT, seed_ := -1) -> Dictionary:
+	seed_ = shop.random_seed if seed_<0 else seed_
+	var path := "user://progression-%s-%d-%d.json" % [shop.id, seed_, Time.get_ticks_usec()]
+	var store := ShopSave.new(shop,path)
+	var started := Time.get_ticks_msec()
+	var checkpoint := func(rules: ShopRules) -> String:
+		var error := store.save_game(rules)
+		if error != OK: return "checkpoint at %.1fs: %s" % [rules.clock,store.last_error]
+		if roundi(rules.clock*10.0)%600==0:
+			print("PROGRESSION RUN %s seed=%d sim=%.1fs wall=%.1fs stage=%d sold=%d" % [shop.id,seed_,rules.clock,(Time.get_ticks_msec()-started)/1000.0,rules.stage_index,rules.sold])
+		return ""
+	var row := sample(shop,seconds,seed_,Callable(),checkpoint)
+	# The unique path belongs to this invocation, never the player's saved game.
+	if row.restore_error.is_empty():
+		for file in DirAccess.get_files_at("user://"):
+			if file.begins_with(path.get_file()): DirAccess.remove_absolute("user://"+file)
+	elif FileAccess.file_exists(path):
+		print("PROGRESSION CHECKPOINT retained: ",ProjectSettings.globalize_path(path))
+	else:
+		print("PROGRESSION CHECKPOINT: no successful disk checkpoint was available")
+	return row
 
 static func target_errors(shops: Dictionary) -> Array[String]:
 	var errors: Array[String] = []
@@ -152,6 +183,23 @@ static func completion_errors(report: Dictionary) -> Array[String]:
 				continue
 			for error in target_errors({id:row}): errors.append("seed %d: %s"%[seed_,error])
 			if not String(row.get("restore_error","")).is_empty(): errors.append("invalid secondary seed state: %s %d"%[id,seed_])
+	return errors
+
+## Current execution/data integrity, independent of the historical balance target.
+static func acceptance_errors(report: Dictionary) -> Array[String]:
+	var errors: Array[String] = []
+	if not report.get("shops") is Dictionary or report.shops.is_empty(): return ["shop reports missing"]
+	for id in report.shops:
+		var rows: Array = [report.shops[id]]
+		if id not in SHOPS: errors.append("unknown shop: "+str(id))
+		for seed_ in AUDIT_SEEDS.get(id,[]):
+			var audit: Dictionary = report.get("audits",{}).get(id,{}).get(str(seed_),{})
+			if audit.get("seed")!=seed_: errors.append("missing or mislabeled audit: %s %d"%[id,seed_])
+			rows.append(audit)
+		for row: Dictionary in rows:
+			var at := float(row.get("completed_at",-1))
+			if not is_finite(at) or at<=0 or at>LIMIT: errors.append("unfinished scenario: "+str(id))
+			if not String(row.get("restore_error","")).is_empty(): errors.append("invalid state: %s: %s"%[id,row.restore_error])
 	return errors
 
 func _initialize() -> void:
@@ -181,19 +229,21 @@ func _initialize() -> void:
 		print("FAIL progression arguments: --shop=tea|pancake|stirfry --output=res://_work/... --check=<report>")
 		quit(1)
 		return
-	var report := {"version":2,"setup":{"scenario":"empty_shop","bot":"minute_visit_role_load_v1","limit_seconds":LIMIT,"target_tolerance":TOLERANCE,"audit_seeds":AUDIT_SEEDS},"shops":{},"audits":{}}
+	var report := {"version":3,"setup":{"scenario":"empty_shop","bot":"minute_visit_role_load_v1","limit_seconds":LIMIT,"target_tolerance":TOLERANCE,"audit_seeds":AUDIT_SEEDS,"save_interval_seconds":SAVE_INTERVAL,"playback_speed":1.0},"shops":{},"audits":{}}
 	var failures: Array[String] = []
 	for id in ids:
-		var row := sample(load("res://content/shops/%s/shop.tres"%id))
+		var row := sample_saved(load("res://content/shops/%s/shop.tres"%id))
 		report.shops[id] = row
-		if not row.restore_error.is_empty(): failures.append("invalid final state: "+id)
+		if not row.restore_error.is_empty(): failures.append("invalid final state: "+id+": "+row.restore_error)
 		print("PROGRESSION %s completed=%.1fs first_sale=%.1fs sold=%d revenue=%d staff=%d"%[id,row.completed_at,row.first_sale_tick/10.0,row.sold,int(row.revenue),row.staff])
 		if AUDIT_SEEDS.has(id): report.audits[id] = {}
 		for seed_ in AUDIT_SEEDS.get(id,[]):
-			var audit := sample(load("res://content/shops/%s/shop.tres"%id),LIMIT,seed_)
+			var audit := sample_saved(load("res://content/shops/%s/shop.tres"%id),LIMIT,seed_)
 			report.audits[id][str(seed_)] = audit
 			print("PROGRESSION AUDIT %s seed=%d completed=%.1fs first_sale=%.1fs sold=%d"%[id,seed_,audit.completed_at,audit.first_sale_tick/10.0,audit.sold])
-	failures.append_array(completion_errors(report))
+	failures.append_array(acceptance_errors(report))
+	report["legacy_target_diagnostics"] = completion_errors(report)
+	for diagnostic in report.legacy_target_diagnostics: print("LEGACY TARGET (not current balance acceptance): ",diagnostic)
 	if expected is Dictionary:
 		if expected.get("version")!=report.version or expected.get("setup")!=JSON.parse_string(JSON.stringify(report.setup)): failures.append("progression setup differs")
 		if ids.size()==SHOPS.size() and expected.get("shops",{}).size()!=SHOPS.size(): failures.append("progression shop set differs")

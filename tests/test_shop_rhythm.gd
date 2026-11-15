@@ -56,3 +56,22 @@ func test_public_diagnostics_count_completed_orders_from_the_actual_shared_servi
 	var report: Dictionary = _tool().sample(SHOP,60.0,42)
 	check(report.sale_events>0,"actual public sales occurred")
 	check_eq(report.orders_done,report.sale_events,"diagnostic counts actual delivered public orders")
+
+func test_recorded_rhythm_baseline_matches_formal_content_and_diagnostic_setup() -> void:
+	var baseline: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/baselines/shared_shop_rhythm.json"))
+	check_eq(baseline.version,1,"rhythm baseline version remains explicit")
+	check_eq(baseline.setup,{"seed":42.0,"seconds":600.0,"staff_target":2.0,"scenario":"all_unlocked"},"baseline retains the full diagnostic scenario")
+	var ids: Array = baseline.shops.keys()
+	ids.sort()
+	check_eq(ids,["pancake","stirfry","tea"],"baseline must cover all formal shops")
+	for id: String in ids:
+		var row: Dictionary = baseline.shops[id]
+		var shop: SpecShop = load("res://content/shops/%s/shop.tres"%id)
+		var current_content: Dictionary = preload("res://game/rules/shop_content_contract.gd").describe(shop)
+		check_eq(row.content,JSON.parse_string(JSON.stringify(current_content)),"baseline content is current: "+id)
+		check_eq(row.ticks,6000.0,"full ten-minute sample: "+id)
+		check_eq(row.staff,2.0,"two actual deployed staff: "+id)
+		check_eq(row.illegal_footprints,0.0,"legal routes: "+id)
+		check_eq(row.overspeed_samples,0.0,"no speed workaround: "+id)
+		check_eq(row.restore_error,"","restorable final state: "+id)
+		check_eq(row.orders_done,row.sale_events,"sales reflect shared service deliveries: "+id)

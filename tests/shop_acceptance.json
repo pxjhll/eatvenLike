@@ -412,15 +412,42 @@
       "success": "SHOP RHYTHM: 0 failures"
     },
     {
-      "id": "shop_progression",
+      "id": "shop_progression_tea",
       "kind": "script",
       "profile": "economy",
       "script": "tools/shop_progression.gd",
       "args": [
-        "--check=res://tests/baselines/shared_shop_progression.json",
-        "--output={res_output}/shared-progression.json"
+        "--shop=tea",
+        "--check=res://tests/baselines/current_shop_progression.json",
+        "--output={res_output}/shared-progression-tea.json"
       ],
-      "timeout": 240,
+      "timeout": 600,
+      "success": "SHOP PROGRESSION: 0 failures"
+    },
+    {
+      "id": "shop_progression_pancake",
+      "kind": "script",
+      "profile": "economy",
+      "script": "tools/shop_progression.gd",
+      "args": [
+        "--shop=pancake",
+        "--check=res://tests/baselines/current_shop_progression.json",
+        "--output={res_output}/shared-progression-pancake.json"
+      ],
+      "timeout": 600,
+      "success": "SHOP PROGRESSION: 0 failures"
+    },
+    {
+      "id": "shop_progression_stirfry",
+      "kind": "script",
+      "profile": "economy",
+      "script": "tools/shop_progression.gd",
+      "args": [
+        "--shop=stirfry",
+        "--check=res://tests/baselines/current_shop_progression.json",
+        "--output={res_output}/shared-progression-stirfry.json"
+      ],
+      "timeout": 1200,
       "success": "SHOP PROGRESSION: 0 failures"
     },
     {

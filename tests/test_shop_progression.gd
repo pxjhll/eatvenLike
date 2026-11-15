@@ -142,3 +142,39 @@ func test_numeric_calibration_preserves_inflight_business_and_original_file_byte
 		resumed.run(120.0)
 		check(resumed.sold>rules.sold,"updated business continues actual sales: "+id)
 		check_eq(LegacyRules.new(current).load_dict(resumed.to_dict()),"","continued state independently reloads: "+id)
+
+func test_checkpoint_failure_is_reported_and_stops_simulation() -> void:
+	var tool := _tool()
+	check(tool.has_method("sample_saved"), "long-run acceptance uses real periodic saves")
+	if not tool.has_method("sample_saved"): return
+	var calls: Array = []
+	var checkpoint := func(rules: ShopRules) -> String:
+		calls.append(rules.clock)
+		return "deliberate checkpoint failure"
+	var row: Dictionary = tool.sample(load("res://content/shops/tea/shop.tres"),60.0,11,Callable(),checkpoint)
+	check_eq(calls.size(),1,"failed checkpoint cannot be ignored")
+	check(absf(row.clock-10.0)<0.001,"stop at first scheduled checkpoint")
+	check_eq(row.restore_error,"deliberate checkpoint failure","failure survives report")
+
+func test_saved_sampling_preserves_economy_and_purchases() -> void:
+	var tool := _tool()
+	if not tool.has_method("sample_saved"): return
+	var shop: SpecShop = load("res://content/shops/tea/shop.tres")
+	var plain: Dictionary = tool.sample(shop,600.0,11)
+	var saved: Dictionary = tool.sample_saved(shop,600.0,11)
+	check_eq(saved,plain,"real validated saves do not change deterministic economy metrics or commands")
+
+func test_current_acceptance_separates_legacy_targets_without_hiding_bad_runs() -> void:
+	var tool := _tool()
+	check(tool.has_method("acceptance_errors"),"current execution gates are separate from historical time targets")
+	if not tool.has_method("acceptance_errors"): return
+	var report := {"shops":{"stirfry":{"completed_at":3691.9,"restore_error":""}},"audits":{"stirfry":{"42":{"seed":42,"completed_at":3691.9,"restore_error":""},"84":{"seed":84,"completed_at":2781.1,"restore_error":""}}}}
+	check_eq(tool.acceptance_errors(report),[],"completed valid run is not rejected as an unapproved balance target")
+	check(not tool.completion_errors(report).is_empty(),"legacy time diagnostic remains visible")
+	report.shops.stirfry.restore_error = "checkpoint failed"
+	check(not tool.acceptance_errors(report).is_empty(),"save failure must still fail")
+	report.shops.stirfry.restore_error = ""
+	report.audits.stirfry["84"].completed_at = -1.0
+	check(not tool.acceptance_errors(report).is_empty(),"unfinished seed must still fail")
+	report.audits.stirfry.erase("42")
+	check(not tool.acceptance_errors(report).is_empty(),"missing audit must still fail")

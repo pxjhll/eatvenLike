@@ -41,6 +41,25 @@ class AcceptanceTests(unittest.TestCase):
         self.assertLessEqual(required, scripts)
         self.assertTrue(any(job['kind'] == 'web' for job in data['jobs']))
 
+    def test_progression_jobs_cover_each_shop_with_audits_and_bounded_budgets(self):
+        data = json.loads(MANIFEST.read_text(encoding='utf-8'))
+        jobs = [j for j in data['jobs'] if j.get('script') == 'tools/shop_progression.gd']
+        self.assertEqual(len(jobs), 3)
+        self.assertEqual({next(a for a in j['args'] if a.startswith('--shop=')) for j in jobs},
+                         {'--shop=tea', '--shop=pancake', '--shop=stirfry'})
+        for job in jobs:
+            self.assertIn('--check=res://tests/baselines/current_shop_progression.json',job['args'])
+            self.assertLessEqual(job['timeout'],1200 if '--shop=stirfry' in job['args'] else 600)
+            self.assertEqual(job['profile'],'economy')
+
+    def test_economy_ci_has_independent_bounded_jobs(self):
+        workflow = (ROOT / '.github/workflows/tests.yml').read_text()
+        self.assertIn('  economy:\n', workflow)
+        self.assertIn('fail-fast: false', workflow)
+        for name in ['shared_rhythm','shop_progression_tea','shop_progression_pancake','shop_progression_stirfry']:
+            self.assertIn(name,workflow)
+        self.assertIn('--only ${{ matrix.acceptance }}',workflow)
+
     def run_child(self, code, timeout=3, success=None):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
@@ -97,11 +116,11 @@ class AcceptanceTests(unittest.TestCase):
     def test_economy_targets_are_preserved_in_a_separate_explicit_profile(self):
         tool=self.tool();data=json.loads((ROOT/'tests/shop_acceptance.json').read_text(encoding='utf-8-sig'))
         jobs={job['id']:job for job in data['jobs']}
-        for name in ['shared_rhythm','shop_progression']:
+        for name in ['shared_rhythm','shop_progression_tea','shop_progression_pancake','shop_progression_stirfry']:
             self.assertEqual(jobs[name]['profile'],'economy')
             self.assertTrue(any(arg.startswith('--check=') for arg in jobs[name]['args']))
-        self.assertFalse({'shared_rhythm','shop_progression'} & {j['id'] for j in tool.select_jobs(data,'headless',[])})
-        self.assertEqual({j['id'] for j in tool.select_jobs(data,'economy',[])},{'shared_rhythm','shop_progression'})
+        self.assertFalse({'shared_rhythm','shop_progression_tea','shop_progression_pancake','shop_progression_stirfry'} & {j['id'] for j in tool.select_jobs(data,'headless',[])})
+        self.assertEqual({j['id'] for j in tool.select_jobs(data,'economy',[])},{'shared_rhythm','shop_progression_tea','shop_progression_pancake','shop_progression_stirfry'})
 
     def test_actual_window_and_template_guards_are_in_the_shared_manifest(self):
         tool=self.tool();data=json.loads((ROOT/'tests/shop_acceptance.json').read_text(encoding='utf-8-sig'))

@@ -1,8 +1,10 @@
 # 三店空店完店标定
 
+2026-11-15 使用说明：本文保留历史标定、目标和结果，不代表当前配置验收。`shared_shop_progression.json` 是历史基线；当前确定性验收使用独立的 `current_shop_progression.json`，历史目标另行诊断，不据此自动调整游戏数值。现行存档策略、按店任务与时间预算见[空店验收执行说明](progression-acceptance-runtime.md)。
+
 2026-11-12 状态：以下结果与基线记录的是加入酸梅汤前台直售之前的配置。用户要求先关注局内节奏，最终通关时间暂缓；新增菜单后尚未重新标定本报告的总时长，不代表当前配置已通过46分钟门禁。局内短测见 `shared-shop-rhythm.md`。
 
-日期：2026-11-11。工具 `tools/shop_progression.gd`；当前确定性基准 `tests/baselines/shared_shop_progression.json`。这项验收补足此前 T12 只有短测报告、没有标定的缺口。
+日期：2026-11-11。工具 `tools/shop_progression.gd`；当时的确定性基准 `tests/baselines/shared_shop_progression.json`。这项验收补足此前 T12 只有短测报告、没有标定的缺口。
 
 ## 目标与方法
 
@@ -50,14 +52,16 @@ CI同时记录并比较三种子的内容指纹、交易、阶段和结果。缺
 
 600秒全开/双人诊断仍保留，见 `shared-shop-rhythm.md`。小炒该条件下14单、间隔中位33.4秒、首单101.8秒，仍比简短流程的两店慢；不能把空店首单49.7秒写成全菜单双人首单。历史奶茶与旧经济冻结基准未重录。
 
-## 复验
+## 复验（现行入口）
+
+以下命令检查当前独立基线，不重现上文历史配置；三店任务分别报告，小炒任务仍包含默认种子及42、84。
 
 ```powershell
-python tools/check_shops.py --engine $engine --profile headless --only shop_progression --output _work/progression/check
-# 或只读采样，输出留在 _work：
+python tools/check_shops.py --engine $engine --profile economy --only shop_progression_tea --only shop_progression_pancake --only shop_progression_stirfry --output _work/progression/check
+# 或不改生产配置的采样，仅写独立临时存档与 _work 报告：
 & $engine --headless --path . -s tools/shop_progression.gd -- --output=res://_work/progression/report.json
 ```
 
-`--shop=tea|pancake|stirfry`可缩小诊断范围。`--check=<基准>`比较条件、内容与完整统计；参数错误不覆盖报告。输出仅允许`res://_work/`。统一验收和 Pages 自动跑相同入口。
+`--shop=tea|pancake|stirfry`可缩小诊断范围。`--check=<基准>`比较条件、内容与完整统计；参数错误不覆盖报告。输出仅允许`res://_work/`。本地统一验收与 CI economy 矩阵使用同一清单；历史目标诊断与当前确定性验收分别报告。
 
 本地证据：`_work/pr88/{before-finalbot.json,robust-progression.json,robust-rhythm.json,task-diagnosis.json,robust-tests.log}`。6项专项涵盖前台空闲下后厨招募、共享岗位、真实支出/部署、确定性与交易重放、完店门槛、抽查不能省略/冒充/超时、三店数值更新的进行中业务/计时器/库存保留及原字节备份。
