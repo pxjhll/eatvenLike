@@ -265,6 +265,7 @@ const DEFAULT_TEXTS := {
 	"no_carrier": "当前没有流动员工搬运，饮品可能无法送到下一站或货架。",
 	"no_staff": "店内暂无员工，请从员工名册派遣伙伴。",
 	"no_mobile": "缺少流动员工，搬运将等待；拖到空地可恢复流动。",
+	"staff_recipe_gap": "{name}的设备和原料已就绪，还缺{count}位符合岗位的员工；请到员工页安排。",
 	"restarted": "店铺已重新开始。",
 	"no_room": "店里没有空位了，解锁新设备后可以多派伙伴。",
 	"hired_deployed": "新伙伴上岗了！拖动伙伴可以换岗位。",
@@ -1438,12 +1439,14 @@ func _show_toast(text: String) -> void:
 func _staffing_warning(workers: Array = []) -> String:
 	if workers.is_empty(): workers = view.deployed_snapshot()
 	if workers.is_empty(): return _t("no_staff")
-	if shop.staff.zones.is_empty(): return ""
+	var gap := view.staffing_gap()
+	if not gap.is_empty(): return _t("staff_recipe_gap", {"name": gap.name, "count": gap.missing})
+	if shop.staff.zones.is_empty() or rules.kitchen_staff() == 0: return ""
 	for worker in workers:
 		if String(worker.get("post", "")).is_empty(): return ""
 	var kitchen_open := false
 	for st in shop.stations:
-		if st.block in ["counter", "supply", "pickup"] or st.id == shop.goals.opening_station: continue
+		if st.zone != "kitchen" or st.block in ["counter", "supply", "pickup"]: continue
 		kitchen_open = kitchen_open or rules.station_unlocked(st.id)
 	return _t("no_mobile") if kitchen_open else ""
 

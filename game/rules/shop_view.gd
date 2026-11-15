@@ -12,6 +12,7 @@ const CommandResult := preload("res://game/rules/rule_command_result.gd")
 const CommandText := preload("res://content/ui/rule_command_text.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Production := preload("res://game/rules/production_plan.gd")
+const Requirements := preload("res://game/rules/template/requirements.gd")
 const SceneFrame := preload("res://game/rules/template/scene_frame.gd")
 var _runtime_binding: RefCounted
 var _follows_owner := false
@@ -151,6 +152,19 @@ func activity_snapshot(frame: Dictionary = {}) -> Dictionary:
 		"queue": rules.queue_size(), "queue_capacity": rules.queue_capacity(), "angry_count": rules.angry_count(),
 		"staff_count": rules.workers.size(), "idle_count": idle, "machine_working": working,
 		"seat_count": rules.seat_count(), "seats_used": rules.seats_used(), "customer_interval": rules.customer_interval()}
+
+
+## Read-only configuration reminder, not a diagnosis of current order delays.
+## Menu requirements already describe qualifying posts; do not infer roles from
+## machine names, screen positions or a worker's current movement/action.
+func staffing_gap() -> Dictionary:
+	if _runtime == null or not rules.is_open(): return {}
+	var selection: Dictionary = _runtime._definition.get("service", {}).get("selection", {})
+	for dish in selection.get("order", []):
+		var gate: Dictionary = selection.gates.get(dish, {})
+		var missing := Requirements.staff_shortfall(gate, rules)
+		if missing > 0: return {"dish": dish, "name": dish_name(dish), "missing": missing}
+	return {}
 
 
 ## Lost-customer bookkeeping belongs to the guide; only current rule facts live here.
