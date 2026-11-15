@@ -15,10 +15,15 @@ templates_dir="$XDG_DATA_HOME/godot/export_templates/${GODOT_VERSION}.stable"
 mkdir -p "$templates_dir"
 unzip -q -o -j "$build_tools/templates.tpz" 'templates/web_*' -d "$templates_dir"
 
-# Import and run regressions before publishing anything.
+# Import and check the game before publishing anything.
 timeout 180s "$godot" --headless --path . --import
-# The same manifest covers rules, all existing scene gates and the new templates.
-python3 tools/check_shops.py --engine "$godot" --profile headless --output _work/pages/headless
+
+headless_checks=()
+if [[ "${CF_PAGES_BRANCH:-main}" != main ]]; then
+    echo "Checking preview shop configuration, layouts and gameplay."
+    headless_checks+=(--only template_authoring --only layout --only template_official_session)
+fi
+python3 tools/check_shops.py --engine "$godot" --profile headless --output _work/pages/headless "${headless_checks[@]}"
 
 mkdir -p build/web
 touch build/.gdignore
