@@ -209,6 +209,31 @@ restocks = {
 }
 }
 recipes = {
+"soup_handoff": {
+"nodes": [{
+"id": "soup",
+"capability": "source",
+"item": "soup",
+"place": "soup_pot:out",
+"seconds": 3.0,
+"timing_target": "soup_pot",
+"fixed": true,
+"label": "盛排骨汤"
+}, {
+"id": "serve",
+"capability": "transfer",
+"input": "soup",
+"item": "soup",
+"place": "plating:out",
+"seconds": 0.5,
+"label": "放到交餐台"
+}],
+"output": {
+"node": "serve",
+"item": "soup",
+"count": 1
+}
+},
 "plain_fried_rice": {
 "nodes": [{
 "id": "rice",
@@ -920,7 +945,10 @@ service = {
 "pattern": "fixed"
 },
 "customer_capacity": 2,
-"delivery": "self_pickup",
+"delivery": "table",
+"delivery_ready": "whole_order",
+"staff_handoff": {"container": "plating:out", "post": "counter", "counter_port": "window", "counter_dishes": ["plum_juice"]},
+"previous_pickup": true,
 "flyers": {
 "cooldown": 120.0,
 "count": 4,
@@ -935,10 +963,11 @@ service = {
 "tomato_rice": "tomato_rice_v2",
 "yangzhou_rice": "yangzhou_rice_v2",
 "plum_juice": "plum_juice",
-"soup": "soup",
+"soup": "soup_handoff",
 "plain_fried_rice": "plain_fried_rice"
 },
 "previous_recipes": {
+"soup": "soup",
 "egg_fried_rice": "egg_fried_rice",
 "kungpao_rice": "kungpao_rice",
 "pepper_rice": "pepper_rice",
@@ -1151,7 +1180,7 @@ dispatch = {
 "interact": ["counter"],
 "operate": ["plum_dispenser"],
 "transfer_from": ["plum_dispenser:out", "plating:out"],
-"transfer_to": ["window"]
+"transfer_to": ["window", "guest:*"]
 },
 "wok_a": {
 "operate": ["wok_a"]

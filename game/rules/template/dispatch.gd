@@ -63,7 +63,7 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 				var seen := {}
 				for target in entries[id][key]:
 					if not target is String or target.is_empty() or seen.has(target): return _error("invalid permission target")
-					if target != "*" and not (machines if key == "operate" else places).has(target): return _error("permission references an unknown machine or port")
+					if target!="*" and not (key=="transfer_to" and target=="guest:*") and not (machines if key=="operate" else places).has(target): return _error("permission references an unknown machine or port")
 					seen[target] = true
 				permissions[key] = entries[id][key].duplicate()
 			result[scope][id] = permissions
@@ -348,7 +348,7 @@ func allowed_task(worker: Dictionary, task: Dictionary, devices: RefCounted, che
 	return false
 
 static func _grants(targets: Array, target: String) -> bool:
-	return "*" in targets or target in targets
+	return "*" in targets or target in targets or ("guest:*" in targets and target.begins_with("guest:"))
 
 static func _error(message: String) -> Dictionary:
 	return {"definition":{}, "error":message}

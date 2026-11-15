@@ -25,13 +25,14 @@ func validate(customers: RefCounted) -> String:
 		points[target.point] = true
 	return ""
 
-func targets(state: Dictionary, deliveries: Array) -> Dictionary:
+func targets(state: Dictionary, deliveries: Array, before_order := -1, counter_dishes: Array = []) -> Dictionary:
 	var carrying := {}
 	for delivery in deliveries:
 		if delivery.phase in ["carry","drop"]: carrying[delivery.order] = true
 	var targets := {}
 	for guest in state.guests:
 		if guest.state!="waiting" or carrying.has(guest.order): continue
+		if before_order>=0 and guest.order>=before_order and (guest.request.is_empty() or guest.request[0].dish not in counter_dishes): continue
 		if targets.size()>=_ports.size(): return {"targets":{},"error":"waiting customers exceed declared pickup points"}
 		targets[guest.id] = _ports[targets.size()]
 	return {"targets":targets,"error":""}

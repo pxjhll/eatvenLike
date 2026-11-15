@@ -30,6 +30,8 @@ func adopt(owner: RefCounted, data: Dictionary, refresh: bool) -> String:
 			var point: Vector2 = migration.legacy_customer_ports[name]
 			legacy_shop.layout.customer_points[name] = point
 			legacy_shop.layout.points[name.get_slice(":",1)] = point
+	if owner._runtime_template.service.get("previous_pickup",false)==true:
+		legacy_shop.fulfillment.dine_rule = "self_pickup"
 	source = owner.get_script().new(legacy_shop)
 	source.event_defs = owner.event_defs.duplicate()
 	error = source._load_legacy_dict(data,refresh)
@@ -506,6 +508,7 @@ func _serve() -> void:
 	var service: RefCounted = runtime.service
 	var orders: Dictionary = service.orders._state
 	orders.next_guest = source.serve.next_id; orders.next_order = source.serve.next_id
+	if service._policy.has("previous_pickup"): service._pickup_before = orders.next_order
 	for old in source.serve.guests:
 		var guest := Orders._guest()
 		guest.id = int(old.id); guest.order = int(old.order); guest.wait = float(old.wait)
@@ -746,7 +749,7 @@ func _reconcile_receipts() -> void:
 				var recipe: Dictionary = runtime._definition.recipes[unit.recipe]
 				_history_node(unit,recipe.output.node)
 				var output: Dictionary = runtime.production_output(unit.id)
-				var pickup: bool = runtime.service._policy.delivery=="self_pickup"
+				var pickup: bool = runtime.service.uses_customer_pickup(order.id)
 				var actor := "customer:"+str(order.guest) if pickup else "staff:1"
 				var place: String = runtime.service._policy.pickup if pickup else output.place
 				var group := _historical_transfer(place,"guest:"+str(order.guest),line.item,1,int(unit.id) if pickup else int(output.owner),int(unit.id),actor)
@@ -757,7 +760,7 @@ func _sync_customers() -> void:
 	error = service._sync_queue()
 	if not error.is_empty(): return
 	for guest in service.orders._state.guests:
-		var destination: String = "queue:"+str(service.orders.queue().find(guest.id)) if guest.state=="queue" else (service._pickup_target(guest) if guest.state=="waiting" and service._policy.delivery=="self_pickup" else service._destination(guest))
+		var destination: String = "queue:"+str(service.orders.queue().find(guest.id)) if guest.state=="queue" else (service._pickup_target(guest) if guest.state=="waiting" and service.uses_customer_pickup(guest.order) else service._destination(guest))
 		var old: Dictionary = source.movement.get("customers",{}).get("guest:"+str(guest.id),{})
 		var actor: Dictionary = service.customers._find(guest.id)
 		if service.waiting!=null:

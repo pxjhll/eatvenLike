@@ -30,6 +30,7 @@ var _runtime: RefCounted:
 	get: return _runtime_ref.get_ref()
 var _policy: Dictionary
 var _deliveries: Array = []
+var _pickup_before := 0
 
 func _init(runtime: RefCounted, policy: Dictionary) -> void:
 	_runtime_ref = weakref(runtime)
@@ -52,6 +53,10 @@ func _init(runtime: RefCounted, policy: Dictionary) -> void:
 		if not found: last_error = "service menu has no shared dish quote"; return
 	for role in policy.admission_roles + policy.delivery_roles:
 		if not runtime.runner.owner.shop.layout.actor_areas.has(role): last_error = "service role has no declared access profile"; return
+	if policy.has("staff_handoff"):
+		var post: String = policy.staff_handoff.post
+		if not runtime.runner.owner.shop.layout.posts.has(post) or not runtime._definition.dispatch.posts.has(post):
+			last_error = "staff handoff requires a declared dispatch post"; return
 	for option in policy.get("customization",{}).get("options",[]):
 		if runtime.runner.owner.shop.station(option.unlock) == null: last_error = "option unlock has no declared station"; return
 	if not policy.arrivals.is_empty(): arrivals = Arrivals.new(policy.arrivals)
@@ -166,9 +171,9 @@ func validate_context() -> String:
 	if error.is_empty() and flyers != null: error = flyers.values(_runtime.runner.owner.mods).error
 	if error.is_empty() and dining != null: error = dining.validate(_runtime.runner.owner,orders.active_snapshot())
 	if error.is_empty() and seating != null: error = seating.validate(_runtime.runner.owner,orders.active_snapshot())
-	if error.is_empty() and pickup_queue != null:
+	if error.is_empty() and _has_pickup_queue():
 		error = pickup_queue.validate(customers)
-		if error.is_empty(): error = pickup_queue.targets(orders.active_snapshot(),_deliveries).error
+		if error.is_empty(): error = _pickup_plan(orders.active_snapshot()).error
 	return error
 
 func send_flyers() -> String:
@@ -223,13 +228,13 @@ func advance(dt: float) -> String:
 			if error.is_empty() and customers.ready(guest.id, target): error = orders.begin_meal(guest.id,float(guest.meal_left) if guest.meal_left>0.0 else _meal_seconds(guest), _runtime.runner.inventory)
 		elif guest.state == "waiting" and not _customer_carrying(guest.order):
 			if dining == null and (waiting == null or not _policy.waiting.retain_after_take):
-				error = customers.request(guest.id, _pickup_target(guest) if _policy.delivery == "self_pickup" else _destination(guest))
+				error = customers.request(guest.id, _waiting_target(guest))
 		if not error.is_empty(): return error
 	error = _sync_queue()
 	if not error.is_empty(): return error
 	error = _admit()
 	if not error.is_empty(): return error
-	if pickup_queue != null:
+	if _has_pickup_queue():
 		error = _sync_pickups()
 		if not error.is_empty(): return error
 	return _fulfill()
@@ -243,7 +248,7 @@ func frame(active_only := false) -> Dictionary:
 	if ramp != null: result.ramp = ramp.snapshot()
 	if dining != null: result.dining = dining.snapshot(); result.queue_capacity = queue_capacity()
 	if seating != null: result.queue_capacity = queue_capacity()
-	if pickup_queue != null: result.pickup_targets = pickup_queue.targets(state,_deliveries).targets
+	if pickup_queue != null: result.pickup_targets = _pickup_plan(state).targets
 	return result
 
 func snapshot() -> Dictionary:
@@ -253,6 +258,7 @@ func snapshot() -> Dictionary:
 	if flyers != null: result.flyers = flyers.snapshot()
 	if ramp != null: result.ramp = ramp.snapshot()
 	if dining != null: result.dining = dining.snapshot()
+	if _policy.has("previous_pickup"): result.pickup_before = _pickup_before
 	return result
 
 func adopt_saved_history(saved: Dictionary) -> void:
@@ -265,6 +271,7 @@ func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := fal
 	if flyers != null: shape.flyers = {}
 	if ramp != null: shape.ramp = {}
 	if dining != null: shape.dining = {}
+	if _policy.has("previous_pickup"): shape.pickup_before = 0
 	if not Inventory._shape(data,shape) or data.version != 1: return "invalid customer service state"
 	if (arrivals == null) != data.arrivals.is_empty(): return "arrival state differs from declared capabilities"
 	if arrivals != null:
@@ -275,6 +282,9 @@ func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := fal
 		if not flyer_error.is_empty(): return flyer_error
 	var error: String = orders.restore(data.orders, stock)
 	if not error.is_empty(): return error
+	if _policy.has("previous_pickup"):
+		if data.pickup_before<0 or data.pickup_before>data.orders.next_order: return "invalid previous pickup order boundary"
+		_pickup_before = data.pickup_before
 	if dining != null:
 		error = dining.restore(data.dining,data.orders,_runtime.runner.owner)
 		if not error.is_empty(): return error
@@ -290,11 +300,11 @@ func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := fal
 	for delivery in data.deliveries:
 		if not Inventory._shape(delivery, {"order":0, "bundle":0, "phase":"", "left":0.0}): return "invalid fulfillment state"
 		if bundles.has(delivery.bundle) or delivery.phase not in ["staff", "collect", "carry", "drop"] or not is_finite(delivery.left) or delivery.left < 0.0: return "invalid or duplicate fulfillment bundle"
-		if (delivery.phase == "staff") != (_policy.delivery != "self_pickup"): return "fulfillment actor differs from service policy"
+		if (delivery.phase != "staff") != uses_customer_pickup(delivery.order): return "fulfillment actor differs from service policy"
 		bundles[delivery.bundle] = true
 	_deliveries = data.deliveries.duplicate(true)
 	if pickup_queue != null:
-		var pickup_plan: Dictionary = pickup_queue.targets(orders.snapshot(),_deliveries)
+		var pickup_plan := _pickup_plan(orders.snapshot())
 		if not pickup_plan.error.is_empty(): return pickup_plan.error
 	var waiting_targets := {}
 	var previous_targets := {}
@@ -348,8 +358,8 @@ func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := fal
 		var target := "queue:" + str(queue.find(guest.id)) if guest.state == "queue" else _destination(guest)
 		if waiting_targets.has(guest.id): target = waiting_targets[guest.id]
 		if guest.state == "leaving": target = "exit"
-		elif guest.state == "waiting" and _policy.delivery == "self_pickup":
-			target = _pickup_target(guest)
+		elif guest.state == "waiting" and (uses_customer_pickup(guest.order) or _counter_delivery(guest)):
+			target = _waiting_target(guest)
 			for delivery in _deliveries:
 				if delivery.order == guest.order and delivery.phase in ["carry", "drop"]: target = _destination(guest)
 		# A customer may still have the previous waiting target until queue sync.
@@ -595,7 +605,7 @@ func _accept(id: int, employee: int = -1) -> String:
 		var receipt: Dictionary = orders.settle(admitted.id, _runtime.runner.owner._sales)
 		if not String(receipt.error).is_empty(): return receipt.error
 	if dining == null and (waiting == null or not _policy.waiting.retain_after_take):
-		error = customers.request(guest.id, _pickup_target(guest) if _policy.delivery == "self_pickup" else _destination(guest))
+		error = customers.request(guest.id, _waiting_target(guest))
 		if not error.is_empty(): return error
 	error = _sync_queue() if waiting != null or dining != null else ""
 	if error.is_empty(): _runtime.runner.owner.events.emit("order_taken",{"guest":int(id),"order":int(admitted.id),"seat":guest.seat})
@@ -603,6 +613,7 @@ func _accept(id: int, employee: int = -1) -> String:
 
 func _guest_place(guest: Dictionary) -> String:
 	if dining != null: return String(_policy.handoff_port)
+	if _counter_delivery(guest): return String(_policy.staff_handoff.counter_port)
 	return String(_policy.seats[guest.seat]) if not guest.seat.is_empty() else String(_policy.pickup if _policy.delivery=="self_pickup" else _policy.handoff_port)
 
 func _meal_seconds(guest: Dictionary) -> float:
@@ -615,10 +626,28 @@ func _delivery_target(guest: Dictionary) -> String:
 
 func _pickup_target(guest: Dictionary) -> String:
 	if pickup_queue==null: return "pickup"
-	return String(pickup_queue.targets(orders.active_snapshot(),_deliveries).targets.get(guest.id,""))
+	return String(_pickup_plan(orders.active_snapshot()).targets.get(guest.id,""))
+
+func uses_customer_pickup(order: int) -> bool:
+	return _policy.delivery=="self_pickup" or (order>0 and order<_pickup_before)
+
+func _counter_delivery(guest: Dictionary) -> bool:
+	return not uses_customer_pickup(guest.order) and not guest.request.is_empty() and guest.request[0].dish in _policy.get("staff_handoff",{}).get("counter_dishes",[])
+
+func _waiting_target(guest: Dictionary) -> String:
+	if uses_customer_pickup(guest.order) or _counter_delivery(guest): return _pickup_target(guest)
+	return _destination(guest)
+
+func _has_pickup_queue() -> bool:
+	return pickup_queue!=null and (_policy.delivery=="self_pickup" or _pickup_before>1 or _policy.get("staff_handoff",{}).has("counter_port"))
+
+func _pickup_plan(state: Dictionary) -> Dictionary:
+	if not _has_pickup_queue(): return {"targets":{},"error":""}
+	return pickup_queue.targets(state,_deliveries,-1 if _policy.delivery=="self_pickup" else _pickup_before,
+		_policy.get("staff_handoff",{}).get("counter_dishes",[]))
 
 func _sync_pickups() -> String:
-	var plan: Dictionary = pickup_queue.targets(orders.active_snapshot(),_deliveries)
+	var plan := _pickup_plan(orders.active_snapshot())
 	if not plan.error.is_empty(): return plan.error
 	for id in plan.targets:
 		var error: String = customers.request(id,plan.targets[id])
@@ -638,10 +667,15 @@ func _customer_carrying(order: int) -> bool:
 		if delivery.order == order and delivery.phase in ["collect", "carry", "drop"]: return true
 	return false
 
+func _ready_for_staff_delivery(guest: Dictionary) -> bool:
+	if not _counter_delivery(guest): return customers.ready(guest.id, _destination(guest))
+	var target := _pickup_target(guest)
+	return target==pickup_queue._ports[0] and customers.ready(guest.id,target)
+
 func _fulfill() -> String:
-	if _policy.delivery != "self_pickup": return ""
+	if _policy.delivery!="self_pickup" and _pickup_before==0: return ""
 	for order in orders.active_snapshot().orders:
-		if order.state == "delivered": continue
+		if order.state=="delivered" or not uses_customer_pickup(order.id): continue
 		var guest: Dictionary = orders.guest(order.guest)
 		if _customer_carrying(order.id) or not customers.ready(guest.id, _pickup_target(guest)): continue
 		var entries := _entries(order, _policy.pickup)
@@ -667,12 +701,14 @@ func candidates(worker: Dictionary) -> Array:
 			out.append({"kind":"interact", "category":"admit", "guest":int(guest.id), "unit":-1,
 				"from":String(_policy.admission_port), "to":String(_policy.admission_port), "seconds":float(_policy.admission_seconds)})
 	if not _eligible(worker, _policy.delivery_roles): return out
+	var handoff: Dictionary = _policy.get("staff_handoff",{})
 	for order in orders.active_snapshot().orders:
 		if order.state == "delivered": continue
 		var guest: Dictionary = orders.guest(order.guest)
-		if _policy.delivery == "self_pickup":
+		if uses_customer_pickup(order.id):
 			if not _customer_carrying(order.id): out.append_array(_stage_candidates(order))
-		elif dining != null or (waiting != null and _policy.waiting.retain_after_take) or customers.ready(guest.id, _destination(guest)):
+		elif not handoff.is_empty() and worker.post!=handoff.post: continue
+		elif dining != null or (waiting != null and _policy.waiting.retain_after_take) or _ready_for_staff_delivery(guest):
 			var entries := _entries(order)
 			if entries.is_empty(): continue
 			if _policy.get("delivery_ready","") == "whole_order":

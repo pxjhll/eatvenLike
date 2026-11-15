@@ -116,6 +116,8 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 			recorded.service.arrivals.signature = candidate.runtime.service.arrivals.snapshot().signature
 			if not recorded.service.arrivals.started: recorded.service.arrivals.left = candidate.runtime.service.arrivals.snapshot().left
 		recorded.service.orders.policy = candidate.runtime.service.orders.snapshot().policy
+		if candidate.runtime.service._policy.has("previous_pickup") and not recorded.service.has("pickup_before"):
+			recorded.service.pickup_before = recorded.service.orders.next_order
 	error = candidate.runtime.restore(recorded,refresh and data.template!=identity,refresh_layout)
 	if not error.is_empty(): return error
 	candidate.clock = data.runtime.clock

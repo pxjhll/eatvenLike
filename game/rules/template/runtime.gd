@@ -606,6 +606,9 @@ func candidates_for(worker_id: int) -> Array:
 
 func dispatch_candidates(worker: Dictionary) -> Array:
 	var pool := _candidates()
+	var handoff: Dictionary = _definition.get("service",{}).get("staff_handoff",{})
+	if not handoff.is_empty() and worker.post==handoff.post:
+		pool = pool.filter(func(candidate: Dictionary) -> bool: return candidate.get("to")!=handoff.container)
 	if service != null: pool.append_array(service.candidates(worker))
 	for candidate in pool:
 		if not candidate.has("unit"): candidate.unit = -1

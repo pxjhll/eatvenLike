@@ -32,9 +32,9 @@ func _take(runtime: RefCounted) -> void:
 
 func _finish(runtime: RefCounted) -> void:
 	for tick in 6000:
-		check_eq(runtime.step(0.1),"","actual production, staging and self-pickup")
+		check_eq(runtime.step(0.1),"","actual production, staging and table service")
 		if runtime.service.orders.guest(1).state=="gone": return
-	check(false,"actual customer collected whole order, ate and left")
+	check(false,"actual customer received the whole order, ate and left")
 
 func test_opening_and_pantry_upgrades_unlock_one_wok_at_a_time() -> void:
 	var rules := ShopRules.new(SHOP.copy_for_editing(),42)
@@ -185,12 +185,12 @@ func test_previous_third_shop_preserves_purchases_and_in_progress_rice() -> void
 	check_eq(loaded.runtime.runner.machines.snapshot().runs,saved.runtime.runner.machines.runs,"already started jobs retain their times")
 	check_eq(loaded.runtime._definition.restocks.rice_cooker.seconds,30.0,"new rice batches use the new timing")
 
-func test_real_resource_keeps_self_pickup_and_declares_eight_dishes_and_purchase_pool() -> void:
+func test_real_resource_uses_table_service_and_declares_eight_dishes_and_purchase_pool() -> void:
 	var template := _template()
 	if template==null: return
-	check_eq(template.service.previous_recipes.size(),5,"every old hot recipe remains available to saved orders")
+	check_eq(template.service.previous_recipes.size(),6,"old hot dishes and soup remain available to saved orders")
 	check_eq(template.service.menu.size(),8,"all menu products mapped")
-	check_eq(template.service.delivery,"self_pickup","retain actual third-shop fulfillment")
+	check_eq(template.service.delivery,"table","front employee delivers to the seated customer")
 	check_eq(template.service.selection.at,"admission","food chosen after employee work")
 	check_eq(template.service.seating.order.size(),16,"complete purchasable seat pool")
 	check_eq(template.service.seating.stages.size(),SHOP.stages.size(),"one queue and meal stage per progression stage")
@@ -315,19 +315,25 @@ func test_plum_juice_is_made_by_front_employee_and_never_draws_or_produces_impli
 	check_eq(runtime.service.orders.guest(1).request.size(),1,"front-only order has no kitchen addon")
 	check_eq(runtime.runner.owner.rng.state,expected.state,"only primary draw; no skipped soup probability draw")
 	var saw_front := false
+	var saw_counter_delivery := false
 	for tick in 1500:
 		check_eq(runtime.step(0.1),"","front makes actual plum juice")
 		for worker in runtime.runner.owner.workers:
 			if worker.post=="counter" and not runtime.runner.idle(worker.id):
 				var task: Dictionary = runtime.runner.tasks[worker.id]
 				if task.kind=="operate" and runtime.runner.machines.run(task.run).machine=="plum_dispenser": saw_front = true
+				if task.to=="guest:1":
+					check_eq(task.from,"plum_dispenser:out","front hands the drink straight from the dispenser")
+					check(runtime.service.customers.ready(1,"pickup:0"),"drink customer waits at the front counter")
+					saw_counter_delivery = true
 		if runtime.service.orders.guest(1).state=="gone": break
 	check(saw_front,"counter employee actually used the common dispenser operation")
+	check(saw_counter_delivery,"counter employee actually hands over the drink")
 	check_eq(runtime.runner.owner.sold_by_dish.plum_juice,1,"real drink sale")
 	check_eq(runtime.runner.owner.sold_by_dish.soup,0,"no unwanted soup sale")
 	check_eq(runtime.snapshot().units.size(),1,"no hidden second production unit")
 
-func test_actual_rice_and_soup_merge_use_whole_customer_pickup_then_paid_meal() -> void:
+func test_actual_rice_and_soup_reach_the_table_together_with_the_front_employee() -> void:
 	var template := _template()
 	if template==null: return
 	template.service.selection.stages[-1].weights = {"tomato_rice":1.0}
@@ -342,7 +348,7 @@ func test_actual_rice_and_soup_merge_use_whole_customer_pickup_then_paid_meal() 
 	check_eq(guest.request[1].dish,"soup","soup is separate owned line")
 	_finish(runtime)
 	check_eq(runtime.runner.owner.sold_by_dish.tomato_rice,1,"two-input rice-and-topping main was really delivered")
-	check_eq(runtime.runner.owner.sold_by_dish.soup,1,"soup physically collected and consumed")
+	check_eq(runtime.runner.owner.sold_by_dish.soup,1,"soup is physically served and consumed")
 	check_eq(runtime.runner.owner.sold,2,"no double-counted addon or merge branches")
 	check(runtime.service.orders.order(guest.order).paid,"common whole-order delivery receipt")
 	check_eq(runtime.runner.inventory.audit(),[],"single authoritative inventory conserves both lines")
@@ -370,7 +376,7 @@ func test_actual_queue_restore_before_sampling_keeps_empty_request_rng_and_futur
 	_take(runtime)
 	check(not runtime.service.orders.guest(1).request.is_empty(),"one real frozen request after resumed employee work")
 
-func test_real_pickup_queue_declares_all_existing_waiting_points_in_original_rank_order() -> void:
+func test_previous_pickup_queue_retains_all_the_original_waiting_points() -> void:
 	var template := _template()
 	if template==null: return
 	check(template.service.has("pickup_queue"),"actual self-pickup scene needs explicit waiting point configuration")
@@ -380,40 +386,90 @@ func test_real_pickup_queue_declares_all_existing_waiting_points_in_original_ran
 	check_eq(template.service.pickup_queue.ports,expected,"reuse every original customer anchor in waiting rank order")
 	for port in expected: check(SHOP.layout.customer_points.has(port),"no invented art or geometry point")
 
-func test_real_drink_then_meal_customers_use_free_waiting_positions_and_complete_common_pickup() -> void:
+func test_front_employee_collects_and_delivers_staged_food_after_save_reload() -> void:
 	var template := _template()
-	if template==null: return
-	check(template.service.has("pickup_queue"),"real customer waiting points must be enabled")
-	if not template.service.has("pickup_queue"): return
-	template.service.selection.stages[4].weights = {"plum_juice":1.0}
 	template.service.selection.stages[-1].weights = {"tomato_rice":1.0}
-	template.service.selection.addon.share = 0.0
+	template.service.selection.addon.share = 1.0
 	var runtime := _runtime(template)
 	if runtime==null: return
-	runtime.runner.owner.stage_index = 4
-	for index in 2: runtime.arrive([])
-	var saw_second := false
-	var saw_advance := false
-	var saw_front := false
-	for tick in 3000:
-		check_eq(runtime.step(0.1),"","real drink service at original scene pickup positions")
-		if runtime.service.orders.guest(1).order>0: runtime.runner.owner.stage_index = SHOP.stages.size()-1
-		var second: Dictionary = runtime.service.customers.record(2)
-		if second.get("target")=="pickup:1": saw_second = true
-		if saw_second and second.get("target")=="pickup:0": saw_advance = true
-		if second.get("target")=="pickup:0":
-			saw_front = true
-			var first_carrying := false
-			for delivery in runtime.service.snapshot().deliveries:
-				if delivery.order==runtime.service.orders.guest(1).order and delivery.phase in ["carry","drop"]: first_carrying = true
-			check(first_carrying or runtime.service.orders.guest(1).state in ["served","eating","leaving","gone"],"front point is reused only after the first customer actually collects their order")
-		if runtime.service.orders.guest(2).state=="gone": break
-	check(saw_front and (not saw_second or saw_advance),"second guest uses the free front point and advances if it had to wait behind the first guest")
-	check_eq(runtime.service.orders.guest(2).state,"gone","both customers really finish pickup, meals and departure")
-	check_eq(runtime.runner.owner.sold_by_dish.plum_juice,1,"first real drink sold once")
-	check_eq(runtime.runner.owner.sold_by_dish.tomato_rice,1,"next real meal sold once")
-	check_eq(runtime.runner.owner.sold_by_dish.soup,0,"pickup queue never creates an unrelated addon")
-	check_eq(runtime.runner.inventory.audit(),[],"queue geometry adds no inventory backend")
+	var owner: ShopRules = runtime.runner.owner
+	var front_id: int = owner.workers[0].id
+	runtime.arrive([])
+	_take(runtime)
+	var guest: Dictionary = runtime.service.orders.guest(1)
+	var seat: String = guest.seat
+	var saw_kitchen := false
+	var saw_deliver := false
+	var restored := false
+	for tick in 1600:
+		check_eq(runtime.step(0.1),"","advance the complete rice and soup service")
+		for task in runtime.runner.tasks.values():
+			if task.to=="plating:out":
+				saw_kitchen = true
+				check(task.worker!=front_id,"the kitchen places finished dishes on the handoff table")
+			if task.to!="guest:1": continue
+			saw_deliver = true
+			check_eq(task.worker,front_id,"only the front employee takes food to the guest")
+			check(runtime.service.customers.ready(1,seat),"guest waits at the assigned table")
+			for pick in task.picks: check_eq(pick.from,"plating:out","front employee takes each item from the handoff table")
+		var worker := owner.worker_by_id(front_id)
+		if saw_deliver and worker.carry_count>0 and not restored:
+			var saved: Dictionary = runtime.snapshot()
+			check_eq(runtime.restore(saved),"","employee carry and both order lines restore while in flight")
+			check_eq(runtime.snapshot(),saved,"restore does not move the tray or duplicate stock")
+			restored = true
+		if runtime.service.orders.guest(1).state=="gone": break
+	check(saw_kitchen and saw_deliver and restored,"saw cooking handoff, front delivery and active readback")
+	check_eq(runtime.service.orders.guest(1).state,"gone","served guest finishes the meal")
+	check_eq(owner.sold_by_dish.tomato_rice,1,"pay for the covered rice once")
+	check_eq(owner.sold_by_dish.soup,1,"pay for the soup once")
+	check_eq(runtime.runner.inventory.audit(),[],"serving and restore conserve stock")
+
+func test_latest_pickup_save_finishes_old_order_and_serves_new_drinks_at_counter() -> void:
+	var previous := SHOP.copy_for_editing()
+	var template: Resource = previous.runtime_template
+	for key in ["delivery_ready","staff_handoff","previous_pickup"]: template.service.erase(key)
+	template.service.delivery = "self_pickup"
+	template.service.menu.soup = "soup"
+	template.service.previous_recipes.erase("soup")
+	template.recipes.erase("soup_handoff")
+	template.dispatch.posts.counter.transfer_to.erase("guest:*")
+	var old := ShopRules.new(previous,42)
+	check_eq(old.unlock("plum_dispenser"),"","open the previous released order flow")
+	var in_flight := false
+	for tick in 600:
+		old.run(0.1)
+		if old.runtime.service.snapshot().deliveries.any(func(row: Dictionary) -> bool: return row.phase=="carry"):
+			in_flight = true
+			break
+	check(in_flight,"the old guest really has the meal in hand")
+	if not in_flight: return
+	var saved := old.to_dict()
+	check_eq(saved.template.structure,"64ebcc3d5ed5044889c05c8c5cb8f959d993e826251c7a5a177ce3dfffcafc17","load a snapshot from the exact pushed revision")
+	var restored := ShopRules.new(SHOP.copy_for_editing(),42)
+	var error := restored.load_dict(saved,true)
+	check_eq(error,"","the previous carry stays valid through migration")
+	if not error.is_empty(): return
+	var service: RefCounted = restored.runtime.service
+	var boundary: int = saved.runtime.service.orders.next_order
+	check_eq(service.snapshot().pickup_before,boundary,"only already accepted orders use the previous window")
+	check_eq(service.snapshot().deliveries,saved.runtime.service.deliveries,"migration preserves the physical in-flight order")
+	var saw_new := false
+	for tick in 1400:
+		restored.run(0.1)
+		for guest in service.orders.active_snapshot().guests:
+			if guest.order<boundary: continue
+			var actor: Dictionary = service.customers.record(guest.id)
+			if guest.state=="waiting":
+				check(String(actor.target).begins_with("pickup:"),"new drink customer waits at the counter")
+				check(not service.uses_customer_pickup(guest.order),"new guest waits for employee handover")
+				saw_new = true
+		if service.orders.guest(1).state=="gone" and saw_new and restored.sold>1: break
+	check(saw_new and restored.sold>1,"front employee delivers after the migration")
+	check_eq(service.orders.guest(1).state,"gone","the old self-pickup order is also completed")
+	check_eq(restored.runtime_error,"","mixed old and new routes coexist")
+	var current := restored.to_dict()
+	check_eq(restored.load_dict(current),"","current save preserves both routes on a subsequent load")
 
 func test_real_frame_exposes_the_same_configured_queue_capacity_as_admission() -> void:
 	var template := _template()

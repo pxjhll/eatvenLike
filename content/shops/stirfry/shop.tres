@@ -428,7 +428,7 @@ script = ExtResource("10_kqskb")
 flow_version = 1
 addon_dish = "soup"
 addon_chance = 0.4
-dine_rule = "self_pickup"
+dine_rule = "seat_wait"
 handoff = "serve"
 leave_queue = "after_take"
 leave_after = 60.0
@@ -1276,7 +1276,6 @@ params = {
 "unit": "份"
 }
 zone = "kitchen"
-companion_of = "wok_a"
 icon = "res://art/stirfry/scene/wood_tray.png"
 
 [sub_resource type="Resource" id="Resource_j8x87"]
@@ -1551,7 +1550,7 @@ background_music = ExtResource("music_theme")
 save_file = "shop_stirfry.json"
 runtime_template = ExtResource("u06_runtime")
 previous_progression = {
-"current_structure": "64ebcc3d5ed5044889c05c8c5cb8f959d993e826251c7a5a177ce3dfffcafc17",
+"current_structure": "8dcc3a9b707a4218dd1278f8c1fa0f56b9f25833141d6e454cd00978a5bc8194",
 "grant_stage_stations": true,
 "legacy_customer_ports": {
 "seat:table/0": Vector2(121, 1010),
@@ -1591,6 +1590,10 @@ previous_progression = {
 },
 "opening_station": "wok_a",
 "other_templates": {
+"64ebcc3d5ed5044889c05c8c5cb8f959d993e826251c7a5a177ce3dfffcafc17": {
+"opening_station": "plum_dispenser",
+"stage_indices": PackedInt32Array(0, 1, 2, 3, 4, 5, 6, 7)
+},
 "40396afc451b498a3caa84ccb0d15a569318ec50e39b9d3df92fb6e40b61d02a": {
 "opening_station": "plum_dispenser",
 "stage_indices": PackedInt32Array(0, 5, 6, 6, 6, 7, 7)
