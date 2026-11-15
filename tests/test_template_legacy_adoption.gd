@@ -20,6 +20,8 @@ func test_active_legacy_snapshots_convert_to_one_valid_public_state_without_rese
 				expected_levels.erase("plating")
 				expected_levels["staff/front"] = 0
 				expected_levels["staff/kitchen"] = 0
+				for material in shop.station("pantry").materials:
+					expected_levels["pantry/"+material.id] = 1
 			check_eq(saved.outer.levels,expected_levels,id+": preserve applicable levels")
 			for dish in old.sold_by_dish:
 				check_eq(saved.outer.sold_by_dish[dish],old.sold_by_dish[dish],id+": preserve sales of "+dish)

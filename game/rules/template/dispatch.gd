@@ -34,7 +34,7 @@ func validate_context() -> String:
 
 static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -> Dictionary:
 	for key in raw:
-		if key not in ["roles", "posts", "scores", "continuation_bonus", "travel_penalty", "affinity", "affinity_bonus", "hold_machine", "help_while_waiting", "station_posts", "assistance", "batch_transfers", "collect_at_drop_last"]: return _error("unsupported dispatch parameter: " + str(key))
+		if key not in ["roles", "posts", "scores", "continuation_bonus", "travel_penalty", "affinity", "affinity_bonus", "hold_machine", "help_while_waiting", "station_posts", "assistance", "batch_transfers", "collect_at_drop_last", "return_posts", "roaming_idle", "port_queues"]: return _error("unsupported dispatch parameter: " + str(key))
 	var result := {"roles":{}, "posts":{}, "scores":SCORES.duplicate(), "continuation_bonus":0.0, "travel_penalty":0.0,
 		"affinity":"none", "affinity_bonus":100.0, "hold_machine":false, "help_while_waiting":true}
 	for key in ["continuation_bonus", "travel_penalty", "affinity_bonus"]:
@@ -74,6 +74,20 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 		var enabled: Variant = raw.get(key,false)
 		if not enabled is bool: return _error("invalid transport dispatch flag: " + key)
 		if enabled: result[key] = true
+	var return_posts: Variant = raw.get("return_posts",[])
+	if not return_posts is Array: return _error("invalid employee return posts")
+	for post in return_posts:
+		if not post is String or not result.posts.has(post): return _error("unknown employee return post")
+	if not return_posts.is_empty(): result.return_posts = return_posts.duplicate()
+	var roaming_idle: Variant = raw.get("roaming_idle",[])
+	if not _standby_points(roaming_idle): return _error("invalid roaming employee positions")
+	if not roaming_idle.is_empty(): result.roaming_idle = roaming_idle.duplicate()
+	var port_queues: Variant = raw.get("port_queues",{})
+	if not port_queues is Dictionary: return _error("invalid employee port queues")
+	for port in port_queues:
+		if not places.has(port) or not _standby_points(port_queues[port]) or port_queues[port].is_empty():
+			return _error("invalid queue positions for employee work port")
+	if not port_queues.is_empty(): result.port_queues = port_queues.duplicate(true)
 	for scope in assistance:
 		if scope not in ["roles","posts"] or not assistance[scope] is Dictionary: return _error("invalid assistance scope")
 		if assistance[scope].is_empty(): continue
@@ -349,6 +363,14 @@ func allowed_task(worker: Dictionary, task: Dictionary, devices: RefCounted, che
 
 static func _grants(targets: Array, target: String) -> bool:
 	return "*" in targets or target in targets or ("guest:*" in targets and target.begins_with("guest:"))
+
+static func _standby_points(points: Variant) -> bool:
+	if not points is Array: return false
+	var seen := {}
+	for point in points:
+		if not point is Vector2 or not point.is_finite() or seen.has(point): return false
+		seen[point] = true
+	return true
 
 static func _error(message: String) -> Dictionary:
 	return {"definition":{}, "error":message}

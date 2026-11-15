@@ -12,7 +12,7 @@ places = {
 },
 "pantry:out": {
 "infinite": ["tomato_egg_raw", "pepper_pork_raw", "egg_rice_raw", "kungpao_raw", "yangzhou_raw"],
-"port": Vector2(200, 660)
+"port": Vector2(190, 365)
 },
 "plating:in": {
 "port": Vector2(720, 650)
@@ -1167,6 +1167,17 @@ service = {
 }
 dispatch = {
 "batch_transfers": true,
+"collect_at_drop_last": true,
+"return_posts": ["counter"],
+"roaming_idle": [Vector2(435, 525), Vector2(485, 525), Vector2(535, 525), Vector2(430, 580), Vector2(480, 580), Vector2(530, 580), Vector2(465, 630), Vector2(410, 630)],
+"port_queues": {
+"pantry:out": [Vector2(250, 365), Vector2(250, 425), Vector2(250, 485)],
+"wok_a:in": [Vector2(400, 405), Vector2(345, 405), Vector2(400, 465)],
+"wok_b:in": [Vector2(500, 405), Vector2(550, 405), Vector2(500, 465)],
+"rice_cooker:out": [Vector2(815, 530), Vector2(765, 530), Vector2(815, 470)],
+"plating:out": [Vector2(665, 470), Vector2(610, 470), Vector2(555, 470)],
+"soup_pot:out": [Vector2(740, 350), Vector2(680, 350), Vector2(620, 350)]
+},
 "station_posts": {"wok_a": {"post": "wok_a", "feed": false}, "wok_b": {"post": "wok_b", "feed": false}},
 "affinity": "prefer",
 "posts": {
@@ -1298,82 +1309,82 @@ presentation = {
 "poses": {
 "seat:table/0": {
 "facing": 2,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/0"
 },
 "seat:table/1": {
 "facing": 6,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/1"
 },
 "seat:table/10": {
 "facing": 2,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/10"
 },
 "seat:table/11": {
 "facing": 6,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/11"
 },
 "seat:table/12": {
 "facing": 2,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/12"
 },
 "seat:table/13": {
 "facing": 6,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/13"
 },
 "seat:table/14": {
 "facing": 2,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/14"
 },
 "seat:table/15": {
 "facing": 6,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/15"
 },
 "seat:table/2": {
 "facing": 2,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/2"
 },
 "seat:table/3": {
 "facing": 6,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/3"
 },
 "seat:table/4": {
 "facing": 2,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/4"
 },
 "seat:table/5": {
 "facing": 6,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/5"
 },
 "seat:table/6": {
 "facing": 2,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/6"
 },
 "seat:table/7": {
 "facing": 6,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/7"
 },
 "seat:table/8": {
 "facing": 2,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/8"
 },
 "seat:table/9": {
 "facing": 6,
-"offset": Vector2(0, 0),
+"offset": Vector2(0, 18),
 "port": "Seats/table/9"
 }
 },

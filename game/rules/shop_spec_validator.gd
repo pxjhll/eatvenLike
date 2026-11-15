@@ -341,6 +341,7 @@ static func _station(s: SpecStation, p: String, c: Dictionary, errors: Array[Dic
 		var at := p + ".materials[%d]" % i
 		_ref(m.item, c.items, at + ".item", errors)
 		_ref(m.box_station, c.stations, at + ".box_station", errors, true)
+		_ref(m.requires_station, c.stations, at + ".requires_station", errors, true)
 		_number(m.box_cost, at + ".box_cost", errors)
 		if m.track != null: _track(m.track, at + ".track", c, errors, s.id, "material")
 	for i in s.stock.size():
@@ -456,6 +457,7 @@ static func _staff_target(id: String, c: Dictionary) -> bool:
 	return suffix.is_valid_int() and int(suffix) > 0 and str(int(suffix)) == suffix
 
 static func _stage(stage: SpecStage, p: String, c: Dictionary, errors: Array[Dictionary]) -> void:
+	_ref(stage.grant_worker, c.kinds, p + ".grant_worker", errors, true)
 	if stage.stations.is_empty() and stage.recipe_at.is_empty(): _error(errors, p + ".stations", "Each stage needs an unlock station or a recipe station.")
 	if stage.recipe_level<0 or (stage.recipe_level!=0 and (stage.recipe_at.is_empty() or stage.recipe_level<2)):
 		_error(errors, p + ".recipe_level", "A recipe upgrade starts at level 2 and requires a recipe station.")

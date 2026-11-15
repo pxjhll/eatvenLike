@@ -503,7 +503,7 @@ size = Vector2(164, 156)
 [node name="Nav" type="Node2D" parent="Sortables/PrepTable" unique_id=297502717]
 
 [node name="Work" type="Node2D" parent="Sortables/PrepTable/Nav" unique_id=391772415]
-position = Vector2(-3, 42.4917)
+position = Vector2(-13, -252.5083)
 
 [node name="Footprints" type="Node2D" parent="Sortables/PrepTable/Nav" unique_id=1108007832]
 
@@ -1546,28 +1546,28 @@ position = Vector2(40, 0)
 [node name="Queue" type="Node2D" parent="EntranceModule/Anchors" unique_id=1940443185]
 
 [node name="0" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=2090197954]
-position = Vector2(-228, -790)
+position = Vector2(197, -790)
 
 [node name="1" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=1860269255]
-position = Vector2(-153, -790)
+position = Vector2(119, -790)
 
 [node name="2" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=43818206]
-position = Vector2(-78, -790)
+position = Vector2(41, -790)
 
 [node name="3" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=232141482]
-position = Vector2(0, -765)
+position = Vector2(-37, -790)
 
 [node name="4" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=476140758]
-position = Vector2(0, -695)
+position = Vector2(-115, -790)
 
 [node name="5" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=783002645]
-position = Vector2(0, -625)
+position = Vector2(-193, -790)
 
 [node name="6" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=381350968]
-position = Vector2(0, -555)
+position = Vector2(-271, -790)
 
 [node name="7" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=1719719602]
-position = Vector2(0, -485)
+position = Vector2(-349, -790)
 
 [node name="Nav" type="Node2D" parent="EntranceModule" unique_id=1021200733]
 

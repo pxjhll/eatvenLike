@@ -581,7 +581,7 @@ func _start_transports() -> void:
 
 func _allocate() -> void:
 	for worker in runner.owner.workers:
-		if not runner.idle(worker.id): continue
+		if not runner.idle(worker.id) or worker.walking: continue
 		for candidate in candidates_for(worker.id):
 			var error := ""
 			match String(candidate.kind):
@@ -599,6 +599,8 @@ func _allocate() -> void:
 				error = service.claimed(worker.id, candidate)
 				if not error.is_empty(): last_error = error; runner.cancel(worker.id)
 			break
+		if runner.idle(worker.id): runner.park_idle(worker)
+
 
 func candidates_for(worker_id: int) -> Array:
 	var worker: Dictionary = runner.owner.worker_by_id(worker_id)

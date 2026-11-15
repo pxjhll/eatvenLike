@@ -638,6 +638,10 @@ func material_row(st: SpecStation, m: SpecMaterial) -> Dictionary:
 		row.effect = ("解锁%s后开放" if row.status.code == CommandResult.STATION_REQUIRED else "解锁后%s才有原料") % row.box_station
 		if row.status.code == CommandResult.STATION_REQUIRED: row.state = "box_closed"
 		return row
+	if not m.requires_station.is_empty() and not rules.station_unlocked(m.requires_station):
+		row.state = "closed"
+		row.effect = "解锁%s后开放" % station_name(m.requires_station)
+		return row
 	if rules.level(st.id) < m.track.requires_level:
 		row.state = "closed"
 		row.effect = "%s Lv%d 开放" % [st.display_name, m.track.requires_level]

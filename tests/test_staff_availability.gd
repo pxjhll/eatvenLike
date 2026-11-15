@@ -117,7 +117,9 @@ func _check_legacy_progress(owner: ShopRules, before: Dictionary) -> void:
 			expected.erase("plating")
 			expected["staff/front"] = 0
 			expected["staff/kitchen"] = 0
-			check_eq(after.outer.levels,expected,"third shop replaces the retired upgrade track with staff training")
+			for material in owner.shop.station("pantry").materials:
+				expected["pantry/"+material.id] = 1
+			check_eq(after.outer.levels,expected,"third shop restores existing levels and initializes new upgrade tracks")
 			continue
 		check_eq(after.outer[key],before[key],owner.shop.id+": migration preserves "+key)
 	for dish in before.sold_by_dish:

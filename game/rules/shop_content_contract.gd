@@ -30,6 +30,8 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 			if type_name=="SpecShop" and key=="runtime_template" and value.runtime_template==null: continue
 			if type_name=="SpecShop" and key=="previous_progression": continue
 			if type_name=="SpecStage" and key=="recipe_level" and value.recipe_level==0: continue
+			if type_name=="SpecStage" and key=="grant_worker" and value.grant_worker.is_empty(): continue
+			if type_name=="SpecMaterial" and key=="requires_station" and value.requires_station.is_empty(): continue
 			if type_name == "SpecFulfillment" and value.flow_version==0 and key in ["flow_version","delivery_batch","delivery_points"]: continue
 			if type_name == "SpecDispatch" and key == "action_version" and value.action_version == 0: continue
 			if type_name == "SpecDispatch" and key == "transport_helpers" and value.transport_helpers.is_empty(): continue

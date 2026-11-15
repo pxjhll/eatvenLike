@@ -46,9 +46,9 @@ func test_opening_and_pantry_upgrades_unlock_one_wok_at_a_time() -> void:
 	check_eq(rules.menu(),["plum_juice"],"drink-only opening")
 	check_eq(rules.next_unlock(),"wok_a","first major purchase is the wok")
 	for second in 260:
-		if rules.gold>=130.0: break
+		if rules.gold>=100.0: break
 		rules.run(1.0)
-	check_eq(rules.sold_by_dish.plum_juice,17,"opening front employee can earn all three costs from real sales")
+	check_eq(rules.sold_by_dish.plum_juice,10,"opening front employee can earn both equipment costs from ten sales")
 	check(rules.station_unlocked("plating"),"handoff is available from opening")
 	check(SHOP.station("plating").tracks.is_empty(),"handoff has no upgrades")
 	check(not rules.unlock("rice_cooker").is_empty(),"rice cooker follows the first wok")
@@ -61,16 +61,13 @@ func test_opening_and_pantry_upgrades_unlock_one_wok_at_a_time() -> void:
 	balance = rules.gold
 	check_eq(rules.unlock("rice_cooker"),"","buy independent rice cooker")
 	check_eq(rules.gold,balance-20.0,"rice cooker costs twenty coins")
-	check_eq(rules.menu(),["plum_juice"],"no hot orders before the kitchen has staff")
-	check_eq(rules.hire_cost(),30,"first kitchen worker is paid for through shared hiring")
-	check_eq(rules.hire(),"","hire kitchen staff")
-	check_eq(rules.menu(),["plum_juice"],"standby staff do not open a hot line")
-	check_eq(rules.deploy_worker(rules.roster.back().id),"","deploy the hired kitchen worker")
+	check_eq(rules.workers.size(),2,"the first kitchen worker is granted and deployed")
+	check_eq(rules.hire_cost(),30,"gift does not advance the paid hire schedule")
 	check(rules.menu().has("plain_fried_rice"),"rice and wok A are enough for plain fried rice")
 	for second in 180:
 		if rules.sold_by_dish.plain_fried_rice>0: break
 		rules.run(1.0)
-	check(rules.sold_by_dish.plain_fried_rice>0,"first paid kitchen worker makes and sells plain fried rice")
+	check(rules.sold_by_dish.plain_fried_rice>0,"gifted kitchen worker makes and sells plain fried rice")
 	check_eq(rules.next_unlock(),"pantry","the pantry is the next separate unlock")
 	rules.gold = 1000.0
 	check(not rules.unlock("wok_b").is_empty(),"cannot skip directly to the second wok")
@@ -213,6 +210,7 @@ func test_table_guests_face_inward_and_previous_progress_still_loads() -> void:
 	for index in 16:
 		var port := "table/%d" % index
 		var pose: Dictionary = template.presentation.poses["seat:" + port]
+		check_eq(pose.offset,Vector2(0,18),"only the seated pose sits lower, at " + port)
 		check_eq(pose.port,"Seats/" + port,"seated pose is attached to its own chair")
 		check_eq(pose.facing,2 if index % 2 == 0 else 6,"diner faces the table from " + port)
 		var before: Vector2 = previous.layout.customer_points["seat:" + port]
@@ -447,6 +445,11 @@ func test_front_employee_collects_and_delivers_staged_food_after_save_reload() -
 func _previous_staff_service() -> SpecShop:
 	var shop := SHOP.copy_for_editing()
 	var template: Resource = shop.runtime_template
+	for pose in template.presentation.poses.values(): pose.offset = Vector2.ZERO
+	for key in ["return_posts","roaming_idle","port_queues","collect_at_drop_last"]: template.dispatch.erase(key)
+	template.places["pantry:out"].port = Vector2(200,660)
+	shop.layout.customer_queue.assign([Vector2(215,950),Vector2(290,950),Vector2(365,950),Vector2(443,975),Vector2(443,1045),Vector2(443,1115),Vector2(443,1185),Vector2(443,1255)])
+	shop.stages[2].grant_worker = ""
 	template.places["plating:out"].erase("drop_port")
 	template.service.admission = "employee"
 	template.service["admission_port"] = "counter"
@@ -658,3 +661,119 @@ func test_staff_cultivation_changes_real_work_walk_and_carry_by_role() -> void:
 	check_eq(owner.effective_worker_stats(front),front_before,"kitchen upgrade affects the kitchen role")
 	check_eq(owner.upgrade("staff/front"),"","buy front walking improvement")
 	check(is_equal_approx(owner.walk_speed(front),front_walk*1.2),"front walking upgrade applies to delivery")
+
+func test_opening_gift_and_base_prices() -> void:
+	var rules := ShopRules.new(SHOP.copy_for_editing(),42)
+	check_eq(rules.dish_price("plum_juice"),10.0,"opening drink base price")
+	check_eq(rules.dish_price("plain_fried_rice"),11.0,"plain fried rice base price")
+	check_eq(rules.dish_price("egg_fried_rice"),12.0,"egg fried rice base price")
+	check_eq(rules.dish_price("tomato_rice"),13.0,"first covered rice base price")
+	rules.gold = 112.0
+	for id in ["plum_dispenser","wok_a","rice_cooker"]:
+		check_eq(rules.unlock(id),"","buy the opening equipment")
+	check_eq(rules.gold,0.0,"no additional coins for the kitchen employee")
+	check_eq(rules.workers.size(),2,"opening gift joins the active team")
+	check_eq(rules.hire_cost(),30,"the gift does not use a paid hire tier")
+	check(rules.menu().has("plain_fried_rice"),"hot orders immediately become available")
+	check(not rules.unlock("rice_cooker").is_empty(),"cannot collect the opening gift again")
+	check_eq(rules.workers.size(),2,"repeat purchase has no side effects")
+
+func test_pantry_ingredient_upgrades_are_independent() -> void:
+	var rules := ShopRules.new(SHOP.copy_for_editing(),42)
+	rules.gold = 1000.0
+	for id in ["plum_dispenser","wok_a","rice_cooker","pantry"]:
+		check_eq(rules.unlock(id),"","open the pantry")
+	check_eq(rules.upgrade("pantry/egg_rice_raw"),"","upgrade egg fried rice seasoning")
+	check(is_equal_approx(rules.dish_price("egg_fried_rice"),12.6),"only the egg fried rice earns the seasoning price bonus")
+	check_eq(rules.dish_price("plain_fried_rice"),11.0,"no seasoning bonus on plain fried rice")
+	check(not rules.upgrade("pantry/yangzhou_raw").is_empty(),"locked seasoning cannot be upgraded")
+	check_eq(rules.unlock("pantry"),"","cabinet level unlocks the next seasoning")
+	check_eq(rules.upgrade("pantry/yangzhou_raw"),"","unlocked seasoning now has its own price upgrade")
+
+func test_front_worker_returns_to_counter_after_delivery_and_can_reload_on_the_way() -> void:
+	var template := _template()
+	template.service.selection.stages[-1].weights = {"plain_fried_rice":1.0}
+	var runtime := _runtime(template)
+	if runtime==null: return
+	var front: Dictionary = runtime.runner.owner.workers[0]
+	var counter: Vector2 = runtime.runner.owner.nav.post("counter")
+	runtime.arrive([])
+	for tick in 600:
+		check_eq(runtime.step(0.1),"","deliver the meal to its seat")
+		if runtime.service.orders.order(1).get("state") != "delivered": continue
+		check(front.walking and runtime.runner.idle(front.id),"front immediately starts walking back after handing over the order")
+		check_eq(front.get("motion",{}).get("goal"),counter,"front returns to the assigned counter post")
+		var saved: Dictionary = runtime.snapshot()
+		check_eq(runtime.restore(saved),"","return trip survives save and load")
+		for remainder in 500:
+			check_eq(runtime.step(0.1),"","complete the saved return walk")
+			if front.pos == counter: break
+		check_eq(front.pos,counter,"front reaches the counter")
+		return
+	check(false,"meal was delivered by the front worker")
+
+func test_workers_wait_at_distinct_positions_for_the_same_port() -> void:
+	var runtime := _runtime(_template())
+	if runtime==null: return
+	var runner: RefCounted = runtime.runner
+	var first: Dictionary = runner.owner.workers[1]
+	var second: Dictionary = runner.owner.workers[2]
+	check_eq(runner.transfer(first.id,"pantry:out","wok_a:in","egg_rice_raw",1,0.5,-1,-1),"","assign the first worker to pick from the pantry")
+	check_eq(runner.transfer(second.id,"pantry:out","wok_a:in","egg_rice_raw",1,0.5,-1,-1),"","assign the second worker to the same pantry")
+	var work_point: Vector2 = runner.ports["pantry:out"]
+	var wait_point: Vector2 = runner.dispatcher._definition.port_queues["pantry:out"][0]
+	check_eq(first.motion.goal,work_point,"first assignment approaches the work port")
+	check_eq(second.motion.goal,wait_point,"second assignment moves to a separate waiting position")
+	var snap: Dictionary = runner.snapshot()
+	check_eq(runner.restore(snap),"","queued route and stock claims restore")
+	var saw_second := false
+	for tick in 300:
+		check_eq(runner.step(0.1),"","sequential pickups and drops advance")
+		check(not (first.pos==work_point and second.pos==work_point),"employees never collect from the same point concurrently")
+		if second.phase=="pickup":
+			saw_second = true
+			check_eq(second.pos,work_point,"the next employee moves up when the port clears")
+		if runner.idle(first.id) and runner.idle(second.id): break
+	check(saw_second,"the second worker reached the work port")
+	check_eq(runner.inventory.quantity("wok_a:in","egg_rice_raw"),2,"both pickups reached the wok")
+
+func test_fried_rice_waits_in_wok_while_worker_walks_to_pantry() -> void:
+	var template := _template()
+	template.service.selection.stages[-1].weights = {"egg_fried_rice":1.0}
+	template.service.selection.addon.share = 0.0
+	var runtime := _runtime(template)
+	if runtime==null: return
+	var owner: ShopRules = runtime.runner.owner
+	for worker in owner.workers.duplicate():
+		if worker.id not in [owner.workers[0].id,owner.workers[1].id]: owner.recall_worker(worker.id)
+	for i in 3: check_eq(owner.upgrade("staff/kitchen"),"","train the floating worker to carry both items")
+	runtime.arrive([])
+	var saw_pantry := false
+	for tick in 900:
+		check_eq(runtime.step(0.1),"","make fried rice with a single kitchen worker")
+		var cook: Dictionary = owner.workers[1]
+		if cook.phase in ["walk","pickup"] and cook.target=="pantry:out":
+			saw_pantry = true
+			check_eq(cook.carry_count,0,"worker goes to collect seasoning empty-handed")
+			check_eq(runtime.runner.inventory.quantity("wok_a:out","fried_rice_base"),1,"the cooked rice base remains at the wok")
+		if owner.sold_by_dish.egg_fried_rice>0: break
+	check(saw_pantry and owner.sold_by_dish.egg_fried_rice==1,"real fried rice was seasoned and served")
+
+func test_customers_walk_to_the_right_queue_head_before_taking_a_seat() -> void:
+	var template := _template()
+	template.service.selection.stages[-1].weights = {"plain_fried_rice":1.0}
+	var runtime := _runtime(template)
+	if runtime==null: return
+	var owner: ShopRules = runtime.runner.owner
+	for id in range(1,3):
+		check_eq(runtime.arrive([]).id,id,"send two customers into the shop")
+	var points := owner.nav.layout.customer_queue
+	for i in range(1,6):
+		check(points[i].x<points[i-1].x and points[i].y==points[0].y,"queue extends to the left of the right-side counter")
+	check_eq(runtime.service.customers.record(1).target,"queue:0","first customer goes to the counter before taking a seat")
+	check_eq(runtime.service.customers.record(2).target,"queue:1","second customer joins at the left")
+	check_eq(runtime.service.orders.guest(1).seat,"","free seats do not skip the queue")
+	for tick in 350:
+		check_eq(runtime.step(0.1),"","advance the entrance walk")
+		if runtime.service.orders.guest(1).order>0: break
+	check_eq(runtime.service.customers.record(1).target,"seat:table/0","first customer takes the available seat from queue head")

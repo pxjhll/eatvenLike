@@ -544,7 +544,7 @@ func flavor_open(dish: SpecDish) -> bool:
 	var st := shop.station(dish.flavor_station)
 	var m := st.material(dish.flavor_material)
 	if m == null: return true
-	return station_unlocked(st.id) and level(st.id) >= m.track.requires_level
+	return station_unlocked(st.id) and level(st.id) >= m.track.requires_level and (m.requires_station.is_empty() or station_unlocked(m.requires_station))
 
 
 func _box_ready(item: String) -> bool:
@@ -955,7 +955,7 @@ func hire_cost() -> int:
 func _hires() -> int:
 	var count := 0
 	for worker in roster:
-		if worker.source!="初始": count += 1
+		if worker.source not in ["初始", "解锁"]: count += 1
 	return count
 
 
@@ -1507,7 +1507,11 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 						code = CommandResult.STATION_REQUIRED
 						params.station = parts[0]
 					elif parts.size() > 1:
-						if boxes.has(parts[1]) and not boxes[parts[1]]:
+						var material := shop.station(parts[0]).material(parts[1])
+						if not material.requires_station.is_empty() and not station_unlocked(material.requires_station):
+							code = CommandResult.STATION_REQUIRED
+							params.station = material.requires_station
+						elif boxes.has(parts[1]) and not boxes[parts[1]]:
 							code = CommandResult.BOX_REQUIRED
 							params.material = parts[1]
 						elif level(parts[0]) < track.requires_level:
@@ -1705,6 +1709,14 @@ func _commit_unlock(id: String) -> void:
 		if next.stations.is_empty() or not next.stations.all(station_unlocked): break
 		stage_index += 1
 	nav.set_open(unlocked)
+	if stage>=0 and not shop.stages[stage].grant_worker.is_empty():
+		var worker := _new_worker(shop.stages[stage].grant_worker)
+		worker.source = "解锁"
+		worker.deployed = true
+		roster.append(worker)
+		workers.append(worker)
+		events.emit("hired", {"id":worker.id, "kind":worker.kind})
+		events.emit("deployed", {"id":worker.id})
 	if runtime!=null: runtime_error = runtime.set_service_open(is_open())
 	var message := {"station":id,"stage":stage_index}
 	var dish := station.unlock_dish
