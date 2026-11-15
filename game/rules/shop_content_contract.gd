@@ -28,6 +28,8 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 		for prop in value.get_property_list():
 			var key: String = prop.name
 			if type_name=="SpecShop" and key=="runtime_template" and value.runtime_template==null: continue
+			if type_name=="SpecShop" and key=="previous_progression": continue
+			if type_name=="SpecStage" and key=="recipe_level" and value.recipe_level==0: continue
 			if type_name == "SpecFulfillment" and value.flow_version==0 and key in ["flow_version","delivery_batch","delivery_points"]: continue
 			if type_name == "SpecDispatch" and key == "action_version" and value.action_version == 0: continue
 			if type_name == "SpecDispatch" and key == "transport_helpers" and value.transport_helpers.is_empty(): continue
@@ -42,6 +44,7 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 				out[key] = value.levels.size()
 				continue
 			var item: Variant = value.get(key)
+			if type_name == "SpecStation" and key in ["unlock_after_stage","unlock_dish"] and String(item).is_empty(): continue
 			if type_name == "SpecStation" and key == "params":
 				item = item.duplicate(true)
 				for parameter in item.keys():

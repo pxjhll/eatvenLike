@@ -188,7 +188,7 @@ restocks = {
 "requires": {
 "stations": ["rice_cooker"]
 },
-"seconds": 60.0,
+"seconds": 30.0,
 "stock_limit": 8
 },
 "soup_pot": {
@@ -381,7 +381,7 @@ recipes = {
 &"produces": Dictionary[String, int]({
 "plum_juice": 1
 }),
-"seconds": 3.0
+"seconds": 2.0
 }],
 "output": {
 "count": 1,
@@ -395,7 +395,7 @@ recipes = {
 &"fixed": true,
 "id": "step:0",
 &"item": "soup",
-"label": "盛汤",
+"label": "盛排骨汤",
 &"place": "soup_pot:out",
 "seconds": 3.0,
 &"timing_target": "soup_pot"
@@ -566,6 +566,9 @@ service = {
 }, {
 "seconds": 45.0,
 "standing": 6
+}, {
+"seconds": 45.0,
+"standing": 6
 }]
 },
 "seats": {
@@ -596,14 +599,15 @@ service = {
 "at": "admission",
 "gates": {
 "egg_fried_rice": {
+"levels": {"pantry": 3},
 "stations": ["wok_b", "rice_cooker"]
 },
 "kungpao_rice": {
-"stage": 4,
+"levels": {"pantry": 4},
 "stations": ["wok_a", "rice_cooker", "plating"]
 },
 "pepper_rice": {
-"stage": 1,
+"levels": {"pantry": 2},
 "stations": ["wok_a", "rice_cooker", "plating"]
 },
 "plum_juice": {
@@ -616,34 +620,38 @@ service = {
 "stations": ["wok_a", "rice_cooker", "plating"]
 },
 "yangzhou_rice": {
-"stage": 5,
+"levels": {"pantry": 5},
 "stations": ["wok_b", "rice_cooker"]
 }
 },
 "order": ["tomato_rice", "pepper_rice", "egg_fried_rice", "soup", "kungpao_rice", "yangzhou_rice", "plum_juice"],
 "stages": [{
-"interval": 20.0,
+"interval": 10.0,
+"weights": Dictionary[String, float]({
+"plum_juice": 1.0
+})
+}, {
+"interval": 13.0,
 "weights": Dictionary[String, float]({
 "plum_juice": 0.25,
 "tomato_rice": 1.0
 })
 }, {
-"interval": 13.33,
+"interval": 12.0,
 "weights": Dictionary[String, float]({
 "pepper_rice": 0.5,
 "plum_juice": 0.25,
 "tomato_rice": 0.5
 })
 }, {
-"interval": 10.91,
+"interval": 11.0,
 "weights": Dictionary[String, float]({
-"egg_fried_rice": 0.4,
-"pepper_rice": 0.3,
+"pepper_rice": 0.5,
 "plum_juice": 0.25,
-"tomato_rice": 0.3
+"tomato_rice": 0.5
 })
 }, {
-"interval": 9.23,
+"interval": 11.0,
 "weights": Dictionary[String, float]({
 "egg_fried_rice": 0.4,
 "pepper_rice": 0.3,

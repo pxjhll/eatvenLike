@@ -649,7 +649,9 @@ func _refresh_station_signs() -> void:
 			continue
 		var st := shop.station(id)
 		if st == null: continue
-		frame.visible = not rules.station_unlocked(id) and shop.stage_of(id) == next_stage
+		var prerequisite := shop.stage_index_of(st.unlock_after_stage)
+		var optional_available := prerequisite >= 0 and rules.is_open() and rules.stage_index >= prerequisite
+		frame.visible = not rules.station_unlocked(id) and (shop.stage_of(id) == next_stage or optional_available)
 		if not frame.visible: continue
 		var card := view.station(id)
 		frame.can_unlock = card.unlock.status.code == "ok"

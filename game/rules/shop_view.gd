@@ -415,8 +415,9 @@ func _unlock_section(id: String, stage: int) -> Dictionary:
 	var members: Array = []
 	var note := ""
 	var title := station_name(id)
-	var dish := ""
-	var cost := 0
+	var station := shop.station(id)
+	var dish := station.unlock_dish
+	var cost := station.unlock_cost if not station.unlock_after_stage.is_empty() else 0
 	if stage >= 0:
 		var def := shop.stages[stage]
 		cost = def.cost
@@ -436,7 +437,8 @@ func _unlock_section(id: String, stage: int) -> Dictionary:
 func recipe_row(id: String, index: int) -> Dictionary:
 	var def := shop.stages[index]
 	var row := {"stage": index, "dish": def.dish, "name": dish_name(def.dish), "title": def.display_name, "cost": def.cost,
-		"price": rules.dish_price(def.dish), "icon": def.dish, "note": def.unlock_note, "state": "later", "status": {}, "error": ""}
+		"price": rules.dish_price(def.dish), "icon": def.dish, "note": def.unlock_note, "level": def.recipe_level,
+		"state": "later", "status": {}, "error": ""}
 	if index <= rules.stage_index:
 		row.state = "owned"
 		return row

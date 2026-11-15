@@ -48,7 +48,16 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 	var template: Resource = owner._runtime_template
 	if template==null: return "public state requires an explicit runtime template"
 	var identity: Dictionary = prepared.identity if not prepared.is_empty() else Contract.describe_template(template)
-	if data.template.get("structure")!=identity.structure: return "public template structure differs"
+	if data.template.get("structure")!=identity.structure:
+		var previous: Dictionary = owner.shop.previous_progression
+		if not refresh or identity.structure!=previous.get("current_structure"):
+			return "public template structure differs"
+		var source: Dictionary = previous if data.template.get("structure")==previous.get("template_structure") else previous.get("other_templates",{}).get(data.template.get("structure"),{})
+		if source.is_empty(): return "public template structure differs"
+		var converted := adopt_progression(owner.shop,data.outer,source)
+		if converted.is_empty(): return "previous purchase stage is invalid"
+		data = data.duplicate()
+		data.outer = converted
 	if not refresh and data.template!=identity: return "public template numeric revision differs"
 	var script: Script = owner.get_script()
 	# The candidate gets its runtime after the saved purchase state is restored.
@@ -120,3 +129,22 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 	owner.runtime.runner.owner = owner
 	owner.runtime_error = ""
 	return ""
+
+## Stage-only migration keeps production, order receipts and actor references intact.
+static func adopt_progression(shop: SpecShop, saved: Dictionary, source: Dictionary = {}) -> Dictionary:
+	var migration := shop.previous_progression if source.is_empty() else source
+	var indices: Variant = migration.get("stage_indices")
+	var previous_open: Variant = migration.get("opening_station")
+	var stage: Variant = saved.get("stage_index")
+	var unlocked: Variant = saved.get("unlocked")
+	if not indices is PackedInt32Array or not previous_open is String or not stage is int or not unlocked is Dictionary: return {}
+	if stage<0 or stage>=indices.size() or indices[stage]<0 or indices[stage]>=shop.stages.size(): return {}
+	var was_open: Variant = unlocked.get(previous_open)
+	if not was_open is bool or (not was_open and stage!=0): return {}
+	var result := saved.duplicate()
+	result.unlocked = unlocked.duplicate()
+	result.unlocked[shop.goals.opening_station] = was_open
+	result.stage_index = indices[stage] if was_open else 0
+	if not was_open and result.get("gold") is float:
+		result.gold = maxf(result.gold,float(shop.start_gold))
+	return result

@@ -501,7 +501,7 @@ func station_unlocked(id: String) -> bool:
 
 
 func level(id: String) -> int:
-	return int(levels.get(id, 1))
+	return int(levels[id]) if levels.has(id) else shop.recipe_level(id, stage_index)
 
 
 func speed(id: String) -> float:
@@ -1464,7 +1464,16 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 			elif station_unlocked(id) and recipe < 0: code = CommandResult.STATION_ALREADY_UNLOCKED
 			else:
 				var stage := recipe if recipe >= 0 else shop.stage_of(id)
-				if stage < 0: code = CommandResult.STATION_NOT_UNLOCKABLE
+				if stage < 0:
+					var prerequisite := shop.stage_index_of(st.unlock_after_stage)
+					if prerequisite < 0: code = CommandResult.STATION_NOT_UNLOCKABLE
+					elif not is_open(): code = CommandResult.SHOP_NOT_OPEN
+					elif stage_index < prerequisite:
+						code = CommandResult.STAGE_REQUIRED
+						params.stage = prerequisite
+					elif gold < st.unlock_cost:
+						code = CommandResult.INSUFFICIENT_GOLD
+						params.required = st.unlock_cost
 				elif stage > 0 and not is_open(): code = CommandResult.SHOP_NOT_OPEN
 				elif stage > 0 and stage > stage_index + 1:
 					code = CommandResult.STAGE_REQUIRED
@@ -1678,16 +1687,21 @@ func _recipe_stage(id: String) -> int:
 func _commit_unlock(id: String) -> void:
 	var recipe := _recipe_stage(id)
 	var stage := recipe if recipe>=0 else shop.stage_of(id)
-	gold -= shop.stages[stage].cost
-	for key in shop.stages[stage].stations:
+	var station := shop.station(id)
+	var cost := station.unlock_cost if stage < 0 else shop.stages[stage].cost
+	var opened: Array = [id] if stage < 0 else shop.stages[stage].stations
+	gold -= cost
+	for key in opened:
 		unlocked[key] = true
 		for st in shop.stations:
 			if st.companion_of==key: unlocked[st.id] = true
 	stage_index = maxi(stage_index,stage)
 	nav.set_open(unlocked)
 	if runtime!=null: runtime_error = runtime.set_service_open(is_open())
-	var message := {"station":id,"stage":stage}
-	if recipe>=0: message.dish = shop.stages[stage].dish
+	var message := {"station":id,"stage":stage_index}
+	var dish := station.unlock_dish
+	if recipe >= 0: dish = shop.stages[stage].dish
+	if not dish.is_empty(): message.dish = dish
 	events.emit("unlocked",message)
 
 func _commit_unlock_box(material: String) -> void:

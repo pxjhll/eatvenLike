@@ -215,8 +215,19 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 		if shop.stations[i] != null: _station(shop.stations[i], "stations[%d]" % i, context, errors)
 	for i in shop.dishes.size():
 		if shop.dishes[i] != null: _dish(shop.dishes[i], "dishes[%d]" % i, context, errors)
+	var recipe_levels := {}
 	for i in shop.stages.size():
-		if shop.stages[i] != null: _stage(shop.stages[i], "stages[%d]" % i, context, errors)
+		var stage := shop.stages[i]
+		if stage == null: continue
+		var path := "stages[%d]" % i
+		_stage(stage, path, context, errors)
+		if stage.recipe_level<=0: continue
+		var station := shop.station(stage.recipe_at)
+		if station!=null and not station.tracks.is_empty():
+			_error(errors,path+".recipe_level","A recipe level cannot also belong to an independent station upgrade track.","combination")
+		if stage.recipe_level!=int(recipe_levels.get(stage.recipe_at,1))+1:
+			_error(errors,path+".recipe_level","Recipe levels must advance by one in purchase order.","order")
+		recipe_levels[stage.recipe_at] = stage.recipe_level
 	_validate_staff(shop, context, errors)
 	_validate_auxiliary(shop, context, errors)
 	_validate_layout(shop, context, errors)
@@ -292,6 +303,14 @@ static func _station(s: SpecStation, p: String, c: Dictionary, errors: Array[Dic
 	if s.id in ["shelf", "rack"]: _error(errors, p + ".id", "ID is reserved for a fulfillment destination.")
 	_ref(s.zone, c.zones, p + ".zone", errors)
 	_ref(s.companion_of, c.stations, p + ".companion_of", errors, true)
+	_ref(s.unlock_after_stage, c.stages, p + ".unlock_after_stage", errors, true)
+	_ref(s.unlock_dish, c.dishes, p + ".unlock_dish", errors, true)
+	if not s.unlock_after_stage.is_empty():
+		if s.starts_unlocked or not s.companion_of.is_empty():
+			_error(errors,p+".unlock_after_stage","Standalone purchases require a locked station with no companion owner.","combination")
+		for stage in c.stages.values():
+			if s.id in stage.stations:
+				_error(errors,p+".unlock_after_stage","A main progression station cannot also be a standalone purchase.","combination")
 	for key in ["seated_bonus", "unlock_cost"]: _number(s.get(key), p + "." + key, errors, 0, key == "seated_bonus")
 	for key in s.params:
 		var at := p + ".params." + str(key)
@@ -435,6 +454,8 @@ static func _staff_target(id: String, c: Dictionary) -> bool:
 
 static func _stage(stage: SpecStage, p: String, c: Dictionary, errors: Array[Dictionary]) -> void:
 	if stage.stations.is_empty() and stage.recipe_at.is_empty(): _error(errors, p + ".stations", "Each stage needs an unlock station or a recipe station.")
+	if stage.recipe_level<0 or (stage.recipe_level!=0 and (stage.recipe_at.is_empty() or stage.recipe_level<2)):
+		_error(errors, p + ".recipe_level", "A recipe upgrade starts at level 2 and requires a recipe station.")
 	if not stage.recipe_at.is_empty():
 		if not stage.stations.is_empty(): _error(errors, p + ".recipe_at", "A recipe stage opens no stations; use either stations or recipe_at.", "combination")
 		_ref(stage.recipe_at, c.stations, p + ".recipe_at", errors)

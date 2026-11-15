@@ -18,6 +18,9 @@ var error := ""
 func adopt(owner: RefCounted, data: Dictionary, refresh: bool) -> String:
 	var legacy_shop: Resource = owner.shop.copy_for_editing()
 	legacy_shop.runtime_template = null
+	if refresh and not owner.shop.previous_progression.is_empty():
+		data = State.adopt_progression(owner.shop,data)
+		if data.is_empty(): return "previous legacy purchase stage is invalid"
 	source = owner.get_script().new(legacy_shop)
 	source.event_defs = owner.event_defs.duplicate()
 	error = source._load_legacy_dict(data,refresh)

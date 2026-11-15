@@ -77,7 +77,8 @@ func _historical_public(shop: SpecShop) -> ShopRules:
 	var owner := ShopRules.new(previous,42)
 	check_eq(owner.recall_worker(owner.roster.back().id),"","historical fox can remain on standby")
 	owner.gold = 1234.0
-	check_eq(owner.unlock("lemonade" if shop==TEA else "wok_a"),"","open historical public production")
+	check_eq(owner.unlock(shop.goals.opening_station),"","open historical public production")
+	if shop==STIRFRY: check_eq(owner.unlock(owner.next_unlock()),"","start the historical kitchen service")
 	owner.run(23.0)
 	check_eq(owner.runtime_error,"","historical public session runs")
 	return owner
@@ -108,6 +109,9 @@ func _check_legacy_progress(owner: ShopRules, before: Dictionary) -> void:
 	var after := owner.to_dict()
 	check_eq(after.version,2,"historical format is adopted by the public protocol")
 	for key in ["gold","revenue","sold","sold_by_dish","stage_index","unlocked","levels","boxes","completed_at","seats","_next_staff","rng","event_rng","_sale_carry"]:
+		if key=="stage_index" and owner.shop==STIRFRY:
+			check_eq(after.outer.stage_index,owner.shop.stages.size()-1,"old final stage maps to the new final stage")
+			continue
 		check_eq(after.outer[key],before[key],owner.shop.id+": migration preserves "+key)
 	check_eq(after.runtime.clock,before.clock,"migration retains the simulation clock")
 	check_eq(owner.runtime.runner.inventory.audit(),[],"converted inventory is conserved")

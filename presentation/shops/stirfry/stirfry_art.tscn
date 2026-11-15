@@ -735,6 +735,11 @@ position = Vector2(-227, -259)
 script = ExtResource("17_8vt8w")
 size = Vector2(120, 164)
 
+[node name="Frame" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Slots/drink"]
+position = Vector2(-227, -259)
+script = ExtResource("17_8vt8w")
+size = Vector2(120, 164)
+
 [node name="Buffer" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Slots/drink"]
 position = Vector2(-75, -110)
 

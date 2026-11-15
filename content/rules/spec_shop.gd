@@ -36,6 +36,8 @@ extends Resource
 ## Formal shops declare one shared capability template. Legacy format fields
 ## are retained only for authoring identity and old-state conversion.
 @export var runtime_template: Resource
+## One compatible prior progression, if only purchase/menu stages changed.
+@export var previous_progression: Dictionary = {}
 
 
 ## Editable variants must own external definitions too. Resource.duplicate(true)
@@ -58,6 +60,13 @@ func dish(dish_id: String) -> SpecDish:
 	return null
 
 
+func stage_index_of(stage_id: String) -> int:
+	if stage_id.is_empty(): return -1
+	for index in stages.size():
+		if stages[index] != null and stages[index].id == stage_id: return index
+	return -1
+
+
 func stage_of(station_id: String) -> int:
 	for index in stages.size():
 		if station_id in stages[index].stations: return index
@@ -76,6 +85,14 @@ func recipe_stages(station_id: String) -> Array[int]:
 	for index in stages.size():
 		if stages[index].stations.is_empty() and stages[index].recipe_at == station_id: out.append(index)
 	return out
+
+
+func recipe_level(station_id: String, purchased_stage: int) -> int:
+	var level := 1
+	for index in mini(purchased_stage + 1, stages.size()):
+		var stage := stages[index]
+		if stage != null and stage.recipe_at == station_id: level = maxi(level, stage.recipe_level)
+	return level
 
 
 ## 这道菜要靠哪个配方阶段才上菜单（-1 = 不靠配方）
