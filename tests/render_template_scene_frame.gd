@@ -30,7 +30,7 @@ func _run() -> void:
 
 func _shop(id: String) -> void:
 	var shop: SpecShop = load("res://content/shops/"+id+"/shop.tres").copy_for_editing()
-	var owner := TemplateOuter.owner(shop,42)
+	var owner := ShopRules.new(shop,42) if id=="stirfry" else TemplateOuter.owner(shop,42)
 	owner.gold = 1000000.0
 	if id=="tea":
 		for machine in ["lemonade","boil","seal","mix","press","topping"]: _check(owner.unlock(machine).is_empty(),"prepare tea purchase")
@@ -46,7 +46,7 @@ func _shop(id: String) -> void:
 	root.add_child(scene)
 	scene.set_process(false)
 	await process_frame
-	_check(not scene._startup_blocked,id+": actual scene starts")
+	_check(not scene._startup_blocked,id+": actual scene starts: "+scene.save_status)
 	if scene._startup_blocked: scene.free(); return
 	var template: Resource = load("res://content/shops/"+id+"/shared_production.tres").duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	var front_id: String = {"tea":"lemonade","pancake":"soy","stirfry":"plum_juice"}[id]
@@ -62,7 +62,14 @@ func _shop(id: String) -> void:
 		for permissions in template.dispatch.get(scope,{}).values():
 			permissions["transfer_from"] = permissions.get("transfer_from",[])+["view_wait"]
 			permissions["transfer_to"] = permissions.get("transfer_to",[])+["view_drop"]
-	var runtime := Runtime.new(owner,template)
+	var runtime: RefCounted
+	if id=="stirfry":
+		var runtime_error := owner.enable_runtime(template,false)
+		_check(runtime_error.is_empty(),id+": "+runtime_error)
+		if not runtime_error.is_empty(): scene.free(); return
+		runtime = owner.runtime
+	else:
+		runtime = Runtime.new(owner,template)
 	_check(runtime.last_error.is_empty(),id+": real runtime compiles: "+runtime.last_error)
 	if not runtime.last_error.is_empty(): scene.free(); return
 	if not scene.view.has_method("bind_runtime"):

@@ -21,7 +21,8 @@ timeout 180s "$godot" --headless --path . --import
 headless_checks=()
 if [[ "${CF_PAGES_BRANCH:-main}" != main ]]; then
     echo "Checking preview shop configuration, layouts and gameplay."
-    headless_checks+=(--only template_authoring --only layout --only template_official_session)
+    headless_checks+=(--only template_authoring --only layout --only template_official_session
+                      --only template_displays --only template_scene_frame)
 fi
 python3 tools/check_shops.py --engine "$godot" --profile headless --output _work/pages/headless "${headless_checks[@]}"
 
