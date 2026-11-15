@@ -28,6 +28,7 @@ func _setup(id: String) -> Dictionary:
 		for upgrade in 3: _check(owner.upgrade("topping").is_empty(),"actual tea flavors")
 	else:
 		for stage in shop.stages.size(): _check(owner.unlock(shop.sold_at(stage)).is_empty(),"actual stage purchase")
+		if id=="stirfry": _check(owner.unlock("soup_pot").is_empty(),"buy optional soup for the bundled-meal display")
 		if id=="pancake":
 			_check(owner.unlock_box("flour").is_empty(),"actual flour purchase")
 			for upgrade in 6: _check(owner.upgrade("topping").is_empty(),"actual pancake flavors")

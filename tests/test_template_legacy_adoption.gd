@@ -13,8 +13,12 @@ func test_active_legacy_snapshots_convert_to_one_valid_public_state_without_rese
 			if not error.is_empty(): continue
 			var saved := owner.to_dict()
 			check_eq(saved.get("version"),2,"old format is actually replaced")
-			for key in ["gold","revenue","sold","sold_by_dish","levels","boxes","unlocked","seats","stage_index","completed_at"]:
+			for key in ["gold","revenue","sold","sold_by_dish","levels","boxes","unlocked","seats","completed_at"]:
 				check_eq(saved.outer[key],old[key],id+": preserve "+key)
+			if id=="stirfry":
+				var previous: SpecShop = load("res://tests/fixtures/legacy_shops/current/stirfry/shop.tres")
+				check_eq(owner.current_stage().id,previous.stages[old.stage_index].id,"preserve active stir-fry progression by stage ID")
+			else: check_eq(saved.outer.stage_index,old.stage_index,id+": preserve stage_index")
 			check_eq(owner.rng.state,old.rng[1],"conversion draws no random choices")
 			check_eq(owner.clock,old.clock,"do not restart the simulation clock")
 			check_eq(owner.runtime.runner.inventory.audit(),[],"converted physical inventory conserves every item")

@@ -737,8 +737,14 @@ static func _validate_graph(shop: SpecShop, c: Dictionary, errors: Array[Diction
 		# If the opening station starts unlocked, stage zero is never purchased.
 		if i == 0 and shop.goals != null and not initial.has(shop.goals.opening_station):
 			_stage_unlocks(stage, c, guaranteed)
+	# Standalone purchases are reachable, but cannot satisfy a required stage's menu.
 	for id in c.stations:
-		if not available.has(id): _error(errors, "stations." + id, "Station is neither initially available nor reachable through a stage/companion.", "unreachable")
+		if c.stages.has(c.stations[id].unlock_after_stage): available[id] = true
+	for unused in c.stations.size():
+		for id in c.stations:
+			if available.has(c.stations[id].companion_of): available[id] = true
+	for id in c.stations:
+		if not available.has(id): _error(errors, "stations." + id, "Station is neither initially available nor reachable through a stage, companion, or standalone purchase.", "unreachable")
 	if c.mode == "serve": _validate_serve(shop, c, errors)
 
 
