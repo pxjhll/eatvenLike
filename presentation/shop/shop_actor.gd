@@ -21,6 +21,7 @@ var work_progress: Callable = func(_worker: Dictionary) -> float: return -1.0
 var progress_bar := ProgressBar.new()
 var body := Sprite2D.new()
 var carried := Sprite2D.new()
+var _held_layer := Node2D.new()
 var _held_sprites: Array[Sprite2D] = []
 var amount := Label.new()
 var task := Label.new()
@@ -75,7 +76,8 @@ func setup(art_id: String, font: Font, height := -1.0) -> void:
 		_visual.add_child(frame_actor)
 	carried.centered = false
 	carried.visible = false
-	_visual.add_child(carried)
+	_visual.add_child(_held_layer)
+	_held_layer.add_child(carried)
 	amount.position = Vector2(38, -59)
 	amount.add_theme_font_override("font", font)
 	amount.add_theme_font_size_override("font_size", 17)
@@ -166,10 +168,8 @@ func display(worker: Dictionary, clock: float) -> void:
 			carried.position = center - texture.get_size() * carried.scale / 2.0
 			amount.position = center + Vector2(10, 10)
 			var behind: bool = facing in [3, 4, 5]
-			if behind and carried.get_index() > frame_actor.get_index():
-				_visual.move_child(carried, frame_actor.get_index())
-			elif not behind and carried.get_index() < frame_actor.get_index():
-				_visual.move_child(carried, frame_actor.get_index())
+			if behind != (_held_layer.get_index() < frame_actor.get_index()):
+				_visual.move_child(_held_layer, frame_actor.get_index())
 	_display_held_items(worker)
 	_last_pos = position
 	_last_clock = clock
@@ -180,7 +180,7 @@ func _display_held_items(worker: Dictionary) -> void:
 	while _held_sprites.size()<maxi(0,items.size()-1):
 		var sprite := Sprite2D.new()
 		sprite.centered = false
-		_visual.add_child(sprite)
+		_held_layer.add_child(sprite)
 		_held_sprites.append(sprite)
 	for index in _held_sprites.size():
 		var sprite := _held_sprites[index]
@@ -192,9 +192,6 @@ func _display_held_items(worker: Dictionary) -> void:
 		sprite.modulate = look.get("tint",Color.WHITE)
 		sprite.scale = Vector2.ONE*CUP_HEIGHT/maxf(texture.get_width(),texture.get_height())
 		sprite.position = carried.position+Vector2((index+1)*18,-(index+1)*4)
-		if frame_actor!=null:
-			if frame_actor.direction in [3,4,5]: _visual.move_child(sprite,frame_actor.get_index())
-			else: _visual.move_child(sprite,carried.get_index()+1)
 
 
 func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -> void:

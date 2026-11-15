@@ -18,6 +18,7 @@ places = {
 "port": Vector2(720, 650)
 },
 "plating:out": {
+"drop_port": Vector2(720, 480),
 "port": Vector2(720, 650)
 },
 "plum_dispenser:in": {
@@ -937,9 +938,7 @@ recipes = {
 }
 service = {
 "pickup_queue": {"ports": ["pickup:0", "pickup:1", "pickup:2", "pickup:3", "pickup:4", "pickup:5", "pickup:6", "pickup:7", "pickup:8", "pickup:9", "pickup:10", "pickup:11", "pickup:12", "pickup:13", "pickup:14", "pickup:15"]},
-"admission": "employee",
-"admission_port": "counter",
-"admission_seconds": 1.0,
+"admission": "automatic",
 "arrivals": {
 "first_delay": 2.0,
 "pattern": "fixed"
@@ -1168,16 +1167,10 @@ service = {
 }
 dispatch = {
 "batch_transfers": true,
-"assistance": {"posts": {"counter": {
-"transfer_from": ["pantry:out", "rice_cooker:out", "wok_a:out", "wok_b:out", "plating:out", "soup_pot:out"],
-"transfer_to": ["rice_cooker:in", "wok_a:in", "wok_b:in", "plating:in", "plating:out", "soup_pot:in", "window"],
-"wait_for_admission": true
-}}},
 "station_posts": {"wok_a": {"post": "wok_a", "feed": false}, "wok_b": {"post": "wok_b", "feed": false}},
 "affinity": "prefer",
 "posts": {
 "counter": {
-"interact": ["counter"],
 "operate": ["plum_dispenser"],
 "transfer_from": ["plum_dispenser:out", "plating:out"],
 "transfer_to": ["window", "guest:*"]
@@ -1197,7 +1190,6 @@ dispatch = {
 }
 },
 "scores": {
-"admit": 400.0,
 "stage": 300.0
 }
 }

@@ -112,6 +112,13 @@ func _check_legacy_progress(owner: ShopRules, before: Dictionary) -> void:
 		if key=="stage_index" and owner.shop==STIRFRY:
 			check_eq(after.outer.stage_index,owner.shop.stages.size()-1,"old final stage maps to the new final stage")
 			continue
+		if key=="levels" and owner.shop==STIRFRY:
+			var expected: Dictionary = before.levels.duplicate()
+			expected.erase("plating")
+			expected["staff/front"] = 0
+			expected["staff/kitchen"] = 0
+			check_eq(after.outer.levels,expected,"third shop replaces the retired upgrade track with staff training")
+			continue
 		check_eq(after.outer[key],before[key],owner.shop.id+": migration preserves "+key)
 	for dish in before.sold_by_dish:
 		check_eq(after.outer.sold_by_dish[dish],before.sold_by_dish[dish],owner.shop.id+": migration preserves sales of "+dish)

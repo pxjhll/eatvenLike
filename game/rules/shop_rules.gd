@@ -1699,6 +1699,11 @@ func _commit_unlock(id: String) -> void:
 		for st in shop.stations:
 			if st.companion_of==key: unlocked[st.id] = true
 	stage_index = maxi(stage_index,stage)
+	# A reordered progression can retain equipment purchased on an older save.
+	while stage >= 0 and stage_index+1 < shop.stages.size():
+		var next: SpecStage = shop.stages[stage_index+1]
+		if next.stations.is_empty() or not next.stations.all(station_unlocked): break
+		stage_index += 1
 	nav.set_open(unlocked)
 	if runtime!=null: runtime_error = runtime.set_service_open(is_open())
 	var message := {"station":id,"stage":stage_index}

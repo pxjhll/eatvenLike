@@ -31,7 +31,7 @@ static func compile(template: Resource, anchors: Dictionary = {}) -> Dictionary:
 		if Inventory.is_hand_place(id):
 			errors.append(_error("reserved_container", path))
 			continue
-		_keys(place, ["port", "anchor", "capacity", "infinite", "initial", "capacity_binding"], path, errors)
+		_keys(place, ["port", "anchor", "capacity", "infinite", "initial", "capacity_binding", "drop_port"], path, errors)
 		var port: Variant = place.get("port")
 		if place.has("anchor"):
 			if place.has("port") or not _id(place.anchor) or not anchors.get(place.anchor) is Vector2:
@@ -54,6 +54,11 @@ static func compile(template: Resource, anchors: Dictionary = {}) -> Dictionary:
 			var seeded := inventory.seed(id, item, initial[item])
 			if not String(seeded.error).is_empty(): errors.append(_error("invalid_initial_stock", path + ".initial." + str(item), seeded.error))
 		definition.places[id] = {"port":port, "capacity":capacity, "infinite":infinite.duplicate(), "initial":initial.duplicate()}
+		if place.has("drop_port"):
+			var drop_port: Variant = place.drop_port
+			if not drop_port is Vector2 or not Vector2(drop_port).is_finite():
+				errors.append(_error("invalid_drop_port",path + ".drop_port"))
+			else: definition.places[id].drop_port = drop_port
 		var binding := Limits.compile_binding(place.get("capacity_binding",{}),capacity,0)
 		if not binding.error.is_empty(): errors.append(_error("invalid_capacity_binding",path + ".capacity_binding",binding.error))
 		elif not binding.definition.is_empty(): definition.places[id].capacity_binding = binding.definition

@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="SpecUpgradeTrack" format=3]
+
+[ext_resource type="Script" path="res://content/rules/spec_effect.gd" id="effect"]
+[ext_resource type="Script" path="res://content/rules/spec_upgrade_level.gd" id="level"]
+[ext_resource type="Script" path="res://content/rules/spec_upgrade_track.gd" id="track"]
+
+[sub_resource type="Resource" id="Resource_nlrjp"]
+script = ExtResource("effect")
+kind = "walk"
+target = "front"
+value = 1.2
+
+[sub_resource type="Resource" id="Resource_ro088"]
+script = ExtResource("level")
+cost = 10
+effects = Array[ExtResource("effect")]([SubResource("Resource_nlrjp")])
+
+[sub_resource type="Resource" id="Resource_1e8ah"]
+script = ExtResource("effect")
+kind = "staff_slot"
+target = "front"
+op = "add"
+
+[sub_resource type="Resource" id="Resource_6u0x0"]
+script = ExtResource("level")
+cost = 51
+effects = Array[ExtResource("effect")]([SubResource("Resource_1e8ah")])
+
+[sub_resource type="Resource" id="Resource_43n6a"]
+script = ExtResource("effect")
+kind = "work"
+target = "front"
+value = 1.25
+
+[sub_resource type="Resource" id="Resource_mflao"]
+script = ExtResource("level")
+cost = 130
+effects = Array[ExtResource("effect")]([SubResource("Resource_43n6a")])
+
+[sub_resource type="Resource" id="Resource_nl2m0"]
+script = ExtResource("effect")
+kind = "walk"
+target = "front"
+value = 1.2
+
+[sub_resource type="Resource" id="Resource_a81lj"]
+script = ExtResource("level")
+cost = 315
+effects = Array[ExtResource("effect")]([SubResource("Resource_nl2m0")])
+
+[resource]
+script = ExtResource("track")
+id = "front"
+display_name = "前台"
+levels = Array[ExtResource("level")]([SubResource("Resource_ro088"), SubResource("Resource_6u0x0"), SubResource("Resource_mflao"), SubResource("Resource_a81lj")])
+effect_label = "员工"

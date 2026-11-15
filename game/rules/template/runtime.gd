@@ -46,6 +46,7 @@ func _init(owner: RefCounted, template: Resource, compiled: Dictionary = {}) -> 
 		var place: Dictionary = _definition.places[id]
 		last_error = runner.define_place(id, place.port, place.capacity, place.infinite)
 		if not last_error.is_empty(): return
+		if place.has("drop_port"): runner.drop_ports[id] = place.drop_port
 		for item in place.initial:
 			var seeded: Dictionary = runner.inventory.seed(id, item, place.initial[item])
 			if not String(seeded.error).is_empty(): last_error = seeded.error; return

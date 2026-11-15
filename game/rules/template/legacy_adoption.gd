@@ -8,6 +8,7 @@ const Motion := preload("res://game/rules/rule_movement.gd")
 const Actions := preload("res://game/rules/rule_actions.gd")
 const Clock := preload("res://game/rules/template/production_clock.gd")
 const State := preload("res://game/rules/template/session_state.gd")
+const FlowValidator := preload("res://game/rules/flow_validator.gd")
 const Options := preload("res://game/rules/template/customization.gd")
 var source: RefCounted
 var target: RefCounted
@@ -24,6 +25,7 @@ func adopt(owner: RefCounted, data: Dictionary, refresh: bool) -> String:
 		if data.is_empty(): return "previous legacy purchase stage is invalid"
 		var migration: Dictionary = owner.shop.previous_progression
 		refresh_layout = migration.get("refresh_layout",false) == true
+		FlowValidator.apply_legacy_production(legacy_shop)
 		for index in migration.get("legacy_obstacles",{}):
 			legacy_shop.layout.obstacles[index] = migration.legacy_obstacles[index]
 		for name in migration.get("legacy_customer_ports",{}):
@@ -635,6 +637,7 @@ func _serve_job(worker: Dictionary, job: Dictionary) -> void:
 	var current: Dictionary = target.worker_by_id(worker.id)
 	if job.kind=="home": return # Idle positioning has no business claim to replay.
 	if job.kind=="take":
+		if runtime.service._policy.admission=="automatic": return
 		var guest: Dictionary = runtime.service.orders._find(runtime.service.orders._state.guests,int(job.guest))
 		guest.claimed = int(worker.id)
 		error = runtime.runner.interact(worker.id,runtime.service._policy.admission_port,runtime.service._policy.admission_seconds,"admit",guest.id)
@@ -699,6 +702,17 @@ func _serve_job(worker: Dictionary, job: Dictionary) -> void:
 			held.id = int(job.good); claim.held[0].lot = int(job.good)
 			stock._state.next_lot = maxi(stock._state.next_lot,int(job.good)+1)
 		runtime.runner._sync_hand(current)
+	if not runtime.runner.dispatcher.allowed_task(current,task,runtime.runner.machines,false):
+		# Already-carried stock from a legacy infinite supply has no finite
+		# source bin to return to. Preserve the acquired lot at its next station.
+		if index>=2 and job.item in stock._state.places[from].infinite:
+			error = stock.drop_bundle(task.bundle)
+			if error.is_empty():
+				runtime.runner._finish(current)
+				current.completed = worker.completed
+		else:
+			error = runtime.runner.cancel(current.id)
+		return
 	_program(current,int(index),float(worker.action_left))
 
 func _import_bundle(worker: Dictionary, entries: Array, seconds: float) -> String:
@@ -728,8 +742,9 @@ func _program(worker: Dictionary, index: int, left: float) -> void:
 		if not error.is_empty(): return
 	var step: Dictionary = program.steps[index]
 	if step.kind not in ["move","transport"]:
-		if Vector2(worker.pos).is_equal_approx(runtime.runner.ports[step.target]):
-			Motion.request(worker,target.nav,runtime.runner.ports[step.target],runtime.runner.tasks[worker.id].profile)
+		var point: Vector2 = runtime.runner.action_port(step,runtime.runner.ports)
+		if Vector2(worker.pos).is_equal_approx(point):
+			Motion.request(worker,target.nav,point,runtime.runner.tasks[worker.id].profile)
 			worker.walking = false
 			worker.path = PackedVector2Array([worker.pos]); worker.path_index = 1
 		else:

@@ -55,11 +55,17 @@ func _run() -> void:
 	_check(actor.frame_actor.action == "idle" and actor.frame_actor.direction == 7, "stopping keeps facing and plays authored idle")
 	_check(actor.carried.visible and actor.amount.visible, "frame rabbit retains cup and quantity overlays")
 	_check(absf(actor.carried.texture.get_height() * actor.carried.scale.y - 52.0) < 0.001, "rabbit keeps existing orthographic cup size")
+	# Both dishes must follow the actor occlusion together during delivery.
+	worker["presentation_version"] = 1
+	worker["held_items"] = [{"item":"black_tea"},{"item":"lemonade"}]
 	for facing in [4, 0, 3, 7, 5, 2]:
 		actor.frame_actor.set_direction(facing)
 		for i in 4:
 			actor.display(worker, clock + 0.2)
-			_check((actor.carried.get_index() < actor.frame_actor.get_index()) == (facing in [3, 4, 5]), "carried cup occlusion stays stable across repeated draws")
+			var layer: Node2D = actor.carried.get_parent()
+			var second: Sprite2D = actor._held_sprites[0]
+			_check((layer.get_index() < actor.frame_actor.get_index()) == (facing in [3, 4, 5]), "carried food occlusion stays stable across repeated draws")
+			_check(second.get_parent() == layer and actor.carried.get_index() < second.get_index(), "both dishes retain their order while turning")
 	actor.free()
 	print("RABBIT GAME VISUALS: %d failures" % failures)
 	quit(1 if failures else 0)

@@ -13,8 +13,14 @@ func test_active_legacy_snapshots_convert_to_one_valid_public_state_without_rese
 			if not error.is_empty(): continue
 			var saved := owner.to_dict()
 			check_eq(saved.get("version"),2,"old format is actually replaced")
-			for key in ["gold","revenue","sold","levels","boxes","seats","completed_at"]:
+			for key in ["gold","revenue","sold","boxes","seats","completed_at"]:
 				check_eq(saved.outer[key],old[key],id+": preserve "+key)
+			var expected_levels: Dictionary = old.levels.duplicate()
+			if id=="stirfry":
+				expected_levels.erase("plating")
+				expected_levels["staff/front"] = 0
+				expected_levels["staff/kitchen"] = 0
+			check_eq(saved.outer.levels,expected_levels,id+": preserve applicable levels")
 			for dish in old.sold_by_dish:
 				check_eq(saved.outer.sold_by_dish[dish],old.sold_by_dish[dish],id+": preserve sales of "+dish)
 			if id=="stirfry":

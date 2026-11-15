@@ -21,6 +21,7 @@ var inventory := Inventory.new()
 var machines: RefCounted
 var dispatcher: RefCounted
 var ports: Dictionary = {}
+var drop_ports: Dictionary = {}
 var _dynamic_places: Dictionary = {}
 var tasks: Dictionary = {}
 var _next_task := 1
@@ -42,6 +43,13 @@ func define_place(id: String, port: Vector2, capacity: int = -1, infinite_items:
 	var error := inventory.configure(id, capacity, infinite_items)
 	if error.is_empty(): ports[id] = port
 	return error
+
+## A single stock container can be accessed from opposite sides.
+func action_port(action: Dictionary, available_ports: Dictionary) -> Vector2:
+	if action.kind in ["transport","drop"] and drop_ports.has(action.target):
+		return drop_ports[action.target]
+	return available_ports[action.target]
+
 
 func define_dynamic_place(id: String, port: Vector2) -> String:
 	if ports.has(id) and not _dynamic_places.has(id): return "dynamic container conflicts with template"
@@ -383,12 +391,28 @@ func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictiona
 				if run.phase != "await_" + task.stage or run.operator != -1: return {"error":"machine stage differs from walking employee"}
 			elif run.phase != task.stage or run.operator != task.worker: return {"error":"machine stage differs from operating employee"}
 			machine_runs[task.run] = task.worker
+		var point := action_port(action,expected_ports)
+		if refresh_layout and point != data.ports[action.target]:
+			if actor.action.started and action.kind=="transport" and actor.get("motion",{}).get("goal") == data.ports[action.target]:
+				error = Movement.relocate_saved_route(actor,owner.nav,point)
+				if not error.is_empty(): return {"error":error}
+			elif action.kind=="drop" and not Vector2(actor.pos).is_equal_approx(point):
+				# The pickup is already committed. Walk to the relocated drop point
+				# before retrying the drop, retaining the same inventory claim.
+				actor.action.index -= 1
+				actor.action.started = false
+				actor.action.status = "ready"
+				actor.action.reason = ""
+				actor.erase("motion")
+				actor.path = PackedVector2Array()
+				actor.path_index = 0
+				actor.walking = false
 		if actor.action.started:
 			if action.kind in ["move", "transport"]:
-				if not actor.walking or actor.phase != "walk" or not actor.has("motion") or actor.motion.goal != expected_ports[action.target] or actor.motion.profile != task.profile: return {"error":"actor movement differs from action request"}
+				if not actor.walking or actor.phase != "walk" or not actor.has("motion") or actor.motion.goal != point or actor.motion.profile != task.profile: return {"error":"actor movement differs from action request"}
 			else:
 				var phase: String = "work" if action.kind == "operate" else ("pickup" if action.kind == "pickup" else "dropoff")
-				if actor.walking or actor.phase != phase or not Vector2(actor.pos).is_equal_approx(expected_ports[action.target]): return {"error":"actor operation is not at its port"}
+				if actor.walking or actor.phase != phase or not Vector2(actor.pos).is_equal_approx(point): return {"error":"actor operation is not at its port"}
 		if dispatcher != null and not dispatcher.allowed_task(owner.worker_by_id(task.worker), task, devices, false): return {"error":"restored task is not authorized for employee role or post"}
 		restored_tasks[task.worker] = task.duplicate(true)
 		task_ids[task.id] = true

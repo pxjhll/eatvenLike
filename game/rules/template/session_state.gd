@@ -6,6 +6,7 @@ const Validator := preload("res://game/rules/shop_state_validator.gd")
 const Worker := preload("res://game/rules/worker_state.gd")
 const Shape := preload("res://game/rules/template/inventory.gd")
 const Contract := preload("res://game/rules/shop_content_contract.gd")
+const Runner := preload("res://game/rules/template/capability_runner.gd")
 const Compiler := preload("res://game/rules/template/compiler.gd")
 const TemplateProjection := preload("res://game/rules/template/content_projection.gd")
 const OUTER := ["gold","revenue","sold","sold_by_dish","stage_index","unlocked","levels","boxes",
@@ -49,6 +50,7 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 	if template==null: return "public state requires an explicit runtime template"
 	var identity: Dictionary = prepared.identity if not prepared.is_empty() else Contract.describe_template(template)
 	var refresh_layout := false
+	var refresh_staff_tasks := false
 	if data.template.get("structure")!=identity.structure:
 		var previous: Dictionary = owner.shop.previous_progression
 		if not refresh or identity.structure!=previous.get("current_structure"):
@@ -60,6 +62,7 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 		data = data.duplicate()
 		data.outer = converted
 		refresh_layout = previous.get("refresh_layout",false) == true
+		refresh_staff_tasks = previous.get("refresh_staff_tasks",false) == true
 	if not refresh and data.template!=identity: return "public template numeric revision differs"
 	var script: Script = owner.get_script()
 	# The candidate gets its runtime after the saved purchase state is restored.
@@ -118,6 +121,9 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 		recorded.service.orders.policy = candidate.runtime.service.orders.snapshot().policy
 		if candidate.runtime.service._policy.has("previous_pickup") and not recorded.service.has("pickup_before"):
 			recorded.service.pickup_before = recorded.service.orders.next_order
+	if refresh_staff_tasks:
+		error = _adopt_staff_tasks(candidate.runtime,recorded)
+		if not error.is_empty(): return error
 	error = candidate.runtime.restore(recorded,refresh and data.template!=identity,refresh_layout)
 	if not error.is_empty(): return error
 	candidate.clock = data.runtime.clock
@@ -134,6 +140,51 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 	owner.runtime_error = ""
 	return ""
 
+## Release obsolete work through the inventory ledger before validating the
+## saved session against the new permissions and automatic admission policy.
+static func _adopt_staff_tasks(runtime: RefCounted, recorded: Dictionary) -> String:
+	var data: Dictionary = recorded.runner
+	var stock := Shape.new()
+	var error := stock.restore(data.inventory)
+	if not error.is_empty(): return error
+	var admissions := {}
+	var released := {}
+	var kept := []
+	var automatic: bool = runtime.service._policy.admission=="automatic"
+	for task in data.tasks:
+		var worker: Dictionary = runtime.runner.owner.worker_by_id(task.worker)
+		if worker.is_empty(): return "obsolete task references an unknown employee"
+		if automatic and task.kind=="interact":
+			admissions[task.subject] = task.worker
+		elif task.kind in ["transfer","bundle"] and not runtime.runner.dispatcher.allowed_task(worker,task,runtime.runner.machines,false):
+			error = stock.cancel_bundle(task.bundle) if task.kind=="bundle" else stock.cancel(task.claim)
+			if not error.is_empty(): return error
+		else:
+			kept.append(task)
+			continue
+		released[task.worker] = true
+	if automatic:
+		for event in data.interactions:
+			admissions[event.subject] = event.worker
+			released[event.worker] = true
+		data.interactions.clear()
+	for guest in recorded.service.orders.guests:
+		if not admissions.has(guest.id): continue
+		if guest.state!="queue" or guest.claimed!=admissions[guest.id]: return "obsolete admission differs from the queued customer"
+		guest.claimed = -1
+		admissions.erase(guest.id)
+	if not admissions.is_empty(): return "obsolete admission references an unknown customer"
+	for actor in data.actors:
+		if not released.has(actor.id) or kept.any(func(task: Dictionary) -> bool: return task.worker==actor.id): continue
+		Runner._clear_actor(actor)
+		actor.carry_item = ""
+		actor.carry_count = 0
+	data.tasks = kept
+	data.inventory = stock.snapshot()
+	recorded.dispatch.scopes = recorded.dispatch.scopes.filter(func(lease: Dictionary) -> bool: return not released.has(lease.worker))
+	return ""
+
+
 ## Stage-only migration keeps production, order receipts and actor references intact.
 static func adopt_progression(shop: SpecShop, saved: Dictionary, source: Dictionary = {}) -> Dictionary:
 	var migration := shop.previous_progression if source.is_empty() else source
@@ -147,6 +198,8 @@ static func adopt_progression(shop: SpecShop, saved: Dictionary, source: Diction
 	if not was_open is bool or (not was_open and stage!=0): return {}
 	var result := saved.duplicate()
 	result.unlocked = unlocked.duplicate()
+	for station in shop.stations:
+		if station.starts_unlocked: result.unlocked[station.id] = true
 	result.unlocked[shop.goals.opening_station] = was_open
 	result.stage_index = indices[stage] if was_open else 0
 	if was_open and shop.previous_progression.get("grant_stage_stations",false)==true:
@@ -157,4 +210,12 @@ static func adopt_progression(shop: SpecShop, saved: Dictionary, source: Diction
 					if station.companion_of==id: result.unlocked[station.id] = true
 	if not was_open and result.get("gold") is float:
 		result.gold = maxf(result.gold,float(shop.start_gold))
+	if result.get("levels") is Dictionary and result.get("gold") is float:
+		result.levels = result.levels.duplicate()
+		for id in shop.previous_progression.get("retired_upgrade_costs",{}):
+			var costs: PackedInt32Array = shop.previous_progression.retired_upgrade_costs[id]
+			var level: Variant = result.levels.get(id,1)
+			if not level is int or level<1 or level>costs.size()+1: return {}
+			for index in level-1: result.gold += costs[index]
+			result.levels.erase(id)
 	return result

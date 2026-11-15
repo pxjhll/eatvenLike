@@ -77,10 +77,28 @@ static func bundle(data: Dictionary, shop: SpecShop, worker: Dictionary, job: Di
 		elif worker.walking or worker.phase!="work" or job.stage!=("pick" if step.kind=="pickup" else "drop"): return "bundle hand action phase invalid"
 	return ""
 
+## Decode the old shop's authored work before comparing its saved recipe signatures.
+static func apply_legacy_production(shop: SpecShop) -> void:
+	var migration := shop.previous_progression
+	for id in migration.get("legacy_station_profiles",{}):
+		var station := shop.station(id)
+		var profile: Dictionary = migration.legacy_station_profiles[id]
+		station.block = profile.block
+		station.params = profile.params.duplicate(true)
+	for id in migration.get("legacy_dish_step_stations",{}):
+		var dish := shop.dish(id)
+		var stations: Dictionary = migration.legacy_dish_step_stations[id]
+		for index in stations: dish.steps[index].station = stations[index]
+
+
 static func protected_file_error(state: Dictionary, shop: SpecShop) -> String:
 	if not state.get("serve") is Dictionary: return ""
 	var serve: Dictionary = state.serve
 	if serve.get("units") is Array:
+		var signature_shop := shop
+		if shop.runtime_template!=null and shop.previous_progression.has("legacy_dish_step_stations"):
+			signature_shop = shop.copy_for_editing()
+			apply_legacy_production(signature_shop)
 		var signatures := {}
 		for unit in serve.units:
 			if not unit is Dictionary: continue
@@ -88,7 +106,7 @@ static func protected_file_error(state: Dictionary, shop: SpecShop) -> String:
 				var version: Variant = unit.get("flow_version")
 				if shop.fulfillment.flow_version!=1 or ((version is int or version is float) and version>1): return "flow version is newer than configuration"
 				if unit.get("dish") is String and unit.get("recipe_signature") is String and shop.dish(unit.dish)!=null:
-					if not signatures.has(unit.dish): signatures[unit.dish] = Production.compile(shop,unit.dish).signature
+					if not signatures.has(unit.dish): signatures[unit.dish] = Production.compile(signature_shop,unit.dish).signature
 					if unit.recipe_signature!=signatures[unit.dish]: return "active recipe identity changed"
 	if serve.get("jobs") is Dictionary:
 		for job in serve.jobs.values():
