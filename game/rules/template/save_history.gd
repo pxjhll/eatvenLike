@@ -46,7 +46,7 @@ static func compact(runtime: Dictionary, recipes: Dictionary) -> void:
 	for run in runner.machines.runs:
 		var key := _key("run", run.id)
 		if run.phase not in Machines.TERMINAL: pending.append(key)
-		_link(dependencies, key, "claim", run.claim)
+		for claim in Machines.operation_ids(run): _link(dependencies,key,"claim",claim)
 	for group in stock.bundles:
 		var key := _key("bundle", group.id)
 		for claim in group.claims: _link(dependencies, key, "claim", claim)
