@@ -35,7 +35,7 @@ static func _label(path: Array) -> bool:
 
 static func _tunable(path: Array) -> bool:
 	if path.size()==3 and path[0]=="transports": return path[2] in ["seconds","interval"]
-	if path==["service","waiting","call_during_final_work"]: return true
+	if path.size()==3 and path.slice(0,2)==["service","waiting"]: return path[2] in ["call_during_final_work","seat_from_queue_tail"]
 	if path==["service","dining","stages","[]","seconds"]: return true
 	if path==["service","seating","stages","[]","seconds"]: return true
 	if path.size()==4 and path.slice(0,3)==["service","selection","ramp"]: return path[3] in ["start","orders"]

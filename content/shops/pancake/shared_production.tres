@@ -1534,6 +1534,7 @@ service = {
 "ports": ["wait:cushion/0", "wait:cushion/1", "wait:cushion/2", "wait:cushion/3", "wait:cushion/4", "wait:cushion/5", "wait:cushion/6", "wait:cushion/7", "wait:cushion/8"],
 "retain_after_take": true,
 "call_during_final_work": true,
+"seat_from_queue_tail": true,
 "stages": [{
 "seats": 0,
 "standing": 3

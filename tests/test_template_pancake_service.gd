@@ -114,6 +114,7 @@ func test_crisp_route_calls_seated_guest_during_bagging_and_restores_before_hand
 	check_eq(owner.buy_seat(),"","install real waiting cushions")
 	var runtime := Runtime.new(owner,TEMPLATE)
 	check_eq(runtime.last_error,"","pancake service compiles")
+	check_eq(runtime.arrive([{"dish":"soy","qty":1}],[]).error,"","first guest keeps the counter turn")
 	check_eq(runtime.arrive([{"dish":"guozi","qty":1}],["bag"]).error,"","queue bagged crispy pancake")
 	var pickups: Array = []
 	var seated := false
@@ -123,22 +124,24 @@ func test_crisp_route_calls_seated_guest_during_bagging_and_restores_before_hand
 		for event in runtime.take_trace().events:
 			if event.operation=="inventory.pickup" and event.facts.to in ["join:in","roll:in","bag:in"]:
 				pickups.append(event.facts.from)
-		if runtime.service.customers.ready(1,"wait:cushion/0"): seated = true
-		if runtime.service.customers.record(1).get("target")=="pickup": break
+		if runtime.service.customers.ready(2,"wait:cushion/0"): seated = true
+		if runtime.service.customers.record(2).get("target")=="pickup": break
 	check(seated,"guest actually waited in the seating area")
 	check_eq(pickups,["grill:out","crisps","join:out","roll:out"],"take the pancake first, collect crisp on the way to the front, then roll and bag")
-	check_eq(runtime.service.customers.record(1).get("target"),"pickup","customer starts toward handoff")
+	check_eq(runtime.service.customers.record(2).get("target"),"pickup","customer starts toward handoff")
 	check(runtime.service.snapshot().deliveries.is_empty(),"guest starts walking while the bag is still being packed")
-	check_eq(owner.sold,0,"calling a guest does not record a sale")
+	check_eq(owner.sold,1,"only the preceding guest has paid at the early call")
 
 	var reopened_owner := _owner()
 	check_eq(reopened_owner.buy_seat(),"","restore matching seat purchase")
 	var reopened := Runtime.new(reopened_owner,TEMPLATE)
+	for key in ["gold","revenue","sold","sale_carry"]: reopened_owner._sales.set(key,owner._sales.get(key))
+	reopened_owner.sold_by_dish = owner.sold_by_dish.duplicate(true)
 	check_eq(reopened.restore(runtime.snapshot()),"","resume with the guest already approaching")
-	_finish(runtime,1)
-	_finish(reopened,1)
+	_finish(runtime,2)
+	_finish(reopened,2)
 	check_eq(reopened.snapshot(),runtime.snapshot(),"handoff and departure replay exactly")
-	check_eq(owner.sold,1,"settle once after handoff")
+	check_eq(owner.sold,2,"each guest settles once after handoff")
 	check_eq(reopened_owner.sold,owner.sold,"restored order settles once")
 
 

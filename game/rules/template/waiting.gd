@@ -12,9 +12,10 @@ static func compile(raw: Variant) -> Dictionary:
 	if not raw is Dictionary: return _error("invalid waiting policy")
 	if raw.is_empty(): return {"definition":{},"error":""}
 	for key in raw:
-		if key not in ["group","ports","line","stages","retain_after_take","call_during_final_work"]: return _error("unsupported waiting parameter: "+str(key))
+		if key not in ["group","ports","line","stages","retain_after_take","call_during_final_work","seat_from_queue_tail"]: return _error("unsupported waiting parameter: "+str(key))
 	if not raw.get("group") is String or raw.group.is_empty() or not raw.get("ports") is Array or not raw.get("line") is Array or raw.line.is_empty() or not raw.get("stages") is Array or raw.stages.is_empty() or not raw.get("retain_after_take",false) is bool: return _error("invalid waiting definition")
 	if not raw.get("call_during_final_work",false) is bool or (raw.get("call_during_final_work",false) and not raw.get("retain_after_take",false)): return _error("early pickup call requires retained waiting")
+	if not raw.get("seat_from_queue_tail",false) is bool: return _error("invalid queue-tail seating flag")
 	var seen := {}
 	for port in raw.ports:
 		if not port is String or not port.begins_with("wait:"+raw.group+"/") or seen.has(port): return _error("invalid or repeated waiting seat port")
@@ -80,21 +81,36 @@ func sync(owner: RefCounted, orders: Dictionary, called: Dictionary, automatic: 
 	var occupied := {}
 	var assigned := {}
 	for row in leases: occupied[row.port] = true; assigned[row.guest] = true
-	var queued := 0
-	var standing: int = _definition.stages[owner.stage_index].standing
-	for guest in _ordered(orders):
-		var needs_seat: bool = guest.state == "waiting" or queued>=standing
-		if guest.state == "queue": queued += 1
-		if assigned.has(guest.id) or not needs_seat: continue
-		for index in seat_limit(owner):
-			var port: String = _definition.ports[index]
-			if occupied.has(port): continue
-			leases.append({"guest":int(guest.id),"port":port})
-			occupied[port] = true
-			break
+	var ports: Array = []
+	for index in seat_limit(owner):
+		var port: String = _definition.ports[index]
+		if not occupied.has(port): ports.append(port)
+	if not ports.is_empty():
+		var candidates := _seat_candidates(owner,orders)
+		var next_port := 0
+		for guest in candidates:
+			if assigned.has(guest.id): continue
+			leases.append({"guest":int(guest.id),"port":ports[next_port]})
+			next_port += 1
+			if next_port == ports.size(): break
 	var projected := _project(orders,called,automatic,leases)
 	if projected.error.is_empty(): _state.leases = leases
 	return projected
+
+func _seat_candidates(owner: RefCounted, orders: Dictionary) -> Array:
+	var candidates: Array = []
+	if _definition.get("seat_from_queue_tail",false):
+		var queue: Array = orders.guests.filter(func(guest: Dictionary) -> bool: return guest.state=="queue")
+		# The head is next at the counter. Seat the standing tail first.
+		for index in range(queue.size()-1,0,-1):
+			if queue[index].claimed<1: candidates.append(queue[index])
+		return candidates
+	var queued := 0
+	var standing: int = _definition.stages[owner.stage_index].standing
+	for guest in _ordered(orders):
+		if guest.state=="waiting" or queued>=standing: candidates.append(guest)
+		if guest.state=="queue": queued += 1
+	return candidates
 
 func targets(orders: Dictionary, called: Dictionary, automatic: bool) -> Dictionary:
 	return _project(orders,called,automatic,_state.leases)

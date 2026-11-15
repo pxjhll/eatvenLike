@@ -45,7 +45,7 @@ func test_actual_nine_cushions_hold_fifteen_guests_without_queue_port_fallback()
 	check_eq(leases.size(),9,"all nine real waiting places are reserved distinctly")
 	for index in 9:
 		var target := "wait:cushion/"+str(index)
-		check_eq(runtime.service.customers.record(index+7).target,target,"overflow follows actual original cushion target")
+		check_eq(runtime.service.customers.record(index+2).target,target,"each arriving tail follows its assigned cushion")
 		check_eq(runtime.service.customers._target(target).point,SHOP.layout.customer_points[target],"uses original scene geometry")
 	check_eq(SHOP.layout.customer_queue.size(),8,"original geometry is not rewritten to fake extra queue ports")
 
@@ -54,11 +54,12 @@ func test_real_cushion_waiting_and_return_to_counter_restore_without_duplicate_p
 	for index in 3: check_eq(owner.buy_seat(),"","install actual cushions")
 	var runtime := _runtime(owner)
 	if runtime == null: return
+	check_eq(runtime.arrive([{"dish":"soy","qty":1}],[]).error,"","first guest keeps the counter turn")
 	check_eq(runtime.arrive([{"dish":"family","qty":1},{"dish":"soy","qty":1}],["bag"]).error,"","real follower order")
 	var seated := false
 	for tick in 2000:
 		check_eq(runtime.step(0.1),"","walk to a real cushion and wait during cooking")
-		if runtime.service.customers.ready(1,"wait:cushion/0"):
+		if runtime.service.customers.ready(2,"wait:cushion/0"):
 			seated = true
 			break
 	check(seated,"customer actually reaches original cushion while food cooks")
@@ -75,10 +76,50 @@ func test_real_cushion_waiting_and_return_to_counter_restore_without_duplicate_p
 	for tick in 5000:
 		check_eq(runtime.step(0.1),"","continue real order")
 		check_eq(reopened.step(0.1),"","continue restored real order")
-		var guest: Dictionary = runtime.service.orders.guest(1)
-		if guest.state == "waiting" and runtime.service.customers.record(1).target == "pickup": called = true
+		var guest: Dictionary = runtime.service.orders.guest(2)
+		if guest.state == "waiting" and runtime.service.customers.record(2).target == "pickup": called = true
 		if guest.state == "gone": break
 	check(called,"actual employee delivery calls seated guest back to pickup")
-	check_eq(runtime.service.orders.guest(1).state,"gone","actual guest receives goods and exits")
+	check_eq(runtime.service.orders.guest(2).state,"gone","actual guest receives goods and exits")
 	check_eq(reopened.snapshot(),runtime.snapshot(),"same actors, queue, physical inventory and payment proofs")
 	check_eq(reopened_owner.revenue,owner.revenue,"real revenue restored and settled once")
+
+func test_vacated_cushion_goes_to_tail_without_a_new_arrival_or_queue_jump() -> void:
+	var owner := _owner(true)
+	check_eq(owner.buy_seat(),"","buy two actual cushions")
+	var runtime := _runtime(owner)
+	if runtime == null: return
+	check_eq(runtime.arrive([{"dish":"soy","qty":1}],[]).id,1,"first guest arrives")
+	check_eq(runtime.service.snapshot().waiting.leases,[],"lone guest goes through the counter without a cushion")
+	for guest in range(2,7):
+		check_eq(runtime.arrive([{"dish":"soy","qty":1}],[]).id,guest,"arrive in order")
+	check_eq(runtime.service.customers.record(2).target,"wait:cushion/0","first queue tail takes a cushion")
+	check_eq(runtime.service.customers.record(3).target,"wait:cushion/1","second queue tail takes a cushion")
+	for tick in 1500:
+		check_eq(runtime.step(0.1),"","run real counter service")
+		if runtime.service.orders.guest(2).state in ["served","eating","leaving","gone"]: break
+	check_eq(runtime.service.orders.order(1).guest,1,"first guest orders first")
+	check_eq(runtime.service.orders.order(2).guest,2,"seated second guest still orders second")
+	check_eq(runtime.service.customers.record(6).target,"wait:cushion/0","released cushion goes to the standing queue tail")
+	check_eq(runtime.service.orders.queue(),[3,4,5,6],"seat move leaves the arrival order intact")
+	check(runtime.service.customers.record(4).target.begins_with("waiting_line:"),"earlier standing guest keeps a standing spot")
+
+func test_queue_tail_policy_keeps_cushions_already_assigned_in_old_saves() -> void:
+	var previous_template: Resource = TEMPLATE.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
+	previous_template.service.waiting.erase("seat_from_queue_tail")
+	var previous := _owner(true)
+	check_eq(previous.buy_seat(),"","buy actual cushions under the previous policy")
+	check_eq(previous.enable_runtime(previous_template,false),"","start the previous public runtime")
+	for guest in 7:
+		check_eq(previous.runtime.arrive([{"dish":"soy","qty":1}],[]).error,"","queue fills before the old policy seats overflow")
+	check_eq(previous.runtime.service.customers.record(7).target,"wait:cushion/0","previous policy has one existing cushion lease")
+	var saved := previous.to_dict()
+
+	var reopened := _owner(true)
+	check_eq(reopened.enable_runtime(TEMPLATE,false),"","start the current public runtime")
+	check_eq(reopened.load_dict(saved,true),"","public save migration accepts the previous seating policy")
+	check_eq(reopened.runtime.service.snapshot().waiting.leases,[{"guest":7,"port":"wait:cushion/0"}],"restore preserves existing leases")
+	check_eq(reopened.runtime.service.customers.record(7).target,"wait:cushion/0","the already seated guest keeps their cushion")
+	check_eq(reopened.runtime.step(0.1),"","resume normal waiting updates after restore")
+	check_eq(reopened.runtime.service.snapshot().waiting.leases,[{"guest":7,"port":"wait:cushion/0"},{"guest":6,"port":"wait:cushion/1"}],"new policy fills the other cushion from the standing tail")
+	check_eq(reopened.runtime.service.orders.queue(),[1,2,3,4,5,6,7],"public restore and seat allocation keep the queue intact")
