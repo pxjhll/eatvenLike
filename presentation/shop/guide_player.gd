@@ -30,6 +30,8 @@ var _bubble: PanelContainer
 var _bubble_text: Label
 var _bubble_skip: Button
 var _show_bubble := false
+var _bubble_touch := -1
+var _bubble_touch_step := ""
 
 
 func setup(view: Node2D, seen_ids: Array) -> void:
@@ -73,6 +75,8 @@ func seen_list() -> Array:
 
 ## Keep seen steps and playback preference; the next refresh selects from fresh rules.
 func restart() -> void:
+	_bubble_touch = -1
+	_bubble_touch_step = ""
 	active = ""
 	_blocking = false
 	_hole = Rect2()
@@ -432,6 +436,41 @@ func _place_bubble() -> void:
 	var below := anchor.y < size.y * 0.5
 	var y := target.end.y + 120.0 if below else target.position.y - 120.0 - _bubble.size.y
 	_bubble.position = Vector2(clampf(anchor.x - _bubble.size.x / 2.0, 16, size.x - _bubble.size.x - 16), clampf(y, 120, size.y - _bubble.size.y - 16))
+
+
+## Native touch works even without mouse emulation. Bind the press to the
+## current step so releasing after a refresh cannot dismiss a different hint.
+func _input(event: InputEvent) -> void:
+	if _bubble_skip == null: return
+	var available := enabled and visible and _bubble_skip.is_visible_in_tree() and not _bubble_skip.disabled
+	if event is InputEventMouseButton and event.device == InputEvent.DEVICE_ID_EMULATION:
+		if available and _bubble_contains(event.position): get_viewport().set_input_as_handled()
+		return
+	if event is InputEventScreenDrag:
+		if event.index == _bubble_touch:
+			get_viewport().set_input_as_handled()
+			if not _bubble_contains(event.position): _bubble_touch_step = ""
+		return
+	if not event is InputEventScreenTouch: return
+	if event.pressed:
+		if available and _bubble_touch == -1 and _bubble_contains(event.position):
+			_bubble_touch = event.index
+			_bubble_touch_step = active
+			get_viewport().set_input_as_handled()
+		return
+	if event.index != _bubble_touch: return
+	var selected: bool = available and not event.canceled and active == _bubble_touch_step and _bubble_contains(event.position)
+	_bubble_touch = -1
+	_bubble_touch_step = ""
+	get_viewport().set_input_as_handled()
+	if selected:
+		ShopAudio.unlock_from_input(event)
+		_skip()
+
+
+func _bubble_contains(point: Vector2) -> bool:
+	var local := _bubble_skip.get_global_transform_with_canvas().affine_inverse() * point
+	return Rect2(Vector2.ZERO, _bubble_skip.size).has_point(local)
 
 
 ## 压暗的时候只有挖开的洞能点
