@@ -59,6 +59,20 @@ func track_slots(machine: String, ceiling: int) -> String:
 	return ""
 
 func start(machine: String, consumes: Dictionary, produces: Dictionary, seconds: float, owner: int = -1) -> Dictionary:
+	return _start(machine,consumes,produces,seconds,[owner])
+
+func start_batch(machine: String, consumes: Dictionary, produces: Dictionary, seconds: float, owners: Array) -> Dictionary:
+	if owners.is_empty(): return {"error":"empty machine batch","id":-1}
+	var seen := {}
+	for owner in owners:
+		if not owner is int or owner<1 or seen.has(owner): return {"error":"invalid batch owner","id":-1}
+		seen[owner] = true
+	return _start(machine,consumes,produces,seconds,owners)
+
+static func operation_ids(run: Dictionary) -> Array:
+	return [run.claim]+run.get("extra_claims",[])
+
+func _start(machine: String, consumes: Dictionary, produces: Dictionary, seconds: float, owners: Array) -> Dictionary:
 	if not _state.definitions.has(machine) or not is_finite(seconds) or seconds < 0.0: return {"error":"invalid machine request", "id":-1}
 	var definition: Dictionary = _state.definitions[machine]
 	var profile: Dictionary = definition.profile
@@ -75,13 +89,19 @@ func start(machine: String, consumes: Dictionary, produces: Dictionary, seconds:
 		for candidate in int(_slot_targets.get(machine,profile.slots)):
 			if not used.has(candidate): slot = candidate; break
 		if slot < 0: return {"error":"no physical processing slot", "id":-1}
-	var task: Dictionary = _inventory.reserve_operation(0, definition.input, consumes, produces, owner, definition.output)
-	if not String(task.error).is_empty(): return {"error":task.error, "id":-1}
+	var stock: RefCounted = _inventory.copy_for_reservation() if owners.size()>1 else _inventory
+	var claims: Array = []
+	for owner in owners:
+		var task: Dictionary = stock.reserve_operation(0,definition.input,consumes,produces,owner,definition.output)
+		if not String(task.error).is_empty(): return {"error":task.error,"id":-1}
+		claims.append(task.id)
+	if stock != _inventory: _inventory.commit_reservation(stock)
 	var run := _run()
 	run.id = _state.next_run
 	_state.next_run += 1
 	run.machine = machine
-	run.claim = task.id
+	run.claim = claims.pop_front()
+	if not claims.is_empty(): run.extra_claims = claims
 	run.duration = seconds
 	run.remaining = seconds
 	run.phase = "await_load" if float(profile.load_seconds) > 0.0 else ("await_operate" if profile.manual else "processing")
@@ -168,7 +188,7 @@ func cancel(id: int) -> String:
 	if run.is_empty(): return "unknown machine operation"
 	if run.phase == "cancelled": return ""
 	if run.phase == "completed": return "machine operation already committed"
-	var error: String = _inventory.cancel(run.claim)
+	var error := _settle_claims(run,false)
 	if not error.is_empty(): return error
 	run.phase = "cancelled"
 	_active_runs.erase(id)
@@ -228,7 +248,7 @@ func status(machine: String) -> Dictionary:
 		"processing":0, "output":output, "phase":"ready" if output > 0 else "idle", "operator":-1, "need":""}
 	for run in _active_runs.values():
 		if run.machine != machine or run.phase in TERMINAL: continue
-		result.processing += Inventory._total(_inventory.claim(run.claim).produces)
+		for claim in operation_ids(run): result.processing += Inventory._total(_inventory.claim(claim).produces)
 		if result.phase not in ["idle", "ready"]: continue
 		result.phase = run.phase
 		result.operator = run.operator
@@ -299,10 +319,10 @@ func audit() -> Array:
 		if not run is Dictionary or not run.get("machine") is String or not _state.definitions.has(run.machine): return ["invalid machine run identity"]
 		var shape := _run()
 		if _state.definitions[run.machine].has("slot_ceiling"): shape.slot = 0
-		if not Inventory._shape(run, shape): return ["invalid machine run shape"]
-		if run.id < 1 or run.id >= _state.next_run or ids.has(run.id) or claims.has(run.claim) or not _state.definitions.has(run.machine): return ["invalid machine run identity"]
+		if run.has("extra_claims"): shape.extra_claims = []
+		if not Inventory._shape(run, shape) or (run.has("extra_claims") and run.extra_claims.is_empty()): return ["invalid machine run shape"]
+		if run.id < 1 or run.id >= _state.next_run or ids.has(run.id) or not _state.definitions.has(run.machine): return ["invalid machine run identity"]
 		ids[run.id] = true
-		claims[run.claim] = true
 		var definition: Dictionary = _state.definitions[run.machine]
 		var profile: Dictionary = definition.profile
 		if definition.has("slot_ceiling"):
@@ -311,11 +331,19 @@ func audit() -> Array:
 				var port := String(run.machine) + ":" + str(run.slot)
 				if occupied_ports.has(port): return ["two operations occupy the same physical slot"]
 				occupied_ports[port] = true
-		var task: Dictionary = _inventory.claim(run.claim)
-		if task.is_empty() or task.kind != "operation" or task.worker != 0 or task.from != definition.input or task.to != definition.output: return ["machine claim differs from inventory"]
 		if run.phase not in TERMINAL + ["processing", "await_load", "await_operate", "await_stir", "await_unload"] + MANUAL: return ["invalid machine phase"]
 		var expected: String = "completed" if run.phase == "completed" else ("cancelled" if run.phase == "cancelled" else "reserved")
-		if task.state != expected: return ["machine and inventory commit differ"]
+		var owners := {}
+		var first: Dictionary = _inventory.claim(run.claim)
+		for claim in operation_ids(run):
+			if not claim is int or claims.has(claim): return ["invalid machine claim identity"]
+			claims[claim] = true
+			var task: Dictionary = _inventory.claim(claim)
+			if task.is_empty() or task.kind != "operation" or task.worker != 0 or task.from != definition.input or task.to != definition.output: return ["machine claim differs from inventory"]
+			if task.state != expected: return ["machine and inventory commit differ"]
+			if run.has("extra_claims") and (task.owner<1 or owners.has(task.owner)): return ["invalid batch operation owner"]
+			if task.consumes!=first.consumes or task.produces!=first.produces: return ["batch operations have different recipes"]
+			owners[task.owner] = true
 		for key in ["duration", "remaining", "stage_total", "stage_left"]:
 			if not is_finite(run[key]) or run[key] < 0.0: return ["invalid machine clock"]
 		if run.remaining > run.duration or run.stage_left > run.stage_total or run.stir_index < 0 or run.stir_index > profile.stir_points.size(): return ["machine progress out of range"]
@@ -344,12 +372,20 @@ func _processed(run: Dictionary, profile: Dictionary) -> String:
 	return _complete(run)
 
 func _complete(run: Dictionary) -> String:
-	var error: String = _inventory.complete_operation(run.claim)
+	var error := _settle_claims(run,true)
 	if not error.is_empty(): return error
 	run.phase = "completed"
 	_active_runs.erase(run.id)
 	run.remaining = 0.0
 	run.operator = -1
+	return ""
+
+func _settle_claims(run: Dictionary, complete: bool) -> String:
+	var stock: RefCounted = _inventory.copy_for_reservation() if run.has("extra_claims") else _inventory
+	for claim in operation_ids(run):
+		var error: String = stock.complete_operation(claim) if complete else stock.cancel(claim)
+		if not error.is_empty(): return error
+	if stock != _inventory: _inventory.commit_reservation(stock)
 	return ""
 
 static func _run() -> Dictionary:

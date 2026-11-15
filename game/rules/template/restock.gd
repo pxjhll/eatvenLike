@@ -19,9 +19,10 @@ func _init(definition: Dictionary, runner: RefCounted) -> void:
 		_runs[id] = -1
 		uses_demand = uses_demand or definition[id].policy.mode == "demand"
 
-func advance(demand: Dictionary = {}) -> String:
+func advance(demand: Dictionary = {}, reserved_machines: Dictionary = {}) -> String:
 	for id in _definition:
 		var rule: Dictionary = _definition[id]
+		if reserved_machines.has(rule.machine): continue
 		if int(_runs[id]) >= 0:
 			var run: Dictionary = _runner.machines.run(_runs[id])
 			if run.get("phase", "") not in ["completed", "cancelled"]: continue
@@ -44,10 +45,11 @@ func advance(demand: Dictionary = {}) -> String:
 		if String(started.error).is_empty(): _runs[id] = started.id
 	return ""
 
-func candidates(demand: Dictionary = {}) -> Array:
+func candidates(demand: Dictionary = {}, reserved_machines: Dictionary = {}) -> Array:
 	var out: Array = []
 	for id in _definition:
 		var rule: Dictionary = _definition[id]
+		if reserved_machines.has(rule.machine): continue
 		var device: Dictionary = _runner.machines.snapshot().definitions[rule.machine]
 		var available := Available.enabled(rule)
 		if int(_runs[id]) >= 0:
@@ -92,7 +94,7 @@ func validate_snapshot(data: Dictionary, machine_state: Dictionary, stock_state:
 		var run: Dictionary = runs[data.runs[id]]
 		var claim: Dictionary = claims[run.claim]
 		var rule: Dictionary = _definition[id]
-		if run.machine != rule.machine or claim.owner != -1 or not Batch.matches(rule,claim): return "replenishment differs from its declared recipe"
+		if run.has("extra_claims") or run.machine != rule.machine or claim.owner != -1 or not Batch.matches(rule,claim): return "replenishment differs from its declared recipe"
 	return ""
 
 func restore_validated(data: Dictionary) -> void:

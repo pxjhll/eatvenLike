@@ -4,6 +4,7 @@ extends RefCounted
 const Compiler := preload("res://game/rules/template/compiler.gd")
 const Runner := preload("res://game/rules/template/capability_runner.gd")
 const Inventory := preload("res://game/rules/template/inventory.gd")
+const Machines := preload("res://game/rules/template/machines.gd")
 const Restock := preload("res://game/rules/template/restock.gd")
 const Numbers := preload("res://game/rules/rule_numbers.gd")
 const Service := preload("res://game/rules/template/service.gd")
@@ -19,6 +20,8 @@ var _trace: RefCounted
 var runner: RefCounted
 var last_error := ""
 var _definition: Dictionary = {}
+var _uses_machine_reservations := false
+var _batch_devices := {}
 var _units: Array = []
 var _next_unit := 1
 var _clock := 0.0
@@ -34,6 +37,8 @@ func _init(owner: RefCounted, template: Resource, compiled: Dictionary = {}) -> 
 		last_error = String(compiled.errors[0].path) + ": " + String(compiled.errors[0].message)
 		return
 	_definition = compiled.definition.duplicate(true)
+	_uses_machine_reservations = _definition.recipes.values().any(func(recipe: Dictionary) -> bool:
+		return recipe.has("machine_reservation"))
 	_transports = Transports.new(_definition.get("transports",{}))
 	last_error = _transports.validate_context(owner)
 	if not last_error.is_empty(): return
@@ -46,6 +51,7 @@ func _init(owner: RefCounted, template: Resource, compiled: Dictionary = {}) -> 
 			if not String(seeded.error).is_empty(): last_error = seeded.error; return
 	for id in _definition.machines:
 		var machine: Dictionary = _definition.machines[id]
+		if machine.has("production_batch"): _batch_devices[id] = machine.production_batch
 		last_error = runner.machines.configure(id, machine.input, machine.output, machine.profile,machine.get("work_port",""),machine.get("stage_ports",{}),machine.get("stage_timing",{}))
 		if not last_error.is_empty(): return
 		if machine.has("slot_ceiling"):
@@ -150,6 +156,9 @@ func _advance(dt: float, paused := false) -> String:
 		if not service_error.is_empty(): last_error = service_error; return service_error
 	var error: String = Clock.validate(_definition,runner.owner)
 	if not error.is_empty(): last_error = error; return error
+	for device in _batch_devices:
+		var value := _batch_size(device)
+		if value<1: last_error = "invalid effective production batch size"; return last_error
 	error = Limits.sync(_definition,runner)
 	if not error.is_empty(): last_error = error; return error
 	_clock += dt
@@ -161,7 +170,7 @@ func _advance(dt: float, paused := false) -> String:
 	if service != null:
 		error = service.advance(dt)
 		if not error.is_empty(): last_error = error; return error
-	error = _restocks.advance(_stock_demand())
+	error = _restocks.advance(_stock_demand(), _machine_reservations(_units).holders)
 	if not error.is_empty(): last_error = error; return error
 	_start_ready_nodes()
 	if not last_error.is_empty(): return last_error
@@ -342,15 +351,48 @@ func restore(data: Dictionary, refresh_numeric := false) -> String:
 				continue
 			if not runs.has(unit.running[id]): return "production node has no machine run"
 			var run: Dictionary = runs[unit.running[id]]
-			if assigned_runs.has(run.id): return "machine commit is assigned to more than one production node"
-			assigned_runs[run.id] = true
-			var claim: Dictionary = claims[run.claim]
-			if run.machine != node.machine or claim.owner != unit.id or claim.consumes != node.consumes or claim.produces != node.produces: return "machine run differs from production node"
+			if not assigned_runs.has(run.id):
+				assigned_runs[run.id] = {"recipe":unit.recipe,"node":id,"owners":{}}
+			var assignment: Dictionary = assigned_runs[run.id]
+			if assignment.recipe!=unit.recipe or assignment.node!=id or assignment.owners.has(unit.id):
+				return "machine commit is assigned to more than one production node"
+			assignment.owners[unit.id] = true
+			var claim := {}
+			for claim_id in Machines.operation_ids(run):
+				if claims[claim_id].owner==unit.id: claim = claims[claim_id]
+			if run.machine!=node.machine or claim.is_empty() or claim.consumes!=node.consumes or claim.produces!=node.produces:
+				return "machine run differs from production node"
 			if (run.phase == "completed") != done.has(id): return "node completion differs from committed machine state"
 			if not _dependencies_complete(recipe, node, unit): return "production run precedes its dependencies"
+	for run in runs.values():
+		if run.has("extra_claims") and not assigned_runs.has(run.id): return "machine batch has no production assignment"
+	for run_id in assigned_runs:
+		var run: Dictionary = runs[run_id]
+		var assignment: Dictionary = assigned_runs[run_id]
+		var operation_count := Machines.operation_ids(run).size()
+		if assignment.owners.size()!=operation_count: return "production batch has an unbound owner"
+		if operation_count>1 and operation_count>int(_batch_devices.get(run.machine,{}).get("max",1)):
+			return "machine batch exceeds the declared production capacity"
+	for unit in data.units:
+		var recipe: Dictionary = _definition.recipes[unit.recipe]
+		var reservation: Dictionary = recipe.get("machine_reservation",{})
+		if reservation.is_empty() or not unit.running.has(reservation.first): continue
+		var first: Dictionary = assigned_runs[unit.running[reservation.first]]
+		for node in unit.running:
+			if recipe.nodes[node].machine!=reservation.machine or node==reservation.first: continue
+			if node not in reservation.stages: continue
+			var later: Dictionary = assigned_runs[unit.running[node]]
+			if first.owners!=later.owners: return "reserved machine batch membership changed between stages"
 	for bundle_id in assigned_bundles:
 		for child in bundles[bundle_id].claims:
 			if not assigned_transfer_claims.has(child): return "production bundle contains an unbound child claim"
+	var reservations := _machine_reservations(data.units)
+	if not reservations.error.is_empty(): return reservations.error
+	for run in data.runner.machines.runs:
+		if run.phase in ["completed","cancelled"] or not reservations.holders.has(run.machine): continue
+		for claim in Machines.operation_ids(run):
+			if not reservations.holders[run.machine].owners.has(claims[claim].owner):
+				return "active machine operation conflicts with recipe reservation"
 	var restored_transports := Transports.new(_definition.get("transports",{}))
 	var transport_state: Dictionary = data.get("transports",{"version":1,"cooldowns":{},"flights":[]})
 	error = restored_transports.validate(transport_state,data.units,restored_runner.inventory,_definition.recipes)
@@ -416,26 +458,114 @@ func _reconcile() -> void:
 
 func _start_ready_nodes() -> void:
 	_diagnostics = []
+	var holders: Dictionary = _machine_reservations(_units).holders
 	for unit in _units:
 		var recipe: Dictionary = _definition.recipes[unit.recipe]
 		for id in recipe.order:
 			var node: Dictionary = recipe.nodes[id]
-			if node.capability != "process" or id in unit.done or unit.running.has(id): continue
-			if not _dependencies_complete(recipe, node, unit): continue
-			var machine: Dictionary = _definition.machines[node.machine]
-			var supplied := true
-			for item in node.consumes:
-				if item in _definition.places[machine.input].infinite: continue
-				if runner.inventory.quantity(machine.input, item, unit.id, true) < int(node.consumes[item]): supplied = false; break
-			if not supplied: continue
+			if node.capability!="process" or not _node_ready(recipe,node,unit): continue
+			if not _can_use_reserved_machine(holders,node.machine,unit.id): continue
+			var reservation: Dictionary = recipe.get("machine_reservation",{})
+			var begins_reservation: bool = id==reservation.get("first")
+			if begins_reservation and runner.machines.occupied_slots(node.machine)>0: continue
+			var continuing: bool = node.machine in holders and id in reservation.get("stages",[])
+			var owners := _batch_members(unit, recipe, node, holders, continuing)
+			if owners.is_empty(): continue
 			var timing := Clock.evaluate(node,runner.owner)
 			if not timing.error.is_empty(): last_error = timing.error; return
-			var seconds: float = timing.seconds
-			var started: Dictionary = runner.machines.start(node.machine, node.consumes, node.produces, seconds, unit.id)
-			if not String(started.error).is_empty():
-				_diagnostics.append({"unit":unit.id, "node":id, "reason":started.error})
+			var started: Dictionary = runner.machines.start_batch(node.machine,node.consumes,node.produces,timing.seconds,owners) if owners.size()>1 else runner.machines.start(node.machine,node.consumes,node.produces,timing.seconds,unit.id)
+			if not started.error.is_empty() and owners.size()>1 and not continuing:
+				# The aggregate output must fit in the same container. A full
+				# batch is optional; a ready individual job can still start.
+				owners.resize(1)
+				started = runner.machines.start(node.machine,node.consumes,node.produces,timing.seconds,unit.id)
+			if not started.error.is_empty():
+				_diagnostics.append({"unit":unit.id,"node":id,"reason":started.error})
 				continue
 			unit.running[id] = started.id
+			for index in range(1, owners.size()): _find_unit(owners[index]).running[id] = started.id
+			if begins_reservation:
+				var holder := {"run":started.id,"owners":{}}
+				for owner in owners: holder.owners[owner] = true
+				holders[node.machine] = holder
+
+func _node_ready(recipe: Dictionary, node: Dictionary, unit: Dictionary) -> bool:
+	if node.id in unit.done or unit.running.has(node.id) or not _dependencies_complete(recipe,node,unit): return false
+	var machine: Dictionary = _definition.machines[node.machine]
+	for item in node.consumes:
+		if item in _definition.places[machine.input].infinite: continue
+		if runner.inventory.quantity(machine.input,item,unit.id,true)<int(node.consumes[item]): return false
+	return true
+
+func _batch_size(machine: String) -> int:
+	if not _batch_devices.has(machine): return 1
+	var config: Dictionary = _batch_devices[machine]
+	var value: float = runner.owner.mods.value("batch",float(config.base),machine)
+	if not is_finite(value) or value<1.0 or value>float(config.max) or value!=floor(value): return 0
+	return int(value)
+
+func _batch_members(unit: Dictionary, recipe: Dictionary, node: Dictionary, holders: Dictionary, continuing: bool) -> Array:
+	if continuing:
+		var members: Array = holders[node.machine].owners.keys()
+		if members[0]!=unit.id: return []
+		for id in members:
+			if not _node_ready(recipe,node,_find_unit(id)): return []
+		return members
+	var out: Array = [unit.id]
+	var size := _batch_size(node.machine)
+	if size<=1: return out
+	var supplies := {}
+	var input: String = _definition.machines[node.machine].input
+	var free: int = runner.inventory.remaining_capacity(input)
+	var waiting := false
+	for candidate in _units:
+		if candidate.id==unit.id or candidate.recipe!=unit.recipe: continue
+		if node.id in candidate.done or candidate.running.has(node.id) or not _dependencies_complete(recipe,node,candidate): continue
+		var needs := _batch_preparation(recipe,node,candidate,input,supplies)
+		if needs.is_empty() or needs.count>free: continue
+		for key in needs.supplies: supplies[key] = needs.supplies[key]
+		free -= needs.count
+		waiting = waiting or not _node_ready(recipe,node,candidate)
+		out.append(candidate.id)
+		if out.size()>=size: break
+	return [] if waiting else out
+
+# Use the regular transfer path for pending portions. Count reachable stock
+# once across those portions so an unavailable input never holds a ready order.
+func _batch_preparation(recipe: Dictionary, node: Dictionary, unit: Dictionary, input: String, supplies: Dictionary) -> Dictionary:
+	var spend := {}
+	var count := 0
+	for item in node.consumes:
+		if item in _definition.places[input].infinite: continue
+		var need: int = int(node.consumes[item]) - runner.inventory.quantity(input,item,unit.id,true) - runner.inventory.incoming(input,item,unit.id)
+		if need<=0: continue
+		count += need
+		var producer: Dictionary = recipe.nodes[node.inputs[item]]
+		if item in _definition.places[producer.place].infinite: continue
+		var source_owner := -1 if producer.capability=="source" else int(unit.id)
+		var key := [producer.place,item,source_owner]
+		var available: int = supplies[key] if supplies.has(key) else runner.inventory.quantity(producer.place,item,source_owner,true)
+		if available<need: return {}
+		spend[key] = available-need
+	return {"supplies":spend,"count":count}
+
+func _can_use_reserved_machine(holders: Dictionary, machine: String, unit: int) -> bool:
+	return not holders.has(machine) or holders[machine].owners.has(unit)
+
+# Rebuild from the first shared run, keeping one owner entry per production
+# unit without a second saved list of reservations or batch members.
+func _machine_reservations(units: Array) -> Dictionary:
+	var holders := {}
+	if not _uses_machine_reservations: return {"holders":holders, "error":""}
+	for unit in units:
+		var reservation: Dictionary = _definition.recipes[unit.recipe].get("machine_reservation",{})
+		if reservation.is_empty() or not unit.running.has(reservation.first) or reservation.last in unit.done: continue
+		var run: int = unit.running[reservation.first]
+		if not holders.has(reservation.machine): holders[reservation.machine] = {"run":run,"owners":{}}
+		var holder: Dictionary = holders[reservation.machine]
+		if holder.run!=run: return {"holders":{}, "error":"more than one recipe reserved the same machine"}
+		holder.owners[unit.id] = true
+	return {"holders":holders, "error":""}
 
 func _start_transports() -> void:
 	if not _definition.has("transports"): return
@@ -485,8 +615,10 @@ func dispatch_candidates(worker: Dictionary) -> Array:
 
 func _candidates() -> Array:
 	var work: Array = []
+	var operations := {}
 	var transfers: Array = []
-	for candidate in _restocks.candidates(_stock_demand()):
+	var holders: Dictionary = _machine_reservations(_units).holders
+	for candidate in _restocks.candidates(_stock_demand(),holders):
 		candidate.category = "restock_operate" if candidate.kind == "operate" else "restock_transfer"
 		if candidate.kind == "operate":
 			candidate.from = candidate.port
@@ -514,10 +646,12 @@ func _candidates() -> Array:
 						"owner":-1 if source.capability == "source" else int(unit.id),"allocate_owner":int(unit.id),"pickup_seconds":0.0 if handoff and _manual_output_at_work_port(source) else _pickup_seconds(source)}]})
 				continue
 			if node.capability != "process": continue
+			if not _can_use_reserved_machine(holders,node.machine,unit.id): continue
 			var machine: Dictionary = _definition.machines[node.machine]
 			if unit.running.has(id):
 				var run: Dictionary = runner.machines.run(unit.running[id])
-				if String(run.get("phase", "")).begins_with("await_"):
+				if String(run.get("phase", "")).begins_with("await_") and not operations.has(run.id):
+					operations[run.id] = true
 					var port: String = runner.machines.stage_port(run.id)
 					work.append({"kind":"operate", "category":"operate", "run":run.id, "from":port, "to":port, "unit":int(unit.id)})
 				continue

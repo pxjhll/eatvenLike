@@ -86,7 +86,8 @@ func operate(worker_id: int, run_id: int, port: String) -> String:
 		if task.kind == "operate" and task.run == run_id: return "machine stage already assigned"
 	var worker: Dictionary = owner.worker_by_id(worker_id)
 	if dispatcher != null and not dispatcher.allowed(worker, {"kind":"operate", "machine":run.machine}): return "employee cannot operate this device"
-	var context: Dictionary = {"error":"", "scope":""} if dispatcher == null else dispatcher.context_for_claims(inventory, [inventory.claim(run.claim)])
+	var context: Dictionary = {"error":"", "scope":""} if dispatcher == null else dispatcher.context_for_claims(inventory,
+		Machines.operation_ids(run).map(func(id: int) -> Dictionary: return inventory.claim(id)))
 	if not String(context.error).is_empty(): return context.error
 	if dispatcher != null:
 		error = dispatcher.can_start(worker, context.scope, run.id)

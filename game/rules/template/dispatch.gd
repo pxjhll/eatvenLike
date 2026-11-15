@@ -249,7 +249,9 @@ func prepare_restore(data: Dictionary, facts: Dictionary, runner_data: Dictionar
 		if task.kind == "interact":
 			var token := "guest:" + str(task.subject)
 			context.scope = token if facts.open.has(token) else ""
-		elif task.kind == "operate": context = context_for_claims(stock, [stock.claim(devices.run(task.run).claim)], facts)
+		elif task.kind == "operate":
+			var operations := Machines.operation_ids(devices.run(task.run))
+			context = context_for_claims(stock,operations.map(func(id: int) -> Dictionary: return stock.claim(id)),facts)
 		elif task.kind == "transfer": context = context_for_claims(stock, [stock.claim(task.claim)], facts)
 		else:
 			var claims: Array = []

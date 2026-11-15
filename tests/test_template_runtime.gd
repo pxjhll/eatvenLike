@@ -2,6 +2,8 @@ extends "res://tests/test_case.gd"
 const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const Fixture := preload("res://tests/fixtures/template_shop.gd")
 const Actors := preload("res://tests/fixtures/movement_shop.gd")
+const ServiceFixture := preload("res://tests/fixtures/template_service.gd")
+const Machines := preload("res://game/rules/template/machines.gd")
 const PATH := "res://game/rules/template/runtime.gd"
 
 func _runtime(template: Resource) -> RefCounted:
@@ -46,6 +48,152 @@ func test_linear_and_parallel_templates_use_the_same_runtime_and_can_run_multipl
 	check_eq(runtime.runner.inventory.quantity("a_out", "drink", first.id), 1, "first order ownership")
 	check_eq(runtime.runner.inventory.quantity("a_out", "drink", second.id), 1, "second order ownership")
 	check_eq(runtime.runner.machines.audit(), [], "shared machine occupancy and stock")
+
+func _reserved_device_template() -> Resource:
+	var template := Fixture.linear()
+	template.places.pantry.infinite = ["raw_a"]
+	template.recipes["two_steps"] = {
+		"machine_reservation":{"first":"heat","last":"finish"},
+		"nodes":[
+			{"id":"base","capability":"source","place":"pantry","item":"raw_a"},
+			{"id":"heat","capability":"process","machine":"a","inputs":{"raw_a":"base"},
+				"consumes":{"raw_a":1},"produces":{"heated":1},"seconds":0.3},
+			{"id":"extra","capability":"source","place":"pantry","item":"raw_b","after":["heat"]},
+			{"id":"finish","capability":"process","machine":"a","inputs":{"heated":"heat","raw_b":"extra"},
+				"consumes":{"heated":1,"raw_b":1},"produces":{"meal":1},"seconds":0.3}],
+		"output":{"node":"finish","item":"meal","count":1}}
+	return template
+
+func test_recipe_keeps_device_while_waiting_for_material_and_after_restore() -> void:
+	var runtime := _runtime(_reserved_device_template())
+	check_eq(runtime.last_error,"","compile opt-in device reservation")
+	if not runtime.last_error.is_empty(): return
+	var first: int = runtime.request_production("two_steps").id
+	for tick in 200:
+		check_eq(runtime.step(0.1),"","first stage advances")
+		if "heat" in runtime.unit(first).done: break
+	check("heat" in runtime.unit(first).done,"first stage completed")
+	check_eq(runtime.runner.machines.occupied_slots("a"),0,"there is a gap between machine operations")
+	var later: int = runtime.request_production("drink").id
+	for tick in 100: check_eq(runtime.step(0.1),"","advance while material is missing")
+	check(runtime.unit(later).running.is_empty(),"other recipe cannot take the reserved device")
+	var reopened := _runtime(_reserved_device_template())
+	check_eq(reopened.restore(runtime.snapshot(true)),"","reservation survives restoration between steps")
+	for tick in 100: check_eq(reopened.step(0.1),"","restored wait for material")
+	check(reopened.unit(later).running.is_empty(),"restored reservation still blocks the other recipe")
+	check_eq(reopened.runner.inventory.seed("pantry","raw_b",1).error,"","supply the second stage")
+	for tick in 500:
+		check_eq(reopened.step(0.1),"","complete reserved and following work")
+		if not reopened.unit(later).running.is_empty():
+			check("finish" in reopened.unit(first).done,"other recipe may begin only after the last stage")
+		if reopened.ready(later): break
+	check(reopened.ready(first) and reopened.ready(later),"both orders complete with separate ownership")
+	check_eq(reopened.runner.inventory.quantity("a_out","meal",first),1,"reserved meal belongs to its unit")
+	check_eq(reopened.runner.inventory.audit(),[],"reservation does not create or lose stock")
+
+func test_device_reservation_rejects_different_machines_and_non_dependent_nodes() -> void:
+	var wrong_machine := _reserved_device_template()
+	wrong_machine.recipes.two_steps.nodes[3].machine = "b"
+	check("machine_reservation" in _runtime(wrong_machine).last_error,"reservation endpoints must share the actual device")
+	var unrelated := _reserved_device_template()
+	var node: Dictionary = unrelated.recipes.two_steps.nodes[3]
+	node.inputs = {"raw_a":"base"}
+	node.consumes = {"raw_a":1}
+	unrelated.recipes.two_steps.nodes[2].erase("after")
+	check("machine_reservation" in _runtime(unrelated).last_error,"last phase must follow the first")
+
+func test_combined_orders_use_one_machine_clock_and_deliver_separately_after_reload() -> void:
+	var template := ServiceFixture.definition()
+	template.machines.a.production_batch = {"base":2,"max":2}
+	template.places.pantry.infinite = []
+	var runtime: RefCounted = load(PATH).new(ServiceFixture.owner(),template)
+	check_eq(runtime.last_error,"","compile a general batch-enabled service")
+	if not runtime.last_error.is_empty(): return
+	var sequence := ["lemonade","black_tea","lemonade"]
+	for index in sequence.size():
+		check_eq(runtime.arrive([{"dish":sequence[index],"qty":1}]).error,"","accept a real guest")
+		for tick in 800:
+			check_eq(runtime.step(0.1),"","move and admit guests")
+			if runtime.service.orders.snapshot().orders.size()>index: break
+	var orders: Array = runtime.service.orders.snapshot().orders
+	check_eq(orders.size(),3,"all three guests have accepted orders")
+	if orders.size()!=3: return
+	var first: int = orders[0].lines[0].units[0].unit
+	var second: int = orders[2].lines[0].units[0].unit
+	check_eq(runtime.runner.inventory.seed("pantry","raw_a",2).error,"","stock the companion's input")
+	check_eq(runtime.runner.inventory.seed("a_in","raw_a",1,first).error,"","the first guest's input is ready")
+	var combined := false
+	for tick in 900:
+		check_eq(runtime.step(0.1),"","the other serving follows real preparation")
+		var run: int = runtime.unit(first).running.get("drink",-1)
+		if run<0: continue
+		combined = run==runtime.unit(second).running.get("drink",-2)
+		break
+	check(combined,"non-adjacent guests share an actual machine run")
+	var reopened: RefCounted = load(PATH).new(ServiceFixture.owner(),template)
+	check_eq(reopened.restore(runtime.snapshot(true)),"","order inventory and actors restore")
+	for tick in 1800:
+		check_eq(reopened.step(0.1),"","produce and deliver each original order")
+		if reopened.runner.owner.sold>=3: break
+	check_eq(reopened.runner.owner.sold_by_dish.lemonade,2,"both same-dish customers receive one item")
+	check_eq(reopened.runner.owner.sold_by_dish.black_tea,1,"different dish remains its own order")
+	check_eq(reopened.runner.inventory.audit(),[],"sales preserve individual inventory ownership")
+
+func test_combined_two_stage_batch_holds_the_device_and_keeps_members_through_restore() -> void:
+	var template := _reserved_device_template()
+	template.machines.a.production_batch = {"base":1,"max":2}
+	template.places.a_in.capacity = 10
+	var runtime := _runtime(template)
+	check_eq(runtime.last_error,"","compile batch and reservation together")
+	if not runtime.last_error.is_empty(): return
+	runtime.runner.owner.apply_effect("event","test_production_batch",SpecEffect.make("batch","set",2.0,"a"))
+	var first: int = runtime.request_production("two_steps").id
+	var different: int = runtime.request_production("drink").id
+	var second: int = runtime.request_production("two_steps").id
+	for id in [first,second]:
+		check_eq(runtime.runner.inventory.seed("a_in","raw_a",1,id).error,"","set out a distinct input per order")
+	check_eq(runtime.step(0.1),"","start the pair")
+	var heat: int = runtime.unit(first).running.get("heat",-1)
+	check(heat>0 and runtime.unit(second).running.get("heat")==heat,"nonadjacent same-dish requests share a machine run")
+	if heat<1: return
+	check_eq(Machines.operation_ids(runtime.runner.machines.run(heat)).size(),2,"one run has one inventory claim per order")
+	check(runtime.unit(different).running.is_empty(),"a different recipe cannot enter that batch")
+	var reopened := _runtime(template)
+	check_eq(reopened.restore(runtime.snapshot()),"","reload the in-progress batch even at the original capacity")
+	for tick in 300:
+		check_eq(reopened.step(0.1),"","complete the first phase")
+		if "heat" in reopened.unit(first).done: break
+	check("heat" in reopened.unit(second).done,"both parts finished at the same instant")
+	check(reopened.unit(different).running.is_empty(),"batch still holds the machine while awaiting materials")
+	var waiting := _runtime(template)
+	check_eq(waiting.restore(reopened.snapshot()),"","reload the batch while no machine stage is running")
+	reopened = waiting
+	check_eq(reopened.runner.inventory.seed("pantry","raw_b",2).error,"","release the supply for both members")
+	for tick in 900:
+		check_eq(reopened.step(0.1),"","continue both batch members then release the machine")
+		if reopened.ready(different): break
+	check_eq(reopened.unit(first).running.get("finish",-1),reopened.unit(second).running.get("finish",-2),"the same batch shares its last phase")
+	check(reopened.ready(first) and reopened.ready(second) and reopened.ready(different),"all three requests complete")
+	for id in [first,second]: check_eq(reopened.runner.inventory.quantity("a_out","meal",id),1,"one finished serving keeps each owner")
+	check_eq(reopened.runner.inventory.audit(),[],"batch consumes and produces by owner without losing stock")
+
+func test_a_ready_order_starts_when_a_matching_request_has_no_available_input() -> void:
+	var template := Fixture.linear()
+	template.machines.a.production_batch = {"base":2,"max":2}
+	template.places.pantry.infinite = []
+	var runtime := _runtime(template)
+	var first: int = runtime.request_production("drink").id
+	var second: int = runtime.request_production("drink").id
+	check_eq(runtime.runner.inventory.seed("a_in","raw_a",1,first).error,"","only the first request can be supplied")
+	check_eq(runtime.step(0.1),"","a pending but unsupplied order cannot stall the device")
+	check(runtime.unit(first).running.has("drink"),"one serving starts immediately")
+	check(runtime.unit(second).running.is_empty(),"a missing serving is never fabricated")
+
+func test_production_batch_configuration_rejects_an_undersized_output() -> void:
+	var template := Fixture.linear()
+	template.machines.a.production_batch = {"base":1,"max":2}
+	template.places.a_out.capacity = 1
+	check("recipes.drink.nodes.drink" in _runtime(template).last_error,"the configured batch must fit the device")
 
 func test_missing_branch_stock_waits_and_resumes_when_public_stock_is_added() -> void:
 	var template := Fixture.definition()
