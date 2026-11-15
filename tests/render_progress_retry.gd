@@ -1,4 +1,6 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 
 const TestSession := preload("res://tests/shop_test_session.gd")
 ## Isolated live startup/retry regression. Run with an isolated APPDATA.
@@ -6,7 +8,7 @@ const TestSession := preload("res://tests/shop_test_session.gd")
 
 const Suite := preload("res://tests/test_profile_safety.gd")
 const Profile := preload("res://game/app/profile.gd")
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
 var suite := Suite.new()
 var errors := preload("res://tests/error_counter.gd").new()
 
@@ -22,7 +24,7 @@ func _run() -> void:
 	var profile := Suite.FailingProfile.new(suite._path("live-profile"))
 	profile.finish_shop({"shop": "pancake"})
 	var store := Suite.FailingStore.new(TEA, suite._path("live-shop"))
-	var previous := ShopRules.new(TEA)
+	var previous := LegacyRules.new(TEA)
 	previous.gold = 1234.0
 	store.save_game(previous)
 	var original := FileAccess.get_file_as_bytes(store.path)
@@ -74,8 +76,8 @@ func _run() -> void:
 func _content_compatibility_retry() -> void:
 	var profile := Profile.new(suite._path("content-profile"))
 	suite.check_eq(profile.select_shop("tea"), OK, "compatible profile prepared")
-	var store := ShopSave.new(TEA, suite._path("content-shop"))
-	var previous := ShopRules.new(TEA)
+	var store := LegacySave.new(TEA, suite._path("content-shop"))
+	var previous := LegacyRules.new(TEA)
 	previous.gold = 6789.0
 	suite.check_eq(store.save_game(previous), OK, "compatible shop prepared")
 	var compatible := FileAccess.get_file_as_string(store.path)

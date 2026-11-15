@@ -1,0 +1,11 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://content/characters/actor_presentation.gd" id="profile"]
+
+[resource]
+script = ExtResource("profile")
+reference_width = 720.0
+minimum_visible_height = 1100.0
+staff_height = 128.0
+customer_height = 110.0
+customer_speed = 170.0

@@ -1,0 +1,1001 @@
+[gd_resource type="Resource" script_class="SpecShopTemplate" format=3]
+
+[ext_resource type="Script" path="res://content/rules/spec_shop_template.gd" id="1_ei48t"]
+
+[resource]
+script = ExtResource("1_ei48t")
+places = {
+"boil": {
+&"anchor": "boil",
+"capacity": 12
+},
+"boil:work": {
+"anchor": "post:boil",
+"capacity": 0
+},
+"counter": {
+&"anchor": "counter",
+"capacity": 3
+},
+"counter:lemon_tea": {
+&"anchor": "counter",
+"capacity": 3
+},
+"counter:lemonade": {
+&"anchor": "counter",
+"capacity": 3
+},
+"lemonade": {
+&"anchor": "lemonade",
+"capacity": 3
+},
+"mix": {
+&"anchor": "mix",
+"capacity": 6,
+"infinite": ["milk"]
+},
+"press": {
+&"anchor": "press",
+"capacity": 3
+},
+"rack": {
+&"anchor": "shelf",
+"capacity": 6
+},
+"seal": {
+&"anchor": "seal",
+"capacity": 6
+},
+"shelf:black_tea": {
+&"anchor": "shelf",
+"capacity": 12
+},
+"shelf:coconut_milk_tea": {
+&"anchor": "shelf",
+"capacity": 12
+},
+"shelf:pearl_milk_tea": {
+&"anchor": "shelf",
+"capacity": 12
+},
+"shelf:plain_milk_tea": {
+&"anchor": "shelf",
+"capacity": 12
+},
+"shelf:redbean_milk_tea": {
+&"anchor": "shelf",
+"capacity": 12
+},
+"shelf:taro_milk_tea": {
+&"anchor": "shelf",
+"capacity": 12
+},
+"supply": {
+&"anchor": "supply",
+"infinite": ["tea_leaf"]
+},
+"topping": {
+&"anchor": "topping",
+"capacity": 6
+},
+"topping:work": {
+"anchor": "post:topping",
+"capacity": 0
+}
+}
+machines = {
+"boil": {
+"input": "boil",
+"output": "boil",
+"profile": {
+"load_seconds": 0.6,
+"stir_points": [0.3333333333333333, 0.6666666666666666],
+"stir_seconds": 1.0,
+"unload_seconds": 0.6
+},
+&"work_port": "boil:work"
+},
+"lemonade": {
+"input": "lemonade",
+"output": "lemonade",
+"profile": {
+"manual": true
+}
+},
+"mix": {
+"input": "mix",
+"output": "mix",
+"profile": {
+"manual": false
+}
+},
+"press": {
+"input": "press",
+"output": "press",
+"profile": {
+"manual": true
+}
+},
+"seal": {
+"input": "seal",
+"output": "seal",
+"profile": {
+"manual": false
+}
+},
+"topping": {
+"input": "topping",
+"output": "topping",
+"profile": {
+"manual": true
+},
+&"work_port": "topping:work"
+}
+}
+restocks = {
+"boil": {
+"requires": {"stations": ["boil"], "boxes": ["tea_leaf"], "workers": {"minimum": 1, "exclude_posts": ["counter"]}},
+"batch": {
+"base": 3,
+"max": 12,
+"target": "boil"
+},
+"consumes": {
+"tea_leaf": 1
+},
+"fetch_seconds": 0.6,
+"fetch_timing_target": "supply",
+"machine": "boil",
+"produces": {
+"black_tea": 1
+},
+"seconds": 30.0,
+"sources": {
+"tea_leaf": "supply"
+},
+"stock_limit": 12
+},
+"mix": {
+"batch": {
+"max": 6,
+"mode": "available"
+},
+"requires": {"stations": ["mix"], "boxes": ["tea_leaf", "milk"], "workers": {"minimum": 1, "exclude_posts": ["counter"]}},
+"consumes": {
+"black_tea": 1,
+"milk": 1
+},
+"fetch_seconds": 0.6,
+"machine": "mix",
+"policy": {
+"base": 0,
+"mode": "demand",
+"per_waiting": 1
+},
+"produces": {
+"plain_milk_tea": 1
+},
+"seconds": 4.0,
+"sources": {
+"black_tea": "boil"
+},
+"stock_limit": 6
+}
+}
+recipes = {
+"black_tea": {
+"nodes": [{
+"capability": "source",
+"id": "ready",
+"item": "black_tea",
+"place": "boil",
+"seconds": 0.6
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "ready",
+"item": "black_tea",
+"place": "shelf:black_tea",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "black_tea",
+"node": "pass"
+}
+},
+"black_tea:sealed": {
+"nodes": [{
+"capability": "source",
+"id": "ready",
+"item": "black_tea",
+"place": "boil",
+"seconds": 0.6
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "ready",
+"item": "black_tea",
+"place": "shelf:black_tea",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": {
+"black_tea": 1
+},
+"id": "seal",
+"inputs": {
+"black_tea": "pass"
+},
+"machine": "seal",
+"produces": {
+"black_tea": 1
+},
+"seconds": 9.0,
+"slot_rate": {
+"base": 1,
+"ignore_duration": true,
+"max": 6,
+"target": "seal"
+}
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "rack",
+"input": "seal",
+"transport": "seal_to_shelf",
+"item": "black_tea",
+"place": "rack",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "black_tea",
+"node": "rack"
+}
+},
+"coconut_milk_tea": {
+"nodes": [{
+"capability": "source",
+"id": "ready",
+"item": "plain_milk_tea",
+"place": "mix",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": Dictionary[String, int]({
+"plain_milk_tea": 1
+}),
+"id": "top",
+"inputs": {
+"plain_milk_tea": "ready"
+},
+"machine": "topping",
+"produces": Dictionary[String, int]({
+"coconut_milk_tea": 1
+}),
+"seconds": 2.0
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "top",
+"item": "coconut_milk_tea",
+"place": "shelf:coconut_milk_tea",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "coconut_milk_tea",
+"node": "pass"
+}
+},
+"coconut_milk_tea:sealed": {
+"nodes": [{
+"capability": "source",
+"id": "ready",
+"item": "plain_milk_tea",
+"place": "mix",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": Dictionary[String, int]({
+"plain_milk_tea": 1
+}),
+"id": "top",
+"inputs": {
+"plain_milk_tea": "ready"
+},
+"machine": "topping",
+"produces": Dictionary[String, int]({
+"coconut_milk_tea": 1
+}),
+"seconds": 2.0
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "top",
+"item": "coconut_milk_tea",
+"place": "shelf:coconut_milk_tea",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": {
+"coconut_milk_tea": 1
+},
+"id": "seal",
+"inputs": {
+"coconut_milk_tea": "pass"
+},
+"machine": "seal",
+"produces": {
+"coconut_milk_tea": 1
+},
+"seconds": 9.0,
+"slot_rate": {
+"base": 1,
+"ignore_duration": true,
+"max": 6,
+"target": "seal"
+}
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "rack",
+"input": "seal",
+"transport": "seal_to_shelf",
+"item": "coconut_milk_tea",
+"place": "rack",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "coconut_milk_tea",
+"node": "rack"
+}
+},
+"lemon_tea": {
+"nodes": [{
+"capability": "process",
+"consumes": Dictionary[String, int]({}),
+"fixed": false,
+"id": "step:0",
+"inputs": {},
+"machine": "lemonade",
+"produces": Dictionary[String, int]({
+"lemonade": 1
+}),
+"seconds": 2.0
+}, {
+"capability": "process",
+"consumes": Dictionary[String, int]({
+"lemonade": 1
+}),
+"fixed": false,
+"id": "step:1",
+"inputs": {
+"lemonade": "step:0"
+},
+"machine": "press",
+"produces": Dictionary[String, int]({
+"lemon_tea": 1
+}),
+"seconds": 4.0
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "step:1",
+"item": "lemon_tea",
+"place": "counter:lemon_tea",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "lemon_tea",
+"node": "pass"
+}
+},
+"lemonade": {
+"nodes": [{
+"capability": "process",
+"consumes": Dictionary[String, int]({}),
+"fixed": false,
+"id": "step:0",
+"inputs": {},
+"machine": "lemonade",
+"produces": Dictionary[String, int]({
+"lemonade": 1
+}),
+"seconds": 2.0
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "step:0",
+"item": "lemonade",
+"place": "counter:lemonade",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "lemonade",
+"node": "pass"
+}
+},
+"pearl_milk_tea": {
+"nodes": [{
+"capability": "source",
+"id": "ready",
+"item": "plain_milk_tea",
+"place": "mix",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": Dictionary[String, int]({
+"plain_milk_tea": 1
+}),
+"id": "top",
+"inputs": {
+"plain_milk_tea": "ready"
+},
+"machine": "topping",
+"produces": Dictionary[String, int]({
+"pearl_milk_tea": 1
+}),
+"seconds": 2.0
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "top",
+"item": "pearl_milk_tea",
+"place": "shelf:pearl_milk_tea",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "pearl_milk_tea",
+"node": "pass"
+}
+},
+"pearl_milk_tea:sealed": {
+"nodes": [{
+"capability": "source",
+"id": "ready",
+"item": "plain_milk_tea",
+"place": "mix",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": Dictionary[String, int]({
+"plain_milk_tea": 1
+}),
+"id": "top",
+"inputs": {
+"plain_milk_tea": "ready"
+},
+"machine": "topping",
+"produces": Dictionary[String, int]({
+"pearl_milk_tea": 1
+}),
+"seconds": 2.0
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "top",
+"item": "pearl_milk_tea",
+"place": "shelf:pearl_milk_tea",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": {
+"pearl_milk_tea": 1
+},
+"id": "seal",
+"inputs": {
+"pearl_milk_tea": "pass"
+},
+"machine": "seal",
+"produces": {
+"pearl_milk_tea": 1
+},
+"seconds": 9.0,
+"slot_rate": {
+"base": 1,
+"ignore_duration": true,
+"max": 6,
+"target": "seal"
+}
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "rack",
+"input": "seal",
+"transport": "seal_to_shelf",
+"item": "pearl_milk_tea",
+"place": "rack",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "pearl_milk_tea",
+"node": "rack"
+}
+},
+"plain_milk_tea": {
+"nodes": [{
+"capability": "source",
+"id": "ready",
+"item": "plain_milk_tea",
+"place": "mix",
+"seconds": 0.6
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "ready",
+"item": "plain_milk_tea",
+"place": "shelf:plain_milk_tea",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "plain_milk_tea",
+"node": "pass"
+}
+},
+"plain_milk_tea:sealed": {
+"nodes": [{
+"capability": "source",
+"id": "ready",
+"item": "plain_milk_tea",
+"place": "mix",
+"seconds": 0.6
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "ready",
+"item": "plain_milk_tea",
+"place": "shelf:plain_milk_tea",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": {
+"plain_milk_tea": 1
+},
+"id": "seal",
+"inputs": {
+"plain_milk_tea": "pass"
+},
+"machine": "seal",
+"produces": {
+"plain_milk_tea": 1
+},
+"seconds": 9.0,
+"slot_rate": {
+"base": 1,
+"ignore_duration": true,
+"max": 6,
+"target": "seal"
+}
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "rack",
+"input": "seal",
+"transport": "seal_to_shelf",
+"item": "plain_milk_tea",
+"place": "rack",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "plain_milk_tea",
+"node": "rack"
+}
+},
+"redbean_milk_tea": {
+"nodes": [{
+"capability": "source",
+"id": "ready",
+"item": "plain_milk_tea",
+"place": "mix",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": Dictionary[String, int]({
+"plain_milk_tea": 1
+}),
+"id": "top",
+"inputs": {
+"plain_milk_tea": "ready"
+},
+"machine": "topping",
+"produces": Dictionary[String, int]({
+"redbean_milk_tea": 1
+}),
+"seconds": 2.0
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "top",
+"item": "redbean_milk_tea",
+"place": "shelf:redbean_milk_tea",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "redbean_milk_tea",
+"node": "pass"
+}
+},
+"redbean_milk_tea:sealed": {
+"nodes": [{
+"capability": "source",
+"id": "ready",
+"item": "plain_milk_tea",
+"place": "mix",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": Dictionary[String, int]({
+"plain_milk_tea": 1
+}),
+"id": "top",
+"inputs": {
+"plain_milk_tea": "ready"
+},
+"machine": "topping",
+"produces": Dictionary[String, int]({
+"redbean_milk_tea": 1
+}),
+"seconds": 2.0
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "top",
+"item": "redbean_milk_tea",
+"place": "shelf:redbean_milk_tea",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": {
+"redbean_milk_tea": 1
+},
+"id": "seal",
+"inputs": {
+"redbean_milk_tea": "pass"
+},
+"machine": "seal",
+"produces": {
+"redbean_milk_tea": 1
+},
+"seconds": 9.0,
+"slot_rate": {
+"base": 1,
+"ignore_duration": true,
+"max": 6,
+"target": "seal"
+}
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "rack",
+"input": "seal",
+"transport": "seal_to_shelf",
+"item": "redbean_milk_tea",
+"place": "rack",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "redbean_milk_tea",
+"node": "rack"
+}
+},
+"taro_milk_tea": {
+"nodes": [{
+"capability": "source",
+"id": "ready",
+"item": "plain_milk_tea",
+"place": "mix",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": Dictionary[String, int]({
+"plain_milk_tea": 1
+}),
+"id": "top",
+"inputs": {
+"plain_milk_tea": "ready"
+},
+"machine": "topping",
+"produces": Dictionary[String, int]({
+"taro_milk_tea": 1
+}),
+"seconds": 2.0
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "top",
+"item": "taro_milk_tea",
+"place": "shelf:taro_milk_tea",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "taro_milk_tea",
+"node": "pass"
+}
+},
+"taro_milk_tea:sealed": {
+"nodes": [{
+"capability": "source",
+"id": "ready",
+"item": "plain_milk_tea",
+"place": "mix",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": Dictionary[String, int]({
+"plain_milk_tea": 1
+}),
+"id": "top",
+"inputs": {
+"plain_milk_tea": "ready"
+},
+"machine": "topping",
+"produces": Dictionary[String, int]({
+"taro_milk_tea": 1
+}),
+"seconds": 2.0
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "pass",
+"input": "top",
+"item": "taro_milk_tea",
+"place": "shelf:taro_milk_tea",
+"seconds": 0.6
+}, {
+"capability": "process",
+"consumes": {
+"taro_milk_tea": 1
+},
+"id": "seal",
+"inputs": {
+"taro_milk_tea": "pass"
+},
+"machine": "seal",
+"produces": {
+"taro_milk_tea": 1
+},
+"seconds": 9.0,
+"slot_rate": {
+"base": 1,
+"ignore_duration": true,
+"max": 6,
+"target": "seal"
+}
+}, {
+"capability": "transfer",
+"count": 1,
+"id": "rack",
+"input": "seal",
+"transport": "seal_to_shelf",
+"item": "taro_milk_tea",
+"place": "rack",
+"seconds": 0.6
+}],
+"output": {
+"count": 1,
+"item": "taro_milk_tea",
+"node": "rack"
+}
+}
+}
+dispatch = {
+"batch_transfers": true,
+"station_posts": {"boil": {"post": "boil", "feed": true}, "topping": {"post": "topping", "feed": false}},
+"affinity": "prefer",
+"help_while_waiting": true,
+"hold_machine": true,
+&"posts": {
+"counter": {
+"operate": ["lemonade", "press"],
+"transfer_from": ["lemonade", "press", "rack", "counter:lemonade", "counter:lemon_tea", "shelf:black_tea", "shelf:plain_milk_tea", "shelf:pearl_milk_tea", "shelf:coconut_milk_tea", "shelf:redbean_milk_tea", "shelf:taro_milk_tea"],
+"transfer_to": ["*"]
+},
+"boil": {
+"operate": ["boil"],
+"transfer_from": ["supply"],
+"transfer_to": ["boil"]
+},
+"topping": {
+"operate": ["topping"]
+}
+},
+&"roles": {
+"staff": {
+"operate": ["boil", "mix", "topping", "seal"],
+"transfer_from": ["supply", "boil", "mix", "topping", "seal", "shelf:black_tea", "shelf:plain_milk_tea", "shelf:pearl_milk_tea", "shelf:coconut_milk_tea", "shelf:redbean_milk_tea", "shelf:taro_milk_tea"],
+"transfer_to": ["boil", "mix", "topping", "seal", "rack", "shelf:black_tea", "shelf:plain_milk_tea", "shelf:pearl_milk_tea", "shelf:coconut_milk_tea", "shelf:redbean_milk_tea", "shelf:taro_milk_tea"]
+}
+}
+}
+service = {
+"menu": {
+"lemonade": "lemonade", "black_tea": "black_tea", "plain_milk_tea": "plain_milk_tea",
+"pearl_milk_tea": "pearl_milk_tea", "coconut_milk_tea": "coconut_milk_tea",
+"redbean_milk_tea": "redbean_milk_tea", "taro_milk_tea": "taro_milk_tea", "lemon_tea": "lemon_tea"
+},
+"delivery": "counter", "handoff_port": "counter", "admission": "automatic",
+"orders": {"pay_at": "on_deliver", "queue_release": "after_delivery", "rounding": "dish_tenth_carry"},
+"dining": {
+"group": "dine",
+"order": ["seat:dine/0", "seat:dine/1", "seat:dine/2", "seat:dine/3", "seat:dine/4", "seat:dine/5", "seat:dine/6", "seat:dine/7"],
+"stages": [{"standing": 3, "seconds": 20.0}, {"standing": 4, "seconds": 20.0},
+{"standing": 5, "seconds": 25.0}, {"standing": 7, "seconds": 30.0},
+{"standing": 8, "seconds": 32.0}, {"standing": 8, "seconds": 35.0}],
+"takeaway": {
+"requires": {"stations": ["seal"]},
+"variants": {"black_tea": "black_tea:sealed", "plain_milk_tea": "plain_milk_tea:sealed",
+"pearl_milk_tea": "pearl_milk_tea:sealed", "coconut_milk_tea": "coconut_milk_tea:sealed",
+"redbean_milk_tea": "redbean_milk_tea:sealed", "taro_milk_tea": "taro_milk_tea:sealed"}
+}
+},
+"selection": {
+"order": ["lemonade", "black_tea", "plain_milk_tea", "pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea", "lemon_tea"],
+"gates": {
+"lemonade": {"stations": ["lemonade"]},
+"black_tea": {"stations": ["boil"], "boxes": ["tea_leaf"], "workers": {"minimum": 1, "exclude_posts": ["counter"]}},
+"plain_milk_tea": {"stations": ["boil", "mix"], "boxes": ["tea_leaf", "milk"], "workers": {"minimum": 1, "exclude_posts": ["counter"]}},
+"pearl_milk_tea": {"stations": ["boil", "mix", "topping"], "boxes": ["tea_leaf", "milk"], "levels": {"topping": 1}, "workers": {"minimum": 1, "exclude_posts": ["counter"]}},
+"coconut_milk_tea": {"stations": ["boil", "mix", "topping"], "boxes": ["tea_leaf", "milk"], "levels": {"topping": 2}, "workers": {"minimum": 1, "exclude_posts": ["counter"]}},
+"redbean_milk_tea": {"stations": ["boil", "mix", "topping"], "boxes": ["tea_leaf", "milk"], "levels": {"topping": 3}, "workers": {"minimum": 1, "exclude_posts": ["counter"]}},
+"taro_milk_tea": {"stations": ["boil", "mix", "topping"], "boxes": ["tea_leaf", "milk"], "levels": {"topping": 4}, "workers": {"minimum": 1, "exclude_posts": ["counter"]}},
+"lemon_tea": {"stations": ["lemonade", "press"]}
+},
+"stages": [
+{"interval": 10.0, "weights": {"lemonade": 1.0}},
+{"interval": 7.0, "weights": {"lemonade": 0.65, "black_tea": 0.35}},
+{"interval": 5.5, "weights": {"lemonade": 0.65, "black_tea": 0.35}},
+{"interval": 5.0, "weights": {"lemonade": 0.35, "black_tea": 0.25, "plain_milk_tea": 0.4}},
+{"interval": 4.0, "weights": {"lemonade": 0.3, "black_tea": 0.2, "plain_milk_tea": 0.3, "lemon_tea": 0.2}},
+{"interval": 3.2, "weights": {"lemonade": 0.12, "black_tea": 0.1, "plain_milk_tea": 0.1, "lemon_tea": 0.12,
+"pearl_milk_tea": 0.14, "coconut_milk_tea": 0.14, "redbean_milk_tea": 0.14, "taro_milk_tea": 0.14}}
+],
+"ramp": {"start": 0.25, "orders": 12},
+"flow": {"flavors": ["pearl_milk_tea", "coconut_milk_tea", "redbean_milk_tea", "taro_milk_tea"],
+"per_extra_flavor": 0.12, "stations": ["lemonade", "boil", "seal", "mix", "press", "topping"], "per_level": 0.0}
+},
+"arrivals": {"pattern": "fixed", "first_delay": 10.0, "opening": 3},
+"flyers": {"pattern": "spread", "seconds": 30.0, "count": 4, "cooldown": 120.0, "when_full": "wait_outside"}
+}
+
+transports = {"seal_to_shelf": {"from": "seal", "to": "rack", "connection": "seal_to_shelf", "seconds": 3.0, "interval": 1.5, "capacity": 1}}
+
+presentation = {
+"conveyors": {
+"seal_to_shelf": {
+"height": 52.0,
+"host": "BeltVertical",
+"path": ["Connections/seal_to_shelf/Path/0", "Connections/seal_to_shelf/Path/1", "Connections/seal_to_shelf/Path/2"]
+}
+},
+"counters": {
+"shelf": ["shelf:black_tea", "shelf:coconut_milk_tea", "shelf:pearl_milk_tea", "shelf:plain_milk_tea", "shelf:redbean_milk_tea", "shelf:taro_milk_tea"]
+},
+"dining": {
+"seat:dine/0": {
+"height": 36.0,
+"host": "DiningArea/Table1",
+"offsets": [Vector2(-34, -92)],
+"port": "Tables/dine/0"
+},
+"seat:dine/1": {
+"height": 36.0,
+"host": "DiningArea/Table1",
+"offsets": [Vector2(34, -92)],
+"port": "Tables/dine/0"
+},
+"seat:dine/2": {
+"height": 36.0,
+"host": "DiningArea/Table2",
+"offsets": [Vector2(-34, -92)],
+"port": "Tables/dine/1"
+},
+"seat:dine/3": {
+"height": 36.0,
+"host": "DiningArea/Table2",
+"offsets": [Vector2(34, -92)],
+"port": "Tables/dine/1"
+},
+"seat:dine/4": {
+"height": 36.0,
+"host": "DiningArea/Table3",
+"offsets": [Vector2(-34, -92)],
+"port": "Tables/dine/2"
+},
+"seat:dine/5": {
+"height": 36.0,
+"host": "DiningArea/Table3",
+"offsets": [Vector2(34, -92)],
+"port": "Tables/dine/2"
+},
+"seat:dine/6": {
+"height": 36.0,
+"host": "DiningArea/Table4",
+"offsets": [Vector2(-34, -92)],
+"port": "Tables/dine/3"
+},
+"seat:dine/7": {
+"height": 36.0,
+"host": "DiningArea/Table4",
+"offsets": [Vector2(34, -92)],
+"port": "Tables/dine/3"
+}
+},
+"poses": {
+"seat:dine/0": {
+"facing": 2,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/0"
+},
+"seat:dine/1": {
+"facing": 6,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/1"
+},
+"seat:dine/2": {
+"facing": 2,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/2"
+},
+"seat:dine/3": {
+"facing": 6,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/3"
+},
+"seat:dine/4": {
+"facing": 2,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/4"
+},
+"seat:dine/5": {
+"facing": 6,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/5"
+},
+"seat:dine/6": {
+"facing": 2,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/6"
+},
+"seat:dine/7": {
+"facing": 6,
+"offset": Vector2(0, -26),
+"port": "Seats/dine/7"
+}
+},
+"stock": [{
+"height": 52.0,
+"host": "Rack",
+"places": ["shelf:black_tea", "shelf:coconut_milk_tea", "shelf:pearl_milk_tea", "shelf:plain_milk_tea", "shelf:redbean_milk_tea", "shelf:taro_milk_tea"],
+"ports": ["Shelf/shelf/0", "Shelf/shelf/1", "Shelf/shelf/2"]
+}, {
+"height": 52.0,
+"host": "Rack",
+"places": ["rack"],
+"ports": ["Shelf/rack/0", "Shelf/rack/1", "Shelf/rack/2"]
+}]
+}

@@ -1,11 +1,12 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 
 const TestSession := preload("res://tests/shop_test_session.gd")
 ## Audio integration through the generic shop scene, including stable subscriptions across restart.
 
 const SHOP := "res://presentation/shop/shop_play.tscn"
-const FIRST: SpecShop = preload("res://content/shops/pancake/shop.tres")
-const SECOND: SpecShop = preload("res://content/shops/tea/shop.tres")
+const FIRST: SpecShop = preload("res://tests/fixtures/legacy_shops/current/pancake/shop.tres")
+const SECOND: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
 
 var failures := 0
 
@@ -22,7 +23,7 @@ func _check(ok: bool, label: String) -> void:
 
 func _open(spec: SpecShop) -> Node2D:
 	var scene: Node2D = load(SHOP).instantiate()
-	scene.session = TestSession.make(spec, "audio-%d-%s" % [OS.get_process_id(), spec.id], ShopRules.new(spec))
+	scene.session = TestSession.make(spec, "audio-%d-%s" % [OS.get_process_id(), spec.id], LegacyRules.new(spec))
 	root.add_child(scene)
 	scene.set_process(false)
 	return scene

@@ -1,11 +1,13 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
 const MODULE := "res://game/rules/rule_sales.gd"
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
 
 # This fixture observes query boundaries without installing callbacks in the owner.
-class QuoteRules extends ShopRules:
+class QuoteRules extends "res://tests/fixtures/legacy_shops/reference_rules.gd":
 	var observations := []
 	func seat_seconds() -> float:
 		observations.append(["seat", sold, diners.size(), gold])
@@ -85,7 +87,7 @@ func test_single_addon_dedup_and_no_addon() -> void:
 
 func test_rules_forward_assignment_reset_candidate_load_and_rejection() -> void:
 	if _owner() == null: return
-	var rules := ShopRules.new(TEA, 42)
+	var rules := LegacyRules.new(TEA, 42)
 	var owner: RefCounted = rules._sales
 	var replacement := rules.sold_by_dish.duplicate()
 	replacement.lemonade = 4

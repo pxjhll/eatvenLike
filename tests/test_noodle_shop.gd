@@ -1,4 +1,5 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
 ## 第三家测试店（规格 §7）：只用数据写成的面馆（tests/fixtures/noodle，不上线）不改规则代码就能从开张一路开到完店，
 ## 骨汤锅的同一锅汤同时供清汤面、牛肉面、鸡蛋面；界面快照、存读档也照常。
 
@@ -19,7 +20,7 @@ func _play(rules: ShopRules, minutes: float, on_tick := Callable()) -> void:
 
 
 func test_opens_and_sells_its_first_dish() -> void:
-	var rules := ShopRules.new(NOODLE)
+	var rules := LegacyRules.new(NOODLE)
 	check(not rules.is_open(), "开张前不营业")
 	check_eq(rules.next_unlock(), "urn", "第一台是茶桶")
 	check_eq(rules.unlock("urn"), "", "开局的钱够开茶桶")
@@ -28,7 +29,7 @@ func test_opens_and_sells_its_first_dish() -> void:
 
 
 func test_plays_from_opening_to_shop_complete() -> void:
-	var rules := ShopRules.new(NOODLE)
+	var rules := LegacyRules.new(NOODLE)
 	rules.unlock("urn")
 	var broth_users := {}
 	# 闭包按值捕获整数，计数放进字典里
@@ -53,14 +54,14 @@ func test_plays_from_opening_to_shop_complete() -> void:
 
 
 func test_view_save_and_resume_work_for_a_new_shop() -> void:
-	var rules := ShopRules.new(NOODLE)
+	var rules := LegacyRules.new(NOODLE)
 	rules.unlock("urn")
 	_play(rules, 12.0)
 	var view := ShopView.new(rules)
 	check(not String(view.goal().text).is_empty(), "目标栏有字")
 	for st in NOODLE.stations: check(not view.station(st.id).is_empty(), "%s 有机器面板" % st.display_name)
 	view.bottleneck()
-	var copy := ShopRules.new(NOODLE)
+	var copy := LegacyRules.new(NOODLE)
 	check_eq(copy.load_dict(rules.to_dict()), "", "中途存档能读")
 	rules.run(30.0)
 	copy.run(30.0)

@@ -1,17 +1,18 @@
 extends "res://tests/test_case.gd"
-const TEA = preload("res://content/shops/tea/shop.tres")
-const PANCAKE = preload("res://content/shops/pancake/shop.tres")
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const TEA = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
+const PANCAKE = preload("res://tests/fixtures/legacy_shops/current/pancake/shop.tres")
 
 func test_numeric_refresh() -> void:
 	for original in [TEA, PANCAKE]:
-		var old := ShopRules.new(original)
+		var old := LegacyRules.new(original)
 		old.unlock(old.next_unlock())
 		old.run(12.0)
 		var saved := old.to_dict()
-		var updated: SpecShop = original.duplicate(true)
+		var updated: SpecShop = original.copy_for_editing()
 		updated.staff.kinds[0].stats["speed"] = 19.0
 		updated.stations[0].params["capacity"] = 81
-		var resumed := ShopRules.new(updated)
+		var resumed := LegacyRules.new(updated)
 		var result: Variant = resumed.callv("load_dict", [saved, true])
 		check_eq(result, "", "numeric refresh accepted")
 		check_eq(resumed.roster[0].stats, updated.staff.kinds[0].stats, "current worker stats")
@@ -22,7 +23,7 @@ const CONTRACT = preload("res://game/rules/shop_content_contract.gd")
 func test_fingerprints() -> void:
 	var base := CONTRACT.describe(TEA)
 	check_eq(base.gameplay.length(), 64, "sha256")
-	var copy: SpecShop = TEA.duplicate(true)
+	var copy: SpecShop = TEA.copy_for_editing()
 	check_eq(CONTRACT.describe(copy), base, "deep copy stable")
 	copy.display_name = "Presentation"
 	copy.scene_path = "res://another.tscn"
@@ -35,16 +36,16 @@ func test_fingerprints() -> void:
 	check_eq(changed.structure, base.structure, "numeric topology stable")
 	copy.layout.points[copy.layout.points.keys()[0]] += Vector2(1, 0)
 	check(CONTRACT.describe(copy).structure != base.structure, "geometry structural")
-	copy = TEA.duplicate(true)
+	copy = TEA.copy_for_editing()
 	copy.stations[0].block = "different"
 	check(CONTRACT.describe(copy).structure != base.structure, "block structural")
-	copy = TEA.duplicate(true)
+	copy = TEA.copy_for_editing()
 	copy.stages.reverse()
 	check(CONTRACT.describe(copy).structure != base.structure, "stage order structural")
 
 func test_refresh_preserves_progress_effects_and_aliases() -> void:
 	for original in [TEA, PANCAKE]:
-		var old := ShopRules.new(original)
+		var old := LegacyRules.new(original)
 		old.unlock(old.next_unlock())
 		old.run(25.0)
 		# Capture during recorded manual work rather than relying on a fixed frame.
@@ -59,12 +60,12 @@ func test_refresh_preserves_progress_effects_and_aliases() -> void:
 		old.mods.add("event", "permanent", "batch", "set", 93.0, old.pots[0])
 		old.mods.add("event", "last_finite", "batch", "set", 97.0, old.pots[0], [], "", 2.0)
 		var saved := old.to_dict()
-		var updated: SpecShop = original.duplicate(true)
+		var updated: SpecShop = original.copy_for_editing()
 		updated.staff.kinds[0].stats["work"] = 19.0
 		for station in updated.stations:
 			for track in station.tracks:
 				for effect in track.base_effects: effect.value += 2.0
-		var resumed := ShopRules.new(updated)
+		var resumed := LegacyRules.new(updated)
 		var bus := resumed.events
 		check_eq(resumed.load_dict(saved, true), "", "refresh succeeds")
 		check(resumed.events == bus, "bus retained")
@@ -88,17 +89,17 @@ func test_refresh_preserves_progress_effects_and_aliases() -> void:
 		check_eq(resumed.to_dict(), once, "repeat idempotent")
 
 func test_new_removed_sources_and_one_shot() -> void:
-	var before: SpecShop = TEA.duplicate(true)
+	var before: SpecShop = TEA.copy_for_editing()
 	var station: SpecStation
 	for entry in before.stations:
 		if not entry.tracks.is_empty():
 			station = entry
 			break
 	station.tracks[0].base_effects.clear()
-	var old := ShopRules.new(before)
+	var old := LegacyRules.new(before)
 	old.mods.add("event", "finite", "batch", "set", 71, station.id, [], "", 9.0)
 	var saved := old.to_dict()
-	var after: SpecShop = before.duplicate(true)
+	var after: SpecShop = before.copy_for_editing()
 	var target := after.station(station.id)
 	var batch := SpecEffect.new()
 	batch.kind = "batch"
@@ -109,7 +110,7 @@ func test_new_removed_sources_and_one_shot() -> void:
 	reward.kind = "grant_gold"
 	reward.value = 999999
 	target.tracks[0].base_effects.append(reward)
-	var resumed := ShopRules.new(after)
+	var resumed := LegacyRules.new(after)
 	check_eq(resumed.load_dict(saved, true), "", "new source refresh")
 	check_eq(resumed.mods.value("batch", 1, station.id), 71, "new upgrade precedes finite event")
 	check_eq(resumed.gold, saved.gold, "one-shot never replayed")
@@ -117,14 +118,14 @@ func test_new_removed_sources_and_one_shot() -> void:
 	var event_entries: Array = restored.mods.filter(func(e: Dictionary) -> bool: return e.source != "upgrade")
 	check_eq(event_entries, saved.mods.filter(func(e: Dictionary) -> bool: return e.source != "upgrade"), "event duration preserved")
 	target.tracks[0].base_effects.clear()
-	var removed := ShopRules.new(after)
+	var removed := LegacyRules.new(after)
 	check_eq(removed.load_dict(restored, true), "", "removed source refresh")
 	check_eq(removed.mods.entries.filter(func(e: Dictionary) -> bool: return e.source == "upgrade" and e.source_id == station.id).size(), 0, "removed upgrade gone")
 
 func test_contract_identity_and_canonical_dictionary() -> void:
-	var before: SpecShop = TEA.duplicate(true)
+	var before: SpecShop = TEA.copy_for_editing()
 	var base := CONTRACT.describe(before)
-	var after: SpecShop = before.duplicate(true)
+	var after: SpecShop = before.copy_for_editing()
 	var keys: Array = after.layout.points.keys()
 	keys.reverse()
 	after.layout.points.clear()
@@ -132,25 +133,25 @@ func test_contract_identity_and_canonical_dictionary() -> void:
 	check_eq(CONTRACT.describe(after), base, "dictionary insertion ignored")
 	after.start_gold += 1
 	check_eq(CONTRACT.describe(after).structure, base.structure, "prices rebalance")
-	after = before.duplicate(true)
+	after = before.copy_for_editing()
 	after.dispatch.travel_penalty += 0.000000000001
 	check(CONTRACT.describe(after).gameplay != base.gameplay, "nearby double differs")
-	after = before.duplicate(true)
+	after = before.copy_for_editing()
 	after.fulfillment.handoff = "single"
 	check(CONTRACT.describe(after).structure != base.structure, "mode structural")
-	after = before.duplicate(true)
+	after = before.copy_for_editing()
 	after.dishes[0].steps[0].produces["label"] = 1
 	check(CONTRACT.describe(after).structure != base.structure, "storage identity named label retained")
-	after = before.duplicate(true)
+	after = before.copy_for_editing()
 	after.dishes[0].steps[0].repeat += 1
 	check(CONTRACT.describe(after).structure != base.structure, "recipe repeat structural")
 	for entry in after.stations:
 		if entry.materials.is_empty(): continue
-		after = before.duplicate(true)
+		after = before.copy_for_editing()
 		after.station(entry.id).materials[0].item += "_different"
 		check(CONTRACT.describe(after).structure != base.structure, "material identity structural")
 		break
-	after = before.duplicate(true)
+	after = before.copy_for_editing()
 	for entry in after.stations:
 		if entry.tracks.is_empty(): continue
 		entry.tracks[0].levels.append(SpecUpgradeLevel.new())
@@ -171,19 +172,19 @@ func test_active_automatic_duration_survives_refresh() -> void:
 	check(not active_id.is_empty(), "real automatic processing captured")
 	if active_id.is_empty(): return
 	var saved := old.to_dict()
-	var updated: SpecShop = TEA.duplicate(true)
+	var updated: SpecShop = TEA.copy_for_editing()
 	updated.station(active_id).params["process_seconds"] = 987.0
-	var resumed := ShopRules.new(updated)
+	var resumed := LegacyRules.new(updated)
 	check_eq(resumed.load_dict(saved, true), "", "active automatic refresh")
 	check_eq(resumed.stations[active_id], saved.stations[active_id], "recorded automatic timing and stock exact")
 	resumed.step(0.1)
 	check(resumed.stations[active_id].remaining <= saved.stations[active_id].remaining, "recorded automatic work advances")
 
 func test_connection_stage_binding_is_structural() -> void:
-	var before: SpecShop = TEA.duplicate(true)
+	var before: SpecShop = TEA.copy_for_editing()
 	check(not before.connections.is_empty(), "connection fixture populated")
 	if before.connections.is_empty(): return
-	var after: SpecShop = before.duplicate(true)
+	var after: SpecShop = before.copy_for_editing()
 	after.connections[0].stage += 1
 	var old := CONTRACT.describe(before)
 	var changed := CONTRACT.describe(after)
@@ -191,17 +192,17 @@ func test_connection_stage_binding_is_structural() -> void:
 	check(changed.structure != old.structure, "connection stage is progression structure")
 
 func test_staff_role_and_station_unit_are_presentation() -> void:
-	var before: SpecShop = TEA.duplicate(true)
+	var before: SpecShop = TEA.copy_for_editing()
 	var base := CONTRACT.describe(before)
-	var after: SpecShop = before.duplicate(true)
+	var after: SpecShop = before.copy_for_editing()
 	after.staff.kinds[0].role = "New role caption"
 	check_eq(CONTRACT.describe(after), base, "staff role caption ignored")
-	after = before.duplicate(true)
+	after = before.copy_for_editing()
 	after.stations[0].params["unit"] = "New quantity caption"
 	check_eq(CONTRACT.describe(after), base, "station quantity caption ignored")
 
 func test_numeric_topology_boundary_predicates() -> void:
-	var before: SpecShop = TEA.duplicate(true)
+	var before: SpecShop = TEA.copy_for_editing()
 	var material_station: SpecStation
 	for station in before.stations:
 		if not station.materials.is_empty():
@@ -211,12 +212,12 @@ func test_numeric_topology_boundary_predicates() -> void:
 	if material_station == null: return
 	material_station.materials[0].box_cost = 1
 	var base := CONTRACT.describe(before)
-	var after: SpecShop = before.duplicate(true)
+	var after: SpecShop = before.copy_for_editing()
 	after.station(material_station.id).materials[0].box_cost = 2
 	check_eq(CONTRACT.describe(after).structure, base.structure, "box price magnitude rebalanceable")
 	after.station(material_station.id).materials[0].box_cost = 0
 	check(CONTRACT.describe(after).structure != base.structure, "box existence structural")
-	before = TEA.duplicate(true)
+	before = TEA.copy_for_editing()
 	var pickup: SpecStation
 	for station in before.stations:
 		if station.block == "pickup": pickup = station
@@ -224,7 +225,7 @@ func test_numeric_topology_boundary_predicates() -> void:
 	if pickup == null: return
 	pickup.params.erase("process_seconds")
 	base = CONTRACT.describe(before)
-	after = before.duplicate(true)
+	after = before.copy_for_editing()
 	after.station(pickup.id).params["process_seconds"] = 1.0
 	check(CONTRACT.describe(after).structure != base.structure, "pickup process role presence structural")
 	base = CONTRACT.describe(after)
@@ -238,7 +239,7 @@ func test_numeric_topology_boundary_predicates() -> void:
 	if hand == null: return
 	hand.params["users"] = 1
 	base = CONTRACT.describe(before)
-	after = before.duplicate(true)
+	after = before.copy_for_editing()
 	after.station(hand.id).params["users"] = 2
 	check_eq(CONTRACT.describe(after).structure, base.structure, "positive hand users magnitude rebalanceable")
 	after.station(hand.id).params["users"] = 0

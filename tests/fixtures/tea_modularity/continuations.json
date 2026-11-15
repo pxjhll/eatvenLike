@@ -1,0 +1,161 @@
+{
+	"source": "9bc1b20364e239e8719e0511be2c1a4d824e3601",
+	"content": {
+		"version": 1,
+		"gameplay": "9b85f1ef12e15c5da834ee1edb31eb54d4631ce2913afbc92bce68dac248004d",
+		"structure": "ccfde4b1e38c590f7a176648bc23fb87760d1b52a3be00b3f3567de54c76c945"
+	},
+	"unopened": {
+		"snapshots": [
+			{
+				"clock": 9.99999999999998,
+				"state_sha256": "b5547c238318c7a200cbc2a13949d7524f99f14c18c7fc91edaea24b2a9da84e"
+			},
+			{
+				"clock": 20.0,
+				"state_sha256": "048c95618f20683d56fc141d855d60ffad438b73fc0329f6d67761667bfe3f87"
+			},
+			{
+				"clock": 30.0000000000002,
+				"state_sha256": "5e0d3a5586341826f635a0e48283d939b005f589c09cf99e0d52eff3cfc5bccb"
+			},
+			{
+				"clock": 40.0000000000003,
+				"state_sha256": "cbd2d38ef31655534a98304931405193f388081b5996ad773aa768e74fcb0797"
+			},
+			{
+				"clock": 50.0000000000004,
+				"state_sha256": "45fec1e36bbaac51d42b8bbda107ea240b98841edba46158f898c753b0a2ee72"
+			},
+			{
+				"clock": 60.0000000000006,
+				"state_sha256": "5d883c7f9f8e1a5b712a01a223c8238b54a5651bf47efa6338e9be9f2891098f"
+			}
+		],
+		"events": [],
+		"sold": 0,
+		"walking_samples": 0
+	},
+	"active": {
+		"snapshots": [
+			{
+				"clock": 10.1,
+				"state_sha256": "f78700975f33b7a87753df6a1cc23b852306b47a4cf0e3a92712921481dab601"
+			},
+			{
+				"clock": 20.1,
+				"state_sha256": "c1cde28efa781471d4a9a81c139255be588259bef5cb1db66a7fee1143f22781"
+			},
+			{
+				"clock": 30.1000000000002,
+				"state_sha256": "8ceb844986b8b9544b29c97ad228b6e61c96bbd295f0281f5d89e8907cf8f5b6"
+			},
+			{
+				"clock": 40.1000000000003,
+				"state_sha256": "67c6f590a2e1965109ec34b00dcc1293e8cc775b6e02554ae5703364f2f317aa"
+			},
+			{
+				"clock": 50.1000000000004,
+				"state_sha256": "d205e6452c06d349f6dbddd567a70efe2df1e1068059a86a88565a3adf416cef"
+			},
+			{
+				"clock": 60.1000000000006,
+				"state_sha256": "43bf679c4fbfa036404413e0a0485333d320b7aaa67b300323538668f6c5902e"
+			}
+		],
+		"events": [
+			{
+				"clock": 2.4,
+				"name": "arrived",
+				"data_sha256": "373363b375bf9bb882249c26405be9b4b949861a7b00477d87e4d734004af514"
+			},
+			{
+				"clock": 4.8,
+				"name": "arrived",
+				"data_sha256": "52be201999d72d554a2c561452a72114805ad8d6f99849894ba00e79dd3c5b76"
+			},
+			{
+				"clock": 7.19999999999999,
+				"name": "arrived",
+				"data_sha256": "52be201999d72d554a2c561452a72114805ad8d6f99849894ba00e79dd3c5b76"
+			},
+			{
+				"clock": 8.09999999999999,
+				"name": "sale",
+				"data_sha256": "2229ecf5c6359da6a6ff0916b948c850c3334e12eb93a889d4b38f7c4bc020d2"
+			},
+			{
+				"clock": 9.59999999999998,
+				"name": "arrived",
+				"data_sha256": "6c0ee5d429e538ef3c08c9705ebfacbecffd13de104d41f02f2eb4121bf73d47"
+			},
+			{
+				"clock": 12.0,
+				"name": "arrived",
+				"data_sha256": "6c0ee5d429e538ef3c08c9705ebfacbecffd13de104d41f02f2eb4121bf73d47"
+			},
+			{
+				"clock": 14.4,
+				"name": "arrived",
+				"data_sha256": "6c0ee5d429e538ef3c08c9705ebfacbecffd13de104d41f02f2eb4121bf73d47"
+			},
+			{
+				"clock": 16.1,
+				"name": "sale",
+				"data_sha256": "2229ecf5c6359da6a6ff0916b948c850c3334e12eb93a889d4b38f7c4bc020d2"
+			},
+			{
+				"clock": 16.8,
+				"name": "arrived",
+				"data_sha256": "4387555077e16155eec273c8a2e27c0378cde7dcc72f54116eafb2961b4414fa"
+			},
+			{
+				"clock": 24.1000000000001,
+				"name": "sale",
+				"data_sha256": "2229ecf5c6359da6a6ff0916b948c850c3334e12eb93a889d4b38f7c4bc020d2"
+			},
+			{
+				"clock": 26.4000000000001,
+				"name": "arrived",
+				"data_sha256": "f35f4f7d62c109cdb58ace87f15e446beb4cd7e1b9ee8a402c000b4db0012e34"
+			},
+			{
+				"clock": 36.1000000000002,
+				"name": "sale",
+				"data_sha256": "8b1f344ac1b5004c482eca234b83fc34745d331fc48327ff96af4d0f74a44629"
+			},
+			{
+				"clock": 38.4000000000003,
+				"name": "arrived",
+				"data_sha256": "4387555077e16155eec273c8a2e27c0378cde7dcc72f54116eafb2961b4414fa"
+			},
+			{
+				"clock": 48.1000000000004,
+				"name": "sale",
+				"data_sha256": "8b1f344ac1b5004c482eca234b83fc34745d331fc48327ff96af4d0f74a44629"
+			},
+			{
+				"clock": 50.4000000000004,
+				"name": "arrived",
+				"data_sha256": "4387555077e16155eec273c8a2e27c0378cde7dcc72f54116eafb2961b4414fa"
+			},
+			{
+				"clock": 52.8000000000005,
+				"name": "arrived",
+				"data_sha256": "f35f4f7d62c109cdb58ace87f15e446beb4cd7e1b9ee8a402c000b4db0012e34"
+			},
+			{
+				"clock": 55.2000000000005,
+				"name": "arrived",
+				"data_sha256": "6c0ee5d429e538ef3c08c9705ebfacbecffd13de104d41f02f2eb4121bf73d47"
+			},
+			{
+				"clock": 60.1000000000006,
+				"name": "sale",
+				"data_sha256": "8b1f344ac1b5004c482eca234b83fc34745d331fc48327ff96af4d0f74a44629"
+			}
+		],
+		"sold": 6,
+		"walking_samples": 420
+	}
+}

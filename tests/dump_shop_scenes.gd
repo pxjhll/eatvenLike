@@ -13,13 +13,26 @@ func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args(): out_path = arg
 	var lines: PackedStringArray = []
 	var failed := false
+	var shop_paths: Array[String] = []
 	for dir_name in DirAccess.get_directories_at(SHOPS_DIR):
 		var shop_path := "%s/%s/shop.tres" % [SHOPS_DIR, dir_name]
-		if not ResourceLoader.exists(shop_path): continue
+		if ResourceLoader.exists(shop_path): shop_paths.append(shop_path)
+	# Include data-only onboarding examples in the same source/export comparison.
+	var catalog: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://content/template_shops.json"))
+	for row in catalog.shops:
+		var shop_path: String = "res://"+row.path
+		if shop_path not in shop_paths: shop_paths.append(shop_path)
+	shop_paths.sort()
+	var scenes := {}
+	for shop_path in shop_paths:
 		var shop: Resource = load(shop_path)
 		var scene_path := String(shop.get("scene_path"))
 		# 还没有美术场景的原型店没有场景可核对
 		if scene_path.is_empty(): continue
+		scenes[scene_path] = true
+	var scene_paths: Array = scenes.keys()
+	scene_paths.sort()
+	for scene_path in scene_paths:
 		var art: Node = load(scene_path).instantiate()
 		var anchors := art.get_node_or_null("Anchors")
 		var sortables := String(anchors.get_meta("sortables", "Sortables")) if anchors else "Sortables"

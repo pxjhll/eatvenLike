@@ -1,0 +1,768 @@
+[gd_resource type="Resource" script_class="SpecShopTemplate" format=3]
+
+[ext_resource type="Script" path="res://content/rules/spec_shop_template.gd" id="1_iq3no"]
+
+[resource]
+script = ExtResource("1_iq3no")
+hop_seconds = 0.5
+places = {
+"front": {
+"anchor": "counter",
+"capacity": 0
+},
+"pantry:out": {
+&"anchor": "pantry",
+"infinite": ["tomato_egg_raw", "pepper_pork_raw", "egg_rice_raw", "kungpao_raw", "yangzhou_raw"]
+},
+"pickup": {
+"anchor": "window",
+"capacity": 12
+},
+"plating:in": {
+&"anchor": "plating"
+},
+"plating:out": {
+&"anchor": "plating"
+},
+"rice_cooker:in": {
+&"anchor": "rice_cooker"
+},
+"rice_cooker:out": {
+&"anchor": "rice_cooker",
+"capacity": 8,
+"initial": {
+"rice": 4
+}
+},
+"seat:table/0": {
+"anchor": "table/0",
+"capacity": 0
+},
+"seat:table/1": {
+"anchor": "table/1",
+"capacity": 0
+},
+"seat:table/10": {
+"anchor": "table/10",
+"capacity": 0
+},
+"seat:table/11": {
+"anchor": "table/11",
+"capacity": 0
+},
+"seat:table/12": {
+"anchor": "table/12",
+"capacity": 0
+},
+"seat:table/13": {
+"anchor": "table/13",
+"capacity": 0
+},
+"seat:table/14": {
+"anchor": "table/14",
+"capacity": 0
+},
+"seat:table/15": {
+"anchor": "table/15",
+"capacity": 0
+},
+"seat:table/2": {
+"anchor": "table/2",
+"capacity": 0
+},
+"seat:table/3": {
+"anchor": "table/3",
+"capacity": 0
+},
+"seat:table/4": {
+"anchor": "table/4",
+"capacity": 0
+},
+"seat:table/5": {
+"anchor": "table/5",
+"capacity": 0
+},
+"seat:table/6": {
+"anchor": "table/6",
+"capacity": 0
+},
+"seat:table/7": {
+"anchor": "table/7",
+"capacity": 0
+},
+"seat:table/8": {
+"anchor": "table/8",
+"capacity": 0
+},
+"seat:table/9": {
+"anchor": "table/9",
+"capacity": 0
+},
+"soup_pot:in": {
+&"anchor": "soup_pot"
+},
+"soup_pot:out": {
+&"anchor": "soup_pot",
+"capacity": 10,
+"initial": {
+"soup": 10
+}
+},
+"wok_a:in": {
+&"anchor": "wok_a"
+},
+"wok_a:out": {
+&"anchor": "wok_a"
+},
+"wok_b:in": {
+&"anchor": "wok_b"
+},
+"wok_b:out": {
+&"anchor": "wok_b"
+}
+}
+machines = {
+"plating": {
+"input": "plating:in",
+"output": "plating:out",
+"profile": {
+"manual": true
+}
+},
+"rice_cooker": {
+"input": "rice_cooker:in",
+"output": "rice_cooker:out",
+"profile": {
+"load_seconds": 0.0,
+"manual": false,
+"stir_points": [],
+"stir_seconds": 0.0,
+"unload_seconds": 0.0
+}
+},
+"soup_pot": {
+"input": "soup_pot:in",
+"output": "soup_pot:out",
+"profile": {
+"load_seconds": 0.0,
+"manual": false,
+"stir_points": [],
+"stir_seconds": 0.0,
+"unload_seconds": 0.0
+}
+},
+"wok_a": {
+"input": "wok_a:in",
+"output": "wok_a:out",
+"profile": {
+"manual": true
+}
+},
+"wok_b": {
+"input": "wok_b:in",
+"output": "wok_b:out",
+"profile": {
+"manual": true
+}
+}
+}
+restocks = {
+"rice_cooker": {
+"consumes": {},
+"machine": "rice_cooker",
+"produces": {
+"rice": 4
+},
+"seconds": 60.0,
+"stock_limit": 8
+},
+"soup_pot": {
+"consumes": {},
+"machine": "soup_pot",
+"produces": {
+"soup": 10
+},
+"seconds": 60.0,
+"stock_limit": 10
+}
+}
+recipes = {
+"egg_fried_rice": {
+"nodes": [{
+&"capability": "source",
+&"fixed": false,
+"id": "step:0",
+&"item": "egg_rice_raw",
+"label": "拿料",
+&"place": "pantry:out",
+"seconds": 2.0,
+&"timing_target": "pantry"
+}, {
+&"capability": "source",
+&"fixed": true,
+"id": "step:1",
+&"item": "rice",
+"label": "盛饭",
+&"place": "rice_cooker:out",
+"seconds": 1.0,
+&"timing_target": "rice_cooker"
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"egg_rice_raw": 1,
+"rice": 1
+}),
+&"fixed": false,
+"id": "step:2",
+&"inputs": {
+"egg_rice_raw": "step:0",
+"rice": "step:1"
+},
+"label": "炒蛋炒饭",
+&"machine": "wok_b",
+&"produces": Dictionary[String, int]({
+"egg_fried_rice": 1
+}),
+"seconds": 14.0
+}],
+"output": {
+"count": 1,
+"item": "egg_fried_rice",
+"node": "step:2"
+}
+},
+"kungpao_rice": {
+"nodes": [{
+&"capability": "source",
+&"fixed": false,
+"id": "step:0",
+&"item": "kungpao_raw",
+"label": "拿料",
+&"place": "pantry:out",
+"seconds": 2.0,
+&"timing_target": "pantry"
+}, {
+&"capability": "source",
+&"fixed": true,
+"id": "step:1",
+&"item": "rice",
+"label": "盛饭",
+&"place": "rice_cooker:out",
+"seconds": 1.0,
+&"timing_target": "rice_cooker"
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"kungpao_raw": 1
+}),
+&"fixed": false,
+"id": "step:2",
+&"inputs": {
+"kungpao_raw": "step:0"
+},
+"label": "炒宫保鸡丁",
+&"machine": "wok_a",
+&"produces": Dictionary[String, int]({
+"kungpao": 1
+}),
+"seconds": 14.0
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"kungpao": 1,
+"rice": 1
+}),
+&"fixed": false,
+"id": "step:3",
+&"inputs": {
+"kungpao": "step:2",
+"rice": "step:1"
+},
+"label": "装盘",
+&"machine": "plating",
+&"produces": Dictionary[String, int]({
+"kungpao_rice": 1
+}),
+"seconds": 7.0
+}],
+"output": {
+"count": 1,
+"item": "kungpao_rice",
+"node": "step:3"
+}
+},
+"pepper_rice": {
+"nodes": [{
+&"capability": "source",
+&"fixed": false,
+"id": "step:0",
+&"item": "pepper_pork_raw",
+"label": "拿料",
+&"place": "pantry:out",
+"seconds": 2.0,
+&"timing_target": "pantry"
+}, {
+&"capability": "source",
+&"fixed": true,
+"id": "step:1",
+&"item": "rice",
+"label": "盛饭",
+&"place": "rice_cooker:out",
+"seconds": 1.0,
+&"timing_target": "rice_cooker"
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"pepper_pork_raw": 1
+}),
+&"fixed": false,
+"id": "step:2",
+&"inputs": {
+"pepper_pork_raw": "step:0"
+},
+"label": "炒青椒肉丝",
+&"machine": "wok_a",
+&"produces": Dictionary[String, int]({
+"pepper_pork": 1
+}),
+"seconds": 12.0
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"pepper_pork": 1,
+"rice": 1
+}),
+&"fixed": false,
+"id": "step:3",
+&"inputs": {
+"pepper_pork": "step:2",
+"rice": "step:1"
+},
+"label": "装盘",
+&"machine": "plating",
+&"produces": Dictionary[String, int]({
+"pepper_rice": 1
+}),
+"seconds": 7.0
+}],
+"output": {
+"count": 1,
+"item": "pepper_rice",
+"node": "step:3"
+}
+},
+"soup": {
+"nodes": [{
+&"capability": "source",
+&"fixed": true,
+"id": "step:0",
+&"item": "soup",
+"label": "盛汤",
+&"place": "soup_pot:out",
+"seconds": 3.0,
+&"timing_target": "soup_pot"
+}],
+"output": {
+"count": 1,
+"item": "soup",
+"node": "step:0"
+}
+},
+"tomato_rice": {
+"nodes": [{
+&"capability": "source",
+&"fixed": false,
+"id": "step:0",
+&"item": "tomato_egg_raw",
+"label": "拿料",
+&"place": "pantry:out",
+"seconds": 2.0,
+&"timing_target": "pantry"
+}, {
+&"capability": "source",
+&"fixed": true,
+"id": "step:1",
+&"item": "rice",
+"label": "盛饭",
+&"place": "rice_cooker:out",
+"seconds": 1.0,
+&"timing_target": "rice_cooker"
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"tomato_egg_raw": 1
+}),
+&"fixed": false,
+"id": "step:2",
+&"inputs": {
+"tomato_egg_raw": "step:0"
+},
+"label": "炒番茄炒蛋",
+&"machine": "wok_a",
+&"produces": Dictionary[String, int]({
+"tomato_egg": 1
+}),
+"seconds": 12.0
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"rice": 1,
+"tomato_egg": 1
+}),
+&"fixed": false,
+"id": "step:3",
+&"inputs": {
+"rice": "step:1",
+"tomato_egg": "step:2"
+},
+"label": "装盘",
+&"machine": "plating",
+&"produces": Dictionary[String, int]({
+"tomato_rice": 1
+}),
+"seconds": 7.0
+}],
+"output": {
+"count": 1,
+"item": "tomato_rice",
+"node": "step:3"
+}
+},
+"yangzhou_rice": {
+"nodes": [{
+&"capability": "source",
+&"fixed": false,
+"id": "step:0",
+&"item": "yangzhou_raw",
+"label": "拿料",
+&"place": "pantry:out",
+"seconds": 2.0,
+&"timing_target": "pantry"
+}, {
+&"capability": "source",
+&"fixed": true,
+"id": "step:1",
+&"item": "rice",
+"label": "盛饭",
+&"place": "rice_cooker:out",
+"seconds": 1.0,
+&"timing_target": "rice_cooker"
+}, {
+&"capability": "process",
+&"consumes": Dictionary[String, int]({
+"rice": 1,
+"yangzhou_raw": 1
+}),
+&"fixed": false,
+"id": "step:2",
+&"inputs": {
+"rice": "step:1",
+"yangzhou_raw": "step:0"
+},
+"label": "炒扬州炒饭",
+&"machine": "wok_b",
+&"produces": Dictionary[String, int]({
+"yangzhou_rice": 1
+}),
+"seconds": 16.0
+}],
+"output": {
+"count": 1,
+"item": "yangzhou_rice",
+"node": "step:2"
+}
+}
+}
+service = {
+"admission": "employee",
+"admission_port": "front",
+"admission_roles": ["staff"],
+"admission_seconds": 1.0,
+"arrivals": {
+"first_delay": 2.0,
+"pattern": "fixed"
+},
+"delivery": "table",
+&"delivery_ready": "whole_order",
+"delivery_roles": ["staff"],
+"eat_seconds": 8.0,
+"flyers": {
+"cooldown": 120.0,
+"count": 4,
+"gap": 3.0,
+"pattern": "gap",
+"when_full": "lost"
+},
+"menu": {
+"egg_fried_rice": "egg_fried_rice",
+"kungpao_rice": "kungpao_rice",
+"pepper_rice": "pepper_rice",
+"soup": "soup",
+"tomato_rice": "tomato_rice",
+"yangzhou_rice": "yangzhou_rice"
+},
+"orders": {
+"pay_at": "on_deliver",
+"queue_release": "after_take"
+},
+"seats": {
+"seat:table/0": "seat:table/0",
+"seat:table/1": "seat:table/1",
+"seat:table/10": "seat:table/10",
+"seat:table/11": "seat:table/11",
+"seat:table/12": "seat:table/12",
+"seat:table/13": "seat:table/13",
+"seat:table/14": "seat:table/14",
+"seat:table/15": "seat:table/15",
+"seat:table/2": "seat:table/2",
+"seat:table/3": "seat:table/3",
+"seat:table/4": "seat:table/4",
+"seat:table/5": "seat:table/5",
+"seat:table/6": "seat:table/6",
+"seat:table/7": "seat:table/7",
+"seat:table/8": "seat:table/8",
+"seat:table/9": "seat:table/9"
+},
+"selection": {
+"addon": {
+"dish": "soup",
+"first": false,
+"share": 1.0
+},
+"at": "admission",
+"gates": {
+"egg_fried_rice": {
+"stations": ["pantry", "rice_cooker", "wok_b"]
+},
+"kungpao_rice": {
+"stations": ["pantry", "rice_cooker", "wok_a", "plating"]
+},
+"pepper_rice": {
+"stations": ["pantry", "rice_cooker", "wok_a", "plating"]
+},
+"soup": {
+"stations": ["soup_pot"]
+},
+"tomato_rice": {
+"stations": ["pantry", "rice_cooker", "wok_a", "plating"]
+},
+"yangzhou_rice": {
+"stations": ["pantry", "rice_cooker", "wok_b"]
+}
+},
+"order": ["tomato_rice", "pepper_rice", "egg_fried_rice", "soup", "kungpao_rice", "yangzhou_rice"],
+"stages": [{
+"interval": 30.0,
+"weights": {
+"tomato_rice": 1.0
+}
+}, {
+"interval": 30.0,
+"weights": {
+"tomato_rice": 1.0
+}
+}, {
+"interval": 30.0,
+"weights": {
+"tomato_rice": 1.0
+}
+}, {
+"interval": 30.0,
+"weights": {
+"tomato_rice": 1.0
+}
+}, {
+"interval": 30.0,
+"weights": {
+"tomato_rice": 1.0
+}
+}, {
+"interval": 30.0,
+"weights": {
+"tomato_rice": 1.0
+}
+}]
+}
+}
+presentation = {
+"dining": {
+"seat:table/0": {
+"height": 36.0,
+"host": "Table0",
+"offsets": [Vector2(-18, 0), Vector2(-8, -8)],
+"port": "Tables/table/0"
+},
+"seat:table/1": {
+"height": 36.0,
+"host": "Table0",
+"offsets": [Vector2(18, 0), Vector2(28, -8)],
+"port": "Tables/table/0"
+},
+"seat:table/10": {
+"height": 36.0,
+"host": "Table5",
+"offsets": [Vector2(-18, 0), Vector2(-8, -8)],
+"port": "Tables/table/5"
+},
+"seat:table/11": {
+"height": 36.0,
+"host": "Table5",
+"offsets": [Vector2(18, 0), Vector2(28, -8)],
+"port": "Tables/table/5"
+},
+"seat:table/12": {
+"height": 36.0,
+"host": "Table6",
+"offsets": [Vector2(-18, 0), Vector2(-8, -8)],
+"port": "Tables/table/6"
+},
+"seat:table/13": {
+"height": 36.0,
+"host": "Table6",
+"offsets": [Vector2(18, 0), Vector2(28, -8)],
+"port": "Tables/table/6"
+},
+"seat:table/14": {
+"height": 36.0,
+"host": "Table7",
+"offsets": [Vector2(-18, 0), Vector2(-8, -8)],
+"port": "Tables/table/7"
+},
+"seat:table/15": {
+"height": 36.0,
+"host": "Table7",
+"offsets": [Vector2(18, 0), Vector2(28, -8)],
+"port": "Tables/table/7"
+},
+"seat:table/2": {
+"height": 36.0,
+"host": "Table1",
+"offsets": [Vector2(-18, 0), Vector2(-8, -8)],
+"port": "Tables/table/1"
+},
+"seat:table/3": {
+"height": 36.0,
+"host": "Table1",
+"offsets": [Vector2(18, 0), Vector2(28, -8)],
+"port": "Tables/table/1"
+},
+"seat:table/4": {
+"height": 36.0,
+"host": "Table2",
+"offsets": [Vector2(-18, 0), Vector2(-8, -8)],
+"port": "Tables/table/2"
+},
+"seat:table/5": {
+"height": 36.0,
+"host": "Table2",
+"offsets": [Vector2(18, 0), Vector2(28, -8)],
+"port": "Tables/table/2"
+},
+"seat:table/6": {
+"height": 36.0,
+"host": "Table3",
+"offsets": [Vector2(-18, 0), Vector2(-8, -8)],
+"port": "Tables/table/3"
+},
+"seat:table/7": {
+"height": 36.0,
+"host": "Table3",
+"offsets": [Vector2(18, 0), Vector2(28, -8)],
+"port": "Tables/table/3"
+},
+"seat:table/8": {
+"height": 36.0,
+"host": "Table4",
+"offsets": [Vector2(-18, 0), Vector2(-8, -8)],
+"port": "Tables/table/4"
+},
+"seat:table/9": {
+"height": 36.0,
+"host": "Table4",
+"offsets": [Vector2(18, 0), Vector2(28, -8)],
+"port": "Tables/table/4"
+}
+},
+"poses": {
+"seat:table/0": {
+"facing": 1,
+"offset": Vector2(0, 0),
+"port": "Seats/table/0"
+},
+"seat:table/1": {
+"facing": 3,
+"offset": Vector2(0, 0),
+"port": "Seats/table/1"
+},
+"seat:table/10": {
+"facing": 1,
+"offset": Vector2(0, 0),
+"port": "Seats/table/10"
+},
+"seat:table/11": {
+"facing": 3,
+"offset": Vector2(0, 0),
+"port": "Seats/table/11"
+},
+"seat:table/12": {
+"facing": 1,
+"offset": Vector2(0, 0),
+"port": "Seats/table/12"
+},
+"seat:table/13": {
+"facing": 3,
+"offset": Vector2(0, 0),
+"port": "Seats/table/13"
+},
+"seat:table/14": {
+"facing": 1,
+"offset": Vector2(0, 0),
+"port": "Seats/table/14"
+},
+"seat:table/15": {
+"facing": 3,
+"offset": Vector2(0, 0),
+"port": "Seats/table/15"
+},
+"seat:table/2": {
+"facing": 1,
+"offset": Vector2(0, 0),
+"port": "Seats/table/2"
+},
+"seat:table/3": {
+"facing": 3,
+"offset": Vector2(0, 0),
+"port": "Seats/table/3"
+},
+"seat:table/4": {
+"facing": 1,
+"offset": Vector2(0, 0),
+"port": "Seats/table/4"
+},
+"seat:table/5": {
+"facing": 3,
+"offset": Vector2(0, 0),
+"port": "Seats/table/5"
+},
+"seat:table/6": {
+"facing": 1,
+"offset": Vector2(0, 0),
+"port": "Seats/table/6"
+},
+"seat:table/7": {
+"facing": 3,
+"offset": Vector2(0, 0),
+"port": "Seats/table/7"
+},
+"seat:table/8": {
+"facing": 1,
+"offset": Vector2(0, 0),
+"port": "Seats/table/8"
+},
+"seat:table/9": {
+"facing": 3,
+"offset": Vector2(0, 0),
+"port": "Seats/table/9"
+}
+}
+}

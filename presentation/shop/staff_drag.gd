@@ -79,8 +79,9 @@ func _press_body(screen: Vector2) -> void:
 	if point.y < band.x or point.y >= band.y: return
 	var found := -1
 	var depth := -INF
+	var unit_scale: float = _view._actor_unit_scale
 	for worker in _view.view.deployed_snapshot():
-		if Rect2(worker.pos + Vector2(-50, -130), Vector2(100, 145)).has_point(point) and worker.pos.y >= depth:
+		if Rect2(worker.pos + Vector2(-50, -130) * unit_scale, Vector2(100, 145) * unit_scale).has_point(point) and worker.pos.y >= depth:
 			found = int(worker.id)
 			depth = worker.pos.y
 	if found != -1: _candidate(found, screen, false)
@@ -92,7 +93,7 @@ func _candidate(id: int, screen: Vector2, from_card: bool) -> void:
 	_pointer = _world(screen)
 	_view.select_worker(id, from_card)
 	var worker := _worker()
-	_grab_offset = Vector2(0, 60) if from_card else worker.pos - _pointer
+	_grab_offset = Vector2(0, 60) * _view._actor_unit_scale if from_card else worker.pos - _pointer
 
 
 func _motion(screen: Vector2) -> void:
@@ -208,7 +209,7 @@ func _release(screen: Vector2) -> void:
 		# 玩家怎么排都行；只在没人搬东西的时候提醒一句
 		if _view.carrier_warning(): message = _view._t("no_carrier")
 		_view._show_toast(message)
-		_view.save_now(false)
+		_view.request_save()
 	else:
 		_view._show_toast(_status_text(status))
 	cancel()

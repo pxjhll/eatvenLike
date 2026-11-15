@@ -1,5 +1,9 @@
 class_name SpecFulfillment
 extends Resource
+## Opt-in production/fulfillment capabilities; legacy definitions retain defaults.
+@export var flow_version: int = 0
+@export var delivery_batch: String = "item"
+@export var delivery_points: Dictionary[String,String] = {}
 ## Mode contract: game/rules/shop_spec_validator.gd capabilities(); docs/shop-capabilities.md.
 ## Unused fields must retain their resource defaults; unsupported combinations are rejected.
 ## 订单履约（§3.2）：一位顾客从进店到离开。菜谱管“怎么做”，这里管“怎么卖”。

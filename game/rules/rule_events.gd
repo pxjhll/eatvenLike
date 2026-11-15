@@ -9,6 +9,18 @@ var _listeners: Dictionary = {}
 ## 最近的事件（界面滚动提示用）：{"name", "time", "data"}
 var log: Array = []
 var clock := 0.0
+var _batch_depth := 0
+var _pending: Array = []
+
+func begin_batch() -> void:
+	_batch_depth += 1
+
+func end_batch() -> void:
+	_batch_depth -= 1
+	if _batch_depth>0: return
+	while not _pending.is_empty():
+		var message: Dictionary = _pending.pop_front()
+		emit(message.name,message.data)
 
 
 func on(name: String, listener: Callable) -> void:
@@ -26,6 +38,9 @@ func off(name: String, listener: Callable) -> void:
 
 
 func emit(name: String, data: Dictionary = {}) -> void:
+	if _batch_depth>0:
+		_pending.append({"name":name,"data":data.duplicate(true)})
+		return
 	# 计时广播（tick_*）不进日志，免得把真正发生的事挤掉
 	if not name.begins_with("tick_"):
 		log.append({"name": name, "time": clock, "data": data})

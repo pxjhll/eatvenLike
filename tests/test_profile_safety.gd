@@ -1,10 +1,12 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 
 const TestSession := preload("res://tests/shop_test_session.gd")
 
 const Profile := preload("res://game/app/profile.gd")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/current/pancake/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
 
 class FailingProfile extends "res://game/app/profile.gd":
 	var fail_write := false
@@ -12,7 +14,7 @@ class FailingProfile extends "res://game/app/profile.gd":
 		if fail_write: return ERR_FILE_CANT_WRITE
 		return super._write_candidate(candidate)
 
-class FailingStore extends ShopSave:
+class FailingStore extends "res://tests/fixtures/legacy_shops/reference_save.gd":
 	var fail_write := false
 	var keep_deleted := false
 	func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
@@ -109,7 +111,7 @@ func test_actual_scene_finish_failure_preserves_signals_and_shop_save() -> void:
 	var profile := FailingProfile.new(_path("scene-profile"))
 	profile.save()
 	var store := FailingStore.new(PANCAKE, _path("scene-shop"))
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	rules.completed_at = 1.0
 	store.save_game(rules)
 	var before := profile.to_dict()
@@ -148,7 +150,7 @@ func test_progress_coordinator_fresh_and_jump_order() -> void:
 	var profile := FailingProfile.new(_path("coordinator"))
 	profile.save()
 	var old_store := FailingStore.new(PANCAKE, _path("old-shop"))
-	var old_rules := ShopRules.new(PANCAKE)
+	var old_rules := LegacyRules.new(PANCAKE)
 	old_store.save_game(old_rules)
 	old_store.fail_write = true
 	check(service.jump_shop(profile, old_store, old_rules, "tea") != OK, "jump requires current save")
@@ -170,7 +172,7 @@ func test_progress_coordinator_fresh_and_jump_order() -> void:
 	profile.fail_write = true
 	check(service.initialize_fresh(profile, store).error != OK, "marker acknowledgement failure blocks init")
 	check(profile.fresh_shop and Profile.new(profile.path).fresh_shop, "failed acknowledgement retains marker")
-	check_eq(ShopSave.new(TEA, store.path).load_game().clock, 0.0, "empty target saved first")
+	check_eq(LegacySave.new(TEA, store.path).load_game().clock, 0.0, "empty target saved first")
 	profile.fail_write = false
 	var result: Dictionary = service.initialize_fresh(profile, store)
 	check_eq(result.error, OK, "initialization retry succeeds")
@@ -181,7 +183,7 @@ func test_startup_failure_blocks_play_and_autosave_until_retry() -> void:
 	var profile := FailingProfile.new(_path("startup-profile"))
 	profile.finish_shop({"shop": "pancake"})
 	var store := FailingStore.new(TEA, _path("startup-shop"))
-	var previous := ShopRules.new(TEA)
+	var previous := LegacyRules.new(TEA)
 	previous.gold = 4321.0
 	store.save_game(previous)
 	var bytes := FileAccess.get_file_as_bytes(store.path)
@@ -220,8 +222,8 @@ func test_startup_failure_blocks_play_and_autosave_until_retry() -> void:
 func test_external_future_profile_blocks_fresh_target_overwrite() -> void:
 	var profile := Profile.new(_path("external-future"))
 	profile.finish_shop({"shop": "pancake"})
-	var store := ShopSave.new(TEA, _path("future-target"))
-	var previous := ShopRules.new(TEA)
+	var store := LegacySave.new(TEA, _path("future-target"))
+	var previous := LegacyRules.new(TEA)
 	previous.gold = 9876.0
 	store.save_game(previous)
 	var before := FileAccess.get_file_as_bytes(store.path)
@@ -234,7 +236,7 @@ func test_actual_scene_jump_requires_both_saves_before_signal() -> void:
 	var profile := FailingProfile.new(_path("jump-profile"))
 	profile.save()
 	var store := FailingStore.new(PANCAKE, _path("jump-shop"))
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	store.save_game(rules)
 	var bytes := FileAccess.get_file_as_bytes(store.path)
 	var before := profile.to_dict()

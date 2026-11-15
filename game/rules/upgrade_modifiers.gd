@@ -1,7 +1,7 @@
 extends RefCounted
 ## Shared upgrade folding; queries never replay one-shot effects.
 
-const SET_KINDS := ["batch", "process_slots", "flyer_customers", "flyer_cooldown"]
+const SET_KINDS := ["batch", "process_slots", "capacity", "flyer_customers", "flyer_cooldown"]
 const ADD_KINDS := ["carry", "staff_slot", "seats"]
 
 

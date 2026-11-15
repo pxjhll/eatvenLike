@@ -1,11 +1,18 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 
 const TestSession := preload("res://tests/shop_test_session.gd")
 ## 通用店铺场景里的奶茶店引导（数据驱动，§6.3），用真实点按走一遍：欢迎卡、柠檬水、第一杯、开店上手卡、
 ## 后面的开线、原料箱、后厨招人、客人等急、加料线以后的多招人；重开游戏记得看过哪些。
 ## 和旧场景的 render_guide.gd 一一对应（旧场景删掉时这个留下）。
 
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
+const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+class RollBottleneck extends ShopView:
+	func _guide_slow_machine() -> String:
+		return "roll"
+
 var view: Node2D
 var hud: Control
 var guide: Control
@@ -29,7 +36,7 @@ func _run() -> void:
 	root.size = Vector2i(720, 1280)
 	if FileAccess.file_exists(save_path): DirAccess.remove_absolute(save_path)
 	view = load("res://presentation/shop/shop_play.tscn").instantiate()
-	view.session = TestSession.make(TEA, save_path, ShopRules.new(TEA), ShopSave.new(TEA, save_path))
+	view.session = TestSession.make(TEA, save_path, LegacyRules.new(TEA), LegacySave.new(TEA, save_path))
 	root.add_child(view)
 	await process_frame
 	view.set_process(false)
@@ -66,7 +73,7 @@ func _run() -> void:
 	await _capture("done")
 	await _touch(hud.popups.get_global_transform_with_canvas() * Vector2(360, 1100))
 	_check(guide.active.is_empty() and guide.seen.has("opening") and not guide.freezes(), "点哪里都能关掉上手卡（只有触屏事件也行）")
-	var resumed := ShopSave.new(TEA, save_path)
+	var resumed := LegacySave.new(TEA, save_path)
 	resumed.load_game()
 	_check("opening" in resumed.loaded_guides, "看过的引导和店一起存")
 	_rules().gold = maxf(_rules().gold, 200)
@@ -139,22 +146,25 @@ func _run() -> void:
 	await _click(hud.tab("shop"))
 	view.free()
 	var reopened: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	reopened.session = TestSession.make(TEA, save_path, null, ShopSave.new(TEA, save_path))
+	reopened.session = TestSession.make(TEA, save_path, null, LegacySave.new(TEA, save_path))
 	reopened.session.guide_enabled = true
 	await _reopen(reopened)
 	_check(reopened.guide.active.is_empty() and reopened.guide.seen.has("lost_machine"), "重开游戏记得看过的引导")
 	reopened.free()
-	var old_save := ShopRules.new(TEA)
+	var old_save := LegacyRules.new(TEA)
 	old_save.unlock("lemonade")
 	old_save.hire()
 	old_save.deploy_worker(old_save.roster[1].id)
-	ShopSave.new(TEA, save_path).save_game(old_save, 1.0, [])
+	LegacySave.new(TEA, save_path).save_game(old_save, 1.0, [])
 	var veteran: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
-	veteran.session = TestSession.make(TEA, save_path, null, ShopSave.new(TEA, save_path))
+	veteran.session = TestSession.make(TEA, save_path, null, LegacySave.new(TEA, save_path))
 	veteran.session.guide_enabled = true
 	await _reopen(veteran)
 	_check(veteran.guide.active.is_empty() and veteran.guide.seen.has("opening"), "已经开过张的存档跳过开场")
 	veteran.free()
+	await _pancake_roll_hint()
+	await _pancake_skip_tutorial(false)
+	await _pancake_skip_tutorial(true)
 	if FileAccess.file_exists(save_path): DirAccess.remove_absolute(save_path)
 	for error in errors.take():
 		failures += 1
@@ -162,6 +172,64 @@ func _run() -> void:
 	OS.remove_logger(errors)
 	print("SHOP GUIDE GUI: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)
+
+func _pancake_roll_hint() -> void:
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	var owner := ShopRules.new(PANCAKE, 42)
+	owner.unlock("soy_milk")
+	view.session = TestSession.make(PANCAKE, save_path + "-pancake", owner)
+	await _reopen(view)
+	hud = view.ui
+	guide = view.guide
+	var original_view: ShopView = view.view
+	view.view = RollBottleneck.new(owner)
+	guide.enabled = true
+	for step in PANCAKE.guide:
+		if step.id != "lost_machine": guide.seen[step.id] = true
+	guide._start("lost_machine")
+	guide.refresh(0)
+	await process_frame
+	_check(not view.anchors.rect("Stations/roll/Tap").has_area(), "卷饼没有可点的区域")
+	_check(not view.frozen() and guide._point == Vector2.INF, "没有目标时不暂停，也不画指向屏幕中央的箭头")
+	_check(guide._bubble.visible and not guide._bubble_text.text.contains("点它升级"), "没有升级入口时显示一般经营提示")
+	var clock := owner.clock
+	view._process(0.25)
+	_check(owner.clock > clock, "提示还在时店铺继续经营")
+	await _touch(guide._bubble_skip.get_global_transform_with_canvas() * (guide._bubble_skip.size / 2.0), true)
+	_check(guide.seen.has("lost_machine") and not guide.visible and not view.frozen(), "只有原生触屏事件也能关闭「知道了」")
+	view.free()
+	original_view = null
+
+func _pancake_skip_tutorial(from_opening: bool) -> void:
+	var path := save_path + "-skip-" + str(from_opening)
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	var owner := ShopRules.new(PANCAKE, 42)
+	view.session = TestSession.make(PANCAKE, path, owner)
+	view.session.guide_enabled = true
+	await _reopen(view)
+	hud = view.ui
+	guide = view.guide
+	if from_opening: await _click(hud.popups.button(hud.popups.primary_index()))
+	# Wait for containers to lay out the wrapped text and position the buttons.
+	for frame in 4: await process_frame
+	var skip: Button = guide._bubble_skip if from_opening else hud.popups.button(0)
+	await _touch(skip.get_global_transform_with_canvas() * (skip.size / 2.0), from_opening)
+	_check(guide.seen.has("welcome") and guide.seen.has("opening") and not guide.freezes(), "触屏跳过后关闭开场引导")
+	_check(not owner.is_open(), "跳过不替玩家购买设备")
+	owner.gold = 1000
+	owner.unlock("soy_milk")
+	owner.unlock("rear_equipment")
+	guide.refresh(0)
+	_check(guide.active.is_empty() and guide.seen.has("box_flour") and guide.seen.has("lost_machine"), "跳过后招人、原料箱和客人等急教程不再弹")
+	_check(not guide.seen.has("shop_done"), "仍可显示完店总结")
+	_check(view.save_now(false) == OK, "跳过教程写入存档")
+	view.free()
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	view.session = TestSession.make(PANCAKE, path)
+	view.session.guide_enabled = true
+	await _reopen(view)
+	_check(view.guide.seen.has("box_flour") and view.guide.active.is_empty(), "读档后仍然跳过教程")
+	view.free()
 
 
 ## Explicit session reopens the isolated save and enables only the tutorial.
@@ -197,7 +265,7 @@ func _click(button: Button) -> void:
 
 
 ## 只有触屏事件，没有 Godot 平常顺手生成的鼠标事件
-func _touch(point: Vector2) -> void:
+func _touch(point: Vector2, refresh_while_pressed := false) -> void:
 	var emulate := Input.is_emulating_mouse_from_touch()
 	Input.emulate_mouse_from_touch = false
 	for pressed in [true, false]:
@@ -207,6 +275,7 @@ func _touch(point: Vector2) -> void:
 		Input.parse_input_event(event)
 		Input.flush_buffered_events()
 		await process_frame
+		if pressed and refresh_while_pressed: guide.refresh(0.016)
 	Input.emulate_mouse_from_touch = emulate
 	guide.refresh(0)
 	await process_frame

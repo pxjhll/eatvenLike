@@ -1,10 +1,12 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 
 const MODULE := "res://game/rules/fulfillment_completion.gd"
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/tea.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
 
-class CompletionRules extends ShopRules:
+class CompletionRules extends "res://tests/fixtures/legacy_shops/reference_rules.gd":
 	var observations := []
 	func _take(job: Dictionary) -> void:
 		observations.append(["take", stations[job.src].phase, stations[job.src].processing])
@@ -65,7 +67,7 @@ func test_topping_input_and_facade_preserve_phase() -> void:
 	var station := {"output": {"tea": 2}, "input": {"leaf": 9}, "processing_item": "", "phase": "working", "history": [7]}
 	kernel.complete_topping(station, {"item": "leaf", "count": 3})
 	check_eq(station, {"output": {"tea": 2}, "input": {"leaf": 12}, "processing_item": "", "phase": "working", "history": [7]}, "direct topping adds input without phase changes")
-	var rules := ShopRules.new(TEA, 42)
+	var rules := LegacyRules.new(TEA, 42)
 	rules._complete_topping("unused", station, {"item": "leaf", "count": 2})
 	check_eq(station, {"output": {"tea": 2}, "input": {"leaf": 14}, "processing_item": "", "phase": "working", "history": [7]}, "compatibility facade forwards")
 
@@ -151,7 +153,7 @@ func test_rules_chore_queries_only_used_arguments_and_work_finishes_first() -> v
 
 func test_rules_terminal_hand_settles_then_cleans_without_advancing() -> void:
 	if _kernel() == null: return
-	var rules := ShopRules.new(PANCAKE, 42)
+	var rules := LegacyRules.new(PANCAKE, 42)
 	var c := {"id": 17, "kind": "plain", "addon": false, "state": "paid", "paid": 6}
 	rules.customers = [c]
 	var worker: Dictionary = rules.workers[0]

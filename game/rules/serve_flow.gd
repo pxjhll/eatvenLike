@@ -14,6 +14,13 @@ extends RefCounted
 ## 物品守恒：实物只在“从原料箱拿起 / 批量锅出锅”时出生，只在“配方工序消耗 / 客人吃完”时消失；取消只放回、不凭空增减。
 
 const WorkerState := preload("res://game/rules/worker_state.gd")
+const CustomerMovement := preload("res://game/rules/customer_movement.gd")
+const Actions := preload("res://game/rules/rule_actions.gd")
+const ActionContext := preload("res://game/rules/serve_action_context.gd")
+const Production := preload("res://game/rules/production_plan.gd")
+const Sampling := preload("res://game/rules/rule_sampling.gd")
+const Bundle := preload("res://game/rules/bundle_delivery.gd")
+const BundleContext := preload("res://game/rules/bundle_action_context.gd")
 const SHARED := -1
 const SOURCE_BLOCKS := ["supply", "batch_pot"]
 const WORK_BLOCKS := ["hand", "combine"]
@@ -31,26 +38,21 @@ static func empty_state() -> Dictionary:
 # =====================================================================
 
 static func work_steps(shop: SpecShop, dish_id: String) -> Array[int]:
-	var out: Array[int] = []
-	var dish := shop.dish(dish_id)
-	for i in dish.steps.size():
-		var st := shop.station(dish.steps[i].station)
-		if st != null and st.block in WORK_BLOCKS: out.append(i)
-	return out
+	return Production.work_steps(shop,dish_id)
 
 
 ## 这道菜里谁做出 item（同一道菜里只认第一步）
 static func producer(shop: SpecShop, dish_id: String, item: String) -> int:
-	var dish := shop.dish(dish_id)
-	for i in dish.steps.size():
-		if dish.steps[i].produces.has(item): return i
-	return -1
+	return Production.producer(shop,dish_id,item)
 
 
 static func pickup_of(shop: SpecShop) -> String:
 	for st in shop.stations:
 		if st.block == "pickup": return st.id
 	return ""
+
+static func pickup_for(shop: SpecShop, dish_id: String) -> String:
+	return Bundle.source_port(shop,dish_id)
 
 
 static func seat_point(shop: SpecShop, seat: int) -> String:
@@ -180,7 +182,7 @@ static func _arrivals(rules: ShopRules, dt: float) -> void:
 			_spawn(rules)
 	if rules._next_customer <= 0.0:
 		var interval := rules.customer_interval()
-		rules._next_customer = interval if rules.shop.fulfillment.arrival == "fixed" else -log(1.0 - rules.rng.randf() * 0.999) * interval
+		rules._next_customer = Sampling.interval(rules.shop.fulfillment.arrival, interval, rules.rng)
 		_spawn(rules)
 
 
@@ -193,6 +195,7 @@ static func _spawn(rules: ShopRules) -> void:
 	s.guests.append({"id": _next(rules), "state": "queue", "wait": 0.0, "seat": -1, "order": -1, "claimed": -1,
 		"walk_left": 0.0, "walk_total": 0.0, "eat_left": 0.0})
 	rules._next_customer_id += 1
+	if rules.movement_enabled(): CustomerMovement.sync(rules)
 	rules.events.emit("arrived", {})
 
 
@@ -259,8 +262,9 @@ static func _guests(rules: ShopRules, dt: float) -> void:
 			"to_pickup":
 				g.wait += dt
 				g.walk_left = maxf(0.0, float(g.walk_left) - dt)
-				if g.walk_left <= 0.000001:
+				if CustomerMovement.ready(rules,"guest:%d"%int(g.id)) if rules.movement_enabled() else g.walk_left <= 0.000001:
 					g.state = "await"
+					if rules.movement_enabled(): CustomerMovement.sync(rules)
 					rules.events.emit("await_pickup", {"guest": g.id})
 					_collect(rules, g)
 			"await":
@@ -269,8 +273,9 @@ static func _guests(rules: ShopRules, dt: float) -> void:
 			"to_seat":
 				g.wait += dt
 				g.walk_left = maxf(0.0, float(g.walk_left) - dt)
-				if g.walk_left <= 0.000001:
+				if CustomerMovement.ready(rules,"guest:%d"%int(g.id)) if rules.movement_enabled() else g.walk_left <= 0.000001:
 					g.state = "seated"
+					if rules.movement_enabled(): CustomerMovement.sync(rules)
 					rules.events.emit("seated", {"guest": g.id, "seat": g.seat})
 					_maybe_eat(rules, g)
 			"seated":
@@ -292,12 +297,14 @@ static func _start_eating(rules: ShopRules, g: Dictionary) -> bool:
 	if o.is_empty() or not order_complete(o): return false
 	g.state = "eating"
 	g.eat_left = rules.seat_seconds()
+	if rules.movement_enabled(): CustomerMovement.sync(rules)
 	return true
 
 
 ## 自取（dine_rule = self_pickup）：这一单的每份餐都在出餐口上了，客人一次端走，走去座位。
 ## 状态先全部改好（东西归到座位、客人在路上、每份记送达、整单结账），最后才广播。
 static func _collect(rules: ShopRules, g: Dictionary) -> void:
+	if rules.movement_enabled() and not CustomerMovement.ready(rules,"guest:%d"%int(g.id)): return
 	var o := order(rules, int(g.order))
 	if o.is_empty(): return
 	var pickup := pickup_of(rules.shop)
@@ -318,6 +325,7 @@ static func _collect(rules: ShopRules, g: Dictionary) -> void:
 	var speed := maxf(1.0, rules.shop.fulfillment.customer_walk)
 	g.walk_total = RuleNav.length(rules.nav.path(rules.nav.point(pickup), _point(rules, SEAT + str(g.seat)))) / speed
 	g.walk_left = g.walk_total
+	if rules.movement_enabled(): CustomerMovement.sync(rules)
 	var done: Array = []
 	for pair in ready: done.append(_commit_delivery(rules, int(pair[0].id)))
 	# 整单端走、送达计数、结账全部落定后才广播，回调里存档读档接得上
@@ -337,6 +345,7 @@ static func _leave(rules: ShopRules, g: Dictionary) -> void:
 		if owned.has(int(good.owner)) and good.at == SEAT + str(g.seat): s.goods.erase(good)
 	if not o.is_empty(): s.orders.erase(o)
 	s.guests.erase(g)
+	if rules.movement_enabled(): CustomerMovement.sync(rules)
 	rules.events.emit("left", {"guest": g.id, "seat": g.seat})
 
 
@@ -354,12 +363,12 @@ static func _go(rules: ShopRules, worker: Dictionary, at: String, stage: String)
 	job.stage = stage
 	worker.target = "" if at.begins_with(SEAT) else at
 	var goal := _point(rules, at)
-	if worker.pos.distance_to(goal) < 1.0:
+	if worker.pos.distance_to(goal) < 1.0 and not rules.movement_enabled():
 		worker.walking = false
 		worker.pos = goal
 		_arrived(rules, worker)
 	else:
-		WorkerState.begin_walk(worker, rules.nav.path(worker.pos, goal), "walk")
+		rules.begin_move(worker,goal,"walk")
 
 
 static func _act(worker: Dictionary, job: Dictionary, stage: String, seconds: float, label: String) -> void:
@@ -375,12 +384,17 @@ static func _work(rules: ShopRules, worker: Dictionary, dt: float) -> void:
 	if job.is_empty():
 		worker.phase = "idle"
 		return
+	if rules.shop.dispatch.action_version==1:
+		var context := _bundle_context(rules) if job.kind=="bundle" else _action_context(rules)
+		if not worker.has("action"): context.restore(worker)
+		Actions.tick(worker,dt,context)
+		return
 	if worker.walking:
-		if WorkerState.advance_walk(worker, rules.walk_speed(worker) * dt): _arrived(rules, worker)
+		if rules.advance_move(worker,dt): _arrived(rules, worker)
 		return
 	if worker.phase != "work": return
-	worker.action_left = maxf(0.0, float(worker.action_left) - dt)
-	if worker.action_left > 0.000001: return
+	if rules.movement_enabled() and job.kind=="take" and not CustomerMovement.ready(rules,"guest:%d"%int(job.guest)): return
+	if not WorkerState.tick_handoff_action(worker,dt): return
 	match String(job.stage):
 		"pick": _picked(rules, worker, job)
 		"drop": _dropped(rules, worker, job)
@@ -426,6 +440,11 @@ static func _pick_label(rules: ShopRules, job: Dictionary) -> String:
 
 
 static func _picked(rules: ShopRules, worker: Dictionary, job: Dictionary) -> void:
+	_pick_good(rules,worker,job)
+	_go(rules, worker, String(job.to), "go_to")
+
+
+static func _pick_good(rules: ShopRules, worker: Dictionary, job: Dictionary) -> void:
 	var good: Dictionary
 	if int(job.good) == -1:
 		good = _birth(rules, String(job.item), HAND + str(worker.id), int(job.unit))
@@ -439,7 +458,6 @@ static func _picked(rules: ShopRules, worker: Dictionary, job: Dictionary) -> vo
 	worker.carry_item = String(job.item)
 	worker.carry_count = 1
 	worker.task_label = "送餐" if job.kind == "serve" else ("出餐" if job.kind == "pass" else "搬")
-	_go(rules, worker, String(job.to), "go_to")
 
 
 static func _dropped(rules: ShopRules, worker: Dictionary, job: Dictionary) -> void:
@@ -479,13 +497,21 @@ static func _taken(rules: ShopRules, worker: Dictionary, job: Dictionary) -> voi
 	var g := guest(rules, int(job.guest))
 	var lines: Array = [{"dish": rules._pick_dish(rules.order_weights()), "qty": 1, "delivered": 0}]
 	var f := rules.shop.fulfillment
-	if not f.addon_dish.is_empty() and lines[0].dish != f.addon_dish and rules.dish_open(f.addon_dish, false) and rules.rng.randf() < f.addon_chance:
+	var main := rules.shop.dish(String(lines[0].dish))
+	var addon := rules.shop.dish(f.addon_dish)
+	# A front-only order must not acquire an implicit kitchen dependency.
+	var same_service := addon!=null and (not main.front or addon.front)
+	if same_service and lines[0].dish != f.addon_dish and rules.dish_open(f.addon_dish, false) and rules.rng.randf() < f.addon_chance:
 		lines.append({"dish": f.addon_dish, "qty": 1, "delivered": 0})
 	var o := {"id": _next(rules), "guest": g.id, "seat": g.seat, "lines": lines, "paid": false}
 	s.orders.append(o)
 	for i in lines.size():
 		for unused in int(lines[i].qty):
-			s.units.append({"id": _next(rules), "order": o.id, "line": i, "dish": lines[i].dish, "done": [], "wait": 0.0})
+			var unit := {"id": _next(rules), "order": o.id, "line": i, "dish": lines[i].dish, "done": [], "wait": 0.0}
+			if f.flow_version==1:
+				unit.flow_version = 1
+				unit.recipe_signature = Production.compile(rules.shop,String(unit.dish)).signature
+			s.units.append(unit)
 	g.order = o.id
 	g.claimed = -1
 	var speed := maxf(1.0, f.customer_walk)
@@ -497,6 +523,7 @@ static func _taken(rules: ShopRules, worker: Dictionary, job: Dictionary) -> voi
 		g.walk_total = RuleNav.length(rules.nav.path(rules.nav.point(rules.counter_id), _point(rules, SEAT + str(g.seat)))) / speed
 	g.walk_left = g.walk_total
 	_end(rules, worker)
+	if rules.movement_enabled(): CustomerMovement.sync(rules)
 	rules.events.emit("order_taken", {"guest": g.id, "order": o.id, "seat": g.seat})
 
 
@@ -541,6 +568,7 @@ static func _announce_delivery(rules: ShopRules, done: Dictionary) -> void:
 
 
 static func _end(rules: ShopRules, worker: Dictionary) -> void:
+	worker.erase("action")
 	rules.serve.jobs.erase(str(worker.id))
 	worker.phase = "idle"
 	worker.task_label = "idle"
@@ -555,8 +583,19 @@ static func _good(rules: ShopRules, id: int) -> Dictionary:
 
 ## 放下手上的活（调岗、收回名册）：预留全部释放；手上的东西放回拿的地方，仍归原来那份餐（§10.3 取消释放）
 static func cancel(rules: ShopRules, worker: Dictionary) -> void:
+	var job := job_of(rules,worker)
+	if job.get("kind","")=="bundle":
+		if not worker.has("action") or not Actions.cancel(worker,_bundle_context(rules)): Bundle.cancel(rules,worker,job,load("res://game/rules/serve_flow.gd"))
+		return
+	if worker.has("action") and Actions.cancel(worker,_action_context(rules)): return
+	_cancel_assignment(rules,worker)
+
+
+static func _cancel_assignment(rules: ShopRules, worker: Dictionary) -> void:
+	worker.erase("action")
 	var job := job_of(rules, worker)
 	if job.is_empty(): return
+	worker.erase("motion")
 	if int(job.good) != -1:
 		var good := _good(rules, int(job.good))
 		if not good.is_empty():
@@ -587,6 +626,15 @@ static func cancel(rules: ShopRules, worker: Dictionary) -> void:
 
 static func _allocate(rules: ShopRules) -> void:
 	for u in rules.serve.units: u.wait = float(u.wait) + ShopRules.STEP
+	if rules.shop.dispatch.preposition_work:
+		# An inbound carrier can be recalled or reassigned while a cook waits.
+		# Release the speculative work lease so the remaining cook can fetch.
+		var claimed := _claimed(rules)
+		for worker: Dictionary in rules.workers:
+			var job := job_of(rules,worker)
+			if job.get("kind","")!="work": continue
+			var u := unit(rules,int(job.unit))
+			if not _inputs_promised(rules,u,int(job.step),claimed): cancel(rules,worker)
 	for worker in rules.workers:
 		if not job_of(rules, worker).is_empty(): continue
 		var best := {}
@@ -605,7 +653,12 @@ static func _idle(rules: ShopRules, worker: Dictionary) -> void:
 	if worker.pos.distance_to(home) < 1.0: return
 	rules.serve.jobs[str(worker.id)] = _job("home", -1, -1, "", -1, "", worker.post)
 	worker.task_label = "回岗"
-	WorkerState.begin_walk(worker, rules.nav.path(worker.pos, home), "walk")
+	if rules.shop.dispatch.action_version==1:
+		var context := _action_context(rules)
+		var error := Actions.start(worker,context.plan(job_of(rules,worker)),context)
+		if not error.is_empty(): _cancel_assignment(rules,worker)
+		return
+	rules.begin_move(worker,home,"walk")
 	job_of(rules, worker).stage = "home"
 
 
@@ -617,6 +670,11 @@ static func _job(kind: String, unit_id: int, step: int, item: String, good: int,
 static func _claim(rules: ShopRules, worker: Dictionary, c: Dictionary) -> void:
 	var job := c.duplicate()
 	rules.serve.jobs[str(worker.id)] = job
+	if job.kind=="bundle":
+		var context := _bundle_context(rules)
+		var error := Actions.start(worker,context.plan(job),context)
+		if not error.is_empty(): rules.serve.jobs.erase(str(worker.id))
+		return
 	if int(job.good) != -1: _good(rules, int(job.good)).res = worker.id
 	if job.kind == "take":
 		var g := guest(rules, int(job.guest))
@@ -626,7 +684,30 @@ static func _claim(rules: ShopRules, worker: Dictionary, c: Dictionary) -> void:
 		var u := unit(rules, int(job.unit))
 		rules.stations[rules.shop.dish(String(u.dish)).steps[int(job.step)].station].user = worker.id
 	worker.task_label = String(c.get("label", ""))
-	_go(rules, worker, String(job.from), "go_from")
+	if rules.shop.dispatch.action_version==1:
+		var context := _action_context(rules)
+		var error := Actions.start(worker,context.plan(job),context)
+		if not error.is_empty(): _cancel_assignment(rules,worker)
+	else: _go(rules, worker, String(job.from), "go_from")
+
+
+static func _action_context(rules: ShopRules) -> RefCounted:
+	return ActionContext.new(rules,load("res://game/rules/serve_flow.gd"))
+
+static func _bundle_context(rules: ShopRules) -> RefCounted:
+	return BundleContext.new(rules,load("res://game/rules/serve_flow.gd"))
+
+
+static func restore_actions(rules: ShopRules) -> void:
+	var context := _action_context(rules)
+	for worker: Dictionary in rules.workers:
+		if not job_of(rules,worker).is_empty() and not worker.has("action"): context.restore(worker)
+
+static func restore_flow(rules: ShopRules) -> void:
+	for unit: Dictionary in rules.serve.units:
+		if not unit.has("flow_version") and not unit.has("recipe_signature"):
+			unit.flow_version = 1
+			unit.recipe_signature = Production.compile(rules.shop,String(unit.dish)).signature
 
 
 ## 这个员工现在能接的所有活（只读）
@@ -637,21 +718,33 @@ static func candidates(rules: ShopRules, worker: Dictionary) -> Array:
 	var d := shop.dispatch
 	if r in ["front", "any"]:
 		for g in rules.serve.guests:
-			if g.state != "queue" or int(g.claimed) != -1: continue
+			if g.state != "queue": continue
+			if int(g.claimed) != -1:
+				if rules.movement_enabled(): break
+				continue
+			if rules.movement_enabled() and not CustomerMovement.ready(rules,"guest:%d"%int(g.id)): break
 			if free_seat(rules) < 0: break
 			out.append(_scored(rules, worker, _job("take", -1, -1, "", -1, rules.counter_id, rules.counter_id, int(g.id)), "take", float(g.wait), "接单"))
 			break
 		var pickup := pickup_of(shop)
-		for good in ([] if self_pickup(shop) else rules.serve.goods):
+		if Bundle.enabled(shop): out.append_array(Bundle.candidates(rules,worker,load("res://game/rules/serve_flow.gd")))
+		for good in ([] if self_pickup(shop) or Bundle.enabled(shop) else rules.serve.goods):
 			if good.at != pickup or int(good.res) != -1 or int(good.owner) == SHARED: continue
 			var u := unit(rules, int(good.owner))
 			if u.is_empty() or String(rules.shop.dish(String(u.dish)).item) != String(good.item): continue
 			var o := order(rules, int(u.order))
 			out.append(_scored(rules, worker, _job("serve", int(u.id), -1, String(good.item), int(good.id), pickup, SEAT + str(o.seat)), "serve", float(u.wait), "送餐"))
-	if r == "front": return out
 	var claimed := _claimed(rules)
 	for u in rules.serve.units:
 		_unit_jobs(rules, worker, r, u, claimed, out)
+	# Another region's logistics are a fallback after native work, never a
+	# competing cooking assignment. Wait for approaching counter guests too.
+	if out.is_empty() and r in d.transport_helpers:
+		if r=="front" and queue_size(rules)>0 and free_seat(rules)>=0: return out
+		for u in rules.serve.units:
+			var dish := shop.dish(String(u.dish))
+			if (r=="front")==dish.front: continue
+			_unit_jobs(rules,worker,r,u,claimed,out,true)
 	return out
 
 
@@ -659,6 +752,11 @@ static func _scored(rules: ShopRules, worker: Dictionary, job: Dictionary, key: 
 	var d := rules.shop.dispatch
 	var travel: float = (worker.pos as Vector2).distance_to(_point(rules, String(job.from)))
 	job.score = float(d.base_scores.get(key, 0.0)) + minf(d.wait_bonus_cap, wait * d.wait_bonus_per_second) - travel * d.travel_penalty
+	var continuation := float(d.base_scores.get("continuation",0.0))
+	if continuation!=0.0 and int(job.unit)>=0:
+		var progress := unit(rules,int(job.unit))
+		if not progress.is_empty() and not progress.done.is_empty():
+			job.score += continuation
 	job.label = label
 	return job
 
@@ -676,11 +774,22 @@ static func _claimed(rules: ShopRules) -> Dictionary:
 	return out
 
 
-static func _unit_jobs(rules: ShopRules, worker: Dictionary, r: String, u: Dictionary, claimed: Dictionary, out: Array) -> void:
+static func _inputs_promised(rules: ShopRules, u: Dictionary, index: int, claimed: Dictionary) -> bool:
+	var step := rules.shop.dish(String(u.dish)).steps[index]
+	for item in step.consumes:
+		var here := goods_at(rules,step.station,item,int(u.id)).size()
+		var coming := int(claimed.get("carry|%d|%s|%s"%[u.id,item,step.station],0))
+		if here+coming<int(step.consumes[item]): return false
+	return true
+
+
+static func _unit_jobs(rules: ShopRules, worker: Dictionary, r: String, u: Dictionary, claimed: Dictionary, out: Array, transport_only := false) -> void:
 	var shop := rules.shop
 	var dish := shop.dish(String(u.dish))
-	var flowing := r in ["kitchen", "any"]
-	var pickup := pickup_of(shop)
+	if dish.front and shop.fulfillment.flow_version!=1: return
+	if not transport_only and ((r=="front" and not dish.front) or (r=="kitchen" and dish.front)): return
+	var flowing := r in ["front", "kitchen", "any"]
+	var pickup := pickup_for(shop,dish.id)
 	var all_done := true
 	for i in work_steps(shop, dish.id):
 		if i in u.done: continue
@@ -688,11 +797,8 @@ static func _unit_jobs(rules: ShopRules, worker: Dictionary, r: String, u: Dicti
 		var s := dish.steps[i]
 		var station: Dictionary = rules.stations[s.station]
 		# 前面的工序还没做完（浇头没炒好）就不往这台送别的料：按单合流，不提前囤货（§10.3）
-		var blocked := false
-		for item in s.consumes:
-			var p := producer(shop, dish.id, item)
-			if p >= 0 and p in work_steps(shop, dish.id) and not p in u.done: blocked = true
-		if blocked: continue
+		var blocked := Production.blocked_inputs(shop,dish.id,i,u.done)
+		if blocked and not shop.dispatch.prefetch_inputs: continue
 		var ready := true
 		for item in s.consumes:
 			var need: int = s.consumes[item]
@@ -702,13 +808,16 @@ static func _unit_jobs(rules: ShopRules, worker: Dictionary, r: String, u: Dicti
 			if here + coming >= need or not flowing: continue
 			var c := _carry_in(rules, worker, u, item, s.station)
 			if not c.is_empty(): out.append(c)
-		if not ready or claimed.has("work|%d|%d" % [u.id, i]): continue
+		if transport_only or blocked: continue
+		var promised := shop.dispatch.preposition_work and _inputs_promised(rules,u,i,claimed)
+		if (not ready and not promised) or claimed.has("work|%d|%d" % [u.id, i]): continue
 		if int(station.user) != -1 or not rules.station_unlocked(s.station): continue
 		# 坐班的人只做自己这台；有人坐班的台子流动员工不碰（§3.6 坐班）
 		if r == "seated" and worker.post != s.station: continue
 		if flowing and rules.post_owner(s.station) != -1: continue
 		out.append(_scored(rules, worker, _job("work", int(u.id), i, "", -1, s.station, s.station), "work", float(u.wait), s.label))
 	if not flowing or not all_done: return
+	if shop.fulfillment.flow_version == 1 and not rules.station_unlocked(pickup): return
 	if int(claimed.get("carry|%d|%s|%s" % [u.id, dish.item, pickup], 0)) > 0: return
 	for good in rules.serve.goods:
 		if int(good.owner) == int(u.id) and good.item == dish.item:
@@ -729,6 +838,13 @@ static func _carry_in(rules: ShopRules, worker: Dictionary, u: Dictionary, item:
 	for good in rules.serve.goods:
 		if int(good.owner) != int(u.id) or good.item != item or int(good.res) != -1: continue
 		if good.at == to or String(good.at).begins_with(HAND) or String(good.at).begins_with(SEAT): continue
+		if shop.fulfillment.flow_version==1:
+			var need := Production.pending_input(shop,String(u.dish),u.done,String(good.at),item)
+			var allocated := false
+			var here := goods_at(rules,String(good.at),item,int(u.id),true)
+			for index in mini(need,here.size()):
+				if here[index].id==good.id: allocated = true; break
+			if allocated: continue
 		return _scored(rules, worker, _job("carry", int(u.id), -1, item, int(good.id), String(good.at), to), "carry", float(u.wait), "搬")
 	var p := producer(shop, String(u.dish), item)
 	if p < 0: return {}

@@ -8,6 +8,7 @@ extends RefCounted
 const FORMAT := "shop_rules"
 const VERSION := 2
 const ContentContract := preload("res://game/rules/shop_content_contract.gd")
+const FlowValidator := preload("res://game/rules/flow_validator.gd")
 
 var shop: SpecShop
 var path: String
@@ -19,6 +20,9 @@ var _write_blocked := false
 var load_error: Error = OK
 ## 店铺内容指纹只算一次：每次自动存档都重算整份数据很慢
 var _content_cache: Dictionary = {}
+var _verified_bytes := PackedByteArray()
+var _verified_template: Dictionary = {}
+var _save_preparation: Dictionary = {}
 
 
 static func path_for(shop_id: String) -> String:
@@ -34,6 +38,13 @@ func _init(shop_: SpecShop, path_ := "") -> void:
 
 func exists() -> bool:
 	return FileAccess.file_exists(path)
+
+func requires_shared_runtime() -> bool:
+	return true
+
+
+func make_rules() -> ShopRules:
+	return ShopRules.new(shop)
 
 
 func delete() -> void:
@@ -53,19 +64,24 @@ func delete() -> void:
 func load_game() -> ShopRules:
 	last_error = ""
 	load_error = OK
+	if requires_shared_runtime() and shop.runtime_template==null:
+		load_error = ERR_INVALID_DATA
+		last_error = "公共经营模板未初始化"
+		_write_blocked = true
+		return make_rules()
 	# Only an explicit load/retry clears the failed-quarantine seal.
 	_write_blocked = false
 	loaded_speed = 1.0
 	loaded_guides = []
 	var result := _assess_existing()
-	if result.get("missing", false): return ShopRules.new(shop)
+	if result.get("missing", false): return make_rules()
 	if not result.get("error", "").is_empty():
 		last_error = result.error
 		if result.get("protected", false): load_error = ERR_UNAVAILABLE
 		else:
 			load_error = _backup_corrupt()
 			if load_error != OK: _write_blocked = true
-		return ShopRules.new(shop)
+		return make_rules()
 	loaded_speed = result.speed
 	loaded_guides = result.guides
 	return result.rules
@@ -76,20 +92,40 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 	if rules == null or rules.shop == null or rules.shop.id != shop.id or not is_finite(speed) or speed <= 0.0:
 		last_error = "存档失败：店铺状态或播放速度无效"
 		return ERR_INVALID_PARAMETER
+	if not rules.runtime_error.is_empty() or (requires_shared_runtime() and rules.runtime==null):
+		last_error = "存档失败：公共经营模板未成功初始化"
+		return ERR_INVALID_DATA
 	var content := _content()
 	if rules.shop != shop and ContentContract.describe(rules.shop) != content:
 		last_error = "存档失败：店铺内容和存档不是同一版本，请重新进店"
 		return ERR_INVALID_PARAMETER
-	var state := rules.to_dict()
-	var state_error := ShopRules.new(shop).load_dict(state)
+	var compact_history: bool = requires_shared_runtime() and rules.runtime != null and rules.runtime.service != null
+	var protocol: Script = load("res://game/rules/template/session_state.gd")
+	var prepared := compact_history and shop.runtime_template != null and rules._runtime_template == shop.runtime_template
+	var identity: Dictionary = {}
+	if prepared:
+		_save_preparation = protocol.prepare_save(shop.runtime_template, shop.layout, _save_preparation)
+		identity = _save_preparation.identity
+	var state: Dictionary = protocol.save(rules, true, identity) if compact_history else rules.to_dict()
+	# Public state restores its own runtime. Custom and legacy stores keep their factory.
+	var validator := ShopRules.new(shop,-1,false) if state.has("runtime") and get_script() == load("res://game/rules/shop_save.gd") else make_rules()
+	var state_error: String
+	if prepared and validator.get_script() == load("res://game/rules/shop_rules.gd") and validator._runtime_template == shop.runtime_template:
+		state_error = protocol.restore(validator, state, false, _save_preparation)
+	else:
+		state_error = validator.load_dict(state)
 	if not state_error.is_empty():
 		last_error = "存档失败：店铺状态无效：" + state_error
 		return ERR_INVALID_DATA
 	if _write_blocked:
 		last_error = "坏存档留底失败，已停止写入；请检查空间或权限后重试"
 		return ERR_UNAVAILABLE
-	# Every write, including fresh intent, assesses the file currently on disk.
-	var existing := _assess_existing()
+	# Exact bytes previously written after validation need no second restore.
+	# Any external edit or template change goes through the full protection path.
+	var existing := {}
+	var template: Dictionary = state.get("template", {})
+	if _verified_bytes.is_empty() or template != _verified_template or FileAccess.get_file_as_bytes(path) != _verified_bytes:
+		existing = _assess_existing()
 	if not existing.get("error", "").is_empty():
 		last_error = existing.error
 		if existing.get("protected", false): return ERR_UNAVAILABLE
@@ -106,10 +142,15 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 	var payload := {"format": FORMAT, "version": VERSION, "shop": shop.id, "content": content, "speed": speed,
 		"state": Marshalls.raw_to_base64(bytes), "state_sha256": bytes.hex_encode().sha256_text()}
 	if not guides.is_empty(): payload.guides = guides.map(func(id: Variant) -> String: return str(id))
-	var error := SaveService.new(path).save(payload)
+	var writer := SaveService.new(path)
+	var error := writer.save(payload)
 	if error != OK:
 		last_error = "存档写入失败：%s" % error_string(error)
 		return error
+	if not template.is_empty():
+		_verified_bytes = writer.saved_bytes
+		_verified_template = template.duplicate()
+	if compact_history: rules.runtime.adopt_saved_history(state.runtime)
 	last_error = ""
 	return OK
 
@@ -117,12 +158,14 @@ func save_game(rules: ShopRules, speed := 1.0, guides: Array = []) -> Error:
 func _assess_existing() -> Dictionary:
 	var result := _read_existing()
 	if result.get("missing", false) or not result.get("error", "").is_empty(): return result
-	var candidate := ShopRules.new(shop)
+	var candidate := make_rules()
 	# 内容改版（数值或结构）后先按当前内容校验并迁移：已删掉的机器/升级轨丢掉，其余进度保留。
 	# 校验不过才当坏档留底、这家店从空店开始；不能因为更新卡在重试界面。
-	var error := _id_map_error(result.state) if result.refresh else ""
+	var error := _id_map_error(result.state) if result.refresh and not result.state.has("runtime") else ""
 	if error.is_empty(): error = candidate.load_dict(result.state, result.refresh)
 	if not error.is_empty():
+		if shop.runtime_template!=null:
+			return {"error":"店铺状态迁移失败（%s），原存档未修改，请保留文件并重试"%error,"protected":true}
 		var reason := "店铺内容已更新，旧存档无法沿用" if result.refresh else "店铺存档状态无效"
 		return {"error": "%s（%s），原档已留底，这家店从空店开始" % [reason, error]}
 	result.rules = candidate
@@ -209,6 +252,36 @@ func _read_existing() -> Dictionary:
 	# bytes_to_var deliberately excludes objects; never use bytes_to_var_with_objects.
 	var state: Variant = bytes_to_var(bytes)
 	if not state is Dictionary: return {"error": "店铺存档状态必须是字典"}
+	if state.has("runtime") or state.has("version"):
+		if state.get("version")!=2 or not state.get("runtime") is Dictionary or state.runtime.get("version")!=1 or shop.runtime_template==null:
+			return {"error":"店铺公共运行版本不受当前程序支持，原文件未修改","protected":true}
+		var seen: Array = []
+		if wrapper.get("guides") is Array:
+			for id in wrapper.guides:
+				if id is String: seen.append(id)
+		return {"state":state,"speed":speed,"guides":seen,"refresh":refresh}
+	if shop.runtime_template!=null: refresh = true
+	if not FlowValidator.protected_file_error(state,shop).is_empty():
+		return {"error":"存档流程版本与当前配置不同，已停止写入以保留原文件","protected":true}
+	if FlowValidator.needs_adoption(state,shop): refresh = true
+	if state.get("movement") is Dictionary:
+		var protocol: Variant = state.movement.get("version")
+		if ((protocol is int or protocol is float) and protocol>1) or shop.layout.motion_version!=1:
+			return {"error":"存档运动版本高于当前配置，已停止写入以保留原文件","protected":true}
+	# First movement adoption also needs a durable old-file backup, even when
+	# the wrapper already carries the current content fingerprint.
+	if shop.layout.motion_version==1 and not state.has("movement"): refresh = true
+	if state.get("roster") is Array:
+		for row in state.roster:
+			if not row is Dictionary: continue
+			if row.get("action") is Dictionary:
+				var action_version: Variant = row.action.get("version")
+				if ((action_version is int or action_version is float) and action_version>1) or shop.dispatch.action_version!=1:
+					return {"error":"存档动作版本高于当前配置，已停止写入以保留原文件","protected":true}
+			elif shop.dispatch.action_version==1 and state.get("serve") is Dictionary and state.serve.get("jobs") is Dictionary and state.serve.jobs.has(str(row.get("id",-1))):
+				refresh = true
+			elif shop.dispatch.action_version==1 and (not row.get("job",{}).is_empty() or int(row.get("order",-1))>=0 or not String(row.get("chore","")).is_empty() or row.get("walking",false)):
+				refresh = true
 	var guides: Array = []
 	var raw_guides: Variant = wrapper.get("guides", [])
 	if raw_guides is Array:

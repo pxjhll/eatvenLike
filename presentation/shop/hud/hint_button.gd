@@ -37,4 +37,4 @@ func refresh() -> void:
 	var dish := ""
 	for d in _view.rules.shop.dishes:
 		if d.display_name == hint.drink: dish = d.id
-	icon = Icons.texture("drink_" + dish if not dish.is_empty() else "goals")
+	icon = _view.view.item_icon(dish) if not dish.is_empty() else Icons.texture("goals")

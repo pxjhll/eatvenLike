@@ -33,6 +33,17 @@ extends Resource
 @export var save_file: String = ""
 ## 人物大小按哪个锚点量
 @export var scale_anchor: String = ""
+## Formal shops declare one shared capability template. Legacy format fields
+## are retained only for authoring identity and old-state conversion.
+@export var runtime_template: Resource
+
+
+## Editable variants must own external definitions too. Resource.duplicate(true)
+## retains external resources, which would let a variant change the shared catalog.
+## Keep the native Resource return type: self-typed deep-copy methods retain
+## dependent scripts at shutdown on Godot 4.6. Callers can type the result SpecShop.
+func copy_for_editing() -> Resource:
+	return duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 
 
 func station(station_id: String) -> SpecStation:

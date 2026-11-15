@@ -9,6 +9,7 @@ extends Resource
 ## price          售价倍率；dishes 为空 = 这台机器管的全部菜；price_part 只乘某一部分价格
 ## batch          批量锅每锅份数（set）
 ## process_slots  出餐口加工位（set）
+## capacity       公共模板容器容量（set）；旧正式入口尚未接入时拒绝此效果配置
 ## open_flavor    开放加料台的某个口味（target = 物料 id）
 ## flow           客流倍率
 ## seats          座位组加座位（target = 座位组 id，add）
@@ -23,7 +24,7 @@ extends Resource
 ## unlock_staff_kind  一次性：开放一个员工种类（target = 种类 id）
 ## unlock_recipe  一次性：开放一道菜（target = 菜品 id）
 ## shop_news      一次性：新店消息（target = 关卡表里的店铺 id）
-const KINDS := ["speed", "duration", "price", "batch", "process_slots", "open_flavor", "flow", "seats",
+const KINDS := ["speed", "duration", "price", "batch", "process_slots", "capacity", "open_flavor", "flow", "seats",
 	"flyer_customers", "flyer_cooldown", "walk", "work", "carry", "staff_slot", "event_chance", "luck", "patience",
 	"grant_gold", "customer_wave", "unlock_staff_kind", "unlock_recipe", "shop_news"]
 const ONE_SHOT := ["grant_gold", "customer_wave", "unlock_staff_kind", "unlock_recipe", "shop_news"]

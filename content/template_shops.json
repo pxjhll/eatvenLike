@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "shops": [
+    {"path": "content/shops/tea/shop.tres", "kind": "campaign"},
+    {"path": "content/shops/pancake/shop.tres", "kind": "campaign"},
+    {"path": "content/shops/stirfry/shop.tres", "kind": "campaign"},
+    {"path": "content/examples/modular_shop.tres", "kind": "example"},
+    {"path": "content/examples/onboarding/table.tres", "kind": "example"},
+    {"path": "content/examples/onboarding/self_pickup.tres", "kind": "example"}
+  ]
+}

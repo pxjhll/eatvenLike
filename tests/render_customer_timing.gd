@@ -20,14 +20,17 @@ func _run() -> void:
 		scene.set_process(false)
 		scene.guide.enabled = false
 		scene._speed_factor = speed
+		scene.rules.gold = 1000.0
+		_check(scene.rules.unlock("lemonade").is_empty(), "open the formal shop to obtain a real customer route")
+		scene.rules.run(0.2)
 		var before := var_to_bytes(scene.rules.to_dict())
 		var frame: Dictionary = scene.view.render_snapshot()
-		frame.orders = [{"id": 9001, "dish": "lemonade", "seat": -1, "wait": 0.0, "reserved": false, "takeaway": false}]
-		frame.diners = []
+		var customer: String = frame.movement.customers.keys()[0]
+		_check(frame.movement.customers[customer].walking, "exercise the published route of an actual moving customer")
 		frame.paused = false
 		frame.clock = 0.0
 		scene._update_customers(0.0, frame)
-		var actor = scene._customers[9001]
+		var actor = scene._customers[customer]
 		var previous: int = actor.frame_actor.sprite.frame
 		var last := 0.0
 		var holds: Array[float] = []

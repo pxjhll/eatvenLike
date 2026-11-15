@@ -6,6 +6,7 @@ extends Node2D
 ## Production uses App.create_session(); tests provide an explicit isolated session.
 
 const Actor := preload("res://presentation/shop/shop_actor.gd")
+const RoutePresentation := preload("res://presentation/shop/route_presentation.gd")
 const Dining := preload("res://presentation/shop/shop_dining.gd")
 const DragController := preload("res://presentation/shop/staff_drag.gd")
 const Guide := preload("res://presentation/shop/guide_player.gd")
@@ -17,20 +18,19 @@ const DefaultHud := preload("res://presentation/shop/hud/default_hud.gd")
 const ArtGroups := preload("res://presentation/shop/art_groups.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const Characters := preload("res://presentation/characters/character_library.gd")
-const ServeFlow := preload("res://game/rules/serve_flow.gd")
+const LegacyQueries := preload("res://game/rules/legacy/content_queries.gd")
 const Schema := preload("res://game/rules/shop_spec_validator.gd")
 const SceneContract := preload("res://presentation/shop/shop_scene_contract.gd")
-## 竖屏铺满宽度；横屏最多少看 MIN_VISIBLE_WORLD 这么高的店面
-const MIN_VISIBLE_WORLD := 1100.0
+const Presentation := preload("res://content/characters/actor_presentation.tres")
 ## 界面按这个宽度排版（竖屏铺满宽度）；店面比它宽的店，店面另外缩放
 const UI_WIDTH := 720.0
 const PAN_SLOP := 12.0
-const WALK_SPEED := 170.0
 
 var session: RefCounted
 var shop: SpecShop
 var rules: ShopRules
 var view: ShopView
+var _refresh_frame: Dictionary = {}
 var anchors: ShopAnchors
 var store: ShopSave
 ## Read aliases for HUD components, populated only from a successfully started session.
@@ -48,13 +48,16 @@ var recorder: RefCounted
 var selected_worker := 1
 var _speed_factor := 1.0
 var _autosave_elapsed := 0.0
+var _save_pending := false
+var _save_generation := 0
 var _font: Font
 var _drag: Node2D
 var _world_size := Vector2(720, 1500)
 var _top_margin := 0.0
-var _customer_height := 110.0
-var _staff_height := 128.0
-var _customer_speed := WALK_SPEED
+var _customer_height := float(Presentation.customer_height)
+var _staff_height := float(Presentation.staff_height)
+var _customer_speed := float(Presentation.customer_speed)
+var _actor_unit_scale := 1.0
 ## 员工、客人、杯子挂在哪个节点下排前后；z_by_y = 那个节点里没有 y 排序，按脚底 y 设 z（物件的 z 在美术场景里）
 var _sortables: Node2D
 var _z_by_y := false
@@ -63,6 +66,7 @@ var _ui_factor := 1.0
 var _actors := {}
 var _customers := {}
 var _customer_positions := {}
+var _customer_route_presentation := RoutePresentation.new()
 var _customer_orders := {}
 var _customer_entering := {}
 ## Customer motion is rendered every frame; its animation clock must not use 100ms rule ticks.
@@ -99,6 +103,17 @@ var _startup_blocked := false
 var _startup_panel: Control
 var _transition_committed := false
 var _production_session: RefCounted
+const TemplatePresentation := preload("res://game/rules/template/presentation.gd")
+
+## Presentation dependency only; the session owns the sole simulation loop.
+func bind_runtime(runtime: RefCounted, displays: Array = []) -> String:
+	var definition: Dictionary = runtime._definition.get("presentation",{})
+	var geometry := {"ports":{},"hosts":[]}
+	for port in TemplatePresentation.port_names(definition):
+		if anchors.has(port): geometry.ports[port] = anchors.point(port)
+	for host in TemplatePresentation.host_names(definition):
+		if _sortables.get_node_or_null(host)!=null: geometry.hosts.append(host)
+	return view.bind_runtime(runtime,displays,geometry)
 
 
 func _ready() -> void:
@@ -159,9 +174,10 @@ func _ready() -> void:
 	anchors = ShopAnchors.new(art.get_node("Anchors"))
 	_world_size = anchors.meta(".", "world_size", _world_size)
 	_top_margin = float(anchors.meta(".", "top_margin", 0.0))
-	_customer_height = float(anchors.meta(".", "customer_height", _customer_height))
-	_staff_height = float(anchors.meta(".", "staff_height", _staff_height))
-	_customer_speed = float(anchors.meta(".", "customer_speed", _customer_speed))
+	_actor_unit_scale = Presentation.scene_units(_world_size)
+	_customer_height = Presentation.customer_height
+	_staff_height = Presentation.staff_height
+	_customer_speed = Presentation.customer_speed * _actor_unit_scale
 	_sortables = art.get_node(String(anchors.meta(".", "sortables", "Sortables")))
 	_z_by_y = _sortables.get_meta("z_by_y", false)
 	$Canvas/WorldLabels.z_index = int(anchors.meta(".", "labels_z", $Canvas/WorldLabels.z_index))
@@ -170,7 +186,12 @@ func _ready() -> void:
 	_dining = art.find_children("*", "Node2D", true, false).filter(func(n: Node) -> bool: return n.get_script() == Dining).front() \
 		if art.find_children("*", "Node2D", true, false).any(func(n: Node) -> bool: return n.get_script() == Dining) else null
 	if _dining != null and rules.dine_group() != null:
-		_dining.setup(anchors, rules.dine_group().id, view.item_art, _customer_height)
+		_dining.setup(anchors, rules.dine_group().id, view.item_art, _customer_height, _actor_unit_scale)
+	if rules.runtime!=null:
+		var binding_error := bind_runtime(rules.runtime)
+		if not binding_error.is_empty():
+			_block_startup(binding_error)
+			return
 	ui = $Overlay/UI/HUD
 	ui.setup(self)
 	_toast = ui.toast
@@ -347,11 +368,12 @@ func frozen() -> bool:
 
 func _process(delta: float) -> void:
 	if rules == null or _startup_blocked or _transition_committed: return
+	var before := rules.clock
 	if not frozen():
-		var before := rules.clock
 		rules.step(minf(delta, 0.25) * _speed_factor)
-		if recorder != null: recorder.tick(rules.clock - before)
-	_refresh(delta)
+	var frame := view.render_snapshot()
+	if recorder != null: recorder.tick(rules.clock - before, frame)
+	_refresh(delta, frame)
 	guide.refresh(delta)
 	_fit()
 	_toast_left = maxf(0, _toast_left - delta)
@@ -361,13 +383,15 @@ func _process(delta: float) -> void:
 		_autosave_elapsed += delta
 		if _autosave_elapsed >= 10.0:
 			_autosave_elapsed = 0.0
-			save_now(false)
+			request_save()
 
 
-func _refresh(delta: float) -> void:
-	var frame := view.render_snapshot()
+func _refresh(delta: float, frame: Dictionary = {}) -> void:
+	if frame.is_empty(): frame = view.render_snapshot()
 	_refresh_events()
+	_refresh_frame = frame
 	ui.refresh()
+	_refresh_frame = {}
 	var deployed := {}
 	for worker in frame.workers: deployed[int(worker.id)] = true
 	for id in _actors.keys():
@@ -402,7 +426,10 @@ func _refresh(delta: float) -> void:
 		_badges[id].visible = open and not working and not need.is_empty()
 		_badges[id].tooltip_text = "%s · 输入 %d · 加工 %d · 输出 %d" % [view.station_name(id), status.get("input", 0), status.get("processing", 0), status.get("output", 0)]
 	if _shelf != null:
-		_shelf.text = _t("chip_shelf", {"count": frame.shelf_count, "limit": rules.shelf_capacity()})
+		_shelf.visible = not frame.has("presentation_version") or frame.get("counters",{}).has("shelf")
+		if _shelf.visible:
+			var count: int = frame.counters.shelf.count if frame.has("presentation_version") else frame.shelf_count
+			_shelf.text = _t("chip_shelf", {"count":count,"limit":rules.shelf_capacity()})
 	if _seats != null and rules.dine_group() != null:
 		var seats := view.seats()
 		_seats.text = _t("chip_seats", {"used": seats.used, "total": seats.total})
@@ -421,13 +448,16 @@ func _refresh(delta: float) -> void:
 	_update_cups(frame)
 	_update_customers(moving, frame)
 	if _dining != null:
-		_dining.refresh(rules.seat_total(), frame.diners, _font, _customer_animation_clock, moving)
+		if frame.has("movement"):
+			_dining.refresh_authoritative(rules.seat_total(),frame.movement.customers.values())
+		else: _dining.refresh(rules.seat_total(), frame.diners, _font, _customer_animation_clock, moving)
 	if frame.sold > _last_sold: _pop_income(int(frame.revenue) - _last_revenue)
 	_last_sold = frame.sold
 	_last_revenue = int(frame.revenue)
 
 
-func _actor(kind: String, height := 128.0) -> Node2D:
+func _actor(kind: String, height := -1.0) -> Node2D:
+	if height < 0.0: height = _staff_height
 	var actor := Actor.new()
 	actor.item_art = view.item_art
 	actor.task_text = view.task_text
@@ -436,6 +466,7 @@ func _actor(kind: String, height := 128.0) -> Node2D:
 	actor.order_icon = _order_icon
 	actor.work_progress = view.work_progress
 	actor.setup(kind, _font, height)
+	actor.scale = Vector2.ONE * _actor_unit_scale
 	actor.progress_bar.theme = ui.theme
 	return actor
 
@@ -458,7 +489,7 @@ func answer_event(choice: int, id: String) -> void:
 		_show_toast(view.command_message(status))
 		return
 	ui.popups.remove("event:" + id)
-	save_now(false)
+	request_save()
 	_refresh(0.0)
 
 
@@ -527,6 +558,9 @@ var _put_items := {}
 
 
 func _show_put_down(worker: Dictionary) -> void:
+	if worker.get("presentation_version")==1:
+		if _put_items.has(worker.id): _put_items[worker.id].visible = false
+		return
 	var steps: Array = worker.get("steps", [])
 	var at: int = worker.get("step", 0)
 	var step: Dictionary = steps[at] if at < steps.size() else {}
@@ -549,7 +583,7 @@ func _show_put_down(worker: Dictionary) -> void:
 	if texture == null: return
 	sprite.texture = texture
 	sprite.modulate = look.get("tint", Color.WHITE)
-	sprite.scale = Vector2.ONE * 52.0 / maxf(texture.get_width(), texture.get_height())
+	sprite.scale = Vector2.ONE * Actor.CUP_HEIGHT * _actor_unit_scale / maxf(texture.get_width(), texture.get_height())
 	sprite.position = anchors.point(path)
 	sprite.visible = true
 
@@ -613,13 +647,13 @@ func _refresh_station_signs() -> void:
 			frame.text = _t("frame_box", {"name": m.display_name, "cost": m.box_cost})
 			frame.tooltip_text = _t("frame_box_tip", {"machine": view.station_name(m.box_station)})
 			continue
-		var card := view.station(id)
-		if card.is_empty(): continue
-		frame.visible = not card.unlocked and int(card.stage) == next_stage
+		var st := shop.station(id)
+		if st == null: continue
+		frame.visible = not rules.station_unlocked(id) and shop.stage_of(id) == next_stage
 		if not frame.visible: continue
+		var card := view.station(id)
 		frame.can_unlock = card.unlock.status.code == "ok"
 		frame.tooltip_text = String(card.description) + "\n" + String(card.unlock.error)
-		var st := shop.station(id)
 		var title: String = card.unlock.title if st.params.get("frame_title", "") == "stage" else view.station_name(id)
 		frame.text = _t("frame_unlock", {"title": title, "cost": card.unlock.cost})
 	ArtGroups.refresh(art, view)
@@ -709,6 +743,9 @@ func _update_pops(delta: float) -> void:
 
 func _update_cups(frame: Dictionary = {}) -> void:
 	if frame.is_empty(): frame = view.render_snapshot()
+	_draw_cups(frame.draws if frame.get("presentation_version")==1 else _legacy_cup_draws(frame))
+
+func _legacy_cup_draws(frame: Dictionary) -> Array:
 	var draws := []
 	var shelf_points := anchors.points("Shelf/shelf")
 	var shelf_items: Array = []
@@ -740,6 +777,9 @@ func _update_cups(frame: Dictionary = {}) -> void:
 				draws.append({"pos": anchors.point(path), "item": item, "host": String(anchors.meta(path, "host", ""))})
 				break
 	if shop.fulfillment.handoff == "serve": _serve_goods(frame, draws)
+	return draws
+
+func _draw_cups(draws: Array) -> void:
 	while _cups.size() < draws.size():
 		var sprite := Sprite2D.new()
 		sprite.centered = false
@@ -754,10 +794,11 @@ func _update_cups(frame: Dictionary = {}) -> void:
 		var texture: Texture2D = look.texture
 		sprite.texture = texture
 		sprite.modulate = look.get("tint", Color.WHITE)
-		sprite.scale = Vector2.ONE * Actor.CUP_HEIGHT / texture.get_height()
+		sprite.scale = Vector2.ONE * float(row.get("height",Actor.CUP_HEIGHT)) * _actor_unit_scale / maxf(texture.get_width(), texture.get_height())
 		# 放在家具上的杯子排在那件家具的落脚点前面一点：压得住家具，又在离镜头更近的员工后面
 		var host: Node2D = _sortables.get_node_or_null(String(row.host)) if not String(row.host).is_empty() else null
-		var sort_y: float = row.pos.y if host == null else maxf(row.pos.y, host.position.y + 1.0)
+		var host_y: float = _sortables.to_local(host.global_position).y if host!=null else row.pos.y
+		var sort_y: float = row.pos.y if host == null else maxf(row.pos.y, host_y + 1.0)
 		sprite.position = Vector2(row.pos.x, sort_y)
 		sprite.offset = Vector2(-texture.get_width() / 2.0, -texture.get_height() - (sort_y - row.pos.y) / sprite.scale.y)
 		if _z_by_y: sprite.z_index = int(sort_y)
@@ -765,8 +806,14 @@ func _update_cups(frame: Dictionary = {}) -> void:
 
 func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 	if frame.is_empty(): frame = view.render_snapshot()
+	if frame.get("presentation_version")==1:
+		_update_customers_motion(frame,delta)
+		return
+	if shop.layout.motion_version==1:
+		_update_customers_motion(frame,delta)
+		return
 	_customer_animation_clock += maxf(0.0, delta) * _speed_factor
-	# Keep the detached business snapshot unchanged; all customer display paths share this clock.
+	# Legacy display-only paths also animate independently of fixed business ticks.
 	frame = frame.duplicate()
 	frame.clock = _customer_animation_clock
 	if shop.fulfillment.handoff == "single":
@@ -800,10 +847,10 @@ func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 		var goal: Vector2 = queue[i] if seat < 0 else (pickup if order.reserved else _dining.seat_point(seat))
 		var point: Vector2 = _customer_positions[order.id]
 		if _customer_entering.get(order.id, false):
-			point = point.move_toward(waypoint, delta * WALK_SPEED)
+			point = point.move_toward(waypoint, delta * _customer_speed)
 			if point.distance_to(waypoint) < 1.0: _customer_entering.erase(order.id)
 		else:
-			point = point.move_toward(goal, delta * WALK_SPEED)
+			point = point.move_toward(goal, delta * _customer_speed)
 		_customer_positions[order.id] = point
 		_customers[order.id].show_order(String(order.dish), -1.0, rules.order_mood(order), order.get("takeaway", false))
 		var pose := {"pos": point, "walking": point.distance_to(goal) > 1, "phase": "idle", "task_label": ""}
@@ -840,16 +887,74 @@ func _update_customers(delta: float, frame: Dictionary = {}) -> void:
 		_customer_entering.erase(id)
 
 
-## 订单明细店（serve，规格 §10）：后厨做好的、出餐口上的、桌上的实物都画出来。
-## 同一处的几份并排摆开；员工手里的由员工自己画。共享库存（饭盆）只看机器牌子上的数。
+## Shared protocol: roots/arrival are authoritative. Only visual attachments
+## predict the remainder of the current tick along the already approved route.
+func _update_customers_motion(frame: Dictionary, delta := 0.0) -> void:
+	_customer_route_presentation.advance(float(frame.clock),minf(delta,0.25)*_speed_factor)
+	var rows: Dictionary = frame.get("movement",{}).get("customers",{})
+	for key in _customers.keys():
+		if rows.has(key): continue
+		_customers[key].free()
+		_customers.erase(key)
+		_customer_positions.erase(key)
+	for key in rows:
+		var row: Dictionary = rows[key]
+		if not _customers.has(key):
+			var created := _actor(Characters.customer_art(int(row.id)),_customer_height)
+			_sortables.add_child(created)
+			_customers[key] = created
+		var actor: Node2D = _customers[key]
+		var point: Vector2 = row.pos
+		var pose := {"pos":point,"walking":row.walking and not row.path.is_empty(),"seated":row.seated,
+			"path":row.path,"path_index":row.path_index,"phase":"idle","task_label":"",
+			"carry_item":row.carry_item,"carry_count":0 if row.carry_item.is_empty() else 1}
+		# Customer clips retain their authored GIF holds; physical route speed
+		# is supplied separately to the visual position predictor below.
+		if row.get("presentation_version")==1:
+			pose.presentation_version = 1
+			pose.held_items = row.held_items
+			pose.carry_count = row.carry_count
+			pose.work_station = ""
+			pose.display_progress = -1.0
+		if row.seated and row.get("presentation_version")==1:
+			pose.pos = row.get("render_pos",row.pos)
+			if row.has("facing"): pose.facing = row.facing
+		elif row.seated:
+			var seat_key: String = String(row.target).get_slice(":",1)
+			var anchor_path := "Seats/"+seat_key
+			# Sitting is an authored display offset from the reached approach port.
+			pose.pos = anchors.point(anchor_path,point)
+			if _dining!=null:
+				pose.pos = _dining.seat_point(int(row.seat))-Vector2(0,14.0*_actor_unit_scale)
+			pose.facing = int(anchors.meta(anchor_path,"facing",2))
+		var bubble := String(row.dish)
+		if row.exiting or row.state in ["diner","eating"] or not row.carry_item.is_empty(): bubble = ""
+		var patience := -1.0
+		if row.has("patience"): patience = float(row.patience)
+		elif shop.fulfillment.handoff=="single" and row.state=="queue" and shop.fulfillment.leave_after>0:
+			patience = 1.0-float(row.wait)/shop.fulfillment.leave_after
+		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway)
+		actor.display(pose,float(frame.clock)+_customer_route_presentation.age)
+		var displayed: Vector2 = pose.pos if row.seated else _customer_route_presentation.point(row,float(Presentation.customer_speed)*shop.layout.motion_units)
+		actor.set_render_position(displayed)
+		_customer_positions[key] = row.pos
+		if _z_by_y: actor.z_index = int(displayed.y)
+		else: actor.z_index = 1 if row.seated else 0
+
+
+## Compatibility rendering for pre-template records, removed at the U06 switch.
+## The normative public protocol only consumes explicitly declared frame.draws.
 func _serve_goods(frame: Dictionary, draws: Array) -> void:
 	var count := {}
 	for good: Dictionary in frame.serve.goods:
+		# Shared pot stock belongs inside the machine. Only allocated order
+		# products become visible loose items at workstations, pickup or tables.
+		if int(good.owner) == LegacyQueries.SHARED: continue
 		var at := String(good.at)
 		var pos: Vector2
 		var host := ""
-		if at.begins_with(ServeFlow.SEAT):
-			var seat := int(at.substr(ServeFlow.SEAT.length()))
+		if at.begins_with(LegacyQueries.SEAT):
+			var seat := int(at.substr(LegacyQueries.SEAT.length()))
 			var table := _serve_table(seat)
 			if table.is_empty():
 				pos = _serve_seat_point(seat) + Vector2(0, -36)
@@ -860,7 +965,9 @@ func _serve_goods(frame: Dictionary, draws: Array) -> void:
 		elif at.contains(":"):
 			continue
 		elif anchors.has("Stations/%s/Buffer" % at):
-			pos = anchors.point("Stations/%s/Buffer" % at)
+			var buffer := "Stations/%s/Buffer" % at
+			pos = anchors.point(buffer)
+			host = String(anchors.meta(buffer, "host", ""))
 		elif _layout_has(at):
 			pos = _layout_point(at)
 		else:
@@ -872,14 +979,14 @@ func _serve_goods(frame: Dictionary, draws: Array) -> void:
 
 ## 座位所在的桌子锚点（Tables/<组>/<座位 / per_table>）；场景没摆桌子锚点就返回空
 func _serve_table(seat: int) -> String:
-	var group := ServeFlow.seat_point(shop, seat).get_slice("/", 0)
+	var group := LegacyQueries.seat_point(shop, seat).get_slice("/", 0)
 	var per_table := maxi(1, int(anchors.meta("Tables/" + group, "per_table", 2)))
 	var path := "Tables/%s/%d" % [group, seat / per_table]
 	return path if anchors.has(path) else ""
 
 
 func _serve_seat_point(seat: int) -> Vector2:
-	var key := ServeFlow.seat_point(shop, seat)
+	var key := LegacyQueries.seat_point(shop, seat)
 	return anchors.point("Seats/" + key, _layout_point(key))
 
 
@@ -898,7 +1005,7 @@ func _layout_point(key: String) -> Vector2:
 func _update_customers_serve(delta: float, frame: Dictionary) -> void:
 	var queue := anchors.points("Queue")
 	var entrance := anchors.point("Entrance", Vector2(_world_size.x / 2.0, _world_size.y))
-	var pickup_id := ServeFlow.pickup_of(shop)
+	var pickup_id := LegacyQueries.pickup_of(shop)
 	var window: Vector2 = anchors.point("Stations/%s/Waiting" % pickup_id, _layout_point(pickup_id) + Vector2(0, 90))
 	var orders := {}
 	for o: Dictionary in frame.serve.orders: orders[int(o.id)] = o
@@ -932,12 +1039,12 @@ func _update_customers_serve(delta: float, frame: Dictionary) -> void:
 		var dish := String(o.lines[0].dish) if not o.is_empty() and not o.lines.is_empty() else ""
 		if state == "queue":
 			actor.show_order("", -1.0, rules.order_mood({"wait": g.wait}))
-		elif state in ["eating"] or (state == "to_seat" and ServeFlow.self_pickup(shop)):
+		elif state in ["eating"] or (state == "to_seat" and LegacyQueries.self_pickup(shop)):
 			actor.show_order("", -1.0)
 		else:
 			actor.show_order(dish, -1.0, rules.order_mood({"wait": g.wait, "seat": g.seat}))
 		var pose := {"pos": point, "walking": not arrived, "seated": seated, "phase": "idle", "task_label": ""}
-		if seated: pose.facing = int(anchors.meta("Seats/" + ServeFlow.seat_point(shop, int(g.seat)), "facing", 2))
+		if seated: pose.facing = int(anchors.meta("Seats/" + LegacyQueries.seat_point(shop, int(g.seat)), "facing", 2))
 		actor.display(pose, frame.clock)
 		if _z_by_y: actor.z_index = int(actor.position.y)
 	var exit := anchors.point("Exit", entrance)
@@ -1071,11 +1178,7 @@ func _wait_group() -> String:
 
 ## 订单气泡里的图：店铺数据给了物品图标就用它，否则用 art/ui/drink_<id>.png
 func _order_icon(item: String) -> Texture2D:
-	var dish := shop.dish(item)
-	var key: String = dish.item if dish != null and not dish.item.is_empty() else item
-	for it in shop.items:
-		if it.id == key and it.icon != null: return it.icon
-	return Actor.drink_icon(item)
+	return view.item_icon(item)
 
 
 func _along(points: PackedVector2Array, progress: float) -> Vector2:
@@ -1223,7 +1326,7 @@ func hire_worker() -> void:
 		selected_worker = int(all_staff().back().id)
 		var deployed: bool = staff_is_deployed(selected_worker) or (execute_command("deploy_worker", {"id": selected_worker}).code == "ok")
 		_show_toast(_t("hired_deployed") if deployed else _t("hired_roster"))
-		save_now(false)
+		request_save()
 	_refresh(0.0)
 
 
@@ -1233,7 +1336,7 @@ func buy_staff_upgrade(side: String) -> void:
 	var status := execute_command("upgrade", {"key": "staff/" + side})
 	if status.code == "ok": _bought("staff_%s/%s" % [side, info.name], gold_before)
 	_show_toast(view.command_message(status) if status.code != "ok" else _t("staff_upgraded", {"side": info.title, "name": info.name}))
-	if status.code == "ok": save_now(false)
+	if status.code == "ok": request_save()
 	_refresh(0.0)
 
 
@@ -1244,7 +1347,7 @@ func select_worker(id: int, from_card := false) -> void:
 
 
 func all_staff() -> Array:
-	return view.roster_snapshot()
+	return view.roster_snapshot(_refresh_frame)
 
 
 func staff_is_deployed(id: int) -> bool:
@@ -1263,7 +1366,7 @@ func toggle_deployment() -> void:
 	var message: String = view.command_message(status) if status.code != "ok" else _t("recalled") if returning else _t("deployed")
 	if status.code == "ok" and returning and carrier_warning(): message = _t("no_carrier")
 	_show_toast(message)
-	if status.code == "ok": save_now(false)
+	if status.code == "ok": request_save()
 	_refresh(0)
 
 
@@ -1287,7 +1390,7 @@ func station_action(action: String, station: String, material := "") -> void:
 	if status.code == "ok":
 		var key := station + ("/" + material if not material.is_empty() else "")
 		_bought("%s %s Lv%d" % [action, key, rules.level(key) if rules.track_of(key) != null else 0], gold_before)
-		save_now(false)
+		request_save()
 	_refresh(0)
 
 
@@ -1299,12 +1402,26 @@ func buy_connection(id: String) -> void:
 		return
 	_bought("belt " + id, before)
 	_show_toast(_t("connection_bought", {"note": String(anchors.meta("Connections/" + id, "note", "")).get_slice("，", 0)}))
-	save_now(false)
+	request_save()
 	_refresh(0.0)
+
+
+## Merge pending background saves and let at least one frame draw the UI first.
+func request_save() -> void:
+	if _save_pending or store == null: return
+	_save_pending = true
+	var generation := _save_generation
+	var tree := get_tree()
+	await tree.process_frame
+	await tree.process_frame
+	if generation == _save_generation: save_now(false)
 
 
 func save_now(notify := true) -> Error:
 	if session == null or not session.started or _startup_blocked or _transition_committed: return ERR_UNAVAILABLE
+	_save_pending = false
+	_save_generation += 1
+	_autosave_elapsed = 0.0
 	session.speed = _speed_factor
 	var result: Error = session.save(guide.seen_list() if guide != null else [])
 	save_status = "进度已保存" if result == OK else session.last_error
@@ -1336,11 +1453,11 @@ func _staffing_warning(workers: Array = []) -> String:
 func _fit() -> void:
 	var size := get_viewport_rect().size
 	var fitted_size := _world_size + Vector2(0, _top_margin)
-	# 店面比界面宽的店（世界单位更小）：店面照样铺满宽度，界面另按 UI_WIDTH 排
-	var world_scale := fitted_size.x / UI_WIDTH
-	var world_factor := minf(size.x / fitted_size.x, size.y / (MIN_VISIBLE_WORLD * world_scale))
+	var fitted: Dictionary = Presentation.fit(size, fitted_size, UI_WIDTH)
+	if fitted.is_empty(): return
+	var world_factor := float(fitted.world_factor)
 	_world_factor = world_factor
-	_ui_factor = world_factor * world_scale
+	_ui_factor = float(fitted.ui_factor)
 	var world_height := fitted_size.y * world_factor
 	_scroll_min = minf(0.0, size.y - world_height)
 	_world_top = maxf(0.0, (size.y - world_height) / 2.0)

@@ -1,4 +1,5 @@
 extends RefCounted
+const Movement := preload("res://game/rules/rule_movement.gd")
 ## Stateless transitions on a caller-owned worker record. Rules owns decisions,
 ## navigation, stock, customers and events; routes/steps are explicit owned inputs.
 
@@ -10,12 +11,12 @@ static func create(id: int, kind: String, name: String, stats: Dictionary, posit
 		"target": "", "timer": 0.0, "order": -1, "steps": [], "step": 0, "chore": ""}
 
 static func place(worker: Dictionary, post: String, position: Vector2) -> void:
+	worker.erase("motion")
 	worker.post = post
 	worker.pos = position
 
 static func assign_path(worker: Dictionary, path: PackedVector2Array) -> void:
-	worker.path = path
-	worker.path_index = 1 if path.size() > 1 else 0
+	Movement.assign(worker,path)
 
 static func begin_walk(worker: Dictionary, path: PackedVector2Array, phase: String) -> void:
 	assign_path(worker, path)
@@ -23,19 +24,7 @@ static func begin_walk(worker: Dictionary, path: PackedVector2Array, phase: Stri
 	worker.walking = true
 
 static func advance_walk(worker: Dictionary, distance: float) -> bool:
-	while distance > 0 and worker.path_index < worker.path.size():
-		var target: Vector2 = worker.path[worker.path_index]
-		var gap: float = worker.pos.distance_to(target)
-		if gap <= distance + 0.00001:
-			worker.pos = target
-			distance -= gap
-			worker.path_index += 1
-		else:
-			worker.pos = worker.pos.move_toward(target, distance)
-			distance = 0
-	if worker.path_index < worker.path.size(): return false
-	arrive(worker)
-	return true
+	return Movement.advance(worker,distance)
 
 static func arrive(worker: Dictionary) -> void:
 	worker.walking = false
@@ -59,6 +48,7 @@ static func finish_handoff(worker: Dictionary) -> void:
 	worker.walking = false
 
 static func cancel_assignment(worker: Dictionary) -> void:
+	worker.erase("motion")
 	worker.job = {}
 	worker.ticket = {}
 	worker.carry_count = 0

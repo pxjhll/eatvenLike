@@ -3,6 +3,19 @@ extends "res://tests/test_case.gd"
 
 const FONT := "res://art/ui/graybox_font.ttf"
 
+func test_public_onboarding_and_global_employee_text_has_glyphs() -> void:
+	var font: FontFile = load(FONT)
+	var campaign: SpecCampaign = load("res://content/examples/campaign.tres")
+	var names: Array = []
+	for city in campaign.cities:
+		names.append(city.display_name)
+		for entry in city.shops:
+			names.append(entry.display_name)
+			var shop: SpecShop = load(entry.shop_path)
+			names.append(shop.display_name)
+			for kind in shop.staff.kinds: names.append_array([kind.display_name,kind.role,kind.description])
+	for text in names: check(_missing(font,text).is_empty(),"onboarding text missing glyphs: "+_missing(font,text))
+
 func test_third_shop_fixture_text_has_glyphs() -> void:
 	var font: FontFile = load(FONT)
 	var literal := RegEx.create_from_string("\"([^\"\\\\]*)\"")

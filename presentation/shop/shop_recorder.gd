@@ -31,11 +31,11 @@ func setup(source: RefCounted) -> void:
 
 
 ## Called every frame with the shop time that just passed.
-func tick(shop_seconds: float) -> void:
+func tick(shop_seconds: float, frame: Dictionary = {}) -> void:
 	if not enabled or shop_seconds <= 0: return
 	_clock += shop_seconds
 	_acc.n += shop_seconds
-	var activity := view.activity_snapshot()
+	var activity := view.activity_snapshot(frame)
 	var waiting: int = activity.queue
 	if waiting >= activity.queue_capacity: _acc.full += shop_seconds
 	_acc.angry += shop_seconds * activity.angry_count / maxf(1.0, waiting)
@@ -46,14 +46,17 @@ func tick(shop_seconds: float) -> void:
 	if seat_count > 0: _acc.seats += shop_seconds * activity.seats_used / float(seat_count)
 	if _clock >= SAMPLE_SECONDS:
 		_clock -= SAMPLE_SECONDS
-		sample()
+		_write_sample(activity)
 
 
 func sample() -> void:
-	var activity := view.activity_snapshot()
+	_write_sample(view.activity_snapshot())
+
+
+func _write_sample(activity: Dictionary) -> void:
 	var progress := view.progress_snapshot()
 	var n: float = maxf(0.001, _acc.n)
-	write({"t": _t(), "stage": activity.stage_index, "gold": activity.gold, "income": activity.revenue - _last_revenue,
+	write({"t": int(activity.clock), "stage": activity.stage_index, "gold": activity.gold, "income": activity.revenue - _last_revenue,
 		"cups": activity.sold - _last_sold, "lost": activity.lost - _last_lost, "queue": activity.queue, "cap": activity.queue_capacity,
 		"full": snappedf(_acc.full / n, 0.01), "angry": snappedf(_acc.angry / n, 0.01), "idle": snappedf(_acc.idle / n, 0.01),
 		"busy": _busy(n), "seats_used": snappedf(_acc.seats / n, 0.01),

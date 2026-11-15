@@ -1,4 +1,5 @@
 extends RefCounted
+const Production := preload("res://game/rules/production_plan.gd")
 ## Pure configuration contract. No resources are loaded and no runtime rules are built.
 
 static func _supported(values: Array = []) -> Dictionary:
@@ -15,6 +16,7 @@ static func capabilities(mode: String) -> Dictionary:
 	if mode not in ["single", "handoff"]: return {}
 	var single := mode == "single"
 	var f := {
+		"flow_version":_reserved(0),"delivery_batch":_reserved("item"),"delivery_points":_reserved({}),
 		"handoff": _fixed([mode]), "taker": _fixed(["follower" if single else "front"]),
 		"dine_rule": _fixed(["takeaway_only" if single else "seat_first"]),
 		"pay_at": _supported(["on_take", "on_deliver"]) if single else _fixed(["on_deliver"]),
@@ -37,6 +39,10 @@ static func capabilities(mode: String) -> Dictionary:
 		"customer_walk": _reserved(0.0),
 	}
 	var d := {
+		"action_version": _supported([0,1]),
+		"transport_helpers": _reserved([]),
+		"preposition_work": _reserved(false),
+		"prefetch_inputs": _reserved(false),
 		"base_scores": _reserved({}) if single else _supported(),
 		"merge": _fixed(["fixed" if single else "carry"]), "merge_cap": _fixed([1]),
 		"resume_from_stock": _reserved(true) if single else _supported(),
@@ -53,6 +59,7 @@ static func capabilities(mode: String) -> Dictionary:
 ## 每趟端 1 件、不合送；整单送齐时一次结账；附加菜（例汤）作为订单第二条明细。
 static func _serve_capabilities() -> Dictionary:
 	var f := {
+		"flow_version":_supported([0,1]),"delivery_batch":_supported(["item","order"]),"delivery_points":_supported(),
 		"handoff": _fixed(["serve"]), "taker": _fixed(["front"]), "dine_rule": _supported(["seat_wait", "self_pickup"]),
 		"pay_at": _fixed(["on_deliver"]), "price_rounding": _fixed(["dish_tenth_carry"]), "leave_queue": _fixed(["after_take"]),
 		"wait_area": _fixed([""]), "leave_who": _supported(["none", "queued_unclaimed"]), "arrival": _supported(["fixed", "exponential"]),
@@ -62,6 +69,10 @@ static func _serve_capabilities() -> Dictionary:
 		"first_customer_delay": _supported(), "customer_walk": _supported(),
 	}
 	var d := {
+		"action_version": _supported([0,1]),
+		"transport_helpers": _supported(),
+		"preposition_work": _supported(),
+		"prefetch_inputs": _supported(),
 		"base_scores": _supported(), "merge": _fixed(["fixed"]), "merge_cap": _fixed([1]), "resume_from_stock": _reserved(true),
 		"help_while_waiting": _fixed([true]), "leave_seated_segments": _fixed([true]), "chores_first": _reserved(false),
 		"shortage_bonus": _reserved(0.0), "shortage_per": _reserved(0.0), "shortage_cap": _reserved(0.0),
@@ -71,7 +82,7 @@ static func _serve_capabilities() -> Dictionary:
 	}
 	return {"fulfillment": f, "dispatch": d}
 
-const SERVE_SCORES := ["take", "serve", "carry", "work", "pass"]
+const SERVE_SCORES := ["take", "serve", "carry", "work", "pass", "continuation"]
 
 static func summary(errors: Array) -> String:
 	var lines: PackedStringArray = []
@@ -140,6 +151,22 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 		_error(errors, "shop", "Shop resource is required.", "required")
 		return errors
 	_walk(shop, "", errors)
+	var public_definition := {}
+	if shop.runtime_template!=null:
+		if shop.runtime_template.get_script()!=load("res://content/rules/spec_shop_template.gd"):
+			_error(errors,"runtime_template.script","Use the shared declarative template schema; private scripts are not supported.","unsupported")
+		elif shop.layout!=null:
+			var menu: Variant = shop.runtime_template.service.get("menu",{})
+			if menu is Dictionary:
+				for id in menu:
+					if id is String and shop.dish(id)==null: _error(errors,"runtime_template.service.menu."+id,"Menu dish has no shared price/art catalog definition.","reference")
+			var compiler: Script = load("res://game/rules/template/compiler.gd")
+			var compiled: Dictionary = compiler.compile(shop.runtime_template,compiler.ports_from_layout(shop.layout))
+			for row in compiled.errors: _error(errors,"runtime_template."+row.path,row.message,row.code)
+			if compiled.errors.is_empty():
+				public_definition = compiled.definition
+				if compiled.definition.service.is_empty() or compiled.definition.service.arrivals.is_empty():
+					_error(errors,"runtime_template.service","Formal shops require an explicit service and arrival policy.","required")
 	if shop.id.strip_edges().is_empty(): _error(errors, "id", "ID must not be empty.", "id")
 	_number(shop.start_gold, "start_gold", errors)
 	_number(shop.flavor_flow, "flavor_flow", errors)
@@ -150,6 +177,7 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 		"seats": _ids(shop.seat_groups, "seat_groups", errors), "connections": _ids(shop.connections, "connections", errors),
 		"options": _ids(shop.order_options, "order_options", errors), "events": _ids(shop.events, "events", errors),
 		"guides": _ids(shop.guide, "guide", errors), "kinds": {}, "zones": {"": true}, "materials": {}, "tracks": {}, "campaign": {},
+		"public":shop.runtime_template!=null,"public_definition":public_definition,
 		"mode": shop.fulfillment.handoff if shop.fulfillment != null else "",
 		"zoned": shop.staff != null and not shop.staff.zones.is_empty(),
 		"retired_kinds": shop.staff.retired_kinds if shop.staff != null else {},
@@ -197,7 +225,25 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 
 static func _validate_policies(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
 	if shop.fulfillment == null: return
+	if c.public:
+		_enum(shop.fulfillment.handoff,["single","handoff","serve"],"fulfillment.handoff",errors)
+		if shop.layout==null or shop.layout.motion_version!=1: _error(errors,"layout.motion_version","Public capabilities require shared motion version 1.")
+		if shop.dispatch==null or shop.dispatch.action_version!=1: _error(errors,"dispatch.action_version","Public capabilities require shared actions version 1.")
+		_number(shop.fulfillment.seated_patience,"fulfillment.seated_patience",errors)
+		if not shop.fulfillment.mood_seconds.is_empty() and shop.fulfillment.mood_seconds.size()!=2: _error(errors,"fulfillment.mood_seconds","Use zero or two mood thresholds.")
+		for index in shop.fulfillment.mood_seconds.size():
+			_number(shop.fulfillment.mood_seconds[index],"fulfillment.mood_seconds[%d]"%index,errors)
+			if index>0 and shop.fulfillment.mood_seconds[index]<shop.fulfillment.mood_seconds[index-1]: _error(errors,"fulfillment.mood_seconds","Thresholds must be ordered.")
+		return
 	var f := shop.fulfillment
+	if f.flow_version==0 and (f.delivery_batch!="item" or not f.delivery_points.is_empty()): _error(errors,"fulfillment.flow_version","Delivery extensions require flow version 1.")
+	if f.delivery_batch=="order" and (f.handoff!="serve" or f.dine_rule!="seat_wait" or shop.dispatch==null or shop.dispatch.action_version!=1 or shop.layout==null or shop.layout.motion_version!=1):
+		_error(errors,"fulfillment.delivery_batch","Order delivery requires serve/seat_wait with shared motion and actions.")
+	if not f.delivery_points.is_empty() and f.delivery_batch!="order": _error(errors,"fulfillment.delivery_points","Multiple collection ports require order delivery.")
+	for dish in f.delivery_points:
+		_ref(dish,c.dishes,"fulfillment.delivery_points."+dish,errors)
+		var point: String = f.delivery_points[dish]
+		if not c.stations.has(point) or c.stations[point].block!="pickup": _error(errors,"fulfillment.delivery_points."+dish,"Collection point must be a pickup station.")
 	var matrix := capabilities(f.handoff)
 	if matrix.is_empty():
 		_error(errors, "fulfillment.handoff", "Unsupported fulfillment mode.", "unsupported")
@@ -223,6 +269,7 @@ static func _validate_policies(shop: SpecShop, c: Dictionary, errors: Array[Dict
 		_number(f.mood_seconds[i], "fulfillment.mood_seconds[%d]" % i, errors)
 		if i > 0 and f.mood_seconds[i] < f.mood_seconds[i - 1]: _error(errors, "fulfillment.mood_seconds", "Thresholds must be ordered.")
 	if shop.dispatch != null:
+		if shop.dispatch.action_version==1 and (shop.layout==null or shop.layout.motion_version!=1): _error(errors,"dispatch.action_version","Actions require shared movement version 1.")
 		for prop in shop.dispatch.get_property_list():
 			if (int(prop.usage) & PROPERTY_USAGE_SCRIPT_VARIABLE) and prop.type == TYPE_FLOAT: _number(shop.dispatch.get(prop.name), "dispatch." + prop.name, errors)
 		for key in shop.dispatch.base_scores:
@@ -287,7 +334,7 @@ static func _station(s: SpecStation, p: String, c: Dictionary, errors: Array[Dic
 static func _step(step: SpecStep, p: String, c: Dictionary, errors: Array[Dictionary], default_station := "") -> void:
 	_ref(step.station if not step.station.is_empty() else default_station, c.stations, p + ".station", errors)
 	if step.action.is_empty(): _error(errors, p + ".action", "Action must not be empty.")
-	if c.mode == "single" and step.action in ["take", "hand"]:
+	if not c.public and c.mode == "single" and step.action in ["take", "hand"]:
 		_error(errors, p + ".action", "Single fulfillment inserts take and hand actions; recipe steps cannot repeat them.", "unsupported")
 	_number(step.seconds, p + ".seconds", errors)
 	_number(step.repeat, p + ".repeat", errors, 0, true)
@@ -300,7 +347,7 @@ static func _dish(d: SpecDish, p: String, c: Dictionary, errors: Array[Dictionar
 	_ref(d.item, c.items, p + ".item", errors)
 	if d.price_parts.is_empty(): _error(errors, p + ".price_parts", "At least one price part is required.")
 	for part in d.price_parts: _number(d.price_parts[part], p + ".price_parts." + part, errors)
-	if d.steps.is_empty(): _error(errors, p + ".steps", "At least one recipe step is required.")
+	if d.steps.is_empty() and not c.public: _error(errors, p + ".steps", "At least one recipe step is required.")
 	for i in d.steps.size():
 		if d.steps[i] != null: _step(d.steps[i], p + ".steps[%d]" % i, c, errors)
 	_ref(d.flavor_station, c.stations, p + ".flavor_station", errors, true)
@@ -335,6 +382,7 @@ static func _effects(effects: Array, p: String, c: Dictionary, errors: Array[Dic
 		if e == null: continue
 		var at := p + "[%d]" % i
 		_enum(e.kind, SpecEffect.KINDS, at + ".kind", errors)
+		if e.kind == "capacity": _error(errors,at + ".kind","Capacity effects require a shared-template binding; the legacy shop entry has no consumer.","unsupported")
 		var upgrade := attachment != "event"
 		if upgrade and e.kind in SpecEffect.ONE_SHOT:
 			_error(errors, at + ".kind", "Upgrade tracks do not execute one-shot effects.", "unsupported")
@@ -402,7 +450,7 @@ static func _stage(stage: SpecStage, p: String, c: Dictionary, errors: Array[Dic
 		if id != stage.flavor_group: _ref(id, c.dishes, p + ".order_weights." + id, errors)
 		_number(stage.order_weights[id], p + ".order_weights." + id, errors)
 		total += stage.order_weights[id]
-	if total <= 0: _error(errors, p + ".order_weights", "Menu needs a positive weight.")
+	if total <= 0 and not c.public: _error(errors, p + ".order_weights", "Menu needs a positive weight.")
 
 	for zone in stage.staff_slots:
 		_enum(zone, ["kitchen"] if c.zoned else [""], p + ".staff_slots." + zone, errors)
@@ -458,7 +506,7 @@ static func _validate_staff(shop: SpecShop, c: Dictionary, errors: Array[Diction
 	_tracks(staff.tracks, "staff.tracks", c, errors, "", "staff")
 
 static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
-	if c.mode in ["single", "serve"] and not shop.connections.is_empty():
+	if not c.public and c.mode in ["single", "serve"] and not shop.connections.is_empty():
 		_error(errors, "connections", "Conveyor dispatch requires handoff fulfillment.", "unsupported")
 	if shop.flyer != null:
 		_number(shop.flyer.wave_seconds, "flyer.wave_seconds", errors)
@@ -497,7 +545,7 @@ static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dic
 		var option := shop.order_options[i]
 		if option == null: continue
 		var p := "order_options[%d]" % i
-		if shop.fulfillment != null and shop.fulfillment.handoff != "single": _error(errors, p, "Order options require single fulfillment.", "unsupported")
+		if not c.public and shop.fulfillment != null and shop.fulfillment.handoff != "single": _error(errors, p, "Order options require single fulfillment.", "unsupported")
 		_ref(option.station, c.stations, p + ".station", errors)
 		_number(option.share, p + ".share", errors, 0, false, 1)
 		_number(option.price_mult, p + ".price_mult", errors)
@@ -548,6 +596,7 @@ static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dic
 static func _validate_layout(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
 	var layout := shop.layout
 	if layout == null: return
+	_validate_motion(shop,errors)
 	_enum(layout.nav, ["straight", "grid"], "layout.nav", errors)
 	_number(layout.cell, "layout.cell", errors, 0, true)
 	if layout.nav == "grid":
@@ -566,8 +615,43 @@ static func _validate_layout(shop: SpecShop, c: Dictionary, errors: Array[Dictio
 		var point: String = layout.aliases.get(id, id)
 		_ref(point, layout.points, "layout.points." + id, errors)
 
+static func _validate_motion(shop: SpecShop, errors: Array[Dictionary]) -> void:
+	var layout := shop.layout
+	_enum(layout.motion_version,[0,1],"layout.motion_version",errors)
+	if layout.motion_version!=1: return
+	_enum(layout.nav,["grid"],"layout.nav",errors)
+	_number(layout.motion_units,"layout.motion_units",errors,0,true)
+	for profile in ["staff","customer"]:
+		if not layout.actor_areas.has(profile): _error(errors,"layout.actor_areas."+profile,"An explicit permission area is required.")
+	for profile in layout.actor_areas:
+		var areas: Variant = layout.actor_areas[profile]
+		if not profile is String or String(profile).is_empty() or not areas is Array or areas.is_empty():
+			_error(errors,"layout.actor_areas","Permission names require a nonempty array of grid rectangles.")
+			continue
+		for area in areas:
+			if not area is Rect2i or area.size.x<=0 or area.size.y<=0 or not Rect2i(Vector2i.ZERO,layout.grid_size).encloses(area):
+				_error(errors,"layout.actor_areas."+profile,"Permission rectangles must fit inside the grid.")
+	for name in ["entrance","exit","pickup"]:
+		if not layout.customer_points.has(name): _error(errors,"layout.customer_points."+name,"Customer port is required.")
+	for group in shop.seat_groups:
+		var count := group.start+group.step*group.costs.size()
+		if not group.steps.is_empty():
+			count = group.start
+			for extra in group.steps: count += extra
+		for index in count:
+			var name := ("wait:" if group.purpose=="wait" else "seat:")+"%s/%d"%[group.id,index]
+			if not layout.customer_points.has(name): _error(errors,"layout.customer_points."+name,"Seat approach port is required.")
+	for name in layout.customer_points:
+		if not layout.customer_points[name].is_finite(): _error(errors,"layout.customer_points."+name,"Port must be finite.")
+	if layout.customer_queue.is_empty(): _error(errors,"layout.customer_queue","Queue must have at least one explicit point.")
+	for index in layout.customer_queue.size():
+		if not layout.customer_queue[index].is_finite(): _error(errors,"layout.customer_queue[%d]"%index,"Queue point must be finite.")
+
 ## Check the necessary staged production graph, without trying to solve economy/balance.
 static func _validate_graph(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
+	if c.public:
+		if not c.public_definition.get("service",{}).is_empty(): errors.append_array(load("res://game/rules/template/authoring.gd").validate(shop,c.public_definition))
+		return
 	var counters := 0
 	var outputs := {}
 	for dish in shop.dishes:
@@ -640,6 +724,19 @@ static func _validate_graph(shop: SpecShop, c: Dictionary, errors: Array[Diction
 ## serve 模式能执行的配方形状（§10.5：不支持的组合明确拒绝）：
 ## 原料箱 / 自动批量锅只当来源；手工台、要人的组合台是工序；每道菜最后做出 dish.item；有出餐口、堂食座位组和每个座位的站位。
 static func _validate_serve(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
+	if shop.dispatch.prefetch_inputs and (shop.fulfillment.flow_version!=1 or shop.dispatch.action_version!=1):
+		_error(errors,"dispatch.prefetch_inputs","Parallel preparation requires serve flow1 and shared actions.","unsupported")
+	if shop.dispatch.preposition_work and (shop.fulfillment.flow_version!=1 or shop.dispatch.action_version!=1):
+		_error(errors,"dispatch.preposition_work","Prepositioned work requires serve flow1 and shared actions.","unsupported")
+	var helpers := shop.dispatch.transport_helpers
+	if not helpers.is_empty() and (shop.fulfillment.flow_version!=1 or shop.dispatch.action_version!=1 or not c.zoned):
+		_error(errors,"dispatch.transport_helpers","Transport assistance requires zoned serve flow1 and shared actions.","unsupported")
+	var helper_roles := {}
+	for index in helpers.size():
+		var role := helpers[index]
+		_enum(role,["front","kitchen"],"dispatch.transport_helpers[%d]"%index,errors)
+		if helper_roles.has(role): _error(errors,"dispatch.transport_helpers","Helper roles must be unique.")
+		helper_roles[role] = true
 	var pickups := 0
 	for id in c.stations:
 		var st: SpecStation = c.stations[id]
@@ -653,8 +750,9 @@ static func _validate_serve(shop: SpecShop, c: Dictionary, errors: Array[Diction
 				if not bool(st.params.get("manual", false)): _error(errors, p, "Serve fulfillment supports staffed combine stations only.", "unsupported")
 			"topping", "dispenser":
 				_error(errors, p, "Serve fulfillment does not support this block yet.", "unsupported")
-		if st.zone == "front" and st.block != "counter": _error(errors, p, "Serve fulfillment has no front production yet.", "unsupported")
-	if pickups != 1: _error(errors, "stations", "Serve fulfillment needs exactly one pickup station.")
+		if st.zone == "front" and st.block != "counter" and shop.fulfillment.flow_version!=1:
+			_error(errors, p, "Front production requires flow version 1.", "unsupported")
+	if pickups<1 or (shop.fulfillment.flow_version==0 and pickups!=1): _error(errors, "stations", "Serve fulfillment needs exactly one pickup station unless flow version 1 is enabled.")
 	var dine: SpecSeatGroup = null
 	for g in shop.seat_groups:
 		if g != null and g.purpose == "dine" and dine == null: dine = g
@@ -667,18 +765,22 @@ static func _validate_serve(shop: SpecShop, c: Dictionary, errors: Array[Diction
 	for dish in shop.dishes:
 		if dish == null: continue
 		var p: String = "dishes." + dish.id
-		if dish.front: _error(errors, p + ".front", "Serve fulfillment has no front recipes yet.", "unsupported")
+		if shop.fulfillment.flow_version==1:
+			for error: Dictionary in Production.compile(shop,dish.id).errors: _error(errors,p+"."+error.path,error.message,error.code)
+		if dish.front and shop.fulfillment.flow_version!=1: _error(errors, p + ".front", "Front recipes require flow version 1.", "unsupported")
 		var made := {}
 		var final := false
 		for i in dish.steps.size():
 			var s := dish.steps[i]
 			if s == null or not c.stations.has(s.station): continue
 			var st: SpecStation = c.stations[s.station]
+			if dish.front and st.zone!="front": _error(errors,"%s.steps[%d].station"%[p,i],"Front recipes must use front production stations.","unsupported")
+			elif not dish.front and st.zone=="front": _error(errors,"%s.steps[%d].station"%[p,i],"Kitchen recipes cannot implicitly require front production.","unsupported")
 			if st.block in ["supply", "batch_pot"]:
 				if not s.consumes.is_empty() or s.produces.size() != 1: _error(errors, "%s.steps[%d]" % [p, i], "Source steps produce exactly one item and consume nothing.", "unsupported")
 			elif st.block in ["hand", "combine"]:
 				for item in s.consumes:
-					if not made.has(item): _error(errors, "%s.steps[%d].consumes.%s" % [p, i, item], "Inputs must be produced by an earlier step.", "unreachable")
+					if shop.fulfillment.flow_version==0 and not made.has(item): _error(errors, "%s.steps[%d].consumes.%s" % [p, i, item], "Inputs must be produced by an earlier step.", "unreachable")
 			else: _error(errors, "%s.steps[%d]" % [p, i], "Serve recipes use supply, batch_pot, hand and combine steps.", "unsupported")
 			for item in s.produces:
 				made[item] = true

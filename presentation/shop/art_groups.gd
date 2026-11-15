@@ -1,4 +1,5 @@
 extends RefCounted
+const Module := preload("res://presentation/shop/modules/shop_module.gd")
 ## 美术场景里按玩法状态显示的分组（通用）：节点上的 layout_group / unlock_rule 标记，同一组用同一条规则。
 ##   always              一直显示
 ##   <机器 id>           这台机器开了才显示
@@ -14,6 +15,7 @@ static func refresh(art: Node2D, view: ShopView) -> void:
 	var visibility := {}
 	var followers: Array[CanvasItem] = []
 	for node in art.find_children("*", "CanvasItem", true, false):
+		if node.get_script()==Module: node.refresh_visual(view)
 		if node.has_meta("follows"): followers.append(node)
 		if not node.has_meta("layout_group"): continue
 		var group: String = node.get_meta("layout_group")

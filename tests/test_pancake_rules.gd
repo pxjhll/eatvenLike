@@ -1,8 +1,10 @@
 extends "res://tests/test_case.gd"
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+## Frozen v0 business regression; formal v1 coverage: test_first_shops_migration.
 ## 煎饼摊玩法跑在通用规则层上（旧 pancake_sim 的行为用例搬过来）：开局、一人跟单走完每台机器、鏊子一次一人、
 ## 面粉箱单独买、打糊加摊饼同一台、装袋选项、口味升级、解锁顺序、招人名额、传单冷却、升级上限、评分。整店节奏由 test_shop_rules 的整店回放对照基准。
 
-const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
+const PANCAKE: SpecShop = preload("res://tests/fixtures/legacy_shops/pancake.tres")
 
 
 ## 只卖一道菜的煎饼摊（不顺带豆浆）
@@ -17,7 +19,7 @@ func _only(dish: String) -> SpecShop:
 
 
 func test_opening_has_counter_roll_and_one_staff_but_no_customers() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	check(rules.station_unlocked("front_counter") and rules.station_unlocked("roll"), "前台和柜台上的卷饼开局就在")
 	check(not rules.station_unlocked("bag"), "装袋要单独解锁")
 	check(not rules.is_open(), "豆浆机开之前不营业")
@@ -31,7 +33,7 @@ func test_opening_has_counter_roll_and_one_staff_but_no_customers() -> void:
 
 
 func test_flour_box_is_its_own_buy_after_the_griddle() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	rules.gold = 9999
 	rules.unlock("soy_milk")
 	check(rules.box_error("flour") != "", "鏊子没开不能买面粉箱")
@@ -45,7 +47,7 @@ func test_flour_box_is_its_own_buy_after_the_griddle() -> void:
 
 
 func test_flavor_orders_require_the_flour_box_including_the_fallback() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	rules.gold = 99999
 	for id in ["soy_milk", "rear_equipment", "fryer", "topping"]:
 		check_eq(rules.unlock(id), "", "开放" + id)
@@ -70,7 +72,7 @@ func _open_all(rules: ShopRules) -> void:
 
 
 func test_one_staff_follows_a_food_order_through_every_station() -> void:
-	var rules := ShopRules.new(_only("family"))
+	var rules := LegacyRules.new(_only("family"))
 	_open_all(rules)
 	for i in 2: rules.upgrade("topping")
 	check(not rules.dish_open("family"), "加料台 3 级还没有全家福")
@@ -93,11 +95,11 @@ func test_one_staff_follows_a_food_order_through_every_station() -> void:
 
 
 func test_batter_is_quick_and_griddle_upgrades_only_speed_up_grilling() -> void:
-	var rules := ShopRules.new(_only("plain"))
+	var rules := LegacyRules.new(_only("plain"))
 	_open_all(rules)
 	var times := func() -> Dictionary:
 		var out := {}
-		var r := ShopRules.new(_only("plain"))
+		var r := LegacyRules.new(_only("plain"))
 		_open_all(r)
 		for i in rules.level("rear_equipment") - 1: r.upgrade("rear_equipment")
 		var started := {}
@@ -115,7 +117,7 @@ func test_batter_is_quick_and_griddle_upgrades_only_speed_up_grilling() -> void:
 
 
 func test_one_griddle_is_held_from_batter_to_pancake() -> void:
-	var rules := ShopRules.new(_only("plain"))
+	var rules := LegacyRules.new(_only("plain"))
 	_open_all(rules)
 	check_eq(rules.hire(), "", "招第 2 人")
 	rules.send_flyers()
@@ -137,7 +139,7 @@ func test_one_griddle_is_held_from_batter_to_pancake() -> void:
 
 
 func test_bag_option_adds_a_step_and_raises_the_price() -> void:
-	var rules := ShopRules.new(_only("guozi"))
+	var rules := LegacyRules.new(_only("guozi"))
 	_open_all(rules)
 	rules._spawn_single()
 	check(not rules.customers[-1].options.has("bag"), "装袋没开时没人要袋子")
@@ -162,7 +164,7 @@ func test_bag_option_adds_a_step_and_raises_the_price() -> void:
 
 
 func test_flavors_have_two_price_levels_like_the_tea_toppings() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	_open_all(rules)
 	var price := rules.dish_price("ham")
 	check(rules.upgrade_error("topping/ham").is_empty(), "火腿口味能升级")
@@ -174,7 +176,7 @@ func test_flavors_have_two_price_levels_like_the_tea_toppings() -> void:
 
 
 func test_staff_walk_to_every_point() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	var pts := PANCAKE.layout.points
 	for a in pts:
 		for b in pts:
@@ -183,7 +185,7 @@ func test_staff_walk_to_every_point() -> void:
 
 
 func test_unlock_order_hires_and_flyer_cooldown() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	rules.gold = 9999
 	check(rules.unlock("fryer") != "", "不能跳过顺序开油锅")
 	rules.unlock("soy_milk")
@@ -199,7 +201,7 @@ func test_unlock_order_hires_and_flyer_cooldown() -> void:
 
 
 func test_upgrades_raise_soy_price_and_griddle_caps_at_nine() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	rules.gold = 99999
 	rules.unlock("soy_milk")
 	var soy := rules.dish_price("soy")
@@ -217,7 +219,7 @@ func test_upgrades_raise_soy_price_and_griddle_caps_at_nine() -> void:
 
 
 func test_rating_uses_finish_time_and_walkouts() -> void:
-	var rules := ShopRules.new(PANCAKE)
+	var rules := LegacyRules.new(PANCAKE)
 	var view := ShopView.new(rules)
 	check_eq(view.rating(), 0, "没完店没有评分")
 	rules.completed_at = 20 * 60.0
@@ -233,7 +235,7 @@ func test_rating_uses_finish_time_and_walkouts() -> void:
 
 
 func test_waiting_customers_never_leave_they_get_angry() -> void:
-	var rules := ShopRules.new(_only("soy"))
+	var rules := LegacyRules.new(_only("soy"))
 	check_eq(rules.unlock("soy_milk"), "", "开豆浆机")
 	rules.workers.clear()
 	rules.run(5.0)
@@ -247,7 +249,7 @@ func test_waiting_customers_never_leave_they_get_angry() -> void:
 ## 试玩记录只问规则层的通用查询：煎饼摊（一人跟单）的排队、生气、空闲、坐垫、走掉的客人都要记得到
 func test_playlog_records_queue_staff_seats_and_walkaways() -> void:
 	var Recorder := preload("res://presentation/shop/shop_recorder.gd")
-	var rules := ShopRules.new(_only("soy"))
+	var rules := LegacyRules.new(_only("soy"))
 	check_eq(rules.unlock("soy_milk"), "", "开豆浆机")
 	var recorder = Recorder.new()
 	recorder.file_path = "user://test_playlog_pancake.txt"
@@ -278,7 +280,7 @@ func test_playlog_records_queue_staff_seats_and_walkaways() -> void:
 
 
 func test_generic_queries_answer_for_the_single_handoff_shop() -> void:
-	var rules := ShopRules.new(_only("soy"))
+	var rules := LegacyRules.new(_only("soy"))
 	check_eq(rules.unlock("soy_milk"), "", "开豆浆机")
 	rules.workers.clear()
 	rules.run(150.0)
@@ -289,7 +291,7 @@ func test_generic_queries_answer_for_the_single_handoff_shop() -> void:
 
 func test_playlog_setup_starts_a_full_new_sampling_interval() -> void:
 	var Recorder := preload("res://presentation/shop/shop_recorder.gd")
-	var rules := ShopRules.new(_only("soy"))
+	var rules := LegacyRules.new(_only("soy"))
 	var recorder = Recorder.new()
 	recorder.file_path = "user://test_playlog_setup_%d.txt" % OS.get_process_id()
 	if FileAccess.file_exists(recorder.file_path): DirAccess.remove_absolute(recorder.file_path)

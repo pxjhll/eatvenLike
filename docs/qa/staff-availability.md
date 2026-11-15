@@ -53,8 +53,9 @@
 - tests/render_work_actions.gd：员工页五种角色、三动作预览、五种员工真实工位操作；原生输出在.godot/work_actions_capture，不进入Git。
 - tests/render_shop_tea.gd、tests/render_shop_stirfry.gd、tests/render_shop_guide.gd：正式经营、UI和引导。
 
-生产基准使用tea_active_staff.json、tea_ui_active_staff.json；历史六种员工基准保留。
-以tests/baselines/record_tea_staff.gd重建，附加-- --check检查一致性。
+以下基准结果属于引入公共 Runtime 前的 main（合并提交 71ad4af），作为五种员工接入的历史证据保留：tea_active_staff.json、tea_ui_active_staff.json。
+tests/baselines/record_tea_staff.gd 也属于该历史版本，只应在对应提交运行；不要用它在当前公共 Runtime 上重录或覆盖这两份文件。
+当前分支的正式经营与员工迁移以公共 Runtime 测试、test_staff_availability.gd、test_shared_staff.gd 及统一验收清单为准；旧经济与 UI 回放继续读取冻结的历史执行器、店铺及六种员工基准。
 保留原79条命令和顺序，金币不足时逐tick重试；UI覆盖540个采样点。
 五种员工完店2148.4秒（历史2133.1秒），45分钟销量601（历史607）、收入33178（历史33670）。
 差异来自员工构成变化，没有调整既有价格、配方或升级数值来对齐快照。

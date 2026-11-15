@@ -300,9 +300,6 @@ color = Color(0.55, 0.62, 0.59, 1)
 
 [node name="Anchors" type="Node2D" parent="."]
 metadata/world_size = Vector2(720, 1200)
-metadata/customer_height = 92.0
-metadata/staff_height = 105.0
-metadata/customer_speed = 170.0
 
 [node name="Stations" type="Node2D" parent="Anchors"]
 

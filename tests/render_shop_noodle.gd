@@ -1,9 +1,11 @@
 extends SceneTree
+const LegacyRules := preload("res://tests/fixtures/legacy_shops/reference_rules.gd")
+const LegacySave := preload("res://tests/fixtures/legacy_shops/reference_save.gd")
 ## Actual sessions, files and input events for the isolated third-shop fixture.
 
 const TestSession := preload("res://tests/shop_test_session.gd")
 const Profile := preload("res://game/app/profile.gd")
-const TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
+const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
 const NOODLE: SpecShop = preload("res://tests/fixtures/noodle/shop.tres")
 const CAMPAIGN: SpecCampaign = preload("res://tests/fixtures/noodle/campaign.tres")
 var errors := preload("res://tests/error_counter.gd").new()
@@ -44,8 +46,8 @@ func _invalid_startup_preserves_progress(defect: String) -> void:
 	var spec: SpecShop = TEA.duplicate(true)
 	var profile := Profile.new(_path("profile.json"))
 	_check(profile.finish_shop({"shop": "pancake"}) == OK, "fresh intent selected")
-	var store := ShopSave.new(spec, _path("shop.json"))
-	var previous := ShopRules.new(TEA)
+	var store := LegacySave.new(spec, _path("shop.json"))
+	var previous := LegacyRules.new(TEA)
 	previous.gold = 1234
 	_check(store.save_game(previous) == OK, "old shop sentinel written")
 	var original := FileAccess.get_file_as_bytes(store.path)
@@ -89,7 +91,7 @@ func _invalid_startup_preserves_progress(defect: String) -> void:
 
 func _session_failure_disposes_candidate() -> void:
 	var profile := Profile.new(_path("mismatch-profile.json"))
-	var store := ShopSave.new(TEA, _path("mismatch-shop.json"))
+	var store := LegacySave.new(TEA, _path("mismatch-shop.json"))
 	var before := Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)
 	# Art is valid but the real Profile still selects the first production shop.
 	# Session.start must reject the mismatch and release its prepared candidate.
@@ -148,7 +150,7 @@ func _third_shop_business() -> void:
 	var saved: Dictionary = view.rules.to_dict()
 	var seen: Array = view.guide.seen_list()
 	var profile_path: String = view.profile.path
-	var continuation := ShopRules.new(NOODLE)
+	var continuation := LegacyRules.new(NOODLE)
 	_check(continuation.load_dict(saved).is_empty(), "saved state supports exact continuation oracle")
 	view.free()
 	_check(Profile.new(profile_path, CAMPAIGN).shop == "noodle", "third shop selection persists with actual campaign")
