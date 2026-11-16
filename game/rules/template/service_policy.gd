@@ -118,6 +118,8 @@ static func compile(raw: Dictionary, places: Dictionary, recipes: Dictionary) ->
 	var pickup_queue := PickupQueue.compile(raw.get("pickup_queue",{}),result.seats,"self_pickup" if previous_pickup or not counter_dishes.is_empty() else result.delivery)
 	if not pickup_queue.error.is_empty(): return pickup_queue
 	if not counter_dishes.is_empty() and pickup_queue.definition.is_empty(): return _error("counter handoff requires a shared pickup queue")
+	if pickup_queue.definition.get("mixed_line",false) and (counter_dishes.is_empty() or result.admission!="automatic" or not result.has("seating") or result.orders.queue_release!="after_take"):
+		return _error("mixed line requires automatic dining admission and staff counter pickup")
 	if not pickup_queue.definition.is_empty(): result.pickup_queue = pickup_queue.definition
 	for place in places:
 		if String(place).begins_with("guest:"): return _error("guest containers are managed by service")

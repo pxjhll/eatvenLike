@@ -934,7 +934,7 @@ func _update_customers_motion(frame: Dictionary, delta := 0.0) -> void:
 		if row.has("patience"): patience = float(row.patience)
 		elif shop.fulfillment.handoff=="single" and row.state=="queue" and shop.fulfillment.leave_after>0:
 			patience = 1.0-float(row.wait)/shop.fulfillment.leave_after
-		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway)
+		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway,row.get("compact_order",false))
 		actor.display(pose,float(frame.clock)+_customer_route_presentation.age)
 		var displayed: Vector2 = pose.pos if row.seated else _customer_route_presentation.point(row,float(Presentation.customer_speed)*shop.layout.motion_units)
 		actor.set_render_position(displayed)

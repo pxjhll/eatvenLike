@@ -445,6 +445,7 @@ func test_front_employee_collects_and_delivers_staged_food_after_save_reload() -
 func _previous_staff_service() -> SpecShop:
 	var shop := SHOP.copy_for_editing()
 	var template: Resource = shop.runtime_template
+	template.service.pickup_queue.erase("mixed_line")
 	for pose in template.presentation.poses.values(): pose.offset = Vector2.ZERO
 	for key in ["return_posts","roaming_idle","port_queues","collect_at_drop_last"]: template.dispatch.erase(key)
 	template.places["pantry:out"].port = Vector2(200,660)
@@ -777,3 +778,45 @@ func test_customers_walk_to_the_right_queue_head_before_taking_a_seat() -> void:
 		check_eq(runtime.step(0.1),"","advance the entrance walk")
 		if runtime.service.orders.guest(1).order>0: break
 	check_eq(runtime.service.customers.record(1).target,"seat:table/0","first customer takes the available seat from queue head")
+
+func test_counter_pickup_and_new_arrivals_use_one_line() -> void:
+	var template := _template()
+	template.service.selection.stages[-1].weights = {"plum_juice":1.0}
+	var runtime := _runtime(template)
+	if runtime==null: return
+	runtime.arrive([])
+	runtime.arrive([])
+	runtime.arrive([])
+	_take(runtime)
+	check_eq(runtime.step(0.1),"","synchronize the mixed line after admission")
+	check_eq(runtime.service.customers.record(1).target,"pickup:0","the drink customer stays at the shared head")
+	check_eq(runtime.service.customers.record(2).target,"queue:1","the waiting drink occupies the first physical position")
+	check_eq(runtime.service.customers.record(3).target,"queue:2","later arrivals use distinct positions in the same line")
+	var saved: Dictionary = runtime.snapshot()
+	check_eq(runtime.restore(saved),"","active mixed queue restores exactly")
+	for tick in 600:
+		check_eq(runtime.step(0.1),"","the shared head advances as drinks are served")
+		if runtime.service.orders.guest(2).order>0: break
+	check_eq(runtime.service.orders.order(1).state,"delivered","the customer at the head gets the drink first")
+	check(runtime.service.orders.guest(2).order>0,"the next guest reaches the head and orders")
+
+func test_old_split_positions_reload_into_the_mixed_line() -> void:
+	var previous := SHOP.copy_for_editing()
+	previous.runtime_template.service.pickup_queue.erase("mixed_line")
+	previous.layout.customer_queue.clear()
+	for rank in 8: previous.layout.customer_queue.append(Vector2(640-78*rank,950))
+	var old := ShopRules.new(previous,42)
+	check_eq(old.unlock("plum_dispenser"),"","open the old counter")
+	old.runtime.service.arrivals._state.left = 10000.0
+	for index in 3: old.runtime.arrive([])
+	_take(old.runtime)
+	old.step(0.1)
+	check_eq(old.runtime.service.customers.record(2).target,"queue:0","previous rules assigned the same physical head twice")
+	var saved := old.to_dict()
+	check_eq(saved.template.structure,"5ef4e1493f4a521cb3bfe9a9c2ad1144ff02161400a426c113d673d48f29875c","save represents the previous deployed layout")
+	var restored := ShopRules.new(SHOP.copy_for_editing(),42)
+	check_eq(restored.load_dict(saved,true),"","previous save accepts the new queue layout")
+	check_eq(restored.runtime.service.customers.record(1).target,"pickup:0","retain the active pickup at the head")
+	check_eq(restored.runtime.service.customers.record(2).target,"queue:1","guide the next arrival toward its new position")
+	check_eq(restored.runtime.service.customers.record(3).target,"queue:2","preserve order across the migration")
+	check_eq(restored.load_dict(restored.to_dict()),"","reassigned movement survives ordinary reload")

@@ -68,6 +68,8 @@ func _init(runtime: RefCounted, policy: Dictionary) -> void:
 	if last_error.is_empty() and dining != null: last_error = dining.validate(runtime.runner.owner)
 	if last_error.is_empty() and seating != null: last_error = seating.validate(runtime.runner.owner)
 	if last_error.is_empty() and pickup_queue != null: last_error = pickup_queue.validate(customers)
+	if last_error.is_empty() and uses_mixed_line():
+		last_error = pickup_queue.validate_mixed_line(customers,policy.seats,policy.seating.stages)
 
 func set_open(value: bool) -> String:
 	if arrivals == null: return "template has no automatic arrival capability"
@@ -228,13 +230,14 @@ func advance(dt: float) -> String:
 			if error.is_empty() and customers.ready(guest.id, target): error = orders.begin_meal(guest.id,float(guest.meal_left) if guest.meal_left>0.0 else _meal_seconds(guest), _runtime.runner.inventory)
 		elif guest.state == "waiting" and not _customer_carrying(guest.order):
 			if dining == null and (waiting == null or not _policy.waiting.retain_after_take):
-				error = customers.request(guest.id, _waiting_target(guest))
+				if not uses_mixed_line() or not (uses_customer_pickup(guest.order) or _counter_delivery(guest)):
+					error = customers.request(guest.id, _waiting_target(guest))
 		if not error.is_empty(): return error
 	error = _sync_queue()
 	if not error.is_empty(): return error
 	error = _admit()
 	if not error.is_empty(): return error
-	if _has_pickup_queue():
+	if _has_pickup_queue() and not uses_mixed_line():
 		error = _sync_pickups()
 		if not error.is_empty(): return error
 	return _fulfill()
@@ -303,9 +306,15 @@ func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := fal
 		if (delivery.phase != "staff") != uses_customer_pickup(delivery.order): return "fulfillment actor differs from service policy"
 		bundles[delivery.bundle] = true
 	_deliveries = data.deliveries.duplicate(true)
+	var shared_targets := {}
+	var former_pickup_targets := {}
 	if pickup_queue != null:
-		var pickup_plan := _pickup_plan(orders.snapshot())
+		var state: Dictionary = orders.active_snapshot()
+		var pickup_plan := _pickup_plan(state)
 		if not pickup_plan.error.is_empty(): return pickup_plan.error
+		if uses_mixed_line():
+			shared_targets = _mixed_targets(orders.queue(),pickup_plan.targets)
+			if refresh_layout: former_pickup_targets = _pickup_plan(state,false).targets
 	var waiting_targets := {}
 	var previous_targets := {}
 	if dining != null:
@@ -362,6 +371,13 @@ func prepare_restore(data: Dictionary, stock: RefCounted, refresh_numeric := fal
 			target = _waiting_target(guest)
 			for delivery in _deliveries:
 				if delivery.order == guest.order and delivery.phase in ["carry", "drop"]: target = _destination(guest)
+		if shared_targets.has(guest.id):
+			target = shared_targets[guest.id]
+			var former: String = "queue:"+str(queue.find(guest.id)) if guest.state=="queue" else former_pickup_targets.get(guest.id,"")
+			if refresh_layout and actor.target!=target and actor.target==former:
+				error = customers.request(guest.id,target)
+				if not error.is_empty(): return error
+				actor = customers.record(guest.id)
 		# A customer may still have the previous waiting target until queue sync.
 		var previous_wait: bool = guest.state=="waiting" and previous_targets.has(guest.id) and actor.target==previous_targets[guest.id]
 		if actor.target != target and not previous_wait: return "customer movement target differs from service facts"
@@ -463,12 +479,27 @@ func _sync_queue() -> String:
 			if not error.is_empty(): return error
 		return ""
 	var queue: Array = orders.queue()
+	if uses_mixed_line():
+		var pickup := _pickup_plan(orders.active_snapshot())
+		if not pickup.error.is_empty(): return pickup.error
+		var targets := _mixed_targets(queue,pickup.targets)
+		for id in targets:
+			var error: String = customers.request(id,targets[id])
+			if not error.is_empty(): return error
+		return ""
 	for index in queue.size():
 		var guest: Dictionary = orders.guest(queue[index])
 		if guest.state != "queue": continue
 		var error: String = customers.request(guest.id, "queue:" + str(index))
 		if not error.is_empty(): return error
 	return ""
+
+func _mixed_targets(queue: Array, pickups: Dictionary) -> Dictionary:
+	# Pickup guests already passed this head; keep their order before new arrivals.
+	var targets := pickups.duplicate()
+	for id in queue:
+		if orders.guest(id).state=="queue": targets[id] = "queue:"+str(targets.size())
+	return targets
 
 func _called_guests(scope_rows: Variant = null, production: Variant = null) -> Dictionary:
 	var called := {}
@@ -607,7 +638,7 @@ func _accept(id: int, employee: int = -1) -> String:
 	if dining == null and (waiting == null or not _policy.waiting.retain_after_take):
 		error = customers.request(guest.id, _waiting_target(guest))
 		if not error.is_empty(): return error
-	error = _sync_queue() if waiting != null or dining != null else ""
+	error = _sync_queue() if waiting != null or dining != null or uses_mixed_line() else ""
 	if error.is_empty(): _runtime.runner.owner.events.emit("order_taken",{"guest":int(id),"order":int(admitted.id),"seat":guest.seat})
 	return error
 
@@ -641,10 +672,13 @@ func _waiting_target(guest: Dictionary) -> String:
 func _has_pickup_queue() -> bool:
 	return pickup_queue!=null and (_policy.delivery=="self_pickup" or _pickup_before>1 or _policy.get("staff_handoff",{}).has("counter_port"))
 
-func _pickup_plan(state: Dictionary) -> Dictionary:
+func uses_mixed_line() -> bool:
+	return _policy.get("pickup_queue",{}).get("mixed_line",false)
+
+func _pickup_plan(state: Dictionary, apply_mixed := true) -> Dictionary:
 	if not _has_pickup_queue(): return {"targets":{},"error":""}
 	return pickup_queue.targets(state,_deliveries,-1 if _policy.delivery=="self_pickup" else _pickup_before,
-		_policy.get("staff_handoff",{}).get("counter_dishes",[]))
+		_policy.get("staff_handoff",{}).get("counter_dishes",[]),apply_mixed and uses_mixed_line())
 
 func _sync_pickups() -> String:
 	var plan := _pickup_plan(orders.active_snapshot())
@@ -677,7 +711,9 @@ func _fulfill() -> String:
 	for order in orders.active_snapshot().orders:
 		if order.state=="delivered" or not uses_customer_pickup(order.id): continue
 		var guest: Dictionary = orders.guest(order.guest)
-		if _customer_carrying(order.id) or not customers.ready(guest.id, _pickup_target(guest)): continue
+		var target := _pickup_target(guest)
+		if uses_mixed_line() and target!=pickup_queue._ports[0]: continue
+		if _customer_carrying(order.id) or not customers.ready(guest.id,target): continue
 		var entries := _entries(order, _policy.pickup)
 		var total := 0
 		for line in order.lines: total += int(line.qty) - int(line.delivered)

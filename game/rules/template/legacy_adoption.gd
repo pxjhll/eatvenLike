@@ -778,6 +778,8 @@ func _sync_customers() -> void:
 		var destination: String = "queue:"+str(service.orders.queue().find(guest.id)) if guest.state=="queue" else (service._pickup_target(guest) if guest.state=="waiting" and service.uses_customer_pickup(guest.order) else service._destination(guest))
 		var old: Dictionary = source.movement.get("customers",{}).get("guest:"+str(guest.id),{})
 		var actor: Dictionary = service.customers._find(guest.id)
+		if service.uses_mixed_line() and (guest.state=="queue" or guest.state=="waiting" and not String(actor.target).is_empty()):
+			destination = actor.target
 		if service.waiting!=null:
 			if guest.state in ["waiting","queue"]: destination = actor.target
 			if old.is_empty(): old = source.movement.get("customers",{}).get("customer:"+str(guest.id),{})

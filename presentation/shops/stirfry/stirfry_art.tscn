@@ -496,9 +496,9 @@ script = ExtResource("17_8vt8w")
 size = Vector2(290, 409)
 
 [node name="Frame" type="Node2D" parent="Sortables/PrepTable/Anchors/Station"]
-position = Vector2(-155, -207)
+position = Vector2(-167, -414.5)
 script = ExtResource("17_8vt8w")
-size = Vector2(164, 156)
+size = Vector2(152, 255)
 
 [node name="Nav" type="Node2D" parent="Sortables/PrepTable" unique_id=297502717]
 
@@ -1564,10 +1564,52 @@ position = Vector2(-115, -790)
 position = Vector2(-193, -790)
 
 [node name="6" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=381350968]
-position = Vector2(-271, -790)
+position = Vector2(-193, -720)
 
 [node name="7" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=1719719602]
-position = Vector2(-349, -790)
+position = Vector2(-123, -720)
+
+[node name="8" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(-53, -720)
+
+[node name="9" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -690)
+
+[node name="10" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -638)
+
+[node name="11" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -586)
+
+[node name="12" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -534)
+
+[node name="13" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -482)
+
+[node name="14" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -430)
+
+[node name="15" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -378)
+
+[node name="16" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -326)
+
+[node name="17" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -274)
+
+[node name="18" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -222)
+
+[node name="19" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -170)
+
+[node name="20" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -118)
+
+[node name="21" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -66)
 
 [node name="Nav" type="Node2D" parent="EntranceModule" unique_id=1021200733]
 

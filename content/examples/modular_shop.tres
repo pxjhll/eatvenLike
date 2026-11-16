@@ -610,7 +610,7 @@ customer_points = Dictionary[String, Vector2]({
 "seat:table/8": Vector2(95, 1383),
 "seat:table/9": Vector2(346, 1383)
 })
-customer_queue = Array[Vector2]([Vector2(640, 950), Vector2(562, 950), Vector2(484, 950), Vector2(406, 950), Vector2(328, 950), Vector2(250, 950), Vector2(172, 950), Vector2(94, 950)])
+customer_queue = Array[Vector2]([Vector2(640, 950), Vector2(562, 950), Vector2(484, 950), Vector2(406, 950), Vector2(328, 950), Vector2(250, 950), Vector2(250, 1020), Vector2(320, 1020), Vector2(390, 1020), Vector2(443, 1050), Vector2(443, 1102), Vector2(443, 1154), Vector2(443, 1206), Vector2(443, 1258), Vector2(443, 1310), Vector2(443, 1362), Vector2(443, 1414), Vector2(443, 1466), Vector2(443, 1518), Vector2(443, 1570), Vector2(443, 1622), Vector2(443, 1674)])
 
 [sub_resource type="Resource" id="Resource_cc38x"]
 script = ExtResource("17_1kiyk")

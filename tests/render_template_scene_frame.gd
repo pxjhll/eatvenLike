@@ -48,6 +48,11 @@ func _shop(id: String) -> void:
 	await process_frame
 	_check(not scene._startup_blocked,id+": actual scene starts: "+scene.save_status)
 	if scene._startup_blocked: scene.free(); return
+	if id=="stirfry":
+		var rack: Sprite2D = scene.art.get_node("Sortables/PrepTable/Visual/PantryRack/Art")
+		var frame_rect: Rect2 = scene.anchors.rect("Stations/pantry/Frame")
+		var sprite_rect: Rect2 = (scene.art.global_transform.affine_inverse() * rack.global_transform) * rack.get_rect()
+		_check(frame_rect.encloses(sprite_rect),"stirfry: pantry purchase frame surrounds the cabinet art")
 	var template: Resource = load("res://content/shops/"+id+"/shared_production.tres").duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	var front_id: String = {"tea":"lemonade","pancake":"soy","stirfry":"plum_juice"}[id]
 	if template.service.selection.get("at")=="admission":
@@ -158,6 +163,8 @@ func _shop(id: String) -> void:
 			if scene._customers[key]._order_cup.visible:
 				saw_order = true
 				_check(scene._customers[key]._order_cup.texture==scene.view.item_icon(front_id),id+": actual shop order artwork")
+				if id=="stirfry" and String(row.target).begins_with("pickup:"):
+					_check(is_equal_approx(scene._customers[key]._order_scale,0.72),"stirfry: shared line uses compact order bubbles")
 		if runtime.service.orders.guest(arrival.id).state=="gone": break
 	_check(saw_customer and saw_order,id+": actual visitor and order displayed")
 	_check(runtime.service.orders.guest(arrival.id).state=="gone",id+": public service completes through real display")

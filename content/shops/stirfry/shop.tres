@@ -653,7 +653,7 @@ customer_points = Dictionary[String, Vector2]({
 "seat:table/8": Vector2(95, 1383),
 "seat:table/9": Vector2(346, 1383)
 })
-customer_queue = Array[Vector2]([Vector2(640, 950), Vector2(562, 950), Vector2(484, 950), Vector2(406, 950), Vector2(328, 950), Vector2(250, 950), Vector2(172, 950), Vector2(94, 950)])
+customer_queue = Array[Vector2]([Vector2(640, 950), Vector2(562, 950), Vector2(484, 950), Vector2(406, 950), Vector2(328, 950), Vector2(250, 950), Vector2(250, 1020), Vector2(320, 1020), Vector2(390, 1020), Vector2(443, 1050), Vector2(443, 1102), Vector2(443, 1154), Vector2(443, 1206), Vector2(443, 1258), Vector2(443, 1310), Vector2(443, 1362), Vector2(443, 1414), Vector2(443, 1466), Vector2(443, 1518), Vector2(443, 1570), Vector2(443, 1622), Vector2(443, 1674)])
 
 [sub_resource type="Resource" id="Resource_cc38x"]
 script = ExtResource("17_1kiyk")
@@ -1683,7 +1683,7 @@ background_music = ExtResource("music_theme")
 save_file = "shop_stirfry.json"
 runtime_template = ExtResource("u06_runtime")
 previous_progression = {
-"current_structure": "5ef4e1493f4a521cb3bfe9a9c2ad1144ff02161400a426c113d673d48f29875c",
+"current_structure": "467d17fda07543b5d0f517fb11976d578a802dd9cca0b3a45a7686542928648a",
 "grant_stage_stations": true,
 "legacy_customer_ports": {
 "seat:table/0": Vector2(121, 1010),
@@ -1729,6 +1729,10 @@ previous_progression = {
 "legacy_station_profiles": {"plating": {"block": "combine", "params": {"manual": true, "seconds": 3.5, "unit": "份"}}},
 "opening_station": "wok_a",
 "other_templates": {
+"5ef4e1493f4a521cb3bfe9a9c2ad1144ff02161400a426c113d673d48f29875c": {
+"opening_station": "plum_dispenser",
+"stage_indices": PackedInt32Array(0, 1, 2, 3, 4, 5, 6, 7)
+},
 "61fec17f6a6768eef90573ad6a30ca6ed3dc9ff66277274cdd4f3bd5509e6581": {
 "opening_station": "plum_dispenser",
 "stage_indices": PackedInt32Array(0, 1, 2, 3, 4, 5, 6, 7)

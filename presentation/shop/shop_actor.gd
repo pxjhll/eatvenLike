@@ -39,6 +39,7 @@ var _order_item := ""
 var _patience := -1.0
 ## 0 calm, 1 impatient, 2 angry; customers never leave, they show it on their face instead.
 var _mood := 0
+var _order_scale := 1.0
 var _takeaway := false
 var _order_cup := Sprite2D.new()
 ## All visible attachments share this offset; the actor root stays authoritative.
@@ -106,20 +107,22 @@ func setup(art_id: String, font: Font, height := -1.0) -> void:
 	_visual.add_child(progress_bar)
 
 
-func show_order(item: String, patience: float, mood := 0, takeaway := false) -> void:
-	if item != _order_item or mood != _mood or takeaway != _takeaway or patience != _patience:
+func show_order(item: String, patience: float, mood := 0, takeaway := false, compact := false) -> void:
+	var scale_factor := 0.72 if compact else 1.0
+	if item != _order_item or mood != _mood or takeaway != _takeaway or patience != _patience or scale_factor != _order_scale:
 		queue_redraw()
 	_order_item = item
 	_patience = patience
 	_mood = mood
 	_takeaway = takeaway
+	_order_scale = scale_factor
 	task.visible = false
 	_order_cup.visible = not item.is_empty()
 	if item.is_empty(): return
 	var texture: Texture2D = order_icon.call(item)
 	_order_cup.texture = texture
-	_order_cup.scale = Vector2.ONE * 40.0 / texture.get_height()
-	_order_cup.position = Vector2(-46, -_height - 62)
+	_order_cup.scale = Vector2.ONE * 40.0 * _order_scale / texture.get_height()
+	_order_cup.position = Vector2(-46.0*_order_scale, -_height-4.0-58.0*_order_scale)
 	_order_cup.visible = true
 
 
@@ -242,9 +245,10 @@ func _draw() -> void:
 	draw_circle(Vector2.ZERO, 25, Color(0.24, 0.14, 0.07, 0.18))
 	if selected:
 		draw_arc(Vector2.ZERO, 31, 0, TAU, 40, Color("e6b94f"), 6, true)
-	draw_set_transform(_visual.position)
 	if _order_item.is_empty():
 		return
+	var anchor := Vector2(0.0,-_height-4.0)
+	draw_set_transform(_visual.position+anchor*(1.0-_order_scale),0.0,Vector2.ONE*_order_scale)
 	var top := -_height - 64.0
 	draw_texture_rect(BUBBLE, Rect2(-48, top, 96, 60), false)
 	if _patience >= 0:
