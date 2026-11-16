@@ -69,6 +69,11 @@ func enter_shop(events: RuleEvents, track: AudioStream) -> void:
 			_events.on("*", _on_rule_event)
 		_stop_effects()
 		_last_sale_ms = -SALE_INTERVAL_MS
+	play_music(track)
+
+
+## Shared by the opening and shops; selecting the same track preserves playback.
+func play_music(track: AudioStream) -> void:
 	if _music.stream != track:
 		_music.stop()
 		_music.stream = track

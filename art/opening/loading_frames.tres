@@ -1,0 +1,54 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://art/opening/loading_atlas.png" id="1"]
+
+[sub_resource type="AtlasTexture" id="Frame0"]
+atlas = ExtResource("1")
+region = Rect2(0, 0, 327, 587)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Frame1"]
+atlas = ExtResource("1")
+region = Rect2(327, 0, 327, 587)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Frame2"]
+atlas = ExtResource("1")
+region = Rect2(654, 0, 327, 587)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Frame3"]
+atlas = ExtResource("1")
+region = Rect2(981, 0, 327, 587)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Frame4"]
+atlas = ExtResource("1")
+region = Rect2(0, 587, 327, 587)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Frame5"]
+atlas = ExtResource("1")
+region = Rect2(327, 587, 327, 587)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Frame6"]
+atlas = ExtResource("1")
+region = Rect2(654, 587, 327, 587)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [
+{"duration": 1.0, "texture": SubResource("Frame0")},
+{"duration": 1.0, "texture": SubResource("Frame1")},
+{"duration": 1.0, "texture": SubResource("Frame2")},
+{"duration": 1.0, "texture": SubResource("Frame3")},
+{"duration": 1.0, "texture": SubResource("Frame4")},
+{"duration": 1.0, "texture": SubResource("Frame5")},
+{"duration": 1.0, "texture": SubResource("Frame6")}
+],
+"loop": true,
+"name": &"default",
+"speed": 11.11111111111111
+}]
