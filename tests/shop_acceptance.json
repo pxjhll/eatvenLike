@@ -2,6 +2,24 @@
   "version": 1,
   "jobs": [
     {
+      "id": "opening",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/render_opening.gd",
+      "args": [],
+      "timeout": 30,
+      "success": "OPENING: 0 failures"
+    },
+    {
+      "id": "opening_web_export",
+      "kind": "python",
+      "profile": "headless",
+      "script": "tests/test_prepare_web_export.py",
+      "args": [],
+      "timeout": 30,
+      "success": "^OK$"
+    },
+    {
       "id": "customer_smoothing",
       "kind": "script",
       "profile": "headless",

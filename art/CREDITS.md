@@ -9,3 +9,7 @@ Font credits and the complete license are in `art/ui/font_license.txt`. Glyph su
 ## Audio
 
 The two shop themes and seven interaction cues in `art/audio/` are original compositions and synthesized sounds made for eatvenLike. They use no third-party samples or recordings. The editable score and rendering instructions are in `art_src/audio/render.py`.
+
+## Opening
+
+`art/opening/welcome.png` is the complete welcome image supplied by the user on 2026-11-16. `intro.mp4` and `intro.ogv` are silent runtime transcodes of the user's supplied first intro video; `final_web.png` and `final_native.png` are its exact final decoded frames in the corresponding runtime formats. Original inputs and compression probes remain in the ignored `_work/opening_video_20261116/` directory. `start_button.svg` is a code-drawn button face following the user's reference, with live text rendered using the existing UI font.

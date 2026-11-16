@@ -4,16 +4,27 @@ python3 tools/prepare_web_export.py /absolute/path/to/export-directory
 """
 from pathlib import Path
 import gzip
+import shutil
 import sys
 
 directory = Path(sys.argv[1]).resolve()
+project = Path(__file__).resolve().parents[1]
+media = project / 'art/opening/intro.mp4'
+player = project / 'web/opening_video.js'
+if not media.is_file() or not player.is_file():
+    raise SystemExit('Opening video or browser player is missing; export from the complete project.')
 wasm = directory / 'index.wasm'
 compressed = directory / 'index.wasm.gz'
+html = directory / 'index.html'
+source = html.read_text(encoding='utf-8')
+if 'id="compressed-godot-loader"' in source:
+    raise SystemExit('This export has already been prepared; export fresh files first.')
 raw_size = wasm.stat().st_size
 compressed.write_bytes(gzip.compress(wasm.read_bytes(), compresslevel=9, mtime=0))
-html = directory / 'index.html'
-source = html.read_text()
-shim = f'''<script id="compressed-godot-loader">
+shutil.copyfile(media, directory / 'opening.mp4')
+shutil.copyfile(player, directory / 'opening_video.js')
+shim = f'''<script src="opening_video.js"></script>
+<script id="compressed-godot-loader">
 (() => {{
   const originalFetch = window.fetch.bind(window);
   window.fetch = async (input, options) => {{
@@ -36,11 +47,9 @@ shim = f'''<script id="compressed-godot-loader">
 #status-progress{{bottom:32%;height:8px;max-width:340px;accent-color:#92b29b}}
 </style>
 '''
-if 'id="compressed-godot-loader"' in source:
-    raise SystemExit('This export has already been prepared; export fresh files first.')
 source = source.replace('<title>eatvenLike</title>', '<title>煎饼果子摊 · 试玩</title>')
 source = source.replace('<html lang="en">', '<html lang="zh-CN">')
-html.write_text(source.replace('</head>', shim + '</head>'))
+html.write_text(source.replace('</head>', shim + '</head>'), encoding='utf-8')
 wasm.unlink()
 assert compressed.stat().st_size < 25 * 1024 * 1024
 print(f'Web engine: {raw_size:,} bytes → {compressed.stat().st_size:,} compressed bytes')
