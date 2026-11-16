@@ -3,10 +3,9 @@ extends Control
 
 const Video := preload("res://presentation/opening/opening_video.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
-const WELCOME := preload("res://art/opening/welcome.png")
+const LoadingView := preload("res://presentation/opening/loading_view.gd")
 const BUTTON_FACE := preload("res://art/opening/start_button.svg")
 const BASE := Vector2(720, 1280)
-const WELCOME_BUTTON := Rect2(138, 1134, 430, 124)
 const SHOP := "res://presentation/shop/shop_play.tscn"
 
 enum Phase { WELCOME, PLAYING, READY, ENTERING }
@@ -17,7 +16,7 @@ var video: Node
 var music_track: AudioStream
 var change_scene_on_start := true
 var frame: Control
-var welcome: TextureRect
+var welcome: Control
 var poster: TextureRect
 var welcome_button: Button
 var start_button: Button
@@ -36,21 +35,19 @@ func _ready() -> void:
 	frame.name = "PortraitFrame"
 	frame.size = BASE
 	add_child(frame)
-	welcome = _picture(WELCOME, "Welcome")
+	welcome = LoadingView.new()
+	welcome.name = "Welcome"
+	welcome.size = BASE
+	frame.add_child(welcome)
+	welcome.set_progress(100, true)
 	var final_path := "res://art/opening/final_web.png" if OS.has_feature("web") else "res://art/opening/final_native.png"
 	poster = _picture(load(final_path), "FinalFrame")
 	poster.hide()
-	welcome_button = Button.new()
+	welcome_button = welcome.caption_button
 	welcome_button.name = "WelcomeButton"
-	welcome_button.position = WELCOME_BUTTON.position
-	welcome_button.size = WELCOME_BUTTON.size
 	welcome_button.tooltip_text = "播放片头"
 	welcome_button.accessibility_name = "开始营业，播放片头"
-	for state in ["normal", "hover", "pressed"]:
-		welcome_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	welcome_button.add_theme_stylebox_override("focus", ReferenceTheme.style("gold", 60, "focus"))
 	welcome_button.pressed.connect(begin_intro)
-	frame.add_child(welcome_button)
 	start_button = Button.new()
 	start_button.name = "StartBusiness"
 	start_button.position = Vector2(145, 1150)
@@ -121,6 +118,7 @@ func layout_frame() -> void:
 func begin_intro() -> void:
 	if phase != Phase.WELCOME: return
 	phase = Phase.PLAYING
+	welcome.sprite.pause()
 	welcome_button.disabled = true
 	welcome_button.hide()
 	if music_track == null:

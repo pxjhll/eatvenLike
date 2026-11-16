@@ -20,4 +20,6 @@ Cloudflare Pages 项目：`eatvenlike`；生产分支：`main`。
 
 欢迎图的第一次真实点击同时用于解锁游戏背景音乐。片头本身没有音轨；背景音乐复用 ShopAudio，遵循音乐开关，进店后同曲目不重播。资源与视频出错时可从末帧继续进入营业。
 
-欢迎图现在同时作为网页最初的加载页：`welcome.png`、`loading_screen.css` 和 `loading_screen.js` 在引擎加载前显示，真实下载进度覆盖原图中的按钮。MP4 会与引擎/PCK 同时预加载，资源与启动场景都准备好后，再揭示同图的 Godot 欢迎按钮；点击后才播放片头和音乐，不会再次要求点击欢迎页。部署必须包含这三个新增独立文件。引擎下载失败会保留欢迎图并提供刷新按钮；片头单独下载失败仍允许进入原有回退流程。
+网页最初的加载页使用用户提供的 `loading.gif` 背景动画；部署时必须包含 `loading.gif`、`loading-font.ttf`、`loading_screen.css` 和 `loading_screen.js`。页面中间的真实百分比和“美味正在准备中…”、底部“小厨师们正在赶来，马上开饭！”圆角框由代码绘制。MP4 与引擎/PCK 同时预加载，准备好后交接到同布局的 Godot 界面，100% 后点击底部按钮直接播放片头和音乐。
+
+Godot 使用 GIF 同源七帧图集与 `presentation/opening/loading_view.gd`，保持原动画像素、帧序和节奏；`loading-font.ttf` 保证网页与原生字形一致。GIF 和旧静态欢迎图不打入 PCK。引擎下载失败会保留加载图并提供刷新按钮；片头单独下载失败仍允许进入末帧回退流程。

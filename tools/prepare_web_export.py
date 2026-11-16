@@ -12,10 +12,11 @@ directory = Path(sys.argv[1]).resolve()
 project = Path(__file__).resolve().parents[1]
 media = project / 'art/opening/intro.mp4'
 player = project / 'web/opening_video.js'
-welcome = project / 'art/opening/welcome.png'
+welcome = project / 'art/opening/loading.gif'
+loading_font = project / 'art/ui/graybox_font.ttf'
 loading_js = project / 'web/loading_screen.js'
 loading_css = project / 'web/loading_screen.css'
-if not all(path.is_file() for path in [media, player, welcome, loading_js, loading_css]):
+if not all(path.is_file() for path in [media, player, welcome, loading_font, loading_js, loading_css]):
     raise SystemExit('Opening video or browser player is missing; export from the complete project.')
 wasm = directory / 'index.wasm'
 compressed = directory / 'index.wasm.gz'
@@ -26,10 +27,12 @@ if 'id="compressed-godot-loader"' in source:
 source, progress_hooks = re.subn(r"('onProgress':\s*function\s*\(current, total\)\s*\{)", r'\1\n window.EatventureLoading.progress(current, total);', source)
 source, error_hooks = re.subn(r'(function displayFailureNotice\(err\)\s*\{)', r'\1\n window.EatventureLoading.fail(err);', source)
 markup = '''<section id="welcome-loading" aria-label="游戏加载中" aria-busy="true" data-state="loading">
-<div class="loading-portrait"><img src="welcome.png" alt="小动物的小店" fetchpriority="high">
-<div class="loading-controls"><span id="welcome-progress-label" role="status" aria-live="polite">正在加载小店…</span>
-<progress id="welcome-progress" max="100" aria-label="资源加载进度"></progress>
-<button id="welcome-retry" hidden type="button">刷新重试</button></div></div></section>'''
+<div class="loading-portrait"><img src="loading.gif" alt="小动物们在厨房时钟旁奔跑" fetchpriority="high">
+<span id="welcome-percentage" aria-hidden="true">…</span>
+<span id="welcome-progress-label" role="status" aria-live="polite">美味正在准备中…</span>
+<progress id="welcome-progress" class="loading-a11y-progress" max="100" aria-label="资源加载进度"></progress>
+<div id="welcome-caption" class="loading-caption">小厨师们正在赶来，马上开饭！</div>
+<button id="welcome-retry" class="loading-caption" hidden type="button">刷新重试</button></div></section>'''
 source, body_hooks = re.subn(r'(<body\b[^>]*>)', lambda match: match.group(0) + markup, source, count=1)
 if (progress_hooks, error_hooks, body_hooks) != (1, 1, 1):
     raise SystemExit('Unsupported Godot HTML shell: loading hooks were not found exactly once.')
@@ -37,7 +40,8 @@ raw_size = wasm.stat().st_size
 compressed.write_bytes(gzip.compress(wasm.read_bytes(), compresslevel=9, mtime=0))
 shutil.copyfile(media, directory / 'opening.mp4')
 shutil.copyfile(player, directory / 'opening_video.js')
-shutil.copyfile(welcome, directory / 'welcome.png')
+shutil.copyfile(welcome, directory / 'loading.gif')
+shutil.copyfile(loading_font, directory / 'loading-font.ttf')
 shutil.copyfile(loading_js, directory / 'loading_screen.js')
 shutil.copyfile(loading_css, directory / 'loading_screen.css')
 shim = f'''<script src="opening_video.js"></script>

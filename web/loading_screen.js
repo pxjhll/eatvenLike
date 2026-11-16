@@ -1,4 +1,4 @@
-/* Show the welcome before the engine exists; hand it to the identical Godot UI. */
+/* Animate the supplied GIF before engine startup; mirror the native loading UI. */
 (() => {
   'use strict';
   const engine = { loaded: 0, total: 0 };
@@ -10,19 +10,24 @@
     if (!screen || failed || released) return;
     const bar = document.getElementById('welcome-progress');
     const label = document.getElementById('welcome-progress-label');
+    const number = document.getElementById('welcome-percentage');
     if ((!engine.total && !engineReady) || (!media.total && !mediaDone)) {
       bar.removeAttribute('value');
-      label.textContent = '正在加载小店…';
+      number.textContent = '…';
+      label.textContent = '美味正在准备中…';
       return;
     }
     const total = engine.total + media.total;
     const percentage = Math.min(99, Math.floor(100 * (engine.loaded + media.loaded) / Math.max(1, total)));
     bar.value = percentage;
-    label.textContent = percentage === 99 ? '正在准备小店…' : `正在加载 ${percentage}%`;
+    number.textContent = `${percentage}%`;
+    label.textContent = '美味正在准备中…';
     if (!engineReady || !mediaDone || scheduled) return;
     scheduled = true;
     bar.value = 100;
+    number.textContent = '100%';
     label.textContent = '加载完成';
+    document.getElementById('welcome-caption').textContent = '加载完成，点击播放片头';
     screen.dataset.state = 'ready';
     // Godot's matching welcome and button must have a rendered frame before revealing them.
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -52,7 +57,9 @@
       screen.dataset.state = 'failed';
       screen.setAttribute('aria-busy', 'false');
       document.getElementById('welcome-progress-label').textContent = '加载失败，请刷新重试';
+      document.getElementById('welcome-percentage').textContent = '!';
       document.getElementById('welcome-progress').hidden = true;
+      document.getElementById('welcome-caption').hidden = true;
       document.getElementById('welcome-retry').hidden = false;
     }
   };

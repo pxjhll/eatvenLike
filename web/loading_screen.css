@@ -1,3 +1,4 @@
+@font-face { font-family: LoadingUI; src: url('loading-font.ttf') format('truetype'); font-display: swap; }
 #welcome-loading {
   position: fixed;
   inset: 0;
@@ -5,44 +6,50 @@
   display: grid;
   place-items: center;
   background: #f4f0df;
-  color: #613d25;
-  font-family: system-ui, sans-serif;
+  color: #603109;
+  font-family: LoadingUI, system-ui, sans-serif;
 }
 #welcome-loading[hidden] { display: none; }
 #welcome-loading .loading-portrait {
   position: relative;
-  width: min(100vw, 56.25vh);
-  height: min(100vh, 177.7778vw);
+  width: min(100vw, 55.707vh);
+  height: min(100vh, 179.5107vw);
+  container-type: inline-size;
 }
 #welcome-loading img { width: 100%; height: 100%; object-fit: contain; display: block; }
-#welcome-loading .loading-controls {
+#welcome-percentage {
   position: absolute;
-  left: 10%; right: 10%; top: 88%; bottom: .4%;
+  left: 23.24%; top: 53.66%; width: 55.05%; height: 8.35%;
+  display: grid; place-items: center;
+  font-size: 13.5cqw; line-height: 1;
+  font-weight: 900;
+  -webkit-text-stroke: .35cqw #603109;
+}
+#welcome-progress-label {
+  position: absolute;
+  left: 17.74%; top: 62.18%; width: 65.75%; height: 4.43%;
+  display: grid; place-items: center;
+  font-size: 4.28cqw; line-height: 1;
+  font-weight: 600; text-align: center;
+}
+#welcome-loading .loading-caption {
+  position: absolute;
+  left: 16.21%; top: 87.05%; width: 67.58%; height: 6.47%;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 9px;
-  padding: 5px 8%;
-  border-radius: 20px;
-  background: #fff0d6;
-  font-size: clamp(12px, 3.5vw, 22px);
-  font-weight: 600;
-  text-align: center;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 1.5%;
+  color: #603109;
+  border: .6cqw solid #8b4c1d;
+  border-radius: 6cqw;
+  background: linear-gradient(#fff0cf, #ffdb99);
+  box-shadow: inset 0 .8cqw .3cqw #fff8df, inset 0 -.8cqw .3cqw #efbb68;
+  font-family: inherit;
+  font-size: 4.28cqw; font-weight: 600;
+  line-height: 1; text-align: center;
 }
-#welcome-loading progress {
-  width: 100%; height: 12px;
-  appearance: none;
-  accent-color: #efb630;
-  overflow: hidden;
-  border: 2px solid #88542c;
-  border-radius: 20px;
-  background: #e4d0aa;
+#welcome-loading .loading-caption[hidden] { display: none; }
+#welcome-loading .loading-a11y-progress {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);
 }
-#welcome-loading progress::-webkit-progress-bar { background: #e4d0aa; }
-#welcome-loading progress::-webkit-progress-value { background: linear-gradient(#ffe58b, #f5b82c); border-radius: 15px; }
-#welcome-loading progress::-moz-progress-bar { background: #f5bf3d; border-radius: 15px; }
-#welcome-loading button { color: #613d25; background: #ffce59; border: 2px solid #88542c; border-radius: 12px; padding: 5px 15px; font: inherit; }
-/* The illustrated loading layer owns startup and error messages. */
+/* The animated loading layer owns startup and error messages. */
 #status { visibility: hidden !important; }

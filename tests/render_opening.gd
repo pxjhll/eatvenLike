@@ -31,6 +31,27 @@ func run_tests() -> void:
 	check(scene.phase == scene.Phase.WELCOME and media.plays == 0, "Welcome waits for a real choice")
 	check(scene.welcome.visible and not scene.poster.visible and not scene.start_button.visible, "Welcome image precedes poster and final button")
 	check(scene.welcome.size.is_equal_approx(Vector2(720, 1280)), "High-resolution welcome must fit the design canvas without clipping")
+	check(scene.welcome.get("sprite") != null, "Loading background uses the supplied GIF animation in-engine")
+	if scene.welcome.get("sprite") == null:
+		scene.free()
+		finish()
+		return
+	check(scene.welcome.sprite.is_playing(), "Loading background animates while waiting for entry")
+	check(scene.welcome.percent_label.get_theme_font_size("font_size") >= 90, "Engine percentage uses viewport-sized glyphs instead of enlarging small bitmap text")
+	var gif_duration := 0.0
+	for index in scene.welcome.sprite.sprite_frames.get_frame_count("default"):
+		gif_duration += scene.welcome.sprite.sprite_frames.get_frame_duration("default", index) / scene.welcome.sprite.sprite_frames.get_animation_speed("default")
+	check(is_equal_approx(gif_duration, 0.63), "Engine animation preserves the original GIF timing")
+	var frame_events: Array = []
+	scene.welcome.sprite.frame_changed.connect(func() -> void: frame_events.append(true))
+	await create_timer(0.20).timeout
+	check(not frame_events.is_empty(), "GIF starts advancing immediately at the supplied frame rate")
+	scene.welcome.set_progress(68, false)
+	check(scene.welcome.percent_label.text == "68%", "Loading percentage is drawn dynamically")
+	check(scene.welcome.message_label.text == "美味正在准备中…", "Loading message matches the supplied UI reference")
+	check(scene.welcome.caption_button.text == "小厨师们正在赶来，马上开饭！", "Loading caption matches the supplied UI reference")
+	check(scene.welcome.caption_button.disabled, "Illustrated caption does not become clickable before readiness")
+	scene.welcome.set_progress(100, true)
 	scene.start_shop()
 	check(scene.phase == scene.Phase.WELCOME, "Cannot enter a shop from the welcome stage")
 	scene.begin_intro()

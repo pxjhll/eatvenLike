@@ -13,3 +13,5 @@ The two shop themes and seven interaction cues in `art/audio/` are original comp
 ## Opening
 
 `art/opening/welcome.png` is the complete welcome image supplied by the user on 2026-11-16. `intro.mp4` and `intro.ogv` are silent runtime transcodes of the user's supplied first intro video; `final_web.png` and `final_native.png` are its exact final decoded frames in the corresponding runtime formats. Original inputs and compression probes remain in the ignored `_work/opening_video_20261116/` directory. `start_button.svg` is a code-drawn button face following the user's reference, with live text rendered using the existing UI font.
+
+`art/opening/loading.gif` is the user's supplied kitchen-clock animal animation (327×587, seven 90 ms frames). `loading_atlas.png` and `loading_frames.tres` preserve those composited frames and timing for Godot's native animation player. The percentage, loading message and caption/button are code-rendered, following the user's marked reference. The clock's orange arc stays part of the supplied animation.
