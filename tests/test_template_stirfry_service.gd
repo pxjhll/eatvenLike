@@ -75,8 +75,10 @@ func test_opening_and_pantry_upgrades_unlock_one_wok_at_a_time() -> void:
 	check(rules.menu().has("egg_fried_rice") and not rules.menu().has("yangzhou_rice"),"opening the pantry enables only egg fried rice")
 	var pantry: Dictionary = view.station("pantry")
 	check_eq(pantry.level,1,"new pantry starts at level one")
-	check_eq(pantry.get("recipes",[]).map(func(row: Dictionary) -> String: return row.dish),
-		["yangzhou_rice","pepper_rice","kungpao_rice"],"pantry previews the remaining recipe upgrades")
+	check("track" in pantry.sections and "recipes" not in pantry.sections,"cabinet uses a single machine upgrade with material prices underneath")
+	var upgrade: Dictionary = pantry.get("track",{})
+	check_eq(upgrade.get("cost"),80,"the machine card uses the existing progression price")
+	check("扬州炒饭" in String(upgrade.get("effect","")),"cabinet previews its next dish")
 	check_eq(rules.unlock("pantry"),"","upgrade the pantry for Yangzhou fried rice")
 	check(rules.menu().has("yangzhou_rice"),"Yangzhou fried rice can be ordered with the first wok")
 	check(not rules.menu().has("tomato_rice"),"covered rice still requires wok B")
@@ -820,3 +822,20 @@ func test_old_split_positions_reload_into_the_mixed_line() -> void:
 	check_eq(restored.runtime.service.customers.record(2).target,"queue:1","guide the next arrival toward its new position")
 	check_eq(restored.runtime.service.customers.record(3).target,"queue:2","preserve order across the migration")
 	check_eq(restored.load_dict(restored.to_dict()),"","reassigned movement survives ordinary reload")
+
+func test_preexisting_kitchen_training_survives_the_new_unlock_requirement() -> void:
+	var previous := SHOP.copy_for_editing()
+	previous.staff.training_requires.clear()
+	var old := ShopRules.new(previous,42)
+	old.gold = 1000.0
+	for id in ["plum_dispenser","wok_a"]: check_eq(old.unlock(id),"","open the drink stage before the kitchen")
+	check_eq(old.upgrade("staff/kitchen"),"","previous versions let a player buy training early")
+	var bought := old.level("staff/kitchen")
+	var saved := old.to_dict()
+	var restored := ShopRules.new(SHOP.copy_for_editing(),42)
+	check_eq(restored.load_dict(saved,true),"","restore the earlier store without modifying paid levels")
+	check_eq(restored.level("staff/kitchen"),bought,"keep previously purchased cultivation")
+	check_eq(restored.command_status("upgrade",{"key":"staff/kitchen"}).code,"station_required","further training waits for the rice cooker")
+	check_eq(restored.unlock("rice_cooker"),"","unlock the kitchen on the restored store")
+	check_eq(restored.command_status("upgrade",{"key":"staff/kitchen"}).code,"ok","the next training purchase becomes available")
+	check_eq(restored.level("staff/kitchen"),bought,"opening the kitchen resumes the player's previous level")

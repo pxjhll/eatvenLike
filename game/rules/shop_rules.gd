@@ -1502,7 +1502,12 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 			if track == null or track.levels.is_empty() or not levels.has(key): code = CommandResult.NO_UPGRADE
 			else:
 				var parts := key.split("/")
-				if not key.begins_with("staff/") and key != "flyer":
+				if key.begins_with("staff/"):
+					var required_station: String = shop.staff.training_requires.get(parts[1], "")
+					if not required_station.is_empty() and not station_unlocked(required_station):
+						code = CommandResult.STATION_REQUIRED
+						params.station = required_station
+				elif key != "flyer":
 					if not station_unlocked(parts[0]) and shop.station(parts[0]).companion_of.is_empty():
 						code = CommandResult.STATION_REQUIRED
 						params.station = parts[0]

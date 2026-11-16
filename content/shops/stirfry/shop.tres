@@ -674,6 +674,7 @@ hire_costs = Array[int]([30, 60, 80, 110])
 zones = Array[String](["front", "kitchen"])
 can_drag = true
 tracks = Array[ExtResource("9_47jng")]([ExtResource("training_front"), ExtResource("training_kitchen")])
+training_requires = Dictionary[String, String]({"kitchen": "rice_cooker"})
 home_anchor = "home"
 
 [sub_resource type="Resource" id="Resource_m6p80"]
@@ -1107,6 +1108,7 @@ display_name = "备料柜"
 block = "supply"
 params = {
 "fetch_seconds": 0.6,
+"materials_label": "配料",
 "unit": "份"
 }
 zone = "kitchen"

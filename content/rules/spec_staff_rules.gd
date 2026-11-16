@@ -26,5 +26,7 @@ extends Resource
 @export var can_drag: bool = false
 ## 前台 / 后厨升级轨（每级效果 walk / work / carry / staff_slot）
 @export var tracks: Array[SpecUpgradeTrack] = []
+## 培养轨 ID → 必须先解锁的设备 ID。
+@export var training_requires: Dictionary[String, String] = {}
 ## 员工没有可做的事时去哪
 @export var home_anchor: String = ""

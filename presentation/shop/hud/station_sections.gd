@@ -12,6 +12,7 @@ class TrackSection extends VBoxContainer:
 	var before: Label
 	var after: Label
 	var effect: Label
+	var _action := "upgrade"
 
 	func setup(page_: Node) -> void:
 		page = page_
@@ -36,12 +37,13 @@ class TrackSection extends VBoxContainer:
 				after = value
 		effect = hud._text(self, "", 19, true)
 		effect.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		upgrade_button = page.buy_button(self, func() -> void: page.view_node().station_action("upgrade", page.station_id))
+		upgrade_button = page.buy_button(self, func() -> void: page.view_node().station_action(_action, page.station_id))
 		upgrade_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		page.skin(upgrade_button, "orange")
 
 	func refresh(card: Dictionary) -> void:
 		var row: Dictionary = card.track
+		_action = row.get("action", "upgrade")
 		before.text = row.now
 		after.text = row.next
 		effect.text = row.effect

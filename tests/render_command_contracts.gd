@@ -186,33 +186,64 @@ func _test_tea(scene: Node2D, translated: String) -> void:
 func _test_pantry_unlock(scene: Node2D) -> void:
 	var rules: ShopRules = scene.rules
 	rules.gold = 1000.0
-	for id in ["plum_dispenser", "wok_a", "rice_cooker", "pantry"]:
-		suite.check_eq(rules.execute_command("unlock", {"id": id}).code, "ok", "prepare pantry through the public command")
+	for id in ["plum_dispenser", "wok_a"]:
+		suite.check_eq(rules.execute_command("unlock", {"id": id}).code, "ok", "prepare the front and first wok through the public command")
+	scene.ui.open_page("staff")
+	var staff: Control = scene.ui.page_node("staff")
+	var kitchen: Button = staff.upgrade_buttons["kitchen"]
+	var status := rules.command_status("upgrade", {"key": "staff/kitchen"})
+	suite.check_eq(status.code, "station_required", "kitchen training is locked even with enough money")
+	suite.check_eq(status.params.get("station"), "rice_cooker", "kitchen training identifies the missing device")
+	suite.check(kitchen.disabled, "staff page disables the locked kitchen training")
+	suite.check_eq(kitchen.text, "后厨培养\n先解锁米饭锅", "staff page explains the unlock requirement")
+	suite.check(not staff.upgrade_buttons["front"].disabled, "front training remains available")
+	_reject(scene, func() -> void: scene.buy_staff_upgrade("kitchen"), "locked kitchen training")
+	suite.check_eq(rules.execute_command("unlock", {"id": "rice_cooker"}).code, "ok", "rice cooker unlocks the kitchen")
+	scene._refresh(0.0)
+	suite.check(not kitchen.disabled, "receipt of the initial kitchen employee enables training")
+	await _success(scene, func() -> void: kitchen.pressed.emit(), "upgraded", "unlocked kitchen training")
+	suite.check_eq(rules.execute_command("unlock", {"id": "pantry"}).code, "ok", "open pantry through the public command")
 	rules.gold = 79.0
 	scene.ui.open_station("pantry")
 	for frame in 3: await process_frame
 	var station: Control = scene.ui.page_node("station")
 	var scroll: ScrollContainer = scene.ui.get_node("Sheet/Margin/Column/Scroll")
-	var yangzhou: Button = station.recipe_buttons["yangzhou_rice"]
+	var track: Control = station.section("track")
+	var upgrade: Button = station.upgrade_button
+	suite.check(track.is_visible_in_tree(), "pantry uses the same machine upgrade section as the tea topping station")
+	suite.check(not station.section("recipes").is_visible_in_tree(), "pantry has no duplicate recipe list")
+	if not track.is_visible_in_tree(): return
 	suite.check_eq(scroll.scroll_vertical, 0, "pantry opens at the top")
-	suite.check(scroll.get_global_rect().encloses(yangzhou.get_global_rect()), "Yangzhou recipe button fits the first phone screen")
-	suite.check(station.section("recipes").get_global_rect().position.y < station.section("materials").get_global_rect().position.y,
-		"pantry shows recipe unlock before ingredient upgrades")
-	suite.check_eq(yangzhou.text, "解锁 · 80 金币", "first screen shows the recipe cost")
-	suite.check(yangzhou.disabled, "unaffordable recipe is visible but disabled")
+	suite.check(scroll.get_global_rect().encloses(upgrade.get_global_rect()), "machine upgrade fits the first phone screen")
+	suite.check(track.get_global_rect().position.y < station.section("materials").get_global_rect().position.y,
+		"machine upgrade appears before ingredient price upgrades")
+	suite.check_eq(upgrade.text, "升级 · 80 金币", "first screen shows the machine upgrade cost")
+	suite.check("扬州炒饭" in track.effect.text and "配料槽" in track.effect.text, "machine upgrade previews the dish and slot")
+	suite.check(upgrade.disabled, "unaffordable machine upgrade is visible but disabled")
 	rules.gold = 1000.0
 	scene._refresh(0.0)
-	suite.check(not yangzhou.disabled, "the displayed recipe enables once affordable")
-	await _success(scene, func() -> void: yangzhou.pressed.emit(), "unlocked", "Yangzhou recipe purchase")
-	suite.check_eq(rules.gold, 920.0, "unlock debits the price displayed in the recipe")
-	suite.check(station.material_buttons["yangzhou_raw"].is_visible_in_tree(), "unlocked ingredient appears in the pantry panel")
-	suite.check_eq(rules.execute_command("unlock", {"id": "wok_b"}).code, "ok", "advance to the next pantry recipe")
+	suite.check(not upgrade.disabled, "the machine upgrade enables once affordable")
+	var price := rules.dish_price("yangzhou_rice")
+	await _success(scene, func() -> void: upgrade.pressed.emit(), "unlocked", "Yangzhou machine upgrade")
+	suite.check_eq(rules.gold, 920.0, "machine upgrade debits the displayed price once")
+	suite.check_eq(rules.level("pantry"), 2, "the cabinet gained a level")
+	suite.check_eq(rules.dish_price("yangzhou_rice"), price, "machine levels leave ingredient prices alone")
+	var ingredient: Button = station.material_buttons["yangzhou_raw"]
+	suite.check(not ingredient.disabled, "the new ingredient price track is usable")
+	await _success(scene, func() -> void: ingredient.pressed.emit(), "upgraded", "Yangzhou ingredient price upgrade")
+	suite.check(is_equal_approx(rules.dish_price("yangzhou_rice"), price * 1.05), "ingredient level increases only the corresponding dish price")
+	suite.check_eq(rules.level("pantry"), 2, "ingredient upgrade does not buy the next machine level")
+	suite.check(upgrade.disabled and "炒锅 B" in track.effect.text, "the next cabinet upgrade shows the pending equipment requirement")
+	suite.check_eq(rules.execute_command("unlock", {"id": "wok_b"}).code, "ok", "advance to the next pantry upgrade")
 	scene.ui.open_station("pantry")
 	for frame in 3: await process_frame
-	var pepper: Button = station.recipe_buttons["pepper_rice"]
-	yangzhou = station.recipe_buttons["yangzhou_rice"]
-	suite.check(scroll.get_global_rect().encloses(pepper.get_global_rect()), "the next recipe fits without scrolling")
-	suite.check(pepper.get_global_rect().position.y < yangzhou.get_global_rect().position.y, "next recipe appears before earlier recipe")
+	suite.check(scroll.get_global_rect().encloses(upgrade.get_global_rect()), "the next machine upgrade fits without scrolling")
+	suite.check(not upgrade.disabled and "青椒肉丝盖饭" in track.effect.text, "the same machine button advances to the next dish")
+	for dish in ["pepper_rice", "kungpao_rice"]:
+		suite.check_eq(rules.execute_command("unlock", {"id": "pantry"}).code, "ok", "buy the remaining cabinet upgrade for " + dish)
+	scene._refresh(0.0)
+	suite.check(upgrade.disabled and upgrade.text == "满级", "the cabinet displays its max level without an unlock history")
+
 
 func _test_save_queue(scene: Node2D) -> void:
 	var writes: int = scene.store.writes

@@ -8,7 +8,7 @@ const Icons := preload("res://presentation/ui/reference_icons.gd")
 const Sections := preload("res://presentation/shop/hud/station_sections.gd")
 
 ## 升级种类的默认说法（店铺数据 track_kind_<种类> 可以改）
-const KIND_LABELS := {"capacity": "产能升级", "price": "售价升级", "both": "产能售价升级", "menu": "开新口味"}
+const KIND_LABELS := {"capacity": "产能升级", "price": "售价升级", "both": "产能售价升级", "menu": "开新口味", "recipe_menu": "解锁菜品"}
 
 var station_id := ""
 var _view: Node2D
