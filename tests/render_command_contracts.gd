@@ -69,6 +69,11 @@ func _run() -> void:
 		scene._refresh(0.0)
 		suite.check_eq(scene.rules.legacy_calls, 0, "third/pancake UI avoids String adapters")
 		scene.free()
+	root.size = Vector2i(360, 640)
+	var stirfry := _open(load("res://content/shops/stirfry/shop.tres"), "-stirfry")
+	await process_frame
+	await _test_pantry_unlock(stirfry)
+	stirfry.free()
 	await process_frame
 	for path in paths:
 		if FileAccess.file_exists(path): DirAccess.remove_absolute(path)
@@ -176,6 +181,38 @@ func _test_tea(scene: Node2D, translated: String) -> void:
 	for button in staff.upgrade_buttons.values(): suite.check(button.disabled, "empty failure cannot enable staff upgrade")
 	_reject(scene, scene.hire_worker, "hire funds")
 	_reject(scene, func() -> void: scene.buy_staff_upgrade("front"), "staff upgrade funds")
+
+
+func _test_pantry_unlock(scene: Node2D) -> void:
+	var rules: ShopRules = scene.rules
+	rules.gold = 1000.0
+	for id in ["plum_dispenser", "wok_a", "rice_cooker", "pantry"]:
+		suite.check_eq(rules.execute_command("unlock", {"id": id}).code, "ok", "prepare pantry through the public command")
+	rules.gold = 79.0
+	scene.ui.open_station("pantry")
+	for frame in 3: await process_frame
+	var station: Control = scene.ui.page_node("station")
+	var scroll: ScrollContainer = scene.ui.get_node("Sheet/Margin/Column/Scroll")
+	var yangzhou: Button = station.recipe_buttons["yangzhou_rice"]
+	suite.check_eq(scroll.scroll_vertical, 0, "pantry opens at the top")
+	suite.check(scroll.get_global_rect().encloses(yangzhou.get_global_rect()), "Yangzhou recipe button fits the first phone screen")
+	suite.check(station.section("recipes").get_global_rect().position.y < station.section("materials").get_global_rect().position.y,
+		"pantry shows recipe unlock before ingredient upgrades")
+	suite.check_eq(yangzhou.text, "解锁 · 80 金币", "first screen shows the recipe cost")
+	suite.check(yangzhou.disabled, "unaffordable recipe is visible but disabled")
+	rules.gold = 1000.0
+	scene._refresh(0.0)
+	suite.check(not yangzhou.disabled, "the displayed recipe enables once affordable")
+	await _success(scene, func() -> void: yangzhou.pressed.emit(), "unlocked", "Yangzhou recipe purchase")
+	suite.check_eq(rules.gold, 920.0, "unlock debits the price displayed in the recipe")
+	suite.check(station.material_buttons["yangzhou_raw"].is_visible_in_tree(), "unlocked ingredient appears in the pantry panel")
+	suite.check_eq(rules.execute_command("unlock", {"id": "wok_b"}).code, "ok", "advance to the next pantry recipe")
+	scene.ui.open_station("pantry")
+	for frame in 3: await process_frame
+	var pepper: Button = station.recipe_buttons["pepper_rice"]
+	yangzhou = station.recipe_buttons["yangzhou_rice"]
+	suite.check(scroll.get_global_rect().encloses(pepper.get_global_rect()), "the next recipe fits without scrolling")
+	suite.check(pepper.get_global_rect().position.y < yangzhou.get_global_rect().position.y, "next recipe appears before earlier recipe")
 
 func _test_save_queue(scene: Node2D) -> void:
 	var writes: int = scene.store.writes

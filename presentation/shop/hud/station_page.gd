@@ -80,6 +80,10 @@ func refresh() -> void:
 	if not unlocked: title = card.unlock.title
 	var pill := "" if not card.sections.has("track") and unlocked else (level_tag if unlocked else "未解锁")
 	_hud.set_heading(title, pill, not unlocked, "")
+	var recipes: Control = _sections.recipes
+	var has_next_recipe: bool = card.get("recipes", []).any(func(row: Dictionary) -> bool: return row.state == "next")
+	var recipe_index := 0 if has_next_recipe else _order.find("recipes")
+	if recipes.get_index() != recipe_index: move_child(recipes, recipe_index)
 	for id in _sections:
 		var node: Control = _sections[id]
 		node.visible = id in card.sections

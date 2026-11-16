@@ -262,7 +262,8 @@ class RecipesSection extends VBoxContainer:
 
 	func refresh(card: Dictionary) -> void:
 		var hud: Control = page.hud()
-		var rows: Array = card.recipes
+		var rows: Array = card.recipes.filter(func(row: Dictionary) -> bool: return row.state == "next")
+		rows.append_array(card.recipes.filter(func(row: Dictionary) -> bool: return row.state != "next"))
 		var upgrades := rows.any(func(row: Dictionary) -> bool: return int(row.level)>0)
 		title.text = "菜品解锁 · 当前 Lv%d" % int(card.level) if upgrades else "配方 · 学会才上菜单"
 		var signature: String = String(card.id) + str(rows.map(func(row: Dictionary) -> String: return String(row.dish)))
@@ -295,7 +296,7 @@ class RecipesSection extends VBoxContainer:
 					button.disabled = true
 				"next":
 					nodes.effect.text = String(row.note) if not String(row.note).is_empty() else "学会后上菜单 · 售价 %.1f" % float(row.price)
-					button.text = ("升级 · %d 金币" if level>0 else "学会 · %d 金币") % int(row.cost)
+					button.text = ("解锁 · %d 金币" if level>0 else "学会 · %d 金币") % int(row.cost)
 					button.disabled = not CommandResult.is_ok(row.status)
 				_:
 					nodes.effect.text = "先开前面的阶段"
