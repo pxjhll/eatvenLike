@@ -572,17 +572,19 @@ func test_self_pickup_callbacks_capture_resumable_settled_orders() -> void:
 
 ## 美术场景（Codex 出的小炒饭馆原画拼装）过场景契约，且锚点和规则层走位是同一份坐标
 func test_art_scene_passes_the_contract_and_matches_the_layout() -> void:
-	check(ResourceLoader.exists(FORMAL.scene_path), "店铺数据指向美术场景")
-	var art: Node = load(FORMAL.scene_path).instantiate()
-	var errors := SceneContract.validate(FORMAL, art)
+	var shop: SpecShop = load("res://content/shops/stirfry/shop.tres")
+	check(ResourceLoader.exists(shop.scene_path), "店铺数据指向美术场景")
+	var art: Node = load(shop.scene_path).instantiate()
+	var errors := SceneContract.validate(shop, art)
 	check(errors.is_empty(), "场景契约通过：%s" % str(errors))
 	var anchors := ShopAnchors.new(art.get_node("Anchors"))
-	var layout := FORMAL.layout
+	var layout := shop.layout
 	for n in 16:
 		var key := "table/%d" % n
-		check_eq(anchors.point("Seats/table/%d" % n), DATA.layout.points[key], "座位 %d 保留原美术坐姿点" % n)
+		var seat := anchors.point("Seats/" + key)
+		check_eq(seat,DATA.layout.points[key]+Vector2(-26 if n % 2 == 0 else 26,0),"坐姿点随椅子外移")
 		check_eq(layout.points[key],layout.customer_points["seat:"+key],"员工送餐点与顾客接近点一致")
-		check_eq(layout.points[key],DATA.layout.points[key]+Vector2(0,-40),"接近点与坐姿点显式分离")
+		check_eq(layout.points[key],seat+Vector2(0,-40),"接近点与坐姿点显式分离")
 	for post in layout.posts:
 		check_eq(anchors.point("Stations/%s/PostPoint" % post), layout.posts[post], post + " 坐班点一致")
 		check(anchors.rect("Stations/%s/Post" % post).has_point(layout.posts[post]), post + " 坐班点在坐班区里")
@@ -591,7 +593,7 @@ func test_art_scene_passes_the_contract_and_matches_the_layout() -> void:
 	var world: Vector2 = art.get_node("Anchors").get_meta("world_size")
 	for key in layout.points:
 		check(Rect2(Vector2.ZERO, world).has_point(layout.points[key]), key + " 在场景范围内")
-	for st in FORMAL.stations:
+	for st in shop.stations:
 		var tap := anchors.rect("Stations/%s/Tap" % st.id)
 		check(tap.has_area(), st.display_name + " 有点按区")
 	art.free()

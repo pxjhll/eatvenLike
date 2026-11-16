@@ -35,7 +35,9 @@ static func reference_error(definition: Dictionary, owner: RefCounted) -> String
 	for id in definition.boxes:
 		if not owner.boxes.has(id): return "requirement references unknown material box: "+id
 	for key in definition.levels:
-		if owner.track_of(key) == null: return "requirement references unknown upgrade track: "+key
+		var shop: SpecShop = owner.shop
+		if owner.track_of(key) == null and shop.recipe_level(key, shop.stages.size()-1)<=1:
+			return "requirement references unknown upgrade track: "+key
 	return ""
 
 static func met(definition: Dictionary, owner: RefCounted) -> bool:

@@ -26,6 +26,22 @@ static func request(record: Dictionary, nav: RuleNav, goal: Vector2, profile: St
 	assign(record,nav.path(record.pos,goal,profile))
 	record.walking = true
 
+## Rebuild a validated saved route after an explicitly supported layout change.
+static func relocate_saved_route(record: Dictionary, nav: RuleNav, goal: Vector2) -> String:
+	var profile: String = record.motion.profile
+	if not nav.can_stand(goal,profile): return "relocated route has an unreachable destination"
+	if not record.walking:
+		record.pos = goal
+		request(record,nav,goal,profile)
+		advance(record,0.001)
+		return ""
+	if not nav.can_stand(record.pos,profile):
+		var start := nav.nearest_reachable(record.pos,goal,profile)
+		if not start.is_finite(): return "relocated route has no reachable start"
+		record.pos = start
+	request(record,nav,goal,profile)
+	return "relocated route is unreachable" if record.path.is_empty() else ""
+
 static func tick(record: Dictionary, nav: RuleNav, distance: float) -> bool:
 	if not record.has("motion"): return advance(record,distance)
 	var motion: Dictionary = record.motion

@@ -33,7 +33,7 @@ func ready(worker: Dictionary, action: Dictionary) -> String:
 	var task: Dictionary = runner.tasks.get(worker.id, {})
 	if task.is_empty() or worker.action.lease != _binding(task): return "capability assignment changed"
 	if action.kind in ["move", "transport"]: return ""
-	if not runner.ports.has(action.target) or worker.walking or not Vector2(worker.pos).is_equal_approx(runner.ports[action.target]): return "not at capability port"
+	if not runner.ports.has(action.target) or worker.walking or not Vector2(worker.pos).is_equal_approx(runner.action_port(action,runner.ports)): return "not at capability port"
 	if action.kind == "operate":
 		if task.kind == "interact": return "" if runner.dispatcher == null or runner.dispatcher.customer_ready(task) else "customer not at admission port"
 		if worker.action.started: return ""
@@ -51,7 +51,7 @@ func ready(worker: Dictionary, action: Dictionary) -> String:
 func enter(worker: Dictionary, action: Dictionary) -> void:
 	var task: Dictionary = runner.tasks[worker.id]
 	if action.kind in ["move", "transport"]:
-		Movement.request(worker, runner.owner.nav, runner.ports[action.target], task.profile)
+		Movement.request(worker, runner.owner.nav, runner.work_goal(worker,action,task), task.profile)
 		worker.phase = "walk"
 		worker.target = action.target
 		return
@@ -67,11 +67,14 @@ func enter(worker: Dictionary, action: Dictionary) -> void:
 
 func advance(worker: Dictionary, action: Dictionary, dt: float) -> bool:
 	if action.kind in ["move", "transport"]:
+		var task: Dictionary = runner.tasks[worker.id]
+		var goal: Vector2 = runner.work_goal(worker,action,task)
+		if worker.motion.goal != goal: Movement.request(worker,runner.owner.nav,goal,task.profile)
 		var arrived := Movement.tick(worker, runner.owner.nav, float(runner.owner.walk_speed(worker)) * dt)
 		if not arrived and worker.path.is_empty():
 			worker.action.status = "blocked"
 			worker.action.reason = "route unavailable"
-		return arrived
+		return arrived and goal == runner.action_port(action,runner.ports)
 	if action.kind == "operate" and runner.tasks[worker.id].kind == "operate":
 		var task: Dictionary = runner.tasks[worker.id]
 		var run: Dictionary = runner.machines.run(task.run)
@@ -83,7 +86,7 @@ func advance(worker: Dictionary, action: Dictionary, dt: float) -> bool:
 
 func immediate(worker: Dictionary, action: Dictionary) -> bool:
 	if action.kind not in ["move","transport"] or worker.path.is_empty(): return false
-	if not Vector2(worker.pos).is_equal_approx(runner.ports[action.target]): return false
+	if worker.motion.goal != runner.action_port(action,runner.ports) or not Vector2(worker.pos).is_equal_approx(worker.motion.goal): return false
 	worker.walking = false
 	worker.path_index = worker.path.size()
 	return true
@@ -100,7 +103,7 @@ func commit(worker: Dictionary, action: Dictionary) -> void:
 		"operate": runner._finish(worker)
 
 	if runner.trace!=null and runner.last_error.is_empty():
-		runner.trace.record("action."+String(action.kind),{"worker":int(worker.id),"target":String(action.target),"pos":worker.pos,"port":runner.ports[action.target],"task":task.duplicate(true)})
+		runner.trace.record("action."+String(action.kind),{"worker":int(worker.id),"target":String(action.target),"pos":worker.pos,"port":runner.action_port(action,runner.ports),"task":task.duplicate(true)})
 
 func cancel(worker: Dictionary, _lease: Dictionary) -> void:
 	runner._cancel_effect(worker)

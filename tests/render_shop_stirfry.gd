@@ -36,6 +36,7 @@ func _run() -> void:
 func _business(rule: String) -> void:
 	var spec: SpecShop = STIRFRY.duplicate(true)
 	spec.fulfillment.dine_rule = rule
+	spec.layout = preload("res://content/shops/stirfry/shop.tres").layout
 	var prefix := "user://stirfry-gui-%d-%d-%s" % [OS.get_process_id(), Time.get_ticks_usec(), rule]
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
 	scene.session = TestSession.make(spec, prefix, LegacyRules.new(spec,42), null, null, CAMPAIGN)

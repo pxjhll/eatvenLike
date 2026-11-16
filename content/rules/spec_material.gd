@@ -10,6 +10,8 @@ extends Resource
 @export var box_cost: int = 0
 ## 这一箱跟着哪台机器出现
 @export var box_station: String = ""
+## 需要另一台设备时，设备解锁后才开放这个物料的升级。
+@export var requires_station: String = ""
 ## 这个槽自己的升级轨（requires_level = 机器几级才开放）
 @export var track: SpecUpgradeTrack
 ## 图标键；空 = 用 id

@@ -34,7 +34,9 @@
 
 [ext_resource type="Resource" path="res://content/shops/tea/shared_production.tres" id="u06_runtime"]
 
-[ext_resource type="Resource" path="res://content/characters/staff/parrot.tres" id="staff_parrot"]
+[ext_resource type="Resource" path="res://content/characters/staff/parrot.tres" id="staff_parrot"][ext_resource type="Resource" path="res://content/shops/shared/front_staff_training.tres" id="training_front"]
+[ext_resource type="Resource" path="res://content/shops/shared/kitchen_staff_training.tres" id="training_kitchen"]
+
 [sub_resource type="Resource" id="Resource_m1tbq"]
 script = ExtResource("1_tjgba")
 id = "seal_to_shelf"
@@ -989,130 +991,6 @@ costs = Array[int]([40, 154, 396])
 seconds = 40.0
 patience = 0.5
 
-[sub_resource type="Resource" id="Resource_nlrjp"]
-script = ExtResource("7_1v0ns")
-kind = "walk"
-target = "front"
-value = 1.2
-
-[sub_resource type="Resource" id="Resource_ro088"]
-script = ExtResource("8_cgjme")
-cost = 10
-effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_nlrjp")])
-
-[sub_resource type="Resource" id="Resource_1e8ah"]
-script = ExtResource("7_1v0ns")
-kind = "staff_slot"
-target = "front"
-op = "add"
-
-[sub_resource type="Resource" id="Resource_6u0x0"]
-script = ExtResource("8_cgjme")
-cost = 51
-effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_1e8ah")])
-
-[sub_resource type="Resource" id="Resource_43n6a"]
-script = ExtResource("7_1v0ns")
-kind = "work"
-target = "front"
-value = 1.25
-
-[sub_resource type="Resource" id="Resource_mflao"]
-script = ExtResource("8_cgjme")
-cost = 130
-effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_43n6a")])
-
-[sub_resource type="Resource" id="Resource_nl2m0"]
-script = ExtResource("7_1v0ns")
-kind = "walk"
-target = "front"
-value = 1.2
-
-[sub_resource type="Resource" id="Resource_a81lj"]
-script = ExtResource("8_cgjme")
-cost = 315
-effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_nl2m0")])
-
-[sub_resource type="Resource" id="Resource_j6r3h"]
-script = ExtResource("9_g4hkj")
-id = "front"
-display_name = "前台"
-levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_ro088"), SubResource("Resource_6u0x0"), SubResource("Resource_mflao"), SubResource("Resource_a81lj")])
-effect_label = "员工"
-
-[sub_resource type="Resource" id="Resource_1vyab"]
-script = ExtResource("7_1v0ns")
-kind = "walk"
-target = "kitchen"
-value = 1.2
-
-[sub_resource type="Resource" id="Resource_fab7n"]
-script = ExtResource("8_cgjme")
-cost = 20
-effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_1vyab")])
-
-[sub_resource type="Resource" id="Resource_15u5b"]
-script = ExtResource("7_1v0ns")
-kind = "work"
-target = "kitchen"
-value = 1.25
-
-[sub_resource type="Resource" id="Resource_5tji1"]
-script = ExtResource("8_cgjme")
-cost = 45
-effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_15u5b")])
-
-[sub_resource type="Resource" id="Resource_d0tyj"]
-script = ExtResource("7_1v0ns")
-kind = "carry"
-target = "kitchen"
-op = "add"
-
-[sub_resource type="Resource" id="Resource_184w0"]
-script = ExtResource("8_cgjme")
-cost = 101
-effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_d0tyj")])
-
-[sub_resource type="Resource" id="Resource_ax1jx"]
-script = ExtResource("7_1v0ns")
-kind = "walk"
-target = "kitchen"
-value = 1.2
-
-[sub_resource type="Resource" id="Resource_p887f"]
-script = ExtResource("8_cgjme")
-cost = 224
-effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ax1jx")])
-
-[sub_resource type="Resource" id="Resource_ukdit"]
-script = ExtResource("7_1v0ns")
-kind = "work"
-target = "kitchen"
-value = 1.25
-
-[sub_resource type="Resource" id="Resource_g0mkt"]
-script = ExtResource("8_cgjme")
-cost = 452
-effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_ukdit")])
-
-[sub_resource type="Resource" id="Resource_qet61"]
-script = ExtResource("7_1v0ns")
-kind = "carry"
-target = "kitchen"
-op = "add"
-
-[sub_resource type="Resource" id="Resource_ixqvy"]
-script = ExtResource("8_cgjme")
-cost = 908
-effects = Array[ExtResource("7_1v0ns")]([SubResource("Resource_qet61")])
-
-[sub_resource type="Resource" id="Resource_ng58g"]
-script = ExtResource("9_g4hkj")
-id = "kitchen"
-display_name = "后厨"
-levels = Array[ExtResource("8_cgjme")]([SubResource("Resource_fab7n"), SubResource("Resource_5tji1"), SubResource("Resource_184w0"), SubResource("Resource_p887f"), SubResource("Resource_g0mkt"), SubResource("Resource_ixqvy")])
-effect_label = "员工"
-
 [sub_resource type="Resource" id="Resource_8p4c6"]
 script = ExtResource("18_tdcmu")
 kinds = Array[ExtResource("17_mx6tq")]([ExtResource("staff_cat"), ExtResource("staff_raccoon"), ExtResource("staff_fox"), ExtResource("staff_rabbit"), ExtResource("staff_gray_cat"), ExtResource("staff_bear"), ExtResource("staff_parrot")])
@@ -1124,7 +1002,7 @@ hire_cost_base = 35
 hire_cost_step = 25
 zones = Array[String](["front", "kitchen"])
 can_drag = true
-tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_j6r3h"), SubResource("Resource_ng58g")])
+tracks = Array[ExtResource("9_g4hkj")]([ExtResource("training_front"), ExtResource("training_kitchen")])
 home_anchor = "counter"
 
 [sub_resource type="Resource" id="Resource_cb5lx"]

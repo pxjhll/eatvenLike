@@ -3,11 +3,13 @@
   'use strict';
   let active = null;
   let preloadPromise = null, preparedSource = null, preloadFailed = false;
+  let preloadController = null;
   const api = {
     preload(onProgress) {
       if (preloadPromise) return preloadPromise;
       preloadPromise = (async () => {
         const abort = new AbortController();
+        preloadController = abort;
         const timeout = setTimeout(() => abort.abort(), 90000);
         try {
           const response = await fetch(new URL('opening.mp4', document.baseURI), { signal: abort.signal });
@@ -27,15 +29,24 @@
             const buffer = await response.arrayBuffer();
             chunks.push(buffer); loaded = buffer.byteLength;
           }
+          if (abort.signal.aborted) throw abort.signal.reason;
           preparedSource = URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
           onProgress(loaded, loaded);
           return true;
         } catch (_) {
           preloadFailed = true;
           return false;
-        } finally { clearTimeout(timeout); }
+        } finally {
+          clearTimeout(timeout);
+          preloadController = null;
+        }
       })();
       return preloadPromise;
+    },
+    cancelPreload() {
+      if (!preloadController) return;
+      preloadFailed = true;
+      preloadController.abort();
     },
     start(callback) {
       api.stop();

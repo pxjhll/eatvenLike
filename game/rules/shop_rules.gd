@@ -501,7 +501,7 @@ func station_unlocked(id: String) -> bool:
 
 
 func level(id: String) -> int:
-	return int(levels.get(id, 1))
+	return int(levels[id]) if levels.has(id) else shop.recipe_level(id, stage_index)
 
 
 func speed(id: String) -> float:
@@ -544,7 +544,7 @@ func flavor_open(dish: SpecDish) -> bool:
 	var st := shop.station(dish.flavor_station)
 	var m := st.material(dish.flavor_material)
 	if m == null: return true
-	return station_unlocked(st.id) and level(st.id) >= m.track.requires_level
+	return station_unlocked(st.id) and level(st.id) >= m.track.requires_level and (m.requires_station.is_empty() or station_unlocked(m.requires_station))
 
 
 func _box_ready(item: String) -> bool:
@@ -906,8 +906,13 @@ func worker_stat_limits(worker: Dictionary) -> Dictionary:
 	return limit
 
 
+func _front_expanded() -> bool:
+	return station_unlocked(shop.staff.second_front_slot_after)
+
+
 func front_slots() -> int:
-	return int(mods.value("staff_slot", float(shop.staff.front_base_slots), "front"))
+	var base := shop.staff.front_base_slots + int(_front_expanded())
+	return int(mods.value("staff_slot", float(base), "front"))
 
 
 func kitchen_slots() -> int:
@@ -951,9 +956,12 @@ func hire_cost() -> int:
 	return rules.hire_cost_base + maxi(0, _hires()) * rules.hire_cost_step
 
 
-## 已经招了几位（名册里减去开局员工）：第 n 次招人按 hire_costs[n] 收钱
+## 第 n 次招人按 hire_costs[n] 收钱。读旧档时保留原有免费员工。
 func _hires() -> int:
-	return roster.size() - shop.staff.starting.size()
+	var count := 0
+	for worker in roster:
+		if worker.source not in ["初始", "解锁"]: count += 1
+	return count
 
 
 func next_hire_kind() -> String:
@@ -1464,7 +1472,16 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 			elif station_unlocked(id) and recipe < 0: code = CommandResult.STATION_ALREADY_UNLOCKED
 			else:
 				var stage := recipe if recipe >= 0 else shop.stage_of(id)
-				if stage < 0: code = CommandResult.STATION_NOT_UNLOCKABLE
+				if stage < 0:
+					var prerequisite := shop.stage_index_of(st.unlock_after_stage)
+					if prerequisite < 0: code = CommandResult.STATION_NOT_UNLOCKABLE
+					elif not is_open(): code = CommandResult.SHOP_NOT_OPEN
+					elif stage_index < prerequisite:
+						code = CommandResult.STAGE_REQUIRED
+						params.stage = prerequisite
+					elif gold < st.unlock_cost:
+						code = CommandResult.INSUFFICIENT_GOLD
+						params.required = st.unlock_cost
 				elif stage > 0 and not is_open(): code = CommandResult.SHOP_NOT_OPEN
 				elif stage > 0 and stage > stage_index + 1:
 					code = CommandResult.STAGE_REQUIRED
@@ -1490,12 +1507,21 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 			if track == null or track.levels.is_empty() or not levels.has(key): code = CommandResult.NO_UPGRADE
 			else:
 				var parts := key.split("/")
-				if not key.begins_with("staff/") and key != "flyer":
+				if key.begins_with("staff/"):
+					var required_station: String = shop.staff.training_requires.get(parts[1], "")
+					if not required_station.is_empty() and not station_unlocked(required_station):
+						code = CommandResult.STATION_REQUIRED
+						params.station = required_station
+				elif key != "flyer":
 					if not station_unlocked(parts[0]) and shop.station(parts[0]).companion_of.is_empty():
 						code = CommandResult.STATION_REQUIRED
 						params.station = parts[0]
 					elif parts.size() > 1:
-						if boxes.has(parts[1]) and not boxes[parts[1]]:
+						var material := shop.station(parts[0]).material(parts[1])
+						if not material.requires_station.is_empty() and not station_unlocked(material.requires_station):
+							code = CommandResult.STATION_REQUIRED
+							params.station = material.requires_station
+						elif boxes.has(parts[1]) and not boxes[parts[1]]:
 							code = CommandResult.BOX_REQUIRED
 							params.material = parts[1]
 						elif level(parts[0]) < track.requires_level:
@@ -1552,9 +1578,12 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 			params.post = post
 			if worker.is_empty(): code = CommandResult.UNKNOWN_WORKER
 			elif not worker.deployed:
-				if post.is_empty() and not CommandResult.is_ok(_role_room_status("")) and CommandResult.is_ok(_role_room_status(counter_id)):
-					post = counter_id
-					params.post = post
+				if post.is_empty() and CommandResult.is_ok(_role_room_status(counter_id)):
+					var front_count := workers.size() - kitchen_staff()
+					var front_first: bool = arguments.get("from_hire", false) and _front_expanded() and front_count <= shop.staff.front_base_slots
+					if front_first or not CommandResult.is_ok(_role_room_status("")):
+						post = counter_id
+						params.post = post
 				if not post.is_empty() and post != counter_id:
 					if not post in seatables: code = CommandResult.NOT_SEATABLE
 					elif post_owner(post, arguments.id) != -1: code = CommandResult.POST_OCCUPIED
@@ -1678,16 +1707,34 @@ func _recipe_stage(id: String) -> int:
 func _commit_unlock(id: String) -> void:
 	var recipe := _recipe_stage(id)
 	var stage := recipe if recipe>=0 else shop.stage_of(id)
-	gold -= shop.stages[stage].cost
-	for key in shop.stages[stage].stations:
+	var station := shop.station(id)
+	var cost := station.unlock_cost if stage < 0 else shop.stages[stage].cost
+	var opened: Array = [id] if stage < 0 else shop.stages[stage].stations
+	gold -= cost
+	for key in opened:
 		unlocked[key] = true
 		for st in shop.stations:
 			if st.companion_of==key: unlocked[st.id] = true
 	stage_index = maxi(stage_index,stage)
+	# A reordered progression can retain equipment purchased on an older save.
+	while stage >= 0 and stage_index+1 < shop.stages.size():
+		var next: SpecStage = shop.stages[stage_index+1]
+		if next.stations.is_empty() or not next.stations.all(station_unlocked): break
+		stage_index += 1
 	nav.set_open(unlocked)
+	if stage>=0 and not shop.stages[stage].grant_worker.is_empty():
+		var worker := _new_worker(shop.stages[stage].grant_worker)
+		worker.source = "解锁"
+		worker.deployed = true
+		roster.append(worker)
+		workers.append(worker)
+		events.emit("hired", {"id":worker.id, "kind":worker.kind})
+		events.emit("deployed", {"id":worker.id})
 	if runtime!=null: runtime_error = runtime.set_service_open(is_open())
-	var message := {"station":id,"stage":stage}
-	if recipe>=0: message.dish = shop.stages[stage].dish
+	var message := {"station":id,"stage":stage_index}
+	var dish := station.unlock_dish
+	if recipe >= 0: dish = shop.stages[stage].dish
+	if not dish.is_empty(): message.dish = dish
 	events.emit("unlocked",message)
 
 func _commit_unlock_box(material: String) -> void:

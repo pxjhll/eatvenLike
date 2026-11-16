@@ -3,7 +3,9 @@
   'use strict';
   const engine = { loaded: 0, total: 0 };
   const media = { loaded: 0, total: 0 };
+  const introGraceMs = 3000;
   let engineReady = false, mediaDone = false, released = false, failed = false, scheduled = false;
+  let introGraceTimer;
   const root = () => document.getElementById('welcome-loading');
   function render() {
     const screen = root();
@@ -48,10 +50,23 @@
       engine.total = Math.max(0, Number(total) || 0);
       render();
     },
-    ready() { engineReady = true; engine.loaded = engine.total; render(); },
+    ready() {
+      if (engineReady || failed) return;
+      engineReady = true;
+      engine.loaded = engine.total;
+      if (!mediaDone) {
+        introGraceTimer = setTimeout(() => {
+          window.EatventureOpening.cancelPreload();
+          finishMedia();
+        }, introGraceMs);
+      }
+      render();
+    },
     fail() {
       if (released || failed) return;
       failed = true;
+      clearTimeout(introGraceTimer);
+      window.EatventureOpening.cancelPreload();
       const screen = root();
       if (!screen) return;
       screen.dataset.state = 'failed';
@@ -71,13 +86,21 @@
   }
   document.addEventListener('keydown', blockActivation, true);
   document.addEventListener('keyup', blockActivation, true);
+  function finishMedia() {
+    if (mediaDone) return;
+    mediaDone = true;
+    media.loaded = media.total;
+    clearTimeout(introGraceTimer);
+    render();
+  }
   function mount() {
     const canvas = document.getElementById('canvas');
     if (canvas) canvas.inert = true;
     document.getElementById('welcome-retry').addEventListener('click', () => location.reload());
     window.EatventureOpening.preload((loaded, total) => {
+      if (mediaDone) return;
       media.loaded = loaded; media.total = total; render();
-    }).finally(() => { mediaDone = true; media.loaded = media.total; render(); });
+    }).finally(finishMedia);
     render();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount, { once: true });

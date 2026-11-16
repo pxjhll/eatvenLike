@@ -20,7 +20,7 @@ func _check(value: bool, message: String) -> void:
 
 func _setup(id: String) -> Dictionary:
 	var shop: SpecShop = load("res://content/shops/"+id+"/shop.tres").copy_for_editing()
-	var owner := TemplateOuter.owner(shop,42)
+	var owner := ShopRules.new(shop,42) if id=="stirfry" else TemplateOuter.owner(shop,42)
 	owner.gold = 1000000.0
 	if id=="tea":
 		for machine in ["lemonade","boil","seal","mix","press","topping"]: _check(owner.unlock(machine).is_empty(),"actual tea purchases")
@@ -28,6 +28,7 @@ func _setup(id: String) -> Dictionary:
 		for upgrade in 3: _check(owner.upgrade("topping").is_empty(),"actual tea flavors")
 	else:
 		for stage in shop.stages.size(): _check(owner.unlock(shop.sold_at(stage)).is_empty(),"actual stage purchase")
+		if id=="stirfry": _check(owner.unlock("soup_pot").is_empty(),"buy optional soup for the bundled-meal display")
 		if id=="pancake":
 			_check(owner.unlock_box("flour").is_empty(),"actual flour purchase")
 			for upgrade in 6: _check(owner.upgrade("topping").is_empty(),"actual pancake flavors")
@@ -39,15 +40,25 @@ func _setup(id: String) -> Dictionary:
 	scene.session = TestSession.make(owner.shop,"user://u05-display-%s-%d"%[id,Time.get_ticks_usec()],owner)
 	for path in [scene.session.profile.path,scene.session.store.path,scene.session.tuning_path,scene.session.recording_path]: paths.append(path)
 	root.add_child(scene); scene.set_process(false)
-	_check(not scene._startup_blocked,"actual "+id+" scene")
+	_check(not scene._startup_blocked,"actual "+id+" scene: "+scene.save_status)
+	if scene._startup_blocked: scene.free(); return {}
 	var template: Resource = load("res://content/shops/"+id+"/shared_production.tres").duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	if id=="stirfry":
 		for stage in template.service.selection.stages: stage.weights = {"tomato_rice":1.0}
 		template.service.selection.addon.share = 1.0
-	var runtime := Runtime.new(owner,template)
+	var runtime: RefCounted
+	if id=="stirfry":
+		var runtime_error := owner.enable_runtime(template,false)
+		_check(runtime_error.is_empty(),id+": "+runtime_error)
+		if not runtime_error.is_empty(): scene.free(); return {}
+		runtime = owner.runtime
+	else:
+		runtime = Runtime.new(owner,template)
 	_check(runtime.last_error.is_empty(),id+": "+runtime.last_error)
+	if not runtime.last_error.is_empty(): scene.free(); return {}
 	var error: String = scene.bind_runtime(runtime)
 	_check(error.is_empty(),id+": actual geometry binding "+error)
+	if not error.is_empty(): scene.free(); return {}
 	return {"scene":scene,"runtime":runtime,"owner":owner}
 
 func _refresh(fixture: Dictionary) -> Dictionary:
@@ -87,6 +98,7 @@ func _freeze(fixture: Dictionary) -> void:
 
 func _tea_stock() -> void:
 	var fixture := _setup("tea")
+	if fixture.is_empty(): return
 	_check(fixture.owner.buy_connection("seal_to_shelf").is_empty(),"buy authored tea conveyor")
 	var ids: Array = []
 	for recipe in ["black_tea","plain_milk_tea","pearl_milk_tea","black_tea:sealed","plain_milk_tea:sealed","pearl_milk_tea:sealed"]:
@@ -119,6 +131,7 @@ func _tea_stock() -> void:
 
 func _meals(id: String) -> void:
 	var fixture := _setup(id)
+	if fixture.is_empty(): return
 	if id=="tea":
 		for dish in ["lemonade","black_tea"]: _check(fixture.runtime.arrive([{"dish":dish,"qty":1}]).error.is_empty(),"actual tea diners")
 	else:
@@ -130,8 +143,11 @@ func _meals(id: String) -> void:
 		var factor := 1.0 if tick<80 else 2.0 if tick<160 else 4.0
 		_check(fixture.runtime.step(0.1*factor).is_empty(),"actual meal at selected speed")
 		var frame := _refresh(fixture)
-		for row in frame.movement.customers.values():
-			if row.carry_count==2: saw_bundle = true
+		if id=="stirfry":
+			for worker in frame.workers:
+				if worker.post!="counter": continue
+				var held: Array = worker.held_items.map(func(row: Dictionary) -> String: return row.item)
+				if "tomato_rice" in held and "soup" in held: saw_bundle = true
 		if frame.draws.any(func(row: Dictionary) -> bool: return row.get("capability")=="dining_item"):
 			saw_meal = true
 			if not saved:
@@ -144,12 +160,13 @@ func _meals(id: String) -> void:
 	var gone: bool = fixture.runtime.service.orders.snapshot().guests.all(func(guest: Dictionary) -> bool: return guest.state=="gone")
 	_check(saw_meal and gone and saved,id+": seated meal rendered and completed")
 	_check(not fixture.scene.view.render_snapshot().draws.any(func(row: Dictionary) -> bool: return row.get("capability")=="dining_item"),"eating consumes displayed food exactly once")
-	if id=="stirfry": _check(saw_bundle,"actual main and soup carried together")
+	if id=="stirfry": _check(saw_bundle,"front employee visibly carries the main and soup together")
 	results.append({"case":id+"_dining","complete":gone,"meal":saw_meal,"restored":saved,"bundle":saw_bundle,"sold":fixture.owner.sold})
 	fixture.scene.free()
 
 func _pancake() -> void:
 	var fixture := _setup("pancake")
+	if fixture.is_empty(): return
 	_check(fixture.runtime.arrive([{"dish":"ham","qty":1},{"dish":"soy","qty":1}],["bag"]).error.is_empty(),"real bagged pancake plus drink")
 	var saw_processing := false
 	var saw_waiting := false

@@ -28,12 +28,16 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 		for prop in value.get_property_list():
 			var key: String = prop.name
 			if type_name=="SpecShop" and key=="runtime_template" and value.runtime_template==null: continue
+			if type_name=="SpecShop" and key=="previous_progression": continue
+			if type_name=="SpecStage" and key=="recipe_level" and value.recipe_level==0: continue
+			if type_name=="SpecStage" and key=="grant_worker" and value.grant_worker.is_empty(): continue
+			if type_name=="SpecMaterial" and key=="requires_station" and value.requires_station.is_empty(): continue
 			if type_name == "SpecFulfillment" and value.flow_version==0 and key in ["flow_version","delivery_batch","delivery_points"]: continue
 			if type_name == "SpecDispatch" and key == "action_version" and value.action_version == 0: continue
 			if type_name == "SpecDispatch" and key == "transport_helpers" and value.transport_helpers.is_empty(): continue
 			if type_name == "SpecDispatch" and key == "preposition_work" and not value.preposition_work: continue
 			if type_name == "SpecDispatch" and key == "prefetch_inputs" and not value.prefetch_inputs: continue
-			if type_name == "SpecStaffRules" and key == "retired_kinds" and value.retired_kinds.is_empty(): continue
+			if type_name == "SpecStaffRules" and key in ["retired_kinds", "training_requires", "second_front_slot_after"] and value.get(key).is_empty(): continue
 			if type_name == "SpecLayout" and value.motion_version == 0 and key in ["motion_version","motion_units","actor_areas","customer_points","customer_queue"]: continue
 			if not (int(prop.usage) & PROPERTY_USAGE_SCRIPT_VARIABLE) or not (int(prop.usage) & PROPERTY_USAGE_STORAGE): continue
 			if key in PRESENTATION or (type_name == "SpecStaffKind" and key == "role"): continue
@@ -42,6 +46,7 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 				out[key] = value.levels.size()
 				continue
 			var item: Variant = value.get(key)
+			if type_name == "SpecStation" and key in ["unlock_after_stage","unlock_dish"] and String(item).is_empty(): continue
 			if type_name == "SpecStation" and key == "params":
 				item = item.duplicate(true)
 				for parameter in item.keys():

@@ -40,7 +40,7 @@ static func _shape(value: Variant, shape: Dictionary) -> String:
 		if typeof(value[key])!=typeof(shape[key]) and not (shape[key] is float and value[key] is int): return key+" has invalid type"
 	return ""
 
-static func _record(row: Dictionary, nav: RuleNav) -> String:
+static func _record(row: Dictionary, nav: RuleNav, check_clearance := true) -> String:
 	var error := _shape(row.motion,{"version":0,"goal":Vector2.ZERO,"profile":"","topology":""})
 	if not error.is_empty(): return error
 	if row.motion.version!=1: return "unsupported version"
@@ -55,7 +55,7 @@ static func _record(row: Dictionary, nav: RuleNav) -> String:
 		if row.path_index!=row.path.size() or not row.pos.is_equal_approx(row.motion.goal): return "arrival differs from real position"
 	# A topology change is allowed between a command and the next tick; tick must
 	# replan from the recorded position before consuming any distance.
-	if row.motion.topology==nav.topology_key():
+	if check_clearance and row.motion.topology==nav.topology_key():
 		var previous: Vector2 = row.pos
 		for i in range(row.path_index,row.path.size()):
 			if not nav.segment_clear(previous,row.path[i],row.motion.profile): return "route crosses forbidden space"

@@ -241,7 +241,7 @@ func test_legacy_position_can_adopt_a_legal_port_without_a_walkable_grid_center(
 	var goal := Vector2(40,20)
 	check(rules.nav.can_stand(goal),"current authored port accommodates whole footprint")
 	check(not rules.nav.can_stand(Vector2(20,20)) and not rules.nav.can_stand(Vector2(60,20)),"grid centers cannot accommodate this narrow port")
-	var actual: Vector2 = preload("res://game/rules/movement_adoption.gd")._nearest(rules,Vector2(-100,20),goal,"staff")
+	var actual := rules.nav.nearest_reachable(Vector2(-100,20),goal,"staff")
 	check_eq(actual,goal,"legacy position falls back to a legal current port without discarding business")
 
 func test_failed_migration_backup_retains_original_and_can_retry_after_repair() -> void:

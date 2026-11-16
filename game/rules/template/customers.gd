@@ -70,11 +70,12 @@ func record(id: int) -> Dictionary:
 func snapshot() -> Dictionary:
 	return {"version":1, "customers":_records.duplicate(true)}
 
-func restore(data: Dictionary) -> String:
+func restore(data: Dictionary, refresh_layout := false) -> String:
 	if not last_error.is_empty(): return last_error
 	if not Inventory._shape(data, {"version":0, "customers":[]}) or data.version != 1: return "invalid customer motion state"
 	var ids := {}
-	for row in data.customers:
+	var rows: Array = data.customers.duplicate(true)
+	for row in rows:
 		var error := Validation._shape(row, _row())
 		if not error.is_empty(): return error
 		for key in row:
@@ -90,10 +91,16 @@ func restore(data: Dictionary) -> String:
 			continue
 		var target := _target(row.target)
 		if not String(target.error).is_empty(): return target.error
-		if not row.get("motion") is Dictionary or row.motion.get("profile", "") != "customer" or row.motion.get("goal") != target.point: return "customer motion differs from declared target or access profile"
+		if not row.get("motion") is Dictionary or row.motion.get("profile", "") != "customer": return "customer motion differs from declared target or access profile"
+		if refresh_layout and (row.motion.get("goal") != target.point or not _nav.can_stand(row.pos,"customer") or not Validation._record(row, _nav).is_empty()):
+			error = Validation._record(row, _nav, false)
+			if not error.is_empty(): return error
+			error = Movement.relocate_saved_route(row,_nav,target.point)
+			if not error.is_empty(): return error
+		if row.motion.get("goal") != target.point: return "customer motion differs from declared target or access profile"
 		error = Validation._record(row, _nav)
 		if not error.is_empty(): return error
-	_records = data.customers.duplicate(true)
+	_records = rows
 	return ""
 
 func _find(id: int) -> Dictionary:

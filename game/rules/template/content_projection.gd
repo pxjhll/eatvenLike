@@ -45,6 +45,8 @@ static func _tunable(path: Array) -> bool:
 	if path == ["service","selection","stages","[]","interval"]: return true
 	if path.size() == 6 and path.slice(0,5) == ["service","selection","stages","[]","weights"]: return true
 	if path.size() == 5 and path.slice(0,4) == ["service","customization","options","[]"]: return path[4] in ["share","price_mult"]
+	# Retaining a part in place changes dispatch, but the recipe and saved stock still bind to the same nodes.
+	if path.size()==4 and path[0]=="recipes" and path.slice(2)==["machine_reservation","retain_inputs"]: return true
 	if path.size() == 5 and path[0] == "recipes" and path[2] == "nodes" and path[3] == "[]": return path[4] == "seconds"
 	if path.size() == 4 and path[0] == "machines" and path[2] == "profile": return path[3] in ["load_seconds", "unload_seconds", "stir_seconds"]
 	if path.size() == 3 and path[0] == "restocks": return path[2] in ["seconds", "fetch_seconds"]

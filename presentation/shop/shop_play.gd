@@ -638,10 +638,9 @@ func _refresh_station_signs() -> void:
 			frame.text = _t("frame_seat", {"step": group.step, "cost": rules.seat_cost()})
 			frame.tooltip_text = _t("frame_seat_tip") + "\n" + view.command_message(rules.command_status("buy_seat"))
 			continue
-		if id == rules.supply_id:
-			# 原料柜的框：最新那台机器要用的原料箱
-			frame.visible = not box.is_empty()
-			if box.is_empty(): continue
+		if id == rules.supply_id and not box.is_empty():
+			# 已有原料柜也能用同一个框显示待买的原料箱。
+			frame.visible = true
 			var m := shop.station(rules.supply_id).material(box)
 			frame.can_unlock = rules.command_status("unlock_box", {"material": box}).code == "ok"
 			frame.text = _t("frame_box", {"name": m.display_name, "cost": m.box_cost})
@@ -649,7 +648,9 @@ func _refresh_station_signs() -> void:
 			continue
 		var st := shop.station(id)
 		if st == null: continue
-		frame.visible = not rules.station_unlocked(id) and shop.stage_of(id) == next_stage
+		var prerequisite := shop.stage_index_of(st.unlock_after_stage)
+		var optional_available := prerequisite >= 0 and rules.is_open() and rules.stage_index >= prerequisite
+		frame.visible = not rules.station_unlocked(id) and (shop.stage_of(id) == next_stage or optional_available)
 		if not frame.visible: continue
 		var card := view.station(id)
 		frame.can_unlock = card.unlock.status.code == "ok"
@@ -933,7 +934,7 @@ func _update_customers_motion(frame: Dictionary, delta := 0.0) -> void:
 		if row.has("patience"): patience = float(row.patience)
 		elif shop.fulfillment.handoff=="single" and row.state=="queue" and shop.fulfillment.leave_after>0:
 			patience = 1.0-float(row.wait)/shop.fulfillment.leave_after
-		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway)
+		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway,row.get("compact_order",false))
 		actor.display(pose,float(frame.clock)+_customer_route_presentation.age)
 		var displayed: Vector2 = pose.pos if row.seated else _customer_route_presentation.point(row,float(Presentation.customer_speed)*shop.layout.motion_units)
 		actor.set_render_position(displayed)
@@ -1314,7 +1315,7 @@ func jump_shop(offset: int) -> String:
 
 # ---------- 命令（界面组件调这些） ----------
 
-## 招人直接上岗（先后厨再前台）；以后拖到别的岗位换活
+## 招人按店铺规则直接上岗，以后可以换岗。
 func hire_worker() -> void:
 	var staff_page: Control = ui.page_node("staff")
 	if staff_page != null and not staff_page.has_staff_room():
@@ -1324,7 +1325,7 @@ func hire_worker() -> void:
 	if execute_command("hire").code == "ok":
 		_bought("hire", gold_before)
 		selected_worker = int(all_staff().back().id)
-		var deployed: bool = staff_is_deployed(selected_worker) or (execute_command("deploy_worker", {"id": selected_worker}).code == "ok")
+		var deployed: bool = staff_is_deployed(selected_worker) or (execute_command("deploy_worker", {"id": selected_worker, "from_hire": true}).code == "ok")
 		_show_toast(_t("hired_deployed") if deployed else _t("hired_roster"))
 		request_save()
 	_refresh(0.0)

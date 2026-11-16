@@ -12,7 +12,7 @@ Cloudflare Pages 项目：`eatvenlike`；生产分支：`main`。
 - 输出目录：`build/web`
 - 根目录：仓库根目录
 
-脚本使用 Godot 4.7 和同版本 Web 导出模板，先导入资源并运行全量、商店 UI 和营业交互回归，再导出并压缩 Web 引擎。测试、导出或单文件大小校验失败会终止部署；失败构建不会替换上一个成功版本。
+脚本使用 Godot 4.7 和同版本 Web 导出模板。非 `main` 的 Pages 试玩构建检查店铺配置、场景坐标，并运行三家店的启动、营业、存档和画面显示测试。`main` 和未指定分支的本地构建运行全量回归。两种构建都校验实际导出的网页包和单文件大小。测试、导出或校验失败会终止部署，原成功版本继续提供服务。
 
 在 Cloudflare 控制台的 Workers & Pages → eatvenlike → Deployments 查看日志和重试失败部署。`/version.json` 记录当前线上构建的分支和完整提交 SHA。原有自定义域名保持不变。
 
@@ -20,6 +20,6 @@ Cloudflare Pages 项目：`eatvenlike`；生产分支：`main`。
 
 欢迎图的第一次真实点击同时用于解锁游戏背景音乐。片头本身没有音轨；背景音乐复用 ShopAudio，遵循音乐开关，进店后同曲目不重播。资源与视频出错时可从末帧继续进入营业。
 
-网页最初的加载页使用用户提供的 `loading.gif` 背景动画；部署时必须包含 `loading.gif`、`loading-font.ttf`、`loading_screen.css` 和 `loading_screen.js`。页面中间的真实百分比和“美味正在准备中…”、底部“小厨师们正在赶来，马上开饭！”圆角框由代码绘制。MP4 与引擎/PCK 同时预加载，准备好后交接到同布局的 Godot 界面，100% 后点击底部按钮直接播放片头和音乐。
+网页最初的加载页使用用户提供的 `loading.gif` 背景动画；部署时必须包含 `loading.gif`、`loading-font.ttf`、`loading_screen.css` 和 `loading_screen.js`。页面中间的真实百分比和“美味正在准备中…”、底部“小厨师们正在赶来，马上开饭！”圆角框由代码绘制。MP4 与引擎/PCK 同时预加载。Godot 就绪后最多再等片头下载 3 秒。片头准备好时，100% 后点击底部按钮播放片头和音乐。下载失败或超时时，点击后显示末帧和“开始营业”按钮。
 
 Godot 使用 GIF 同源七帧图集与 `presentation/opening/loading_view.gd`，保持原动画像素、帧序和节奏；`loading-font.ttf` 保证网页与原生字形一致。GIF 和旧静态欢迎图不打入 PCK。引擎下载失败会保留加载图并提供刷新按钮；片头单独下载失败仍允许进入末帧回退流程。

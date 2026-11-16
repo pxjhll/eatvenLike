@@ -6,6 +6,7 @@ const Validator := preload("res://game/rules/shop_state_validator.gd")
 const Worker := preload("res://game/rules/worker_state.gd")
 const Shape := preload("res://game/rules/template/inventory.gd")
 const Contract := preload("res://game/rules/shop_content_contract.gd")
+const Runner := preload("res://game/rules/template/capability_runner.gd")
 const Compiler := preload("res://game/rules/template/compiler.gd")
 const TemplateProjection := preload("res://game/rules/template/content_projection.gd")
 const OUTER := ["gold","revenue","sold","sold_by_dish","stage_index","unlocked","levels","boxes",
@@ -48,7 +49,20 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 	var template: Resource = owner._runtime_template
 	if template==null: return "public state requires an explicit runtime template"
 	var identity: Dictionary = prepared.identity if not prepared.is_empty() else Contract.describe_template(template)
-	if data.template.get("structure")!=identity.structure: return "public template structure differs"
+	var refresh_layout := false
+	var refresh_staff_tasks := false
+	if data.template.get("structure")!=identity.structure:
+		var previous: Dictionary = owner.shop.previous_progression
+		if not refresh or identity.structure!=previous.get("current_structure"):
+			return "public template structure differs"
+		var source: Dictionary = previous if data.template.get("structure")==previous.get("template_structure") else previous.get("other_templates",{}).get(data.template.get("structure"),{})
+		if source.is_empty(): return "public template structure differs"
+		var converted := adopt_progression(owner.shop,data.outer,source)
+		if converted.is_empty(): return "previous purchase stage is invalid"
+		data = data.duplicate()
+		data.outer = converted
+		refresh_layout = previous.get("refresh_layout",false) == true
+		refresh_staff_tasks = previous.get("refresh_staff_tasks",false) == true
 	if not refresh and data.template!=identity: return "public template numeric revision differs"
 	var script: Script = owner.get_script()
 	# The candidate gets its runtime after the saved purchase state is restored.
@@ -105,7 +119,13 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 			recorded.service.arrivals.signature = candidate.runtime.service.arrivals.snapshot().signature
 			if not recorded.service.arrivals.started: recorded.service.arrivals.left = candidate.runtime.service.arrivals.snapshot().left
 		recorded.service.orders.policy = candidate.runtime.service.orders.snapshot().policy
-	error = candidate.runtime.restore(recorded,refresh and data.template!=identity)
+		if candidate.runtime.service._policy.has("previous_pickup") and not recorded.service.has("pickup_before"):
+			recorded.service.pickup_before = recorded.service.orders.next_order
+	var refresh_retained_inputs: bool = refresh and data.template!=identity and candidate.runtime.uses_retained_inputs
+	if refresh_staff_tasks or refresh_retained_inputs:
+		error = _adopt_staff_tasks(candidate.runtime,recorded,refresh_staff_tasks)
+		if not error.is_empty(): return error
+	error = candidate.runtime.restore(recorded,refresh and data.template!=identity,refresh_layout)
 	if not error.is_empty(): return error
 	candidate.clock = data.runtime.clock
 	# Adopt validated outer facts and the same Runtime objects; rebind the one
@@ -120,3 +140,106 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 	owner.runtime.runner.owner = owner
 	owner.runtime_error = ""
 	return ""
+
+## Release obsolete work through the inventory ledger before validating the
+## saved session against the new permissions and automatic admission policy.
+static func _adopt_staff_tasks(runtime: RefCounted, recorded: Dictionary, refresh_permissions: bool) -> String:
+	var data: Dictionary = recorded.runner
+	var stock := Shape.new()
+	var error := stock.restore(data.inventory)
+	if not error.is_empty(): return error
+	var admissions := {}
+	var released := {}
+	var kept := []
+	var automatic: bool = refresh_permissions and runtime.service!=null and runtime.service._policy.admission=="automatic"
+	var recipe_by_owner := {}
+	if runtime.uses_retained_inputs:
+		if not recorded.get("units") is Array: return "invalid production unit shape"
+		for unit in recorded.units:
+			if unit is Dictionary and unit.get("id") is int and unit.get("recipe") is String:
+				recipe_by_owner[unit.id] = runtime._definition.recipes.get(unit.recipe,{})
+	for task in data.tasks:
+		var worker: Dictionary = runtime.runner.owner.worker_by_id(task.worker)
+		if worker.is_empty(): return "obsolete task references an unknown employee"
+		if automatic and task.kind=="interact":
+			admissions[task.subject] = task.worker
+		elif task.kind in ["transfer","bundle"] and (
+				_replaced_by_retained_input(runtime,stock,task,recipe_by_owner) or
+				(refresh_permissions and not runtime.runner.dispatcher.allowed_task(worker,task,runtime.runner.machines,false))):
+			error = stock.cancel_bundle(task.bundle) if task.kind=="bundle" else stock.cancel(task.claim)
+			if not error.is_empty(): return error
+		else:
+			kept.append(task)
+			continue
+		released[task.worker] = true
+	if automatic:
+		for event in data.interactions:
+			admissions[event.subject] = event.worker
+			released[event.worker] = true
+		data.interactions.clear()
+	if not admissions.is_empty():
+		for guest in recorded.service.orders.guests:
+			if not admissions.has(guest.id): continue
+			if guest.state!="queue" or guest.claimed!=admissions[guest.id]: return "obsolete admission differs from the queued customer"
+			guest.claimed = -1
+			admissions.erase(guest.id)
+	if not admissions.is_empty(): return "obsolete admission references an unknown customer"
+	for actor in data.actors:
+		if not released.has(actor.id) or kept.any(func(task: Dictionary) -> bool: return task.worker==actor.id): continue
+		Runner._clear_actor(actor)
+		actor.carry_item = ""
+		actor.carry_count = 0
+	data.tasks = kept
+	data.inventory = stock.snapshot()
+	recorded.dispatch.scopes = recorded.dispatch.scopes.filter(func(lease: Dictionary) -> bool: return not released.has(lease.worker))
+	return ""
+
+
+static func _replaced_by_retained_input(runtime: RefCounted, stock: RefCounted, task: Dictionary, recipes: Dictionary) -> bool:
+	if recipes.is_empty(): return false
+	var claims: Array = stock.bundle(task.bundle).get("claims",[]) if task.kind=="bundle" else [task.claim]
+	for id in claims:
+		var claim: Dictionary = stock.claim(id)
+		var recipe: Dictionary = recipes.get(claim.get("allocate_owner"),{})
+		if not recipe.has("machine_reservation"): continue
+		var reservation: Dictionary = recipe.machine_reservation
+		if claim.item not in recipe.nodes[reservation.last].get("retained_inputs",[]): continue
+		var machine: Dictionary = runtime._definition.machines[reservation.machine]
+		if claim.from==machine.output and claim.to==machine.input: return true
+	return false
+
+
+## Stage-only migration keeps production, order receipts and actor references intact.
+static func adopt_progression(shop: SpecShop, saved: Dictionary, source: Dictionary = {}) -> Dictionary:
+	var migration := shop.previous_progression if source.is_empty() else source
+	var indices: Variant = migration.get("stage_indices")
+	var previous_open: Variant = migration.get("opening_station")
+	var stage: Variant = saved.get("stage_index")
+	var unlocked: Variant = saved.get("unlocked")
+	if not indices is PackedInt32Array or not previous_open is String or not stage is int or not unlocked is Dictionary: return {}
+	if stage<0 or stage>=indices.size() or indices[stage]<0 or indices[stage]>=shop.stages.size(): return {}
+	var was_open: Variant = unlocked.get(previous_open)
+	if not was_open is bool or (not was_open and stage!=0): return {}
+	var result := saved.duplicate()
+	result.unlocked = unlocked.duplicate()
+	for station in shop.stations:
+		if station.starts_unlocked: result.unlocked[station.id] = true
+	result.unlocked[shop.goals.opening_station] = was_open
+	result.stage_index = indices[stage] if was_open else 0
+	if was_open and shop.previous_progression.get("grant_stage_stations",false)==true:
+		for index in result.stage_index+1:
+			for id in shop.stages[index].stations:
+				result.unlocked[id] = true
+				for station in shop.stations:
+					if station.companion_of==id: result.unlocked[station.id] = true
+	if not was_open and result.get("gold") is float:
+		result.gold = maxf(result.gold,float(shop.start_gold))
+	if result.get("levels") is Dictionary and result.get("gold") is float:
+		result.levels = result.levels.duplicate()
+		for id in shop.previous_progression.get("retired_upgrade_costs",{}):
+			var costs: PackedInt32Array = shop.previous_progression.retired_upgrade_costs[id]
+			var level: Variant = result.levels.get(id,1)
+			if not level is int or level<1 or level>costs.size()+1: return {}
+			for index in level-1: result.gold += costs[index]
+			result.levels.erase(id)
+	return result

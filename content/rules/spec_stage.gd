@@ -8,6 +8,10 @@ extends Resource
 @export var stations: Array[String] = []
 ## 配方阶段：不开新机器，在这台（已开的）机器面板的配方栏里买，买了 dish 才上菜单。和 stations 二选一。
 @export var recipe_at: String = ""
+## 配方购买也可以表示工位的新等级。阶段本身是购买凭据，不重复保存等级。
+@export var recipe_level: int = 0
+## Optional employee who joins as a floating worker when this stage is purchased.
+@export var grant_worker: String = ""
 @export var cost: int = 0
 ## 新上菜单的主打菜（解锁卡上显示）
 @export var dish: String = ""

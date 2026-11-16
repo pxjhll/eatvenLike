@@ -23,8 +23,12 @@ extends Resource
 @export var zones: Array[String] = []
 ## 前厅区额外上限（买“多一个前台位”）
 @export var front_base_slots: int = 1
+## 解锁此设备时开放第二个前台位，并优先向前台派新招募的员工。
+@export var second_front_slot_after: String = ""
 @export var can_drag: bool = false
 ## 前台 / 后厨升级轨（每级效果 walk / work / carry / staff_slot）
 @export var tracks: Array[SpecUpgradeTrack] = []
+## 培养轨 ID → 必须先解锁的设备 ID。
+@export var training_requires: Dictionary[String, String] = {}
 ## 员工没有可做的事时去哪
 @export var home_anchor: String = ""

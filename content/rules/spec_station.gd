@@ -27,6 +27,9 @@ const BLOCKS := ["supply", "batch_pot", "hand", "combine", "topping", "dispenser
 @export var seated_bonus: float = 1.0
 ## 解锁：价格；随哪台机器一起开（companion_of）；开局就在
 @export var unlock_cost: int = 0
+## Nonempty for a standalone purchase available after this stage ID.
+@export var unlock_after_stage: String = ""
+@export var unlock_dish: String = ""
 @export var starts_unlocked: bool = false
 @export var companion_of: String = ""
 @export var materials: Array[SpecMaterial] = []

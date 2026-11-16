@@ -148,19 +148,25 @@ func test_legacy_active_progress_adopts_new_ports_without_losing_goods_jobs_or_t
 
 func test_formal_geometry_and_customer_pickup_positions_cannot_enter_furniture_or_kitchen() -> void:
 	if not _enabled(): return
-	var prepared := Contract.prepare(DATA)
+	var shop: SpecShop = load("res://content/shops/stirfry/shop.tres")
+	var prepared := Contract.prepare(shop)
 	check_eq(prepared.errors,[],"formal scene and exported space agree")
 	if prepared.art!=null: nodes.append(prepared.art)
-	var rules := LegacyRules.new(DATA,11)
-	for station in DATA.stations: rules.unlocked[station.id] = true
+	var rules := ShopRules.new(shop,11)
+	for station in shop.stations: rules.unlocked[station.id] = true
 	rules.nav.set_open(rules.unlocked)
+	check(not rules.nav.can_stand(Vector2(140,320),"staff"),"employees cannot stand inside the pantry cabinet")
+	check(rules.nav.path(Vector2(400,340),Vector2(140,320),"staff").is_empty(),"employees cannot approach through the cabinet")
+	var pantry: Vector2 = rules.runtime.runner.ports["pantry:out"]
+	check_eq(pantry,rules.nav.point("pantry"),"the work site and production port agree")
+	check(not rules.nav.path(Vector2(400,340),pantry,"staff").is_empty(),"wok and pantry are connected from outside the cabinet")
 	check(not rules.nav.can_stand(Vector2(400,850),"staff"),"service counter is solid")
 	check(not rules.nav.can_stand(Vector2(400,340),"customer"),"customer cannot enter kitchen")
-	check(rules.nav.path(Vector2(215,755),Vector2(121,1010),"staff").size()>2,"staff reach dining through the passage")
+	check(rules.nav.path(Vector2(215,755),shop.layout.customer_points["seat:table/0"],"staff").size()>2,"staff reach dining through the passage")
 	for i in 16:
 		var key := "pickup:%d"%i
-		check(DATA.layout.customer_points.has(key),"explicit pickup waiting slot: "+key)
-		if DATA.layout.customer_points.has(key): check(rules.nav.can_stand(DATA.layout.customer_points[key],"customer"),"pickup queue does not fall inside a table")
+		check(shop.layout.customer_points.has(key),"explicit pickup waiting slot: "+key)
+		if shop.layout.customer_points.has(key): check(rules.nav.can_stand(shop.layout.customer_points[key],"customer"),"pickup queue does not fall inside a table")
 
 func _write(path: String, wrapper: Dictionary) -> PackedByteArray:
 	var bytes := JSON.stringify(wrapper,"  ").to_utf8_buffer()
