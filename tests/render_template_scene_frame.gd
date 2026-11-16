@@ -30,7 +30,7 @@ func _run() -> void:
 
 func _shop(id: String) -> void:
 	var shop: SpecShop = load("res://content/shops/"+id+"/shop.tres").copy_for_editing()
-	var owner := TemplateOuter.owner(shop,42)
+	var owner := ShopRules.new(shop,42) if id=="stirfry" else TemplateOuter.owner(shop,42)
 	owner.gold = 1000000.0
 	if id=="tea":
 		for machine in ["lemonade","boil","seal","mix","press","topping"]: _check(owner.unlock(machine).is_empty(),"prepare tea purchase")
@@ -46,8 +46,13 @@ func _shop(id: String) -> void:
 	root.add_child(scene)
 	scene.set_process(false)
 	await process_frame
-	_check(not scene._startup_blocked,id+": actual scene starts")
+	_check(not scene._startup_blocked,id+": actual scene starts: "+scene.save_status)
 	if scene._startup_blocked: scene.free(); return
+	if id=="stirfry":
+		var rack: Sprite2D = scene.art.get_node("Sortables/PrepTable/Visual/PantryRack/Art")
+		var frame_rect: Rect2 = scene.anchors.rect("Stations/pantry/Frame")
+		var sprite_rect: Rect2 = (scene.art.global_transform.affine_inverse() * rack.global_transform) * rack.get_rect()
+		_check(frame_rect.encloses(sprite_rect),"stirfry: pantry purchase frame surrounds the cabinet art")
 	var template: Resource = load("res://content/shops/"+id+"/shared_production.tres").duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
 	var front_id: String = {"tea":"lemonade","pancake":"soy","stirfry":"plum_juice"}[id]
 	if template.service.selection.get("at")=="admission":
@@ -62,7 +67,14 @@ func _shop(id: String) -> void:
 		for permissions in template.dispatch.get(scope,{}).values():
 			permissions["transfer_from"] = permissions.get("transfer_from",[])+["view_wait"]
 			permissions["transfer_to"] = permissions.get("transfer_to",[])+["view_drop"]
-	var runtime := Runtime.new(owner,template)
+	var runtime: RefCounted
+	if id=="stirfry":
+		var runtime_error := owner.enable_runtime(template,false)
+		_check(runtime_error.is_empty(),id+": "+runtime_error)
+		if not runtime_error.is_empty(): scene.free(); return
+		runtime = owner.runtime
+	else:
+		runtime = Runtime.new(owner,template)
 	_check(runtime.last_error.is_empty(),id+": real runtime compiles: "+runtime.last_error)
 	if not runtime.last_error.is_empty(): scene.free(); return
 	if not scene.view.has_method("bind_runtime"):
@@ -151,6 +163,8 @@ func _shop(id: String) -> void:
 			if scene._customers[key]._order_cup.visible:
 				saw_order = true
 				_check(scene._customers[key]._order_cup.texture==scene.view.item_icon(front_id),id+": actual shop order artwork")
+				if id=="stirfry" and String(row.target).begins_with("pickup:"):
+					_check(is_equal_approx(scene._customers[key]._order_scale,0.72),"stirfry: shared line uses compact order bubbles")
 		if runtime.service.orders.guest(arrival.id).state=="gone": break
 	_check(saw_customer and saw_order,id+": actual visitor and order displayed")
 	_check(runtime.service.orders.guest(arrival.id).state=="gone",id+": public service completes through real display")

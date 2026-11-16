@@ -215,8 +215,19 @@ static func validate(shop: SpecShop, campaign: SpecCampaign = null) -> Array[Dic
 		if shop.stations[i] != null: _station(shop.stations[i], "stations[%d]" % i, context, errors)
 	for i in shop.dishes.size():
 		if shop.dishes[i] != null: _dish(shop.dishes[i], "dishes[%d]" % i, context, errors)
+	var recipe_levels := {}
 	for i in shop.stages.size():
-		if shop.stages[i] != null: _stage(shop.stages[i], "stages[%d]" % i, context, errors)
+		var stage := shop.stages[i]
+		if stage == null: continue
+		var path := "stages[%d]" % i
+		_stage(stage, path, context, errors)
+		if stage.recipe_level<=0: continue
+		var station := shop.station(stage.recipe_at)
+		if station!=null and not station.tracks.is_empty():
+			_error(errors,path+".recipe_level","A recipe level cannot also belong to an independent station upgrade track.","combination")
+		if stage.recipe_level!=int(recipe_levels.get(stage.recipe_at,1))+1:
+			_error(errors,path+".recipe_level","Recipe levels must advance by one in purchase order.","order")
+		recipe_levels[stage.recipe_at] = stage.recipe_level
 	_validate_staff(shop, context, errors)
 	_validate_auxiliary(shop, context, errors)
 	_validate_layout(shop, context, errors)
@@ -292,6 +303,14 @@ static func _station(s: SpecStation, p: String, c: Dictionary, errors: Array[Dic
 	if s.id in ["shelf", "rack"]: _error(errors, p + ".id", "ID is reserved for a fulfillment destination.")
 	_ref(s.zone, c.zones, p + ".zone", errors)
 	_ref(s.companion_of, c.stations, p + ".companion_of", errors, true)
+	_ref(s.unlock_after_stage, c.stages, p + ".unlock_after_stage", errors, true)
+	_ref(s.unlock_dish, c.dishes, p + ".unlock_dish", errors, true)
+	if not s.unlock_after_stage.is_empty():
+		if s.starts_unlocked or not s.companion_of.is_empty():
+			_error(errors,p+".unlock_after_stage","Standalone purchases require a locked station with no companion owner.","combination")
+		for stage in c.stages.values():
+			if s.id in stage.stations:
+				_error(errors,p+".unlock_after_stage","A main progression station cannot also be a standalone purchase.","combination")
 	for key in ["seated_bonus", "unlock_cost"]: _number(s.get(key), p + "." + key, errors, 0, key == "seated_bonus")
 	for key in s.params:
 		var at := p + ".params." + str(key)
@@ -322,6 +341,7 @@ static func _station(s: SpecStation, p: String, c: Dictionary, errors: Array[Dic
 		var at := p + ".materials[%d]" % i
 		_ref(m.item, c.items, at + ".item", errors)
 		_ref(m.box_station, c.stations, at + ".box_station", errors, true)
+		_ref(m.requires_station, c.stations, at + ".requires_station", errors, true)
 		_number(m.box_cost, at + ".box_cost", errors)
 		if m.track != null: _track(m.track, at + ".track", c, errors, s.id, "material")
 	for i in s.stock.size():
@@ -382,7 +402,11 @@ static func _effects(effects: Array, p: String, c: Dictionary, errors: Array[Dic
 		if e == null: continue
 		var at := p + "[%d]" % i
 		_enum(e.kind, SpecEffect.KINDS, at + ".kind", errors)
-		if e.kind == "capacity": _error(errors,at + ".kind","Capacity effects require a shared-template binding; the legacy shop entry has no consumer.","unsupported")
+		var id := e.target if not e.target.is_empty() else ("" if e.kind == "price" else target)
+		if e.kind=="capacity":
+			var places: Dictionary = c.public_definition.get("places",{})
+			if not places.values().any(func(place: Dictionary) -> bool: return place.has("capacity_binding") and place.capacity_binding.target==id):
+				_error(errors,at + ".kind","Capacity effects require a shared-template binding for their target.","unsupported")
 		var upgrade := attachment != "event"
 		if upgrade and e.kind in SpecEffect.ONE_SHOT:
 			_error(errors, at + ".kind", "Upgrade tracks do not execute one-shot effects.", "unsupported")
@@ -394,7 +418,6 @@ static func _effects(effects: Array, p: String, c: Dictionary, errors: Array[Dic
 		_number(e.value, at + ".value", errors, -INF)
 		if e.kind in ["speed", "duration", "flow", "walk", "work", "patience"] and e.op != "add": _number(e.value, at + ".value", errors, 0, true)
 		if e.kind in ["batch", "process_slots", "carry"] and e.op == "set": _number(e.value, at + ".value", errors, 0, true)
-		var id := e.target if not e.target.is_empty() else ("" if e.kind == "price" else target)
 		match e.kind:
 			"speed", "duration", "batch", "process_slots": _ref(id, c.stations, at + ".target", errors, true)
 			"price", "flow", "flyer_customers", "flyer_cooldown", "event_chance", "patience", "grant_gold", "customer_wave":
@@ -434,7 +457,10 @@ static func _staff_target(id: String, c: Dictionary) -> bool:
 	return suffix.is_valid_int() and int(suffix) > 0 and str(int(suffix)) == suffix
 
 static func _stage(stage: SpecStage, p: String, c: Dictionary, errors: Array[Dictionary]) -> void:
+	_ref(stage.grant_worker, c.kinds, p + ".grant_worker", errors, true)
 	if stage.stations.is_empty() and stage.recipe_at.is_empty(): _error(errors, p + ".stations", "Each stage needs an unlock station or a recipe station.")
+	if stage.recipe_level<0 or (stage.recipe_level!=0 and (stage.recipe_at.is_empty() or stage.recipe_level<2)):
+		_error(errors, p + ".recipe_level", "A recipe upgrade starts at level 2 and requires a recipe station.")
 	if not stage.recipe_at.is_empty():
 		if not stage.stations.is_empty(): _error(errors, p + ".recipe_at", "A recipe stage opens no stations; use either stations or recipe_at.", "combination")
 		_ref(stage.recipe_at, c.stations, p + ".recipe_at", errors)
@@ -504,6 +530,13 @@ static func _validate_staff(shop: SpecShop, c: Dictionary, errors: Array[Diction
 		if c.stations.has(post) and not c.stations[post].seatable and c.stations[post].block != "counter": _error(errors, "staff.starting_posts[%d]" % i, "Starting post must be seatable.")
 	if c.stations.has(staff.starting_post) and not c.stations[staff.starting_post].seatable and c.stations[staff.starting_post].block != "counter": _error(errors, "staff.starting_post", "Starting post must be seatable.")
 	_tracks(staff.tracks, "staff.tracks", c, errors, "", "staff")
+	_ref(staff.second_front_slot_after, c.stations, "staff.second_front_slot_after", errors, true)
+	if not staff.second_front_slot_after.is_empty() and not c.zoned:
+		_error(errors, "staff.second_front_slot_after", "Front expansion requires staff zones.")
+	for side in staff.training_requires:
+		var path := "staff.training_requires." + side
+		_ref("staff/" + side, c.tracks, path, errors)
+		_ref(staff.training_requires[side], c.stations, path, errors)
 
 static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dictionary]) -> void:
 	if not c.public and c.mode in ["single", "serve"] and not shop.connections.is_empty():
@@ -716,8 +749,14 @@ static func _validate_graph(shop: SpecShop, c: Dictionary, errors: Array[Diction
 		# If the opening station starts unlocked, stage zero is never purchased.
 		if i == 0 and shop.goals != null and not initial.has(shop.goals.opening_station):
 			_stage_unlocks(stage, c, guaranteed)
+	# Standalone purchases are reachable, but cannot satisfy a required stage's menu.
 	for id in c.stations:
-		if not available.has(id): _error(errors, "stations." + id, "Station is neither initially available nor reachable through a stage/companion.", "unreachable")
+		if c.stages.has(c.stations[id].unlock_after_stage): available[id] = true
+	for unused in c.stations.size():
+		for id in c.stations:
+			if available.has(c.stations[id].companion_of): available[id] = true
+	for id in c.stations:
+		if not available.has(id): _error(errors, "stations." + id, "Station is neither initially available nor reachable through a stage, companion, or standalone purchase.", "unreachable")
 	if c.mode == "serve": _validate_serve(shop, c, errors)
 
 

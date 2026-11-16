@@ -7,6 +7,7 @@ const Frame := preload("res://game/rules/template/view_frame.gd")
 const Actions := preload("res://game/rules/rule_actions.gd")
 const Context := preload("res://game/rules/template/action_context.gd")
 const MotionValidation := preload("res://game/rules/movement_validator.gd")
+const Movement := preload("res://game/rules/rule_movement.gd")
 const ACTOR_FIELDS := ["id", "pos", "walking", "phase", "task_label", "carry_item", "carry_count",
 	"path", "path_index", "action_left", "completed", "target"]
 const ACTOR_OPTIONAL := ["duration", "motion", "action"]
@@ -20,6 +21,7 @@ var inventory := Inventory.new()
 var machines: RefCounted
 var dispatcher: RefCounted
 var ports: Dictionary = {}
+var drop_ports: Dictionary = {}
 var _dynamic_places: Dictionary = {}
 var tasks: Dictionary = {}
 var _next_task := 1
@@ -41,6 +43,80 @@ func define_place(id: String, port: Vector2, capacity: int = -1, infinite_items:
 	var error := inventory.configure(id, capacity, infinite_items)
 	if error.is_empty(): ports[id] = port
 	return error
+
+## A single stock container can be accessed from opposite sides.
+func action_port(action: Dictionary, available_ports: Dictionary) -> Vector2:
+	if action.kind in ["transport","drop"] and drop_ports.has(action.target):
+		return drop_ports[action.target]
+	return available_ports[action.target]
+
+
+## Let an employee finish at a shared port before the next one steps up.
+## Queue order is derived from the active task/action state and needs no save field.
+func work_goal(worker: Dictionary, action: Dictionary, task: Dictionary) -> Vector2:
+	var point := action_port(action,ports)
+	var slots := work_queue(point)
+	if slots.is_empty(): return point
+	var rank := 0
+	var committed: bool = worker.get("motion",{}).get("goal") == point
+	for other_task in tasks.values():
+		if other_task.worker == worker.id: continue
+		var other: Dictionary = owner.worker_by_id(other_task.worker)
+		var program: Dictionary = other.get("action",{})
+		if program.is_empty() or program.index>=program.steps.size(): continue
+		var step: Dictionary = program.steps[program.index]
+		if action_port(step,ports) != point: continue
+		if step.kind not in ["move", "transport"]:
+			rank += 1
+			continue
+		var other_committed: bool = other.get("motion",{}).get("goal") == point
+		if (other_committed and not committed) or (other_committed == committed and other_task.id < task.id):
+			rank += 1
+	if rank == 0: return point
+	if rank <= slots.size(): return slots[rank-1]
+	var fallback := idle_goal(worker)
+	return fallback if fallback.is_finite() else slots.back()
+
+func work_queue(point: Vector2) -> Array:
+	if dispatcher == null: return []
+	for port in dispatcher._definition.get("port_queues",{}):
+		if drop_ports.get(port,ports[port]) == point: return dispatcher._definition.port_queues[port]
+	return []
+
+func idle_goal(worker: Dictionary) -> Vector2:
+	if dispatcher == null: return Vector2.INF
+	if worker.post in dispatcher._definition.get("return_posts",[]):
+		var nearby := _post_standby_points(worker.post)
+		if not nearby.is_empty():
+			var rank := 0
+			for other in owner.workers:
+				if other.post!=worker.post: continue
+				if other.id==worker.id:
+					if rank>0 and rank<=nearby.size(): return nearby[rank-1]
+					break
+				rank += 1
+		return owner.nav.post(worker.post)
+	var spots: Array = dispatcher._definition.get("roaming_idle",[])
+	if not String(worker.post).is_empty() or spots.is_empty(): return Vector2.INF
+	for index in owner.roster.size():
+		if owner.roster[index].id == worker.id: return spots[index % spots.size()]
+	return Vector2.INF
+
+func _walk_to_idle(worker: Dictionary) -> void:
+	var point := idle_goal(worker)
+	if point.is_finite() and not Vector2(worker.pos).is_equal_approx(point):
+		Movement.request(worker,owner.nav,point,access_profile(worker))
+		if worker.path.is_empty(): _clear_actor(worker)
+
+func _post_standby_points(post: String) -> Array:
+	if dispatcher==null or post not in dispatcher._definition.get("return_posts",[]): return []
+	return dispatcher._definition.get("port_queues",{}).get(post,[])
+
+func park_idle(worker: Dictionary) -> void:
+	if not String(worker.post).is_empty():
+		if not _post_standby_points(worker.post).is_empty(): _walk_to_idle(worker)
+	elif not work_queue(worker.pos).is_empty():
+		_walk_to_idle(worker)
 
 func define_dynamic_place(id: String, port: Vector2) -> String:
 	if ports.has(id) and not _dynamic_places.has(id): return "dynamic container conflicts with template"
@@ -86,7 +162,8 @@ func operate(worker_id: int, run_id: int, port: String) -> String:
 		if task.kind == "operate" and task.run == run_id: return "machine stage already assigned"
 	var worker: Dictionary = owner.worker_by_id(worker_id)
 	if dispatcher != null and not dispatcher.allowed(worker, {"kind":"operate", "machine":run.machine}): return "employee cannot operate this device"
-	var context: Dictionary = {"error":"", "scope":""} if dispatcher == null else dispatcher.context_for_claims(inventory, [inventory.claim(run.claim)])
+	var context: Dictionary = {"error":"", "scope":""} if dispatcher == null else dispatcher.context_for_claims(inventory,
+		Machines.operation_ids(run).map(func(id: int) -> Dictionary: return inventory.claim(id)))
 	if not String(context.error).is_empty(): return context.error
 	if dispatcher != null:
 		error = dispatcher.can_start(worker, context.scope, run.id)
@@ -182,6 +259,9 @@ func step(dt: float, paused := false) -> String:
 	var error: String = machines.advance(dt)
 	if not error.is_empty(): return error
 	last_error = ""
+	for worker in owner.workers:
+		if tasks.has(worker.id) or not worker.walking or worker.phase!="idle": continue
+		if Movement.tick(worker,owner.nav,float(owner.walk_speed(worker))*dt) or worker.path.is_empty(): _clear_actor(worker)
 	for id in tasks.keys():
 		var worker: Dictionary = owner.worker_by_id(id)
 		if worker.is_empty(): return "assigned employee missing"
@@ -194,6 +274,8 @@ func step(dt: float, paused := false) -> String:
 
 func cancel(worker_id: int) -> String:
 	if not tasks.has(worker_id):
+		var worker: Dictionary = owner.worker_by_id(worker_id)
+		if worker.get("walking",false) and worker.phase=="idle": _clear_actor(worker)
 		if dispatcher != null: dispatcher.release_worker(worker_id)
 		return ""
 	var worker: Dictionary = owner.worker_by_id(worker_id)
@@ -246,17 +328,17 @@ func adopt_restore(data: Dictionary, candidate: Dictionary) -> void:
 	inventory.trace = trace
 	machines = candidate.machines
 	tasks = candidate.tasks
-	ports = data.ports.duplicate(true)
+	ports = candidate.ports.duplicate(true)
 	_dynamic_places = candidate.dynamic
 	_next_task = data.next_task
 	_interactions = data.interactions.duplicate(true)
-	for actor in data.actors:
+	for actor in candidate.actors.values():
 		var worker: Dictionary = owner.worker_by_id(actor.id)
 		for key in ACTOR_OPTIONAL: worker.erase(key)
 		for key in actor: worker[key] = actor[key].duplicate(true) if actor[key] is Dictionary or actor[key] is Array else actor[key]
 	last_error = ""
 
-func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}) -> Dictionary:
+func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}, refresh_layout := false) -> Dictionary:
 	if not Inventory._shape(data, {"version":0, "next_task":0, "ports":{}, "inventory":{}, "machines":{}, "tasks":[], "actors":[], "interactions":[]}): return {"error":"invalid capability state shape"}
 	var additions: Dictionary = _dynamic_places if dynamic == null else dynamic
 	var expected_ports := ports.duplicate(true)
@@ -273,7 +355,12 @@ func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictiona
 		var value: Variant = limits.capacity[id]
 		if not expected_places.has(id) or additions.has(id) or Inventory.is_hand_place(id) or not value is int or value < 0: return {"error":"invalid numeric container override"}
 		expected_places[id].capacity = value
-	if data.version != 1 or data.next_task < 1 or data.ports != expected_ports: return {"error":"capability version or ports differ"}
+	if data.version != 1 or data.next_task < 1: return {"error":"capability version or ports differ"}
+	if refresh_layout:
+		if data.ports.size()!=expected_ports.size(): return {"error":"capability version or ports differ"}
+		for id in expected_ports:
+			if not data.ports.get(id) is Vector2 or not data.ports[id].is_finite(): return {"error":"invalid saved capability port"}
+	elif data.ports != expected_ports: return {"error":"capability version or ports differ"}
 	var stock := Inventory.new()
 	var error := stock.restore(data.inventory)
 	if not error.is_empty(): return {"error":error}
@@ -295,7 +382,8 @@ func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictiona
 	var actors := {}
 	var deployed := {}
 	for worker in owner.workers: deployed[int(worker.id)] = true
-	for actor in data.actors:
+	for saved_actor in data.actors:
+		var actor: Variant = saved_actor.duplicate(true) if refresh_layout and saved_actor is Dictionary else saved_actor
 		error = MotionValidation._shape(actor, {"id":0, "pos":Vector2.ZERO, "walking":false, "phase":"", "task_label":"", "carry_item":"", "carry_count":0,
 			"path":PackedVector2Array(), "path_index":0, "action_left":0.0, "completed":0, "target":""})
 		if not error.is_empty(): return {"error":error}
@@ -309,7 +397,20 @@ func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictiona
 		if actor.has("motion"):
 			if not actor.motion is Dictionary: return {"error":"invalid actor motion"}
 			error = MotionValidation._record(actor, owner.nav)
+			if refresh_layout and actor.walking and MotionValidation._record(actor,owner.nav,false).is_empty() and (
+					not error.is_empty() or not owner.nav.can_stand(actor.pos,actor.motion.profile)):
+				error = Movement.relocate_saved_route(actor,owner.nav,actor.motion.goal)
 			if not error.is_empty(): return {"error":error}
+		if refresh_layout and not actor.walking and actor.phase=="idle":
+			var profile := access_profile(owner.worker_by_id(actor.id))
+			if not owner.nav.can_stand(actor.pos,profile):
+				var goal: Vector2 = owner.nav.point(owner.shop.layout.spawn_point)
+				var start: Vector2 = owner.nav.nearest_reachable(actor.pos,goal,profile)
+				if not start.is_finite(): return {"error":"employee has no reachable position in the relocated layout"}
+				actor.pos = start
+				actor.erase("motion")
+				actor.path = PackedVector2Array()
+				actor.path_index = 0
 		var held: Dictionary = Frame.build(stock, devices).held.get(actor.id, {"count":0, "items":[]})
 		if actor.carry_count != held.count or actor.carry_item != ("" if held.items.is_empty() else String(held.items[0].item)): return {"error":"actor hand differs from inventory"}
 		actors[actor.id] = actor
@@ -362,17 +463,47 @@ func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictiona
 				if run.phase != "await_" + task.stage or run.operator != -1: return {"error":"machine stage differs from walking employee"}
 			elif run.phase != task.stage or run.operator != task.worker: return {"error":"machine stage differs from operating employee"}
 			machine_runs[task.run] = task.worker
+		var point := action_port(action,expected_ports)
+		var moving: bool = action.kind in ["move","transport"]
+		var goal: Vector2 = actor.get("motion",{}).get("goal",Vector2.INF)
+		var slots := work_queue(point)
+		var queued: bool = goal.is_finite() and (goal in slots or (not slots.is_empty() and goal == idle_goal(owner.worker_by_id(task.worker))))
+		if refresh_layout and point != data.ports[action.target]:
+			if actor.action.started and moving and actor.has("motion") and not queued and goal != point:
+				error = Movement.relocate_saved_route(actor,owner.nav,point)
+				if not error.is_empty(): return {"error":error}
+				goal = point
+			elif action.kind in ["drop","pickup"] and not Vector2(actor.pos).is_equal_approx(point):
+				# Walk to the relocated port before committing the pickup or drop.
+				# The operation keeps its original inventory claim.
+				actor.action.index -= 1
+				actor.action.started = false
+				actor.action.status = "ready"
+				actor.action.reason = ""
+				actor.erase("motion")
+				actor.path = PackedVector2Array()
+				actor.path_index = 0
+				actor.walking = false
 		if actor.action.started:
-			if action.kind in ["move", "transport"]:
-				if not actor.walking or actor.phase != "walk" or not actor.has("motion") or actor.motion.goal != expected_ports[action.target] or actor.motion.profile != task.profile: return {"error":"actor movement differs from action request"}
+			if moving:
+				if (not actor.walking and not queued) or actor.phase != "walk" or not actor.has("motion") or (goal != point and not queued) or actor.motion.profile != task.profile: return {"error":"actor movement differs from action request"}
 			else:
 				var phase: String = "work" if action.kind == "operate" else ("pickup" if action.kind == "pickup" else "dropoff")
-				if actor.walking or actor.phase != phase or not Vector2(actor.pos).is_equal_approx(expected_ports[action.target]): return {"error":"actor operation is not at its port"}
+				if actor.walking or actor.phase != phase or not Vector2(actor.pos).is_equal_approx(point): return {"error":"actor operation is not at its port"}
 		if dispatcher != null and not dispatcher.allowed_task(owner.worker_by_id(task.worker), task, devices, false): return {"error":"restored task is not authorized for employee role or post"}
 		restored_tasks[task.worker] = task.duplicate(true)
 		task_ids[task.id] = true
 	for actor in actors.values():
-		if not restored_tasks.has(actor.id) and (actor.has("action") or actor.walking or actor.carry_count > 0 or actor.phase != "idle"): return {"error":"actor activity has no capability request"}
+		if restored_tasks.has(actor.id): continue
+		if actor.has("action") or actor.carry_count > 0 or actor.phase != "idle": return {"error":"actor activity has no capability request"}
+		if actor.walking:
+			var worker: Dictionary = owner.worker_by_id(actor.id)
+			var point := idle_goal(worker)
+			var goal: Vector2 = actor.get("motion",{}).get("goal",Vector2.INF)
+			var standby := _post_standby_points(worker.post)
+			var valid_goal: bool = goal==point or (not standby.is_empty() and (goal==owner.nav.post(worker.post) or goal in standby))
+			if not goal.is_finite() or not valid_goal or actor.motion.profile != access_profile(worker):
+				return {"error":"actor idle movement differs from assigned post or standby position"}
 	for claim in data.inventory.claims:
 		if claim.worker > 0 and claim.state in Inventory.ACTIVE and not transfer_claims.has(claim.id): return {"error":"orphan employee stock claim"}
 	for run in data.machines.runs:
@@ -381,12 +512,12 @@ func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictiona
 		if not Inventory._shape(event, {"id":0, "worker":0, "purpose":"", "subject":0, "result":""}): return {"error":"invalid interaction result shape"}
 		if event.id < 1 or event.id >= data.next_task or task_ids.has(event.id) or not actors.has(event.worker) or event.purpose != "admit" or event.subject < 1 or event.result not in ["completed", "cancelled"]: return {"error":"invalid or duplicate interaction result"}
 		task_ids[event.id] = true
-	return {"error":"", "inventory":stock, "machines":devices, "tasks":restored_tasks, "dynamic":additions.duplicate(true)}
+	return {"error":"", "inventory":stock, "machines":devices, "tasks":restored_tasks, "dynamic":additions.duplicate(true), "ports":expected_ports, "actors":actors}
 
 func _available_worker(id: int) -> String:
 	var worker: Dictionary = owner.worker_by_id(id)
 	if worker.is_empty() or not worker.deployed: return "employee unavailable"
-	if tasks.has(id) or worker.has("action") or worker.phase != "idle" or worker.carry_count != 0: return "employee already assigned"
+	if tasks.has(id) or worker.walking or worker.has("action") or worker.phase != "idle" or worker.carry_count != 0: return "employee already assigned"
 	return ""
 
 func _task(kind: String, worker: Dictionary) -> Dictionary:
@@ -428,11 +559,13 @@ func _sync_hand(worker: Dictionary) -> void:
 		worker.carry_count += int(lot.count)
 
 func _finish(worker: Dictionary) -> void:
-	_interaction_result(tasks[worker.id], "completed")
+	var task: Dictionary = tasks[worker.id]
+	_interaction_result(task, "completed")
 	tasks.erase(worker.id)
 	_clear_actor(worker)
 	_sync_hand(worker)
 	worker.completed += 1
+	if String(task.to).begins_with("guest:") and not String(worker.post).is_empty(): _walk_to_idle(worker)
 
 func _cancel_effect(worker: Dictionary) -> void:
 	var task: Dictionary = tasks.get(worker.id, {})

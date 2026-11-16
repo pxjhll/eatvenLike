@@ -21,6 +21,7 @@ var work_progress: Callable = func(_worker: Dictionary) -> float: return -1.0
 var progress_bar := ProgressBar.new()
 var body := Sprite2D.new()
 var carried := Sprite2D.new()
+var _held_layer := Node2D.new()
 var _held_sprites: Array[Sprite2D] = []
 var amount := Label.new()
 var task := Label.new()
@@ -38,6 +39,7 @@ var _order_item := ""
 var _patience := -1.0
 ## 0 calm, 1 impatient, 2 angry; customers never leave, they show it on their face instead.
 var _mood := 0
+var _order_scale := 1.0
 var _takeaway := false
 var _order_cup := Sprite2D.new()
 ## All visible attachments share this offset; the actor root stays authoritative.
@@ -75,7 +77,8 @@ func setup(art_id: String, font: Font, height := -1.0) -> void:
 		_visual.add_child(frame_actor)
 	carried.centered = false
 	carried.visible = false
-	_visual.add_child(carried)
+	_visual.add_child(_held_layer)
+	_held_layer.add_child(carried)
 	amount.position = Vector2(38, -59)
 	amount.add_theme_font_override("font", font)
 	amount.add_theme_font_size_override("font_size", 17)
@@ -104,20 +107,22 @@ func setup(art_id: String, font: Font, height := -1.0) -> void:
 	_visual.add_child(progress_bar)
 
 
-func show_order(item: String, patience: float, mood := 0, takeaway := false) -> void:
-	if item != _order_item or mood != _mood or takeaway != _takeaway or patience != _patience:
+func show_order(item: String, patience: float, mood := 0, takeaway := false, compact := false) -> void:
+	var scale_factor := 0.72 if compact else 1.0
+	if item != _order_item or mood != _mood or takeaway != _takeaway or patience != _patience or scale_factor != _order_scale:
 		queue_redraw()
 	_order_item = item
 	_patience = patience
 	_mood = mood
 	_takeaway = takeaway
+	_order_scale = scale_factor
 	task.visible = false
 	_order_cup.visible = not item.is_empty()
 	if item.is_empty(): return
 	var texture: Texture2D = order_icon.call(item)
 	_order_cup.texture = texture
-	_order_cup.scale = Vector2.ONE * 40.0 / texture.get_height()
-	_order_cup.position = Vector2(-46, -_height - 62)
+	_order_cup.scale = Vector2.ONE * 40.0 * _order_scale / texture.get_height()
+	_order_cup.position = Vector2(-46.0*_order_scale, -_height-4.0-58.0*_order_scale)
 	_order_cup.visible = true
 
 
@@ -166,10 +171,8 @@ func display(worker: Dictionary, clock: float) -> void:
 			carried.position = center - texture.get_size() * carried.scale / 2.0
 			amount.position = center + Vector2(10, 10)
 			var behind: bool = facing in [3, 4, 5]
-			if behind and carried.get_index() > frame_actor.get_index():
-				_visual.move_child(carried, frame_actor.get_index())
-			elif not behind and carried.get_index() < frame_actor.get_index():
-				_visual.move_child(carried, frame_actor.get_index())
+			if behind != (_held_layer.get_index() < frame_actor.get_index()):
+				_visual.move_child(_held_layer, frame_actor.get_index())
 	_display_held_items(worker)
 	_last_pos = position
 	_last_clock = clock
@@ -180,7 +183,7 @@ func _display_held_items(worker: Dictionary) -> void:
 	while _held_sprites.size()<maxi(0,items.size()-1):
 		var sprite := Sprite2D.new()
 		sprite.centered = false
-		_visual.add_child(sprite)
+		_held_layer.add_child(sprite)
 		_held_sprites.append(sprite)
 	for index in _held_sprites.size():
 		var sprite := _held_sprites[index]
@@ -192,9 +195,6 @@ func _display_held_items(worker: Dictionary) -> void:
 		sprite.modulate = look.get("tint",Color.WHITE)
 		sprite.scale = Vector2.ONE*CUP_HEIGHT/maxf(texture.get_width(),texture.get_height())
 		sprite.position = carried.position+Vector2((index+1)*18,-(index+1)*4)
-		if frame_actor!=null:
-			if frame_actor.direction in [3,4,5]: _visual.move_child(sprite,frame_actor.get_index())
-			else: _visual.move_child(sprite,carried.get_index()+1)
 
 
 func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -> void:
@@ -245,9 +245,10 @@ func _draw() -> void:
 	draw_circle(Vector2.ZERO, 25, Color(0.24, 0.14, 0.07, 0.18))
 	if selected:
 		draw_arc(Vector2.ZERO, 31, 0, TAU, 40, Color("e6b94f"), 6, true)
-	draw_set_transform(_visual.position)
 	if _order_item.is_empty():
 		return
+	var anchor := Vector2(0.0,-_height-4.0)
+	draw_set_transform(_visual.position+anchor*(1.0-_order_scale),0.0,Vector2.ONE*_order_scale)
 	var top := -_height - 64.0
 	draw_texture_rect(BUBBLE, Rect2(-48, top, 96, 60), false)
 	if _patience >= 0:

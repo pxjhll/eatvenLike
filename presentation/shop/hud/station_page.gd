@@ -8,7 +8,7 @@ const Icons := preload("res://presentation/ui/reference_icons.gd")
 const Sections := preload("res://presentation/shop/hud/station_sections.gd")
 
 ## 升级种类的默认说法（店铺数据 track_kind_<种类> 可以改）
-const KIND_LABELS := {"capacity": "产能升级", "price": "售价升级", "both": "产能售价升级", "menu": "开新口味"}
+const KIND_LABELS := {"capacity": "产能升级", "price": "售价升级", "both": "产能售价升级", "menu": "开新口味", "recipe_menu": "解锁菜品"}
 
 var station_id := ""
 var _view: Node2D
@@ -80,6 +80,10 @@ func refresh() -> void:
 	if not unlocked: title = card.unlock.title
 	var pill := "" if not card.sections.has("track") and unlocked else (level_tag if unlocked else "未解锁")
 	_hud.set_heading(title, pill, not unlocked, "")
+	var recipes: Control = _sections.recipes
+	var has_next_recipe: bool = card.get("recipes", []).any(func(row: Dictionary) -> bool: return row.state == "next")
+	var recipe_index := 0 if has_next_recipe else _order.find("recipes")
+	if recipes.get_index() != recipe_index: move_child(recipes, recipe_index)
 	for id in _sections:
 		var node: Control = _sections[id]
 		node.visible = id in card.sections

@@ -20,7 +20,8 @@ func _shop(id: String) -> void:
 	var owner := ShopRules.new(spec,42)
 	check(owner.runtime!=null and owner.runtime_error.is_empty(),id+": normal constructor owns the template runtime")
 	owner.gold = 1000000.0
-	for stage in spec.stages.size(): check(owner.unlock(spec.sold_at(stage)).is_empty(),"normal purchase")
+	if id!="stirfry":
+		for stage in spec.stages.size(): check(owner.unlock(spec.sold_at(stage)).is_empty(),"normal purchase")
 	for material in owner.boxes: check(owner.unlock_box(material).is_empty(),"normal material purchase")
 	while owner.roster.size()<2: check(owner.hire().is_empty(),"normal hiring")
 	for worker in owner.roster:
@@ -31,6 +32,15 @@ func _shop(id: String) -> void:
 	root.add_child(scene); scene.set_process(false)
 	check(not scene._startup_blocked,id+": ordinary scene startup: "+scene.save_status)
 	if scene._startup_blocked: scene.free(); return
+	if id=="stirfry":
+		for index in spec.stages.size():
+			var stage := spec.stages[index]
+			var station := spec.sold_at(index)
+			if not stage.stations.is_empty():
+				var frame: Control = scene._station_buttons.get(station)
+				check(frame!=null and frame.visible,station+": next physical purchase is visible at its station")
+			scene.station_action("recipe" if stage.stations.is_empty() else "unlock",station)
+			check(owner.stage_index==index and owner.station_unlocked(station),station+": purchase works from the normal scene action")
 	check(scene.view._runtime==owner.runtime and scene.view._follows_owner,"scene binds the session runtime without a test injection")
 	var restored := false
 	var observer := func(_receipt: Dictionary) -> void:

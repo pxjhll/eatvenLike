@@ -48,6 +48,8 @@ static func build(runtime: RefCounted, displays: Array = [], presentation: Dicti
 		row.state = guest.state
 		row.wait = float(guest.wait)
 		row.dish = "" if guest.request.is_empty() else String(guest.request[0].dish)
+		if runtime.service.uses_mixed_line():
+			row.compact_order = String(row.target).begins_with("queue:") or String(row.target).begins_with("pickup:")
 		row.seat_key = String(guest.seat) if not String(guest.seat).is_empty() else String(waiting.get(guest.id,""))
 		row.seat = -1 if row.seat_key.is_empty() else int(String(row.seat_key).get_slice("/",1))
 		row.seated = not row.seat_key.is_empty() and runtime.service.customers.ready(guest.id,row.seat_key)

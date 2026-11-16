@@ -8,16 +8,32 @@ const Motion := preload("res://game/rules/rule_movement.gd")
 const Actions := preload("res://game/rules/rule_actions.gd")
 const Clock := preload("res://game/rules/template/production_clock.gd")
 const State := preload("res://game/rules/template/session_state.gd")
+const FlowValidator := preload("res://game/rules/flow_validator.gd")
 const Options := preload("res://game/rules/template/customization.gd")
 var source: RefCounted
 var target: RefCounted
 var runtime: RefCounted
 var stock: RefCounted
 var error := ""
+var refresh_layout := false
 
 func adopt(owner: RefCounted, data: Dictionary, refresh: bool) -> String:
 	var legacy_shop: Resource = owner.shop.copy_for_editing()
 	legacy_shop.runtime_template = null
+	if refresh and not owner.shop.previous_progression.is_empty():
+		data = State.adopt_progression(owner.shop,data)
+		if data.is_empty(): return "previous legacy purchase stage is invalid"
+		var migration: Dictionary = owner.shop.previous_progression
+		refresh_layout = migration.get("refresh_layout",false) == true
+		FlowValidator.apply_legacy_production(legacy_shop)
+		for index in migration.get("legacy_obstacles",{}):
+			legacy_shop.layout.obstacles[index] = migration.legacy_obstacles[index]
+		for name in migration.get("legacy_customer_ports",{}):
+			var point: Vector2 = migration.legacy_customer_ports[name]
+			legacy_shop.layout.customer_points[name] = point
+			legacy_shop.layout.points[name.get_slice(":",1)] = point
+	if owner._runtime_template.service.get("previous_pickup",false)==true:
+		legacy_shop.fulfillment.dine_rule = "self_pickup"
 	source = owner.get_script().new(legacy_shop)
 	source.event_defs = owner.event_defs.duplicate()
 	error = source._load_legacy_dict(data,refresh)
@@ -494,6 +510,7 @@ func _serve() -> void:
 	var service: RefCounted = runtime.service
 	var orders: Dictionary = service.orders._state
 	orders.next_guest = source.serve.next_id; orders.next_order = source.serve.next_id
+	if service._policy.has("previous_pickup"): service._pickup_before = orders.next_order
 	for old in source.serve.guests:
 		var guest := Orders._guest()
 		guest.id = int(old.id); guest.order = int(old.order); guest.wait = float(old.wait)
@@ -512,7 +529,8 @@ func _serve() -> void:
 			var before: Dictionary = old.lines[index]
 			var line := Orders._line()
 			line.id = int(orders.next_line); orders.next_line += 1
-			line.dish = String(before.dish); line.recipe = service._policy.menu[line.dish]
+			line.dish = String(before.dish)
+			line.recipe = service._policy.get("previous_recipes",{}).get(line.dish,service._policy.menu[line.dish])
 			line.item = runtime._definition.recipes[line.recipe].output.item
 			line.qty = int(before.qty); line.price = float(source.dish_price(line.dish))
 			line.delivered = int(before.delivered)
@@ -619,6 +637,7 @@ func _serve_job(worker: Dictionary, job: Dictionary) -> void:
 	var current: Dictionary = target.worker_by_id(worker.id)
 	if job.kind=="home": return # Idle positioning has no business claim to replay.
 	if job.kind=="take":
+		if runtime.service._policy.admission=="automatic": return
 		var guest: Dictionary = runtime.service.orders._find(runtime.service.orders._state.guests,int(job.guest))
 		guest.claimed = int(worker.id)
 		error = runtime.runner.interact(worker.id,runtime.service._policy.admission_port,runtime.service._policy.admission_seconds,"admit",guest.id)
@@ -683,6 +702,17 @@ func _serve_job(worker: Dictionary, job: Dictionary) -> void:
 			held.id = int(job.good); claim.held[0].lot = int(job.good)
 			stock._state.next_lot = maxi(stock._state.next_lot,int(job.good)+1)
 		runtime.runner._sync_hand(current)
+	if not runtime.runner.dispatcher.allowed_task(current,task,runtime.runner.machines,false):
+		# Already-carried stock from a legacy infinite supply has no finite
+		# source bin to return to. Preserve the acquired lot at its next station.
+		if index>=2 and job.item in stock._state.places[from].infinite:
+			error = stock.drop_bundle(task.bundle)
+			if error.is_empty():
+				runtime.runner._finish(current)
+				current.completed = worker.completed
+		else:
+			error = runtime.runner.cancel(current.id)
+		return
 	_program(current,int(index),float(worker.action_left))
 
 func _import_bundle(worker: Dictionary, entries: Array, seconds: float) -> String:
@@ -712,8 +742,9 @@ func _program(worker: Dictionary, index: int, left: float) -> void:
 		if not error.is_empty(): return
 	var step: Dictionary = program.steps[index]
 	if step.kind not in ["move","transport"]:
-		if Vector2(worker.pos).is_equal_approx(runtime.runner.ports[step.target]):
-			Motion.request(worker,target.nav,runtime.runner.ports[step.target],runtime.runner.tasks[worker.id].profile)
+		var point: Vector2 = runtime.runner.action_port(step,runtime.runner.ports)
+		if Vector2(worker.pos).is_equal_approx(point):
+			Motion.request(worker,target.nav,point,runtime.runner.tasks[worker.id].profile)
 			worker.walking = false
 			worker.path = PackedVector2Array([worker.pos]); worker.path_index = 1
 		else:
@@ -733,7 +764,7 @@ func _reconcile_receipts() -> void:
 				var recipe: Dictionary = runtime._definition.recipes[unit.recipe]
 				_history_node(unit,recipe.output.node)
 				var output: Dictionary = runtime.production_output(unit.id)
-				var pickup: bool = runtime.service._policy.delivery=="self_pickup"
+				var pickup: bool = runtime.service.uses_customer_pickup(order.id)
 				var actor := "customer:"+str(order.guest) if pickup else "staff:1"
 				var place: String = runtime.service._policy.pickup if pickup else output.place
 				var group := _historical_transfer(place,"guest:"+str(order.guest),line.item,1,int(unit.id) if pickup else int(output.owner),int(unit.id),actor)
@@ -744,9 +775,11 @@ func _sync_customers() -> void:
 	error = service._sync_queue()
 	if not error.is_empty(): return
 	for guest in service.orders._state.guests:
-		var destination: String = "queue:"+str(service.orders.queue().find(guest.id)) if guest.state=="queue" else (service._pickup_target(guest) if guest.state=="waiting" and service._policy.delivery=="self_pickup" else service._destination(guest))
+		var destination: String = "queue:"+str(service.orders.queue().find(guest.id)) if guest.state=="queue" else (service._pickup_target(guest) if guest.state=="waiting" and service.uses_customer_pickup(guest.order) else service._destination(guest))
 		var old: Dictionary = source.movement.get("customers",{}).get("guest:"+str(guest.id),{})
 		var actor: Dictionary = service.customers._find(guest.id)
+		if service.uses_mixed_line() and (guest.state=="queue" or guest.state=="waiting" and not String(actor.target).is_empty()):
+			destination = actor.target
 		if service.waiting!=null:
 			if guest.state in ["waiting","queue"]: destination = actor.target
 			if old.is_empty(): old = source.movement.get("customers",{}).get("customer:"+str(guest.id),{})
@@ -755,6 +788,12 @@ func _sync_customers() -> void:
 			if old.is_empty() and not guest.seat.is_empty(): old = source.movement.get("customers",{}).get("diner:"+guest.seat.get_slice("/",1),{})
 		if not old.is_empty(): actor.pos = old.pos
 		if guest.state=="leaving": destination = "exit"
+		if refresh_layout:
+			var goal: Vector2 = service.customers._target(destination).point
+			if guest.state=="eating" and old.get("seated",false): actor.pos = goal
+			elif not target.nav.can_stand(actor.pos,"customer"):
+				actor.pos = target.nav.nearest_reachable(actor.pos,goal,"customer")
+				if not actor.pos.is_finite(): _fail("legacy customer cannot reach the relocated port"); return
 		if guest.state=="eating" and not actor.pos.is_equal_approx(service.customers._target(service._destination(guest)).point): guest.state = "served"
 		actor.target = ""
 		error = service.customers.request(guest.id,destination)

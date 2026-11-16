@@ -1,0 +1,78 @@
+[gd_resource type="Resource" script_class="SpecUpgradeTrack" format=3]
+
+[ext_resource type="Script" path="res://content/rules/spec_effect.gd" id="effect"]
+[ext_resource type="Script" path="res://content/rules/spec_upgrade_level.gd" id="level"]
+[ext_resource type="Script" path="res://content/rules/spec_upgrade_track.gd" id="track"]
+
+[sub_resource type="Resource" id="Resource_1vyab"]
+script = ExtResource("effect")
+kind = "walk"
+target = "kitchen"
+value = 1.2
+
+[sub_resource type="Resource" id="Resource_fab7n"]
+script = ExtResource("level")
+cost = 20
+effects = Array[ExtResource("effect")]([SubResource("Resource_1vyab")])
+
+[sub_resource type="Resource" id="Resource_15u5b"]
+script = ExtResource("effect")
+kind = "work"
+target = "kitchen"
+value = 1.25
+
+[sub_resource type="Resource" id="Resource_5tji1"]
+script = ExtResource("level")
+cost = 45
+effects = Array[ExtResource("effect")]([SubResource("Resource_15u5b")])
+
+[sub_resource type="Resource" id="Resource_d0tyj"]
+script = ExtResource("effect")
+kind = "carry"
+target = "kitchen"
+op = "add"
+
+[sub_resource type="Resource" id="Resource_184w0"]
+script = ExtResource("level")
+cost = 101
+effects = Array[ExtResource("effect")]([SubResource("Resource_d0tyj")])
+
+[sub_resource type="Resource" id="Resource_ax1jx"]
+script = ExtResource("effect")
+kind = "walk"
+target = "kitchen"
+value = 1.2
+
+[sub_resource type="Resource" id="Resource_p887f"]
+script = ExtResource("level")
+cost = 224
+effects = Array[ExtResource("effect")]([SubResource("Resource_ax1jx")])
+
+[sub_resource type="Resource" id="Resource_ukdit"]
+script = ExtResource("effect")
+kind = "work"
+target = "kitchen"
+value = 1.25
+
+[sub_resource type="Resource" id="Resource_g0mkt"]
+script = ExtResource("level")
+cost = 452
+effects = Array[ExtResource("effect")]([SubResource("Resource_ukdit")])
+
+[sub_resource type="Resource" id="Resource_qet61"]
+script = ExtResource("effect")
+kind = "carry"
+target = "kitchen"
+op = "add"
+
+[sub_resource type="Resource" id="Resource_ixqvy"]
+script = ExtResource("level")
+cost = 908
+effects = Array[ExtResource("effect")]([SubResource("Resource_qet61")])
+
+[resource]
+script = ExtResource("track")
+id = "kitchen"
+display_name = "后厨"
+levels = Array[ExtResource("level")]([SubResource("Resource_fab7n"), SubResource("Resource_5tji1"), SubResource("Resource_184w0"), SubResource("Resource_p887f"), SubResource("Resource_g0mkt"), SubResource("Resource_ixqvy")])
+effect_label = "员工"

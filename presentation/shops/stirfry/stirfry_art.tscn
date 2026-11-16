@@ -210,6 +210,11 @@ position = Vector2(-47, -84)
 script = ExtResource("17_8vt8w")
 size = Vector2(110, 140)
 
+[node name="Frame" type="Node2D" parent="Sortables/RiceCookerStand/Anchors/Station"]
+position = Vector2(-82, -115)
+script = ExtResource("17_8vt8w")
+size = Vector2(128, 138)
+
 [node name="Nav" type="Node2D" parent="Sortables/RiceCookerStand" unique_id=1044761603]
 
 [node name="Work" type="Node2D" parent="Sortables/RiceCookerStand/Nav" unique_id=1502407201]
@@ -490,10 +495,15 @@ position = Vector2(-164, -409.5083)
 script = ExtResource("17_8vt8w")
 size = Vector2(290, 409)
 
+[node name="Frame" type="Node2D" parent="Sortables/PrepTable/Anchors/Station"]
+position = Vector2(-167, -414.5)
+script = ExtResource("17_8vt8w")
+size = Vector2(152, 255)
+
 [node name="Nav" type="Node2D" parent="Sortables/PrepTable" unique_id=297502717]
 
 [node name="Work" type="Node2D" parent="Sortables/PrepTable/Nav" unique_id=391772415]
-position = Vector2(-3, 42.4917)
+position = Vector2(17, -252.5083)
 
 [node name="Footprints" type="Node2D" parent="Sortables/PrepTable/Nav" unique_id=1108007832]
 
@@ -504,9 +514,9 @@ size = Vector2(325, 60)
 metadata/station = ""
 
 [node name="rack" type="Node2D" parent="Sortables/PrepTable/Nav/Footprints" unique_id=1804085693]
-position = Vector2(-158, -232.5083)
+position = Vector2(-158, -377.5083)
 script = ExtResource("17_8vt8w")
-size = Vector2(125, 65)
+size = Vector2(129, 210)
 metadata/station = "pantry"
 
 [node name="PlatingTable" type="Node2D" parent="Sortables" unique_id=1773211269]
@@ -533,6 +543,17 @@ metadata/asset_id = "prep_table"
 [node name="Buffer" type="Marker2D" parent="Sortables/PlatingTable/Anchors/Station"]
 position = Vector2(163, -58.421387)
 metadata/host = "PlatingTable"
+
+[node name="Showcase" type="Node2D" parent="Sortables/PlatingTable/Anchors/Station"]
+
+[node name="0" type="Marker2D" parent="Sortables/PlatingTable/Anchors/Station/Showcase"]
+position = Vector2(-18, -79)
+
+[node name="1" type="Marker2D" parent="Sortables/PlatingTable/Anchors/Station/Showcase"]
+position = Vector2(53, -79)
+
+[node name="2" type="Marker2D" parent="Sortables/PlatingTable/Anchors/Station/Showcase"]
+position = Vector2(124, -79)
 
 [node name="Tap" type="Node2D" parent="Sortables/PlatingTable/Anchors/Station" unique_id=92303897]
 position = Vector2(-67, -138.42139)
@@ -735,6 +756,11 @@ position = Vector2(-227, -259)
 script = ExtResource("17_8vt8w")
 size = Vector2(120, 164)
 
+[node name="Frame" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Slots/drink"]
+position = Vector2(-227, -259)
+script = ExtResource("17_8vt8w")
+size = Vector2(120, 164)
+
 [node name="Buffer" type="Node2D" parent="Sortables/ServiceCounter/Anchors/Slots/drink"]
 position = Vector2(-75, -110)
 
@@ -760,14 +786,14 @@ metadata/unlock_rule = "dine_seats:1"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table01/Visual" unique_id=2032692217]
 
 [node name="0" type="Sprite2D" parent="Sortables/Dining/Table01/Visual/Seats" unique_id=470471336]
-position = Vector2(-142.5, -130.46704)
+position = Vector2(-168.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
 [node name="1" type="Sprite2D" parent="Sortables/Dining/Table01/Visual/Seats" unique_id=2020302753]
-position = Vector2(56.5, -130.46704)
+position = Vector2(82.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
@@ -792,20 +818,20 @@ metadata/host = "Dining/Table01"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table01/Anchors" unique_id=557266751]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table01/Anchors/Seats" unique_id=672016565]
-position = Vector2(-95.5, -70.367065)
+position = Vector2(-121.5, -70.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table01/Anchors/Seats" unique_id=340363470]
-position = Vector2(103.5, -70.367065)
+position = Vector2(129.5, -70.367065)
 
 [node name="Nav" type="Node2D" parent="Sortables/Dining/Table01" unique_id=1090146217]
 
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table01/Nav" unique_id=1233125948]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table01/Nav/Seats" unique_id=1158484842]
-position = Vector2(-95.5, -110.367065)
+position = Vector2(-121.5, -110.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table01/Nav/Seats" unique_id=1711833248]
-position = Vector2(103.5, -110.367065)
+position = Vector2(129.5, -110.367065)
 
 [node name="Footprints" type="Node2D" parent="Sortables/Dining/Table01/Nav" unique_id=754515274]
 
@@ -816,13 +842,13 @@ size = Vector2(158, 45)
 metadata/station = ""
 
 [node name="chair_left" type="Node2D" parent="Sortables/Dining/Table01/Nav/Footprints" unique_id=171270780]
-position = Vector2(-128, -32)
+position = Vector2(-154, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
 
 [node name="chair_right" type="Node2D" parent="Sortables/Dining/Table01/Nav/Footprints" unique_id=872907154]
-position = Vector2(70, -32)
+position = Vector2(96, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
@@ -843,14 +869,14 @@ metadata/unlock_rule = "dine_seats:3"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table02/Visual" unique_id=537123246]
 
 [node name="0" type="Sprite2D" parent="Sortables/Dining/Table02/Visual/Seats" unique_id=56496635]
-position = Vector2(-142.5, -130.46704)
+position = Vector2(-168.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
 [node name="1" type="Sprite2D" parent="Sortables/Dining/Table02/Visual/Seats" unique_id=1513345189]
-position = Vector2(56.5, -130.46704)
+position = Vector2(82.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
@@ -875,20 +901,20 @@ metadata/host = "Dining/Table02"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table02/Anchors" unique_id=283416745]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table02/Anchors/Seats" unique_id=13601485]
-position = Vector2(-94.5, -70.367065)
+position = Vector2(-120.5, -70.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table02/Anchors/Seats" unique_id=1080791031]
-position = Vector2(103.5, -70.367065)
+position = Vector2(129.5, -70.367065)
 
 [node name="Nav" type="Node2D" parent="Sortables/Dining/Table02" unique_id=848652242]
 
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table02/Nav" unique_id=665557479]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table02/Nav/Seats" unique_id=1676162580]
-position = Vector2(-94.5, -110.367065)
+position = Vector2(-120.5, -110.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table02/Nav/Seats" unique_id=1293335718]
-position = Vector2(103.5, -110.367065)
+position = Vector2(129.5, -110.367065)
 
 [node name="Footprints" type="Node2D" parent="Sortables/Dining/Table02/Nav" unique_id=514653562]
 
@@ -899,13 +925,13 @@ size = Vector2(158, 45)
 metadata/station = ""
 
 [node name="chair_left" type="Node2D" parent="Sortables/Dining/Table02/Nav/Footprints" unique_id=234500182]
-position = Vector2(-128, -32)
+position = Vector2(-154, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
 
 [node name="chair_right" type="Node2D" parent="Sortables/Dining/Table02/Nav/Footprints" unique_id=1021294064]
-position = Vector2(70, -32)
+position = Vector2(96, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
@@ -926,14 +952,14 @@ metadata/unlock_rule = "dine_seats:5"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table03/Visual" unique_id=1514699021]
 
 [node name="0" type="Sprite2D" parent="Sortables/Dining/Table03/Visual/Seats" unique_id=1791544574]
-position = Vector2(-142.5, -130.46704)
+position = Vector2(-168.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
 [node name="1" type="Sprite2D" parent="Sortables/Dining/Table03/Visual/Seats" unique_id=404300116]
-position = Vector2(56.5, -130.46704)
+position = Vector2(82.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
@@ -958,20 +984,20 @@ metadata/host = "Dining/Table03"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table03/Anchors" unique_id=1716053895]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table03/Anchors/Seats" unique_id=646688227]
-position = Vector2(-95.5, -70.367065)
+position = Vector2(-121.5, -70.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table03/Anchors/Seats" unique_id=1967766188]
-position = Vector2(103.5, -70.367065)
+position = Vector2(129.5, -70.367065)
 
 [node name="Nav" type="Node2D" parent="Sortables/Dining/Table03" unique_id=334584029]
 
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table03/Nav" unique_id=1444901891]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table03/Nav/Seats" unique_id=656822886]
-position = Vector2(-95.5, -110.367065)
+position = Vector2(-121.5, -110.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table03/Nav/Seats" unique_id=1433391894]
-position = Vector2(103.5, -110.367065)
+position = Vector2(129.5, -110.367065)
 
 [node name="Footprints" type="Node2D" parent="Sortables/Dining/Table03/Nav" unique_id=837044907]
 
@@ -982,13 +1008,13 @@ size = Vector2(158, 45)
 metadata/station = ""
 
 [node name="chair_left" type="Node2D" parent="Sortables/Dining/Table03/Nav/Footprints" unique_id=760778705]
-position = Vector2(-128, -32)
+position = Vector2(-154, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
 
 [node name="chair_right" type="Node2D" parent="Sortables/Dining/Table03/Nav/Footprints" unique_id=1082970170]
-position = Vector2(70, -32)
+position = Vector2(96, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
@@ -1009,14 +1035,14 @@ metadata/unlock_rule = "dine_seats:7"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table04/Visual" unique_id=718755939]
 
 [node name="0" type="Sprite2D" parent="Sortables/Dining/Table04/Visual/Seats" unique_id=1742667489]
-position = Vector2(-142.5, -130.46704)
+position = Vector2(-168.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
 [node name="1" type="Sprite2D" parent="Sortables/Dining/Table04/Visual/Seats" unique_id=167272396]
-position = Vector2(56.5, -130.46704)
+position = Vector2(82.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
@@ -1041,20 +1067,20 @@ metadata/host = "Dining/Table04"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table04/Anchors" unique_id=230741544]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table04/Anchors/Seats" unique_id=1482500655]
-position = Vector2(-94.5, -70.367065)
+position = Vector2(-120.5, -70.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table04/Anchors/Seats" unique_id=1079719561]
-position = Vector2(103.5, -70.367065)
+position = Vector2(129.5, -70.367065)
 
 [node name="Nav" type="Node2D" parent="Sortables/Dining/Table04" unique_id=577074078]
 
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table04/Nav" unique_id=1061872339]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table04/Nav/Seats" unique_id=1589295902]
-position = Vector2(-94.5, -110.367065)
+position = Vector2(-120.5, -110.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table04/Nav/Seats" unique_id=1034041848]
-position = Vector2(103.5, -110.367065)
+position = Vector2(129.5, -110.367065)
 
 [node name="Footprints" type="Node2D" parent="Sortables/Dining/Table04/Nav" unique_id=2049956945]
 
@@ -1065,13 +1091,13 @@ size = Vector2(158, 45)
 metadata/station = ""
 
 [node name="chair_left" type="Node2D" parent="Sortables/Dining/Table04/Nav/Footprints" unique_id=414389361]
-position = Vector2(-128, -32)
+position = Vector2(-154, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
 
 [node name="chair_right" type="Node2D" parent="Sortables/Dining/Table04/Nav/Footprints" unique_id=1666933077]
-position = Vector2(70, -32)
+position = Vector2(96, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
@@ -1092,14 +1118,14 @@ metadata/unlock_rule = "dine_seats:9"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table05/Visual" unique_id=1089528116]
 
 [node name="0" type="Sprite2D" parent="Sortables/Dining/Table05/Visual/Seats" unique_id=238837930]
-position = Vector2(-142.5, -130.46704)
+position = Vector2(-168.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
 [node name="1" type="Sprite2D" parent="Sortables/Dining/Table05/Visual/Seats" unique_id=105652250]
-position = Vector2(56.5, -130.46704)
+position = Vector2(82.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
@@ -1124,20 +1150,20 @@ metadata/host = "Dining/Table05"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table05/Anchors" unique_id=808773798]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table05/Anchors/Seats" unique_id=1417249479]
-position = Vector2(-95.5, -70.367065)
+position = Vector2(-121.5, -70.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table05/Anchors/Seats" unique_id=1566804771]
-position = Vector2(103.5, -70.367065)
+position = Vector2(129.5, -70.367065)
 
 [node name="Nav" type="Node2D" parent="Sortables/Dining/Table05" unique_id=1330515084]
 
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table05/Nav" unique_id=1101310687]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table05/Nav/Seats" unique_id=1466731229]
-position = Vector2(-95.5, -110.367065)
+position = Vector2(-121.5, -110.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table05/Nav/Seats" unique_id=2090772050]
-position = Vector2(103.5, -110.367065)
+position = Vector2(129.5, -110.367065)
 
 [node name="Footprints" type="Node2D" parent="Sortables/Dining/Table05/Nav" unique_id=2090236007]
 
@@ -1148,13 +1174,13 @@ size = Vector2(158, 45)
 metadata/station = ""
 
 [node name="chair_left" type="Node2D" parent="Sortables/Dining/Table05/Nav/Footprints" unique_id=115107632]
-position = Vector2(-128, -32)
+position = Vector2(-154, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
 
 [node name="chair_right" type="Node2D" parent="Sortables/Dining/Table05/Nav/Footprints" unique_id=1616431316]
-position = Vector2(70, -32)
+position = Vector2(96, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
@@ -1175,14 +1201,14 @@ metadata/unlock_rule = "dine_seats:11"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table06/Visual" unique_id=10922145]
 
 [node name="0" type="Sprite2D" parent="Sortables/Dining/Table06/Visual/Seats" unique_id=1668644600]
-position = Vector2(-142.5, -130.46704)
+position = Vector2(-168.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
 [node name="1" type="Sprite2D" parent="Sortables/Dining/Table06/Visual/Seats" unique_id=1017079422]
-position = Vector2(56.5, -130.46704)
+position = Vector2(82.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
@@ -1207,20 +1233,20 @@ metadata/host = "Dining/Table06"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table06/Anchors" unique_id=1779244489]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table06/Anchors/Seats" unique_id=99694113]
-position = Vector2(-94.5, -70.367065)
+position = Vector2(-120.5, -70.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table06/Anchors/Seats" unique_id=938824583]
-position = Vector2(103.5, -70.367065)
+position = Vector2(129.5, -70.367065)
 
 [node name="Nav" type="Node2D" parent="Sortables/Dining/Table06" unique_id=459611246]
 
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table06/Nav" unique_id=1553796505]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table06/Nav/Seats" unique_id=1544273730]
-position = Vector2(-94.5, -110.367065)
+position = Vector2(-120.5, -110.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table06/Nav/Seats" unique_id=256062700]
-position = Vector2(103.5, -110.367065)
+position = Vector2(129.5, -110.367065)
 
 [node name="Footprints" type="Node2D" parent="Sortables/Dining/Table06/Nav" unique_id=791982067]
 
@@ -1231,13 +1257,13 @@ size = Vector2(158, 45)
 metadata/station = ""
 
 [node name="chair_left" type="Node2D" parent="Sortables/Dining/Table06/Nav/Footprints" unique_id=1048241202]
-position = Vector2(-128, -32)
+position = Vector2(-154, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
 
 [node name="chair_right" type="Node2D" parent="Sortables/Dining/Table06/Nav/Footprints" unique_id=2029225983]
-position = Vector2(70, -32)
+position = Vector2(96, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
@@ -1258,14 +1284,14 @@ metadata/unlock_rule = "dine_seats:13"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table07/Visual" unique_id=829651161]
 
 [node name="0" type="Sprite2D" parent="Sortables/Dining/Table07/Visual/Seats" unique_id=1143016755]
-position = Vector2(-142.5, -130.46704)
+position = Vector2(-168.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
 [node name="1" type="Sprite2D" parent="Sortables/Dining/Table07/Visual/Seats" unique_id=1081834270]
-position = Vector2(56.5, -130.46704)
+position = Vector2(82.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
@@ -1290,20 +1316,20 @@ metadata/host = "Dining/Table07"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table07/Anchors" unique_id=504940714]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table07/Anchors/Seats" unique_id=468868733]
-position = Vector2(-95.5, -70.367065)
+position = Vector2(-121.5, -70.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table07/Anchors/Seats" unique_id=1517088576]
-position = Vector2(103.5, -70.367065)
+position = Vector2(129.5, -70.367065)
 
 [node name="Nav" type="Node2D" parent="Sortables/Dining/Table07" unique_id=1401969667]
 
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table07/Nav" unique_id=266223309]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table07/Nav/Seats" unique_id=1423453070]
-position = Vector2(-95.5, -110.367065)
+position = Vector2(-121.5, -110.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table07/Nav/Seats" unique_id=353176946]
-position = Vector2(103.5, -110.367065)
+position = Vector2(129.5, -110.367065)
 
 [node name="Footprints" type="Node2D" parent="Sortables/Dining/Table07/Nav" unique_id=903900865]
 
@@ -1314,13 +1340,13 @@ size = Vector2(158, 45)
 metadata/station = ""
 
 [node name="chair_left" type="Node2D" parent="Sortables/Dining/Table07/Nav/Footprints" unique_id=995257965]
-position = Vector2(-128, -32)
+position = Vector2(-154, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
 
 [node name="chair_right" type="Node2D" parent="Sortables/Dining/Table07/Nav/Footprints" unique_id=1956308544]
-position = Vector2(70, -32)
+position = Vector2(96, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
@@ -1341,14 +1367,14 @@ metadata/unlock_rule = "dine_seats:15"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table08/Visual" unique_id=1789793451]
 
 [node name="0" type="Sprite2D" parent="Sortables/Dining/Table08/Visual/Seats" unique_id=1746258030]
-position = Vector2(-142.5, -130.46704)
+position = Vector2(-168.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
 metadata/asset_id = "dining_chair"
 
 [node name="1" type="Sprite2D" parent="Sortables/Dining/Table08/Visual/Seats" unique_id=1874168561]
-position = Vector2(56.5, -130.46704)
+position = Vector2(82.5, -130.46704)
 scale = Vector2(0.39166668, 0.39166668)
 texture = ExtResource("36_tbyjm")
 centered = false
@@ -1373,20 +1399,20 @@ metadata/host = "Dining/Table08"
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table08/Anchors" unique_id=942596476]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table08/Anchors/Seats" unique_id=133558249]
-position = Vector2(-94.5, -70.367065)
+position = Vector2(-120.5, -70.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table08/Anchors/Seats" unique_id=1956161987]
-position = Vector2(103.5, -70.367065)
+position = Vector2(129.5, -70.367065)
 
 [node name="Nav" type="Node2D" parent="Sortables/Dining/Table08" unique_id=191926815]
 
 [node name="Seats" type="Node2D" parent="Sortables/Dining/Table08/Nav" unique_id=1911037787]
 
 [node name="0" type="Node2D" parent="Sortables/Dining/Table08/Nav/Seats" unique_id=1171305491]
-position = Vector2(-94.5, -110.367065)
+position = Vector2(-120.5, -110.367065)
 
 [node name="1" type="Node2D" parent="Sortables/Dining/Table08/Nav/Seats" unique_id=354324126]
-position = Vector2(103.5, -110.367065)
+position = Vector2(129.5, -110.367065)
 
 [node name="Footprints" type="Node2D" parent="Sortables/Dining/Table08/Nav" unique_id=172800124]
 
@@ -1397,13 +1423,13 @@ size = Vector2(158, 45)
 metadata/station = ""
 
 [node name="chair_left" type="Node2D" parent="Sortables/Dining/Table08/Nav/Footprints" unique_id=1753946375]
-position = Vector2(-128, -32)
+position = Vector2(-154, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
 
 [node name="chair_right" type="Node2D" parent="Sortables/Dining/Table08/Nav/Footprints" unique_id=1926446541]
-position = Vector2(70, -32)
+position = Vector2(96, -32)
 script = ExtResource("17_8vt8w")
 size = Vector2(66, 32)
 metadata/station = ""
@@ -1520,28 +1546,70 @@ position = Vector2(40, 0)
 [node name="Queue" type="Node2D" parent="EntranceModule/Anchors" unique_id=1940443185]
 
 [node name="0" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=2090197954]
-position = Vector2(-228, -790)
+position = Vector2(197, -790)
 
 [node name="1" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=1860269255]
-position = Vector2(-153, -790)
+position = Vector2(119, -790)
 
 [node name="2" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=43818206]
-position = Vector2(-78, -790)
+position = Vector2(41, -790)
 
 [node name="3" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=232141482]
-position = Vector2(0, -765)
+position = Vector2(-37, -790)
 
 [node name="4" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=476140758]
-position = Vector2(0, -695)
+position = Vector2(-115, -790)
 
 [node name="5" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=783002645]
-position = Vector2(0, -625)
+position = Vector2(-193, -790)
 
 [node name="6" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=381350968]
-position = Vector2(0, -555)
+position = Vector2(-193, -720)
 
 [node name="7" type="Node2D" parent="EntranceModule/Anchors/Queue" unique_id=1719719602]
-position = Vector2(0, -485)
+position = Vector2(-123, -720)
+
+[node name="8" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(-53, -720)
+
+[node name="9" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -690)
+
+[node name="10" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -638)
+
+[node name="11" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -586)
+
+[node name="12" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -534)
+
+[node name="13" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -482)
+
+[node name="14" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -430)
+
+[node name="15" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -378)
+
+[node name="16" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -326)
+
+[node name="17" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -274)
+
+[node name="18" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -222)
+
+[node name="19" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -170)
+
+[node name="20" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -118)
+
+[node name="21" type="Node2D" parent="EntranceModule/Anchors/Queue"]
+position = Vector2(0, -66)
 
 [node name="Nav" type="Node2D" parent="EntranceModule" unique_id=1021200733]
 

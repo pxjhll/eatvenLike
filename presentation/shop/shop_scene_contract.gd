@@ -82,14 +82,15 @@ static func validate(shop: SpecShop, art: Node) -> Array[Dictionary]:
 		if station == null: continue
 		stations[station.id] = station
 		var path := "Stations/" + station.id
-		var actionable := stage_stations.has(station.id) or not station.tracks.is_empty() or not station.materials.is_empty()
+		var purchasable := stage_stations.has(station.id) or not station.unlock_after_stage.is_empty()
+		var actionable := purchasable or not station.tracks.is_empty() or not station.materials.is_empty()
 		# The counter also exposes seats/flyers. Tea intentionally reaches it via its seat chip.
 		if station.block == "counter":
 			actionable = true
 			if anchors.has("Chips/Seats") and shop.seat_groups.any(func(g: SpecSeatGroup) -> bool: return g != null and g.purpose == "dine"):
 				actionable = false
 		if actionable: _rect(anchors, path + "/Tap", errors)
-		if stage_stations.has(station.id): _rect(anchors, path + "/Frame", errors)
+		if purchasable: _rect(anchors, path + "/Frame", errors)
 		if (station.seatable or station.block == "counter") and shop.staff != null and shop.staff.can_drag:
 			_rect(anchors, path + "/Post", errors)
 			var found := false

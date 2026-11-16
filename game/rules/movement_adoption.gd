@@ -2,24 +2,6 @@ extends RefCounted
 ## One-time legacy serve adoption. Never called by normal movement ticks.
 const Flow := preload("res://game/rules/serve_flow.gd")
 
-static func _nearest(rules: ShopRules, at: Vector2, goal: Vector2, profile: String) -> Vector2:
-	if rules.nav.can_stand(at,profile) and not rules.nav.path(at,goal,profile).is_empty(): return at
-	# A valid authored port may fit between furniture even when no grid center
-	# does. Include it so legacy coordinates cannot discard otherwise valid work.
-	var candidates: Array = [{"point":goal,"distance":goal.distance_squared_to(at)}]
-	var data := rules.shop.layout
-	for y in data.grid_size.y:
-		for x in data.grid_size.x:
-			var point := (Vector2(x,y)+Vector2.ONE*0.5)*data.cell
-			candidates.append({"point":point,"distance":point.distance_squared_to(at)})
-	candidates.sort_custom(func(a: Dictionary,b: Dictionary) -> bool:
-		if a.distance!=b.distance: return a.distance<b.distance
-		if a.point.y!=b.point.y: return a.point.y<b.point.y
-		return a.point.x<b.point.x)
-	for row: Dictionary in candidates:
-		if rules.nav.can_stand(row.point,profile) and not rules.nav.path(row.point,goal,profile).is_empty(): return row.point
-	return Vector2.INF
-
 static func workers(rules: ShopRules) -> String:
 	for worker: Dictionary in rules.workers:
 		var mode := rules.shop.fulfillment.handoff
@@ -43,7 +25,7 @@ static func workers(rules: ShopRules) -> String:
 			# Legacy hand timers are already running at the old authored port.
 			worker.pos = goal
 		else:
-			var start := _nearest(rules,worker.pos,goal,profile)
+			var start := rules.nav.nearest_reachable(worker.pos,goal,profile)
 			if not start.is_finite(): return "movement adoption: no legal position connects to the current action"
 			worker.pos = start
 		if worker.walking: rules.begin_move(worker,goal,worker.phase)

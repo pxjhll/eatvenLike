@@ -12,6 +12,7 @@ class TrackSection extends VBoxContainer:
 	var before: Label
 	var after: Label
 	var effect: Label
+	var _action := "upgrade"
 
 	func setup(page_: Node) -> void:
 		page = page_
@@ -36,12 +37,13 @@ class TrackSection extends VBoxContainer:
 				after = value
 		effect = hud._text(self, "", 19, true)
 		effect.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		upgrade_button = page.buy_button(self, func() -> void: page.view_node().station_action("upgrade", page.station_id))
+		upgrade_button = page.buy_button(self, func() -> void: page.view_node().station_action(_action, page.station_id))
 		upgrade_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		page.skin(upgrade_button, "orange")
 
 	func refresh(card: Dictionary) -> void:
 		var row: Dictionary = card.track
+		_action = row.get("action", "upgrade")
 		before.text = row.now
 		after.text = row.next
 		effect.text = row.effect
@@ -262,7 +264,10 @@ class RecipesSection extends VBoxContainer:
 
 	func refresh(card: Dictionary) -> void:
 		var hud: Control = page.hud()
-		var rows: Array = card.recipes
+		var rows: Array = card.recipes.filter(func(row: Dictionary) -> bool: return row.state == "next")
+		rows.append_array(card.recipes.filter(func(row: Dictionary) -> bool: return row.state != "next"))
+		var upgrades := rows.any(func(row: Dictionary) -> bool: return int(row.level)>0)
+		title.text = "菜品解锁 · 当前 Lv%d" % int(card.level) if upgrades else "配方 · 学会才上菜单"
 		var signature: String = String(card.id) + str(rows.map(func(row: Dictionary) -> String: return String(row.dish)))
 		if signature != _signature:
 			for child in list.get_children(): child.free()
@@ -283,16 +288,17 @@ class RecipesSection extends VBoxContainer:
 		for row in rows:
 			var nodes: Dictionary = _rows[row.dish]
 			var button: Button = buttons[row.dish]
-			nodes.name.text = String(row.name)
+			var level := int(row.level)
+			nodes.name.text = "Lv%d · %s" % [level, row.name] if level>0 else String(row.name)
 			nodes.card.modulate.a = 1.0
 			match String(row.state):
 				"owned":
 					nodes.effect.text = "已上菜单 · 售价 %.1f" % float(row.price)
-					button.text = "已学会"
+					button.text = "已解锁" if level>0 else "已学会"
 					button.disabled = true
 				"next":
 					nodes.effect.text = String(row.note) if not String(row.note).is_empty() else "学会后上菜单 · 售价 %.1f" % float(row.price)
-					button.text = "学会 · %d 金币" % int(row.cost)
+					button.text = ("解锁 · %d 金币" if level>0 else "学会 · %d 金币") % int(row.cost)
 					button.disabled = not CommandResult.is_ok(row.status)
 				_:
 					nodes.effect.text = "先开前面的阶段"

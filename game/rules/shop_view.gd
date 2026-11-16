@@ -395,9 +395,14 @@ func station(id: String) -> Dictionary:
 	if t != null and not t.levels.is_empty():
 		card.sections.append("track")
 		card.track = track_row(id)
-	if not shop.recipe_stages(id).is_empty():
-		card.sections.append("recipes")
-		card.recipes = shop.recipe_stages(id).map(func(index: int) -> Dictionary: return recipe_row(id, index))
+	var recipes := shop.recipe_stages(id)
+	if not recipes.is_empty():
+		if recipes.all(func(index: int) -> bool: return shop.stages[index].recipe_level > 0):
+			card.sections.append("track")
+			card.track = _recipe_track_row(st, card.level)
+		else:
+			card.sections.append("recipes")
+			card.recipes = recipes.map(func(index: int) -> Dictionary: return recipe_row(id, index))
 	if not st.materials.is_empty():
 		card.sections.append("materials")
 		card.materials = st.materials.map(func(m: SpecMaterial) -> Dictionary: return material_row(st, m))
@@ -415,8 +420,9 @@ func _unlock_section(id: String, stage: int) -> Dictionary:
 	var members: Array = []
 	var note := ""
 	var title := station_name(id)
-	var dish := ""
-	var cost := 0
+	var station := shop.station(id)
+	var dish := station.unlock_dish
+	var cost := station.unlock_cost if not station.unlock_after_stage.is_empty() else 0
 	if stage >= 0:
 		var def := shop.stages[stage]
 		cost = def.cost
@@ -436,13 +442,32 @@ func _unlock_section(id: String, stage: int) -> Dictionary:
 func recipe_row(id: String, index: int) -> Dictionary:
 	var def := shop.stages[index]
 	var row := {"stage": index, "dish": def.dish, "name": dish_name(def.dish), "title": def.display_name, "cost": def.cost,
-		"price": rules.dish_price(def.dish), "icon": def.dish, "note": def.unlock_note, "state": "later", "status": {}, "error": ""}
+		"price": rules.dish_price(def.dish), "icon": def.dish, "note": def.unlock_note, "level": def.recipe_level,
+		"state": "later", "status": {}, "error": ""}
 	if index <= rules.stage_index:
 		row.state = "owned"
 		return row
 	row.status = rules.command_status("unlock", {"id": id})
 	row.error = command_message(row.status)
 	if index == rules.stage_index + 1 and rules.is_open(): row.state = "next"
+	return row
+
+
+## 配方阶段同时代表设备等级时，沿用设备升级面板和原有阶段扣费。
+func _recipe_track_row(st: SpecStation, level: int) -> Dictionary:
+	var status := rules.command_status("unlock", {"id": st.id})
+	var row := {"now": "Lv.%d" % level, "next": "满级", "cost": -1, "status": status,
+		"heading_kind": "recipe_menu", "effect": "菜品全部开放", "star_next": false, "action": "recipe"}
+	var next_index := rules._recipe_stage(st.id)
+	if next_index < 0: return row
+	var next := shop.stages[next_index]
+	row.next = "Lv.%d" % next.recipe_level
+	row.cost = next.cost
+	row.effect = "开放%s" % dish_name(next.dish)
+	if st.materials.any(func(material: SpecMaterial) -> bool: return material.track != null and material.track.requires_level == next.recipe_level):
+		row.effect += " · 配料槽同步开放"
+	if status.code == CommandResult.STAGE_REQUIRED:
+		row.effect += "\n先解锁%s" % shop.stages[status.params.stage].display_name
 	return row
 
 
@@ -635,6 +660,10 @@ func material_row(st: SpecStation, m: SpecMaterial) -> Dictionary:
 		row.box_station = station_name(m.box_station)
 		row.effect = ("解锁%s后开放" if row.status.code == CommandResult.STATION_REQUIRED else "解锁后%s才有原料") % row.box_station
 		if row.status.code == CommandResult.STATION_REQUIRED: row.state = "box_closed"
+		return row
+	if not m.requires_station.is_empty() and not rules.station_unlocked(m.requires_station):
+		row.state = "closed"
+		row.effect = "解锁%s后开放" % station_name(m.requires_station)
 		return row
 	if rules.level(st.id) < m.track.requires_level:
 		row.state = "closed"
