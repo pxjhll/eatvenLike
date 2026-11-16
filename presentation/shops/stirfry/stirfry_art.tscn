@@ -503,7 +503,7 @@ size = Vector2(152, 255)
 [node name="Nav" type="Node2D" parent="Sortables/PrepTable" unique_id=297502717]
 
 [node name="Work" type="Node2D" parent="Sortables/PrepTable/Nav" unique_id=391772415]
-position = Vector2(-13, -252.5083)
+position = Vector2(17, -252.5083)
 
 [node name="Footprints" type="Node2D" parent="Sortables/PrepTable/Nav" unique_id=1108007832]
 
@@ -514,9 +514,9 @@ size = Vector2(325, 60)
 metadata/station = ""
 
 [node name="rack" type="Node2D" parent="Sortables/PrepTable/Nav/Footprints" unique_id=1804085693]
-position = Vector2(-158, -232.5083)
+position = Vector2(-158, -377.5083)
 script = ExtResource("17_8vt8w")
-size = Vector2(125, 65)
+size = Vector2(129, 210)
 metadata/station = "pantry"
 
 [node name="PlatingTable" type="Node2D" parent="Sortables" unique_id=1773211269]

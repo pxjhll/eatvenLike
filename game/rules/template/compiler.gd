@@ -75,7 +75,9 @@ static func compile(template: Resource, anchors: Dictionary = {}) -> Dictionary:
 		_keys(machine, ["input", "output", "profile", "slots_binding", "processing_display", "work_port", "stage_ports", "stage_timing", "production_batch"], path, errors)
 		if machine.has("production_batch"):
 			var batch: Variant = machine.production_batch
-			if not Inventory._shape(batch,{"base":1,"max":1}) or batch.base<1 or batch.max<batch.base:
+			var shape := {"base":1,"max":1}
+			if batch is Dictionary and batch.has("reserve_on_feed"): shape.reserve_on_feed = false
+			if not Inventory._shape(batch,shape) or batch.base<1 or batch.max<batch.base:
 				errors.append(_error("invalid_production_batch",path+".production_batch"))
 			else: production_batches[id] = batch.duplicate()
 		if not machine.get("input") is String or not machine.get("output") is String or not machine.get("profile", {}) is Dictionary or not machine.get("work_port","") is String or not machine.get("stage_ports",{}) is Dictionary or not machine.get("stage_timing",{}) is Dictionary:

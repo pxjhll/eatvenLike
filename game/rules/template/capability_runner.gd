@@ -85,7 +85,17 @@ func work_queue(point: Vector2) -> Array:
 
 func idle_goal(worker: Dictionary) -> Vector2:
 	if dispatcher == null: return Vector2.INF
-	if worker.post in dispatcher._definition.get("return_posts",[]): return owner.nav.post(worker.post)
+	if worker.post in dispatcher._definition.get("return_posts",[]):
+		var nearby := _post_standby_points(worker.post)
+		if not nearby.is_empty():
+			var rank := 0
+			for other in owner.workers:
+				if other.post!=worker.post: continue
+				if other.id==worker.id:
+					if rank>0 and rank<=nearby.size(): return nearby[rank-1]
+					break
+				rank += 1
+		return owner.nav.post(worker.post)
 	var spots: Array = dispatcher._definition.get("roaming_idle",[])
 	if not String(worker.post).is_empty() or spots.is_empty(): return Vector2.INF
 	for index in owner.roster.size():
@@ -98,10 +108,15 @@ func _walk_to_idle(worker: Dictionary) -> void:
 		Movement.request(worker,owner.nav,point,access_profile(worker))
 		if worker.path.is_empty(): _clear_actor(worker)
 
+func _post_standby_points(post: String) -> Array:
+	if dispatcher==null or post not in dispatcher._definition.get("return_posts",[]): return []
+	return dispatcher._definition.get("port_queues",{}).get(post,[])
+
 func park_idle(worker: Dictionary) -> void:
-	if not String(worker.post).is_empty(): return
-	if work_queue(worker.pos).is_empty(): return
-	_walk_to_idle(worker)
+	if not String(worker.post).is_empty():
+		if not _post_standby_points(worker.post).is_empty(): _walk_to_idle(worker)
+	elif not work_queue(worker.pos).is_empty():
+		_walk_to_idle(worker)
 
 func define_dynamic_place(id: String, port: Vector2) -> String:
 	if ports.has(id) and not _dynamic_places.has(id): return "dynamic container conflicts with template"
@@ -484,7 +499,10 @@ func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictiona
 		if actor.walking:
 			var worker: Dictionary = owner.worker_by_id(actor.id)
 			var point := idle_goal(worker)
-			if not point.is_finite() or actor.get("motion",{}).get("goal") != point or actor.motion.profile != access_profile(worker):
+			var goal: Vector2 = actor.get("motion",{}).get("goal",Vector2.INF)
+			var standby := _post_standby_points(worker.post)
+			var valid_goal: bool = goal==point or (not standby.is_empty() and (goal==owner.nav.post(worker.post) or goal in standby))
+			if not goal.is_finite() or not valid_goal or actor.motion.profile != access_profile(worker):
 				return {"error":"actor idle movement differs from assigned post or standby position"}
 	for claim in data.inventory.claims:
 		if claim.worker > 0 and claim.state in Inventory.ACTIVE and not transfer_claims.has(claim.id): return {"error":"orphan employee stock claim"}

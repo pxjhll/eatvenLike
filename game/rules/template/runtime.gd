@@ -22,6 +22,7 @@ var last_error := ""
 var _definition: Dictionary = {}
 var _uses_machine_reservations := false
 var _batch_devices := {}
+var _reserve_on_feed: Array[String] = []
 var _units: Array = []
 var _next_unit := 1
 var _clock := 0.0
@@ -52,7 +53,9 @@ func _init(owner: RefCounted, template: Resource, compiled: Dictionary = {}) -> 
 			if not String(seeded.error).is_empty(): last_error = seeded.error; return
 	for id in _definition.machines:
 		var machine: Dictionary = _definition.machines[id]
-		if machine.has("production_batch"): _batch_devices[id] = machine.production_batch
+		if machine.has("production_batch"):
+			_batch_devices[id] = machine.production_batch
+			if machine.production_batch.get("reserve_on_feed",false): _reserve_on_feed.append(id)
 		last_error = runner.machines.configure(id, machine.input, machine.output, machine.profile,machine.get("work_port",""),machine.get("stage_ports",{}),machine.get("stage_timing",{}))
 		if not last_error.is_empty(): return
 		if machine.has("slot_ceiling"):
@@ -460,6 +463,7 @@ func _reconcile() -> void:
 func _start_ready_nodes() -> void:
 	_diagnostics = []
 	var holders: Dictionary = _machine_reservations(_units).holders
+	var feeds := _feed_batches(holders)
 	for unit in _units:
 		var recipe: Dictionary = _definition.recipes[unit.recipe]
 		for id in recipe.order:
@@ -470,12 +474,19 @@ func _start_ready_nodes() -> void:
 			var begins_reservation: bool = id==reservation.get("first")
 			if begins_reservation and runner.machines.occupied_slots(node.machine)>0: continue
 			var continuing: bool = node.machine in holders and id in reservation.get("stages",[])
-			var owners := _batch_members(unit, recipe, node, holders, continuing)
+			var feed_locked: bool = node.machine in _reserve_on_feed and not continuing
+			var owners: Array
+			if feed_locked:
+				var feed: Dictionary = feeds[node.machine]
+				if feed.owners.is_empty() or feed.node!=id: continue
+				owners = _ready_batch(unit,recipe,node,feed.owners)
+			else:
+				owners = _batch_members(unit, recipe, node, holders, continuing)
 			if owners.is_empty(): continue
 			var timing := Clock.evaluate(node,runner.owner)
 			if not timing.error.is_empty(): last_error = timing.error; return
 			var started: Dictionary = runner.machines.start_batch(node.machine,node.consumes,node.produces,timing.seconds,owners) if owners.size()>1 else runner.machines.start(node.machine,node.consumes,node.produces,timing.seconds,unit.id)
-			if not started.error.is_empty() and owners.size()>1 and not continuing:
+			if not started.error.is_empty() and owners.size()>1 and not continuing and not feed_locked:
 				# The aggregate output must fit in the same container. A full
 				# batch is optional; a ready individual job can still start.
 				owners.resize(1)
@@ -489,6 +500,7 @@ func _start_ready_nodes() -> void:
 				var holder := {"run":started.id,"owners":{}}
 				for owner in owners: holder.owners[owner] = true
 				holders[node.machine] = holder
+			if feed_locked: feeds[node.machine] = {"node":"","owners":[]}
 
 func _node_ready(recipe: Dictionary, node: Dictionary, unit: Dictionary) -> bool:
 	if node.id in unit.done or unit.running.has(node.id) or not _dependencies_complete(recipe,node,unit): return false
@@ -507,11 +519,7 @@ func _batch_size(machine: String) -> int:
 
 func _batch_members(unit: Dictionary, recipe: Dictionary, node: Dictionary, holders: Dictionary, continuing: bool) -> Array:
 	if continuing:
-		var members: Array = holders[node.machine].owners.keys()
-		if members[0]!=unit.id: return []
-		for id in members:
-			if not _node_ready(recipe,node,_find_unit(id)): return []
-		return members
+		return _ready_batch(unit,recipe,node,holders[node.machine].owners.keys())
 	var out: Array = [unit.id]
 	var size := _batch_size(node.machine)
 	if size<=1: return out
@@ -530,6 +538,60 @@ func _batch_members(unit: Dictionary, recipe: Dictionary, node: Dictionary, hold
 		out.append(candidate.id)
 		if out.size()>=size: break
 	return [] if waiting else out
+
+func _ready_batch(unit: Dictionary, recipe: Dictionary, node: Dictionary, members: Array) -> Array:
+	if members[0]!=unit.id: return []
+	for id in members:
+		if not _node_ready(recipe,node,_find_unit(id)): return []
+	return members
+
+# Recover the feeding batch from in-flight claims or deposited ingredients.
+# The first trip commits the batch, including across a save/reload or a recall.
+func _feed_batches(holders: Dictionary) -> Dictionary:
+	var feeds := {}
+	var waiting := {}
+	for machine in _reserve_on_feed:
+		feeds[machine] = {"node":"","owners":[]}
+		if not holders.has(machine) and runner.machines.occupied_slots(machine)==0:
+			waiting[machine] = []
+	if waiting.is_empty(): return feeds
+	for unit in _units:
+		var recipe: Dictionary = _definition.recipes[unit.recipe]
+		if recipe.output.node in unit.done: continue
+		for id in recipe.order:
+			var node: Dictionary = recipe.nodes[id]
+			if node.capability!="process" or not waiting.has(node.machine): continue
+			if id in unit.done or unit.running.has(id) or not _dependencies_complete(recipe,node,unit): continue
+			var input: String = _definition.machines[node.machine].input
+			var committed := _has_feed(input,node,unit.id)
+			waiting[node.machine].append({"unit":unit,"node":node,"recipe":recipe,"committed":committed})
+	for machine in waiting:
+		var rows: Array = waiting[machine]
+		# Already loaded portions have priority, including those from older saves.
+		rows = rows.filter(func(row: Dictionary) -> bool: return row.committed) + rows.filter(func(row: Dictionary) -> bool: return not row.committed)
+		var input: String = _definition.machines[machine].input
+		var remaining: int = runner.inventory.remaining_capacity(input)
+		var used := {}
+		var batch_size := _batch_size(machine)
+		var recipe_id := ""
+		var feed: Dictionary = feeds[machine]
+		for row in rows:
+			if not recipe_id.is_empty() and (row.unit.recipe!=recipe_id or row.node.id!=feed.node): continue
+			var needs := _batch_preparation(row.recipe,row.node,row.unit,input,used)
+			if (needs.is_empty() or needs.count>remaining) and not (row.committed and feed.owners.is_empty()): continue
+			feed.owners.append(row.unit.id)
+			feed.node = row.node.id
+			recipe_id = row.unit.recipe
+			if needs.is_empty() or feed.owners.size()>=batch_size: break
+			remaining -= needs.count
+			used.merge(needs.supplies,true)
+	return feeds
+
+func _has_feed(input: String, node: Dictionary, owner: int) -> bool:
+	for item in node.consumes:
+		if item in _definition.places[input].infinite: continue
+		if runner.inventory.quantity(input,item,owner)>0 or runner.inventory.incoming(input,item,owner)>0: return true
+	return false
 
 # Use the regular transfer path for pending portions. Count reachable stock
 # once across those portions so an unavailable input never holds a ready order.
@@ -624,6 +686,7 @@ func _candidates() -> Array:
 	var operations := {}
 	var transfers: Array = []
 	var holders: Dictionary = _machine_reservations(_units).holders
+	var feeds := _feed_batches(holders)
 	for candidate in _restocks.candidates(_stock_demand(),holders):
 		candidate.category = "restock_operate" if candidate.kind == "operate" else "restock_transfer"
 		if candidate.kind == "operate":
@@ -661,6 +724,9 @@ func _candidates() -> Array:
 					var port: String = runner.machines.stage_port(run.id)
 					work.append({"kind":"operate", "category":"operate", "run":run.id, "from":port, "to":port, "unit":int(unit.id)})
 				continue
+			if feeds.has(node.machine) and not holders.has(node.machine):
+				var feed: Dictionary = feeds[node.machine]
+				if feed.node!=id or unit.id not in feed.owners: continue
 			if not _dependencies_complete(recipe, node, unit): continue
 			for item in node.consumes:
 				if item in _definition.places[machine.input].infinite: continue

@@ -444,8 +444,22 @@ func test_front_employee_collects_and_delivers_staged_food_after_save_reload() -
 	check_eq(owner.sold_by_dish.soup,1,"pay for the soup once")
 	check_eq(runtime.runner.inventory.audit(),[],"serving and restore conserve stock")
 
+func _before_staff_and_wok_expansion() -> SpecShop:
+	var previous := SHOP.copy_for_editing()
+	var pantry := Vector2(190,365)
+	previous.layout.points.pantry = pantry
+	var obstacle: int = previous.layout.obstacle_stations.find("pantry")
+	previous.layout.obstacles[obstacle] = Rect2(45,385,125,65)
+	previous.runtime_template.places["pantry:out"].port = pantry
+	previous.runtime_template.dispatch.port_queues["pantry:out"] = [Vector2(250,365),Vector2(250,425),Vector2(250,485)]
+	previous.runtime_template.dispatch.port_queues.erase("counter")
+	previous.staff.second_front_slot_after = ""
+	for wok in ["wok_a","wok_b"]: previous.runtime_template.machines[wok].production_batch.erase("reserve_on_feed")
+	return previous
+
+
 func _previous_staff_service() -> SpecShop:
-	var shop := SHOP.copy_for_editing()
+	var shop := _before_staff_and_wok_expansion()
 	var template: Resource = shop.runtime_template
 	template.service.pickup_queue.erase("mixed_line")
 	for pose in template.presentation.poses.values(): pose.offset = Vector2.ZERO
@@ -681,6 +695,29 @@ func test_opening_gift_and_base_prices() -> void:
 	check(not rules.unlock("rice_cooker").is_empty(),"cannot collect the opening gift again")
 	check_eq(rules.workers.size(),2,"repeat purchase has no side effects")
 
+func test_first_paid_recruit_fills_the_new_front_slot() -> void:
+	var rules := ShopRules.new(SHOP.copy_for_editing(),42)
+	rules.gold = 142.0
+	for id in ["plum_dispenser","wok_a"]:
+		check_eq(rules.unlock(id),"","open the front drink service")
+	check_eq(rules.front_slots(),1,"the second front slot waits for the kitchen")
+	check_eq(rules.unlock("rice_cooker"),"","open the kitchen")
+	check_eq(rules.front_slots(),2,"the rice cooker unlocks the second front slot")
+	check_eq(rules.kitchen_staff(),1,"the free bear keeps its kitchen assignment")
+	check_eq(rules.hire(),"","pay 30 gold for the first recruit")
+	var recruit: Dictionary = rules.roster.back()
+	check_eq(rules.execute_command("deploy_worker",{"id":recruit.id,"from_hire":true}).code,"ok","use the staff screen deployment")
+	check_eq(recruit.post,rules.counter_id,"the recruit joins the front despite an open kitchen spot")
+	check_eq(rules.gold,0.0,"the front slot needs no additional purchase")
+	rules.run(1.0)
+	check(recruit.pos.distance_to(rules.workers[0].pos)>30.0,"both front workers have distinct standby spots")
+	var reopened := ShopRules.new(SHOP.copy_for_editing(),42)
+	check_eq(reopened.load_dict(rules.to_dict()),"","save the expanded front staff")
+	check_eq(reopened.front_slots(),2,"the slot follows rice cooker progress")
+	check_eq(reopened.worker_by_id(recruit.id).post,reopened.counter_id,"the recruit stays at the front")
+	check_eq(reopened.place_worker(recruit.id,""),"","the player can still reassign the recruit")
+	check_eq(reopened.kitchen_staff(),2,"the reassigned recruit joins the kitchen")
+
 func test_pantry_ingredient_upgrades_are_independent() -> void:
 	var rules := ShopRules.new(SHOP.copy_for_editing(),42)
 	rules.gold = 1000.0
@@ -739,6 +776,51 @@ func test_workers_wait_at_distinct_positions_for_the_same_port() -> void:
 		if runner.idle(first.id) and runner.idle(second.id): break
 	check(saw_second,"the second worker reached the work port")
 	check_eq(runner.inventory.quantity("wok_a:in","egg_rice_raw"),2,"both pickups reached the wok")
+
+func test_wok_keeps_other_orders_out_from_the_first_rice_pickup_until_the_food_is_done() -> void:
+	var template := _template()
+	var runtime := _runtime(template)
+	if runtime==null: return
+	check_eq(runtime.runner.inventory.seed("rice_cooker:out","rice",2).error,"","provide rice for two orders")
+	var first: int = runtime.request_production("egg_fried_rice_v2").id
+	var second: int = runtime.request_production("plain_fried_rice").id
+	var saw_incoming := false
+	for tick in 900:
+		check_eq(runtime.step(0.1),"","advance both orders with two kitchen workers")
+		var stock: RefCounted = runtime.runner.inventory
+		if "finish" not in runtime.unit(first).done:
+			check_eq(stock.incoming("wok_a:in","rice",second),0,"no second rice delivery has been assigned")
+			check_eq(stock.quantity("wok_a:in","rice",second),0,"the other order has not deposited rice")
+		if not saw_incoming and stock.incoming("wok_a:in","rice",first)>0:
+			saw_incoming = true
+			check(not runtime.unit(first).running.has("heat"),"the first rice dispatch precedes heating")
+			check_eq(runtime.restore(runtime.snapshot()),"","restore the incoming rice reservation before heating")
+		if runtime.ready(first) and runtime.ready(second): break
+	check(saw_incoming,"the rice was dispatched by an employee")
+	check(runtime.ready(first) and runtime.ready(second),"both distinct orders still cook and reach the handoff")
+
+func test_previous_pantry_pickup_resumes_at_the_new_outside_port() -> void:
+	var previous := _before_staff_and_wok_expansion()
+	var pantry: Vector2 = previous.layout.points.pantry
+	var old := ShopRules.new(previous,42)
+	old.gold = 1000.0
+	for id in ["plum_dispenser","wok_a","rice_cooker","pantry"]:
+		check_eq(old.unlock(id),"","open the previous cabinet")
+	var old_cook: Dictionary = old.workers[1]
+	for tick in 1800:
+		old.step(0.1)
+		if old_cook.get("motion",{}).get("goal")!=pantry or not old_cook.walking: continue
+		var reopened := ShopRules.new(SHOP.copy_for_editing(),42)
+		check_eq(reopened.load_dict(old.to_dict(),true),"","restore the previous takeout walk with its inventory claim")
+		var new_cook: Dictionary = reopened.worker_by_id(old_cook.id)
+		check_eq(new_cook.get("motion",{}).get("goal"),Vector2(220,365),"active route follows the new outside work point")
+		for remaining in 900:
+			reopened.step(0.1)
+			if reopened.sold_by_dish.egg_fried_rice>0: break
+		check_eq(reopened.runtime_error,"","relocated production keeps advancing")
+		check(reopened.sold_by_dish.egg_fried_rice>0,"pickup resumed and the meal was sold")
+		return
+	check(false,"the older employee walked toward the cabinet")
 
 func test_fried_rice_waits_in_wok_while_worker_walks_to_pantry() -> void:
 	var template := _template()
@@ -803,7 +885,7 @@ func test_counter_pickup_and_new_arrivals_use_one_line() -> void:
 	check(runtime.service.orders.guest(2).order>0,"the next guest reaches the head and orders")
 
 func test_old_split_positions_reload_into_the_mixed_line() -> void:
-	var previous := SHOP.copy_for_editing()
+	var previous := _before_staff_and_wok_expansion()
 	previous.runtime_template.service.pickup_queue.erase("mixed_line")
 	previous.layout.customer_queue.clear()
 	for rank in 8: previous.layout.customer_queue.append(Vector2(640-78*rank,950))

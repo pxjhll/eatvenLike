@@ -1315,7 +1315,7 @@ func jump_shop(offset: int) -> String:
 
 # ---------- 命令（界面组件调这些） ----------
 
-## 招人直接上岗（先后厨再前台）；以后拖到别的岗位换活
+## 招人按店铺规则直接上岗，以后可以换岗。
 func hire_worker() -> void:
 	var staff_page: Control = ui.page_node("staff")
 	if staff_page != null and not staff_page.has_staff_room():
@@ -1325,7 +1325,7 @@ func hire_worker() -> void:
 	if execute_command("hire").code == "ok":
 		_bought("hire", gold_before)
 		selected_worker = int(all_staff().back().id)
-		var deployed: bool = staff_is_deployed(selected_worker) or (execute_command("deploy_worker", {"id": selected_worker}).code == "ok")
+		var deployed: bool = staff_is_deployed(selected_worker) or (execute_command("deploy_worker", {"id": selected_worker, "from_hire": true}).code == "ok")
 		_show_toast(_t("hired_deployed") if deployed else _t("hired_roster"))
 		request_save()
 	_refresh(0.0)

@@ -42,7 +42,7 @@ const UI_DROP_REJECTED := "ui_drop_rejected"
 const SCHEMAS := {
 	"set_paused": {"paused": TYPE_BOOL}, "set_tuning": {"key": TYPE_STRING, "value": TYPE_FLOAT, "snap": TYPE_BOOL},
 	"unlock": {"id": TYPE_STRING}, "unlock_box": {"material": TYPE_STRING}, "upgrade": {"key": TYPE_STRING},
-	"buy_seat": {}, "send_flyers": {}, "hire": {}, "deploy_worker": {"id": TYPE_INT, "post": TYPE_STRING},
+	"buy_seat": {}, "send_flyers": {}, "hire": {}, "deploy_worker": {"id": TYPE_INT, "post": TYPE_STRING, "from_hire": TYPE_BOOL},
 	"place_worker": {"id": TYPE_INT, "post": TYPE_STRING, "point": TYPE_VECTOR2},
 	"recall_worker": {"id": TYPE_INT}, "buy_connection": {"id": TYPE_STRING}, "answer_event": {"choice": TYPE_INT},
 }
@@ -62,7 +62,7 @@ static func validate(command: String, arguments: Dictionary) -> Dictionary:
 	for argument in arguments:
 		if not schema.has(argument): return failure(INVALID_ARGUMENT, {"command": command, "argument": str(argument)})
 	for argument in schema:
-		var optional: bool = (command == "deploy_worker" and argument == "post") or (command == "place_worker" and argument == "point") or (command == "set_tuning" and argument == "snap")
+		var optional: bool = (command == "deploy_worker" and argument in ["post", "from_hire"]) or (command == "place_worker" and argument == "point") or (command == "set_tuning" and argument == "snap")
 		if not arguments.has(argument):
 			if optional: continue
 			return failure(INVALID_ARGUMENT, {"command": command, "argument": argument})

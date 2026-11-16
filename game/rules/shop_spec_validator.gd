@@ -530,6 +530,9 @@ static func _validate_staff(shop: SpecShop, c: Dictionary, errors: Array[Diction
 		if c.stations.has(post) and not c.stations[post].seatable and c.stations[post].block != "counter": _error(errors, "staff.starting_posts[%d]" % i, "Starting post must be seatable.")
 	if c.stations.has(staff.starting_post) and not c.stations[staff.starting_post].seatable and c.stations[staff.starting_post].block != "counter": _error(errors, "staff.starting_post", "Starting post must be seatable.")
 	_tracks(staff.tracks, "staff.tracks", c, errors, "", "staff")
+	_ref(staff.second_front_slot_after, c.stations, "staff.second_front_slot_after", errors, true)
+	if not staff.second_front_slot_after.is_empty() and not c.zoned:
+		_error(errors, "staff.second_front_slot_after", "Front expansion requires staff zones.")
 	for side in staff.training_requires:
 		var path := "staff.training_requires." + side
 		_ref("staff/" + side, c.tracks, path, errors)

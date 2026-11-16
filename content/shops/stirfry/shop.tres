@@ -572,14 +572,14 @@ icon = ExtResource("food_plum_juice")
 script = ExtResource("14_tnc2d")
 nav = "grid"
 areas = Array[Rect2i]([Rect2i(2, 12, 40, 76)])
-obstacles = Array[Rect2]([Rect2(750, 385, 85, 45), Rect2(330, 270, 235, 50), Rect2(735, 280, 105, 40), Rect2(45, 560, 325, 60), Rect2(45, 385, 125, 65), Rect2(585, 555, 250, 60), Rect2(50, 820, 665, 95), Rect2(137.5, 1075.3671, 158, 45), Rect2(62.5, 1088.3671, 66, 32), Rect2(312.5, 1088.3671, 66, 32), Rect2(589.5, 1075.3671, 158, 45), Rect2(514.5, 1088.3671, 66, 32), Rect2(764.5, 1088.3671, 66, 32), Rect2(137.5, 1258.3671, 158, 45), Rect2(62.5, 1271.3671, 66, 32), Rect2(312.5, 1271.3671, 66, 32), Rect2(589.5, 1258.3671, 158, 45), Rect2(514.5, 1271.3671, 66, 32), Rect2(764.5, 1271.3671, 66, 32), Rect2(137.5, 1448.3671, 158, 45), Rect2(62.5, 1461.3671, 66, 32), Rect2(312.5, 1461.3671, 66, 32), Rect2(589.5, 1448.3671, 158, 45), Rect2(514.5, 1461.3671, 66, 32), Rect2(764.5, 1461.3671, 66, 32), Rect2(137.5, 1636.3671, 158, 45), Rect2(62.5, 1649.3671, 66, 32), Rect2(312.5, 1649.3671, 66, 32), Rect2(589.5, 1636.3671, 158, 45), Rect2(514.5, 1649.3671, 66, 32), Rect2(764.5, 1649.3671, 66, 32), Rect2(620, 245, 100, 40), Rect2(715, 815, 20, 40), Rect2(830, 815, 15, 40), Rect2(40, 1718, 310, 42), Rect2(550, 1718, 290, 42), Rect2(148, 1710, 130, 50)])
+obstacles = Array[Rect2]([Rect2(750, 385, 85, 45), Rect2(330, 270, 235, 50), Rect2(735, 280, 105, 40), Rect2(45, 560, 325, 60), Rect2(45, 240, 129, 210), Rect2(585, 555, 250, 60), Rect2(50, 820, 665, 95), Rect2(137.5, 1075.3671, 158, 45), Rect2(62.5, 1088.3671, 66, 32), Rect2(312.5, 1088.3671, 66, 32), Rect2(589.5, 1075.3671, 158, 45), Rect2(514.5, 1088.3671, 66, 32), Rect2(764.5, 1088.3671, 66, 32), Rect2(137.5, 1258.3671, 158, 45), Rect2(62.5, 1271.3671, 66, 32), Rect2(312.5, 1271.3671, 66, 32), Rect2(589.5, 1258.3671, 158, 45), Rect2(514.5, 1271.3671, 66, 32), Rect2(764.5, 1271.3671, 66, 32), Rect2(137.5, 1448.3671, 158, 45), Rect2(62.5, 1461.3671, 66, 32), Rect2(312.5, 1461.3671, 66, 32), Rect2(589.5, 1448.3671, 158, 45), Rect2(514.5, 1461.3671, 66, 32), Rect2(764.5, 1461.3671, 66, 32), Rect2(137.5, 1636.3671, 158, 45), Rect2(62.5, 1649.3671, 66, 32), Rect2(312.5, 1649.3671, 66, 32), Rect2(589.5, 1636.3671, 158, 45), Rect2(514.5, 1649.3671, 66, 32), Rect2(764.5, 1649.3671, 66, 32), Rect2(620, 245, 100, 40), Rect2(715, 815, 20, 40), Rect2(830, 815, 15, 40), Rect2(40, 1718, 310, 42), Rect2(550, 1718, 290, 42), Rect2(148, 1710, 130, 50)])
 obstacle_stations = Array[String](["", "wok_a", "soup_pot", "", "pantry", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""])
 grid_size = Vector2i(45, 89)
 points = Dictionary[String, Vector2]({
 "counter": Vector2(448, 755),
 "door": Vector2(443, 1730),
 "home": Vector2(450, 560),
-"pantry": Vector2(190, 365),
+"pantry": Vector2(220, 365),
 "plating": Vector2(720, 650),
 "plum_dispenser": Vector2(310, 755),
 "rice_cooker": Vector2(790, 480),
@@ -672,6 +672,7 @@ starting_posts = Array[String](["counter"])
 hire_pool = Array[String](["rabbit", "bear", "gray_cat", "fox", "parrot"])
 hire_costs = Array[int]([30, 60, 80, 110])
 zones = Array[String](["front", "kitchen"])
+second_front_slot_after = "rice_cooker"
 can_drag = true
 tracks = Array[ExtResource("9_47jng")]([ExtResource("training_front"), ExtResource("training_kitchen")])
 training_requires = Dictionary[String, String]({"kitchen": "rice_cooker"})
@@ -738,7 +739,7 @@ stations = Array[String](["rice_cooker"])
 cost = 20
 dish = "plain_fried_rice"
 grant_worker = "bear"
-unlock_note = "获得一位流动后厨员工，自动上岗开始卖炒饭"
+unlock_note = "赠送一位后厨员工，开放第二个前台位"
 customer_interval = 13.0
 order_weights = Dictionary[String, float]({
 "plum_juice": 0.4,
@@ -1685,7 +1686,7 @@ background_music = ExtResource("music_theme")
 save_file = "shop_stirfry.json"
 runtime_template = ExtResource("u06_runtime")
 previous_progression = {
-"current_structure": "467d17fda07543b5d0f517fb11976d578a802dd9cca0b3a45a7686542928648a",
+"current_structure": "41f9ca29dc68c0bce7e9508eb54b70d32ecaa8b17144e74d9f6b288f9fc41529",
 "grant_stage_stations": true,
 "legacy_customer_ports": {
 "seat:table/0": Vector2(121, 1010),
@@ -1731,6 +1732,10 @@ previous_progression = {
 "legacy_station_profiles": {"plating": {"block": "combine", "params": {"manual": true, "seconds": 3.5, "unit": "份"}}},
 "opening_station": "wok_a",
 "other_templates": {
+"467d17fda07543b5d0f517fb11976d578a802dd9cca0b3a45a7686542928648a": {
+"opening_station": "plum_dispenser",
+"stage_indices": PackedInt32Array(0, 1, 2, 3, 4, 5, 6, 7)
+},
 "5ef4e1493f4a521cb3bfe9a9c2ad1144ff02161400a426c113d673d48f29875c": {
 "opening_station": "plum_dispenser",
 "stage_indices": PackedInt32Array(0, 1, 2, 3, 4, 5, 6, 7)

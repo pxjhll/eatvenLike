@@ -155,6 +155,11 @@ func test_formal_geometry_and_customer_pickup_positions_cannot_enter_furniture_o
 	var rules := ShopRules.new(shop,11)
 	for station in shop.stations: rules.unlocked[station.id] = true
 	rules.nav.set_open(rules.unlocked)
+	check(not rules.nav.can_stand(Vector2(140,320),"staff"),"employees cannot stand inside the pantry cabinet")
+	check(rules.nav.path(Vector2(400,340),Vector2(140,320),"staff").is_empty(),"employees cannot approach through the cabinet")
+	var pantry: Vector2 = rules.runtime.runner.ports["pantry:out"]
+	check_eq(pantry,rules.nav.point("pantry"),"the work site and production port agree")
+	check(not rules.nav.path(Vector2(400,340),pantry,"staff").is_empty(),"wok and pantry are connected from outside the cabinet")
 	check(not rules.nav.can_stand(Vector2(400,850),"staff"),"service counter is solid")
 	check(not rules.nav.can_stand(Vector2(400,340),"customer"),"customer cannot enter kitchen")
 	check(rules.nav.path(Vector2(215,755),shop.layout.customer_points["seat:table/0"],"staff").size()>2,"staff reach dining through the passage")

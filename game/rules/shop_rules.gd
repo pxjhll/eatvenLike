@@ -906,8 +906,13 @@ func worker_stat_limits(worker: Dictionary) -> Dictionary:
 	return limit
 
 
+func _front_expanded() -> bool:
+	return station_unlocked(shop.staff.second_front_slot_after)
+
+
 func front_slots() -> int:
-	return int(mods.value("staff_slot", float(shop.staff.front_base_slots), "front"))
+	var base := shop.staff.front_base_slots + int(_front_expanded())
+	return int(mods.value("staff_slot", float(base), "front"))
 
 
 func kitchen_slots() -> int:
@@ -1573,9 +1578,12 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 			params.post = post
 			if worker.is_empty(): code = CommandResult.UNKNOWN_WORKER
 			elif not worker.deployed:
-				if post.is_empty() and not CommandResult.is_ok(_role_room_status("")) and CommandResult.is_ok(_role_room_status(counter_id)):
-					post = counter_id
-					params.post = post
+				if post.is_empty() and CommandResult.is_ok(_role_room_status(counter_id)):
+					var front_count := workers.size() - kitchen_staff()
+					var front_first: bool = arguments.get("from_hire", false) and _front_expanded() and front_count <= shop.staff.front_base_slots
+					if front_first or not CommandResult.is_ok(_role_room_status("")):
+						post = counter_id
+						params.post = post
 				if not post.is_empty() and post != counter_id:
 					if not post in seatables: code = CommandResult.NOT_SEATABLE
 					elif post_owner(post, arguments.id) != -1: code = CommandResult.POST_OCCUPIED
