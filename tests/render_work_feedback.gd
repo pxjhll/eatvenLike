@@ -37,7 +37,9 @@ func _run() -> void:
 	_check(actor.frame_actor.action=="idle","blocked handoff does not pretend to perform work")
 	_check(is_zero_approx(actor.body.rotation),"blocked handoff has no work wobble")
 	actor.set_render_position(row.pos+Vector2(8,5))
-	_check(actor.carried.get_parent()==actor.frame_actor.get_parent() and actor.task.get_parent()==actor.frame_actor.get_parent() and actor.progress_bar.get_parent()==actor.frame_actor.get_parent(),"hands and overhead feedback share the actor visual layer")
+	var visual: Node2D = actor.frame_actor.get_parent()
+	var carried_layer: Node2D = actor.carried.get_parent()
+	_check(carried_layer.get_parent()==visual and actor.task.get_parent()==visual and actor.progress_bar.get_parent()==visual,"held items and overhead feedback follow the actor visual layer")
 	actor.free()
 	await process_frame
 	for error in errors.take(): _check(false,error)
