@@ -841,8 +841,60 @@ func test_fried_rice_waits_in_wok_while_worker_walks_to_pantry() -> void:
 			saw_pantry = true
 			check_eq(cook.carry_count,0,"worker goes to collect seasoning empty-handed")
 			check_eq(runtime.runner.inventory.quantity("wok_a:out","fried_rice_base"),1,"the cooked rice base remains at the wok")
+		check(cook.carry_item!="fried_rice_base","rice never enters the worker's hands at the wok")
 		if owner.sold_by_dish.egg_fried_rice>0: break
 	check(saw_pantry and owner.sold_by_dish.egg_fried_rice==1,"real fried rice was seasoned and served")
+	var claims: Array = runtime.runner.inventory.snapshot().claims
+	check(not claims.any(func(claim: Dictionary) -> bool: return claim.kind=="transfer" and claim.item=="fried_rice_base"),"no take-out and put-back transfer was even scheduled")
+
+func test_double_yangzhou_batch_keeps_both_rice_portions_in_the_wok() -> void:
+	var runtime := _runtime(_template())
+	if runtime==null: return
+	var shop: ShopRules = runtime.runner.owner
+	for level in 3: check_eq(shop.upgrade("wok_a"),"","upgrade the wok to its two-portion level")
+	check_eq(runtime.runner.inventory.seed("rice_cooker:out","rice",2).error,"","stage two portions of rice")
+	var first: int = runtime.request_production("yangzhou_rice_v2").id
+	var second: int = runtime.request_production("yangzhou_rice_v2").id
+	for tick in 900:
+		check_eq(runtime.step(0.1),"","cook both portions")
+		if runtime.ready(first) and runtime.ready(second): break
+	check(runtime.ready(first) and runtime.ready(second),"both portions reach the handoff")
+	var first_run: Dictionary = runtime.unit(first).running
+	var second_run: Dictionary = runtime.unit(second).running
+	check(first_run.has("finish") and first_run.get("finish")==second_run.get("finish"),"both portions share the final wok operation")
+	var claims: Array = runtime.runner.inventory.snapshot().claims
+	check(not claims.any(func(claim: Dictionary) -> bool: return claim.kind=="transfer" and claim.item=="fried_rice_base"),"no rice transfer occurs even as a double batch")
+	check_eq(runtime.runner.inventory.audit(),[],"retention conserves both orders")
+
+
+func test_previous_save_with_rice_in_hand_restores_it_to_the_wok() -> void:
+	var previous := SHOP.copy_for_editing()
+	for recipe in ["egg_fried_rice_v2","yangzhou_rice_v2"]:
+		previous.runtime_template.recipes[recipe].machine_reservation.erase("retain_inputs")
+	var old := ShopRules.new(previous,42)
+	old.gold = 100000.0
+	for id in ["plum_dispenser","wok_a","rice_cooker","pantry"]:
+		check_eq(old.unlock(id),"","open the old restaurant")
+	var unit: int = old.runtime.request_production("egg_fried_rice_v2").id
+	for tick in 1500:
+		old.step(0.1)
+		var claims: Array = old.runtime.runner.inventory.snapshot().claims
+		if not claims.any(func(claim: Dictionary) -> bool: return claim.kind=="transfer" and claim.item=="fried_rice_base" and claim.state=="held" and claim.owner==unit): continue
+		var restored := ShopRules.new(SHOP.copy_for_editing(),42)
+		var error := restored.load_dict(old.to_dict(),true)
+		check_eq(error,"","restore a save made during the old take-out action")
+		if not error.is_empty(): return
+		var inventory: RefCounted = restored.runtime.runner.inventory
+		check_eq(inventory.quantity("wok_a:out","fried_rice_base",unit),1,"rice in the employee's hand returns to its original wok")
+		for remainder in 1000:
+			restored.step(0.1)
+			if restored.runtime.ready(unit): break
+		check(restored.runtime.ready(unit),"the same order finishes after restoring")
+		check_eq(restored.runtime_error,"","continued wok operation reports no errors")
+		check_eq(inventory.audit(),[],"no rice is lost or duplicated")
+		return
+	check(false,"the previous version actually had a cook take the rice out")
+
 
 func test_customers_walk_to_the_right_queue_head_before_taking_a_seat() -> void:
 	var template := _template()

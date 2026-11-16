@@ -343,7 +343,8 @@ recipes = {
 },
 "machine_reservation": {
 "first": "heat",
-"last": "finish"
+"last": "finish",
+"retain_inputs": ["fried_rice_base"]
 }
 },
 "yangzhou_rice_v2": {
@@ -414,7 +415,8 @@ recipes = {
 },
 "machine_reservation": {
 "first": "heat",
-"last": "finish"
+"last": "finish",
+"retain_inputs": ["fried_rice_base"]
 }
 },
 "tomato_rice_v2": {

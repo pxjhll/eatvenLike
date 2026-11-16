@@ -58,21 +58,21 @@ func track_slots(machine: String, ceiling: int) -> String:
 	definition.slot_ceiling = ceiling
 	return ""
 
-func start(machine: String, consumes: Dictionary, produces: Dictionary, seconds: float, owner: int = -1) -> Dictionary:
-	return _start(machine,consumes,produces,seconds,[owner])
+func start(machine: String, consumes: Dictionary, produces: Dictionary, seconds: float, owner: int = -1, retained_inputs: Array = []) -> Dictionary:
+	return _start(machine,consumes,produces,seconds,[owner],retained_inputs)
 
-func start_batch(machine: String, consumes: Dictionary, produces: Dictionary, seconds: float, owners: Array) -> Dictionary:
+func start_batch(machine: String, consumes: Dictionary, produces: Dictionary, seconds: float, owners: Array, retained_inputs: Array = []) -> Dictionary:
 	if owners.is_empty(): return {"error":"empty machine batch","id":-1}
 	var seen := {}
 	for owner in owners:
 		if not owner is int or owner<1 or seen.has(owner): return {"error":"invalid batch owner","id":-1}
 		seen[owner] = true
-	return _start(machine,consumes,produces,seconds,owners)
+	return _start(machine,consumes,produces,seconds,owners,retained_inputs)
 
 static func operation_ids(run: Dictionary) -> Array:
 	return [run.claim]+run.get("extra_claims",[])
 
-func _start(machine: String, consumes: Dictionary, produces: Dictionary, seconds: float, owners: Array) -> Dictionary:
+func _start(machine: String, consumes: Dictionary, produces: Dictionary, seconds: float, owners: Array, retained_inputs: Array) -> Dictionary:
 	if not _state.definitions.has(machine) or not is_finite(seconds) or seconds < 0.0: return {"error":"invalid machine request", "id":-1}
 	var definition: Dictionary = _state.definitions[machine]
 	var profile: Dictionary = definition.profile
@@ -89,9 +89,17 @@ func _start(machine: String, consumes: Dictionary, produces: Dictionary, seconds
 		for candidate in int(_slot_targets.get(machine,profile.slots)):
 			if not used.has(candidate): slot = candidate; break
 		if slot < 0: return {"error":"no physical processing slot", "id":-1}
-	var stock: RefCounted = _inventory.copy_for_reservation() if owners.size()>1 else _inventory
+	for item in retained_inputs:
+		if not consumes.has(item): return {"error":"retained item is not a recipe input","id":-1}
+	var isolated := owners.size()>1 or not retained_inputs.is_empty()
+	var stock: RefCounted = _inventory.copy_for_reservation() if isolated else _inventory
 	var claims: Array = []
 	for owner in owners:
+		for item in retained_inputs:
+			var count: int = consumes[item] - stock.quantity(definition.input,item,owner,true)
+			if count<=0: continue
+			var error: String = stock.move_available_stock(definition.output,definition.input,item,count,owner)
+			if not error.is_empty(): return {"error":error,"id":-1}
 		var task: Dictionary = stock.reserve_operation(0,definition.input,consumes,produces,owner,definition.output)
 		if not String(task.error).is_empty(): return {"error":task.error,"id":-1}
 		claims.append(task.id)

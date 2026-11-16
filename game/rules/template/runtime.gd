@@ -21,6 +21,7 @@ var runner: RefCounted
 var last_error := ""
 var _definition: Dictionary = {}
 var _uses_machine_reservations := false
+var uses_retained_inputs := false
 var _batch_devices := {}
 var _reserve_on_feed: Array[String] = []
 var _units: Array = []
@@ -40,6 +41,8 @@ func _init(owner: RefCounted, template: Resource, compiled: Dictionary = {}) -> 
 	_definition = compiled.definition.duplicate(true)
 	_uses_machine_reservations = _definition.recipes.values().any(func(recipe: Dictionary) -> bool:
 		return recipe.has("machine_reservation"))
+	uses_retained_inputs = _definition.recipes.values().any(func(recipe: Dictionary) -> bool:
+		return recipe.has("machine_reservation") and recipe.nodes[recipe.machine_reservation.last].has("retained_inputs"))
 	_transports = Transports.new(_definition.get("transports",{}))
 	last_error = _transports.validate_context(owner)
 	if not last_error.is_empty(): return
@@ -485,12 +488,13 @@ func _start_ready_nodes() -> void:
 			if owners.is_empty(): continue
 			var timing := Clock.evaluate(node,runner.owner)
 			if not timing.error.is_empty(): last_error = timing.error; return
-			var started: Dictionary = runner.machines.start_batch(node.machine,node.consumes,node.produces,timing.seconds,owners) if owners.size()>1 else runner.machines.start(node.machine,node.consumes,node.produces,timing.seconds,unit.id)
+			var retained: Array = node.get("retained_inputs",[])
+			var started: Dictionary = runner.machines.start_batch(node.machine,node.consumes,node.produces,timing.seconds,owners,retained) if owners.size()>1 else runner.machines.start(node.machine,node.consumes,node.produces,timing.seconds,unit.id,retained)
 			if not started.error.is_empty() and owners.size()>1 and not continuing and not feed_locked:
 				# The aggregate output must fit in the same container. A full
 				# batch is optional; a ready individual job can still start.
 				owners.resize(1)
-				started = runner.machines.start(node.machine,node.consumes,node.produces,timing.seconds,unit.id)
+				started = runner.machines.start(node.machine,node.consumes,node.produces,timing.seconds,unit.id,retained)
 			if not started.error.is_empty():
 				_diagnostics.append({"unit":unit.id,"node":id,"reason":started.error})
 				continue
@@ -507,7 +511,10 @@ func _node_ready(recipe: Dictionary, node: Dictionary, unit: Dictionary) -> bool
 	var machine: Dictionary = _definition.machines[node.machine]
 	for item in node.consumes:
 		if item in _definition.places[machine.input].infinite: continue
-		if runner.inventory.quantity(machine.input,item,unit.id,true)<int(node.consumes[item]): return false
+		var available: int = runner.inventory.quantity(machine.input,item,unit.id,true)
+		if item in node.get("retained_inputs",[]) and machine.input!=machine.output:
+			available += runner.inventory.quantity(machine.output,item,unit.id,true)
+		if available<int(node.consumes[item]): return false
 	return true
 
 func _batch_size(machine: String) -> int:
@@ -729,7 +736,7 @@ func _candidates() -> Array:
 				if feed.node!=id or unit.id not in feed.owners: continue
 			if not _dependencies_complete(recipe, node, unit): continue
 			for item in node.consumes:
-				if item in _definition.places[machine.input].infinite: continue
+				if item in _definition.places[machine.input].infinite or item in node.get("retained_inputs",[]): continue
 				var need := int(node.consumes[item]) - int(runner.inventory.quantity(machine.input, item, unit.id)) - int(runner.inventory.incoming(machine.input, item, unit.id))
 				if need <= 0: continue
 				var producer: Dictionary = recipe.nodes[node.inputs[item]]

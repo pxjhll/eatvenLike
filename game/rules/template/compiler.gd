@@ -302,14 +302,22 @@ static func _recipe(raw: Variant, definition: Dictionary, path: String, errors: 
 				"Reserve the same machine between two dependent processing nodes that lead to the recipe output."))
 		else:
 			recipe.machine_reservation = reservation
+			if raw.machine_reservation.has("retain_inputs"):
+				recipe.nodes[reservation.last].retained_inputs = raw.machine_reservation.retain_inputs.duplicate()
 	return recipe
 
 static func _machine_reservation(raw: Variant, recipe: Dictionary) -> Dictionary:
-	if not Inventory._shape(raw,{"first":"","last":""}): return {}
+	var shape := {"first":"","last":""}
+	if raw is Dictionary and raw.has("retain_inputs"): shape.retain_inputs = []
+	if not Inventory._shape(raw,shape): return {}
 	var first: Dictionary = recipe.nodes.get(raw.first,{})
 	var last: Dictionary = recipe.nodes.get(raw.last,{})
 	if first.is_empty() or last.is_empty() or first.id==last.id: return {}
 	if first.capability!="process" or last.capability!="process" or first.machine!=last.machine: return {}
+	var retained := {}
+	for item in raw.get("retain_inputs",[]):
+		if not item is String or retained.has(item) or last.inputs.get(item)!=first.id: return {}
+		retained[item] = true
 	var dependencies := _recipe_dependencies(recipe,last.id)
 	if not dependencies.has(first.id): return {}
 	if recipe.output.node!=last.id and not _recipe_dependencies(recipe,recipe.output.node).has(last.id): return {}
