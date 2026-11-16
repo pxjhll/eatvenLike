@@ -93,6 +93,9 @@ func _ready() -> void:
 	resized.connect(layout_frame)
 	layout_frame()
 	welcome_button.grab_focus()
+	if OS.has_feature("web"):
+		var loading := JavaScriptBridge.get_interface("EatventureLoading")
+		if loading != null: loading.ready()
 
 
 func _picture(texture: Texture2D, node_name: String) -> TextureRect:

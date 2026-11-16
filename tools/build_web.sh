@@ -41,13 +41,19 @@ cat > build/web/_headers <<'HEADERS'
   Cache-Control: no-cache
 /opening_video.js
   Cache-Control: no-cache
+/welcome.png
+  Cache-Control: no-cache
+/loading_screen.js
+  Cache-Control: no-cache
+/loading_screen.css
+  Cache-Control: no-cache
 HEADERS
 python3 - <<'PY'
 import json
 import os
 from pathlib import Path
 out = Path("build/web")
-required = ["index.html", "index.js", "index.pck", "index.wasm.gz", "opening.mp4", "opening_video.js"]
+required = ["index.html", "index.js", "index.pck", "index.wasm.gz", "opening.mp4", "opening_video.js", "welcome.png", "loading_screen.js", "loading_screen.css"]
 for name in required:
     assert (out / name).is_file(), f"Missing Web asset: {name}"
 for path in out.rglob("*"):

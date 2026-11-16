@@ -19,3 +19,5 @@ Cloudflare Pages 项目：`eatvenlike`；生产分支：`main`。
 片头使用浏览器原生 MP4 播放；`tools/prepare_web_export.py` 会把 `art/opening/intro.mp4` 和 `web/opening_video.js` 复制到导出目录，注入播放器脚本。发布时必须保留 `opening.mp4`、`opening_video.js`，不能只复制 Godot 的四个导出文件。Web PCK 排除 Windows 用的 OGV 和原生末帧，Windows 导出排除网页 MP4 和网页末帧。
 
 欢迎图的第一次真实点击同时用于解锁游戏背景音乐。片头本身没有音轨；背景音乐复用 ShopAudio，遵循音乐开关，进店后同曲目不重播。资源与视频出错时可从末帧继续进入营业。
+
+欢迎图现在同时作为网页最初的加载页：`welcome.png`、`loading_screen.css` 和 `loading_screen.js` 在引擎加载前显示，真实下载进度覆盖原图中的按钮。MP4 会与引擎/PCK 同时预加载，资源与启动场景都准备好后，再揭示同图的 Godot 欢迎按钮；点击后才播放片头和音乐，不会再次要求点击欢迎页。部署必须包含这三个新增独立文件。引擎下载失败会保留欢迎图并提供刷新按钮；片头单独下载失败仍允许进入原有回退流程。

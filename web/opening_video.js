@@ -2,9 +2,44 @@
 (() => {
   'use strict';
   let active = null;
+  let preloadPromise = null, preparedSource = null, preloadFailed = false;
   const api = {
+    preload(onProgress) {
+      if (preloadPromise) return preloadPromise;
+      preloadPromise = (async () => {
+        const abort = new AbortController();
+        const timeout = setTimeout(() => abort.abort(), 90000);
+        try {
+          const response = await fetch(new URL('opening.mp4', document.baseURI), { signal: abort.signal });
+          if (!response.ok) throw new Error('Intro download failed');
+          const total = Number(response.headers.get('Content-Length')) || 0;
+          const chunks = [];
+          let loaded = 0;
+          if (response.body) {
+            const reader = response.body.getReader();
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              chunks.push(value); loaded += value.byteLength;
+              onProgress(loaded, total);
+            }
+          } else {
+            const buffer = await response.arrayBuffer();
+            chunks.push(buffer); loaded = buffer.byteLength;
+          }
+          preparedSource = URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
+          onProgress(loaded, loaded);
+          return true;
+        } catch (_) {
+          preloadFailed = true;
+          return false;
+        } finally { clearTimeout(timeout); }
+      })();
+      return preloadPromise;
+    },
     start(callback) {
       api.stop();
+      if (preloadFailed) { callback('failed'); return; }
       const canvas = document.getElementById('canvas');
       if (!canvas) { callback('failed'); return; }
       const video = document.createElement('video');
@@ -49,7 +84,8 @@
       }, 1000);
       fit();
       document.body.appendChild(video);
-      video.src = new URL('opening.mp4', document.baseURI).href;
+      session.source = preparedSource || new URL('opening.mp4', document.baseURI).href;
+      video.src = session.source;
       video.play().catch(() => notify('failed'));
     },
     stop() {
@@ -68,6 +104,10 @@
         session.video.removeAttribute('src');
         session.video.load();
         session.video.remove();
+        if (preparedSource === session.source && (!active || active.source !== preparedSource)) {
+          URL.revokeObjectURL(preparedSource);
+          preparedSource = null;
+        }
       }));
     }
   };
