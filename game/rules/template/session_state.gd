@@ -121,8 +121,9 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 		recorded.service.orders.policy = candidate.runtime.service.orders.snapshot().policy
 		if candidate.runtime.service._policy.has("previous_pickup") and not recorded.service.has("pickup_before"):
 			recorded.service.pickup_before = recorded.service.orders.next_order
-	if refresh_staff_tasks:
-		error = _adopt_staff_tasks(candidate.runtime,recorded)
+	var refresh_retained_inputs: bool = refresh and data.template!=identity and candidate.runtime.uses_retained_inputs
+	if refresh_staff_tasks or refresh_retained_inputs:
+		error = _adopt_staff_tasks(candidate.runtime,recorded,refresh_staff_tasks)
 		if not error.is_empty(): return error
 	error = candidate.runtime.restore(recorded,refresh and data.template!=identity,refresh_layout)
 	if not error.is_empty(): return error
@@ -142,7 +143,7 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 
 ## Release obsolete work through the inventory ledger before validating the
 ## saved session against the new permissions and automatic admission policy.
-static func _adopt_staff_tasks(runtime: RefCounted, recorded: Dictionary) -> String:
+static func _adopt_staff_tasks(runtime: RefCounted, recorded: Dictionary, refresh_permissions: bool) -> String:
 	var data: Dictionary = recorded.runner
 	var stock := Shape.new()
 	var error := stock.restore(data.inventory)
@@ -150,13 +151,21 @@ static func _adopt_staff_tasks(runtime: RefCounted, recorded: Dictionary) -> Str
 	var admissions := {}
 	var released := {}
 	var kept := []
-	var automatic: bool = runtime.service._policy.admission=="automatic"
+	var automatic: bool = refresh_permissions and runtime.service!=null and runtime.service._policy.admission=="automatic"
+	var recipe_by_owner := {}
+	if runtime.uses_retained_inputs:
+		if not recorded.get("units") is Array: return "invalid production unit shape"
+		for unit in recorded.units:
+			if unit is Dictionary and unit.get("id") is int and unit.get("recipe") is String:
+				recipe_by_owner[unit.id] = runtime._definition.recipes.get(unit.recipe,{})
 	for task in data.tasks:
 		var worker: Dictionary = runtime.runner.owner.worker_by_id(task.worker)
 		if worker.is_empty(): return "obsolete task references an unknown employee"
 		if automatic and task.kind=="interact":
 			admissions[task.subject] = task.worker
-		elif task.kind in ["transfer","bundle"] and not runtime.runner.dispatcher.allowed_task(worker,task,runtime.runner.machines,false):
+		elif task.kind in ["transfer","bundle"] and (
+				_replaced_by_retained_input(runtime,stock,task,recipe_by_owner) or
+				(refresh_permissions and not runtime.runner.dispatcher.allowed_task(worker,task,runtime.runner.machines,false))):
 			error = stock.cancel_bundle(task.bundle) if task.kind=="bundle" else stock.cancel(task.claim)
 			if not error.is_empty(): return error
 		else:
@@ -168,11 +177,12 @@ static func _adopt_staff_tasks(runtime: RefCounted, recorded: Dictionary) -> Str
 			admissions[event.subject] = event.worker
 			released[event.worker] = true
 		data.interactions.clear()
-	for guest in recorded.service.orders.guests:
-		if not admissions.has(guest.id): continue
-		if guest.state!="queue" or guest.claimed!=admissions[guest.id]: return "obsolete admission differs from the queued customer"
-		guest.claimed = -1
-		admissions.erase(guest.id)
+	if not admissions.is_empty():
+		for guest in recorded.service.orders.guests:
+			if not admissions.has(guest.id): continue
+			if guest.state!="queue" or guest.claimed!=admissions[guest.id]: return "obsolete admission differs from the queued customer"
+			guest.claimed = -1
+			admissions.erase(guest.id)
 	if not admissions.is_empty(): return "obsolete admission references an unknown customer"
 	for actor in data.actors:
 		if not released.has(actor.id) or kept.any(func(task: Dictionary) -> bool: return task.worker==actor.id): continue
@@ -183,6 +193,20 @@ static func _adopt_staff_tasks(runtime: RefCounted, recorded: Dictionary) -> Str
 	data.inventory = stock.snapshot()
 	recorded.dispatch.scopes = recorded.dispatch.scopes.filter(func(lease: Dictionary) -> bool: return not released.has(lease.worker))
 	return ""
+
+
+static func _replaced_by_retained_input(runtime: RefCounted, stock: RefCounted, task: Dictionary, recipes: Dictionary) -> bool:
+	if recipes.is_empty(): return false
+	var claims: Array = stock.bundle(task.bundle).get("claims",[]) if task.kind=="bundle" else [task.claim]
+	for id in claims:
+		var claim: Dictionary = stock.claim(id)
+		var recipe: Dictionary = recipes.get(claim.get("allocate_owner"),{})
+		if not recipe.has("machine_reservation"): continue
+		var reservation: Dictionary = recipe.machine_reservation
+		if claim.item not in recipe.nodes[reservation.last].get("retained_inputs",[]): continue
+		var machine: Dictionary = runtime._definition.machines[reservation.machine]
+		if claim.from==machine.output and claim.to==machine.input: return true
+	return false
 
 
 ## Stage-only migration keeps production, order receipts and actor references intact.

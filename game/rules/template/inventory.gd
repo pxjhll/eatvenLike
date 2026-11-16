@@ -194,6 +194,22 @@ func _drop(id: int, grouped: bool) -> String:
 	_record("drop",task.id)
 	return ""
 
+## Stage stock inside one device without assigning a carrier or changing its owner.
+func move_available_stock(source: String, destination: String, item: String, count: int, owner: int) -> String:
+	if not _state.places.has(source) or not _state.places.has(destination) or source==destination or is_hand_place(source) or is_hand_place(destination): return "invalid stock move containers"
+	if item.is_empty() or count<=0 or owner<SHARED or item in _state.places[destination].infinite: return "invalid stock move"
+	if quantity(source,item,owner,true)<count or _free(destination)<count: return "stock or capacity unavailable"
+	for part in _parts(source,{item:count},owner):
+		var lot := _find(_state.lots,part.lot)
+		if part.count==lot.count:
+			lot.place = destination
+		else:
+			_remove(lot,part.count)
+			_insert(destination,item,part.count,owner)
+	_sync_capacity_limits()
+	return ""
+
+
 func reserve_operation(worker: int, place: String, consumes: Dictionary, produces: Dictionary,
 		owner: int = SHARED, output_place: String = "") -> Dictionary:
 	var destination := place if output_place.is_empty() else output_place
