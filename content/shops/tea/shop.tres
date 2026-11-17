@@ -575,7 +575,7 @@ notice_seconds = 4.0
 notice_portrait = SubResource("Manager_notice_portrait")
 speaker = "manager"
 icon = "cat"
-card_text = "我路过，回来看看你。留点金币给你周转！"
+card_text = "我路过，回来看看你们。留点金币给你周转！"
 
 [sub_resource type="Resource" id="Resource_4lrgi"]
 script = ExtResource("12_anqca")
