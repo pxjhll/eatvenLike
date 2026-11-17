@@ -139,7 +139,86 @@
       "kind": "script",
       "profile": "headless",
       "script": "tests/run_all.gd",
-      "args": [],
+      "args": [
+        "--shard=0/8"
+      ],
+      "timeout": 600,
+      "success": "\\d+ 个用例，0 个失败"
+    },
+    {
+      "id": "rules_1",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/run_all.gd",
+      "args": [
+        "--shard=1/8"
+      ],
+      "timeout": 600,
+      "success": "\\d+ 个用例，0 个失败"
+    },
+    {
+      "id": "rules_2",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/run_all.gd",
+      "args": [
+        "--shard=2/8"
+      ],
+      "timeout": 600,
+      "success": "\\d+ 个用例，0 个失败"
+    },
+    {
+      "id": "rules_3",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/run_all.gd",
+      "args": [
+        "--shard=3/8"
+      ],
+      "timeout": 600,
+      "success": "\\d+ 个用例，0 个失败"
+    },
+    {
+      "id": "rules_4",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/run_all.gd",
+      "args": [
+        "--shard=4/8"
+      ],
+      "timeout": 600,
+      "success": "\\d+ 个用例，0 个失败"
+    },
+    {
+      "id": "rules_5",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/run_all.gd",
+      "args": [
+        "--shard=5/8"
+      ],
+      "timeout": 600,
+      "success": "\\d+ 个用例，0 个失败"
+    },
+    {
+      "id": "rules_6",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/run_all.gd",
+      "args": [
+        "--shard=6/8"
+      ],
+      "timeout": 600,
+      "success": "\\d+ 个用例，0 个失败"
+    },
+    {
+      "id": "rules_7",
+      "kind": "script",
+      "profile": "headless",
+      "script": "tests/run_all.gd",
+      "args": [
+        "--shard=7/8"
+      ],
       "timeout": 600,
       "success": "\\d+ 个用例，0 个失败"
     },

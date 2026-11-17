@@ -123,6 +123,23 @@ const SUITES := [
 
 
 func _initialize() -> void:
+	# Optional deterministic partition: all tests still run exactly once across shards.
+	var shard_index := 0
+	var shard_count := 1
+	var args := OS.get_cmdline_user_args()
+	if not args.is_empty():
+		var parts := args[0].trim_prefix("--shard=").split("/")
+		if args.size() != 1 or not args[0].begins_with("--shard=") or parts.size() != 2 or not parts[0].is_valid_int() or not parts[1].is_valid_int():
+			push_error("Invalid rule shard; expected --shard=index/count")
+			quit(2)
+			return
+		shard_index = int(parts[0])
+		shard_count = int(parts[1])
+		if shard_count < 1 or shard_count > 32 or shard_index < 0 or shard_index >= shard_count:
+			push_error("Invalid rule shard range")
+			quit(2)
+			return
+	var discovered := 0
 	# 测试方法里发生运行时错误时 Godot 只会中止那个方法，断言不会记失败，所以另外收集错误
 	var errors := preload("res://tests/error_counter.gd").new()
 	OS.add_logger(errors)
@@ -134,6 +151,12 @@ func _initialize() -> void:
 			var name: String = method.name
 			if not name.begins_with("test_"):
 				continue
+			var ordinal := discovered
+			discovered += 1
+			if ordinal % shard_count != shard_index:
+				continue
+			var started := Time.get_ticks_msec()
+			print("  RUN   %s.%s" % [suite_name, name])
 			var suite: RefCounted = suite_script.new()
 			total += 1
 			errors.take()
@@ -148,6 +171,10 @@ func _initialize() -> void:
 				print("  FAIL  %s.%s" % [suite_name, name])
 				for f in suite.failures:
 					print("        - " + f)
+			print("  TIME  %s.%s %.3fs" % [suite_name, name, (Time.get_ticks_msec() - started) / 1000.0])
+	if total == 0:
+		failed += 1
+	print("RULE SHARD %d/%d: selected %d of %d tests" % [shard_index, shard_count, total, discovered])
 	OS.remove_logger(errors)
 	print("\n%d 个用例，%d 个失败" % [total, failed])
 	quit(1 if failed > 0 else 0)

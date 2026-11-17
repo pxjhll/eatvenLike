@@ -48,6 +48,23 @@ def validate_manifest(data: dict, root: Path) -> None:
             raise ValueError(f'missing completion banner: {name}')
         re.compile(job['success'])
 
+    # A partial/malformed shard set must never silently reduce rule coverage.
+    rules = [job for job in data['jobs'] if job.get('script') == 'tests/run_all.gd']
+    if rules and any(job.get('args') for job in rules):
+        partitions = []
+        for job in rules:
+            args = job.get('args', [])
+            match = re.fullmatch(r'--shard=(\d+)/(\d+)', args[0]) if len(args) == 1 else None
+            if not match:
+                raise ValueError('rule shards require --shard=index/count')
+            index, count = map(int, match.groups())
+            if not 1 <= count <= 32 or not 0 <= index < count or job['profile'] != 'headless':
+                raise ValueError('invalid rule shard range/profile')
+            partitions.append((index, count))
+        count = partitions[0][1]
+        if len(partitions) != count or set(partitions) != {(i, count) for i in range(count)}:
+            raise ValueError('rule shards must cover every partition exactly once')
+
 
 def output_path(root: Path, value: str) -> Path:
     path = (root / value).resolve()
