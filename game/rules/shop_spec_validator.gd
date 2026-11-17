@@ -416,6 +416,11 @@ static func _effects(effects: Array, p: String, c: Dictionary, errors: Array[Dic
 			_error(errors, at + ".kind", "open_flavor is a station upgrade label only, not a gameplay effect.", "unsupported")
 		_enum(e.op, ["mul", "add", "set"], at + ".op", errors)
 		_number(e.value, at + ".value", errors, -INF)
+		if e.gold_max != 0:
+			if e.kind != "grant_gold": _error(errors, at + ".gold_max", "Random gold is only supported for grant_gold.")
+			_number(e.gold_max, at + ".gold_max", errors, 1, false, 2147483647)
+			_number(e.value, at + ".value", errors, 0, false, e.gold_max)
+			if e.value != floorf(e.value): _error(errors, at + ".value", "Random gold must use an integer minimum.")
 		if e.kind in ["speed", "duration", "flow", "walk", "work", "patience"] and e.op != "add": _number(e.value, at + ".value", errors, 0, true)
 		if e.kind in ["batch", "process_slots", "carry"] and e.op == "set": _number(e.value, at + ".value", errors, 0, true)
 		match e.kind:
@@ -591,6 +596,11 @@ static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dic
 		_number(event.chance, p + ".chance", errors, 0, false, 1)
 		_number(event.cooldown, p + ".cooldown", errors)
 		_number(event.duration, p + ".duration", errors)
+		_number(event.notice_seconds, p + ".notice_seconds", errors)
+		if event.notice_seconds > 0.0 and (not event.once or not event.choices.is_empty()):
+			_error(errors, p + ".notice_seconds", "Automatic notices require a one-time event with no choices.")
+		for condition in ["min_sold", "min_stage", "max_stage"]:
+			if event.condition.has(condition): _number(event.condition[condition], p + ".condition." + condition, errors)
 		for n in event.choices.size():
 			var choice: Dictionary = event.choices[n]
 			if not choice.get("label", "") is String: _error(errors, p + ".choices[%d].label" % n, "Expected text.")

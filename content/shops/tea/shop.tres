@@ -549,6 +549,27 @@ texts = Dictionary[String, String]({
 })
 opening_station = "lemonade"
 
+[sub_resource type="Resource" id="Effect_tea_manager_gift"]
+script = ExtResource("7_1v0ns")
+kind = "grant_gold"
+op = "add"
+value = 30.0
+gold_max = 50
+
+[sub_resource type="Resource" id="Event_tea_manager_visit"]
+script = ExtResource("5_kou0a")
+id = "tea_manager_visit"
+display_name = "店长回访"
+trigger = "tick_second"
+condition = {"open": true, "min_sold": 8, "max_stage": 1}
+chance = 1.0
+once = true
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Effect_tea_manager_gift")])
+notice_seconds = 4.0
+speaker = "manager"
+icon = "cat"
+card_text = "我路过，回来看看你。留点金币给你周转！"
+
 [sub_resource type="Resource" id="Resource_4lrgi"]
 script = ExtResource("12_anqca")
 id = "shop_done"
@@ -1972,6 +1993,7 @@ script = ExtResource("15_3rult")
 id = "tea"
 display_name = "奶茶店"
 start_gold = 50
+events = Array[ExtResource("5_kou0a")]([SubResource("Event_tea_manager_visit")])
 random_seed = 20261025
 items = Array[ExtResource("13_l0dwn")]([SubResource("Resource_ofbvg"), SubResource("Resource_cffgs"), SubResource("Resource_e8s1d"), SubResource("Resource_3dkr1"), SubResource("Resource_n745i"), SubResource("Resource_gc2vn"), SubResource("Resource_aph8w"), SubResource("Resource_e7yay"), SubResource("Resource_nicqr"), SubResource("Resource_nyjld"), SubResource("Resource_jv8ei")])
 dishes = Array[ExtResource("2_ctjwf")]([SubResource("Resource_oybcy"), SubResource("Resource_py30k"), SubResource("Resource_gam32"), SubResource("Resource_3cbtw"), SubResource("Resource_mwsl7"), SubResource("Resource_7jc1v"), SubResource("Resource_14e4x"), SubResource("Resource_bkbpb")])

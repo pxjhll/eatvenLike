@@ -39,6 +39,8 @@ const ONE_SHOT := ["grant_gold", "customer_wave", "unlock_staff_kind", "unlock_r
 ## mul = 乘到当前值上；add = 加；set = 这一级起直接等于 value
 @export var op: String = "mul"
 @export var value: float = 1.0
+## grant_gold 的随机整数上限（含）。0 表示发固定的 value。
+@export var gold_max: int = 0
 
 
 static func make(effect_kind: String, effect_op: String, effect_value: float, effect_target := "") -> SpecEffect:

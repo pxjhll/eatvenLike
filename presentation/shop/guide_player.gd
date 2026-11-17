@@ -28,6 +28,9 @@ var _lost_seen := -1
 var _staff_at_start := 0
 var _bubble: PanelContainer
 var _bubble_text: Label
+var _notice_portrait: TextureRect
+var _announcement := ""
+var _announcement_left := 0.0
 var _bubble_skip: Button
 var _show_bubble := false
 var _show_notice := false
@@ -53,7 +56,18 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_theme_constant_override("separation", 8)
 	_bubble.add_child(column)
-	_bubble_text = _hud._text(column, "", 23)
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 12)
+	column.add_child(row)
+	_notice_portrait = TextureRect.new()
+	_notice_portrait.custom_minimum_size = Vector2(56, 56)
+	_notice_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_notice_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_notice_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_notice_portrait.hide()
+	row.add_child(_notice_portrait)
+	_bubble_text = _hud._text(row, "", 23)
 	_bubble_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_bubble_text.custom_minimum_size.x = 400
 	_bubble_skip = Button.new()
@@ -84,6 +98,8 @@ func restart() -> void:
 	_angry_pending = false
 	_lost_seen = -1
 	_staff_at_start = 0
+	_announcement_left = 0.0
+	_notice_portrait.texture = null
 	visible = false
 	if _bubble != null: _bubble.hide()
 	queue_redraw()
@@ -104,9 +120,39 @@ func refresh(delta: float) -> void:
 		_pick()
 		if not active.is_empty(): _play(_step(), delta)
 	visible = enabled and not active.is_empty() and _step() != null and _step().style != "card"
-	_bubble.visible = _show_bubble and visible
+	if _announcement_left > 0.0 and _announcement_space_available():
+		_render_announcement()
+		_announcement_left = maxf(0.0, _announcement_left - delta)
+	else:
+		_notice_portrait.hide()
+		_bubble.visible = _show_bubble and visible
 	_place_bubble()
 	queue_redraw()
+
+
+func can_show_announcement() -> bool:
+	return _announcement_left <= 0.0 and _announcement_space_available()
+
+
+func _announcement_space_available() -> bool:
+	return active.is_empty() and _hud.page == "shop" and not _hud.popups.has_card()
+
+
+func show_announcement(text: String, portrait: Texture2D, seconds: float) -> void:
+	_announcement = text
+	_announcement_left = seconds
+	_notice_portrait.texture = portrait
+	_render_announcement()
+	_place_bubble()
+
+
+func _render_announcement() -> void:
+	_show_notice = true
+	_say(_announcement)
+	_bubble_skip.hide()
+	_notice_portrait.visible = _notice_portrait.texture != null
+	visible = true
+	_bubble.show()
 
 
 # ---------- 选步骤 ----------

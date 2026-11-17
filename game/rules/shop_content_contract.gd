@@ -29,6 +29,8 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 			var key: String = prop.name
 			if type_name=="SpecShop" and key=="runtime_template" and value.runtime_template==null: continue
 			if type_name=="SpecShop" and key=="previous_progression": continue
+			if type_name=="SpecEffect" and key=="gold_max" and value.gold_max==0: continue
+			if type_name=="SpecEvent" and key=="notice_seconds" and value.notice_seconds==0.0: continue
 			if type_name=="SpecStage" and key=="recipe_level" and value.recipe_level==0: continue
 			if type_name=="SpecStage" and key=="grant_worker" and value.grant_worker.is_empty(): continue
 			if type_name=="SpecMaterial" and key=="requires_station" and value.requires_station.is_empty(): continue

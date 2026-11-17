@@ -375,6 +375,7 @@ func _process(delta: float) -> void:
 	if recorder != null: recorder.tick(rules.clock - before, frame)
 	_refresh(delta, frame)
 	guide.refresh(delta)
+	_refresh_event_notice()
 	_fit()
 	_toast_left = maxf(0, _toast_left - delta)
 	_toast.visible = _toast_left > 0 or not _staffing_warning().is_empty()
@@ -475,12 +476,25 @@ func _actor(kind: String, height := -1.0) -> Node2D:
 
 func _refresh_events() -> void:
 	var card := view.event_card()
-	if card.is_empty() or ui.popups.has_card("event:" + String(card.id)): return
+	if card.is_empty() or card.notice_seconds > 0.0 or ui.popups.has_card("event:" + String(card.id)): return
 	var buttons: Array = []
 	for index in card.choices.size():
 		buttons.append({"label": card.choices[index], "primary": index == 0, "action": answer_event.bind(index, String(card.id))})
 	ui.popups.push({"id": "event:" + String(card.id), "title": card.title, "art": card.icon if not String(card.icon).is_empty() else String(card.speaker),
 		"note": card.text, "buttons": buttons, "speaker": card.speaker})
+
+
+func _refresh_event_notice() -> void:
+	var card := view.event_card()
+	if card.is_empty() or card.notice_seconds <= 0.0 or not guide.can_show_announcement(): return
+	var result := execute_command("resolve_event_notice", {"id": card.id})
+	if result.code != "ok": return
+	save_now(false)
+	ui.refresh()
+	var notice: String = card.title + "：" + card.text
+	if result.params.gold_granted > 0.0:
+		notice += "\n+%d 金币" % int(result.params.gold_granted)
+	guide.show_announcement(notice, ui.portrait_texture(card.icon), card.notice_seconds)
 
 
 func answer_event(choice: int, id: String) -> void:
