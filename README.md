@@ -1,6 +1,6 @@
 # eatvenLike · 小店经营
 
-竖屏小店经营游戏，Godot 4.7。主场景 `presentation/opening/opening.tscn`：欢迎图点击后播放片头和游戏背景音乐，片头结束停在最后一帧，点击“开始营业”进入 `presentation/shop/shop_play.tscn`。按跨店记录（`game/app/profile.gd`）和关卡表（`content/campaign/campaign.tres`）进店：北方城先是煎饼果子摊，结店后去奶茶店。
+竖屏小店经营游戏，Godot 4.7。主场景 `presentation/opening/opening.tscn`：点击欢迎图播放带原声的片头，片头结束停在最后一帧，点击“开始营业”进入 `presentation/shop/shop_play.tscn` 并播放局内背景音乐。按跨店记录（`game/app/profile.gd`）和关卡表（`content/campaign/campaign.tres`）进店：北方城先是煎饼果子摊，结店后去奶茶店。
 
 所有店跑同一套规则代码和同一套界面代码，店与店之间只有数据和美术不同（规格：Notion《通用店铺规则规格｜定稿 v1.0》）：
 

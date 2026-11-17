@@ -13,7 +13,6 @@ signal shop_requested
 
 var phase := Phase.WELCOME
 var video: Node
-var music_track: AudioStream
 var change_scene_on_start := true
 var frame: Control
 var welcome: Control
@@ -121,10 +120,7 @@ func begin_intro() -> void:
 	welcome.sprite.pause()
 	welcome_button.disabled = true
 	welcome_button.hide()
-	if music_track == null:
-		music_track = get_node("/root/App").opening_music()
-	get_node("/root/ShopAudio").play_music(music_track)
-	video.play(frame)
+	video.play(frame, ShopAudio.music_enabled)
 
 
 func _video_started() -> void:

@@ -1,4 +1,4 @@
-/* The browser decodes the silent MP4; Godot owns music, state and all buttons. */
+/* The browser plays the MP4 and its soundtrack; Godot owns state and all buttons. */
 (() => {
   'use strict';
   let active = null;
@@ -48,7 +48,7 @@
       preloadFailed = true;
       preloadController.abort();
     },
-    start(callback) {
+    start(callback, audioEnabled) {
       api.stop();
       if (preloadFailed) { callback('failed'); return; }
       const canvas = document.getElementById('canvas');
@@ -57,7 +57,7 @@
       const session = { video, callback, done: false, lastTime: -1, waiting: 0 };
       active = session;
       video.id = 'eatventure-opening-video';
-      video.muted = true;
+      video.muted = !audioEnabled;
       video.playsInline = true;
       video.disablePictureInPicture = true;
       video.preload = 'auto';

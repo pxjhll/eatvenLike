@@ -38,6 +38,7 @@ extends Resource
 ##   go: 页面（先回到这一页）、wait: true（先不显示）、back: true（先退出，下次再提示）、then: 步骤（换成另一步）
 ##   select_waiting: true（在员工页时选中名册里没派出去的那位）
 ##   pause: false（不压暗、不停店，只指一下）
+##   notice_seconds: 秒数（在顶栏下短暂显示提示，无箭头，店继续营业）
 @export var cues: Array[Dictionary] = []
 ## 填进文案和条件的值
 @export var params: Dictionary = {}

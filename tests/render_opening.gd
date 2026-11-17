@@ -21,10 +21,10 @@ func run_tests() -> void:
 	root.size = Vector2i(720, 1280)
 	var audio: Node = root.get_node("ShopAudio")
 	var app: Node = root.get_node("App")
+	audio.music_enabled = true
 	var scene = load("res://presentation/opening/opening.tscn").instantiate()
 	var media := Stub.new()
 	scene.video = media
-	scene.music_track = TRACK
 	scene.change_scene_on_start = false
 	root.add_child(scene)
 	check(app._profile == null, "Welcome does not read ambient progress")
@@ -58,8 +58,8 @@ func run_tests() -> void:
 	scene.begin_intro()
 	check(media.plays == 1 and scene.phase == scene.Phase.PLAYING, "Double welcome click plays only once")
 	check(root.get_node_or_null("ShopPlay") == null, "Intro has no running shop behind it")
-	check(app._profile == null, "Injected intro music never creates a shop session")
-	check(audio.get_node("Music").stream == TRACK, "Intro music uses the existing audio service")
+	check(app._profile == null, "Playing the intro never reads shop progress")
+	check(media.audio_enabled and audio.get_node("Music").stream == null, "The video plays its soundtrack without starting shop music")
 	media.finished.emit()
 	await process_frame
 	check(scene.poster.visible and scene.start_button.visible, "Finished video displays a permanent poster and real button")
@@ -76,7 +76,6 @@ func run_tests() -> void:
 	var failed_scene = load("res://presentation/opening/opening.tscn").instantiate()
 	var bad_media := Stub.new()
 	failed_scene.video = bad_media
-	failed_scene.music_track = TRACK
 	failed_scene.change_scene_on_start = false
 	root.add_child(failed_scene)
 	failed_scene.begin_intro()
@@ -93,7 +92,7 @@ func run_tests() -> void:
 		check(is_equal_approx(failed_scene.frame.size.x / failed_scene.frame.size.y, 720.0 / 1280.0), "Opening artwork always retains portrait proportions")
 		check(failed_scene.frame.position.x >= 0 and failed_scene.frame.position.y >= 0, "Artwork remains inside the viewport")
 	failed_scene.free()
-	# Read music for existing progress without opening, resetting or saving that shop.
+	# Repeat with existing progress and the saved mute preference.
 	var profile_script = load("res://game/app/profile.gd")
 	var isolated_profile = profile_script.new("user://opening-profile-probe.json")
 	isolated_profile.shop = "tea"
@@ -104,16 +103,16 @@ func run_tests() -> void:
 	var resumed_media := Stub.new()
 	resumed.video = resumed_media
 	root.add_child(resumed)
+	audio.music_enabled = false
 	resumed.begin_intro()
-	check(resumed.music_track == load("res://art/audio/milk_tea_afternoon.ogg"), "Existing progress chooses the upcoming shop's music")
-	check(isolated_profile.to_dict() == before, "Selecting intro music leaves progress untouched")
+	check(resumed_media.plays == 1 and not resumed_media.audio_enabled, "Intro respects the music-off preference and still plays")
+	check(isolated_profile.to_dict() == before, "Playing the intro leaves progress untouched")
 	var saved_after := FileAccess.get_file_as_bytes(isolated_profile.path) if FileAccess.file_exists(isolated_profile.path) else PackedByteArray()
 	check(saved_after == saved_before, "Intro does not write progress to disk")
 	resumed.free()
 	app.profile = null
-	audio.music_enabled = false
 	audio.play_music(TRACK)
-	check(not audio.get_node("Music").playing or audio.get_node("Music").stream_paused, "Intro respects saved music-off preference")
+	check(not audio.get_node("Music").playing or audio.get_node("Music").stream_paused, "Shop music also respects the music-off preference")
 	audio.music_enabled = true
 	audio._can_play = true
 	audio.play_music(TRACK)

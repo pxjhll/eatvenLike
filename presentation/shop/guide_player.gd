@@ -30,6 +30,8 @@ var _bubble: PanelContainer
 var _bubble_text: Label
 var _bubble_skip: Button
 var _show_bubble := false
+var _show_notice := false
+var _notice_elapsed := {}
 
 
 func setup(view: Node2D, seen_ids: Array) -> void:
@@ -96,9 +98,10 @@ func refresh(delta: float) -> void:
 	_hole = Rect2()
 	_point = Vector2.INF
 	_show_bubble = false
+	_show_notice = false
 	if enabled:
 		_pick()
-		if not active.is_empty(): _play(_step())
+		if not active.is_empty(): _play(_step(), delta)
 	visible = enabled and not active.is_empty() and _step() != null and _step().style != "card"
 	_bubble.visible = _show_bubble and visible
 	_place_bubble()
@@ -134,6 +137,7 @@ func _opening_done() -> bool:
 
 func _start(id: String) -> void:
 	active = id
+	_notice_elapsed.clear()
 	_staff_at_start = _view.view.deployed_count()
 	var step := _step()
 	if step.style == "card":
@@ -143,7 +147,7 @@ func _start(id: String) -> void:
 
 # ---------- 播放 ----------
 
-func _play(step: SpecGuideStep) -> void:
+func _play(step: SpecGuideStep, delta: float) -> void:
 	if step == null:
 		active = ""
 		return
@@ -154,7 +158,8 @@ func _play(step: SpecGuideStep) -> void:
 		_finish()
 		return
 	_bubble_skip.text = step.skip_label
-	for cue in step.cues:
+	for index in step.cues.size():
+		var cue := step.cues[index]
 		if not _all(cue.get("if", []), step): continue
 		if cue.get("back", false):
 			active = ""
@@ -172,6 +177,13 @@ func _play(step: SpecGuideStep) -> void:
 			if not waiting.is_empty() and _view.staff_is_deployed(_view.selected_worker):
 				_view.select_worker(int(waiting[0].id), true)
 		var text := _fill(String(cue.get("text", "")), step)
+		if cue.has("notice_seconds"):
+			var elapsed: float = _notice_elapsed.get(index, 0.0)
+			if elapsed < float(cue.notice_seconds):
+				_show_notice = true
+				_say(text)
+				_notice_elapsed[index] = elapsed + delta
+			return
 		var target := String(cue.get("at", ""))
 		var at := _fill(target, step)
 		if target == "station:{slow_id}":
@@ -427,6 +439,10 @@ func _place_bubble() -> void:
 	if not _bubble.visible:
 		return
 	_bubble.reset_size()
+	if _show_notice:
+		var header := _control_rect(_hud.get_node("Header"))
+		_bubble.position = Vector2((size.x - _bubble.size.x) * 0.5, header.end.y + 12.0)
+		return
 	var anchor := _point if _point != Vector2.INF else size / 2.0
 	var target := _hole if _hole.has_area() else Rect2(anchor, Vector2.ZERO)
 	var below := anchor.y < size.y * 0.5

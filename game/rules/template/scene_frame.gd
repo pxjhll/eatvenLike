@@ -13,6 +13,7 @@ static func build(runtime: RefCounted, displays: Array = [], presentation: Dicti
 		frame[key] = value.duplicate(true) if value is Dictionary or value is Array else value
 	frame.stage_queue_capacity = runtime.service.queue_capacity() if runtime.service!=null else 0
 	frame.movement = {"customers":{}}
+	var counter_pose := _counter_pose(runtime)
 	for worker in frame.workers:
 		for legacy in ["steps","step","job","timer"]: worker.erase(legacy)
 		worker.presentation_version = 1
@@ -22,10 +23,15 @@ static func build(runtime: RefCounted, displays: Array = [], presentation: Dicti
 		worker.carry_item = "" if held.items.is_empty() else String(held.items[0].item)
 		worker.speed = owner.walk_speed(worker)/owner.shop.layout.motion_units
 		var task: Dictionary = runtime.runner.tasks.get(worker.id,{})
+		var action_status: String = worker.get("action", {}).get("status", "")
 		worker.display_task = task.get("kind","idle")
 		worker.work_station = ""
-		worker.display_working = worker.phase in ["work","pickup","dropoff"] and worker.get("action",{}).get("status","")!="blocked"
+		worker.display_working = worker.phase in ["work","pickup","dropoff"] and action_status != "blocked"
 		worker.display_progress = _progress(runtime,worker,task)
+		var standing_by: bool = (task.is_empty() and worker.phase == "idle") or (task.get("kind") == "interact" and action_status == "blocked")
+		if not counter_pose.is_empty() and standing_by and not worker.walking:
+			if Vector2(worker.pos).is_equal_approx(counter_pose.position):
+				worker.facing = counter_pose.direction
 		if task.get("kind")=="operate": worker.work_station = runtime.runner.machines.run(task.run).machine
 		elif worker.display_working and worker.has("action"):
 			var target: String = worker.action.steps[worker.action.index].target
@@ -65,6 +71,20 @@ static func build(runtime: RefCounted, displays: Array = [], presentation: Dicti
 		frame.movement.customers["guest:"+str(guest.id)] = row
 	TemplatePresentation.project(frame,presentation)
 	return frame
+
+static func _counter_pose(runtime: RefCounted) -> Dictionary:
+	if runtime.service == null: return {}
+	var policy: Dictionary = runtime._definition.service
+	var port: String = policy.get("staff_handoff", {}).get("counter_port", policy.handoff_port)
+	if port.is_empty(): return {}
+	var staff_position: Vector2 = runtime.runner.ports[port]
+	var pickup_ports: Array = policy.get("pickup_queue", {}).get("ports", ["pickup"])
+	var pickup: Dictionary = runtime.service.customers._target(pickup_ports[0])
+	if not pickup.error.is_empty(): return {}
+	var toward_customer: Vector2 = pickup.point - staff_position
+	if toward_customer.is_zero_approx(): return {}
+	var direction := posmod(roundi(atan2(toward_customer.x, toward_customer.y) / (PI / 4.0)), 8)
+	return {"position": staff_position, "direction": direction}
 
 static func seats_used(runtime: RefCounted, group: Resource) -> int:
 	if runtime.service==null or group==null: return 0
