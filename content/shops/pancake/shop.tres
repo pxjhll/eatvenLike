@@ -745,10 +745,9 @@ cues = Array[Dictionary]([{
 "if": ["!open"],
 "text": "点豆浆机，花 10 金币开张"
 }, {
-"at": "station:front_counter",
-"pause": false,
-"text": "员工去前台收钱、打豆浆。
-看第一单卖出去"
+"if": ["page:shop"],
+"notice_seconds": 3.0,
+"text": "员工会自动完成第一单"
 }])
 skip_label = "跳过引导"
 skip_tutorial = true

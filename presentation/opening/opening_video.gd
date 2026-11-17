@@ -1,5 +1,5 @@
 extends Node
-## Platform boundary only. UI, music and shop lifetime belong to the opening scene.
+## Play the platform's intro video and its embedded soundtrack together.
 
 signal started
 signal finished
@@ -15,7 +15,7 @@ var _last_position := -1.0
 var _waiting := 0.0
 
 
-func play(frame: Control) -> void:
+func play(frame: Control, audio_enabled: bool) -> void:
 	stop()
 	_playing = true
 	_announced = false
@@ -27,7 +27,7 @@ func play(frame: Control) -> void:
 			failed.emit()
 			return
 		_callback = JavaScriptBridge.create_callback(_web_event)
-		_bridge.start(_callback)
+		_bridge.start(_callback, audio_enabled)
 		return
 	if not ResourceLoader.exists(NATIVE_VIDEO):
 		failed.emit()
@@ -37,7 +37,7 @@ func play(frame: Control) -> void:
 	_player.expand = true
 	_player.size = frame.size
 	_player.stream = load(NATIVE_VIDEO)
-	_player.volume = 0.0
+	_player.volume = 1.0 if audio_enabled else 0.0
 	_player.loop = false
 	_player.hide()
 	_player.finished.connect(func() -> void: finished.emit())

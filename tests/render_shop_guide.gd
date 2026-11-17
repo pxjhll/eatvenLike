@@ -162,6 +162,7 @@ func _run() -> void:
 	await _reopen(veteran)
 	_check(veteran.guide.active.is_empty() and veteran.guide.seen.has("opening"), "已经开过张的存档跳过开场")
 	veteran.free()
+	await _pancake_first_sale()
 	await _pancake_roll_hint()
 	await _pancake_skip_tutorial(false)
 	await _pancake_skip_tutorial(true)
@@ -172,6 +173,34 @@ func _run() -> void:
 	OS.remove_logger(errors)
 	print("SHOP GUIDE GUI: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)
+
+func _pancake_first_sale() -> void:
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	var owner := ShopRules.new(PANCAKE, 42)
+	view.session = TestSession.make(PANCAKE, save_path + "-first-sale", owner)
+	view.session.guide_enabled = true
+	await _reopen(view)
+	hud = view.ui
+	guide = view.guide
+	await _click(hud.popups.button(hud.popups.primary_index()))
+	await _click(view._station_buttons.soy_milk)
+	await _click(hud.page_node("station").unlock_button)
+	await _click(hud.tab("shop"))
+	var employee: Node2D = view._actors[owner.workers[0].id]
+	var canvas: Node2D = view.get_node("Canvas")
+	var world_to_guide := guide.get_global_transform_with_canvas().affine_inverse() * canvas.get_global_transform_with_canvas()
+	var head := world_to_guide * (employee.position - Vector2(0, float(employee._height) * employee.scale.y))
+	_check(guide._bubble.visible and guide._bubble.position.y + guide._bubble.size.y < head.y, "首单提示在员工活动区上方")
+	_check(not guide.freezes() and guide._point == Vector2.INF, "首单提示无箭头，员工继续营业")
+	var started_at := owner.clock
+	_run_until(func() -> bool: return not guide._bubble.visible, 3.5)
+	_check(owner.clock >= started_at + 2.75 and owner.clock <= started_at + 3.5 and owner.sold == 0, "首单提示约三秒收起，店铺时钟继续推进")
+	_run_until(func() -> bool: return owner.sold > 0, 30.0)
+	_check(owner.sold == 1 and guide.seen.has("opening"), "员工自动完成第一单并结束开张引导")
+	_check(employee.frame_actor.action == "idle" and employee.frame_actor.direction == 0, "首单收银后员工朝向柜台外的顾客")
+	_run_until(func() -> bool: return employee.frame_actor.action == "walk", 30.0)
+	_check(employee.frame_actor.action == "walk", "员工接到下一单后继续行走")
+	view.free()
 
 func _pancake_roll_hint() -> void:
 	view = load("res://presentation/shop/shop_play.tscn").instantiate()

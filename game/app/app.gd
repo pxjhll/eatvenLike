@@ -22,9 +22,3 @@ func create_session() -> RefCounted:
 	session.tuning_path = Session.TUNING_PATH
 	session.recording_path = Session.RECORDING_PATH
 	return session
-
-
-## Read-only selection: the intro must not start, reset or save a shop session.
-func opening_music() -> AudioStream:
-	var shop := Session.shop_for(profile)
-	return shop.background_music if shop != null else null
