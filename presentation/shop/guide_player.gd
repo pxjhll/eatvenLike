@@ -50,6 +50,7 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	_bubble.custom_minimum_size.x = 440
 	add_child(_bubble)
 	var column := VBoxContainer.new()
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_theme_constant_override("separation", 8)
 	_bubble.add_child(column)
 	_bubble_text = _hud._text(column, "", 23)
@@ -178,12 +179,18 @@ func _play(step: SpecGuideStep, delta: float) -> void:
 				_view.select_worker(int(waiting[0].id), true)
 		var text := _fill(String(cue.get("text", "")), step)
 		if cue.has("notice_seconds"):
+			var finish_after_notice: bool = cue.get("finish_after_notice", false)
+			_bubble_skip.visible = not finish_after_notice
+			if finish_after_notice and (_hud.page != "shop" or _hud.popups.has_card()): return
 			var elapsed: float = _notice_elapsed.get(index, 0.0)
 			if elapsed < float(cue.notice_seconds):
 				_show_notice = true
 				_say(text)
 				_notice_elapsed[index] = elapsed + delta
+			elif finish_after_notice:
+				_finish()
 			return
+		_bubble_skip.show()
 		var target := String(cue.get("at", ""))
 		var at := _fill(target, step)
 		if target == "station:{slow_id}":
@@ -302,6 +309,7 @@ func _holds(condition: String) -> bool:
 		"affordable": return rules.command_status("unlock", {"id": arg}).code == "ok"
 		"box": return rules.pending_box() == arg
 		"box_affordable": return not rules.pending_box().is_empty() and rules.command_status("unlock_box", {"material": rules.pending_box()}).code == "ok"
+		"processing": return view.has_order_requiring_processing(arg)
 		"no_box": return rules.pending_box().is_empty()
 		"kitchen_staff": return rules.kitchen_staff() == int(arg)
 		"room": return _view.view.deployed_count() < rules.staff_slots()

@@ -13,6 +13,7 @@ extends Resource
 ##   stage>=N / stage<N           阶段
 ##   affordable:<机器>            这台机器现在能解锁
 ##   box:<物料>                   正在等买这一箱，box_affordable 现在买得起
+##   processing:<设备>            已接且未交付的订单需要该设备加工
 ##   no_box                       没有待买的原料箱
 ##   kitchen_staff:0 / kitchen_staff>0
 ##   room / !room                 还有员工名额
@@ -39,6 +40,7 @@ extends Resource
 ##   select_waiting: true（在员工页时选中名册里没派出去的那位）
 ##   pause: false（不压暗、不停店，只指一下）
 ##   notice_seconds: 秒数（在顶栏下短暂显示提示，无箭头，店继续营业）
+##   finish_after_notice: true（短提示只在店面且没有弹卡时计时，播完记为看过）
 @export var cues: Array[Dictionary] = []
 ## 填进文案和条件的值
 @export var params: Dictionary = {}
