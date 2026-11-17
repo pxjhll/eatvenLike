@@ -25,6 +25,7 @@
 [ext_resource type="Script" path="res://content/rules/spec_material.gd" id="22_snoov"]
 [ext_resource type="Script" path="res://content/rules/spec_stock_rule.gd" id="23_xb1gn"]
 [ext_resource type="AudioStream" path="res://art/audio/milk_tea_afternoon.ogg" id="music_theme"]
+[ext_resource type="Texture2D" path="res://art/ui/tea_manager_portrait.png" id="manager_art"]
 [ext_resource type="Resource" path="res://content/characters/staff/bear.tres" id="staff_bear"]
 [ext_resource type="Resource" path="res://content/characters/staff/cat.tres" id="staff_cat"]
 [ext_resource type="Resource" path="res://content/characters/staff/fox.tres" id="staff_fox"]
@@ -549,182 +550,32 @@ texts = Dictionary[String, String]({
 })
 opening_station = "lemonade"
 
-[sub_resource type="Resource" id="Resource_4p3jx"]
-script = ExtResource("12_anqca")
-id = "welcome"
-when = Array[String](["!open"])
-seen_when = Array[String](["open", "stage>=1"])
-shop_page_only = false
-skip_tutorial = true
-style = "card"
-title = "欢迎，店长！"
-art = "raccoon"
-rows = [["res://art/ui/drink_lemonade.png", "招待顾客，卖饮品收金币"], ["res://art/reference/pearl_pot.png", "开通后厨生产线，做新饮品"], ["goals", "完成经营任务，把小店做大"]]
-confirm_label = "开始营业"
-cancel_label = "跳过引导"
-next = "opening"
+[sub_resource type="Resource" id="Effect_tea_manager_gift"]
+script = ExtResource("7_1v0ns")
+kind = "grant_gold"
+op = "add"
+value = 30.0
+gold_max = 50
 
-[sub_resource type="Resource" id="Resource_1wmsa"]
-script = ExtResource("12_anqca")
-id = "opening"
-seen_when = Array[String](["stage>=1", "open&staff>=opening"])
-shop_page_only = false
-cues = Array[Dictionary]([{
-"at": "ui:unlock",
-"if": ["!open", "page:station:lemonade"],
-"text": "点「解锁」，花 10 金币摆上柠檬水台"
-}, {
-"go": "shop",
-"if": ["!open", "!page:shop"]
-}, {
-"at": "frame:lemonade",
-"if": ["!open"],
-"text": "先开张！点这里摆上柠檬水台"
-}, {
-"at": "area:Guide/CounterArea",
-"if": ["sold:0"],
-"pause": false,
-"text": "小猫会自己做柠檬水、招呼客人。
-看看第一杯卖出去！"
-}, {
-"at": "ui:tab:staff",
-"if": ["staff<opening", "waiting", "!page:staff"],
-"text": "新伙伴在名册里，点「员工」"
-}, {
-"at": "ui:deploy",
-"if": ["staff<opening", "waiting"],
-"select_waiting": true,
-"text": "点「派到店内」，让伙伴一起干活"
-}, {
-"if": ["staff<opening", "!can_hire"],
-"wait": true
-}, {
-"at": "ui:tab:staff",
-"if": ["staff<opening", "!page:staff"],
-"text": "收到金币了！人手多出杯更快，点「员工」"
-}, {
-"at": "ui:hire",
-"if": ["staff<opening"],
-"text": "招一位新伙伴，招来直接上岗"
-}, {
-"then": "done"
-}])
-skip_label = "跳过引导"
-skip_tutorial = true
+[sub_resource type="AtlasTexture" id="Manager_notice_portrait"]
+atlas = ExtResource("manager_art")
+region = Rect2(245, 8, 785, 835)
+filter_clip = true
 
-[sub_resource type="Resource" id="Resource_ho7ym"]
-script = ExtResource("12_anqca")
-id = "done"
-trigger = "next"
-params = {
-"stage": 1
-}
-finish_marks = Array[String](["opening"])
-style = "card"
-title = "开店上手了！"
-text = "接下来自己经营：攒够 {cost} 金币，就能开{line}。
-点机器可以升级，点「员工」可以调整岗位。"
-confirm_label = "继续营业"
-
-[sub_resource type="Resource" id="Resource_tsvuk"]
-script = ExtResource("12_anqca")
-id = "line_1"
-when = Array[String](["stage>=0", "stage<1", "affordable:boil"])
-done_when = Array[String](["stage>=1", "!affordable:boil"])
-cues = Array[Dictionary]([{
-"at": "ui:unlock",
-"if": ["page:station:boil"],
-"text": "点「解锁」开通{line}"
-}, {
-"go": "shop",
-"if": ["!page:shop"]
-}, {
-"at": "frame:boil",
-"text": "金币够了！开通{line}，能卖新饮品"
-}])
-params = {
-"stage": 1
-}
-
-[sub_resource type="Resource" id="Resource_njies"]
-script = ExtResource("12_anqca")
-id = "line_2"
-when = Array[String](["stage>=1", "stage<2", "affordable:seal"])
-done_when = Array[String](["stage>=2", "!affordable:seal"])
-cues = Array[Dictionary]([{
-"at": "ui:unlock",
-"if": ["page:station:seal"],
-"text": "点「解锁」开通{line}"
-}, {
-"go": "shop",
-"if": ["!page:shop"]
-}, {
-"at": "frame:seal",
-"text": "金币够了！开通{line}，能卖新饮品"
-}])
-params = {
-"stage": 2
-}
-
-[sub_resource type="Resource" id="Resource_nwen5"]
-script = ExtResource("12_anqca")
-id = "line_3"
-when = Array[String](["stage>=2", "stage<3", "affordable:mix"])
-done_when = Array[String](["stage>=3", "!affordable:mix"])
-cues = Array[Dictionary]([{
-"at": "ui:unlock",
-"if": ["page:station:mix"],
-"text": "点「解锁」开通{line}"
-}, {
-"go": "shop",
-"if": ["!page:shop"]
-}, {
-"at": "frame:mix",
-"text": "金币够了！开通{line}，能卖新饮品"
-}])
-params = {
-"stage": 3
-}
-
-[sub_resource type="Resource" id="Resource_pkfa0"]
-script = ExtResource("12_anqca")
-id = "line_4"
-when = Array[String](["stage>=3", "stage<4", "affordable:press"])
-done_when = Array[String](["stage>=4", "!affordable:press"])
-cues = Array[Dictionary]([{
-"at": "ui:unlock",
-"if": ["page:station:press"],
-"text": "点「解锁」开通{line}"
-}, {
-"go": "shop",
-"if": ["!page:shop"]
-}, {
-"at": "frame:press",
-"text": "金币够了！开通{line}，能卖新饮品"
-}])
-params = {
-"stage": 4
-}
-
-[sub_resource type="Resource" id="Resource_h2bkm"]
-script = ExtResource("12_anqca")
-id = "line_5"
-when = Array[String](["stage>=4", "stage<5", "affordable:topping"])
-done_when = Array[String](["stage>=5", "!affordable:topping"])
-cues = Array[Dictionary]([{
-"at": "ui:unlock",
-"if": ["page:station:topping"],
-"text": "点「解锁」开通{line}"
-}, {
-"go": "shop",
-"if": ["!page:shop"]
-}, {
-"at": "frame:topping",
-"text": "金币够了！开通{line}，能卖新饮品"
-}])
-params = {
-"stage": 5
-}
+[sub_resource type="Resource" id="Event_tea_manager_visit"]
+script = ExtResource("5_kou0a")
+id = "tea_manager_visit"
+display_name = "店长回访"
+trigger = "tick_second"
+condition = {"open": true, "min_sold": 8, "max_stage": 1}
+chance = 1.0
+once = true
+effects = Array[ExtResource("7_1v0ns")]([SubResource("Effect_tea_manager_gift")])
+notice_seconds = 4.0
+notice_portrait = SubResource("Manager_notice_portrait")
+speaker = "manager"
+icon = "cat"
+card_text = "我路过，回来看看你们。留点金币给你周转！"
 
 [sub_resource type="Resource" id="Resource_4lrgi"]
 script = ExtResource("12_anqca")
@@ -738,38 +589,38 @@ stats = [["clock", "用时", "time"], ["coin", "总营业额", "revenue"]]
 text = "第二家店还在准备中，可以继续把这家店做大。"
 confirm_label = "继续营业"
 
+[sub_resource type="Resource" id="Guide_tea_opening_notice"]
+script = ExtResource("12_anqca")
+id = "tea_opening_notice"
+when = Array[String](["!open"])
+done_when = Array[String](["open"])
+seen_when = Array[String](["open"])
+cues = Array[Dictionary]([{
+"finish_after_notice": true,
+"notice_seconds": 3.0,
+"text": "摆上柠檬水台，就能开张啦。"
+}])
+
+[sub_resource type="Resource" id="Guide_tea_kitchen_roles"]
+script = ExtResource("12_anqca")
+id = "tea_kitchen_roles"
+when = Array[String](["stage>=1", "stage<2"])
+seen_when = Array[String](["stage>=2"])
+cues = Array[Dictionary]([{
+"finish_after_notice": true,
+"notice_seconds": 4.0,
+"text": "后厨煮茶并交餐，前台从交餐处取饮品，再交给顾客。"
+}])
+
 [sub_resource type="Resource" id="Resource_ifvmf"]
 script = ExtResource("12_anqca")
 id = "box_tea_leaf"
 when = Array[String](["box:tea_leaf", "box_affordable"])
-done_when = Array[String](["!box:tea_leaf", "!box_affordable"])
+done_when = Array[String](["!box:tea_leaf"])
 cues = Array[Dictionary]([{
-"at": "ui:material:tea_leaf",
-"if": ["page:station:supply"],
-"text": "解锁{box}箱，{machine}才有原料"
-}, {
-"go": "shop",
-"if": ["!page:shop"]
-}, {
-"at": "frame:supply",
-"text": "{machine}要用{box}：去原料柜解锁{box}箱"
-}])
-
-[sub_resource type="Resource" id="Resource_m6brp"]
-script = ExtResource("12_anqca")
-id = "box_milk"
-when = Array[String](["box:milk", "box_affordable"])
-done_when = Array[String](["!box:milk", "!box_affordable"])
-cues = Array[Dictionary]([{
-"at": "ui:material:milk",
-"if": ["page:station:supply"],
-"text": "解锁{box}箱，{machine}才有原料"
-}, {
-"go": "shop",
-"if": ["!page:shop"]
-}, {
-"at": "frame:supply",
-"text": "{machine}要用{box}：去原料柜解锁{box}箱"
+"finish_after_notice": true,
+"notice_seconds": 4.0,
+"text": "煮茶机缺茶叶，去原料柜解锁茶叶箱。"
 }])
 
 [sub_resource type="Resource" id="Resource_j7ryq"]
@@ -778,93 +629,20 @@ id = "kitchen"
 when = Array[String](["stage>=1", "kitchen_staff:0", "no_box", "can_staff"])
 done_when = Array[String](["!kitchen_staff:0"])
 cues = Array[Dictionary]([{
-"at": "ui:tab:staff",
-"if": ["waiting", "!page:staff"],
-"text": "后厨还没人！新伙伴在名册里，点「员工」"
-}, {
-"at": "ui:deploy",
-"if": ["waiting"],
-"select_waiting": true,
-"text": "点「派到店内」，让伙伴去后厨煮茶"
-}, {
-"back": true,
-"if": ["!can_hire"]
-}, {
-"at": "ui:tab:staff",
-"if": ["!page:staff"],
-"text": "前台只管接待客人，煮茶要后厨员工：点「员工」"
-}, {
-"at": "ui:hire",
-"text": "招一位伙伴，招来直接去后厨"
+"finish_after_notice": true,
+"notice_seconds": 4.0,
+"text": "后厨还没人，去「员工」招募或派一位伙伴到后厨煮茶。"
 }])
 
-[sub_resource type="Resource" id="Resource_l8d5n"]
+[sub_resource type="Resource" id="Guide_tea_sealing"]
 script = ExtResource("12_anqca")
-id = "more_staff"
-when = Array[String](["stage>=5", "room", "can_staff"])
-done_when = Array[String](["hired", "!room"])
+id = "tea_sealing"
+when = Array[String](["processing:seal"])
 cues = Array[Dictionary]([{
-"at": "ui:tab:staff",
-"if": ["waiting", "!page:staff"],
-"text": "加料机开通了，每杯要多走一段路。
-还有空岗位，点「员工」派伙伴上岗"
-}, {
-"at": "ui:deploy",
-"if": ["waiting"],
-"select_waiting": true,
-"text": "点「派到店内」，让伙伴一起干活"
-}, {
-"back": true,
-"if": ["!can_hire"]
-}, {
-"at": "ui:tab:staff",
-"if": ["!page:staff"],
-"text": "加料机开通了，每杯要多走一段路。
-还有空岗位，点「员工」再招一位，
-煮茶机也要升级跟上"
-}, {
-"at": "ui:hire",
-"text": "招一位新伙伴，招来直接上岗"
+"finish_after_notice": true,
+"notice_seconds": 4.0,
+"text": "需要封口的外带饮品会先打包。柠檬水可以直接交给客人。"
 }])
-
-[sub_resource type="Resource" id="Resource_tb00n"]
-script = ExtResource("12_anqca")
-id = "lost_seats"
-trigger = "angry"
-when = Array[String](["angry:seats"])
-done_when = Array[String](["!page:shop"])
-cues = Array[Dictionary]([{
-"at": "ui:chip:seats",
-"text": "有客人等急了！堂食坐满了，
-点这里加座位，客人才能坐下"
-}])
-skip_label = "知道了"
-
-[sub_resource type="Resource" id="Resource_wx7ac"]
-script = ExtResource("12_anqca")
-id = "lost_staff"
-trigger = "angry"
-when = Array[String](["angry:staff"])
-done_when = Array[String](["!page:shop"])
-cues = Array[Dictionary]([{
-"at": "ui:tab:staff",
-"text": "有客人等急了！还有空岗位，
-点「员工」招一位伙伴"
-}])
-skip_label = "知道了"
-
-[sub_resource type="Resource" id="Resource_fm6n5"]
-script = ExtResource("12_anqca")
-id = "lost_machine"
-trigger = "angry"
-when = Array[String](["angry:machine"])
-done_when = Array[String](["!page:shop"])
-cues = Array[Dictionary]([{
-"at": "station:{slow_id}",
-"text": "有客人等急了！{slow}跟不上，
-点它升级，出杯更快"
-}])
-skip_label = "知道了"
 
 [sub_resource type="Resource" id="Resource_ofbvg"]
 script = ExtResource("13_l0dwn")
@@ -2222,6 +2000,7 @@ script = ExtResource("15_3rult")
 id = "tea"
 display_name = "奶茶店"
 start_gold = 50
+events = Array[ExtResource("5_kou0a")]([SubResource("Event_tea_manager_visit")])
 random_seed = 20261025
 items = Array[ExtResource("13_l0dwn")]([SubResource("Resource_ofbvg"), SubResource("Resource_cffgs"), SubResource("Resource_e8s1d"), SubResource("Resource_3dkr1"), SubResource("Resource_n745i"), SubResource("Resource_gc2vn"), SubResource("Resource_aph8w"), SubResource("Resource_e7yay"), SubResource("Resource_nicqr"), SubResource("Resource_nyjld"), SubResource("Resource_jv8ei")])
 dishes = Array[ExtResource("2_ctjwf")]([SubResource("Resource_oybcy"), SubResource("Resource_py30k"), SubResource("Resource_gam32"), SubResource("Resource_3cbtw"), SubResource("Resource_mwsl7"), SubResource("Resource_7jc1v"), SubResource("Resource_14e4x"), SubResource("Resource_bkbpb")])
@@ -2235,7 +2014,7 @@ staff = SubResource("Resource_8p4c6")
 connections = Array[ExtResource("1_tjgba")]([SubResource("Resource_m1tbq"), SubResource("Resource_q0qcx"), SubResource("Resource_jp4pd"), SubResource("Resource_6bvuk"), SubResource("Resource_bc3ge"), SubResource("Resource_gjupt"), SubResource("Resource_gd06f")])
 goals = SubResource("Resource_ufdpv")
 layout = SubResource("Resource_x4rom")
-guide = Array[ExtResource("12_anqca")]([SubResource("Resource_4p3jx"), SubResource("Resource_1wmsa"), SubResource("Resource_ho7ym"), SubResource("Resource_tsvuk"), SubResource("Resource_njies"), SubResource("Resource_nwen5"), SubResource("Resource_pkfa0"), SubResource("Resource_h2bkm"), SubResource("Resource_4lrgi"), SubResource("Resource_ifvmf"), SubResource("Resource_m6brp"), SubResource("Resource_j7ryq"), SubResource("Resource_l8d5n"), SubResource("Resource_tb00n"), SubResource("Resource_wx7ac"), SubResource("Resource_fm6n5")])
+guide = Array[ExtResource("12_anqca")]([SubResource("Resource_4lrgi"), SubResource("Guide_tea_opening_notice"), SubResource("Guide_tea_kitchen_roles"), SubResource("Resource_ifvmf"), SubResource("Resource_j7ryq"), SubResource("Guide_tea_sealing")])
 flavor_flow = 0.12
 scene_path = "res://presentation/shops/tea/tea_art.tscn"
 background_music = ExtResource("music_theme")

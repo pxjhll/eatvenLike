@@ -8,6 +8,7 @@ const TestSession := preload("res://tests/shop_test_session.gd")
 ## 和旧场景的 render_guide.gd 一一对应（旧场景删掉时这个留下）。
 
 const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
+const CURRENT_TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
 const PANCAKE: SpecShop = preload("res://content/shops/pancake/shop.tres")
 class RollBottleneck extends ShopView:
 	func _guide_slow_machine() -> String:
@@ -162,6 +163,7 @@ func _run() -> void:
 	await _reopen(veteran)
 	_check(veteran.guide.active.is_empty() and veteran.guide.seen.has("opening"), "已经开过张的存档跳过开场")
 	veteran.free()
+	await _tea_contextual_guides()
 	await _pancake_first_sale()
 	await _pancake_roll_hint()
 	await _pancake_skip_tutorial(false)
@@ -173,6 +175,73 @@ func _run() -> void:
 	OS.remove_logger(errors)
 	print("SHOP GUIDE GUI: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)
+
+func _tea_contextual_guides() -> void:
+	var path := save_path + "-current-tea"
+	var store := ShopSave.new(CURRENT_TEA, path)
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	view.session = TestSession.make(CURRENT_TEA, path, null, store)
+	view.session.guide_enabled = true
+	await _reopen(view)
+	hud = view.ui
+	guide = view.guide
+	_check(guide.active == "tea_opening_notice" and guide._show_notice and not view.frozen() and not hud.popups.has_card(),
+		"正式奶茶店直接进店面，开张提示不暂停、不弹卡")
+	await _click(view._station_buttons.lemonade)
+	_check(hud.page == "station" and not guide._bubble.visible, "开张提示不挡设备面板，也不留在面板上")
+	await _click(hud.page_node("station").unlock_button)
+	await _click(hud.tab("shop"))
+	_run_until(func() -> bool: return _rules().sold > 0, 120.0)
+	_check(_rules().sold > 0 and guide.active.is_empty() and not hud.popups.has_card(), "首杯自动卖出，没有首单或上手教学")
+	_rules().gold = 20000.0
+	guide.refresh(0.0)
+	_check(guide.active.is_empty(), "金币够开下一台时，基础开线教学不弹")
+	await _click(view._station_buttons.boil)
+	await _click(hud.page_node("station").unlock_button)
+	await _click(hud.tab("shop"))
+	_check(guide.active == "tea_kitchen_roles" and guide._show_notice and not view.frozen(), "煮茶机开通后解释前后厅分工")
+	var clock := _rules().clock
+	view._process(0.25)
+	_check(_rules().clock > clock, "分工提示出现时营业继续")
+	await _click(hud.tab("staff"))
+	guide.refresh(5.0)
+	_check(hud.page == "staff" and guide.active == "tea_kitchen_roles" and not guide._bubble.visible,
+		"短提示不抢员工页，隐藏期间也不消耗显示时间")
+	await _click(hud.tab("shop"))
+	guide.refresh(4.0)
+	guide.refresh(0.0)
+	guide.refresh(0.0)
+	_check(guide.seen.has("tea_kitchen_roles") and guide.active == "box_tea_leaf" and not view.frozen(), "分工提示到时收起，缺茶叶时提示去原料柜")
+	await _click(view._station_buttons.supply)
+	await _click(hud.page_node("station").material_buttons.tea_leaf)
+	await _click(hud.tab("shop"))
+	_check(guide.active == "kitchen" and guide._show_notice and not view.frozen(), "茶叶箱买好后，缺后厨才提示招募或派岗")
+	await _click(hud.tab("staff"))
+	await _click(hud.page_node("staff").hire_button)
+	await _click(hud.tab("shop"))
+	_check(_rules().kitchen_staff() == 1 and guide.active.is_empty(), "后厨有人上岗后，缺人提示自动消失")
+	_run_until(func() -> bool: return int(_rules().sold_by_dish.black_tea) > 0, 240.0)
+	_check(int(_rules().sold_by_dish.black_tea) > 0 and not guide.seen.has("tea_sealing"), "堂食红茶可正常售出，且不触发封口提示")
+	_check(_rules().unlock("seal").is_empty(), "用正式规则解锁封口机")
+	guide.refresh(0.0)
+	_check(guide.active.is_empty(), "单独解锁封口机不触发提示")
+	_run_until(func() -> bool: return guide.active == "tea_sealing", 240.0)
+	_check(guide.active == "tea_sealing" and view.view.has_order_requiring_processing("seal") and not view.frozen(),
+		"实际接到需要封口的订单后，才出现封口说明")
+	guide.refresh(4.0)
+	guide.refresh(0.0)
+	_check(guide.seen.has("tea_sealing") and not guide._bubble.visible, "封口提示自动收起并记为看过")
+
+	view.free()
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	view.session = TestSession.make(CURRENT_TEA, path, null, ShopSave.new(CURRENT_TEA, path))
+	view.session.guide_enabled = true
+	await _reopen(view)
+	_check(view.guide.seen.has("tea_sealing") and view.guide.active.is_empty() and view.rules.kitchen_staff() == 1,
+		"正式存档恢复营业进度，已看提示不重复")
+	view.free()
+	DirAccess.remove_absolute(path)
+
 
 func _pancake_first_sale() -> void:
 	view = load("res://presentation/shop/shop_play.tscn").instantiate()

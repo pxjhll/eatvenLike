@@ -7,6 +7,7 @@ const TestSession := preload("res://tests/shop_test_session.gd")
 ## 都要能看见、能点；另外新场景能整局跑下去不报错（读档、存档、重开都走一遍）。
 
 const TEA: SpecShop = preload("res://tests/fixtures/legacy_shops/current/tea/shop.tres")
+const CURRENT_TEA: SpecShop = preload("res://content/shops/tea/shop.tres")
 var failures := 0
 var checks := 0
 var errors := preload("res://tests/error_counter.gd").new()
@@ -113,12 +114,104 @@ func _run() -> void:
 	reopened.free()
 	view.free()
 	if FileAccess.file_exists(save_path): DirAccess.remove_absolute(save_path)
+	await _check_manager_visit()
 	for error in errors.take():
 		failures += 1
 		print(error)
 	OS.remove_logger(errors)
 	print("SHOP EXTEND: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)
+
+
+func _check_manager_visit() -> void:
+	var path := save_path + "-manager"
+	var old_shop: SpecShop = CURRENT_TEA.duplicate()
+	old_shop.events = []
+	var old_rules := ShopRules.new(old_shop, 42)
+	_check(old_rules.unlock("lemonade").is_empty(), "旧奶茶档按正常方式开张")
+	for unused in 960:
+		if old_rules.sold >= 7: break
+		old_rules.step(0.25)
+	_check(old_rules.sold == 7, "旧奶茶档自然卖出七杯")
+	_check(ShopSave.new(old_shop, path).save_game(old_rules, 1.0, ["opening"]) == OK, "写入未配置回访的旧档")
+
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	view.session = TestSession.make(CURRENT_TEA, path, null, ShopSave.new(CURRENT_TEA, path))
+	view.session.guide_enabled = true
+	root.add_child(view)
+	view.set_process(false)
+	await process_frame
+	var owner: ShopRules = view.rules
+	_check(owner.sold == 7 and owner.pending_events.is_empty(), "内容更新保留旧档进度，七杯未触发")
+	view.ui.open_page("goals")
+	for unused in 240:
+		if not owner.pending_events.is_empty(): break
+		view._process(0.25)
+	_check(owner.sold >= 8 and owner.pending_events.size() == 1 and not view.guide._bubble.visible,
+		"八杯后回访排队，玩家看目标面板时不弹出")
+	var gold := owner.gold
+	var revenue := owner.revenue
+	var sold := owner.sold
+	var expected_rng := RandomNumberGenerator.new()
+	expected_rng.seed = owner.event_rng.seed
+	expected_rng.state = owner.event_rng.state
+	var expected := expected_rng.randi_range(30, 50)
+	_check(owner.gold == 50.0 - float(owner.shop.stages[0].cost) + revenue, "等待期间钱包只有营业收入")
+	_check(view.save_now(false) == OK, "玩家可保存尚未结算的回访")
+	view.free()
+
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	view.session = TestSession.make(CURRENT_TEA, path, null, ShopSave.new(CURRENT_TEA, path))
+	root.add_child(view)
+	view.set_process(false)
+	await process_frame
+	owner = view.rules
+	var blocker := {"id": "test-modal", "title": "测试卡片", "buttons": [{"label": "关闭"}]}
+	view.ui.popups.push(blocker)
+	view._process(0.0)
+	_check(owner.gold == gold and owner.pending_events.size() == 1, "有弹卡时继续等待")
+	view.ui.popups.remove("test-modal")
+	view._process(0.0)
+	_check(owner.gold == gold + expected and owner.revenue == revenue and owner.sold == sold and owner.pending_events.is_empty(),
+		"回到店面自动按存档随机状态发放三十至五十金币，只加钱包")
+	_check(view.guide._bubble.visible and view.guide._notice_portrait.visible and not view.frozen()
+		and "+%d 金币" % expected in view.guide._bubble_text.text, "店长头像与实际到账金额可见，营业继续")
+	await process_frame
+	var portrait: TextureRect = view.guide._notice_portrait
+	var label: Label = view.guide._bubble_text
+	_check(portrait.texture == CURRENT_TEA.events[0].notice_portrait and portrait.size.x >= 130.0
+		and portrait.get_global_rect().end.x <= label.get_global_rect().position.x, "店长半身立绘与右侧文案分栏")
+	_check(view.ui.get_node("%Gold").text == str(int(owner.gold)), "金币栏当帧更新")
+	view.guide.refresh(4.0)
+	view.guide.refresh(0.0)
+	_check(not view.guide._bubble.visible, "回访短消息自动收起")
+
+	var restored := ShopSave.new(CURRENT_TEA, path).load_game()
+	_check(restored.gold == gold + expected and "tea_manager_visit" in restored.events_seen
+		and restored.pending_events.is_empty(), "金币与一次性标记在同一份存档")
+	var duplicate_award := restored.execute_command("resolve_event_notice", {"id": "tea_manager_visit"})
+	_check(duplicate_award.code == "event_missing" and restored.gold == gold + expected, "读档后重复请求无法再领")
+	view.free()
+	DirAccess.remove_absolute(path)
+
+	var late := ShopRules.new(CURRENT_TEA, 42)
+	late.gold = 1000.0
+	for id in ["lemonade", "boil", "seal"]: late.unlock(id)
+	late.sold = 8
+	late.run(3.0)
+	_check(late.pending_events.is_empty() and late.events_seen.is_empty(), "已进入封口机阶段的档不补发早期回访")
+
+	var gift: SpecEffect = CURRENT_TEA.events[0].effects[0]
+	var customer_rng := late.rng.state
+	var amounts := {}
+	for seed in range(16):
+		late.event_rng.seed = seed
+		var before := late.gold
+		late.apply_effect("event", "manager_gift_probe", gift)
+		amounts[late.gold - before] = true
+	_check(amounts.size() > 1 and amounts.keys().all(func(amount: float) -> bool: return amount >= 30.0 and amount <= 50.0),
+		"多组奇遇种子抽到不同金币数，全部在三十至五十范围内")
+	_check(late.rng.state == customer_rng, "随机奖励不消耗顾客和点单随机数")
 
 
 func _click(button: Button) -> void:

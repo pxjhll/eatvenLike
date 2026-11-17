@@ -45,6 +45,7 @@ const SCHEMAS := {
 	"buy_seat": {}, "send_flyers": {}, "hire": {}, "deploy_worker": {"id": TYPE_INT, "post": TYPE_STRING, "from_hire": TYPE_BOOL},
 	"place_worker": {"id": TYPE_INT, "post": TYPE_STRING, "point": TYPE_VECTOR2},
 	"recall_worker": {"id": TYPE_INT}, "buy_connection": {"id": TYPE_STRING}, "answer_event": {"choice": TYPE_INT},
+	"resolve_event_notice": {"id": TYPE_STRING},
 }
 
 static func is_ok(status: Dictionary) -> bool:

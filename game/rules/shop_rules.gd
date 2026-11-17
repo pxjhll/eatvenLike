@@ -1301,8 +1301,10 @@ func customer_wave(count: int) -> void:
 func apply_effect(source: String, source_id: String, effect: SpecEffect, seconds := -1.0) -> void:
 	match effect.kind:
 		"grant_gold":
-			gold += effect.value
-			events.emit("gold_granted", {"source": source_id, "amount": effect.value})
+			var amount := effect.value
+			if effect.gold_max > 0: amount = float(event_rng.randi_range(int(effect.value), effect.gold_max))
+			gold += amount
+			events.emit("gold_granted", {"source": source_id, "amount": amount})
 		"customer_wave": customer_wave(int(effect.value))
 		"unlock_staff_kind":
 			if shop.staff.retired_kinds.has(effect.target): return
@@ -1375,6 +1377,8 @@ func _event_conditions_met(ev: SpecEvent, data: Dictionary) -> bool:
 		var want: Variant = ev.condition[key]
 		match key:
 			"min_stage": if stage_index < int(want): return false
+			"max_stage": if stage_index > int(want): return false
+			"min_sold": if sold < int(want): return false
 			"open": if is_open() != bool(want): return false
 			_: if data.get(key) != want: return false
 	return true
@@ -1388,14 +1392,14 @@ func _roll_event(ev: SpecEvent, data: Dictionary) -> void:
 	trigger_event(ev)
 
 
-## 奇遇发生：没有选项就直接生效，有选项就排进卡片队列等玩家选。
+## 有选项或短提示的奇遇等界面处理，其余直接生效。
 func trigger_event(ev: SpecEvent) -> void:
 	var bus := events
 	bus.begin_batch()
 	event_ready_at[ev.id] = clock + ev.cooldown
 	if ev.once and not ev.id in events_seen: events_seen.append(ev.id)
 	events.emit("event_started", {"id": ev.id, "speaker": ev.speaker})
-	if ev.choices.is_empty(): _apply_event(ev)
+	if ev.choices.is_empty() and ev.notice_seconds <= 0.0: _apply_event(ev)
 	else: pending_events.append(ev)
 	bus.end_batch()
 
@@ -1617,6 +1621,9 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 					if gold < cost:
 						code = CommandResult.INSUFFICIENT_GOLD
 						params.required = cost
+		"resolve_event_notice":
+			if pending_events.is_empty() or pending_events[0].id != arguments.id or pending_events[0].notice_seconds <= 0.0:
+				code = CommandResult.EVENT_MISSING
 	return CommandResult.failure(code, params)
 
 
@@ -1690,6 +1697,12 @@ func execute_command(command: String, arguments: Dictionary = {}) -> Dictionary:
 			gold -= int(option.get("cost", 0))
 			if bool(option.get("accept", true)): _apply_event(event)
 			events.emit("event_answered", {"id": event.id, "choice": arguments.choice})
+		"resolve_event_notice":
+			var event: SpecEvent = pending_events.pop_front()
+			var before := gold
+			_apply_event(event)
+			status.params.gold_granted = gold - before
+			events.emit("event_resolved", {"id": event.id})
 	bus.end_batch()
 	return status
 

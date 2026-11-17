@@ -161,6 +161,17 @@ func guide_snapshot() -> Dictionary:
 		"any_angry": rules.angry_count() > 0, "angry_cause": _guide_angry_cause(), "slow_machine": _guide_slow_machine()}
 
 
+func has_order_requiring_processing(station: String) -> bool:
+	if _runtime == null or _runtime.service == null or not rules.station_unlocked(station): return false
+	for order in _runtime.service.orders.active_snapshot().orders:
+		if order.state != "accepted": continue
+		for line in order.lines:
+			if line.delivered >= line.qty: continue
+			for node in _runtime._definition.recipes[line.recipe].nodes.values():
+				if node.capability == "process" and node.machine == station: return true
+	return false
+
+
 func _guide_angry_cause() -> String:
 	if _runtime!=null:
 		if rules.angry_count()==0: return ""
@@ -952,6 +963,7 @@ func event_card() -> Dictionary:
 	if rules.pending_events.is_empty(): return {}
 	var ev: SpecEvent = rules.pending_events[0]
 	return {"id": ev.id, "title": ev.display_name, "text": ev.card_text, "icon": ev.icon, "speaker": ev.speaker,
+		"notice_seconds": ev.notice_seconds, "notice_portrait": ev.notice_portrait,
 		"choices": ev.choices.map(func(c: Dictionary) -> String: return String(c.get("label", "")))}
 
 

@@ -27,7 +27,7 @@ func test_third_shop_fixture_text_has_glyphs() -> void:
 				check(_missing(font, text).is_empty(), "%s missing glyphs: %s" % [path, _missing(font, text)])
 
 
-func test_content_names_have_glyphs() -> void:
+func test_content_names_and_event_text_have_glyphs() -> void:
 	var font: FontFile = load(FONT)
 	var names: Array = preload("res://presentation/characters/character_library.gd").NAMES.values()
 	var campaign: SpecCampaign = load("res://content/campaign/campaign.tres")
@@ -37,6 +37,7 @@ func test_content_names_have_glyphs() -> void:
 			if entry.shop_path.is_empty(): continue
 			var shop: SpecShop = load(entry.shop_path)
 			names.append(shop.display_name)
+			for event in shop.events: names.append_array([event.display_name, event.card_text])
 			for list in [shop.items, shop.dishes, shop.stations, shop.staff.kinds, shop.connections]:
 				for thing in list: names.append(thing.display_name)
 			for st in shop.stations:

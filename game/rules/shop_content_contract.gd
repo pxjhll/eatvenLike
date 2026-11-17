@@ -1,6 +1,6 @@
 extends RefCounted
 ## Versioned canonical fingerprints of exported gameplay resources.
-const PRESENTATION := ["display_name", "description", "icon", "art", "tint", "label", "effect_label", "preview_label", "preview_dishes", "speaker", "card_text", "unlock_note", "texts", "guide", "scene_path", "save_file", "background_music", "scale_anchor"]
+const PRESENTATION := ["display_name", "description", "icon", "art", "tint", "label", "effect_label", "preview_label", "preview_dishes", "speaker", "card_text", "notice_portrait", "unlock_note", "texts", "guide", "scene_path", "save_file", "background_music", "scale_anchor"]
 const TYPES := ["SpecShop", "SpecShopTemplate", "SpecItem", "SpecDish", "SpecStation", "SpecStage", "SpecFulfillment", "SpecDispatch", "SpecFlyer", "SpecSeatGroup", "SpecStaffRules", "SpecStaffKind", "SpecConnection", "SpecOrderOption", "SpecGoalRules", "SpecLayout", "SpecMaterial", "SpecStep", "SpecStockRule", "SpecTask", "SpecUpgradeTrack", "SpecUpgradeLevel", "SpecEffect", "SpecEvent"]
 const TemplateSchema := preload("res://content/rules/spec_shop_template.gd")
 const TemplateProjection := preload("res://game/rules/template/content_projection.gd")
@@ -29,6 +29,8 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 			var key: String = prop.name
 			if type_name=="SpecShop" and key=="runtime_template" and value.runtime_template==null: continue
 			if type_name=="SpecShop" and key=="previous_progression": continue
+			if type_name=="SpecEffect" and key=="gold_max" and value.gold_max==0: continue
+			if type_name=="SpecEvent" and key=="notice_seconds" and value.notice_seconds==0.0: continue
 			if type_name=="SpecStage" and key=="recipe_level" and value.recipe_level==0: continue
 			if type_name=="SpecStage" and key=="grant_worker" and value.grant_worker.is_empty(): continue
 			if type_name=="SpecMaterial" and key=="requires_station" and value.requires_station.is_empty(): continue
