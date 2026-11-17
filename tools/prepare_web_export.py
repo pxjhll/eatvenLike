@@ -12,12 +12,13 @@ directory = Path(sys.argv[1]).resolve()
 project = Path(__file__).resolve().parents[1]
 media = project / 'art/opening/intro.mp4'
 player = project / 'web/opening_video.js'
-welcome = project / 'art/opening/loading.gif'
+loading_video = project / 'web/loading.mp4'
+loading_poster = project / 'web/loading-poster.jpg'
 loading_font = project / 'art/ui/graybox_font.ttf'
 loading_js = project / 'web/loading_screen.js'
 loading_css = project / 'web/loading_screen.css'
-if not all(path.is_file() for path in [media, player, welcome, loading_font, loading_js, loading_css]):
-    raise SystemExit('Opening video or browser player is missing; export from the complete project.')
+if not all(path.is_file() for path in [media, player, loading_video, loading_poster, loading_font, loading_js, loading_css]):
+    raise SystemExit('Opening or loading media is missing; export from the complete project.')
 wasm = directory / 'index.wasm'
 compressed = directory / 'index.wasm.gz'
 html = directory / 'index.html'
@@ -27,7 +28,8 @@ if 'id="compressed-godot-loader"' in source:
 source, progress_hooks = re.subn(r"('onProgress':\s*function\s*\(current, total\)\s*\{)", r'\1\n window.EatventureLoading.progress(current, total);', source)
 source, error_hooks = re.subn(r'(function displayFailureNotice\(err\)\s*\{)', r'\1\n window.EatventureLoading.fail(err);', source)
 markup = '''<section id="welcome-loading" aria-label="游戏加载中" aria-busy="true" data-state="loading">
-<div class="loading-portrait"><img src="loading.gif" alt="小动物们在厨房时钟旁奔跑" fetchpriority="high">
+<div class="loading-portrait">
+<video id="welcome-animation" src="loading.mp4" poster="loading-poster.jpg" autoplay muted loop playsinline aria-label="小动物们在厨房时钟旁奔跑"></video>
 <span id="welcome-percentage" aria-hidden="true">…</span>
 <span id="welcome-progress-label" role="status" aria-live="polite">美味正在准备中…</span>
 <progress id="welcome-progress" class="loading-a11y-progress" max="100" aria-label="资源加载进度"></progress>
@@ -40,7 +42,8 @@ raw_size = wasm.stat().st_size
 compressed.write_bytes(gzip.compress(wasm.read_bytes(), compresslevel=9, mtime=0))
 shutil.copyfile(media, directory / 'opening.mp4')
 shutil.copyfile(player, directory / 'opening_video.js')
-shutil.copyfile(welcome, directory / 'loading.gif')
+shutil.copyfile(loading_video, directory / loading_video.name)
+shutil.copyfile(loading_poster, directory / loading_poster.name)
 shutil.copyfile(loading_font, directory / 'loading-font.ttf')
 shutil.copyfile(loading_js, directory / 'loading_screen.js')
 shutil.copyfile(loading_css, directory / 'loading_screen.css')

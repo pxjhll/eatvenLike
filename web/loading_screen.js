@@ -1,4 +1,4 @@
-/* Animate the supplied GIF before engine startup; mirror the native loading UI. */
+/* Display the browser's waiting screen until Godot's welcome screen is ready. */
 (() => {
   'use strict';
   const engine = { loaded: 0, total: 0 };
@@ -36,6 +36,7 @@
       if (failed) return;
       released = true;
       screen.hidden = true;
+      document.getElementById('welcome-animation').pause();
       screen.setAttribute('aria-busy', 'false');
       const canvas = document.getElementById('canvas');
       if (canvas) { canvas.inert = false; canvas.focus({ preventScroll: true }); }
@@ -70,6 +71,7 @@
       const screen = root();
       if (!screen) return;
       screen.dataset.state = 'failed';
+      document.getElementById('welcome-animation').pause();
       screen.setAttribute('aria-busy', 'false');
       document.getElementById('welcome-progress-label').textContent = '加载失败，请刷新重试';
       document.getElementById('welcome-percentage').textContent = '!';
