@@ -963,7 +963,7 @@ func event_card() -> Dictionary:
 	if rules.pending_events.is_empty(): return {}
 	var ev: SpecEvent = rules.pending_events[0]
 	return {"id": ev.id, "title": ev.display_name, "text": ev.card_text, "icon": ev.icon, "speaker": ev.speaker,
-		"notice_seconds": ev.notice_seconds,
+		"notice_seconds": ev.notice_seconds, "notice_portrait": ev.notice_portrait,
 		"choices": ev.choices.map(func(c: Dictionary) -> String: return String(c.get("label", "")))}
 
 

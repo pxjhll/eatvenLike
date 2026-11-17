@@ -19,6 +19,8 @@ extends Resource
 @export var duration: float = 0.0
 ## 大于零时，等店面可以提示再自动结算。与玩家选项互斥。
 @export var notice_seconds: float = 0.0
+## Optional illustration for a wide notice.
+@export var notice_portrait: Texture2D
 @export var speaker: String = ""
 @export_multiline var card_text: String = ""
 ## 卡片和顶栏加成用的图标键

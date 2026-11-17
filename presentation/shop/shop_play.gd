@@ -494,7 +494,9 @@ func _refresh_event_notice() -> void:
 	var notice: String = card.title + "：" + card.text
 	if result.params.gold_granted > 0.0:
 		notice += "\n+%d 金币" % int(result.params.gold_granted)
-	guide.show_announcement(notice, ui.portrait_texture(card.icon), card.notice_seconds)
+	var illustration: Texture2D = card.notice_portrait
+	var portrait: Texture2D = illustration if illustration != null else ui.portrait_texture(card.icon)
+	guide.show_announcement(notice, portrait, card.notice_seconds, illustration != null)
 
 
 func answer_event(choice: int, id: String) -> void:

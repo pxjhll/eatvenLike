@@ -176,6 +176,11 @@ func _check_manager_visit() -> void:
 		"回到店面自动按存档随机状态发放三十至五十金币，只加钱包")
 	_check(view.guide._bubble.visible and view.guide._notice_portrait.visible and not view.frozen()
 		and "+%d 金币" % expected in view.guide._bubble_text.text, "店长头像与实际到账金额可见，营业继续")
+	await process_frame
+	var portrait: TextureRect = view.guide._notice_portrait
+	var label: Label = view.guide._bubble_text
+	_check(portrait.texture == CURRENT_TEA.events[0].notice_portrait and portrait.size.x >= 130.0
+		and portrait.get_global_rect().end.x <= label.get_global_rect().position.x, "店长半身立绘与右侧文案分栏")
 	_check(view.ui.get_node("%Gold").text == str(int(owner.gold)), "金币栏当帧更新")
 	view.guide.refresh(4.0)
 	view.guide.refresh(0.0)

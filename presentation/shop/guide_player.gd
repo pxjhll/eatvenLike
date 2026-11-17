@@ -7,6 +7,8 @@ const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const DIM := Color(0.16, 0.1, 0.06, 0.62)
 const GLOW := Color("ffd98a")
 const HAND := Color("8b6446")
+const BUBBLE_WIDTH := 440.0
+const ILLUSTRATED_NOTICE_WIDTH := 668.0
 
 var enabled := false
 var seen := {}
@@ -31,6 +33,7 @@ var _bubble_text: Label
 var _notice_portrait: TextureRect
 var _announcement := ""
 var _announcement_left := 0.0
+var _illustrated_announcement := false
 var _bubble_skip: Button
 var _show_bubble := false
 var _show_notice := false
@@ -50,7 +53,7 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	_bubble = PanelContainer.new()
 	_bubble.add_theme_stylebox_override("panel", ReferenceTheme.style("paper", 20))
 	_bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bubble.custom_minimum_size.x = 440
+	_bubble.custom_minimum_size.x = BUBBLE_WIDTH
 	add_child(_bubble)
 	var column := VBoxContainer.new()
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -69,6 +72,7 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	row.add_child(_notice_portrait)
 	_bubble_text = _hud._text(row, "", 23)
 	_bubble_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_bubble_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_bubble_text.custom_minimum_size.x = 400
 	_bubble_skip = Button.new()
 	_bubble_skip.focus_mode = Control.FOCUS_NONE
@@ -125,6 +129,7 @@ func refresh(delta: float) -> void:
 		_announcement_left = maxf(0.0, _announcement_left - delta)
 	else:
 		_notice_portrait.hide()
+		_bubble.custom_minimum_size.x = BUBBLE_WIDTH
 		_bubble.visible = _show_bubble and visible
 	_place_bubble()
 	queue_redraw()
@@ -138,15 +143,18 @@ func _announcement_space_available() -> bool:
 	return active.is_empty() and _hud.page == "shop" and not _hud.popups.has_card()
 
 
-func show_announcement(text: String, portrait: Texture2D, seconds: float) -> void:
+func show_announcement(text: String, portrait: Texture2D, seconds: float, illustrated := false) -> void:
 	_announcement = text
 	_announcement_left = seconds
+	_illustrated_announcement = illustrated
 	_notice_portrait.texture = portrait
+	_notice_portrait.custom_minimum_size = Vector2(136, 136) if illustrated else Vector2(56, 56)
 	_render_announcement()
 	_place_bubble()
 
 
 func _render_announcement() -> void:
+	_bubble.custom_minimum_size.x = ILLUSTRATED_NOTICE_WIDTH if _illustrated_announcement else BUBBLE_WIDTH
 	_show_notice = true
 	_say(_announcement)
 	_bubble_skip.hide()
