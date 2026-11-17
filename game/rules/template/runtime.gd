@@ -185,6 +185,11 @@ func _advance(dt: float, paused := false) -> String:
 	error = runner.dispatcher.reconcile()
 	if not error.is_empty(): last_error = error; return error
 	_allocate()
+	# Allocation can release or acquire order-follow scopes after service.advance.
+	# Publish a coherent customer target before events/saves observe this tick.
+	if service != null:
+		error = service.sync_dispatch_targets()
+		if not error.is_empty(): last_error = error; return error
 	return ""
 
 func ready(id: int) -> bool:

@@ -195,8 +195,31 @@ func _pancake_roll_hint() -> void:
 	var clock := owner.clock
 	view._process(0.25)
 	_check(owner.clock > clock, "提示还在时店铺继续经营")
-	await _touch(guide._bubble_skip.get_global_transform_with_canvas() * (guide._bubble_skip.size / 2.0), true)
+	var button_point: Vector2 = guide._bubble_skip.get_global_transform_with_canvas() * (guide._bubble_skip.size / 2.0)
+	await _rejected_bubble_touch(button_point, true)
+	_check(guide.active == "lost_machine" and not guide.seen.has("lost_machine"), "取消触摸不会关闭气泡")
+	await _rejected_bubble_touch(button_point, false)
+	_check(guide.active == "lost_machine" and not guide.seen.has("lost_machine"), "拖出按钮再返回不会误跳过")
+	await _touch(button_point, true)
 	_check(guide.seen.has("lost_machine") and not guide.visible and not view.frozen(), "只有原生触屏事件也能关闭「知道了」")
+	# A synthesized mouse release must not dismiss another hint that appears
+	# under the same finger after the native touch has completed.
+	guide.seen.erase("lost_machine")
+	guide._start("lost_machine")
+	guide.refresh(0)
+	for frame in 4: await process_frame
+	var synthetic := InputEventMouseButton.new()
+	synthetic.button_index = MOUSE_BUTTON_LEFT
+	synthetic.device = InputEvent.DEVICE_ID_EMULATION
+	synthetic.position = guide._bubble_skip.get_global_transform_with_canvas() * (guide._bubble_skip.size / 2.0)
+	for pressed in [true, false]:
+		synthetic.pressed = pressed
+		Input.parse_input_event(synthetic)
+		Input.flush_buffered_events()
+		await process_frame
+	_check(guide.active == "lost_machine" and not guide.seen.has("lost_machine"), "模拟鼠标事件不会再次跳过新气泡")
+	await _click(guide._bubble_skip)
+	_check(guide.seen.has("lost_machine"), "真实鼠标仍可关闭气泡")
 	view.free()
 	original_view = null
 
@@ -279,6 +302,30 @@ func _touch(point: Vector2, refresh_while_pressed := false) -> void:
 	Input.emulate_mouse_from_touch = emulate
 	guide.refresh(0)
 	await process_frame
+
+
+func _rejected_bubble_touch(point: Vector2, canceled: bool) -> void:
+	var emulate := Input.is_emulating_mouse_from_touch()
+	Input.emulate_mouse_from_touch = false
+	var press := InputEventScreenTouch.new()
+	press.position = point
+	press.pressed = true
+	Input.parse_input_event(press)
+	Input.flush_buffered_events()
+	await process_frame
+	if not canceled:
+		var motion := InputEventScreenDrag.new()
+		motion.position = point + Vector2(600, 0)
+		Input.parse_input_event(motion)
+		Input.flush_buffered_events()
+		await process_frame
+	var release := InputEventScreenTouch.new()
+	release.position = point
+	release.canceled = canceled
+	Input.parse_input_event(release)
+	Input.flush_buffered_events()
+	await process_frame
+	Input.emulate_mouse_from_touch = emulate
 
 
 func _press(point: Vector2) -> void:

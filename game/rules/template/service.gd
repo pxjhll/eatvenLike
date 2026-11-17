@@ -464,6 +464,11 @@ func _unit_output(unit: Dictionary) -> Dictionary:
 	return {"place":String(node.place), "owner":-1 if node.capability == "source" else int(unit.id),
 		"complete":node.capability == "source" or node.id in unit.done}
 
+## Dispatch changes can call or uncall a waiting customer at the end of a tick.
+## Synchronize destinations only; do not advance clocks, meals, or admissions.
+func sync_dispatch_targets() -> String:
+	return _sync_queue() if dining != null or waiting != null else ""
+
 func _sync_queue() -> String:
 	if dining != null:
 		var targets: Dictionary = dining.targets(orders.active_snapshot(),_called_guests())

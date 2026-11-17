@@ -55,5 +55,18 @@ static func met(definition: Dictionary, owner: RefCounted) -> bool:
 		if owner.level(key) < int(definition.levels[key]): return false
 	return true
 
+## Configuration hint only: all non-staff prerequisites are ready, but staffing
+## prevents this recipe entering the menu. Does not imply an existing queue.
+static func staff_shortfall(definition: Dictionary, owner: RefCounted) -> int:
+	if not definition.has("workers"): return 0
+	var without_staff := definition.duplicate(true)
+	without_staff.erase("workers")
+	if not met(without_staff, owner): return 0
+	var count := 0
+	for worker in owner.workers:
+		if worker.deployed and worker.post not in definition.workers.exclude_posts: count += 1
+	return maxi(0, int(definition.workers.minimum) - count)
+
+
 static func _error(message: String) -> Dictionary:
 	return {"definition":{},"error":message}

@@ -24,7 +24,12 @@ func setup(view: Node2D, hud: Control) -> void:
 
 
 func _go() -> void:
-	var target: String = _view.view.bottleneck().get("target", "")
+	var hint: Dictionary = _view.view.bottleneck()
+	var target: String = hint.get("target", "")
+	if hint.get("navigate", "") == "staff":
+		_hud.open_page("staff")
+		_view._show_toast(String(hint.text))
+		return
 	if target.begins_with("staff"): _hud.open_page("staff")
 	elif not target.is_empty(): _hud.open_station(target)
 
@@ -33,6 +38,7 @@ func refresh() -> void:
 	var hint: Dictionary = _view.view.bottleneck()
 	visible = not hint.is_empty()
 	if hint.is_empty(): return
+	tooltip_text = String(hint.text)
 	text = String(hint.short).replace("排长队", "排队") + " ›"
 	var dish := ""
 	for d in _view.rules.shop.dishes:
