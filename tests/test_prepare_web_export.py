@@ -53,6 +53,7 @@ engine.startGame({'onProgress': function (current, total) {}});
             self.assertIn('EatventureLoading.progress(current, total)', html)
             self.assertIn('EatventureLoading.fail(err)', html)
             self.assertIn('id="welcome-percentage"', html)
+            self.assertIn('<button id="welcome-play" class="loading-caption" hidden type="button">加载完成，点击播放片头</button>', html)
             self.assertIn('美味正在准备中…', html)
             self.assertIn('小厨师们正在赶来，马上开饭！', html)
             self.assertNotIn('68%', html, 'Progress must not be baked into the loading UI')

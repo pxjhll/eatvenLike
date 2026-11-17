@@ -34,6 +34,7 @@ markup = '''<section id="welcome-loading" aria-label="游戏加载中" aria-busy
 <span id="welcome-progress-label" role="status" aria-live="polite">美味正在准备中…</span>
 <progress id="welcome-progress" class="loading-a11y-progress" max="100" aria-label="资源加载进度"></progress>
 <div id="welcome-caption" class="loading-caption">小厨师们正在赶来，马上开饭！</div>
+<button id="welcome-play" class="loading-caption" hidden type="button">加载完成，点击播放片头</button>
 <button id="welcome-retry" class="loading-caption" hidden type="button">刷新重试</button></div></section>'''
 source, body_hooks = re.subn(r'(<body\b[^>]*>)', lambda match: match.group(0) + markup, source, count=1)
 if (progress_hooks, error_hooks, body_hooks) != (1, 1, 1):

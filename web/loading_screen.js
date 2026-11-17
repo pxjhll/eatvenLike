@@ -1,19 +1,31 @@
-/* Display the browser's waiting screen until Godot's welcome screen is ready. */
+/* Keep the loading animation visible until the intro or its fallback takes over. */
 (() => {
   'use strict';
   const engine = { loaded: 0, total: 0 };
   const media = { loaded: 0, total: 0 };
   const introGraceMs = 3000;
-  let engineReady = false, mediaDone = false, released = false, failed = false, scheduled = false;
-  let introGraceTimer;
+  let playIntro, introGraceTimer;
+  let mediaDone = false, released = false, failed = false;
   const root = () => document.getElementById('welcome-loading');
   function render() {
     const screen = root();
-    if (!screen || failed || released) return;
+    if (!screen || screen.dataset.state !== 'loading') return;
     const bar = document.getElementById('welcome-progress');
     const label = document.getElementById('welcome-progress-label');
     const number = document.getElementById('welcome-percentage');
-    if ((!engine.total && !engineReady) || (!media.total && !mediaDone)) {
+    if (playIntro && mediaDone) {
+      bar.value = 100;
+      number.textContent = '100%';
+      label.textContent = '加载完成';
+      screen.dataset.state = 'ready';
+      screen.setAttribute('aria-busy', 'false');
+      document.getElementById('welcome-caption').hidden = true;
+      const button = document.getElementById('welcome-play');
+      button.hidden = false;
+      button.focus({ preventScroll: true });
+      return;
+    }
+    if ((!engine.total && !playIntro) || (!media.total && !mediaDone)) {
       bar.removeAttribute('value');
       number.textContent = '…';
       label.textContent = '美味正在准备中…';
@@ -24,25 +36,6 @@
     bar.value = percentage;
     number.textContent = `${percentage}%`;
     label.textContent = '美味正在准备中…';
-    if (!engineReady || !mediaDone || scheduled) return;
-    scheduled = true;
-    bar.value = 100;
-    number.textContent = '100%';
-    label.textContent = '加载完成';
-    document.getElementById('welcome-caption').textContent = '加载完成，点击播放片头';
-    screen.dataset.state = 'ready';
-    // Godot's matching welcome and button must have a rendered frame before revealing them.
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (failed) return;
-      released = true;
-      screen.hidden = true;
-      document.getElementById('welcome-animation').pause();
-      screen.setAttribute('aria-busy', 'false');
-      const canvas = document.getElementById('canvas');
-      if (canvas) { canvas.inert = false; canvas.focus({ preventScroll: true }); }
-      document.removeEventListener('keydown', blockActivation, true);
-      document.removeEventListener('keyup', blockActivation, true);
-    }));
   }
   window.EatventureLoading = {
     progress(current, total) {
@@ -51,9 +44,9 @@
       engine.total = Math.max(0, Number(total) || 0);
       render();
     },
-    ready() {
-      if (engineReady || failed) return;
-      engineReady = true;
+    ready(startIntro) {
+      if (playIntro || failed || released) return;
+      playIntro = startIntro;
       engine.loaded = engine.total;
       if (!mediaDone) {
         introGraceTimer = setTimeout(() => {
@@ -62,6 +55,25 @@
         }, introGraceMs);
       }
       render();
+    },
+    release(afterCanvasFrame = false) {
+      if (released || failed) return;
+      released = true;
+      playIntro = null;
+      const hide = () => {
+        root().hidden = true;
+        document.getElementById('welcome-animation').pause();
+        const canvas = document.getElementById('canvas');
+        if (canvas) {
+          canvas.inert = false;
+          canvas.focus({ preventScroll: true });
+        }
+      };
+      if (afterCanvasFrame) {
+        requestAnimationFrame(() => requestAnimationFrame(hide));
+      } else {
+        hide();
+      }
     },
     fail() {
       if (released || failed) return;
@@ -77,17 +89,10 @@
       document.getElementById('welcome-percentage').textContent = '!';
       document.getElementById('welcome-progress').hidden = true;
       document.getElementById('welcome-caption').hidden = true;
+      document.getElementById('welcome-play').hidden = true;
       document.getElementById('welcome-retry').hidden = false;
     }
   };
-  // An engine-ready canvas must remain noninteractive while the intro is still downloading.
-  function blockActivation(event) {
-    if (!released && !failed && (event.key === 'Enter' || event.key === ' ')) {
-      event.preventDefault(); event.stopImmediatePropagation();
-    }
-  }
-  document.addEventListener('keydown', blockActivation, true);
-  document.addEventListener('keyup', blockActivation, true);
   function finishMedia() {
     if (mediaDone) return;
     mediaDone = true;
@@ -98,6 +103,14 @@
   function mount() {
     const canvas = document.getElementById('canvas');
     if (canvas) canvas.inert = true;
+    const button = document.getElementById('welcome-play');
+    button.addEventListener('click', () => {
+      if (root().dataset.state !== 'ready') return;
+      root().dataset.state = 'starting';
+      button.disabled = true;
+      // Call through synchronously so the browser can start the sound from this gesture.
+      playIntro();
+    });
     document.getElementById('welcome-retry').addEventListener('click', () => location.reload());
     window.EatventureOpening.preload((loaded, total) => {
       if (mediaDone) return;
