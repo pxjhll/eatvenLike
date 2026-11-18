@@ -16,7 +16,7 @@
   height: min(100vh, 179.5107vw);
   container-type: inline-size;
 }
-#welcome-loading img { width: 100%; height: 100%; object-fit: contain; display: block; }
+#welcome-animation { width: 100%; height: 100%; object-fit: contain; display: block; }
 #welcome-percentage {
   position: absolute;
   left: 23.24%; top: 53.66%; width: 55.05%; height: 8.35%;
@@ -48,6 +48,7 @@
   line-height: 1; text-align: center;
 }
 #welcome-loading .loading-caption[hidden] { display: none; }
+#welcome-loading button.loading-caption:not(:disabled) { cursor: pointer; }
 #welcome-loading .loading-a11y-progress {
   position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);
 }

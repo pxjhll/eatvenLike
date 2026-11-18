@@ -551,11 +551,9 @@ func _order_finishing(order: Dictionary, recorded_units: Variant) -> bool:
 func _free_seat() -> String:
 	var available: Array = dining.seats(_runtime.runner.owner) if dining!=null else _policy.seats.keys()
 	if seating != null: available = seating.seats(_runtime.runner.owner)
+	var occupied: Dictionary = orders.occupied_seats(dining != null or seating != null)
 	for seat in available:
-		var free := true
-		for guest in orders.active_snapshot().guests:
-			if guest.seat == seat and guest.state != "gone" and not ((dining!=null or seating!=null) and guest.state=="leaving"): free = false; break
-		if free: return seat
+		if not occupied.has(seat): return seat
 	return ""
 
 func _admit() -> String:

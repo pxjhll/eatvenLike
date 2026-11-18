@@ -28,10 +28,17 @@ static func build(runtime: RefCounted, displays: Array = [], presentation: Dicti
 		worker.work_station = ""
 		worker.display_working = worker.phase in ["work","pickup","dropoff"] and action_status != "blocked"
 		worker.display_progress = _progress(runtime,worker,task)
-		var standing_by: bool = (task.is_empty() and worker.phase == "idle") or (task.get("kind") == "interact" and action_status == "blocked")
-		if not counter_pose.is_empty() and standing_by and not worker.walking:
-			if Vector2(worker.pos).is_equal_approx(counter_pose.position):
+		if not worker.walking:
+			var standing_by: bool = (task.is_empty() and worker.phase == "idle") or (task.get("kind") == "interact" and action_status == "blocked")
+			if not counter_pose.is_empty() and standing_by and Vector2(worker.pos).is_equal_approx(counter_pose.position):
 				worker.facing = counter_pose.direction
+			if worker.phase == "dropoff" and worker.display_working and task.get("kind") == "bundle" and String(task.to).begins_with("guest:"):
+				var guest_id := int(String(task.to).trim_prefix("guest:"))
+				for customer in frame.customers:
+					if customer.id != guest_id: continue
+					var toward_customer: Vector2 = customer.pos - worker.pos
+					if not toward_customer.is_zero_approx(): worker.facing = _direction(toward_customer)
+					break
 		if task.get("kind")=="operate": worker.work_station = runtime.runner.machines.run(task.run).machine
 		elif worker.display_working and worker.has("action"):
 			var target: String = worker.action.steps[worker.action.index].target
@@ -83,8 +90,10 @@ static func _counter_pose(runtime: RefCounted) -> Dictionary:
 	if not pickup.error.is_empty(): return {}
 	var toward_customer: Vector2 = pickup.point - staff_position
 	if toward_customer.is_zero_approx(): return {}
-	var direction := posmod(roundi(atan2(toward_customer.x, toward_customer.y) / (PI / 4.0)), 8)
-	return {"position": staff_position, "direction": direction}
+	return {"position": staff_position, "direction": _direction(toward_customer)}
+
+static func _direction(vector: Vector2) -> int:
+	return posmod(roundi(atan2(vector.x, vector.y) / (PI / 4.0)), 8)
 
 static func seats_used(runtime: RefCounted, group: Resource) -> int:
 	if runtime.service==null or group==null: return 0

@@ -9,15 +9,9 @@ static func enabled(rule: Dictionary) -> bool:
 
 static func plan(rule: Dictionary, runner: RefCounted, target: int, fetch: bool) -> Dictionary:
 	var stock: RefCounted = runner.inventory
-	var device: Dictionary = runner.machines.snapshot().definitions[rule.machine]
-	var infinite: Array = stock.snapshot().places[device.input].infinite
-	var finite: Dictionary = rule.consumes.duplicate()
-	for item in infinite: finite.erase(item)
-	var projected := 0
-	for item in rule.produces: projected += int(stock.quantity(device.output,item,-1))
-	for claim in stock.snapshot().claims:
-		if claim.kind != "operation" or claim.state != "reserved" or claim.to != device.output or claim.owner != -1: continue
-		for item in rule.produces: projected += int(claim.produces.get(item,0))
+	var device: Dictionary = runner.machines.containers(rule.machine)
+	var finite: Dictionary = stock.finite_inputs(device.input, rule.consumes)
+	var projected: int = stock.projected_output(device.output, rule.produces, Inventory.SHARED)
 	var output := Inventory._total(rule.produces)
 	@warning_ignore("integer_division")
 	var amount := mini(int(rule.batch.max),maxi(0,int(rule.stock_limit)-projected)/output)

@@ -10,6 +10,7 @@ const SAMPLE_SECONDS := 60.0
 
 var view: ShopView
 var enabled := true
+var performance_sample: Callable
 var _clock := 0.0
 var _acc := {}
 var _last_revenue := 0.0
@@ -56,16 +57,33 @@ func sample() -> void:
 func _write_sample(activity: Dictionary) -> void:
 	var progress := view.progress_snapshot()
 	var n: float = maxf(0.001, _acc.n)
-	write({"t": int(activity.clock), "stage": activity.stage_index, "gold": activity.gold, "income": activity.revenue - _last_revenue,
+	var entry := {"t": int(activity.clock), "stage": activity.stage_index, "gold": activity.gold, "income": activity.revenue - _last_revenue,
 		"cups": activity.sold - _last_sold, "lost": activity.lost - _last_lost, "queue": activity.queue, "cap": activity.queue_capacity,
 		"full": snappedf(_acc.full / n, 0.01), "angry": snappedf(_acc.angry / n, 0.01), "idle": snappedf(_acc.idle / n, 0.01),
 		"busy": _busy(n), "seats_used": snappedf(_acc.seats / n, 0.01),
 		"staff": activity.staff_count, "seats": activity.seat_count, "interval": snappedf(activity.customer_interval, 0.1),
-		"levels": progress.levels, "tune": _tune()})
+		"levels": progress.levels, "tune": _tune()}
+	_add_performance(entry, true)
+	write(entry)
 	_last_revenue = activity.revenue
 	_last_sold = activity.sold
 	_last_lost = activity.lost
 	_reset_acc()
+
+
+func log_mark() -> void:
+	if not enabled: return
+	var activity := view.activity_snapshot()
+	var entry := {"t": int(activity.clock), "mark": true, "stage": activity.stage_index,
+		"gold": activity.gold, "queue": activity.queue}
+	_add_performance(entry, false)
+	write(entry)
+
+
+func _add_performance(entry: Dictionary, consume: bool) -> void:
+	if not enabled or not performance_sample.is_valid(): return
+	var stats: Dictionary = performance_sample.call(consume)
+	if not stats.is_empty(): entry.perf = stats
 
 
 func log_buy(what: String, gold_before: float) -> void:
@@ -99,6 +117,7 @@ func line_count() -> int:
 func clear() -> void:
 	if not enabled: return
 	if FileAccess.file_exists(file_path): DirAccess.remove_absolute(ProjectSettings.globalize_path(file_path))
+	if performance_sample.is_valid(): performance_sample.call(true)
 	setup(view)
 
 

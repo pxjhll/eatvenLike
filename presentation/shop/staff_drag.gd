@@ -81,9 +81,10 @@ func _press_body(screen: Vector2) -> void:
 	var depth := -INF
 	var unit_scale: float = _view._actor_unit_scale
 	for worker in _view.view.deployed_snapshot():
-		if Rect2(worker.pos + Vector2(-50, -130) * unit_scale, Vector2(100, 145) * unit_scale).has_point(point) and worker.pos.y >= depth:
+		var feet := _visible_feet(worker)
+		if Rect2(feet + Vector2(-50, -130) * unit_scale, Vector2(100, 145) * unit_scale).has_point(point) and feet.y >= depth:
 			found = int(worker.id)
-			depth = worker.pos.y
+			depth = feet.y
 	if found != -1: _candidate(found, screen, false)
 
 
@@ -93,7 +94,12 @@ func _candidate(id: int, screen: Vector2, from_card: bool) -> void:
 	_pointer = _world(screen)
 	_view.select_worker(id, from_card)
 	var worker := _worker()
-	_grab_offset = Vector2(0, 60) * _view._actor_unit_scale if from_card else worker.pos - _pointer
+	_grab_offset = Vector2(0, 60) * _view._actor_unit_scale if from_card else _visible_feet(worker) - _pointer
+
+
+func _visible_feet(worker: Dictionary) -> Vector2:
+	var actor: Node2D = _view._actors.get(worker.id)
+	return actor.render_position() if actor != null else worker.pos
 
 
 func _motion(screen: Vector2) -> void:
