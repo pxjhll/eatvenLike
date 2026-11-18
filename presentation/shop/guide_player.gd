@@ -3,13 +3,10 @@ extends Control
 ## 判断条件、指向目标、压暗挖洞、画手指和气泡；卡片型步骤交给 HUD 的弹卡队列。
 ## 每帧从规则层和界面现状重新判断，关掉面板、读档都能接着在对的地方提示，不存“走到第几步”。
 
-const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const DIM := Color(0.16, 0.1, 0.06, 0.62)
 const GLOW := Color("ffd98a")
 const HAND := Color("8b6446")
-const BUBBLE_WIDTH := 440.0
-const ILLUSTRATED_NOTICE_WIDTH := 668.0
-const GUIDE_DIALOGUE_WIDTH := 644.0
+const BUBBLE_WIDTH := 644.0
 const GUIDE_PORTRAIT_SIZE := Vector2(146, 125)
 
 var enabled := false
@@ -32,18 +29,15 @@ var _lost_seen := -1
 var _staff_at_start := 0
 var _bubble: PanelContainer
 var _bubble_text: Label
-var _bubble_paper: StyleBox
-var _dialogue_paper: StyleBoxFlat
 var _dialogue_slot: Control
 var _dialogue_portrait: TextureRect
 var _dialogue_heading: Label
-var _dialogue_width := GUIDE_DIALOGUE_WIDTH
+var _dialogue_title := ""
 var _dialogue_visible := false
 var _pointer_bounds := Rect2()
-var _notice_portrait: TextureRect
+var _announcement_title := ""
 var _announcement := ""
 var _announcement_left := 0.0
-var _illustrated_announcement := false
 var _bubble_skip: Button
 var _skip_touch := -1
 var _show_bubble := false
@@ -62,20 +56,19 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 		_steps[step.id] = step
 		_order.append(step)
 	_bubble = PanelContainer.new()
-	_bubble_paper = ReferenceTheme.style("paper", 20)
-	_dialogue_paper = StyleBoxFlat.new()
-	_dialogue_paper.bg_color = Color("fff5e1bd")
-	_dialogue_paper.border_color = Color("d7a473de")
-	_dialogue_paper.shadow_color = Color("3d261735")
-	_dialogue_paper.shadow_size = 5
-	_dialogue_paper.shadow_offset = Vector2(0, 4)
-	_dialogue_paper.set_corner_radius_all(24)
-	_dialogue_paper.set_border_width_all(2)
-	_dialogue_paper.content_margin_left = 16
-	_dialogue_paper.content_margin_right = 16
-	_dialogue_paper.content_margin_top = 9
-	_dialogue_paper.content_margin_bottom = 9
-	_bubble.add_theme_stylebox_override("panel", _bubble_paper)
+	var paper := StyleBoxFlat.new()
+	paper.bg_color = Color("fff5e1bd")
+	paper.border_color = Color("d7a473de")
+	paper.shadow_color = Color("3d261735")
+	paper.shadow_size = 5
+	paper.shadow_offset = Vector2(0, 4)
+	paper.set_corner_radius_all(24)
+	paper.set_border_width_all(2)
+	paper.content_margin_left = 16
+	paper.content_margin_right = 16
+	paper.content_margin_top = 9
+	paper.content_margin_bottom = 9
+	_bubble.add_theme_stylebox_override("panel", paper)
 	_bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bubble.custom_minimum_size.x = BUBBLE_WIDTH
 	add_child(_bubble)
@@ -87,13 +80,6 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", 12)
 	column.add_child(row)
-	_notice_portrait = TextureRect.new()
-	_notice_portrait.custom_minimum_size = Vector2(56, 56)
-	_notice_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_notice_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_notice_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_notice_portrait.hide()
-	row.add_child(_notice_portrait)
 	_dialogue_slot = Control.new()
 	_dialogue_slot.custom_minimum_size = Vector2(GUIDE_PORTRAIT_SIZE.x, 81)
 	_dialogue_slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -116,7 +102,7 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	_dialogue_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_dialogue_heading.hide()
 	_bubble_text = _hud._text(copy, "", 23)
-	_bubble_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_bubble_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_bubble_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_bubble_text.custom_minimum_size.x = 400
 	_bubble_skip = Button.new()
@@ -149,7 +135,6 @@ func restart() -> void:
 	_staff_at_start = 0
 	_announcement_left = 0.0
 	_skip_touch = -1
-	_notice_portrait.texture = null
 	visible = false
 	if _bubble != null: _bubble.hide()
 	queue_redraw()
@@ -167,19 +152,18 @@ func refresh(delta: float) -> void:
 	_show_bubble = false
 	_show_notice = false
 	_dialogue_visible = false
+	_dialogue_title = ""
 	_pointer_bounds = Rect2()
 	if enabled:
 		_pick()
 		if not active.is_empty(): _play(_step(), delta)
 	visible = enabled and not active.is_empty() and _step() != null and _step().style != "card"
-	_sync_dialogue()
 	if _announcement_left > 0.0 and _announcement_space_available():
 		_render_announcement()
 		_announcement_left = maxf(0.0, _announcement_left - delta)
 	else:
-		_notice_portrait.hide()
-		_bubble.custom_minimum_size.x = _dialogue_width if _dialogue_visible else BUBBLE_WIDTH
 		_bubble.visible = _show_bubble and visible
+	_sync_dialogue()
 	_place_bubble()
 	queue_redraw()
 
@@ -192,22 +176,21 @@ func _announcement_space_available() -> bool:
 	return active.is_empty() and _hud.page == "shop" and not _hud.popups.has_card()
 
 
-func show_announcement(text: String, portrait: Texture2D, seconds: float, illustrated := false) -> void:
+func show_announcement(title: String, text: String, seconds: float) -> void:
+	_announcement_title = title
 	_announcement = text
 	_announcement_left = seconds
-	_illustrated_announcement = illustrated
-	_notice_portrait.texture = portrait
-	_notice_portrait.custom_minimum_size = Vector2(136, 136) if illustrated else Vector2(56, 56)
 	_render_announcement()
+	_sync_dialogue()
 	_place_bubble()
 
 
 func _render_announcement() -> void:
-	_bubble.custom_minimum_size.x = ILLUSTRATED_NOTICE_WIDTH if _illustrated_announcement else BUBBLE_WIDTH
+	_dialogue_visible = false
+	_dialogue_title = _announcement_title
 	_show_notice = true
 	_say(_announcement)
 	_bubble_skip.hide()
-	_notice_portrait.visible = _notice_portrait.texture != null
 	visible = true
 	_bubble.show()
 
@@ -317,20 +300,18 @@ func _play(step: SpecGuideStep, delta: float) -> void:
 
 
 func _set_dialogue(step: SpecGuideStep, cue: Dictionary) -> void:
-	if step.portrait == null or not cue.has("heading"): return
-	_dialogue_visible = true
-	_dialogue_width = minf(GUIDE_DIALOGUE_WIDTH, maxf(440, size.x - 32))
-	_dialogue_portrait.texture = step.portrait
-	_dialogue_heading.text = _fill(String(cue.heading), step)
+	if not cue.has("heading"): return
+	_dialogue_title = _fill(String(cue.heading), step)
+	_dialogue_visible = step.portrait != null
+	if _dialogue_visible: _dialogue_portrait.texture = step.portrait
 
 
 func _sync_dialogue() -> void:
+	if _dialogue_heading.text != _dialogue_title: _dialogue_heading.text = _dialogue_title
+	_dialogue_heading.visible = not _dialogue_title.is_empty()
 	if _dialogue_slot.visible == _dialogue_visible: return
 	_dialogue_slot.visible = _dialogue_visible
-	_dialogue_heading.visible = _dialogue_visible
-	_bubble_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if _dialogue_visible else HORIZONTAL_ALIGNMENT_CENTER
 	_bubble_text.autowrap_mode = TextServer.AUTOWRAP_OFF if _dialogue_visible else TextServer.AUTOWRAP_WORD_SMART
-	_bubble.add_theme_stylebox_override("panel", _dialogue_paper if _dialogue_visible else _bubble_paper)
 
 
 func _push_card(step: SpecGuideStep) -> void:

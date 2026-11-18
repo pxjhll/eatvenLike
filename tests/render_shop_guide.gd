@@ -188,6 +188,9 @@ func _tea_contextual_guides() -> void:
 	guide = view.guide
 	_check(guide.active == "tea_opening_notice" and guide._show_notice and not view.frozen() and not hud.popups.has_card(),
 		"正式奶茶店直接进店面，开张提示不暂停、不弹卡")
+	var paper: StyleBoxFlat = guide._bubble.get_theme_stylebox("panel")
+	_check(is_equal_approx(paper.bg_color.a, 189.0 / 255.0) and not guide._dialogue_slot.visible,
+		"奶茶店短提示使用普通半透明气泡")
 	await _click(view._station_buttons.lemonade)
 	_check(hud.page == "station" and not guide._bubble.visible, "开张提示不挡设备面板，也不留在面板上")
 	await _click(hud.page_node("station").unlock_button)
@@ -258,8 +261,14 @@ func _pancake_first_sale() -> void:
 	await _click(hud.popups.button(hud.popups.primary_index()))
 	_check(guide._dialogue_visible and guide._dialogue_heading.text == "先点豆浆机" and guide.freezes(),
 		"豆浆机引导带店长和可点区域")
+	var paper: StyleBoxFlat = guide._bubble.get_theme_stylebox("panel")
+	_check(is_equal_approx(paper.bg_color.a, 189.0 / 255.0), "带店长的气泡使用半透明底板")
 	await _capture("calico-unlock")
 	await _click(view._station_buttons.soy_milk)
+	_check(guide._bubble.get_theme_stylebox("panel") == paper and not guide._dialogue_slot.visible
+		and not guide._dialogue_heading.visible and guide._bubble_text.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT,
+		"设备面板指引共用底板，收起立绘和空标题，正文左对齐")
+	await _capture("calico-plain-unlock")
 	await _click(hud.page_node("station").unlock_button)
 	await _click(hud.tab("shop"))
 	var employee: Node2D = view._actors[owner.workers[0].id]

@@ -174,13 +174,12 @@ func _check_manager_visit() -> void:
 	view._process(0.0)
 	_check(owner.gold == gold + expected and owner.revenue == revenue and owner.sold == sold and owner.pending_events.is_empty(),
 		"回到店面自动按存档随机状态发放三十至五十金币，只加钱包")
-	_check(view.guide._bubble.visible and view.guide._notice_portrait.visible and not view.frozen()
-		and "+%d 金币" % expected in view.guide._bubble_text.text, "店长头像与实际到账金额可见，营业继续")
+	_check(view.guide._bubble.visible and not view.guide._dialogue_slot.visible and not view.frozen()
+		and "+%d 金币" % expected in view.guide._bubble_text.text, "普通通知显示实际到账金额，营业继续")
 	await process_frame
-	var portrait: TextureRect = view.guide._notice_portrait
-	var label: Label = view.guide._bubble_text
-	_check(portrait.texture == CURRENT_TEA.events[0].notice_portrait and portrait.size.x >= 130.0
-		and portrait.get_global_rect().end.x <= label.get_global_rect().position.x, "店长半身立绘与右侧文案分栏")
+	var paper: StyleBoxFlat = view.guide._bubble.get_theme_stylebox("panel")
+	_check(view.guide._dialogue_heading.visible and view.guide._dialogue_heading.text == "店长回访"
+		and is_equal_approx(paper.bg_color.a, 189.0 / 255.0), "半透明回访通知保留店长标题")
 	_check(view.ui.get_node("%Gold").text == str(int(owner.gold)), "金币栏当帧更新")
 	view.guide.refresh(4.0)
 	view.guide.refresh(0.0)

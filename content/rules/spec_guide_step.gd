@@ -41,7 +41,7 @@ extends Resource
 ##   pause: false（不压暗、不停店，只指一下）
 ##   notice_seconds: 秒数（在顶栏下短暂显示提示，无箭头，店继续营业）
 ##   finish_after_notice: true（短提示只在店面且没有弹卡时计时，播完记为看过）
-##   heading: 配合 portrait 显示半透明的立绘提示；提示有 at 时也会指向目标
+##   heading: 可选标题；配有 portrait 时一并显示引导立绘。提示有 at 时也会指向目标
 @export var cues: Array[Dictionary] = []
 ## 填进文案和条件的值
 @export var params: Dictionary = {}
