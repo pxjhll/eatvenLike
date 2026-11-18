@@ -3,11 +3,30 @@ extends RefCounted
 ## ledger. Offside commits make whole-order reservation/drop/return atomic.
 
 static func reserve(stock: RefCounted, actor: String, entries: Array, capacity: int) -> Dictionary:
+	var plan := _validate_entries(stock, actor, entries, capacity)
+	if not plan.error.is_empty(): return plan
+	if entries.size() == 1: return _reserve_entries(stock, actor, entries, capacity, plan.count)
+	var candidate: RefCounted = stock.copy_for_reservation()
+	var result := _reserve_entries(candidate, actor, entries, capacity, plan.count)
+	if not result.error.is_empty(): return result
+	stock.commit_reservation(candidate)
+	for claim in stock.bundle(result.id).claims: stock._record("reserve_transfer",claim)
+	return result
+
+## A probe never commits. One entry can be checked directly; multiple entries
+## must account for the stock and space each preceding entry would reserve.
+static func can_reserve(stock: RefCounted, actor: String, entries: Array, capacity: int) -> bool:
+	var plan := _validate_entries(stock, actor, entries, capacity)
+	if not plan.error.is_empty(): return false
+	if entries.size() == 1: return true
+	return _reserve_entries(stock.copy_for_probe(), actor, entries, capacity, plan.count).error.is_empty()
+
+static func _validate_entries(stock: RefCounted, actor: String, entries: Array, capacity: int) -> Dictionary:
 	if not stock._actor_valid(actor) or entries.is_empty() or capacity < 1: return stock._failure("invalid bundle carrier or capacity")
 	var total := 0
 	for entry in entries:
 		if not entry is Dictionary: return stock._failure("invalid bundle entry")
-		var row: Dictionary = entry.duplicate(true)
+		var row: Dictionary = entry.duplicate()
 		if not row.has("owner"): row.owner = stock.ANY_OWNER
 		if not row.has("allocate_owner"): row.allocate_owner = stock.ANY_OWNER
 		if not stock._shape(row, {"from":"", "to":"", "item":"", "count":0, "owner":0, "allocate_owner":0}) or row.count < 1: return stock._failure("invalid bundle entry")
@@ -21,13 +40,7 @@ static func reserve(stock: RefCounted, actor: String, entries: Array, capacity: 
 			entry.get("owner",stock.ANY_OWNER),entry.get("allocate_owner",stock.ANY_OWNER))
 		if not offer.error.is_empty(): return offer
 		if offer.count != entry.count: return stock._failure("bundle stock or capacity unavailable")
-		return _reserve_entries(stock,actor,entries,capacity,total)
-	var candidate: RefCounted = stock.copy_for_reservation()
-	var result := _reserve_entries(candidate,actor,entries,capacity,total)
-	if not result.error.is_empty(): return result
-	stock.commit_reservation(candidate)
-	for claim in stock.bundle(result.id).claims: stock._record("reserve_transfer",claim)
-	return result
+	return {"error":"", "count":total}
 
 static func _reserve_entries(stock: RefCounted, actor: String, entries: Array, capacity: int, total: int) -> Dictionary:
 	var group := {"id":int(stock._state.next_bundle), "actor":actor, "capacity":capacity, "claims":[]}

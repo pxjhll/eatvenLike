@@ -72,6 +72,27 @@ func test_cancel_after_pickup_retains_return_capacity_and_original_ownership() -
 	check_eq(inventory.quantity("source", "rice"), 2, "compensation runs once")
 	check_eq(inventory.audit(), [], "cancel conserves stock")
 
+func test_bundle_availability_probe_checks_all_entries_without_reserving() -> void:
+	var inventory := _new_inventory()
+	if inventory == null: return
+	_stock(inventory, "source")
+	_stock(inventory, "target", 2)
+	_stock(inventory, "other", 1)
+	inventory.seed("source", "rice", 2)
+	var entry := {"from":"source", "to":"target", "item":"rice", "count":1}
+	var other := {"from":"source", "to":"other", "item":"rice", "count":1}
+	var before: Dictionary = inventory.snapshot()
+	check(inventory.can_reserve_bundle("staff:1", [entry], 2), "complete single entry can be carried")
+	check(inventory.can_reserve_bundle("staff:1", [entry,entry], 2), "whole bundle can be carried")
+	check(not inventory.can_reserve_bundle("staff:1", [entry,entry], 1), "bundle respects carrier capacity")
+	check(not inventory.can_reserve_bundle("staff:1", [entry,entry,other], 3), "entries share the same source stock")
+	check(not inventory.can_reserve_bundle("staff:1", [other,other], 2), "entries share the same destination capacity")
+	check_eq(inventory.snapshot(), before, "probes do not consume stock, space, or transaction IDs")
+	var reserved: Dictionary = inventory.reserve_bundle("staff:1", [entry,entry], 2)
+	check_eq(reserved.error, "", "the accepted load reserves successfully")
+	check(not inventory.can_reserve_bundle("staff:1", [other], 2), "a carrier with an active load cannot take another")
+	check_eq(inventory.audit(), [], "the real reservation remains valid")
+
 func test_owned_material_is_never_borrowed_by_another_order() -> void:
 	var inventory := _new_inventory()
 	if inventory == null: return

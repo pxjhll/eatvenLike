@@ -2,7 +2,7 @@ extends RefCounted
 ## Compose already authorized logistics into one ordinary bundle. Each entry
 ## retains its owner, allocation and pickup clock; only the walk/drop is shared.
 
-static func compose(runtime: RefCounted, worker: Dictionary, ranked: Array) -> Array:
+static func compose(runtime: RefCounted, worker: Dictionary, ranked: Array, facts: Dictionary) -> Array:
 	if not runtime._definition.dispatch.get("batch_transfers",false): return ranked
 	var result: Array = []
 	var used := {}
@@ -20,12 +20,11 @@ static func compose(runtime: RefCounted, worker: Dictionary, ranked: Array) -> A
 			var extra := _entry(runtime,candidate,entries,capacity)
 			if extra.is_empty(): continue
 			var combined: Array = entries + [extra]
-			var context: Dictionary = runtime.runner.dispatcher.context_for_candidate({"kind":"bundle","entries":combined})
+			var context: Dictionary = runtime.runner.dispatcher.context_for_candidate({"kind":"bundle","entries":combined}, facts)
 			if not String(context.error).is_empty() or not runtime.runner.dispatcher.can_start(worker,context.scope).is_empty(): continue
-			var stock: RefCounted = runtime.runner.inventory.copy_for_probe()
 			var raw: Array = combined.duplicate(true)
 			for entry in raw: entry.erase("pickup_seconds")
-			if not String(stock.reserve_bundle("staff:"+str(worker.id),raw,capacity).error).is_empty(): continue
+			if not runtime.runner.inventory.can_reserve_bundle("staff:"+str(worker.id),raw,capacity): continue
 			entries = combined
 			members.append(next)
 		if members.size()<2: result.append(first); continue

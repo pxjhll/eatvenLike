@@ -55,12 +55,29 @@ func test_route_cost_can_prioritize_nearby_work_and_does_not_choose_unreachable_
 		template.dispatch = {"travel_penalty":1.0}
 		var runtime := _runtime(template)
 		if runtime == null: return
-		runtime.runner.owner.workers[0].pos = Vector2(100,100)
-		runtime.request_production("far_drink")
+		var owner: ShopRules = runtime.runner.owner
+		var worker: Dictionary = owner.workers[0]
+		owner.shop.layout.obstacles.append(Rect2(80,80,40,40))
+		owner.shop.layout.obstacle_stations.append("late_barrier")
+		owner.nav.set_open({})
+		worker.pos = Vector2(160,100)
+		var far: Dictionary = runtime.request_production("far_drink")
 		var near: Dictionary = runtime.request_production("drink")
-		var candidates: Array = runtime.candidates_for(runtime.runner.owner.workers[0].id)
+		var candidates: Array = runtime.candidates_for(worker.id)
 		check_eq(candidates[0].unit, near.id, "actual route cost favors nearby reachable source")
-		if unreachable: check_eq(candidates.size(), 1, "unreachable candidate cannot trap the scheduler or cause remote pickup")
+		if unreachable:
+			check_eq(candidates.size(), 1, "unreachable candidate cannot trap the scheduler or cause remote pickup")
+			continue
+		worker.pos = Vector2(900,100)
+		check_eq(runtime.candidates_for(worker.id)[0].unit, far.id, "route scores follow the employee's current origin")
+		worker.pos = Vector2(160,100)
+		check_eq(runtime.candidates_for(worker.id)[0].unit, near.id, "rank again from the original position")
+		owner.nav.set_open({"late_barrier":true})
+		candidates = runtime.candidates_for(worker.id)
+		check_eq(candidates.size(), 1, "an unlocked obstacle can block a previously reachable source")
+		check_eq(candidates[0].unit, far.id, "routing uses the updated shop topology")
+		owner.nav.set_open({})
+		check_eq(runtime.candidates_for(worker.id)[0].unit, near.id, "removing the obstacle restores the original route score")
 
 func test_continuation_bonus_prefers_existing_work_over_starting_another_order() -> void:
 	var template := Production.definition()
