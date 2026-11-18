@@ -4,6 +4,21 @@ const SHOP: SpecShop = preload("res://content/shops/pancake/shop.tres")
 const TEMPLATE := preload("res://content/shops/pancake/shared_production.tres")
 const Runtime := preload("res://game/rules/template/runtime.gd")
 
+func test_finished_pancakes_share_one_atlas_with_distinct_order_icons() -> void:
+	var view := ShopView.new(TemplateOuter.owner(SHOP))
+	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
+	scene.view = view
+	var dishes := ["plain","guozi","ham","floss","bacon","family"]
+	for index in dishes.size():
+		var dish: String = dishes[index]
+		var texture := scene._order_icon(dish) as AtlasTexture
+		check(texture != null,"order icon uses the atlas for "+dish)
+		if texture == null: continue
+		check_eq(texture.atlas.resource_path,"res://art/pancake/items/pancake_servings.png","all servings use one atlas")
+		check_eq(texture.region,Rect2(index % 3 * 112,floori(index / 3.0) * 132,112,132),"the proper serving appears for "+dish)
+		check(is_same(view.item_art(dish).texture,texture),"scene and order share the same serving for "+dish)
+	scene.free()
+
 func _owner(all_open := true) -> ShopRules:
 	var owner := TemplateOuter.owner(SHOP.copy_for_editing(),42)
 	owner.gold = 100000.0

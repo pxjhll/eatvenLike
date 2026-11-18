@@ -25,7 +25,15 @@
 [ext_resource type="Script" path="res://content/rules/spec_material.gd" id="22_snoov"]
 [ext_resource type="Script" path="res://content/rules/spec_stock_rule.gd" id="23_xb1gn"]
 [ext_resource type="AudioStream" path="res://art/audio/milk_tea_afternoon.ogg" id="music_theme"]
-[ext_resource type="Texture2D" path="res://art/ui/tea_manager_portrait.png" id="manager_art"]
+[ext_resource type="Texture2D" path="res://art/reference/fruit_tea.png" id="drink_lemonade"]
+[ext_resource type="Texture2D" path="res://art/reference/black_tea.png" id="drink_black_tea"]
+[ext_resource type="Texture2D" path="res://art/reference/cream_tea.png" id="drink_plain_milk_tea"]
+[ext_resource type="Texture2D" path="res://art/reference/lemon_tea.png" id="drink_lemon_tea"]
+[ext_resource type="Texture2D" path="res://art/reference/pearl_tea.png" id="drink_pearl_milk_tea"]
+[ext_resource type="Texture2D" path="res://art/reference/coconut_milk_tea.png" id="drink_coconut_milk_tea"]
+[ext_resource type="Texture2D" path="res://art/reference/redbean_milk_tea.png" id="drink_redbean_milk_tea"]
+[ext_resource type="Texture2D" path="res://art/reference/taro_milk_tea.png" id="drink_taro_milk_tea"]
+[ext_resource type="Texture2D" path="res://art/reference/tea_dining.png" id="tea_dining_atlas"]
 [ext_resource type="Resource" path="res://content/characters/staff/bear.tres" id="staff_bear"]
 [ext_resource type="Resource" path="res://content/characters/staff/cat.tres" id="staff_cat"]
 [ext_resource type="Resource" path="res://content/characters/staff/fox.tres" id="staff_fox"]
@@ -37,6 +45,46 @@
 
 [ext_resource type="Resource" path="res://content/characters/staff/parrot.tres" id="staff_parrot"][ext_resource type="Resource" path="res://content/shops/shared/front_staff_training.tres" id="training_front"]
 [ext_resource type="Resource" path="res://content/shops/shared/kitchen_staff_training.tres" id="training_kitchen"]
+
+[sub_resource type="AtlasTexture" id="dining_lemonade"]
+atlas = ExtResource("tea_dining_atlas")
+region = Rect2(0, 0, 160, 160)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="dining_black_tea"]
+atlas = ExtResource("tea_dining_atlas")
+region = Rect2(160, 0, 160, 160)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="dining_plain_milk_tea"]
+atlas = ExtResource("tea_dining_atlas")
+region = Rect2(320, 0, 160, 160)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="dining_lemon_tea"]
+atlas = ExtResource("tea_dining_atlas")
+region = Rect2(480, 0, 160, 160)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="dining_pearl_milk_tea"]
+atlas = ExtResource("tea_dining_atlas")
+region = Rect2(0, 192, 160, 192)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="dining_coconut_milk_tea"]
+atlas = ExtResource("tea_dining_atlas")
+region = Rect2(160, 192, 160, 192)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="dining_redbean_milk_tea"]
+atlas = ExtResource("tea_dining_atlas")
+region = Rect2(320, 192, 160, 192)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="dining_taro_milk_tea"]
+atlas = ExtResource("tea_dining_atlas")
+region = Rect2(480, 192, 160, 192)
+filter_clip = true
 
 [sub_resource type="Resource" id="Resource_m1tbq"]
 script = ExtResource("1_tjgba")
@@ -557,11 +605,6 @@ op = "add"
 value = 30.0
 gold_max = 50
 
-[sub_resource type="AtlasTexture" id="Manager_notice_portrait"]
-atlas = ExtResource("manager_art")
-region = Rect2(245, 8, 785, 835)
-filter_clip = true
-
 [sub_resource type="Resource" id="Event_tea_manager_visit"]
 script = ExtResource("5_kou0a")
 id = "tea_manager_visit"
@@ -572,7 +615,6 @@ chance = 1.0
 once = true
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Effect_tea_manager_gift")])
 notice_seconds = 4.0
-notice_portrait = SubResource("Manager_notice_portrait")
 speaker = "manager"
 icon = "cat"
 card_text = "我路过，回来看看你们。留点金币给你周转！"
@@ -666,54 +708,57 @@ art = "cream_tea"
 script = ExtResource("13_l0dwn")
 id = "plain_milk_tea"
 display_name = "原味奶茶"
-art = "cream_tea"
+icon = ExtResource("drink_plain_milk_tea")
+dining_texture = SubResource("dining_plain_milk_tea")
 
 [sub_resource type="Resource" id="Resource_n745i"]
 script = ExtResource("13_l0dwn")
 id = "pearl_milk_tea"
 display_name = "珍珠奶茶"
-art = "pearl_tea"
+icon = ExtResource("drink_pearl_milk_tea")
+dining_texture = SubResource("dining_pearl_milk_tea")
 
 [sub_resource type="Resource" id="Resource_gc2vn"]
 script = ExtResource("13_l0dwn")
 id = "coconut_milk_tea"
 display_name = "椰果奶茶"
-art = "cream_tea"
-tint = Color(1, 0.972549, 0.8745098, 1)
+icon = ExtResource("drink_coconut_milk_tea")
+dining_texture = SubResource("dining_coconut_milk_tea")
 
 [sub_resource type="Resource" id="Resource_aph8w"]
 script = ExtResource("13_l0dwn")
 id = "redbean_milk_tea"
 display_name = "红豆奶茶"
-art = "pearl_tea"
-tint = Color(1, 0.84705883, 0.8117647, 1)
+icon = ExtResource("drink_redbean_milk_tea")
+dining_texture = SubResource("dining_redbean_milk_tea")
 
 [sub_resource type="Resource" id="Resource_e7yay"]
 script = ExtResource("13_l0dwn")
 id = "taro_milk_tea"
 display_name = "芋泥奶茶"
-art = "cream_tea"
-tint = Color(0.88235295, 0.8156863, 1, 1)
+icon = ExtResource("drink_taro_milk_tea")
+dining_texture = SubResource("dining_taro_milk_tea")
 
 [sub_resource type="Resource" id="Resource_nicqr"]
 script = ExtResource("13_l0dwn")
 id = "lemonade"
 display_name = "柠檬水"
-art = "fruit_tea"
+icon = ExtResource("drink_lemonade")
+dining_texture = SubResource("dining_lemonade")
 
 [sub_resource type="Resource" id="Resource_nyjld"]
 script = ExtResource("13_l0dwn")
 id = "black_tea"
 display_name = "红茶"
-art = "cream_tea"
-tint = Color(0.8509804, 0.5764706, 0.37254903, 1)
+icon = ExtResource("drink_black_tea")
+dining_texture = SubResource("dining_black_tea")
 
 [sub_resource type="Resource" id="Resource_jv8ei"]
 script = ExtResource("13_l0dwn")
 id = "lemon_tea"
 display_name = "柠檬茶"
-art = "fruit_tea"
-tint = Color(0.9490196, 0.7019608, 0.41568628, 1)
+icon = ExtResource("drink_lemon_tea")
+dining_texture = SubResource("dining_lemon_tea")
 
 [sub_resource type="Resource" id="Resource_x4rom"]
 script = ExtResource("14_8dy82")
@@ -1090,7 +1135,7 @@ tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_u86ql")])
 price_dishes = Array[String](["lemonade"])
 counts_for_flow = true
 description = "服务员到展示柜现取柠檬水，外带不用封口；升级提高柠檬水售价"
-icon = "res://art/ui/drink_lemonade.png"
+icon = "res://art/reference/fruit_tea.png"
 
 [sub_resource type="Resource" id="Resource_ygrx2"]
 script = ExtResource("7_1v0ns")
@@ -1642,7 +1687,7 @@ id = "lemon"
 display_name = "柠檬"
 item = "lemon_tea"
 track = SubResource("Resource_7nern")
-icon = "drink_lemon_tea"
+icon = "res://art/reference/lemon_tea.png"
 
 [sub_resource type="Resource" id="Resource_w0igs"]
 script = ExtResource("7_1v0ns")
@@ -1723,7 +1768,7 @@ tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_i46xi")])
 price_dishes = Array[String](["lemon_tea"])
 counts_for_flow = true
 description = "前台员工接一杯柠檬水，再亲手捣柠檬，做成柠檬茶；外带不用封口；升级提高柠檬茶售价"
-icon = "drink_lemon_tea"
+icon = "res://art/reference/lemon_tea.png"
 
 [sub_resource type="Resource" id="Resource_y1325"]
 script = ExtResource("7_1v0ns")
@@ -1769,7 +1814,7 @@ id = "pearl"
 display_name = "珍珠"
 item = "pearl_milk_tea"
 track = SubResource("Resource_107pf")
-icon = "drink_pearl_milk_tea"
+icon = "res://art/reference/pearl_tea.png"
 
 [sub_resource type="Resource" id="Resource_ocn6m"]
 script = ExtResource("7_1v0ns")
@@ -1816,7 +1861,7 @@ id = "coconut"
 display_name = "椰果"
 item = "coconut_milk_tea"
 track = SubResource("Resource_oa1x0")
-icon = "drink_coconut_milk_tea"
+icon = "res://art/reference/coconut_milk_tea.png"
 
 [sub_resource type="Resource" id="Resource_il2xq"]
 script = ExtResource("7_1v0ns")
@@ -1863,7 +1908,7 @@ id = "redbean"
 display_name = "红豆"
 item = "redbean_milk_tea"
 track = SubResource("Resource_fd1fs")
-icon = "drink_redbean_milk_tea"
+icon = "res://art/reference/redbean_milk_tea.png"
 
 [sub_resource type="Resource" id="Resource_7wnqj"]
 script = ExtResource("7_1v0ns")
@@ -1910,7 +1955,7 @@ id = "taro"
 display_name = "芋泥"
 item = "taro_milk_tea"
 track = SubResource("Resource_qqh1t")
-icon = "drink_taro_milk_tea"
+icon = "res://art/reference/taro_milk_tea.png"
 
 [sub_resource type="Resource" id="Resource_18cdu"]
 script = ExtResource("7_1v0ns")
@@ -1994,7 +2039,7 @@ materials = Array[ExtResource("22_snoov")]([SubResource("Resource_dmmhs"), SubRe
 tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_e0rlp")])
 counts_for_flow = true
 description = "人工加料；升级开放新口味（椰果、红豆、芋泥），每开一种来的客人更多"
-icon = "drink_pearl_milk_tea"
+icon = "res://art/reference/pearl_tea.png"
 
 [resource]
 script = ExtResource("15_3rult")

@@ -612,7 +612,7 @@ func _history_node(unit: Dictionary, id: String) -> void:
 		var claim: Dictionary = stock._task("operation",0,definition.input,definition.output,int(unit.id))
 		claim.consumes = node.consumes.duplicate(); claim.produces = node.produces.duplicate()
 		claim.count = stock._total(claim.produces)
-		claim.space = maxi(0,claim.count-(stock._total(stock._finite_inputs(claim.from,claim.consumes)) if claim.from==claim.to else 0))
+		claim.space = maxi(0,claim.count-(stock._total(stock.finite_inputs(claim.from,claim.consumes)) if claim.from==claim.to else 0))
 		claim.state = "completed"
 		stock._store(claim)
 		var run := Machines._run()

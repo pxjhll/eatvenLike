@@ -553,7 +553,7 @@ skip_marks = Array[String](["opening"])
 style = "card"
 title = "欢迎，店长！"
 art = "raccoon"
-rows = [["res://art/ui/drink_lemonade.png", "招待顾客，卖饮品收金币"], ["res://art/reference/pearl_pot.png", "开通后厨生产线，做新饮品"], ["goals", "完成经营任务，把小店做大"]]
+rows = [["res://art/reference/fruit_tea.png", "招待顾客，卖饮品收金币"], ["res://art/reference/pearl_pot.png", "开通后厨生产线，做新饮品"], ["goals", "完成经营任务，把小店做大"]]
 confirm_label = "开始营业"
 cancel_label = "跳过引导"
 next = "opening"
@@ -1409,7 +1409,7 @@ tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_u86ql")])
 price_dishes = Array[String](["lemonade"])
 counts_for_flow = true
 description = "服务员到展示柜现取柠檬水，外带不用封口；升级提高柠檬水售价"
-icon = "res://art/ui/drink_lemonade.png"
+icon = "res://art/reference/fruit_tea.png"
 
 [sub_resource type="Resource" id="Resource_ygrx2"]
 script = ExtResource("7_1v0ns")
@@ -1960,7 +1960,7 @@ id = "lemon"
 display_name = "柠檬"
 item = "lemon_tea"
 track = SubResource("Resource_7nern")
-icon = "drink_lemon_tea"
+icon = "res://art/reference/lemon_tea.png"
 
 [sub_resource type="Resource" id="Resource_w0igs"]
 script = ExtResource("7_1v0ns")
@@ -2041,7 +2041,7 @@ tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_i46xi")])
 price_dishes = Array[String](["lemon_tea"])
 counts_for_flow = true
 description = "前台员工接一杯柠檬水，再亲手捣柠檬，做成柠檬茶；外带不用封口；升级提高柠檬茶售价"
-icon = "drink_lemon_tea"
+icon = "res://art/reference/lemon_tea.png"
 
 [sub_resource type="Resource" id="Resource_y1325"]
 script = ExtResource("7_1v0ns")
@@ -2087,7 +2087,7 @@ id = "pearl"
 display_name = "珍珠"
 item = "pearl_milk_tea"
 track = SubResource("Resource_107pf")
-icon = "drink_pearl_milk_tea"
+icon = "res://art/reference/pearl_tea.png"
 
 [sub_resource type="Resource" id="Resource_ocn6m"]
 script = ExtResource("7_1v0ns")
@@ -2134,7 +2134,7 @@ id = "coconut"
 display_name = "椰果"
 item = "coconut_milk_tea"
 track = SubResource("Resource_oa1x0")
-icon = "drink_coconut_milk_tea"
+icon = "res://art/reference/coconut_milk_tea.png"
 
 [sub_resource type="Resource" id="Resource_il2xq"]
 script = ExtResource("7_1v0ns")
@@ -2181,7 +2181,7 @@ id = "redbean"
 display_name = "红豆"
 item = "redbean_milk_tea"
 track = SubResource("Resource_fd1fs")
-icon = "drink_redbean_milk_tea"
+icon = "res://art/reference/redbean_milk_tea.png"
 
 [sub_resource type="Resource" id="Resource_7wnqj"]
 script = ExtResource("7_1v0ns")
@@ -2228,7 +2228,7 @@ id = "taro"
 display_name = "芋泥"
 item = "taro_milk_tea"
 track = SubResource("Resource_qqh1t")
-icon = "drink_taro_milk_tea"
+icon = "res://art/reference/taro_milk_tea.png"
 
 [sub_resource type="Resource" id="Resource_18cdu"]
 script = ExtResource("7_1v0ns")
@@ -2312,7 +2312,7 @@ materials = Array[ExtResource("22_snoov")]([SubResource("Resource_dmmhs"), SubRe
 tracks = Array[ExtResource("9_g4hkj")]([SubResource("Resource_e0rlp")])
 counts_for_flow = true
 description = "人工加料；升级开放新口味（椰果、红豆、芋泥），每开一种来的客人更多"
-icon = "drink_pearl_milk_tea"
+icon = "res://art/reference/pearl_tea.png"
 
 [resource]
 script = ExtResource("15_3rult")

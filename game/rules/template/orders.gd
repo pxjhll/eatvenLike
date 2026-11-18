@@ -58,6 +58,13 @@ func reject_arrival() -> Dictionary:
 	_state.lost += 1
 	return {"error":"queue full", "id":-1}
 
+func occupied_seats(release_leaving: bool) -> Dictionary:
+	var occupied := {}
+	for guest in _present_guests.values():
+		if not guest.seat.is_empty() and not (release_leaving and guest.state == "leaving"):
+			occupied[guest.seat] = true
+	return occupied
+
 func queue() -> Array:
 	var out: Array = []
 	for guest in _present_guests.values():

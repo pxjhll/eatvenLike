@@ -3,8 +3,11 @@
 [ext_resource type="Script" uid="uid://c7llm1nom34ir" path="res://presentation/ui/reference_style.gd" id="1_style"]
 [ext_resource type="FontFile" uid="uid://6j1cxbp2576r" path="res://art/ui/graybox_font.ttf" id="2_font"]
 
+[ext_resource type="FontFile" path="res://art/ui/guide_glyphs.otf" id="3_guide_glyphs"]
+
 [sub_resource type="FontVariation" id="FontVariation_ui"]
 base_font = ExtResource("2_font")
+fallbacks = Array[Font]([ExtResource("3_guide_glyphs")])
 variation_embolden = 0.42
 
 [sub_resource type="StyleBox" id="StyleBox_cream"]

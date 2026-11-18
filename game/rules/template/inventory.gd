@@ -59,6 +59,18 @@ func quantity(place: String, item: String = "", owner: int = ANY_OWNER, availabl
 		count += int(lot.count) - (_reserved_lot(int(lot.id)) if available_only else 0)
 	return count
 
+func is_infinite_source(place: String, item: String) -> bool:
+	return item in _state.places[place].infinite
+
+## Stock already at the output plus reserved production for the same owner.
+func projected_output(place: String, products: Dictionary, owner: int) -> int:
+	var count := 0
+	for item in products: count += quantity(place, item, owner)
+	for claim in _active_claims.values():
+		if claim.kind != "operation" or claim.state != "reserved" or claim.to != place or claim.owner != owner: continue
+		for item in products: count += int(claim.produces.get(item, 0))
+	return count
+
 func remaining_capacity(place: String) -> int:
 	return _free(place) if _state.places.has(place) else 0
 
@@ -107,6 +119,9 @@ func reserve_actor_transfer(actor: String, source: String, destination: String, 
 func reserve_bundle(actor: String, entries: Array, capacity: int) -> Dictionary:
 	return Bundles.reserve(self, actor, entries, capacity)
 
+func next_bundle_id() -> int:
+	return _state.next_bundle
+
 func bundle(id: int) -> Dictionary:
 	return _bundles_by_id.get(id, {}).duplicate(true)
 
@@ -122,7 +137,7 @@ func drop_bundle(id: int) -> String:
 func cancel_bundle(id: int) -> String:
 	return Bundles.apply(self, id, "cancel")
 
-func _reserve_actor_transfer(actor: String, source: String, destination: String, item: String,
+func transfer_offer(actor: String, source: String, destination: String, item: String,
 		requested: int, capacity: int, owner: int, allocate_owner: int, group: int = -1) -> Dictionary:
 	if not _actor_valid(actor) or requested <= 0 or capacity <= 0 or owner < ANY_OWNER or allocate_owner < ANY_OWNER or item.is_empty(): return _failure("invalid transfer")
 	if not _state.places.has(source) or not _state.places.has(destination) or source == destination: return _failure("invalid transfer containers")
@@ -134,6 +149,14 @@ func _reserve_actor_transfer(actor: String, source: String, destination: String,
 	var amount := mini(requested, mini(capacity, _free(destination)))
 	if not minted: amount = mini(amount, quantity(source, item, owner, true))
 	if amount <= 0: return _failure("stock or capacity unavailable")
+	return {"error":"", "count":amount, "minted":minted}
+
+func _reserve_actor_transfer(actor: String, source: String, destination: String, item: String,
+		requested: int, capacity: int, owner: int, allocate_owner: int, group: int = -1) -> Dictionary:
+	var offer := transfer_offer(actor,source,destination,item,requested,capacity,owner,allocate_owner,group)
+	if not offer.error.is_empty(): return offer
+	var amount: int = offer.count
+	var minted: bool = offer.minted
 	var parts: Array = [] if minted else _parts(source, {item:amount}, owner)
 	var task := _task("transfer", _staff_id(actor), source, destination, owner)
 	task.actor = actor
@@ -217,7 +240,7 @@ func reserve_operation(worker: int, place: String, consumes: Dictionary, produce
 	if worker < 0 or owner < SHARED or not _counts_valid(consumes) or not _counts_valid(produces) or (consumes.is_empty() and produces.is_empty()): return _failure("invalid operation")
 	if not _state.places.has(place) or not _state.places.has(destination): return _failure("unknown operation container")
 	if worker > 0 and _busy(worker): return _failure("worker already assigned")
-	var finite := _finite_inputs(place, consumes)
+	var finite := finite_inputs(place, consumes)
 	for item in finite:
 		if quantity(place, item, owner, true) < int(finite[item]): return _failure("recipe input unavailable")
 	for item in produces:
@@ -329,7 +352,18 @@ func restore(data: Dictionary) -> String:
 ## reservation methods. Loading a serialized ledger still goes through restore().
 func copy_for_reservation() -> RefCounted:
 	var candidate: RefCounted = get_script().new()
-	candidate._state = snapshot()
+	# Closed claims and published bundle membership are immutable. Isolate
+	# mutable lots, capacity definitions and current claims for rollback.
+	candidate._state = _state.duplicate()
+	candidate._state.places = _state.places.duplicate(true)
+	candidate._state.lots = _state.lots.duplicate(true)
+	candidate._state.created = _state.created.duplicate()
+	candidate._state.consumed = _state.consumed.duplicate()
+	candidate._state.bundles = _state.bundles.duplicate()
+	var claims: Array = _state.claims.duplicate()
+	for index in claims.size():
+		if _active_claims.has(claims[index].id): claims[index] = claims[index].duplicate(true)
+	candidate._state.claims = claims
 	candidate._index_transactions()
 	return candidate
 
@@ -390,7 +424,7 @@ func audit() -> Array:
 		else:
 			if task.actor != ("staff:" + str(task.worker) if task.worker > 0 else "") or is_hand_place(task.from) or is_hand_place(task.to): return ["invalid operation actor or container"]
 			if task.owner < SHARED or task.minted or not _counts_valid(task.consumes) or not _counts_valid(task.produces) or (task.consumes.is_empty() and task.produces.is_empty()) or task.state in ["held", "dropped"]: return ["invalid operation claim"]
-			if task.count != _total(task.produces) or task.space != maxi(0, task.count - (_total(_finite_inputs(task.from, task.consumes)) if task.from == task.to else 0)): return ["invalid operation capacity claim"]
+			if task.count != _total(task.produces) or task.space != maxi(0, task.count - (_total(finite_inputs(task.from, task.consumes)) if task.from == task.to else 0)): return ["invalid operation capacity claim"]
 			for item in task.produces:
 				if item in _state.places[task.to].infinite: return ["recipe produces into integrated supply"]
 		var part_total := 0
@@ -407,7 +441,7 @@ func audit() -> Array:
 			_add(recipe_counts, lot.item, part.count)
 			reservations[part.lot] = int(reservations.get(part.lot, 0)) + int(part.count)
 		if task.kind == "transfer" and part_total != (0 if task.minted else int(task.count)): return ["transfer reservation amount differs"]
-		if task.kind == "operation" and task.state == "reserved" and recipe_counts != _finite_inputs(task.from, task.consumes): return ["recipe reservation differs"]
+		if task.kind == "operation" and task.state == "reserved" and recipe_counts != finite_inputs(task.from, task.consumes): return ["recipe reservation differs"]
 		if task.state in ACTIVE and not task.actor.is_empty():
 			if actors.has(task.actor) and (task.group < 1 or actors[task.actor] != task.group): return ["carrier has multiple assignments"]
 			actors[task.actor] = task.group
@@ -504,7 +538,7 @@ func _busy_actor(actor: String) -> bool:
 		if task.actor == actor: return true
 	return false
 
-func _finite_inputs(place: String, consumes: Dictionary) -> Dictionary:
+func finite_inputs(place: String, consumes: Dictionary) -> Dictionary:
 	var result := consumes.duplicate()
 	for item in _state.places[place].infinite: result.erase(item)
 	return result

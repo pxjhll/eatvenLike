@@ -83,10 +83,17 @@ func test_art_scene_has_independent_occluders_and_clear_doorway() -> void:
 	art.free()
 
 
-func test_ui_p0_art_covers_every_dish_and_checkout_keeps_its_aspect() -> void:
+func test_tea_orders_share_scene_drink_textures_and_checkout_keeps_its_aspect() -> void:
 	var tea: SpecShop = load("res://content/shops/tea/shop.tres")
+	var view := ShopView.new(ShopRules.new(tea))
+	var textures := {}
 	for dish in tea.dishes:
-		check(ResourceLoader.exists("res://art/ui/drink_%s.png" % dish.id), "order bubble icon for " + dish.id)
+		var texture := view.item_icon(dish.id)
+		check(texture.resource_path.begins_with("res://art/reference/"), "drink comes from scene assets: " + dish.id)
+		check_eq(view.item_art(dish.id).texture, texture, "scene and order use the same texture: " + dish.id)
+		check_eq(view.item_art(dish.id).tint, Color.WHITE, "drink keeps its painted color: " + dish.id)
+		textures[texture.resource_path] = true
+	check_eq(textures.size(), 8, "each menu drink has its own scene image")
 	for name in ["coin", "coin_small", "bubble"]:
 		check(ResourceLoader.exists("res://art/ui/%s.png" % name), "UI art " + name)
 	# The counter used to be a 620 px image stretched 2.3x sideways; it is now drawn at scene width.
@@ -94,6 +101,31 @@ func test_ui_p0_art_covers_every_dish_and_checkout_keeps_its_aspect() -> void:
 	var checkout: Sprite2D = art.get_node("Sortables/Checkout/Sprite")
 	check(absf(checkout.scale.x - checkout.scale.y) < 0.001, "checkout is not stretched")
 	art.free()
+
+
+func test_tea_display_uses_glasses_only_for_dining_portions() -> void:
+	var tea: SpecShop = load("res://content/shops/tea/shop.tres")
+	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
+	scene.view = ShopView.new(ShopRules.new(tea))
+	scene._sortables = Node2D.new()
+	scene.add_child(scene._sortables)
+	var regions := {}
+	for dish in tea.dishes:
+		scene._draw_cups([
+			{"item": dish.id, "capability": "stock_showcase", "pos": Vector2.ZERO, "host": ""},
+			{"item": dish.id, "capability": "dining_item", "pos": Vector2.ZERO, "host": ""},
+		])
+		check_eq(scene._cups[0].texture, scene._order_icon(dish.id), "stock and orders share the usual cup: " + dish.id)
+		var glass := scene._cups[1].texture as AtlasTexture
+		check(glass != null, "dining sprite comes from the glass atlas: " + dish.id)
+		if glass == null: continue
+		check_eq(glass.atlas.resource_path, "res://art/reference/tea_dining.png", "all glasses use the same atlas")
+		check(glass.filter_clip, "dining sprite is clipped to its region: " + dish.id)
+		regions[glass.region] = true
+	check_eq(regions.size(), tea.dishes.size(), "every menu drink has its own dining region")
+	check_eq(scene.view.item_art("tea_leaf", true).texture, scene.view.item_art("tea_leaf").texture,
+			"items without a dining texture keep their usual appearance")
+	scene.free()
 
 
 func test_front_wood_uses_existing_floor_texture_below_the_counter() -> void:

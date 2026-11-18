@@ -30,6 +30,9 @@ func _run() -> void:
 	rules.unlock("lemonade")
 	rules.unlock("boil")
 	rules.unlock_box("tea_leaf")
+	var helper: Dictionary = rules.roster.back()
+	_check(helper.kind == "bear" and helper.deployed, "the tea-leaf gift takes the first kitchen slot")
+	_check(rules.recall_worker(helper.id).is_empty(), "recalling the gift frees the slot for the gray cat scenario")
 	_check(rules.deploy_worker(6) == "", "gray cat deploys into a real kitchen slot")
 	var carried := false
 	for i in 1200:

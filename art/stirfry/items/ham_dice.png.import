@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ds6hg47bh8hn7"
-path="res://.godot/imported/drink_lemonade.png-eb9ea34090aa47b6164b48964457713c.ctex"
+uid="uid://d1d2v5bkiccq1"
+path="res://.godot/imported/ham_dice.png-f4ce70ad4afe1a8680c3c84c597a544a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ui/drink_lemonade.png"
-dest_files=["res://.godot/imported/drink_lemonade.png-eb9ea34090aa47b6164b48964457713c.ctex"]
+source_file="res://art/stirfry/items/ham_dice.png"
+dest_files=["res://.godot/imported/ham_dice.png-f4ce70ad4afe1a8680c3c84c597a544a.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

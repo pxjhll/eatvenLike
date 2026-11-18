@@ -6,7 +6,7 @@ extends Control
 ##   art       标题旁的插画（角色 id 或图标键），medal = 顶上的奖牌图标键
 ##   rows      [[图标键, 一句话], …]   图标 + 说明的小卡片
 ##   stats     [[图标键, 小标题, 数值], …]
-##   note      底下一段说明
+##   note      一段说明；portrait 配 subtitle 显示插画和副标题，portrait_right 把立绘放在说明右侧并镜像
 ##   buttons   [{label, primary(金色), action: Callable}, …]（按钮按了就关卡；action 可以为空）
 ##   dim       卡片后面压暗（默认 true），pause 弹着时店里停（默认 true）
 ##   any_tap   点卡片外面也算按了主按钮（默认 true：有的手机浏览器点不中按钮）
@@ -19,6 +19,8 @@ var _hud: Control
 var queue: Array = []
 var _card: PanelContainer
 var _title: Label
+var _subtitle: Label
+var _header_note: Label
 var _body: VBoxContainer
 var _buttons: HBoxContainer
 var _art: TextureRect
@@ -45,8 +47,15 @@ func setup(hud: Control) -> void:
 	heading.add_theme_constant_override("separation", 8)
 	column.add_child(heading)
 	_art = _picture(heading, null, Vector2(190, 190))
-	_title = hud._text(heading, "", 40)
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var header := VBoxContainer.new()
+	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_theme_constant_override("separation", 8)
+	heading.add_child(header)
+	_subtitle = hud._text(header, "", 23, true)
+	_title = hud._text(header, "", 40)
+	_header_note = hud._text(header, "", 26)
+	_header_note.add_theme_constant_override("line_spacing", 9)
 	_title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_title.custom_minimum_size.x = 300
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -121,14 +130,38 @@ func _build(card: Dictionary) -> void:
 		for child in holder.get_children():
 			holder.remove_child(child)
 			child.queue_free()
-	var art := String(card.get("art", ""))
-	_art.visible = not art.is_empty()
-	if not art.is_empty(): _art.texture = Icons.portrait(art) if art in _hud.Characters.IDS else Icons.texture(art)
+	var portrait: Texture2D = card.get("portrait")
+	var portrait_right: bool = portrait != null and card.get("portrait_right", false)
+	var note_text := String(card.get("note", ""))
 	var medal := String(card.get("medal", ""))
-	_medal.visible = not medal.is_empty()
-	if not medal.is_empty(): _medal.texture = Icons.texture(medal)
+	_card.custom_minimum_size.x = 650 if portrait != null else 560
+	_subtitle.text = String(card.get("subtitle", ""))
+	_subtitle.visible = not _subtitle.text.is_empty()
+	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_header_note.text = note_text
+	_header_note.visible = portrait != null and not portrait_right and not note_text.is_empty()
 	_title.text = String(card.get("title", ""))
 	_title.add_theme_font_size_override("font_size", int(card.get("title_size", 40)))
+	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if portrait != null else HORIZONTAL_ALIGNMENT_CENTER
+	_art.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN if portrait != null else Control.SIZE_EXPAND_FILL
+	_art.custom_minimum_size = Vector2(190, 190)
+	_medal.visible = portrait == null and not medal.is_empty()
+	if _medal.visible: _medal.texture = Icons.texture(medal)
+	var art := String(card.get("art", ""))
+	_art.visible = portrait != null or not art.is_empty()
+	if portrait != null:
+		_art.custom_minimum_size = Vector2(145, 118) if portrait_right else Vector2(227, 358)
+		_art.texture = Icons.texture(medal) if portrait_right else portrait
+	elif not art.is_empty():
+		_art.texture = Icons.portrait(art) if art in _hud.Characters.IDS else Icons.texture(art)
+	if portrait_right:
+		var note_row: HBoxContainer = _hud._row(_body, 14)
+		var note: Label = _hud._text(note_row, note_text, 26)
+		note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		note.add_theme_constant_override("line_spacing", 9)
+		var figure := _picture(note_row, portrait, Vector2(154, 132))
+		figure.size_flags_horizontal = Control.SIZE_SHRINK_END
+		figure.flip_h = true
 	for row in card.get("rows", []):
 		var panel := PanelContainer.new()
 		panel.add_theme_stylebox_override("panel", ReferenceTheme.style("card", 22))
@@ -141,8 +174,8 @@ func _build(card: Dictionary) -> void:
 	if not card.get("stats", []).is_empty():
 		var metrics: HBoxContainer = _hud._row(_body, 14)
 		for stat in card.stats: _stat(metrics, String(stat[0]), String(stat[1]), String(stat[2]))
-	if not String(card.get("note", "")).is_empty():
-		var note: Label = _hud._text(_body, String(card.note), 22)
+	if portrait == null and not note_text.is_empty():
+		var note: Label = _hud._text(_body, note_text, 22)
 		note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		note.custom_minimum_size.x = 500
 	var buttons: Array = card.get("buttons", [{"label": "知道了", "primary": true}])

@@ -427,26 +427,34 @@ func station(id: String) -> Dictionary:
 	return card
 
 
+func unlock_sign(id: String, stage: int) -> Dictionary:
+	var station := shop.station(id)
+	var cost := station.unlock_cost if not station.unlock_after_stage.is_empty() else 0
+	var title := station_name(id)
+	if stage >= 0:
+		cost = shop.stages[stage].cost
+		if stage > 0: title = shop.stages[stage].display_name
+	var status := rules.command_status("unlock", {"id": id})
+	return {"cost": cost, "status": status, "error": command_message(status), "title": title}
+
+
 func _unlock_section(id: String, stage: int) -> Dictionary:
 	var members: Array = []
 	var note := ""
-	var title := station_name(id)
+	var section := unlock_sign(id, stage)
 	var station := shop.station(id)
 	var dish := station.unlock_dish
-	var cost := station.unlock_cost if not station.unlock_after_stage.is_empty() else 0
 	if stage >= 0:
 		var def := shop.stages[stage]
-		cost = def.cost
 		note = def.unlock_note
 		dish = def.dish
-		if stage > 0: title = def.display_name
 		for key in def.stations: members.append(station_name(key))
 	var d := shop.dish(dish)
-	var status := rules.command_status("unlock", {"id": id})
-	return {"cost": cost, "status": status, "error": command_message(status), "title": title, "members": members, "note": note,
+	section.merge({"members": members, "note": note,
 		"dish": dish_name(dish) if not dish.is_empty() else "", "dish_price": rules.dish_price(dish) if d != null else 0.0,
 		"quote": rules.dish_quote(dish) if d != null else {},
-		"description": "基础说明：" + shop.station(id).description, "frame": stage >= 0 and stage == next_stage()}
+		"description": "基础说明：" + shop.station(id).description, "frame": stage >= 0 and stage == next_stage()})
+	return section
 
 
 ## 配方栏的一行：{stage, dish, name, cost, price, state(owned 已买 / next 下一个可买 / later 还没轮到), status, error}
@@ -856,8 +864,8 @@ func work_progress(worker: Dictionary) -> float:
 const ItemArt := preload("res://game/rules/shop_item_art.gd")
 
 ## Explicit scene artwork and UI icons share the same shop item data.
-func item_art(id: String) -> Dictionary:
-	return ItemArt.appearance(shop, id)
+func item_art(id: String, dining := false) -> Dictionary:
+	return ItemArt.appearance(shop, id, dining)
 
 
 func item_icon(id: String) -> Texture2D:

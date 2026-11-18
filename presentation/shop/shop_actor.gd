@@ -131,7 +131,9 @@ func show_order(item: String, patience: float, mood := 0, takeaway := false, com
 		_order_cup.texture = order_icon.call(item)
 	if item_changed or size_changed:
 		_order_cup.scale = Vector2.ONE * 40.0 * scale_factor / _order_cup.texture.get_height()
-		_order_cup.position = Vector2(-46.0 * scale_factor, -_height - 4.0 - 58.0 * scale_factor)
+		var icon_width := _order_cup.texture.get_width() * _order_cup.scale.x
+		var inset := maxf(0.0, (40.0 * scale_factor - icon_width) / 2.0)
+		_order_cup.position = Vector2(-46.0 * scale_factor + inset, -_height - 4.0 - 58.0 * scale_factor)
 	patience = clampf(patience, 0.0, 1.0) if patience >= 0.0 else -1.0
 	var redraw := item_changed or size_changed or mood != _mood or takeaway != _takeaway
 	if not redraw and patience != _patience:

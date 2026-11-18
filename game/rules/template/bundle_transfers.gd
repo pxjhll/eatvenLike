@@ -13,18 +13,32 @@ static func reserve(stock: RefCounted, actor: String, entries: Array, capacity: 
 		if not stock._shape(row, {"from":"", "to":"", "item":"", "count":0, "owner":0, "allocate_owner":0}) or row.count < 1: return stock._failure("invalid bundle entry")
 		total += int(row.count)
 		if total > capacity: return stock._failure("bundle exceeds carrier capacity")
+	# A one-entry bundle has no later child that could fail. Check exact
+	# quantity before reserving; ordinary transfers may accept a partial load.
+	if entries.size() == 1:
+		var entry: Dictionary = entries[0]
+		var offer: Dictionary = stock.transfer_offer(actor,entry.from,entry.to,entry.item,entry.count,capacity,
+			entry.get("owner",stock.ANY_OWNER),entry.get("allocate_owner",stock.ANY_OWNER))
+		if not offer.error.is_empty(): return offer
+		if offer.count != entry.count: return stock._failure("bundle stock or capacity unavailable")
+		return _reserve_entries(stock,actor,entries,capacity,total)
 	var candidate: RefCounted = stock.copy_for_reservation()
-	var group := {"id":int(candidate._state.next_bundle), "actor":actor, "capacity":capacity, "claims":[]}
-	candidate._state.next_bundle += 1
-	candidate.append_bundle(group)
+	var result := _reserve_entries(candidate,actor,entries,capacity,total)
+	if not result.error.is_empty(): return result
+	stock.commit_reservation(candidate)
+	for claim in stock.bundle(result.id).claims: stock._record("reserve_transfer",claim)
+	return result
+
+static func _reserve_entries(stock: RefCounted, actor: String, entries: Array, capacity: int, total: int) -> Dictionary:
+	var group := {"id":int(stock._state.next_bundle), "actor":actor, "capacity":capacity, "claims":[]}
+	stock._state.next_bundle += 1
+	stock.append_bundle(group)
 	for entry in entries:
-		var result: Dictionary = candidate._reserve_actor_transfer(actor, entry.from, entry.to, entry.item,
+		var result: Dictionary = stock._reserve_actor_transfer(actor, entry.from, entry.to, entry.item,
 			entry.count, capacity, entry.get("owner", stock.ANY_OWNER), entry.get("allocate_owner", stock.ANY_OWNER), group.id)
 		if not String(result.error).is_empty(): return result
 		if result.count != entry.count: return stock._failure("bundle stock or capacity unavailable")
 		group.claims.append(int(result.id))
-	stock.commit_reservation(candidate)
-	for claim in group.claims: stock._record("reserve_transfer",claim)
 	return {"error":"", "id":group.id, "count":total}
 
 static func apply(stock: RefCounted, id: int, operation: String, child: int = -1) -> String:

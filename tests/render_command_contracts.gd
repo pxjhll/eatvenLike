@@ -149,6 +149,10 @@ func _test_tea(scene: Node2D, translated: String) -> void:
 	_reject(scene, func() -> void: scene.station_action("flyers", rules.counter_id), "active flyers")
 	await _success(scene, func() -> void: scene.station_action("flyer_upgrade", rules.counter_id), "upgraded", "flyer upgrade")
 	scene.ui.open_page("staff")
+	suite.check(scene.ui.page_node("staff").hire_button.disabled, "the gifted bear occupies the first kitchen slot")
+	_reject(scene, scene.hire_worker, "hire when the gifted bear fills the kitchen")
+	await _success(scene, func() -> void: scene.station_action("unlock", "seal"), "unlocked", "seal")
+	await _success(scene, func() -> void: scene.station_action("unlock", "mix"), "unlocked", "mix opens the second kitchen slot")
 	await _success(scene, scene.hire_worker, "hired", "hire")
 	await _success(scene, scene.toggle_deployment, "recalled", "recall")
 	await _success(scene, scene.toggle_deployment, "deployed", "deployment")
@@ -175,7 +179,8 @@ func _test_tea(scene: Node2D, translated: String) -> void:
 	await _test_drag(scene)
 	await _test_save_queue(scene)
 	rules.gold = 0.0
-	scene._refresh(0.0)
+	# The staff page defers its controls until it is opened.
+	scene.ui.open_page("staff")
 	var staff: Control = scene.ui.page_node("staff")
 	suite.check(staff.hire_button.disabled, "empty failure cannot enable hire")
 	for button in staff.upgrade_buttons.values(): suite.check(button.disabled, "empty failure cannot enable staff upgrade")

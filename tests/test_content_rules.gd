@@ -28,6 +28,7 @@ func test_fingerprints() -> void:
 	copy.display_name = "Presentation"
 	copy.scene_path = "res://another.tscn"
 	copy.stations[0].params["load_label"] = "Presentation"
+	copy.items[0].dining_texture = preload("res://art/reference/tea_dining.png")
 	check_eq(CONTRACT.describe(copy), base, "presentation ignored")
 	copy.staff.kinds[0].stats["new_stat"] = 7.0
 	copy.stations[0].params["capacity"] = 81
