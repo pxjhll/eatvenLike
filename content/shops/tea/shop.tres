@@ -25,6 +25,7 @@
 [ext_resource type="Script" path="res://content/rules/spec_material.gd" id="22_snoov"]
 [ext_resource type="Script" path="res://content/rules/spec_stock_rule.gd" id="23_xb1gn"]
 [ext_resource type="AudioStream" path="res://art/audio/milk_tea_afternoon.ogg" id="music_theme"]
+[ext_resource type="Texture2D" path="res://art/ui/tea_manager_portrait.png" id="manager_art"]
 [ext_resource type="Texture2D" path="res://art/reference/fruit_tea.png" id="drink_lemonade"]
 [ext_resource type="Texture2D" path="res://art/reference/black_tea.png" id="drink_black_tea"]
 [ext_resource type="Texture2D" path="res://art/reference/cream_tea.png" id="drink_plain_milk_tea"]
@@ -605,6 +606,11 @@ op = "add"
 value = 30.0
 gold_max = 50
 
+[sub_resource type="AtlasTexture" id="Manager_visit_portrait"]
+atlas = ExtResource("manager_art")
+region = Rect2(270, 8, 770, 660)
+filter_clip = true
+
 [sub_resource type="Resource" id="Event_tea_manager_visit"]
 script = ExtResource("5_kou0a")
 id = "tea_manager_visit"
@@ -615,9 +621,11 @@ chance = 1.0
 once = true
 effects = Array[ExtResource("7_1v0ns")]([SubResource("Effect_tea_manager_gift")])
 notice_seconds = 4.0
+notice_portrait = SubResource("Manager_visit_portrait")
 speaker = "manager"
 icon = "cat"
-card_text = "我路过，回来看看你们。留点金币给你周转！"
+card_text = "我路过，回来看看你们。
+留点金币给你周转！"
 
 [sub_resource type="Resource" id="Resource_4lrgi"]
 script = ExtResource("12_anqca")

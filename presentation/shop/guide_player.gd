@@ -7,7 +7,7 @@ const DIM := Color(0.16, 0.1, 0.06, 0.62)
 const GLOW := Color("ffd98a")
 const HAND := Color("8b6446")
 const BUBBLE_WIDTH := 644.0
-const GUIDE_PORTRAIT_SIZE := Vector2(146, 125)
+const GUIDE_PORTRAIT_SLOT_SIZE := Vector2(174, 146)
 
 var enabled := false
 var seen := {}
@@ -37,6 +37,7 @@ var _dialogue_visible := false
 var _pointer_bounds := Rect2()
 var _announcement_title := ""
 var _announcement := ""
+var _announcement_portrait: Texture2D
 var _announcement_left := 0.0
 var _bubble_skip: Button
 var _skip_touch := -1
@@ -81,7 +82,7 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	row.add_theme_constant_override("separation", 12)
 	column.add_child(row)
 	_dialogue_slot = Control.new()
-	_dialogue_slot.custom_minimum_size = Vector2(GUIDE_PORTRAIT_SIZE.x, 81)
+	_dialogue_slot.custom_minimum_size = GUIDE_PORTRAIT_SLOT_SIZE
 	_dialogue_slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dialogue_slot.hide()
 	row.add_child(_dialogue_slot)
@@ -89,9 +90,8 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	_dialogue_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_dialogue_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_dialogue_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_dialogue_portrait.position.y = 81.0 - GUIDE_PORTRAIT_SIZE.y
-	_dialogue_portrait.size = GUIDE_PORTRAIT_SIZE
 	_dialogue_slot.add_child(_dialogue_portrait)
+	_dialogue_portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 4)
 	var copy := VBoxContainer.new()
 	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	copy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -134,6 +134,7 @@ func restart() -> void:
 	_lost_seen = -1
 	_staff_at_start = 0
 	_announcement_left = 0.0
+	_announcement_portrait = null
 	_skip_touch = -1
 	visible = false
 	if _bubble != null: _bubble.hide()
@@ -176,9 +177,10 @@ func _announcement_space_available() -> bool:
 	return active.is_empty() and _hud.page == "shop" and not _hud.popups.has_card()
 
 
-func show_announcement(title: String, text: String, seconds: float) -> void:
+func show_announcement(title: String, text: String, seconds: float, portrait: Texture2D = null) -> void:
 	_announcement_title = title
 	_announcement = text
+	_announcement_portrait = portrait
 	_announcement_left = seconds
 	_render_announcement()
 	_sync_dialogue()
@@ -186,8 +188,9 @@ func show_announcement(title: String, text: String, seconds: float) -> void:
 
 
 func _render_announcement() -> void:
-	_dialogue_visible = false
 	_dialogue_title = _announcement_title
+	_dialogue_visible = _announcement_portrait != null
+	if _dialogue_visible: _dialogue_portrait.texture = _announcement_portrait
 	_show_notice = true
 	_say(_announcement)
 	_bubble_skip.hide()

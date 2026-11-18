@@ -174,12 +174,26 @@ func _check_manager_visit() -> void:
 	view._process(0.0)
 	_check(owner.gold == gold + expected and owner.revenue == revenue and owner.sold == sold and owner.pending_events.is_empty(),
 		"回到店面自动按存档随机状态发放三十至五十金币，只加钱包")
-	_check(view.guide._bubble.visible and not view.guide._dialogue_slot.visible and not view.frozen()
-		and "+%d 金币" % expected in view.guide._bubble_text.text, "普通通知显示实际到账金额，营业继续")
+	_check(view.guide._bubble.visible and view.guide._dialogue_slot.visible and not view.frozen()
+		and "+%d 金币" % expected in view.guide._bubble_text.text, "店长立绘和实际到账金额同时显示，营业继续")
+	await process_frame
+	view.guide.refresh(0.1)
 	await process_frame
 	var paper: StyleBoxFlat = view.guide._bubble.get_theme_stylebox("panel")
 	_check(view.guide._dialogue_heading.visible and view.guide._dialogue_heading.text == "店长回访"
 		and is_equal_approx(paper.bg_color.a, 189.0 / 255.0), "半透明回访通知保留店长标题")
+	var portrait: TextureRect = view.guide._dialogue_portrait
+	var label: Label = view.guide._bubble_text
+	var portrait_rect := portrait.get_global_rect()
+	var slot_rect: Rect2 = view.guide._dialogue_slot.get_global_rect()
+	_check(portrait.is_visible_in_tree() and portrait.texture == CURRENT_TEA.events[0].notice_portrait
+		and portrait_rect.end.x <= label.get_global_rect().position.x, "刷新后立绘仍在正文左侧")
+	_check(slot_rect.encloses(portrait_rect) and portrait_rect.get_center().is_equal_approx(slot_rect.get_center())
+		and portrait_rect.size.x > 146.0 and portrait_rect.size.y > 125.0, "放大的立绘在左栏居中，不超出提示框")
+	var font := label.get_theme_font("font")
+	var font_size := label.get_theme_font_size("font_size")
+	for line in label.text.split("\n"):
+		_check(font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= label.size.x, "回访台词和金额在右侧可完整显示")
 	_check(view.ui.get_node("%Gold").text == str(int(owner.gold)), "金币栏当帧更新")
 	view.guide.refresh(4.0)
 	view.guide.refresh(0.0)
