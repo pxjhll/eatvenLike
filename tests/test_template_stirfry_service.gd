@@ -72,7 +72,9 @@ func test_opening_and_pantry_upgrades_unlock_one_wok_at_a_time() -> void:
 	rules.gold = 1000.0
 	check(not rules.unlock("wok_b").is_empty(),"cannot skip directly to the second wok")
 	check_eq(rules.unlock("pantry"),"","buy the pantry")
-	check(rules.menu().has("egg_fried_rice") and not rules.menu().has("yangzhou_rice"),"opening the pantry enables only egg fried rice")
+	check(rules.menu().has("egg_fried_rice") and not rules.menu().has("yangzhou_rice"),"opening the pantry enables only ham fried rice")
+	check_eq(SHOP.dish("egg_fried_rice").display_name,"火腿炒饭","the saved dish ID now presents ham fried rice")
+	check_eq(SHOP.station("pantry").material("egg_rice_raw").display_name,"火腿丁","the existing pantry slot now supplies diced ham")
 	var pantry: Dictionary = view.station("pantry")
 	check_eq(pantry.level,1,"new pantry starts at level one")
 	check("track" in pantry.sections and "recipes" not in pantry.sections,"cabinet uses a single machine upgrade with material prices underneath")

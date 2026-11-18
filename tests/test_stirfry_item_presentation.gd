@@ -1,7 +1,7 @@
 extends "res://tests/test_case.gd"
 const TemplateOuter := preload("res://tests/fixtures/template_outer.gd")
 const SHOP: SpecShop = preload("res://content/shops/stirfry/shop.tres")
-const FOOD := ["rice","tomato_egg","pepper_pork","kungpao","tomato_rice","pepper_rice","kungpao_rice","egg_fried_rice","yangzhou_rice","soup"]
+const FOOD := ["rice","tomato_egg","pepper_pork","kungpao","tomato_rice","pepper_rice","kungpao_rice","plain_fried_rice","egg_fried_rice","yangzhou_rice","soup"]
 
 func test_user_food_resources_drive_scene_items_order_icons_and_ui_icon_paths() -> void:
 	var view := ShopView.new(TemplateOuter.owner(SHOP))
@@ -10,10 +10,14 @@ func test_user_food_resources_drive_scene_items_order_icons_and_ui_icon_paths() 
 	scene.view = view
 	check(view.has_method("item_icon"),"scene and HUD share the same data-driven item icon resolver")
 	for id in FOOD:
-		var expected := "res://art/stirfry/items/%s.png"%id
+		var filename: String = {"plain_fried_rice": "egg_fried_rice", "egg_fried_rice": "ham_fried_rice"}.get(id, id)
+		var expected := "res://art/stirfry/items/%s.png" % filename
 		check_eq(view.item_art(id).texture.resource_path,expected,"scene uses the user's actual "+id+" sprite")
 		check_eq(scene._order_icon(id).resource_path,expected,"customer bubble uses the same "+id+" sprite")
 		check_eq(view.icon_of(id),expected,"recipe/UI uses the actual "+id+" image instead of a tea icon name")
+	var ham_dice := "res://art/stirfry/items/ham_dice.png"
+	check_eq(view.item_art("egg_rice_raw").texture.resource_path,ham_dice,"workers carry diced ham")
+	check_eq(view.icon_of("egg_rice_raw"),ham_dice,"the pantry uses the same diced ham sprite")
 	scene.free()
 
 func test_missing_art_has_a_neutral_placeholder_and_preserves_explicit_tea_art() -> void:
