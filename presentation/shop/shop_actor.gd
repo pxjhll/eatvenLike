@@ -122,7 +122,9 @@ func show_order(item: String, patience: float, mood := 0, takeaway := false, com
 	var texture: Texture2D = order_icon.call(item)
 	_order_cup.texture = texture
 	_order_cup.scale = Vector2.ONE * 40.0 * _order_scale / texture.get_height()
-	_order_cup.position = Vector2(-46.0*_order_scale, -_height-4.0-58.0*_order_scale)
+	var icon_width := texture.get_width() * _order_cup.scale.x
+	var inset := maxf(0.0, (40.0 * _order_scale - icon_width) / 2.0)
+	_order_cup.position = Vector2(-46.0 * _order_scale + inset, -_height - 4.0 - 58.0 * _order_scale)
 	_order_cup.visible = true
 
 

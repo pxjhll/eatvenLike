@@ -807,7 +807,7 @@ func _draw_cups(draws: Array) -> void:
 		sprite.visible = i < draws.size()
 		if not sprite.visible: continue
 		var row: Dictionary = draws[i]
-		var look := view.item_art(String(row.item))
+		var look := view.item_art(String(row.item), row.get("capability", "") == "dining_item")
 		var texture: Texture2D = look.texture
 		sprite.texture = texture
 		sprite.modulate = look.get("tint", Color.WHITE)

@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://i2u1r58wu88"
-path="res://.godot/imported/drink_lemon_tea.png-792b8e2b1f071db61d7449627758313e.ctex"
+uid="uid://cu1rxysq285sr"
+path="res://.godot/imported/lemon_tea.png-72e28b6815df580b191ae3ee61c3b281.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ui/drink_lemon_tea.png"
-dest_files=["res://.godot/imported/drink_lemon_tea.png-792b8e2b1f071db61d7449627758313e.ctex"]
+source_file="res://art/reference/lemon_tea.png"
+dest_files=["res://.godot/imported/lemon_tea.png-72e28b6815df580b191ae3ee61c3b281.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

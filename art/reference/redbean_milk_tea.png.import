@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bp6dfejvx4d2s"
-path="res://.godot/imported/drink_coconut_milk_tea.png-2484ac92655a75627fa47a38e829946f.ctex"
+uid="uid://xa470xmil5wn"
+path="res://.godot/imported/redbean_milk_tea.png-b35039cd9c621ebc029f0e75a6109d35.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ui/drink_coconut_milk_tea.png"
-dest_files=["res://.godot/imported/drink_coconut_milk_tea.png-2484ac92655a75627fa47a38e829946f.ctex"]
+source_file="res://art/reference/redbean_milk_tea.png"
+dest_files=["res://.godot/imported/redbean_milk_tea.png-b35039cd9c621ebc029f0e75a6109d35.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
