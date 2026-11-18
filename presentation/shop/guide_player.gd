@@ -9,6 +9,8 @@ const GLOW := Color("ffd98a")
 const HAND := Color("8b6446")
 const BUBBLE_WIDTH := 440.0
 const ILLUSTRATED_NOTICE_WIDTH := 668.0
+const GUIDE_DIALOGUE_WIDTH := 644.0
+const GUIDE_PORTRAIT_SIZE := Vector2(146, 125)
 
 var enabled := false
 var seen := {}
@@ -30,11 +32,20 @@ var _lost_seen := -1
 var _staff_at_start := 0
 var _bubble: PanelContainer
 var _bubble_text: Label
+var _bubble_paper: StyleBox
+var _dialogue_paper: StyleBoxFlat
+var _dialogue_slot: Control
+var _dialogue_portrait: TextureRect
+var _dialogue_heading: Label
+var _dialogue_width := GUIDE_DIALOGUE_WIDTH
+var _dialogue_visible := false
+var _pointer_bounds := Rect2()
 var _notice_portrait: TextureRect
 var _announcement := ""
 var _announcement_left := 0.0
 var _illustrated_announcement := false
 var _bubble_skip: Button
+var _skip_touch := -1
 var _show_bubble := false
 var _show_notice := false
 var _notice_elapsed := {}
@@ -51,7 +62,20 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 		_steps[step.id] = step
 		_order.append(step)
 	_bubble = PanelContainer.new()
-	_bubble.add_theme_stylebox_override("panel", ReferenceTheme.style("paper", 20))
+	_bubble_paper = ReferenceTheme.style("paper", 20)
+	_dialogue_paper = StyleBoxFlat.new()
+	_dialogue_paper.bg_color = Color("fff5e1bd")
+	_dialogue_paper.border_color = Color("d7a473de")
+	_dialogue_paper.shadow_color = Color("3d261735")
+	_dialogue_paper.shadow_size = 5
+	_dialogue_paper.shadow_offset = Vector2(0, 4)
+	_dialogue_paper.set_corner_radius_all(24)
+	_dialogue_paper.set_border_width_all(2)
+	_dialogue_paper.content_margin_left = 16
+	_dialogue_paper.content_margin_right = 16
+	_dialogue_paper.content_margin_top = 9
+	_dialogue_paper.content_margin_bottom = 9
+	_bubble.add_theme_stylebox_override("panel", _bubble_paper)
 	_bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bubble.custom_minimum_size.x = BUBBLE_WIDTH
 	add_child(_bubble)
@@ -70,7 +94,28 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	_notice_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_notice_portrait.hide()
 	row.add_child(_notice_portrait)
-	_bubble_text = _hud._text(row, "", 23)
+	_dialogue_slot = Control.new()
+	_dialogue_slot.custom_minimum_size = Vector2(GUIDE_PORTRAIT_SIZE.x, 81)
+	_dialogue_slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dialogue_slot.hide()
+	row.add_child(_dialogue_slot)
+	_dialogue_portrait = TextureRect.new()
+	_dialogue_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_dialogue_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_dialogue_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dialogue_portrait.position.y = 81.0 - GUIDE_PORTRAIT_SIZE.y
+	_dialogue_portrait.size = GUIDE_PORTRAIT_SIZE
+	_dialogue_slot.add_child(_dialogue_portrait)
+	var copy := VBoxContainer.new()
+	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	copy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	copy.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	copy.add_theme_constant_override("separation", 4)
+	row.add_child(copy)
+	_dialogue_heading = _hud._text(copy, "", 30)
+	_dialogue_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_dialogue_heading.hide()
+	_bubble_text = _hud._text(copy, "", 23)
 	_bubble_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_bubble_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_bubble_text.custom_minimum_size.x = 400
@@ -103,6 +148,7 @@ func restart() -> void:
 	_lost_seen = -1
 	_staff_at_start = 0
 	_announcement_left = 0.0
+	_skip_touch = -1
 	_notice_portrait.texture = null
 	visible = false
 	if _bubble != null: _bubble.hide()
@@ -120,16 +166,19 @@ func refresh(delta: float) -> void:
 	_point = Vector2.INF
 	_show_bubble = false
 	_show_notice = false
+	_dialogue_visible = false
+	_pointer_bounds = Rect2()
 	if enabled:
 		_pick()
 		if not active.is_empty(): _play(_step(), delta)
 	visible = enabled and not active.is_empty() and _step() != null and _step().style != "card"
+	_sync_dialogue()
 	if _announcement_left > 0.0 and _announcement_space_available():
 		_render_announcement()
 		_announcement_left = maxf(0.0, _announcement_left - delta)
 	else:
 		_notice_portrait.hide()
-		_bubble.custom_minimum_size.x = BUBBLE_WIDTH
+		_bubble.custom_minimum_size.x = _dialogue_width if _dialogue_visible else BUBBLE_WIDTH
 		_bubble.visible = _show_bubble and visible
 	_place_bubble()
 	queue_redraw()
@@ -234,12 +283,17 @@ func _play(step: SpecGuideStep, delta: float) -> void:
 		var text := _fill(String(cue.get("text", "")), step)
 		if cue.has("notice_seconds"):
 			var finish_after_notice: bool = cue.get("finish_after_notice", false)
-			_bubble_skip.visible = not finish_after_notice
-			if finish_after_notice and (_hud.page != "shop" or _hud.popups.has_card()): return
+			var dialogue := step.portrait != null and cue.has("heading")
+			_bubble_skip.visible = not finish_after_notice and not dialogue
+			if (finish_after_notice or dialogue) and (_hud.page != "shop" or _hud.popups.has_card()): return
 			var elapsed: float = _notice_elapsed.get(index, 0.0)
 			if elapsed < float(cue.notice_seconds):
 				_show_notice = true
 				_say(text)
+				_set_dialogue(step, cue)
+				if cue.has("at"):
+					_pointer_bounds = _target_rect(_fill(String(cue.at), step))
+					if _pointer_bounds.has_area(): _point = _pointer_bounds.get_center()
 				_notice_elapsed[index] = elapsed + delta
 			elif finish_after_notice:
 				_finish()
@@ -258,7 +312,25 @@ func _play(step: SpecGuideStep, delta: float) -> void:
 			var rect := _target_rect(at)
 			if rect.has_area(): _point = rect.get_center()
 			_say(text)
+		_set_dialogue(step, cue)
 		return
+
+
+func _set_dialogue(step: SpecGuideStep, cue: Dictionary) -> void:
+	if step.portrait == null or not cue.has("heading"): return
+	_dialogue_visible = true
+	_dialogue_width = minf(GUIDE_DIALOGUE_WIDTH, maxf(440, size.x - 32))
+	_dialogue_portrait.texture = step.portrait
+	_dialogue_heading.text = _fill(String(cue.heading), step)
+
+
+func _sync_dialogue() -> void:
+	if _dialogue_slot.visible == _dialogue_visible: return
+	_dialogue_slot.visible = _dialogue_visible
+	_dialogue_heading.visible = _dialogue_visible
+	_bubble_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if _dialogue_visible else HORIZONTAL_ALIGNMENT_CENTER
+	_bubble_text.autowrap_mode = TextServer.AUTOWRAP_OFF if _dialogue_visible else TextServer.AUTOWRAP_WORD_SMART
+	_bubble.add_theme_stylebox_override("panel", _dialogue_paper if _dialogue_visible else _bubble_paper)
 
 
 func _push_card(step: SpecGuideStep) -> void:
@@ -272,26 +344,24 @@ func _push_card(step: SpecGuideStep) -> void:
 	for row in step.stats: stats.append([row[0], row[1], _stat_value(String(row[2]))])
 	_hud.popups.push({"id": "guide:" + step.id, "title": _fill(step.title, step), "title_size": step.title_size,
 		"art": step.art, "medal": step.medal, "rows": step.rows, "stats": stats, "note": _fill(step.text, step),
-		"buttons": buttons, "speaker": step.speaker})
+		"buttons": buttons, "speaker": step.speaker, "portrait": step.portrait,
+		"portrait_right": step.portrait_right, "subtitle": _fill(step.subtitle, step)})
 
 
 func _stat_value(key: String) -> String:
 	var rules: ShopRules = _view.rules
 	match key:
-		"time": return "%d 分 %02d 秒" % [int(rules.clock) / 60, int(rules.clock) % 60]
-		"revenue": return "%d 金" % int(rules.revenue)
+		"time":
+			var seconds := int(rules.completed_at if rules.completed_at >= 0.0 else rules.clock)
+			return "%d 分 %02d 秒" % [seconds / 60, seconds % 60]
+		"revenue": return "%d 金币" % int(rules.revenue)
 	return key
 
 
 func _confirm() -> void:
 	var step := _step()
 	if step == null: return
-	if not step.next.is_empty():
-		seen[step.id] = true
-		active = ""
-		_start(step.next)
-	else:
-		_finish()
+	_finish()
 	refresh(0.0)
 	if step.confirm_action == "leave": _view.open_summary()
 
@@ -316,6 +386,8 @@ func _finish() -> void:
 		seen[step.id] = true
 		for id in step.finish_marks: seen[id] = true
 	active = ""
+	if step != null and not step.next.is_empty() and not seen.has(step.next):
+		_start(step.next)
 	_view.request_save()
 
 
@@ -379,6 +451,7 @@ func _number(name: String) -> float:
 		"staff": return _view.view.deployed_count()
 		"opening": return mini(2, rules.staff_slots())
 		"stage": return rules.stage_index
+		"sold": return rules.sold
 		"kitchen_staff": return rules.kitchen_staff()
 	return float(name) if name.is_valid_float() else 0.0
 
@@ -501,15 +574,35 @@ func _place_bubble() -> void:
 	if not _bubble.visible:
 		return
 	_bubble.reset_size()
-	if _show_notice:
+	if _show_notice or _dialogue_visible:
 		var header := _control_rect(_hud.get_node("Header"))
-		_bubble.position = Vector2((size.x - _bubble.size.x) * 0.5, header.end.y + 12.0)
+		var y := header.end.y + 12.0
+		if _dialogue_visible: y += 22.0 if _show_notice else 84.0
+		_bubble.position = Vector2((size.x - _bubble.size.x) * 0.5, y)
 		return
 	var anchor := _point if _point != Vector2.INF else size / 2.0
 	var target := _hole if _hole.has_area() else Rect2(anchor, Vector2.ZERO)
 	var below := anchor.y < size.y * 0.5
 	var y := target.end.y + 120.0 if below else target.position.y - 120.0 - _bubble.size.y
 	_bubble.position = Vector2(clampf(anchor.x - _bubble.size.x / 2.0, 16, size.x - _bubble.size.x - 16), clampf(y, 120, size.y - _bubble.size.y - 16))
+
+
+## 真触屏也能按气泡按钮，无需依赖系统模拟的鼠标事件。
+func _input(event: InputEvent) -> void:
+	var touch := event as InputEventScreenTouch
+	if touch == null or _bubble_skip == null: return
+	if not _bubble_skip.is_visible_in_tree() or _hud.popups.has_card():
+		_skip_touch = -1
+		return
+	var local := _bubble_skip.get_global_transform_with_canvas().affine_inverse() * touch.position
+	var on_button := Rect2(Vector2.ZERO, _bubble_skip.size).has_point(local)
+	if touch.pressed and on_button and _skip_touch < 0:
+		_skip_touch = touch.index
+		get_viewport().set_input_as_handled()
+	elif not touch.pressed and touch.index == _skip_touch:
+		_skip_touch = -1
+		get_viewport().set_input_as_handled()
+		if on_button and not touch.canceled: _skip()
 
 
 ## 压暗的时候只有挖开的洞能点
@@ -530,6 +623,9 @@ func _draw() -> void:
 			draw_rect(_hole, GLOW, false, 5.0)
 	if _point == Vector2.INF:
 		return
+	if _dialogue_visible:
+		_draw_dialogue_arrow()
+		return
 	var pulse := fmod(_time, 1.2) / 1.2
 	draw_arc(_point, 18.0 + pulse * 30.0, 0, TAU, 40, Color(GLOW, 1.0 - pulse), 5.0)
 	var below := _point.y < size.y * 0.5
@@ -540,3 +636,19 @@ func _draw() -> void:
 	draw_colored_polygon(PackedVector2Array([tip, back + Vector2(-24, 0), back + Vector2(24, 0)]), HAND)
 	draw_rect(Rect2(back.x - 10, minf(back.y, back.y - direction * 40), 20, 40), HAND)
 	draw_polyline(PackedVector2Array([tip, back + Vector2(-24, 0), back + Vector2(24, 0), tip]), Color("fff5e2"), 3.0)
+
+
+func _draw_dialogue_arrow() -> void:
+	var target := _hole if _blocking else _pointer_bounds.grow(6)
+	if not _blocking: draw_rect(target, GLOW, false, 4.0)
+	var from_below := target.position.y < _bubble.position.y + _bubble.size.y + 65.0
+	var direction := -1.0 if from_below else 1.0
+	var edge := target.end.y if from_below else target.position.y
+	var tip := Vector2(target.get_center().x, edge - direction * 9.0)
+	var base := tip - Vector2(0, direction * 25.0)
+	var top := tip - Vector2(0, direction * 50.0)
+	var points := PackedVector2Array([tip, base + Vector2(-24, 0), base + Vector2(-10, 0),
+		top + Vector2(-10, 0), top + Vector2(10, 0), base + Vector2(10, 0), base + Vector2(24, 0)])
+	draw_colored_polygon(points, Color("e44436"))
+	points.append(tip)
+	draw_polyline(points, Color("2a1714"), 5.0, true)

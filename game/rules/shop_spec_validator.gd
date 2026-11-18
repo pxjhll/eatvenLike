@@ -624,7 +624,7 @@ static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dic
 				elif cue["if"] is Array:
 					for k in cue["if"].size():
 						if not cue["if"][k] is String: _error(errors, at + ".if[%d]" % k, "Expected condition text.")
-			for key in ["at", "text", "go"]:
+			for key in ["at", "text", "go", "heading"]:
 				if cue.has(key) and not cue[key] is String: _error(errors, at + "." + key, "Expected text.")
 			if cue.has("notice_seconds"): _number(cue.notice_seconds, at + ".notice_seconds", errors, 0, true)
 			var anchor: Variant = cue.get("at", "")
