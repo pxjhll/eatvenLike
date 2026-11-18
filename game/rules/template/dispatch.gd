@@ -12,6 +12,7 @@ var _definition: Dictionary
 var _runner_ref: WeakRef
 var _runtime_ref: WeakRef
 var _leases: RefCounted
+var _route_costs := {}
 
 func _init(definition: Dictionary, runner: RefCounted, runtime: RefCounted = null) -> void:
 	_definition = definition.duplicate(true)
@@ -123,17 +124,19 @@ static func compile(raw: Dictionary, places: Dictionary, machines: Dictionary) -
 			result.station_posts[machine] = {"post":binding.post,"feed":binding.feed,"input":machines[machine].input}
 	return {"definition":result, "error":""}
 
-func rank(worker: Dictionary, candidates: Array) -> Array:
-	var native := _rank(worker,candidates,false)
+func rank(worker: Dictionary, candidates: Array, facts: Dictionary = {}) -> Array:
+	if candidates.is_empty(): return []
+	if facts.is_empty(): facts = _facts()
+	var native := _rank(worker, candidates, false, facts)
 	if not native.is_empty() or not _help_available(worker): return native
-	return _rank(worker,candidates,true)
+	return _rank(worker, candidates, true, facts)
 
-func _rank(worker: Dictionary, candidates: Array, helping: bool) -> Array:
+func _rank(worker: Dictionary, candidates: Array, helping: bool, facts: Dictionary) -> Array:
 	var runner: RefCounted = _runner_ref.get_ref()
 	var ranked: Array = []
-	var facts := _facts()
-	var distances := {}
 	var profile: String = runner.access_profile(worker)
+	var nav: RuleNav = runner.owner.nav
+	var distances := _worker_route_costs(worker, profile, nav)
 	var native := _native_rule(worker)
 	var helper := _helper_rule(worker)
 	var preferred: Dictionary = _leases.record(worker.id)
@@ -147,7 +150,7 @@ func _rank(worker: Dictionary, candidates: Array, helping: bool) -> Array:
 		if not String(context.error).is_empty() or not can_start(worker, context.scope, int(candidate.get("run", -1))).is_empty(): continue
 		var target: Vector2 = runner.ports[candidate.from]
 		if not distances.has(target):
-			var path: PackedVector2Array = runner.owner.nav.path(worker.pos, target, profile)
+			var path := nav.path(worker.pos, target, profile)
 			distances[target] = -1.0 if path.is_empty() else RuleNav.length(path)
 		var distance: float = distances[target]
 		if distance < 0.0: continue
@@ -165,6 +168,15 @@ func _rank(worker: Dictionary, candidates: Array, helping: bool) -> Array:
 	for entry in ranked: result.append(entry.candidate)
 	return result
 
+func _worker_route_costs(worker: Dictionary, profile: String, nav: RuleNav) -> Dictionary:
+	var topology := nav.topology_key()
+	var cached: Dictionary = _route_costs.get(worker.id, {})
+	# Only the current exact origin, access profile and shop layout can reuse costs.
+	if cached.is_empty() or cached.position != worker.pos or cached.profile != profile or cached.nav != nav or cached.topology != topology:
+		cached = {"position":worker.pos, "profile":profile, "nav":nav, "topology":topology, "distances":{}}
+		_route_costs[worker.id] = cached
+	return cached.distances
+
 func _claimable(worker: Dictionary, candidate: Dictionary) -> bool:
 	var runner: RefCounted = _runner_ref.get_ref()
 	if candidate.kind=="operate":
@@ -177,10 +189,9 @@ func _claimable(worker: Dictionary, candidate: Dictionary) -> bool:
 	if candidate.kind=="transfer":
 		return runner.inventory.transfer_offer(actor,candidate.from,candidate.to,candidate.item,candidate.count,capacity,
 			candidate.get("owner",Inventory.ANY_OWNER),candidate.get("unit",Inventory.ANY_OWNER)).error.is_empty()
-	var stock: RefCounted = runner.inventory.copy_for_probe()
 	var entries: Array = candidate.entries.duplicate(true)
 	for entry in entries: entry.erase("pickup_seconds")
-	return String(stock.reserve_bundle("staff:"+str(worker.id),entries,runner.owner.carry(worker)).error).is_empty()
+	return runner.inventory.can_reserve_bundle(actor, entries, capacity)
 
 func _facts() -> Dictionary:
 	return {"units":{}, "open":{}} if _runtime_ref == null else _runtime_ref.get_ref().dispatch_facts()
@@ -245,6 +256,7 @@ func started(worker: Dictionary, task: Dictionary) -> void:
 
 func release_worker(worker: int) -> void:
 	_leases.release_worker(worker)
+	_route_costs.erase(worker)
 
 func promote(guest: int, order: int, worker: int) -> void:
 	_leases.promote(guest, order, worker)
@@ -309,7 +321,7 @@ func allowed(worker: Dictionary, request: Dictionary, check_priority := true) ->
 	if not check_priority: return true
 	if not _help_available(worker): return false
 	if _runtime_ref==null: return false
-	return _rank(worker,_runtime_ref.get_ref().dispatch_candidates(worker),false).is_empty()
+	return _rank(worker, _runtime_ref.get_ref().dispatch_candidates(worker), false, _facts()).is_empty()
 
 func _native_rule(worker: Dictionary) -> Dictionary:
 	var runner: RefCounted = _runner_ref.get_ref()

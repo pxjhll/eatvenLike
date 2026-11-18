@@ -649,9 +649,18 @@ func _start_transports() -> void:
 			if result.error.is_empty(): unit.running[node.id] = int(result.id)
 
 func _allocate() -> void:
+	var production: Variant = null
+	var facts := {}
 	for worker in runner.owner.workers:
 		if not runner.idle(worker.id) or worker.walking: continue
-		for candidate in candidates_for(worker.id):
+		if production == null:
+			production = _candidates()
+			facts = dispatch_facts()
+		var candidates := _ranked_candidates(worker, production, facts)
+		if not candidates.is_empty():
+			# An attempt can change stock, even if it has to cancel after starting.
+			production = null
+		for candidate in candidates:
 			var error := ""
 			match String(candidate.kind):
 				"operate": error = runner.operate(worker.id, candidate.run, candidate.from)
@@ -674,19 +683,31 @@ func _allocate() -> void:
 func candidates_for(worker_id: int) -> Array:
 	var worker: Dictionary = runner.owner.worker_by_id(worker_id)
 	if worker.is_empty() or not runner._available_worker(worker_id).is_empty(): return []
-	return TransportBatch.compose(self,worker,runner.dispatcher.rank(worker, dispatch_candidates(worker)))
+	return _ranked_candidates(worker, _candidates(), dispatch_facts())
+
+func _ranked_candidates(worker: Dictionary, production: Array, facts: Dictionary) -> Array:
+	if not runner._available_worker(worker.id).is_empty(): return []
+	var ranked: Array = runner.dispatcher.rank(worker, _dispatch_candidates(worker, production), facts)
+	return TransportBatch.compose(self, worker, ranked, facts)
 
 func dispatch_candidates(worker: Dictionary) -> Array:
-	var pool := _candidates()
+	return _dispatch_candidates(worker, _candidates())
+
+func _dispatch_candidates(worker: Dictionary, production: Array) -> Array:
 	var handoff: Dictionary = _definition.get("service",{}).get("staff_handoff",{})
+	var pool := production
 	if not handoff.is_empty() and worker.post==handoff.post:
 		pool = pool.filter(func(candidate: Dictionary) -> bool: return candidate.get("to")!=handoff.container)
-	if service != null: pool.append_array(service.candidates(worker))
-	for candidate in pool:
+	if service == null: return pool
+	var service_candidates: Array = service.candidates(worker)
+	_set_candidate_progress(service_candidates)
+	return pool + service_candidates
+
+func _set_candidate_progress(candidates: Array) -> void:
+	for candidate in candidates:
 		if not candidate.has("unit"): candidate.unit = -1
 		var unit := _find_unit(candidate.unit)
 		candidate.progress = 0 if unit.is_empty() else unit.done.size()
-	return pool
 
 func _candidates() -> Array:
 	var work: Array = []
@@ -747,6 +768,7 @@ func _candidates() -> Array:
 					"count":need, "seconds":_pickup_seconds(producer),
 					"owner":source_owner, "unit":unit.id})
 	work.append_array(transfers)
+	_set_candidate_progress(work)
 	return work
 
 func _dependencies_complete(recipe: Dictionary, node: Dictionary, unit: Dictionary) -> bool:

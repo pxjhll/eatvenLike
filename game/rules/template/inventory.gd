@@ -119,6 +119,9 @@ func reserve_actor_transfer(actor: String, source: String, destination: String, 
 func reserve_bundle(actor: String, entries: Array, capacity: int) -> Dictionary:
 	return Bundles.reserve(self, actor, entries, capacity)
 
+func can_reserve_bundle(actor: String, entries: Array, capacity: int) -> bool:
+	return Bundles.can_reserve(self, actor, entries, capacity)
+
 func next_bundle_id() -> int:
 	return _state.next_bundle
 
