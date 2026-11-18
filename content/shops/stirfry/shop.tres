@@ -32,6 +32,8 @@
 [ext_resource type="Script" path="res://content/rules/spec_stock_rule.gd" id="30_w3c2t"]
 [ext_resource type="AudioStream" path="res://art/audio/milk_tea_afternoon.ogg" id="music_theme"]
 [ext_resource type="Texture2D" path="res://art/stirfry/items/egg_fried_rice.png" id="food_egg_fried_rice"]
+[ext_resource type="Texture2D" path="res://art/stirfry/items/ham_fried_rice.png" id="food_ham_fried_rice"]
+[ext_resource type="Texture2D" path="res://art/stirfry/items/ham_dice.png" id="food_ham_dice"]
 [ext_resource type="Texture2D" path="res://art/stirfry/items/kungpao.png" id="food_kungpao"]
 [ext_resource type="Texture2D" path="res://art/stirfry/items/kungpao_rice.png" id="food_kungpao_rice"]
 [ext_resource type="Texture2D" path="res://art/stirfry/items/pepper_pork.png" id="food_pepper_pork"]
@@ -177,7 +179,7 @@ seconds = 0.6
 produces = Dictionary[String, int]({
 "egg_rice_raw": 1
 })
-label = "拿料"
+label = "取火腿丁"
 
 [sub_resource type="Resource" id="Resource_5nbmi"]
 script = ExtResource("3_pc7b7")
@@ -201,12 +203,12 @@ consumes = Dictionary[String, int]({
 produces = Dictionary[String, int]({
 "egg_fried_rice": 1
 })
-label = "炒蛋炒饭"
+label = "加火腿丁翻炒"
 
 [sub_resource type="Resource" id="Resource_7286g"]
 script = ExtResource("2_6jyx4")
 id = "egg_fried_rice"
-display_name = "蛋炒饭"
+display_name = "火腿炒饭"
 item = "egg_fried_rice"
 price_parts = Dictionary[String, float]({
 "base": 12.0
@@ -481,8 +483,8 @@ icon = ExtResource("food_prep")
 [sub_resource type="Resource" id="Resource_b0fip"]
 script = ExtResource("13_2vgy6")
 id = "egg_rice_raw"
-display_name = "鸡蛋葱花"
-icon = ExtResource("food_prep")
+display_name = "火腿丁"
+icon = ExtResource("food_ham_dice")
 
 [sub_resource type="Resource" id="Resource_vysub"]
 script = ExtResource("13_2vgy6")
@@ -535,8 +537,8 @@ icon = ExtResource("food_kungpao_rice")
 [sub_resource type="Resource" id="Resource_nld4s"]
 script = ExtResource("13_2vgy6")
 id = "egg_fried_rice"
-display_name = "蛋炒饭"
-icon = ExtResource("food_egg_fried_rice")
+display_name = "火腿炒饭"
+icon = ExtResource("food_ham_fried_rice")
 
 [sub_resource type="Resource" id="Resource_npkjl"]
 script = ExtResource("13_2vgy6")
@@ -554,7 +556,7 @@ icon = ExtResource("food_soup")
 script = ExtResource("13_2vgy6")
 id = "plain_fried_rice"
 display_name = "炒饭"
-icon = ExtResource("food_rice")
+icon = ExtResource("food_egg_fried_rice")
 
 [sub_resource type="Resource" id="FriedRiceBaseItem"]
 script = ExtResource("13_2vgy6")
@@ -695,7 +697,7 @@ amount = 20.0
 [sub_resource type="Resource" id="Resource_r50en"]
 script = ExtResource("27_gfylo")
 id = "sell_egg"
-display_name = "卖出 20 份蛋炒饭"
+display_name = "卖出 20 份火腿炒饭"
 target = "egg_fried_rice"
 amount = 20.0
 
@@ -775,7 +777,7 @@ display_name = "备料柜"
 stations = Array[String](["pantry"])
 cost = 40
 dish = "egg_fried_rice"
-unlock_note = "开放鸡蛋葱花，炒锅 A 可以制作蛋炒饭"
+unlock_note = "开放火腿丁，炒锅 A 可以制作火腿炒饭"
 customer_interval = 12.0
 order_weights = Dictionary[String, float]({
 "plum_juice": 0.3,
@@ -928,7 +930,7 @@ effects = Array[ExtResource("7_p3vft")]([SubResource("Pantry_egg_rice_raw_price_
 [sub_resource type="Resource" id="Pantry_egg_rice_raw_track"]
 script = ExtResource("9_47jng")
 id = "egg_rice_raw"
-display_name = "鸡蛋葱花"
+display_name = "火腿丁"
 requires_level = 1
 levels = Array[ExtResource("8_fr6bm")]([SubResource("Pantry_egg_rice_raw_level_2"), SubResource("Pantry_egg_rice_raw_level_3")])
 effect_label = "售价"
@@ -936,10 +938,10 @@ effect_label = "售价"
 [sub_resource type="Resource" id="Pantry_egg_rice_raw"]
 script = ExtResource("pantry_material")
 id = "egg_rice_raw"
-display_name = "鸡蛋葱花"
+display_name = "火腿丁"
 item = "egg_rice_raw"
 track = SubResource("Pantry_egg_rice_raw_track")
-icon = "egg_fried_rice"
+icon = "res://art/stirfry/items/ham_dice.png"
 
 [sub_resource type="Resource" id="Pantry_yangzhou_raw_price_2"]
 script = ExtResource("7_p3vft")

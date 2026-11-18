@@ -8,3 +8,5 @@ extends Resource
 ## 画在场景里用哪张图（art/reference/<art>.png）、染什么色
 @export var art: String = ""
 @export var tint: Color = Color.WHITE
+## Optional texture for a finished item served at a dining seat.
+@export var dining_texture: Texture2D

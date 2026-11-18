@@ -175,7 +175,8 @@ func _test_tea(scene: Node2D, translated: String) -> void:
 	await _test_drag(scene)
 	await _test_save_queue(scene)
 	rules.gold = 0.0
-	scene._refresh(0.0)
+	# The staff page defers its controls until it is opened.
+	scene.ui.open_page("staff")
 	var staff: Control = scene.ui.page_node("staff")
 	suite.check(staff.hire_button.disabled, "empty failure cannot enable hire")
 	for button in staff.upgrade_buttons.values(): suite.check(button.disabled, "empty failure cannot enable staff upgrade")

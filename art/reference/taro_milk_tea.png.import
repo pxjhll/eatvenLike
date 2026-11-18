@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bcel2ndfd6lom"
-path="res://.godot/imported/drink_pearl_milk_tea.png-1ac30c9aa6b49b4e5ffd1d9568d96d8e.ctex"
+uid="uid://uk06y2ai8qjo"
+path="res://.godot/imported/taro_milk_tea.png-0567d55c156f0fc15fa98d8f2b0d550c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ui/drink_pearl_milk_tea.png"
-dest_files=["res://.godot/imported/drink_pearl_milk_tea.png-1ac30c9aa6b49b4e5ffd1d9568d96d8e.ctex"]
+source_file="res://art/reference/taro_milk_tea.png"
+dest_files=["res://.godot/imported/taro_milk_tea.png-0567d55c156f0fc15fa98d8f2b0d550c.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

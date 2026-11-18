@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://drd7ehul8ekji"
-path="res://.godot/imported/drink_redbean_milk_tea.png-1393a099a83cbe0a9f1ac4c73f6ff070.ctex"
+uid="uid://cq40cxahmsma5"
+path="res://.godot/imported/pancake_servings.png-d36170e92ce1d2fcd4c3d39304d822e5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ui/drink_redbean_milk_tea.png"
-dest_files=["res://.godot/imported/drink_redbean_milk_tea.png-1393a099a83cbe0a9f1ac4c73f6ff070.ctex"]
+source_file="res://art/pancake/items/pancake_servings.png"
+dest_files=["res://.godot/imported/pancake_servings.png-d36170e92ce1d2fcd4c3d39304d822e5.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
