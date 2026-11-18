@@ -69,6 +69,7 @@ func adopt(owner: RefCounted, data: Dictionary, refresh: bool) -> String:
 	target.gold = source.gold; target.revenue = source.revenue
 	target.sold = source.sold; target.sold_by_dish = source.sold_by_dish.duplicate()
 	target.events.log = source.events.log.duplicate(true)
+	if refresh: target._restore_material_grants()
 	return State.restore(owner,State.save(target))
 
 static func ContextRunnerClear(worker: Dictionary) -> void:

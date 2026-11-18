@@ -620,7 +620,7 @@ done_when = Array[String](["!box:tea_leaf"])
 cues = Array[Dictionary]([{
 "finish_after_notice": true,
 "notice_seconds": 4.0,
-"text": "煮茶机缺茶叶，去原料柜解锁茶叶箱。"
+"text": "去原料柜购买茶叶箱，备齐后小熊会加入后厨。"
 }])
 
 [sub_resource type="Resource" id="Resource_j7ryq"]
@@ -1130,6 +1130,7 @@ display_name = "茶叶"
 item = "tea_leaf"
 box_cost = 20
 box_station = "boil"
+grant_worker = "bear"
 track = SubResource("Resource_k3uxj")
 icon = "res://art/reference/tea_tin.png"
 

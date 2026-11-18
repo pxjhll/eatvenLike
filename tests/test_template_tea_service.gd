@@ -13,10 +13,9 @@ func _owner(full := true, kitchen := true) -> ShopRules:
 		for id in ["boil","seal","mix","press","topping"]: check_eq(owner.unlock(id),"","unlock actual tea machine")
 		for id in ["tea_leaf","milk"]: check_eq(owner.unlock_box(id),"","buy actual material box")
 		for index in 3: check_eq(owner.upgrade("topping"),"","open all actual flavors")
-	if full and kitchen:
-		check_eq(owner.hire(),"","hire actual kitchen employee")
-		for worker in owner.roster:
-			if not worker.deployed: check_eq(owner.deploy_worker(worker.id),"","deploy kitchen employee")
+	if full and not kitchen:
+		for worker in owner.workers.duplicate():
+			if worker.post != owner.counter_id: check_eq(owner.recall_worker(worker.id),"","test the deliberately unstaffed kitchen")
 	return owner
 
 func _runtime(full := true, kitchen := true) -> RefCounted:

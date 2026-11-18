@@ -128,6 +128,7 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 	error = candidate.runtime.restore(recorded,refresh and data.template!=identity,refresh_layout)
 	if not error.is_empty(): return error
 	candidate.clock = data.runtime.clock
+	if refresh: candidate._restore_material_grants()
 	# Adopt validated outer facts and the same Runtime objects; rebind the one
 	# owner before observers are allowed to use the live state again.
 	for key in owner.STATE_KEYS: owner.set(key,candidate.get(key))

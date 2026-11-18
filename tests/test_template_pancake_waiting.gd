@@ -86,6 +86,7 @@ func test_real_cushion_waiting_and_return_to_counter_restore_without_duplicate_p
 
 func test_vacated_cushion_goes_to_tail_without_a_new_arrival_or_queue_jump() -> void:
 	var owner := _owner(true)
+	check_eq(owner.recall_worker(owner.workers.back().id),"","isolate queue rotation with one active employee")
 	check_eq(owner.buy_seat(),"","buy two actual cushions")
 	var runtime := _runtime(owner)
 	if runtime == null: return

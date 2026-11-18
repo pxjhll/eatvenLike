@@ -1736,13 +1736,8 @@ func _commit_unlock(id: String) -> void:
 		stage_index += 1
 	nav.set_open(unlocked)
 	if stage>=0 and not shop.stages[stage].grant_worker.is_empty():
-		var worker := _new_worker(shop.stages[stage].grant_worker)
-		worker.source = "解锁"
-		worker.deployed = true
-		roster.append(worker)
-		workers.append(worker)
-		events.emit("hired", {"id":worker.id, "kind":worker.kind})
-		events.emit("deployed", {"id":worker.id})
+		_grant_worker(shop.stages[stage].grant_worker)
+	_deploy_granted_workers()
 	if runtime!=null: runtime_error = runtime.set_service_open(is_open())
 	var message := {"station":id,"stage":stage_index}
 	var dish := station.unlock_dish
@@ -1751,9 +1746,48 @@ func _commit_unlock(id: String) -> void:
 	events.emit("unlocked",message)
 
 func _commit_unlock_box(material: String) -> void:
-	gold -= shop.station(supply_id).material(material).box_cost
+	var definition := shop.station(supply_id).material(material)
+	gold -= definition.box_cost
 	boxes[material] = true
+	if not definition.grant_worker.is_empty():
+		_grant_worker(definition.grant_worker)
 	events.emit("box", {"material": material})
+
+
+func _grant_worker(kind: String) -> void:
+	var worker := _new_worker(kind)
+	worker.source = "解锁"
+	worker.deployed = workers.size() < staff_slots() if shop.staff.zones.is_empty() else CommandResult.is_ok(_role_room_status(""))
+	roster.append(worker)
+	if worker.deployed: workers.append(worker)
+	events.emit("hired", {"id":worker.id, "kind":worker.kind})
+	if worker.deployed: events.emit("deployed", {"id":worker.id})
+
+
+func _deploy_granted_workers() -> void:
+	if not shop.staff.zones.is_empty(): return
+	for worker in roster:
+		if worker.source != "解锁" or worker.deployed: continue
+		if workers.size() >= staff_slots(): break
+		worker.deployed = true
+		workers.append(worker)
+		events.emit("deployed", {"id":worker.id})
+
+
+## Older saves with an open kitchen receive the missing first helper on content refresh.
+func _restore_material_grants() -> void:
+	var supply := shop.station(supply_id)
+	if supply == null: return
+	for material in supply.materials:
+		if material.grant_worker.is_empty() or not boxes.get(material.id, false): continue
+		if not station_unlocked(material.box_station): continue
+		if roster.any(func(worker: Dictionary) -> bool: return worker.source == "解锁" and worker.kind == material.grant_worker): continue
+		if shop.staff.zones.is_empty():
+			if workers.size() >= 2 or workers.size() >= staff_slots(): continue
+		elif kitchen_staff() > 0 or not CommandResult.is_ok(_role_room_status("")):
+			continue
+		_grant_worker(material.grant_worker)
+	_deploy_granted_workers()
 
 
 func _commit_upgrade(key: String) -> void:
