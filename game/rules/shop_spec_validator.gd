@@ -342,6 +342,9 @@ static func _station(s: SpecStation, p: String, c: Dictionary, errors: Array[Dic
 		_ref(m.item, c.items, at + ".item", errors)
 		_ref(m.box_station, c.stations, at + ".box_station", errors, true)
 		_ref(m.requires_station, c.stations, at + ".requires_station", errors, true)
+		_ref(m.grant_worker, c.kinds, at + ".grant_worker", errors, true)
+		if not m.grant_worker.is_empty() and (s.block != "supply" or m.box_cost <= 0):
+			_error(errors, at + ".grant_worker", "Employee gifts require a purchasable supply box.")
 		_number(m.box_cost, at + ".box_cost", errors)
 		if m.track != null: _track(m.track, at + ".track", c, errors, s.id, "material")
 	for i in s.stock.size():

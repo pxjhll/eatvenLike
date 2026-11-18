@@ -219,11 +219,8 @@ func _tea_contextual_guides() -> void:
 	await _click(view._station_buttons.supply)
 	await _click(hud.page_node("station").material_buttons.tea_leaf)
 	await _click(hud.tab("shop"))
-	_check(guide.active == "kitchen" and guide._show_notice and not view.frozen(), "茶叶箱买好后，缺后厨才提示招募或派岗")
-	await _click(hud.tab("staff"))
-	await _click(hud.page_node("staff").hire_button)
-	await _click(hud.tab("shop"))
-	_check(_rules().kitchen_staff() == 1 and guide.active.is_empty(), "后厨有人上岗后，缺人提示自动消失")
+	_check(_rules().kitchen_staff() == 1 and _rules().roster.back().kind == "bear", "茶叶箱买好后，小熊自动到后厨上岗")
+	_check(guide.active.is_empty() and not view.frozen(), "赠员后继续营业，无须提示招募")
 	_run_until(func() -> bool: return int(_rules().sold_by_dish.black_tea) > 0, 240.0)
 	_check(int(_rules().sold_by_dish.black_tea) > 0 and not guide.seen.has("tea_sealing"), "堂食红茶可正常售出，且不触发封口提示")
 	_check(_rules().unlock("seal").is_empty(), "用正式规则解锁封口机")
@@ -264,6 +261,23 @@ func _pancake_first_sale() -> void:
 	var paper: StyleBoxFlat = guide._bubble.get_theme_stylebox("panel")
 	_check(is_equal_approx(paper.bg_color.a, 189.0 / 255.0), "带店长的气泡使用半透明底板")
 	await _capture("calico-unlock")
+	var bubble_rect: Rect2 = guide._bubble.get_global_rect()
+	var slot_rect: Rect2 = guide._dialogue_slot.get_global_rect()
+	var portrait_rect: Rect2 = guide._dialogue_portrait.get_global_rect()
+	var skip_rect: Rect2 = guide._bubble_skip.get_global_rect()
+	_check(bubble_rect.size.y <= 160.0 and not guide._bubble.get_rect().intersects(guide._hole),
+		"豆浆机提示保持紧凑，可点区域露在外面")
+	_check(slot_rect.encloses(portrait_rect) and portrait_rect.get_center().is_equal_approx(slot_rect.get_center())
+		and skip_rect.position.x >= slot_rect.end.x and bubble_rect.encloses(skip_rect),
+		"立绘在左栏居中，跳过按钮收进右栏")
+	var heading_rect: Rect2 = guide._dialogue_heading.get_global_rect()
+	var body_rect: Rect2 = guide._bubble_text.get_global_rect()
+	var copy_rect := heading_rect.merge(body_rect)
+	_check(guide._dialogue_heading.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT
+		and guide._bubble_text.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT
+		and is_equal_approx(heading_rect.position.x, body_rect.position.x)
+		and absf(copy_rect.get_center().y - bubble_rect.get_center().y) <= 1.0
+		and not copy_rect.intersects(skip_rect), "豆浆机提示的文字左对齐，整体上下居中，跳过按钮不遮挡文字")
 	await _click(view._station_buttons.soy_milk)
 	_check(guide._bubble.get_theme_stylebox("panel") == paper and not guide._dialogue_slot.visible
 		and not guide._dialogue_heading.visible and guide._bubble_text.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT,
@@ -278,6 +292,9 @@ func _pancake_first_sale() -> void:
 	_check(guide._bubble.visible and guide._bubble.position.y + guide._bubble.size.y < head.y, "首单提示在员工活动区上方")
 	_check(not guide.freezes() and guide._point == Vector2.INF, "首单提示无箭头，员工继续营业")
 	_check(guide._dialogue_visible and guide._dialogue_heading.text == "开张啦！", "等待首单沿用立绘提示")
+	_check(guide._dialogue_slot.custom_minimum_size == Vector2(174, 146)
+		and guide._dialogue_heading.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT
+		and guide._bubble_text.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT, "开张短提示恢复原本的立绘栏和文字布局")
 	await _capture("calico-waiting", 0.0)
 	var started_at := owner.clock
 	_run_until(func() -> bool: return not guide._bubble.visible, 3.5)

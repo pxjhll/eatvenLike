@@ -7,6 +7,8 @@ const CUP_HEIGHT := 52.0
 const Characters := preload("res://presentation/characters/character_library.gd")
 const Presentation := preload("res://content/characters/actor_presentation.tres")
 const BUBBLE := preload("res://art/ui/bubble.png")
+const CUSTOMER_MOOD := preload("res://art/ui/customer_mood.png")
+const MOOD_SIZE := Vector2(40.0, 40.0)
 const PATIENCE_WIDTH := 42.0
 const PATIENCE_GREEN := Color("6b8f4e")
 const PATIENCE_AMBER := Color("d08a2e")
@@ -285,19 +287,8 @@ static func _patience_color(fill: float) -> Color:
 	return PATIENCE_GREEN if fill > 0.6 else PATIENCE_AMBER if fill > 0.3 else PATIENCE_RED
 
 
-## A small face above the bubble: a sweating straight face when impatient, a red frown when angry.
+## Both faces share one atlas. Keep the original center and bubble draw order.
 func _draw_mood(center: Vector2) -> void:
-	var angry := _mood >= 2
-	var face := Color("e2533b") if angry else Color("f2c14e")
-	var ink := Color("4a2a1a")
-	_visual.draw_circle(center, 15, face)
-	_visual.draw_arc(center, 15, 0, TAU, 32, ink, 2, true)
-	_visual.draw_circle(center + Vector2(-5, -2), 2.2, ink)
-	_visual.draw_circle(center + Vector2(5, -2), 2.2, ink)
-	if angry:
-		_visual.draw_line(center + Vector2(-9, -9), center + Vector2(-2, -6), ink, 2.5, true)
-		_visual.draw_line(center + Vector2(9, -9), center + Vector2(2, -6), ink, 2.5, true)
-		_visual.draw_arc(center + Vector2(0, 10), 6, PI * 1.15, PI * 1.85, 10, ink, 2.5, true)
-	else:
-		_visual.draw_line(center + Vector2(-5, 6), center + Vector2(5, 6), ink, 2.5, true)
-		_visual.draw_circle(center + Vector2(14, -10), 4, Color("7cc4f0"))
+	var tile := Vector2(CUSTOMER_MOOD.get_width() * 0.5, CUSTOMER_MOOD.get_height())
+	var source := Vector2(tile.x if _mood >= 2 else 0.0, 0.0)
+	_visual.draw_texture_rect_region(CUSTOMER_MOOD, Rect2(center - MOOD_SIZE * 0.5, MOOD_SIZE), Rect2(source, tile))

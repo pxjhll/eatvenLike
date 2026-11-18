@@ -760,6 +760,7 @@ cues = Array[Dictionary]([{
 "if": ["!open", "!page:shop"]
 }, {
 "at": "frame:soy_milk",
+"compact_portrait": true,
 "heading": "先点豆浆机",
 "if": ["!open"],
 "text": "花 {cost} 金币解锁，小摊就能开张。"
@@ -789,18 +790,11 @@ cues = Array[Dictionary]([{
 [sub_resource type="Resource" id="Resource_f53vs"]
 script = ExtResource("12_p70m1")
 id = "hire"
-when = Array[String](["stage>=1", "staff<2", "can_hire"])
-done_when = Array[String](["hired", "!room"])
-seen_when = Array[String](["staff>=2"])
+when = Array[String](["stage>=1", "staff>=2", "no_box"])
 cues = Array[Dictionary]([{
-"at": "ui:tab:staff",
-"if": ["!page:staff"],
-"text": "一个人又收钱又摊饼，忙不过来了。
-点「员工」招第二个人"
-}, {
-"at": "ui:hire",
-"text": "一个人又收钱又摊饼，忙不过来了。
-招第二个人"
+"finish_after_notice": true,
+"notice_seconds": 3.0,
+"text": "原料备齐，伙伴们可以一起摊饼和交餐了。"
 }])
 
 [sub_resource type="Resource" id="Resource_nqi46"]
@@ -834,7 +828,7 @@ cues = Array[Dictionary]([{
 "finish_after_notice": true,
 "heading": "鏊子等着用面粉",
 "notice_seconds": 4.0,
-"text": "去原料台买一箱面粉，就能开始摊饼。"
+"text": "去原料台买面粉鸡蛋箱，小灰猫就会加入。"
 }])
 
 [sub_resource type="Resource" id="Resource_h5pau"]
@@ -1211,7 +1205,7 @@ starting = Array[String](["rabbit"])
 hire_pool = Array[String](["rabbit", "gray_cat", "bear", "fox", "parrot"])
 hire_rule = "cycle"
 hire_order = Array[String](["gray_cat", "bear", "rabbit", "fox", "parrot"])
-hire_costs = Array[int]([30, 100, 200])
+hire_costs = Array[int]([30, 100, 200, 300])
 tracks = Array[ExtResource("9_u2yoc")]([SubResource("Resource_qwd65")])
 home_anchor = "home"
 
@@ -1353,7 +1347,7 @@ display_name = "装袋"
 stations = Array[String](["bag"])
 cost = 300
 dish = "ham"
-unlock_note = "开放装袋：约 4 成客人要手提袋，每份贵 25%"
+unlock_note = "开放装袋和第 5 个员工位：约 4 成客人要手提袋，每份贵 25%"
 customer_interval = 4.5
 order_weights = Dictionary[String, float]({
 "guozi": 0.2,
@@ -1364,7 +1358,7 @@ order_weights = Dictionary[String, float]({
 flavor_group = "meat"
 flavor_fallback = "guozi"
 staff_slots = Dictionary[String, int]({
-"": 4
+"": 5
 })
 queue_capacity = 6
 wait_seats = 9
@@ -1602,6 +1596,7 @@ display_name = "面粉鸡蛋"
 item = "flour"
 box_cost = 20
 box_station = "rear_equipment"
+grant_worker = "gray_cat"
 track = SubResource("Resource_p07o0")
 icon = "res://art/pancake/icons/flour_box.png"
 

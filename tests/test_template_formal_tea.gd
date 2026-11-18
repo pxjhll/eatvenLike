@@ -14,9 +14,7 @@ func _owner() -> ShopRules:
 	for id in ["lemonade","boil","seal","mix","press","topping"]: check_eq(owner.unlock(id),"","prepare real milk-tea station through shared command: " + id)
 	for id in ["tea_leaf","milk"]: check_eq(owner.unlock_box(id),"","install actual material box: " + id)
 	for index in 3: check_eq(owner.upgrade("topping"),"","open actual topping flavors")
-	check_eq(owner.hire(),"","recruit the actual kitchen employee instead of letting the sole front employee bypass its post")
-	for worker in owner.roster:
-		if not worker.deployed: check_eq(owner.deploy_worker(worker.id),"","deploy recruited kitchen employee through shared command")
+	check_eq(owner.kitchen_staff(),1,"the ingredient gift staffs the actual kitchen")
 	owner.nav.set_open(owner.unlocked)
 	return owner
 
