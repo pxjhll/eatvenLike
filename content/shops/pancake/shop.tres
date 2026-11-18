@@ -760,6 +760,7 @@ cues = Array[Dictionary]([{
 "if": ["!open", "!page:shop"]
 }, {
 "at": "frame:soy_milk",
+"compact_portrait": true,
 "heading": "先点豆浆机",
 "if": ["!open"],
 "text": "花 {cost} 金币解锁，小摊就能开张。"

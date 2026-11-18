@@ -7,7 +7,9 @@ const DIM := Color(0.16, 0.1, 0.06, 0.62)
 const GLOW := Color("ffd98a")
 const HAND := Color("8b6446")
 const BUBBLE_WIDTH := 644.0
+const BUBBLE_TEXT_MIN_WIDTH := 400.0
 const GUIDE_PORTRAIT_SLOT_SIZE := Vector2(174, 146)
+const COMPACT_PORTRAIT_SLOT_SIZE := Vector2(154, 124)
 
 var enabled := false
 var seen := {}
@@ -28,12 +30,15 @@ var _lost_seen := -1
 ## 步骤开始时店里有几个人（hired 条件用）
 var _staff_at_start := 0
 var _bubble: PanelContainer
+var _bubble_column: VBoxContainer
+var _bubble_row: HBoxContainer
 var _bubble_text: Label
 var _dialogue_slot: Control
 var _dialogue_portrait: TextureRect
 var _dialogue_heading: Label
 var _dialogue_title := ""
 var _dialogue_visible := false
+var _compact_portrait := false
 var _pointer_bounds := Rect2()
 var _announcement_title := ""
 var _announcement := ""
@@ -73,19 +78,19 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	_bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bubble.custom_minimum_size.x = BUBBLE_WIDTH
 	add_child(_bubble)
-	var column := VBoxContainer.new()
-	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_theme_constant_override("separation", 8)
-	_bubble.add_child(column)
-	var row := HBoxContainer.new()
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation", 12)
-	column.add_child(row)
+	_bubble_column = VBoxContainer.new()
+	_bubble_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bubble_column.add_theme_constant_override("separation", 8)
+	_bubble.add_child(_bubble_column)
+	_bubble_row = HBoxContainer.new()
+	_bubble_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bubble_row.add_theme_constant_override("separation", 12)
+	_bubble_column.add_child(_bubble_row)
 	_dialogue_slot = Control.new()
 	_dialogue_slot.custom_minimum_size = GUIDE_PORTRAIT_SLOT_SIZE
 	_dialogue_slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dialogue_slot.hide()
-	row.add_child(_dialogue_slot)
+	_bubble_row.add_child(_dialogue_slot)
 	_dialogue_portrait = TextureRect.new()
 	_dialogue_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_dialogue_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -97,20 +102,21 @@ func setup(view: Node2D, seen_ids: Array) -> void:
 	copy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	copy.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	copy.add_theme_constant_override("separation", 4)
-	row.add_child(copy)
+	_bubble_row.add_child(copy)
 	_dialogue_heading = _hud._text(copy, "", 30)
 	_dialogue_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_dialogue_heading.hide()
 	_bubble_text = _hud._text(copy, "", 23)
 	_bubble_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_bubble_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_bubble_text.custom_minimum_size.x = 400
+	_bubble_text.custom_minimum_size.x = BUBBLE_TEXT_MIN_WIDTH
 	_bubble_skip = Button.new()
 	_bubble_skip.focus_mode = Control.FOCUS_NONE
 	_bubble_skip.add_theme_font_size_override("font_size", 18)
 	_bubble_skip.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_bubble_skip.size_flags_vertical = Control.SIZE_SHRINK_END
 	_bubble_skip.pressed.connect(_skip)
-	column.add_child(_bubble_skip)
+	_bubble_column.add_child(_bubble_skip)
 	refresh(0.0)
 
 
@@ -153,6 +159,7 @@ func refresh(delta: float) -> void:
 	_show_bubble = false
 	_show_notice = false
 	_dialogue_visible = false
+	_compact_portrait = false
 	_dialogue_title = ""
 	_pointer_bounds = Rect2()
 	if enabled:
@@ -190,6 +197,7 @@ func show_announcement(title: String, text: String, seconds: float, portrait: Te
 func _render_announcement() -> void:
 	_dialogue_title = _announcement_title
 	_dialogue_visible = _announcement_portrait != null
+	_compact_portrait = false
 	if _dialogue_visible: _dialogue_portrait.texture = _announcement_portrait
 	_show_notice = true
 	_say(_announcement)
@@ -306,12 +314,18 @@ func _set_dialogue(step: SpecGuideStep, cue: Dictionary) -> void:
 	if not cue.has("heading"): return
 	_dialogue_title = _fill(String(cue.heading), step)
 	_dialogue_visible = step.portrait != null
+	_compact_portrait = _dialogue_visible and cue.get("compact_portrait", false)
 	if _dialogue_visible: _dialogue_portrait.texture = step.portrait
 
 
 func _sync_dialogue() -> void:
 	if _dialogue_heading.text != _dialogue_title: _dialogue_heading.text = _dialogue_title
 	_dialogue_heading.visible = not _dialogue_title.is_empty()
+	var skip_parent: Container = _bubble_row if _compact_portrait else _bubble_column
+	if _bubble_skip.get_parent() != skip_parent:
+		_bubble_skip.reparent(skip_parent, false)
+		_dialogue_slot.custom_minimum_size = COMPACT_PORTRAIT_SLOT_SIZE if _compact_portrait else GUIDE_PORTRAIT_SLOT_SIZE
+		_bubble_text.custom_minimum_size.x = 0.0 if _compact_portrait else BUBBLE_TEXT_MIN_WIDTH
 	if _dialogue_slot.visible == _dialogue_visible: return
 	_dialogue_slot.visible = _dialogue_visible
 	_bubble_text.autowrap_mode = TextServer.AUTOWRAP_OFF if _dialogue_visible else TextServer.AUTOWRAP_WORD_SMART
