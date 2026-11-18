@@ -14,6 +14,7 @@ const UnlockFrame := preload("res://presentation/shop/unlock_frame.gd")
 const UpgradeBadge := preload("res://presentation/shop/upgrade_badge.gd")
 const TuningPanel := preload("res://presentation/shop/shop_tuning.gd")
 const Recorder := preload("res://presentation/shop/shop_recorder.gd")
+const FrameMonitor := preload("res://presentation/shop/shop_frame_monitor.gd")
 const DefaultHud := preload("res://presentation/shop/hud/default_hud.gd")
 const ArtGroups := preload("res://presentation/shop/art_groups.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
@@ -45,6 +46,7 @@ var guide: Control
 var guide_enabled := false
 var tuning: PanelContainer
 var recorder: RefCounted
+@onready var _frame_monitor: FrameMonitor = $Overlay/UI/FrameMonitor
 var selected_worker := 1
 var _speed_factor := 1.0
 var _autosave_elapsed := 0.0
@@ -215,6 +217,7 @@ func _ready() -> void:
 
 func _block_startup(message: String) -> void:
 	_startup_blocked = true
+	_frame_monitor.hide()
 	set_process(false)
 	set_process_unhandled_input(false)
 	rules = null
@@ -325,6 +328,7 @@ func restart() -> void:
 	_toast.hide()
 	_hint_text = ""
 	_reset_visuals()
+	_frame_monitor.reset()
 	if recorder != null: recorder.setup(view)
 	ui.open_page("shop")
 	_refresh(0.0)
@@ -368,11 +372,13 @@ func frozen() -> bool:
 
 func _process(delta: float) -> void:
 	if rules == null or _startup_blocked or _transition_committed: return
+	var frame_started := Time.get_ticks_usec()
 	var before := rules.clock
 	if not frozen():
 		rules.step(minf(delta, 0.25) * _speed_factor)
+	var logic_finished := Time.get_ticks_usec()
 	var frame := view.render_snapshot()
-	if recorder != null: recorder.tick(rules.clock - before, frame)
+	var snapshot_finished := Time.get_ticks_usec()
 	_refresh(delta, frame)
 	guide.refresh(delta)
 	_refresh_event_notice()
@@ -380,6 +386,10 @@ func _process(delta: float) -> void:
 	_toast_left = maxf(0, _toast_left - delta)
 	_toast.visible = _toast_left > 0 or not _staffing_warning().is_empty()
 	_update_pops(delta)
+	var timings := Vector3i(logic_finished - frame_started, snapshot_finished - logic_finished,
+		Time.get_ticks_usec() - snapshot_finished)
+	_frame_monitor.record_frame(frame_started, timings, _actors.size(), _customers.size())
+	if recorder != null: recorder.tick(rules.clock - before, frame)
 	if store != null:
 		_autosave_elapsed += delta
 		if _autosave_elapsed >= 10.0:
@@ -1214,7 +1224,10 @@ func _build_tuning() -> void:
 	recorder = Recorder.new()
 	recorder.enabled = session.recording_enabled
 	recorder.file_path = session.recording_path
+	recorder.performance_sample = _frame_monitor.snapshot
 	recorder.setup(view)
+	_frame_monitor.reset()
+	_frame_monitor.show()
 	var shade := ColorRect.new()
 	shade.name = "TuningShade"
 	shade.color = Color(0.12, 0.09, 0.065, 0.34)
@@ -1440,7 +1453,9 @@ func save_now(notify := true) -> Error:
 	_save_generation += 1
 	_autosave_elapsed = 0.0
 	session.speed = _speed_factor
+	var started := Time.get_ticks_usec()
 	var result: Error = session.save(guide.seen_list() if guide != null else [])
+	_frame_monitor.record_save(Time.get_ticks_usec() - started)
 	save_status = "进度已保存" if result == OK else session.last_error
 	if notify: _show_toast(save_status)
 	return result
@@ -1568,6 +1583,9 @@ func _opens_counter(point: Vector2) -> bool:
 
 
 func _notification(what: int) -> void:
+	if is_instance_valid(_frame_monitor) and what in [NOTIFICATION_APPLICATION_PAUSED,
+		NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_FOCUS_IN]:
+		_frame_monitor.break_frame_chain()
 	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST] and rules != null:
 		save_now(false)
 
