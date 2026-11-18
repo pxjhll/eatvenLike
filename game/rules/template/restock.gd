@@ -34,10 +34,10 @@ func advance(demand: Dictionary = {}, reserved_machines: Dictionary = {}) -> Str
 		if planned.definition.is_empty(): continue
 		rule = planned.definition
 		if not available and not _can_fill(rule, demand): continue
-		var device: Dictionary = _runner.machines.snapshot().definitions[rule.machine]
+		var device: Dictionary = _runner.machines.containers(rule.machine)
 		var ready := true
 		for item in rule.consumes:
-			if item in _runner.inventory.snapshot().places[device.input].infinite: continue
+			if _runner.inventory.is_infinite_source(device.input, item): continue
 			if _runner.inventory.quantity(device.input, item, -1, true) < int(rule.consumes[item]): ready = false; break
 		if not ready: continue
 		var seconds := Numbers.capability_seconds(_runner.owner.mods, _runner.owner.tune, rule.machine, rule.seconds)
@@ -50,7 +50,7 @@ func candidates(demand: Dictionary = {}, reserved_machines: Dictionary = {}) -> 
 	for id in _definition:
 		var rule: Dictionary = _definition[id]
 		if reserved_machines.has(rule.machine): continue
-		var device: Dictionary = _runner.machines.snapshot().definitions[rule.machine]
+		var device: Dictionary = _runner.machines.containers(rule.machine)
 		var available := Available.enabled(rule)
 		if int(_runs[id]) >= 0:
 			var run: Dictionary = _runner.machines.run(_runs[id])
@@ -68,7 +68,7 @@ func candidates(demand: Dictionary = {}, reserved_machines: Dictionary = {}) -> 
 			var need := int(rule.consumes[item]) - int(_runner.inventory.quantity(device.input, item, -1, available)) - int(_runner.inventory.incoming(device.input, item, -1))
 			if need <= 0: continue
 			var source: String = rule.sources[item]
-			if item not in _runner.inventory.snapshot().places[source].infinite and _runner.inventory.quantity(source, item, -1, true) <= 0: continue
+			if not _runner.inventory.is_infinite_source(source, item) and _runner.inventory.quantity(source, item, -1, true) <= 0: continue
 			var seconds: float = rule.fetch_seconds
 			if not String(rule.get("fetch_timing_target", "")).is_empty():
 				seconds = Numbers.capability_seconds(_runner.owner.mods, _runner.owner.tune, rule.fetch_timing_target, seconds, bool(rule.get("fetch_fixed",false)))
@@ -108,27 +108,22 @@ func validate_context() -> String:
 	return ""
 
 func _can_fill(rule: Dictionary, demand: Dictionary) -> bool:
-	var device: Dictionary = _runner.machines.snapshot().definitions[rule.machine]
-	var projected := 0
-	for item in rule.produces: projected += int(_runner.inventory.quantity(device.output, item, -1))
-	for claim in _runner.inventory.snapshot().claims:
-		if claim.kind != "operation" or claim.state != "reserved" or claim.to != device.output or claim.owner != -1: continue
-		for item in rule.produces: projected += int(claim.produces.get(item, 0))
+	var device: Dictionary = _runner.machines.containers(rule.machine)
+	var projected: int = _runner.inventory.projected_output(device.output, rule.produces, Inventory.SHARED)
 	var batch := Inventory._total(rule.produces)
 	if rule.policy.mode == "demand":
 		var target := _target(rule,demand)
 		if projected >= target and projected >= int(rule.policy.low): return false
 	var space := batch
 	if device.input == device.output:
-		var finite: Dictionary = rule.consumes.duplicate()
-		for item in _runner.inventory.snapshot().places[device.input].infinite: finite.erase(item)
+		var finite: Dictionary = _runner.inventory.finite_inputs(device.input, rule.consumes)
 		space = maxi(0, space - Inventory._total(finite))
 	return (projected == 0 or projected + batch <= int(rule.stock_limit)) and _runner.inventory.remaining_capacity(device.output) >= space
 
 func _target(rule: Dictionary, demand: Dictionary) -> int:
 	var limit: int = int(rule.stock_limit)
 	if rule.policy.mode != "demand": return limit
-	var device: Dictionary = _runner.machines.snapshot().definitions[rule.machine]
+	var device: Dictionary = _runner.machines.containers(rule.machine)
 	var need: int = int(demand.get(device.output,{}).get(rule.produces.keys()[0],0))
 	var target := mini(limit,int(rule.policy.base))
 	var multiplier: int = int(rule.policy.per_waiting)

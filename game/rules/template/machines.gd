@@ -248,6 +248,10 @@ func stage_seconds(id: int, mods: RefCounted, tune: Dictionary) -> Dictionary:
 	if not binding.is_empty(): seconds = Numbers.capability_seconds(mods,tune,binding.target,seconds,binding.fixed)
 	return {"seconds":seconds,"error":"" if is_finite(seconds) and seconds >= 0.0 else "invalid effective machine stage duration"}
 
+func containers(machine: String) -> Dictionary:
+	var device: Dictionary = _state.definitions[machine]
+	return {"input": device.input, "output": device.output}
+
 func status(machine: String) -> Dictionary:
 	if not _state.definitions.has(machine): return {}
 	var definition: Dictionary = _state.definitions[machine]

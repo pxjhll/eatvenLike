@@ -67,6 +67,27 @@ func test_idle_ticks_and_display_reads_do_not_copy_or_recheck_completed_history(
 	check_eq(after.runner.machines,saved.runner.machines,"optimization preserves every device proof for restoring")
 	check_eq(runtime.restore(after),"","optimized state still passes the complete save validator")
 
+func test_restock_planning_reads_only_live_shared_output() -> void:
+	var runtime := Fixture.runtime()
+	var stock := MeasuredInventory.new()
+	stock.configure("pot", 8, ["water"])
+	stock.configure("shelf", 8)
+	var machines := MeasuredMachines.new(stock)
+	check_eq(machines.configure("boil","pot","shelf"),"","define production ports")
+	runtime.runner.inventory = stock
+	runtime.runner.machines = machines
+	var rule := {"machine":"boil","consumes":{"water":1},"produces":{"tea":1},
+		"stock_limit":4,"policy":{"mode":"fixed","low":0},"batch":{"mode":"available","max":4}}
+	var restock := preload("res://game/rules/template/restock.gd").new({"tea":rule},runtime.runner)
+	var batch := preload("res://game/rules/template/available_batch.gd")
+	stock.reserve_operation(0,"pot",{"water":1},{"tea":3},-1,"shelf")
+	stock.reserve_operation(0,"pot",{"water":1},{"tea":1},42,"shelf")
+	stock.history_reads = 0
+	check_eq(batch.plan(rule,runtime.runner,4,false).definition.produces,{"tea":1},"only shared production counts toward the stock limit")
+	check(restock._can_fill(rule,{}),"regular replenishment can fill the last shared portion")
+	check_eq(stock.history_reads,0,"planning does not copy historical stock claims")
+	check_eq(machines.history_reads,0,"planning does not copy machine history")
+
 func test_delivery_sale_reports_the_committed_receipt_for_both_payment_policies() -> void:
 	for payment in ["on_take","on_deliver"]:
 		var owner := Fixture.owner()

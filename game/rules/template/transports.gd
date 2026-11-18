@@ -30,7 +30,7 @@ func enabled(route: String, owner: RefCounted) -> bool:
 func start(route: String, stock: RefCounted, entry: Dictionary) -> Dictionary:
 	if float(_state.cooldowns[route])>0.00000001: return _error("transport interval")
 	var definition: Dictionary = _definition[route]
-	var actor := "conveyor:"+str(stock.snapshot().next_bundle)
+	var actor := "conveyor:"+str(stock.next_bundle_id())
 	var group: Dictionary = stock.reserve_bundle(actor,[entry],definition.capacity)
 	if not group.error.is_empty(): return group
 	var error: String = stock.pickup_bundle(group.id)
