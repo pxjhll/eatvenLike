@@ -65,9 +65,11 @@ var _sortables: Node2D
 var _z_by_y := false
 ## 店面缩放（世界单位 → 界面单位）
 var _ui_factor := 1.0
+var _fitted_viewport_size := Vector2.ZERO
 var _actors := {}
 var _customers := {}
 var _customer_positions := {}
+var _staff_route_presentation := RoutePresentation.new()
 var _customer_route_presentation := RoutePresentation.new()
 var _customer_orders := {}
 var _customer_entering := {}
@@ -340,6 +342,7 @@ func restart() -> void:
 
 func _reset_visuals() -> void:
 	_customer_animation_clock = 0.0
+	_staff_route_presentation = RoutePresentation.new()
 	ui.show_selection = false
 	if _dining != null: _dining.reset()
 	var roster := all_staff()
@@ -382,9 +385,10 @@ func _process(delta: float) -> void:
 	_refresh(delta, frame)
 	guide.refresh(delta)
 	_refresh_event_notice()
-	_fit()
-	_toast_left = maxf(0, _toast_left - delta)
-	_toast.visible = _toast_left > 0 or not _staffing_warning().is_empty()
+	if get_viewport_rect().size != _fitted_viewport_size:
+		_fit()
+	elif tuning != null and tuning.visible:
+		tuning.fit_to_size($Overlay/UI.size)
 	_update_pops(delta)
 	var timings := Vector3i(logic_finished - frame_started, snapshot_finished - logic_finished,
 		Time.get_ticks_usec() - snapshot_finished)
@@ -413,15 +417,25 @@ func _refresh(delta: float, frame: Dictionary = {}) -> void:
 		var art_name := String(anchors.meta("Connections/" + id, "art", ""))
 		var belt := art.find_child(art_name, true, false) if not art_name.is_empty() else null
 		if belt != null and belt.get_meta("art_layer", "") == "belts": belt.visible = frame.belts.has(id)
+	var moving := 0.0 if frame.paused or frozen() else delta
+	var staff_motion: bool = frame.get("presentation_version") == 1 or shop.layout.motion_version == 1
+	if staff_motion:
+		_staff_route_presentation.advance(float(frame.clock), minf(moving, 0.25) * _speed_factor)
 	for worker in frame.workers:
 		if not _actors.has(worker.id):
 			var actor := _actor(String(worker.kind), _staff_height)
+			actor.y_sort_enabled = _sortables.y_sort_enabled
 			_sortables.add_child(actor)
 			_actors[worker.id] = actor
 		var actor: Node2D = _actors[worker.id]
 		actor.selected = ui.show_selection and int(worker.id) == selected_worker
-		actor.display(worker, frame.clock)
-		if _z_by_y: actor.z_index = int(actor.position.y)
+		var displayed: Vector2 = worker.pos
+		var pose_clock: float = frame.clock
+		if staff_motion and worker.walking:
+			displayed = _staff_route_presentation.point(worker, float(worker.get("speed", 0.0)) * shop.layout.motion_units)
+			pose_clock += _staff_route_presentation.age
+		actor.display(worker, pose_clock, displayed)
+		if _z_by_y: actor.z_index = int(displayed.y)
 		actor.task.visible = ui.show_selection and int(worker.id) == selected_worker and ui.page == "shop"
 		_show_put_down(worker)
 	for id in _put_items.keys():
@@ -453,9 +467,13 @@ func _refresh(delta: float, frame: Dictionary = {}) -> void:
 				owner = int(worker.id)
 				_post_labels[post].text = _t("chip_post_counter") if post == rules.counter_id else _t("chip_post")
 		_post_labels[post].visible = owner != -1
-	var staffing_warning := _staffing_warning(frame.workers)
-	if not staffing_warning.is_empty() and _toast_left <= 0: _toast.text = staffing_warning
-	var moving := 0.0 if frame.paused or frozen() else delta
+	_toast_left = maxf(0.0, _toast_left - delta)
+	var show_toast := _toast_left > 0.0
+	if not show_toast:
+		var warning := _staffing_warning(frame.workers)
+		show_toast = not warning.is_empty()
+		if show_toast: _toast.text = warning
+	_toast.visible = show_toast
 	_update_cups(frame)
 	_update_customers(moving, frame)
 	if _dining != null:
@@ -961,9 +979,8 @@ func _update_customers_motion(frame: Dictionary, delta := 0.0) -> void:
 		elif shop.fulfillment.handoff=="single" and row.state=="queue" and shop.fulfillment.leave_after>0:
 			patience = 1.0-float(row.wait)/shop.fulfillment.leave_after
 		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway,row.get("compact_order",false))
-		actor.display(pose,float(frame.clock)+_customer_route_presentation.age)
 		var displayed: Vector2 = pose.pos if row.seated else _customer_route_presentation.point(row,float(Presentation.customer_speed)*shop.layout.motion_units)
-		actor.set_render_position(displayed)
+		actor.display(pose,float(frame.clock)+_customer_route_presentation.age,displayed)
 		_customer_positions[key] = row.pos
 		if _z_by_y: actor.z_index = int(displayed.y)
 		else: actor.z_index = 1 if row.seated else 0
@@ -1467,8 +1484,7 @@ func _show_toast(text: String) -> void:
 	_toast.visible = true
 
 
-func _staffing_warning(workers: Array = []) -> String:
-	if workers.is_empty(): workers = view.deployed_snapshot()
+func _staffing_warning(workers: Array) -> String:
 	if workers.is_empty(): return _t("no_staff")
 	if shop.staff.zones.is_empty(): return ""
 	for worker in workers:
@@ -1487,6 +1503,7 @@ func _fit() -> void:
 	var fitted_size := _world_size + Vector2(0, _top_margin)
 	var fitted: Dictionary = Presentation.fit(size, fitted_size, UI_WIDTH)
 	if fitted.is_empty(): return
+	_fitted_viewport_size = size
 	var world_factor := float(fitted.world_factor)
 	_world_factor = world_factor
 	_ui_factor = float(fitted.ui_factor)

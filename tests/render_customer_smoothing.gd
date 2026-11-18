@@ -162,11 +162,48 @@ func _route_and_lifecycle() -> void:
 	_check(scene._customers.is_empty(),"removed actors leave no smoothing state")
 	scene.free()
 
+func _staff_subtick_and_handoff() -> void:
+	var scene := _scene("pancake")
+	var frame: Dictionary = scene.view.render_snapshot()
+	var row: Dictionary = frame.workers[0]
+	row.pos = Vector2(100,100)
+	row.walking = true
+	row.path = PackedVector2Array([row.pos,Vector2(103,100),Vector2(103,200)])
+	row.path_index = 1
+	row.speed = 150.0 / scene.shop.layout.motion_units
+	var initial := var_to_bytes(row)
+	scene._refresh(0.0,frame)
+	scene._refresh(1.0/60.0,frame)
+	var actor: Node2D = scene._actors[row.id]
+	_check(is_equal_approx(_visible(actor).x,102.5) and _visible(actor).y==100.0,"staff moves before the next simulation tick")
+	scene._refresh(1.0/60.0,frame)
+	_check(_visible(actor).is_equal_approx(Vector2(103,102)),"staff follows a corner using native route speed")
+	_check(actor.position==row.pos and var_to_bytes(row)==initial,"staff smoothing keeps physics and the snapshot authoritative")
+	_check(actor.z_index==int(_visible(actor).y),"staff depth uses the visible feet")
+	var paused_point := _visible(actor)
+	frame.paused = true
+	scene._refresh(1.0/60.0,frame)
+	_check(_visible(actor)==paused_point,"staff visual position freezes during pause")
+	frame.paused = false
+	scene._speed_factor = 2.0
+	scene._refresh(1.0/60.0,frame)
+	_check(is_equal_approx(_visible(actor).y-paused_point.y,5.0),"staff visual movement follows the simulation speed")
+	row.walking = false
+	row.pos = Vector2(103,200)
+	row.phase = "dropoff"
+	row.display_working = true
+	row.facing = 0
+	frame.clock += 0.1
+	scene._refresh(1.0/60.0,frame)
+	_check(_visible(actor)==row.pos and actor.frame_actor.direction==0,"arrival uses the authoritative handoff position and facing immediately")
+	scene.free()
+
 func _run() -> void:
 	root.size = Vector2i(720,1280)
 	root.get_node("ShopAudio")._can_play = false
 	for id in ["tea","pancake","stirfry"]: _motion(id)
 	_route_and_lifecycle()
+	_staff_subtick_and_handoff()
 	await process_frame
 	for error in errors.take(): _check(false,error)
 	OS.remove_logger(errors)

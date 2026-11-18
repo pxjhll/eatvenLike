@@ -56,9 +56,13 @@ func _run() -> void:
 		scene.recorder._clock = 59.9
 		measured.show_test_gold = true
 		measured.frames = 0
+		scene._toast_left = 0.0
 		scene._process(0.2)
 		var recorded: Dictionary = JSON.parse_string(scene.recorder.text().split("\n", false)[-1])
-		if measured.frames != 1 or recorded.get("gold") != 123456.0 or owner.gold == 123456.0:
+		if measured.frames != 1:
+			failures += 1
+			print("FAIL ", id, " builds ", measured.frames, " snapshots with no active toast")
+		if recorded.get("gold") != 123456.0 or owner.gold == 123456.0:
 			failures += 1
 			print("FAIL ", id, " recorder must sample the same detached frame as the scene")
 		scene.free()
