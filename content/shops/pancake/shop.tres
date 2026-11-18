@@ -16,7 +16,7 @@
 [ext_resource type="Script" path="res://content/rules/spec_layout.gd" id="14_phbrp"]
 [ext_resource type="Texture2D" path="res://art/pancake/icons/crisps.tres" id="15_2y8k5"]
 [ext_resource type="Script" path="res://content/rules/spec_shop.gd" id="15_50a0c"]
-[ext_resource type="Texture2D" path="res://art/pancake/icons/pancake_packet.tres" id="16_f53vs"]
+[ext_resource type="Texture2D" path="res://art/pancake/items/pancake_servings.png" id="pancake_servings"]
 [ext_resource type="Script" path="res://content/rules/spec_seat_group.gd" id="16_n1vsr"]
 [ext_resource type="Script" path="res://content/rules/spec_staff_kind.gd" id="17_70k8p"]
 [ext_resource type="Texture2D" path="res://art/pancake/icons/soy_cup.tres" id="17_wn2x6"]
@@ -928,6 +928,36 @@ cues = Array[Dictionary]([{
 }])
 skip_label = "知道了"
 
+[sub_resource type="AtlasTexture" id="Serving_plain"]
+atlas = ExtResource("pancake_servings")
+region = Rect2(0, 0, 112, 132)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Serving_guozi"]
+atlas = ExtResource("pancake_servings")
+region = Rect2(112, 0, 112, 132)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Serving_ham"]
+atlas = ExtResource("pancake_servings")
+region = Rect2(224, 0, 112, 132)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Serving_floss"]
+atlas = ExtResource("pancake_servings")
+region = Rect2(0, 132, 112, 132)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Serving_bacon"]
+atlas = ExtResource("pancake_servings")
+region = Rect2(112, 132, 112, 132)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Serving_family"]
+atlas = ExtResource("pancake_servings")
+region = Rect2(224, 132, 112, 132)
+filter_clip = true
+
 [sub_resource type="Resource" id="Resource_fadod"]
 script = ExtResource("13_icdnm")
 id = "crisp"
@@ -944,37 +974,37 @@ icon = ExtResource("17_wn2x6")
 script = ExtResource("13_icdnm")
 id = "plain"
 display_name = "原味煎饼"
-icon = ExtResource("16_f53vs")
+icon = SubResource("Serving_plain")
 
 [sub_resource type="Resource" id="Resource_f7tu3"]
 script = ExtResource("13_icdnm")
 id = "guozi"
 display_name = "煎饼果子"
-icon = ExtResource("16_f53vs")
+icon = SubResource("Serving_guozi")
 
 [sub_resource type="Resource" id="Resource_nkp5d"]
 script = ExtResource("13_icdnm")
 id = "ham"
 display_name = "火腿煎饼果子"
-icon = ExtResource("16_f53vs")
+icon = SubResource("Serving_ham")
 
 [sub_resource type="Resource" id="Resource_suyc0"]
 script = ExtResource("13_icdnm")
 id = "floss"
 display_name = "肉松煎饼果子"
-icon = ExtResource("16_f53vs")
+icon = SubResource("Serving_floss")
 
 [sub_resource type="Resource" id="Resource_vvdok"]
 script = ExtResource("13_icdnm")
 id = "bacon"
 display_name = "培根煎饼果子"
-icon = ExtResource("16_f53vs")
+icon = SubResource("Serving_bacon")
 
 [sub_resource type="Resource" id="Resource_fj6u1"]
 script = ExtResource("13_icdnm")
 id = "family"
 display_name = "全家福"
-icon = ExtResource("16_f53vs")
+icon = SubResource("Serving_family")
 
 [sub_resource type="Resource" id="Resource_2dm8i"]
 script = ExtResource("13_icdnm")

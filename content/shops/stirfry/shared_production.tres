@@ -306,7 +306,7 @@ recipes = {
 "item": "egg_rice_raw",
 "place": "pantry:out",
 "seconds": 0.6,
-"label": "取配料",
+"label": "取火腿丁",
 "timing_target": "pantry",
 "fixed": false,
 "after": ["heat"]
@@ -326,7 +326,7 @@ recipes = {
 "egg_fried_rice": 1
 },
 "seconds": 4.0,
-"label": "加料翻炒"
+"label": "加火腿丁翻炒"
 }, {
 "id": "serve",
 "capability": "transfer",
@@ -663,7 +663,7 @@ recipes = {
 "egg_rice_raw": "step:0",
 "rice": "step:1"
 },
-"label": "炒蛋炒饭",
+"label": "加火腿丁翻炒",
 &"machine": "wok_b",
 &"produces": Dictionary[String, int]({
 "egg_fried_rice": 1

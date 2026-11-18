@@ -856,8 +856,8 @@ func work_progress(worker: Dictionary) -> float:
 const ItemArt := preload("res://game/rules/shop_item_art.gd")
 
 ## Explicit scene artwork and UI icons share the same shop item data.
-func item_art(id: String) -> Dictionary:
-	return ItemArt.appearance(shop, id)
+func item_art(id: String, dining := false) -> Dictionary:
+	return ItemArt.appearance(shop, id, dining)
 
 
 func item_icon(id: String) -> Texture2D:

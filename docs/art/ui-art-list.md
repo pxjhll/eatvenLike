@@ -8,7 +8,8 @@
 |---|---|---|
 | 底板、按钮（普通/悬停/按下/禁用/选中）、卡片、弹层、胶囊、进度条、滑条、勾选框、toast | 代码绘制（圆角、描边、底托、渐变） | 配色、描边、厚度：在 Godot 编辑器里打开 `art/ui/reference_skin.tres`，每种样式（paper、wood、gold、card……）一个条目；各状态的变化规则在 `presentation/ui/reference_theme.gd` |
 | 简单图标（目标、帽子、暂停、保存、玻璃、垃圾桶、勾、锁、时钟、箭头、关闭等） | 独立 SVG，导入时放大 4 倍 | `art/ui/icons/<名字>.svg`，同名覆盖即可；画布 64×64，也可以换成同名 PNG 再改 `reference_icons.gd` 一行 |
-| 金币、饮品、订单气泡、角色头像 | 位图（沿用） | `art/ui/*.png`、角色库 |
+| 金币、订单气泡、角色头像 | 位图（沿用） | `art/ui/*.png`、角色库 |
+| 奶茶店饮品图标 | 直接用饮品在游戏里的成品贴图 | `art/reference/*.png`，在 `content/shops/tea/shop.tres` 的物品资源中设置 |
 | 设备小图标（收银台、货架、煮茶锅、封口机、茶叶罐、奶瓶、椅子） | 直接用游戏里的设备图 | `art/reference/*.png`，映射表在 `reference_icons.gd` 的 `ART` |
 | 奖章、喇叭 | 位图，**临时**：从效果图截图里抠的，分辨率和边缘一般 | `art/ui/reference/`，来源见 `provenance.json`；需要正式重画 |
 
@@ -50,7 +51,7 @@
 ## 已完成
 
 - 2026-10-30 P0 三样已出图并接进游戏：`coin.png`（64）/ `coin_small.png`（40，按钮和收入飘字用）、`drink_*.png` ×7（比清单多一个红茶 `black_tea`，对应现有 7 种饮品 id）、`bubble.png`（192×120，订单气泡固定尺寸，游戏里直接整张画，不用九宫格）。
-- 这批是代码绘制的占位成品，源脚本 `art_src/ui/generate_ui_p0.py`；以后出正式图时按同名文件覆盖即可。
+- 最早一批占位图由 `art_src/ui/generate_ui_p0.py` 绘制。当前脚本输出金币和气泡底板。
 
 ## 建议顺序
 

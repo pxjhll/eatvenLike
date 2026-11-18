@@ -9,10 +9,12 @@ static func find_item(shop: SpecShop, id: String) -> SpecItem:
 		if item.id == key: return item
 	return null
 
-static func appearance(shop: SpecShop, id: String) -> Dictionary:
+static func appearance(shop: SpecShop, id: String, dining := false) -> Dictionary:
 	var item := find_item(shop, id)
 	var look := {"art": "", "tint": Color.WHITE}
 	if item != null:
+		if dining and item.dining_texture != null:
+			return {"art": "", "tint": Color.WHITE, "texture": item.dining_texture}
 		look = {"art": item.art, "tint": item.tint, "texture": item.icon}
 	look.texture = texture_from_look(look)
 	return look
