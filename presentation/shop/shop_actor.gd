@@ -7,6 +7,10 @@ const CUP_HEIGHT := 52.0
 const Characters := preload("res://presentation/characters/character_library.gd")
 const Presentation := preload("res://content/characters/actor_presentation.tres")
 const BUBBLE := preload("res://art/ui/bubble.png")
+const PATIENCE_WIDTH := 42.0
+const PATIENCE_GREEN := Color("6b8f4e")
+const PATIENCE_AMBER := Color("d08a2e")
+const PATIENCE_RED := Color("b4482f")
 ## 外面给的查表：物品 → {art, tint}；任务 → 头顶的字；机器 → 干活时朝哪个方向（8 方向）
 var item_art: Callable = func(_item: String) -> Dictionary: return {}
 var task_text: Callable = func(worker: Dictionary) -> String: return String(worker.get("task_label", ""))
@@ -25,7 +29,11 @@ var _held_layer := Node2D.new()
 var _held_sprites: Array[Sprite2D] = []
 var amount := Label.new()
 var task := Label.new()
-var selected := false
+var selected := false:
+	set(value):
+		if selected == value: return
+		selected = value
+		_visual.queue_redraw()
 var _last_pos := Vector2.ZERO
 var _base_scale := Vector2.ONE
 var _font: Font
@@ -47,7 +55,6 @@ var _visual := Node2D.new()
 
 func set_render_position(point: Vector2) -> void:
 	_visual.position = (point-position)/scale
-	queue_redraw()
 
 func render_position() -> Vector2:
 	return position+_visual.position*scale
@@ -61,6 +68,7 @@ func face(right: bool) -> void:
 func setup(art_id: String, font: Font, height := -1.0) -> void:
 	if height < 0.0: height = Presentation.staff_height
 	_font = font
+	_visual.draw.connect(_draw_visual)
 	add_child(_visual)
 	_art = art_id
 	_height = height
@@ -108,27 +116,41 @@ func setup(art_id: String, font: Font, height := -1.0) -> void:
 
 
 func show_order(item: String, patience: float, mood := 0, takeaway := false, compact := false) -> void:
-	var scale_factor := 0.72 if compact else 1.0
-	if item != _order_item or mood != _mood or takeaway != _takeaway or patience != _patience or scale_factor != _order_scale:
-		queue_redraw()
-	_order_item = item
-	_patience = patience
-	_mood = mood
-	_takeaway = takeaway
-	_order_scale = scale_factor
 	task.visible = false
+	var item_changed := item != _order_item
+	_order_item = item
 	_order_cup.visible = not item.is_empty()
-	if item.is_empty(): return
-	var texture: Texture2D = order_icon.call(item)
-	_order_cup.texture = texture
-	_order_cup.scale = Vector2.ONE * 40.0 * _order_scale / texture.get_height()
-	_order_cup.position = Vector2(-46.0*_order_scale, -_height-4.0-58.0*_order_scale)
-	_order_cup.visible = true
+	if item.is_empty():
+		if item_changed: _visual.queue_redraw()
+		return
+	var scale_factor := 0.72 if compact else 1.0
+	var size_changed := scale_factor != _order_scale
+	if item_changed:
+		_order_cup.texture = order_icon.call(item)
+	if item_changed or size_changed:
+		_order_cup.scale = Vector2.ONE * 40.0 * scale_factor / _order_cup.texture.get_height()
+		var icon_width := _order_cup.texture.get_width() * _order_cup.scale.x
+		var inset := maxf(0.0, (40.0 * scale_factor - icon_width) / 2.0)
+		_order_cup.position = Vector2(-46.0 * scale_factor + inset, -_height - 4.0 - 58.0 * scale_factor)
+	patience = clampf(patience, 0.0, 1.0) if patience >= 0.0 else -1.0
+	var redraw := item_changed or size_changed or mood != _mood or takeaway != _takeaway
+	if not redraw and patience != _patience:
+		# Retain the fill until its tip moves a screen pixel, with immediate
+		# updates to colors and empty/full states.
+		redraw = patience <= 0.0 or patience >= 1.0 or _patience < 0.0 \
+			or _patience_color(patience) != _patience_color(_patience) \
+			or absf(patience - _patience) * PATIENCE_WIDTH * scale_factor * get_screen_transform().x.length() >= 1.0
+	if redraw:
+		_patience = patience
+		_mood = mood
+		_takeaway = takeaway
+		_order_scale = scale_factor
+		_visual.queue_redraw()
 
 
-func display(worker: Dictionary, clock: float) -> void:
+func display(worker: Dictionary, clock: float, displayed_position := Vector2.INF) -> void:
 	position = worker.pos
-	_visual.position = Vector2.ZERO
+	set_render_position(position if displayed_position == Vector2.INF else displayed_position)
 	var movement: Vector2 = position - _last_pos
 	var clock_step := maxf(0.0, clock - _last_clock) if _pose_initialized else 0.0
 	if not _pose_initialized:
@@ -176,7 +198,6 @@ func display(worker: Dictionary, clock: float) -> void:
 	_display_held_items(worker)
 	_last_pos = position
 	_last_clock = clock
-	queue_redraw()
 
 func _display_held_items(worker: Dictionary) -> void:
 	var items: Array = worker.get("held_items",[]) if worker.get("presentation_version")==1 and carried.visible else []
@@ -227,11 +248,12 @@ func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -
 	if frame_actor.action != desired:
 		frame_actor.set_action(desired)
 		frame_actor.seek_phase(0.0)
-	frame_actor.pause()
+	if frame_actor.sprite.is_playing(): frame_actor.pause()
 	if walking or desired != "walk":
-		var factor := float(worker.get("speed", Characters.walk_speed(_art))) / Characters.walk_speed(_art) if walking else 1.0
-		frame_actor.seek_phase(fposmod(frame_actor.get_phase() + clock_step * factor / frame_actor.get_cycle_seconds(), 1.0))
-	else:
+		if clock_step > 0.0:
+			var factor := float(worker.get("speed", Characters.walk_speed(_art))) / Characters.walk_speed(_art) if walking else 1.0
+			frame_actor.seek_phase(fposmod(frame_actor.get_phase() + clock_step * factor / frame_actor.get_cycle_seconds(), 1.0))
+	elif frame_actor.sprite.frame != 0 or frame_actor.sprite.frame_progress != 0.0:
 		frame_actor.seek_phase(0.0)
 
 
@@ -240,26 +262,27 @@ static func drink_icon(item: String) -> Texture2D:
 	return ItemArt.legacy_icon(item)
 
 
-func _draw() -> void:
-	draw_set_transform(_visual.position+Vector2(0, 1), 0, Vector2(1, 0.3))
-	draw_circle(Vector2.ZERO, 25, Color(0.24, 0.14, 0.07, 0.18))
+func _draw_visual() -> void:
+	_visual.draw_set_transform(Vector2(0, 1), 0, Vector2(1, 0.3))
+	_visual.draw_circle(Vector2.ZERO, 25, Color(0.24, 0.14, 0.07, 0.18))
 	if selected:
-		draw_arc(Vector2.ZERO, 31, 0, TAU, 40, Color("e6b94f"), 6, true)
+		_visual.draw_arc(Vector2.ZERO, 31, 0, TAU, 40, Color("e6b94f"), 6, true)
 	if _order_item.is_empty():
 		return
 	var anchor := Vector2(0.0,-_height-4.0)
-	draw_set_transform(_visual.position+anchor*(1.0-_order_scale),0.0,Vector2.ONE*_order_scale)
+	_visual.draw_set_transform(anchor*(1.0-_order_scale),0.0,Vector2.ONE*_order_scale)
 	var top := -_height - 64.0
-	draw_texture_rect(BUBBLE, Rect2(-48, top, 96, 60), false)
+	_visual.draw_texture_rect(BUBBLE, Rect2(-48, top, 96, 60), false)
 	if _patience >= 0:
-		var fill := clampf(_patience, 0.0, 1.0)
-		var color := Color("6b8f4e") if fill > 0.6 else Color("d08a2e") if fill > 0.3 else Color("b4482f")
-		draw_rect(Rect2(-4, top + 19, 42, 10), Color("efe3cc"))
-		draw_rect(Rect2(-4, top + 19, 42 * fill, 10), color)
+		_visual.draw_rect(Rect2(-4, top + 19, PATIENCE_WIDTH, 10), Color("efe3cc"))
+		_visual.draw_rect(Rect2(-4, top + 19, PATIENCE_WIDTH * _patience, 10), _patience_color(_patience))
 	if _takeaway and _font != null:
-		draw_string(_font, Vector2(-2, top + 30), "外带", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("8a5a35"))
+		_visual.draw_string(_font, Vector2(-2, top + 30), "外带", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("8a5a35"))
 	if _mood > 0:
 		_draw_mood(Vector2(40, top + 8))
+
+static func _patience_color(fill: float) -> Color:
+	return PATIENCE_GREEN if fill > 0.6 else PATIENCE_AMBER if fill > 0.3 else PATIENCE_RED
 
 
 ## A small face above the bubble: a sweating straight face when impatient, a red frown when angry.
@@ -267,14 +290,14 @@ func _draw_mood(center: Vector2) -> void:
 	var angry := _mood >= 2
 	var face := Color("e2533b") if angry else Color("f2c14e")
 	var ink := Color("4a2a1a")
-	draw_circle(center, 15, face)
-	draw_arc(center, 15, 0, TAU, 32, ink, 2, true)
-	draw_circle(center + Vector2(-5, -2), 2.2, ink)
-	draw_circle(center + Vector2(5, -2), 2.2, ink)
+	_visual.draw_circle(center, 15, face)
+	_visual.draw_arc(center, 15, 0, TAU, 32, ink, 2, true)
+	_visual.draw_circle(center + Vector2(-5, -2), 2.2, ink)
+	_visual.draw_circle(center + Vector2(5, -2), 2.2, ink)
 	if angry:
-		draw_line(center + Vector2(-9, -9), center + Vector2(-2, -6), ink, 2.5, true)
-		draw_line(center + Vector2(9, -9), center + Vector2(2, -6), ink, 2.5, true)
-		draw_arc(center + Vector2(0, 10), 6, PI * 1.15, PI * 1.85, 10, ink, 2.5, true)
+		_visual.draw_line(center + Vector2(-9, -9), center + Vector2(-2, -6), ink, 2.5, true)
+		_visual.draw_line(center + Vector2(9, -9), center + Vector2(2, -6), ink, 2.5, true)
+		_visual.draw_arc(center + Vector2(0, 10), 6, PI * 1.15, PI * 1.85, 10, ink, 2.5, true)
 	else:
-		draw_line(center + Vector2(-5, 6), center + Vector2(5, 6), ink, 2.5, true)
-		draw_circle(center + Vector2(14, -10), 4, Color("7cc4f0"))
+		_visual.draw_line(center + Vector2(-5, 6), center + Vector2(5, 6), ink, 2.5, true)
+		_visual.draw_circle(center + Vector2(14, -10), 4, Color("7cc4f0"))

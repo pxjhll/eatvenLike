@@ -21,6 +21,8 @@ var welcome_button: Button
 var start_button: Button
 var status: Label
 var _pop: Tween
+var _web_loading: JavaScriptObject
+var _web_start_intro: JavaScriptObject
 
 
 func _ready() -> void:
@@ -34,19 +36,22 @@ func _ready() -> void:
 	frame.name = "PortraitFrame"
 	frame.size = BASE
 	add_child(frame)
-	welcome = LoadingView.new()
-	welcome.name = "Welcome"
-	welcome.size = BASE
-	frame.add_child(welcome)
-	welcome.set_progress(100, true)
+	if OS.has_feature("web"):
+		_web_loading = JavaScriptBridge.get_interface("EatventureLoading")
+	if _web_loading == null:
+		welcome = LoadingView.new()
+		welcome.name = "Welcome"
+		welcome.size = BASE
+		frame.add_child(welcome)
+		welcome.set_progress(100, true)
+		welcome_button = welcome.caption_button
+		welcome_button.name = "WelcomeButton"
+		welcome_button.tooltip_text = "播放片头"
+		welcome_button.accessibility_name = "开始营业，播放片头"
+		welcome_button.pressed.connect(begin_intro)
 	var final_path := "res://art/opening/final_web.png" if OS.has_feature("web") else "res://art/opening/final_native.png"
 	poster = _picture(load(final_path), "FinalFrame")
 	poster.hide()
-	welcome_button = welcome.caption_button
-	welcome_button.name = "WelcomeButton"
-	welcome_button.tooltip_text = "播放片头"
-	welcome_button.accessibility_name = "开始营业，播放片头"
-	welcome_button.pressed.connect(begin_intro)
 	start_button = Button.new()
 	start_button.name = "StartBusiness"
 	start_button.position = Vector2(145, 1150)
@@ -88,10 +93,11 @@ func _ready() -> void:
 	video.failed.connect(_finish_intro.bind(true), CONNECT_DEFERRED)
 	resized.connect(layout_frame)
 	layout_frame()
-	welcome_button.grab_focus()
-	if OS.has_feature("web"):
-		var loading := JavaScriptBridge.get_interface("EatventureLoading")
-		if loading != null: loading.ready()
+	if _web_loading != null:
+		_web_start_intro = JavaScriptBridge.create_callback(func(_args: Array) -> void: begin_intro())
+		_web_loading.ready(_web_start_intro)
+	else:
+		welcome_button.grab_focus()
 
 
 func _picture(texture: Texture2D, node_name: String) -> TextureRect:
@@ -117,21 +123,25 @@ func layout_frame() -> void:
 func begin_intro() -> void:
 	if phase != Phase.WELCOME: return
 	phase = Phase.PLAYING
-	welcome.sprite.pause()
-	welcome_button.disabled = true
-	welcome_button.hide()
+	if welcome != null:
+		welcome.sprite.pause()
+		welcome_button.disabled = true
+		welcome_button.hide()
 	video.play(frame, ShopAudio.music_enabled)
 
 
 func _video_started() -> void:
-	if phase == Phase.PLAYING:
+	if phase != Phase.PLAYING: return
+	if _web_loading != null:
+		_web_loading.release()
+	else:
 		welcome.hide()
 
 
 func _finish_intro(failed: bool) -> void:
 	if phase != Phase.PLAYING: return
 	phase = Phase.READY
-	welcome.hide()
+	if welcome != null: welcome.hide()
 	poster.show()
 	video.stop()
 	if failed:
@@ -139,6 +149,8 @@ func _finish_intro(failed: bool) -> void:
 	start_button.disabled = true
 	start_button.scale = Vector2.ONE * 0.08
 	start_button.show()
+	if _web_loading != null:
+		_web_loading.release(true)
 	_pop = create_tween()
 	_pop.tween_property(start_button, "scale", Vector2.ONE * 1.04, 0.30).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_pop.tween_property(start_button, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)

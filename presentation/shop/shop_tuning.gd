@@ -244,7 +244,7 @@ func fit_to_size(available: Vector2) -> void:
 
 func _mark() -> void:
 	if game.recorder == null: return
-	game.recorder.write({"t": int(game.rules.clock), "mark": true, "stage": game.rules.stage_index, "gold": game.rules.gold, "queue": game.rules.queue_size()})
+	game.recorder.log_mark()
 	game._show_toast("已标出，录制里会看到这个时间点")
 	refresh()
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://i2u1r58wu88"
-path="res://.godot/imported/drink_lemon_tea.png-792b8e2b1f071db61d7449627758313e.ctex"
+uid="uid://cgw1hfu5ul76w"
+path="res://.godot/imported/ham_fried_rice.png-96e8461063cf2e5631107ccb717de743.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ui/drink_lemon_tea.png"
-dest_files=["res://.godot/imported/drink_lemon_tea.png-792b8e2b1f071db61d7449627758313e.ctex"]
+source_file="res://art/stirfry/items/ham_fried_rice.png"
+dest_files=["res://.godot/imported/ham_fried_rice.png-96e8461063cf2e5631107ccb717de743.ctex"]
 
 [params]
 

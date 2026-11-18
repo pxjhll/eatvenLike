@@ -14,6 +14,7 @@ const UnlockFrame := preload("res://presentation/shop/unlock_frame.gd")
 const UpgradeBadge := preload("res://presentation/shop/upgrade_badge.gd")
 const TuningPanel := preload("res://presentation/shop/shop_tuning.gd")
 const Recorder := preload("res://presentation/shop/shop_recorder.gd")
+const FrameMonitor := preload("res://presentation/shop/shop_frame_monitor.gd")
 const DefaultHud := preload("res://presentation/shop/hud/default_hud.gd")
 const ArtGroups := preload("res://presentation/shop/art_groups.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
@@ -30,6 +31,8 @@ var session: RefCounted
 var shop: SpecShop
 var rules: ShopRules
 var view: ShopView
+var _art_groups: ArtGroups
+var _station_rects: Dictionary
 var _refresh_frame: Dictionary = {}
 var anchors: ShopAnchors
 var store: ShopSave
@@ -45,6 +48,7 @@ var guide: Control
 var guide_enabled := false
 var tuning: PanelContainer
 var recorder: RefCounted
+@onready var _frame_monitor: FrameMonitor = $Overlay/UI/FrameMonitor
 var selected_worker := 1
 var _speed_factor := 1.0
 var _autosave_elapsed := 0.0
@@ -63,9 +67,11 @@ var _sortables: Node2D
 var _z_by_y := false
 ## 店面缩放（世界单位 → 界面单位）
 var _ui_factor := 1.0
+var _fitted_viewport_size := Vector2.ZERO
 var _actors := {}
 var _customers := {}
 var _customer_positions := {}
+var _staff_route_presentation := RoutePresentation.new()
 var _customer_route_presentation := RoutePresentation.new()
 var _customer_orders := {}
 var _customer_entering := {}
@@ -202,6 +208,8 @@ func _ready() -> void:
 	guide.setup(self, guides_seen)
 	guide.enabled = guide_enabled
 	ui.start()
+	_art_groups = ArtGroups.new(art)
+	_station_rects = anchors.station_rects()
 	_build_world_labels()
 	_drag = DragController.new()
 	$Canvas.add_child(_drag)
@@ -215,6 +223,7 @@ func _ready() -> void:
 
 func _block_startup(message: String) -> void:
 	_startup_blocked = true
+	_frame_monitor.hide()
 	set_process(false)
 	set_process_unhandled_input(false)
 	rules = null
@@ -325,6 +334,7 @@ func restart() -> void:
 	_toast.hide()
 	_hint_text = ""
 	_reset_visuals()
+	_frame_monitor.reset()
 	if recorder != null: recorder.setup(view)
 	ui.open_page("shop")
 	_refresh(0.0)
@@ -336,6 +346,7 @@ func restart() -> void:
 
 func _reset_visuals() -> void:
 	_customer_animation_clock = 0.0
+	_staff_route_presentation = RoutePresentation.new()
 	ui.show_selection = false
 	if _dining != null: _dining.reset()
 	var roster := all_staff()
@@ -368,18 +379,26 @@ func frozen() -> bool:
 
 func _process(delta: float) -> void:
 	if rules == null or _startup_blocked or _transition_committed: return
+	var frame_started := Time.get_ticks_usec()
 	var before := rules.clock
 	if not frozen():
 		rules.step(minf(delta, 0.25) * _speed_factor)
+	var logic_finished := Time.get_ticks_usec()
 	var frame := view.render_snapshot()
-	if recorder != null: recorder.tick(rules.clock - before, frame)
+	var snapshot_finished := Time.get_ticks_usec()
 	_refresh(delta, frame)
 	guide.refresh(delta)
 	_refresh_event_notice()
-	_fit()
-	_toast_left = maxf(0, _toast_left - delta)
-	_toast.visible = _toast_left > 0 or not _staffing_warning().is_empty()
+	if get_viewport_rect().size != _fitted_viewport_size:
+		_fit()
+	elif tuning != null and tuning.visible:
+		tuning.fit_to_size($Overlay/UI.size)
 	_update_pops(delta)
+	var timings := Vector3i(logic_finished - frame_started, snapshot_finished - logic_finished,
+		Time.get_ticks_usec() - snapshot_finished)
+	var steps := maxi(0, roundi((rules.clock - before) / ShopRules.STEP))
+	_frame_monitor.record_frame(frame_started, timings, _actors.size(), _customers.size(), steps)
+	if recorder != null: recorder.tick(rules.clock - before, frame)
 	if store != null:
 		_autosave_elapsed += delta
 		if _autosave_elapsed >= 10.0:
@@ -403,15 +422,25 @@ func _refresh(delta: float, frame: Dictionary = {}) -> void:
 		var art_name := String(anchors.meta("Connections/" + id, "art", ""))
 		var belt := art.find_child(art_name, true, false) if not art_name.is_empty() else null
 		if belt != null and belt.get_meta("art_layer", "") == "belts": belt.visible = frame.belts.has(id)
+	var moving := 0.0 if frame.paused or frozen() else delta
+	var staff_motion: bool = frame.get("presentation_version") == 1 or shop.layout.motion_version == 1
+	if staff_motion:
+		_staff_route_presentation.advance(float(frame.clock), minf(moving, 0.25) * _speed_factor)
 	for worker in frame.workers:
 		if not _actors.has(worker.id):
 			var actor := _actor(String(worker.kind), _staff_height)
+			actor.y_sort_enabled = _sortables.y_sort_enabled
 			_sortables.add_child(actor)
 			_actors[worker.id] = actor
 		var actor: Node2D = _actors[worker.id]
 		actor.selected = ui.show_selection and int(worker.id) == selected_worker
-		actor.display(worker, frame.clock)
-		if _z_by_y: actor.z_index = int(actor.position.y)
+		var displayed: Vector2 = worker.pos
+		var pose_clock: float = frame.clock
+		if staff_motion and worker.walking:
+			displayed = _staff_route_presentation.point(worker, float(worker.get("speed", 0.0)) * shop.layout.motion_units)
+			pose_clock += _staff_route_presentation.age
+		actor.display(worker, pose_clock, displayed)
+		if _z_by_y: actor.z_index = int(displayed.y)
 		actor.task.visible = ui.show_selection and int(worker.id) == selected_worker and ui.page == "shop"
 		_show_put_down(worker)
 	for id in _put_items.keys():
@@ -443,9 +472,13 @@ func _refresh(delta: float, frame: Dictionary = {}) -> void:
 				owner = int(worker.id)
 				_post_labels[post].text = _t("chip_post_counter") if post == rules.counter_id else _t("chip_post")
 		_post_labels[post].visible = owner != -1
-	var staffing_warning := _staffing_warning(frame.workers)
-	if not staffing_warning.is_empty() and _toast_left <= 0: _toast.text = staffing_warning
-	var moving := 0.0 if frame.paused or frozen() else delta
+	_toast_left = maxf(0.0, _toast_left - delta)
+	var show_toast := _toast_left > 0.0
+	if not show_toast:
+		var warning := _staffing_warning(frame.workers)
+		show_toast = not warning.is_empty()
+		if show_toast: _toast.text = warning
+	_toast.visible = show_toast
 	_update_cups(frame)
 	_update_customers(moving, frame)
 	if _dining != null:
@@ -547,8 +580,8 @@ func _build_world_labels() -> void:
 		if rect.has_area(): _station_buttons["connection:" + id] = _frame(rect, buy_connection.bind(id))
 	if rules.dine_group() != null and anchors.has("Tables/" + rules.dine_group().id):
 		_station_buttons["seat"] = _frame(Rect2(), station_action.bind("seat", rules.counter_id))
-	for id in anchors.station_rects():
-		var region: Rect2 = anchors.station_rects()[id]
+	for id in _station_rects:
+		var region: Rect2 = _station_rects[id]
 		var mark := UpgradeBadge.new()
 		var spot := Vector2(region.end.x - 14, region.position.y + 14)
 		mark.center_on(anchors.point("Stations/%s/Mark" % id, spot))
@@ -666,12 +699,12 @@ func _refresh_station_signs() -> void:
 		var optional_available := prerequisite >= 0 and rules.is_open() and rules.stage_index >= prerequisite
 		frame.visible = not rules.station_unlocked(id) and (shop.stage_of(id) == next_stage or optional_available)
 		if not frame.visible: continue
-		var card := view.station(id)
-		frame.can_unlock = card.unlock.status.code == "ok"
-		frame.tooltip_text = String(card.description) + "\n" + String(card.unlock.error)
-		var title: String = card.unlock.title if st.params.get("frame_title", "") == "stage" else view.station_name(id)
-		frame.text = _t("frame_unlock", {"title": title, "cost": card.unlock.cost})
-	ArtGroups.refresh(art, view)
+		var sign := view.unlock_sign(id, shop.stage_of(id))
+		frame.can_unlock = sign.status.code == "ok"
+		frame.tooltip_text = String(st.description) + "\n" + String(sign.error)
+		var title: String = sign.title if st.params.get("frame_title", "") == "stage" else view.station_name(id)
+		frame.text = _t("frame_unlock", {"title": title, "cost": sign.cost})
+	_art_groups.update(view)
 	for id in _upgrade_marks:
 		var frame: Button = _station_buttons.get(id)
 		_upgrade_marks[id].visible = view.can_buy(id) and not (frame != null and frame.visible)
@@ -686,7 +719,7 @@ func _refresh_station_signs() -> void:
 	# 刚堵上的时候弹一次完整原因，目标栏里留短句
 	if not hint.is_empty() and _hint_text != String(hint.text): _show_toast(String(hint.text))
 	_hint_text = String(hint.get("text", ""))
-	var rects := anchors.station_rects()
+	var rects := _station_rects
 	_hint_ring.visible = rects.has(target)
 	if _hint_ring.visible:
 		_hint_ring.position = rects[target].position - Vector2(6, 6)
@@ -805,7 +838,7 @@ func _draw_cups(draws: Array) -> void:
 		sprite.visible = i < draws.size()
 		if not sprite.visible: continue
 		var row: Dictionary = draws[i]
-		var look := view.item_art(String(row.item))
+		var look := view.item_art(String(row.item), row.get("capability", "") == "dining_item")
 		var texture: Texture2D = look.texture
 		sprite.texture = texture
 		sprite.modulate = look.get("tint", Color.WHITE)
@@ -949,9 +982,8 @@ func _update_customers_motion(frame: Dictionary, delta := 0.0) -> void:
 		elif shop.fulfillment.handoff=="single" and row.state=="queue" and shop.fulfillment.leave_after>0:
 			patience = 1.0-float(row.wait)/shop.fulfillment.leave_after
 		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway,row.get("compact_order",false))
-		actor.display(pose,float(frame.clock)+_customer_route_presentation.age)
 		var displayed: Vector2 = pose.pos if row.seated else _customer_route_presentation.point(row,float(Presentation.customer_speed)*shop.layout.motion_units)
-		actor.set_render_position(displayed)
+		actor.display(pose,float(frame.clock)+_customer_route_presentation.age,displayed)
 		_customer_positions[key] = row.pos
 		if _z_by_y: actor.z_index = int(displayed.y)
 		else: actor.z_index = 1 if row.seated else 0
@@ -1212,7 +1244,10 @@ func _build_tuning() -> void:
 	recorder = Recorder.new()
 	recorder.enabled = session.recording_enabled
 	recorder.file_path = session.recording_path
+	recorder.performance_sample = _frame_monitor.snapshot
 	recorder.setup(view)
+	_frame_monitor.reset()
+	_frame_monitor.show()
 	var shade := ColorRect.new()
 	shade.name = "TuningShade"
 	shade.color = Color(0.12, 0.09, 0.065, 0.34)
@@ -1438,7 +1473,9 @@ func save_now(notify := true) -> Error:
 	_save_generation += 1
 	_autosave_elapsed = 0.0
 	session.speed = _speed_factor
+	var started := Time.get_ticks_usec()
 	var result: Error = session.save(guide.seen_list() if guide != null else [])
+	_frame_monitor.record_save(Time.get_ticks_usec() - started)
 	save_status = "进度已保存" if result == OK else session.last_error
 	if notify: _show_toast(save_status)
 	return result
@@ -1450,8 +1487,7 @@ func _show_toast(text: String) -> void:
 	_toast.visible = true
 
 
-func _staffing_warning(workers: Array = []) -> String:
-	if workers.is_empty(): workers = view.deployed_snapshot()
+func _staffing_warning(workers: Array) -> String:
 	if workers.is_empty(): return _t("no_staff")
 	if shop.staff.zones.is_empty(): return ""
 	for worker in workers:
@@ -1470,6 +1506,7 @@ func _fit() -> void:
 	var fitted_size := _world_size + Vector2(0, _top_margin)
 	var fitted: Dictionary = Presentation.fit(size, fitted_size, UI_WIDTH)
 	if fitted.is_empty(): return
+	_fitted_viewport_size = size
 	var world_factor := float(fitted.world_factor)
 	_world_factor = world_factor
 	_ui_factor = float(fitted.ui_factor)
@@ -1547,7 +1584,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if was_pan or _drag.worker_id != -1: return
 	# 点一下（没滚动）：打开点到的东西
 	var point: Vector2 = $Canvas.get_global_transform_with_canvas().affine_inverse() * event.position
-	var rects := anchors.station_rects()
+	var rects := _station_rects
 	for id in rects:
 		if rects[id].has_point(point):
 			ui.open_station(id)
@@ -1566,6 +1603,9 @@ func _opens_counter(point: Vector2) -> bool:
 
 
 func _notification(what: int) -> void:
+	if is_instance_valid(_frame_monitor) and what in [NOTIFICATION_APPLICATION_PAUSED,
+		NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_FOCUS_IN]:
+		_frame_monitor.break_frame_chain()
 	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST] and rules != null:
 		save_now(false)
 

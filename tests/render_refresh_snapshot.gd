@@ -2,6 +2,7 @@ extends SceneTree
 ## A scene refresh shares its detached frame with the staff HUD.
 class MeasuredView extends ShopView:
 	var frames := 0
+	var worker_card_reads := 0
 	var show_test_gold := false
 	var station_reads: Array[String] = []
 	func render_snapshot() -> Dictionary:
@@ -9,6 +10,10 @@ class MeasuredView extends ShopView:
 		var frame := super.render_snapshot()
 		if show_test_gold: frame.gold = 123456.0
 		return frame
+
+	func worker_card(worker: Dictionary) -> Dictionary:
+		worker_card_reads += 1
+		return super.worker_card(worker)
 
 	func station(id: String) -> Dictionary:
 		station_reads.append(id)
@@ -43,11 +48,20 @@ func _run() -> void:
 		if measured.frames!=10:
 			failures += 1
 			print("FAIL ",id," refresh builds ",measured.frames," frames for 10 refreshes")
-		for station_id in measured.station_reads:
-			if owner.station_unlocked(station_id) or shop.stage_of(station_id) != measured.next_stage():
-				failures += 1
-				print("FAIL ", id, " built a full station panel for a hidden unlock sign: ", station_id)
-				break
+		if not measured.station_reads.is_empty() or measured.worker_card_reads != 0:
+			failures += 1
+			print("FAIL ", id, " shop HUD built hidden staff or station cards")
+		scene.ui.show_selection = true
+		scene._refresh(0.0)
+		if measured.worker_card_reads != 1 or not scene.ui.get_node("%Selection").visible:
+			failures += 1
+			print("FAIL ", id, " selection summary should read only the selected worker")
+		scene.ui.open_page("staff")
+		if scene._staff_cards.size() != owner.roster.size() or scene.ui.get_node("%Selection").visible:
+			failures += 1
+			print("FAIL ", id, " staff page should show the current roster immediately")
+		scene.ui.show_selection = false
+		scene.ui.open_page("shop")
 		owner.workers[0].pos += Vector2(1,0)
 		if scene.all_staff()[0].pos!=owner.workers[0].pos:
 			failures += 1
@@ -56,9 +70,13 @@ func _run() -> void:
 		scene.recorder._clock = 59.9
 		measured.show_test_gold = true
 		measured.frames = 0
+		scene._toast_left = 0.0
 		scene._process(0.2)
 		var recorded: Dictionary = JSON.parse_string(scene.recorder.text().split("\n", false)[-1])
-		if measured.frames != 1 or recorded.get("gold") != 123456.0 or owner.gold == 123456.0:
+		if measured.frames != 1:
+			failures += 1
+			print("FAIL ", id, " builds ", measured.frames, " snapshots with no active toast")
+		if recorded.get("gold") != 123456.0 or owner.gold == 123456.0:
 			failures += 1
 			print("FAIL ", id, " recorder must sample the same detached frame as the scene")
 		scene.free()

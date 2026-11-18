@@ -132,21 +132,27 @@ func _rank(worker: Dictionary, candidates: Array, helping: bool) -> Array:
 	var runner: RefCounted = _runner_ref.get_ref()
 	var ranked: Array = []
 	var facts := _facts()
+	var distances := {}
+	var profile: String = runner.access_profile(worker)
+	var native := _native_rule(worker)
+	var helper := _helper_rule(worker)
+	var preferred: Dictionary = _leases.record(worker.id)
 	for index in candidates.size():
 		var candidate: Dictionary = candidates[index]
 		var request := request_for(candidate)
 		if request.is_empty() or not _station_allows(worker,request): continue
-		if not _permission(_native_rule(worker),request) and not (helping and _permission(_helper_rule(worker),request)): continue
-		if not _helper_rule(worker).is_empty() and not _claimable(worker,candidate): continue
+		if not _permission(native,request) and not (helping and _permission(helper,request)): continue
+		if not helper.is_empty() and not _claimable(worker,candidate): continue
 		var context := context_for_candidate(candidate, facts)
 		if not String(context.error).is_empty() or not can_start(worker, context.scope, int(candidate.get("run", -1))).is_empty(): continue
-		var path: PackedVector2Array = runner.owner.nav.path(worker.pos, runner.ports[candidate.from], runner.access_profile(worker))
-		if path.is_empty(): continue
-		var distance := 0.0
-		for point in range(1, path.size()): distance += path[point-1].distance_to(path[point])
+		var target: Vector2 = runner.ports[candidate.from]
+		if not distances.has(target):
+			var path: PackedVector2Array = runner.owner.nav.path(worker.pos, target, profile)
+			distances[target] = -1.0 if path.is_empty() else RuleNav.length(path)
+		var distance: float = distances[target]
+		if distance < 0.0: continue
 		var score: float = float(_definition.scores[candidate.category])
 		if int(candidate.get("progress", 0)) > 0: score += float(_definition.continuation_bonus)
-		var preferred: Dictionary = _leases.record(worker.id)
 		if not preferred.is_empty() and preferred.scope == context.scope: score += float(_definition.affinity_bonus)
 		score -= distance / float(runner.owner.shop.layout.motion_units) * float(_definition.travel_penalty)
 		ranked.append({"score":score, "index":index, "candidate":candidate.duplicate(true)})
@@ -166,11 +172,12 @@ func _claimable(worker: Dictionary, candidate: Dictionary) -> bool:
 			if task.kind=="operate" and task.run==candidate.run: return false
 		return true
 	if candidate.kind=="interact": return true
-	# Probe the same transactions offside; candidate queries must never reserve
-	# real stock or treat an impossible whole move as available native work.
-	var stock: RefCounted = runner.inventory.copy_for_probe()
+	var actor := "staff:"+str(worker.id)
+	var capacity: int = runner.owner.carry(worker)
 	if candidate.kind=="transfer":
-		return String(stock.reserve_transfer(worker.id,candidate.from,candidate.to,candidate.item,candidate.count,runner.owner.carry(worker),candidate.get("owner",-2),candidate.get("unit",-2)).error).is_empty()
+		return runner.inventory.transfer_offer(actor,candidate.from,candidate.to,candidate.item,candidate.count,capacity,
+			candidate.get("owner",Inventory.ANY_OWNER),candidate.get("unit",Inventory.ANY_OWNER)).error.is_empty()
+	var stock: RefCounted = runner.inventory.copy_for_probe()
 	var entries: Array = candidate.entries.duplicate(true)
 	for entry in entries: entry.erase("pickup_seconds")
 	return String(stock.reserve_bundle("staff:"+str(worker.id),entries,runner.owner.carry(worker)).error).is_empty()

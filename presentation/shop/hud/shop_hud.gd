@@ -261,13 +261,21 @@ func _row(parent: Node, separation := 12) -> HBoxContainer:
 	return row
 
 
+var _pill_backgrounds := {}
+
+
 func pill(label: Label, text: String, background: String, foreground: String) -> void:
 	label.text = text
-	var box := _style(background, background, 14, 0)
-	box.content_margin_top = 2
-	box.content_margin_bottom = 2
-	label.add_theme_stylebox_override("normal", box)
-	label.add_theme_color_override("font_color", Color(foreground))
+	if not _pill_backgrounds.has(background):
+		var box := _style(background, background, 14, 0)
+		box.content_margin_top = 2
+		box.content_margin_bottom = 2
+		_pill_backgrounds[background] = box
+	if label.get_theme_stylebox("normal") != _pill_backgrounds[background]:
+		label.add_theme_stylebox_override("normal", _pill_backgrounds[background])
+	var color := Color(foreground)
+	if not label.has_theme_color_override("font_color") or label.get_theme_color("font_color") != color:
+		label.add_theme_color_override("font_color", color)
 
 
 func _portrait(parent: Node, art: String, height: float) -> TextureRect:
