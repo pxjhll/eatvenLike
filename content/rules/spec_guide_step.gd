@@ -5,7 +5,7 @@ extends Resource
 ##   open / !open                 开张了没有
 ##   seen:<步骤> / !seen:<步骤>   看过某一步没有
 ##   page:shop、page:<页>、page:station:<机器>、!page:shop
-##   sold:0                       一杯都没卖
+##   sold:0 / sold>=N             已卖出的数量
 ##   staff>=opening / staff<opening   上岗人数够不够开张人数（min(2, 名额)）
 ##   waiting                      名册里有没派出去的人
 ##   can_hire / !can_hire         现在付得起招人
@@ -41,6 +41,7 @@ extends Resource
 ##   pause: false（不压暗、不停店，只指一下）
 ##   notice_seconds: 秒数（在顶栏下短暂显示提示，无箭头，店继续营业）
 ##   finish_after_notice: true（短提示只在店面且没有弹卡时计时，播完记为看过）
+##   heading: 可选标题；配有 portrait 时一并显示引导立绘。提示有 at 时也会指向目标
 @export var cues: Array[Dictionary] = []
 ## 填进文案和条件的值
 @export var params: Dictionary = {}
@@ -57,6 +58,10 @@ extends Resource
 @export var title: String = ""
 @export var title_size: int = 40
 @export var art: String = ""
+@export var portrait: Texture2D
+## 卡片把立绘放在文案右侧，并让立绘朝向文案。
+@export var portrait_right := false
+@export var subtitle: String = ""
 @export var medal: String = ""
 @export var rows: Array = []
 ## [[图标, 小标题, 值键]]，值键：time 用时、revenue 总营业额
@@ -66,6 +71,7 @@ extends Resource
 @export var cancel_label: String = ""
 ## 确认键另外做的事：leave = 打开结店总结去下一家店（去不了时只留取消键当主按钮）
 @export var confirm_action: String = ""
+## 卡片点确认后或提示达成条件时接着播放的步骤。
 @export var next: String = ""
 ## 说话的角色（默认三花猫店长）
 @export var speaker: String = "manager"

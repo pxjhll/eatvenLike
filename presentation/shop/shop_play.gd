@@ -524,12 +524,10 @@ func _refresh_event_notice() -> void:
 	if result.code != "ok": return
 	save_now(false)
 	ui.refresh()
-	var notice: String = card.title + "：" + card.text
+	var notice: String = card.text
 	if result.params.gold_granted > 0.0:
 		notice += "\n+%d 金币" % int(result.params.gold_granted)
-	var illustration: Texture2D = card.notice_portrait
-	var portrait: Texture2D = illustration if illustration != null else ui.portrait_texture(card.icon)
-	guide.show_announcement(notice, portrait, card.notice_seconds, illustration != null)
+	guide.show_announcement(card.title, notice, card.notice_seconds)
 
 
 func answer_event(choice: int, id: String) -> void:

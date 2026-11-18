@@ -44,6 +44,18 @@
 
 [ext_resource type="Resource" path="res://content/characters/staff/fox.tres" id="staff_fox"]
 [ext_resource type="Resource" path="res://content/characters/staff/parrot.tres" id="staff_parrot"]
+[ext_resource type="Texture2D" path="res://art/ui/tea_manager_portrait.png" id="manager_art"]
+
+[sub_resource type="AtlasTexture" id="Guide_manager_full"]
+atlas = ExtResource("manager_art")
+region = Rect2(242, 8, 788, 1246)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Guide_manager_hip"]
+atlas = ExtResource("manager_art")
+region = Rect2(270, 8, 770, 660)
+filter_clip = true
+
 [sub_resource type="Resource" id="Resource_ghdy6"]
 script = ExtResource("3_nwmtm")
 station = "soy_milk"
@@ -720,9 +732,13 @@ seen_when = Array[String](["open"])
 shop_page_only = false
 skip_tutorial = true
 style = "card"
-title = "欢迎来到煎饼果子摊"
-text = "早点摊刚支起来，先卖豆浆，攒钱再开鏊子、油锅、加料台和装袋。
-员工会自己接单，从接单一直做到递餐收钱。"
+title = "小摊交给你啦！"
+subtitle = "三花猫店长"
+portrait = SubResource("Guide_manager_full")
+text = "我准备出门旅行啦。
+这段时间，小摊就
+拜托你照看了！
+咱们先卖一杯豆浆吧。"
 confirm_label = "开始"
 cancel_label = "跳过引导"
 next = "opening"
@@ -731,26 +747,44 @@ next = "opening"
 script = ExtResource("12_p70m1")
 id = "opening"
 done_when = Array[String](["!sold:0"])
-seen_when = Array[String](["stage>=1"])
+seen_when = Array[String](["!sold:0", "stage>=1"])
 shop_page_only = false
+portrait = SubResource("Guide_manager_hip")
+params = {"stage": 0}
 cues = Array[Dictionary]([{
 "at": "ui:unlock",
 "if": ["!open", "page:station:soy_milk"],
-"text": "点「解锁」，花 10 金币开张"
+"text": "点「解锁」，花 {cost} 金币开张"
 }, {
 "go": "shop",
 "if": ["!open", "!page:shop"]
 }, {
 "at": "frame:soy_milk",
+"heading": "先点豆浆机",
 "if": ["!open"],
-"text": "点豆浆机，花 10 金币开张"
+"text": "花 {cost} 金币解锁，小摊就能开张。"
 }, {
+"heading": "开张啦！",
 "if": ["page:shop"],
 "notice_seconds": 3.0,
-"text": "员工会自动完成第一单"
+"text": "员工会自动完成第一单。"
 }])
 skip_label = "跳过引导"
 skip_tutorial = true
+next = "first_sale"
+
+[sub_resource type="Resource" id="Guide_first_sale"]
+script = ExtResource("12_p70m1")
+id = "first_sale"
+trigger = "next"
+portrait = SubResource("Guide_manager_hip")
+done_when = Array[String](["sold>=2", "stage>=1"])
+cues = Array[Dictionary]([{
+"finish_after_notice": true,
+"heading": "第一单卖出啦！",
+"notice_seconds": 3.0,
+"text": "干得好！攒些金币，就能开新设备。"
+}])
 
 [sub_resource type="Resource" id="Resource_f53vs"]
 script = ExtResource("12_p70m1")
@@ -768,15 +802,6 @@ cues = Array[Dictionary]([{
 "text": "一个人又收钱又摊饼，忙不过来了。
 招第二个人"
 }])
-
-[sub_resource type="Resource" id="Resource_wn2x6"]
-script = ExtResource("12_p70m1")
-id = "done"
-when = Array[String](["seen:hire"])
-style = "card"
-title = "开张完成"
-text = "之后每分钟回来看一眼就行：
-攒够钱开下一台；队伍排满了就招人；台子上出现红色 ↑ 就点它升级。"
 
 [sub_resource type="Resource" id="Resource_nqi46"]
 script = ExtResource("12_p70m1")
@@ -803,16 +828,13 @@ script = ExtResource("12_p70m1")
 id = "box_flour"
 when = Array[String](["box:flour", "box_affordable"])
 done_when = Array[String](["!box:flour", "!box_affordable"])
+portrait = SubResource("Guide_manager_hip")
 cues = Array[Dictionary]([{
-"at": "ui:material:flour",
-"if": ["page:station:raw_ingredients"],
-"text": "解锁{box}箱，{machine}才有原料"
-}, {
-"go": "shop",
-"if": ["!page:shop"]
-}, {
 "at": "frame:raw_ingredients",
-"text": "{machine}要用{box}：去原料台解锁{box}箱"
+"finish_after_notice": true,
+"heading": "鏊子等着用面粉",
+"notice_seconds": 4.0,
+"text": "去原料台买一箱面粉，就能开始摊饼。"
 }])
 
 [sub_resource type="Resource" id="Resource_h5pau"]
@@ -880,11 +902,15 @@ script = ExtResource("12_p70m1")
 id = "shop_done"
 when = Array[String](["complete"])
 style = "card"
-title = "完店了！"
-title_size = 56
+title = "煎饼摊毕业啦！"
+subtitle = "首店目标达成"
+title_size = 44
 medal = "medal"
-stats = [["clock", "用时", "time"], ["coin", "总营业额", "revenue"]]
-text = "可以去下一家店，也可以接着营业。"
+portrait = SubResource("Guide_manager_hip")
+portrait_right = true
+stats = [["clock", "完店用时", "time"], ["coin", "总营业额", "revenue"]]
+text = "你把小摊照看得真好！
+下一站，咱们去开奶茶店吧。"
 confirm_label = "去下一家店"
 cancel_label = "接着营业"
 confirm_action = "leave"
@@ -2033,7 +2059,7 @@ staff = SubResource("Resource_q5hjk")
 order_options = Array[ExtResource("27_kr8mi")]([SubResource("Resource_43m6u")])
 goals = SubResource("Resource_wtmls")
 layout = SubResource("Resource_rrmvw")
-guide = Array[ExtResource("12_p70m1")]([SubResource("Resource_3rjv3"), SubResource("Resource_2y8k5"), SubResource("Resource_f53vs"), SubResource("Resource_wn2x6"), SubResource("Resource_nqi46"), SubResource("Resource_x354x"), SubResource("Resource_h5pau"), SubResource("Resource_ow3tk"), SubResource("Resource_tg2y0"), SubResource("Resource_u2yoc"), SubResource("Resource_psx6r"), SubResource("Resource_alpd3"), SubResource("Resource_rbnse")])
+guide = Array[ExtResource("12_p70m1")]([SubResource("Resource_3rjv3"), SubResource("Resource_2y8k5"), SubResource("Guide_first_sale"), SubResource("Resource_x354x"), SubResource("Resource_f53vs"), SubResource("Resource_nqi46"), SubResource("Resource_h5pau"), SubResource("Resource_ow3tk"), SubResource("Resource_tg2y0"), SubResource("Resource_u2yoc"), SubResource("Resource_psx6r"), SubResource("Resource_alpd3"), SubResource("Resource_rbnse")])
 scene_path = "res://presentation/shops/pancake/pancake_art.tscn"
 background_music = ExtResource("music_theme")
 save_file = "shop_pancake_v2.json"

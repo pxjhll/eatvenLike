@@ -165,6 +165,7 @@ func _run() -> void:
 	veteran.free()
 	await _tea_contextual_guides()
 	await _pancake_first_sale()
+	await _pancake_late_guides()
 	await _pancake_roll_hint()
 	await _pancake_skip_tutorial(false)
 	await _pancake_skip_tutorial(true)
@@ -187,6 +188,9 @@ func _tea_contextual_guides() -> void:
 	guide = view.guide
 	_check(guide.active == "tea_opening_notice" and guide._show_notice and not view.frozen() and not hud.popups.has_card(),
 		"正式奶茶店直接进店面，开张提示不暂停、不弹卡")
+	var paper: StyleBoxFlat = guide._bubble.get_theme_stylebox("panel")
+	_check(is_equal_approx(paper.bg_color.a, 189.0 / 255.0) and not guide._dialogue_slot.visible,
+		"奶茶店短提示使用普通半透明气泡")
 	await _click(view._station_buttons.lemonade)
 	_check(hud.page == "station" and not guide._bubble.visible, "开张提示不挡设备面板，也不留在面板上")
 	await _click(hud.page_node("station").unlock_button)
@@ -251,8 +255,20 @@ func _pancake_first_sale() -> void:
 	await _reopen(view)
 	hud = view.ui
 	guide = view.guide
+	_check(hud.popups.current().get("portrait") is AtlasTexture and not hud.popups.current().portrait_right,
+		"煎饼摊欢迎卡使用店长全身立绘")
+	await _capture("calico-welcome")
 	await _click(hud.popups.button(hud.popups.primary_index()))
+	_check(guide._dialogue_visible and guide._dialogue_heading.text == "先点豆浆机" and guide.freezes(),
+		"豆浆机引导带店长和可点区域")
+	var paper: StyleBoxFlat = guide._bubble.get_theme_stylebox("panel")
+	_check(is_equal_approx(paper.bg_color.a, 189.0 / 255.0), "带店长的气泡使用半透明底板")
+	await _capture("calico-unlock")
 	await _click(view._station_buttons.soy_milk)
+	_check(guide._bubble.get_theme_stylebox("panel") == paper and not guide._dialogue_slot.visible
+		and not guide._dialogue_heading.visible and guide._bubble_text.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT,
+		"设备面板指引共用底板，收起立绘和空标题，正文左对齐")
+	await _capture("calico-plain-unlock")
 	await _click(hud.page_node("station").unlock_button)
 	await _click(hud.tab("shop"))
 	var employee: Node2D = view._actors[owner.workers[0].id]
@@ -261,15 +277,70 @@ func _pancake_first_sale() -> void:
 	var head := world_to_guide * (employee.position - Vector2(0, float(employee._height) * employee.scale.y))
 	_check(guide._bubble.visible and guide._bubble.position.y + guide._bubble.size.y < head.y, "首单提示在员工活动区上方")
 	_check(not guide.freezes() and guide._point == Vector2.INF, "首单提示无箭头，员工继续营业")
+	_check(guide._dialogue_visible and guide._dialogue_heading.text == "开张啦！", "等待首单沿用立绘提示")
+	await _capture("calico-waiting", 0.0)
 	var started_at := owner.clock
 	_run_until(func() -> bool: return not guide._bubble.visible, 3.5)
 	_check(owner.clock >= started_at + 2.75 and owner.clock <= started_at + 3.5 and owner.sold == 0, "首单提示约三秒收起，店铺时钟继续推进")
 	_run_until(func() -> bool: return owner.sold > 0, 30.0)
 	_check(owner.sold == 1 and guide.seen.has("opening"), "员工自动完成第一单并结束开张引导")
+	guide.refresh(0)
+	_check(guide.active == "first_sale" and guide._dialogue_visible and not guide.freezes(), "实际卖出首单才显示恭喜")
+	await _capture("calico-sold", 0.0)
+	guide.refresh(3.0)
+	guide.refresh(0.0)
+	_check(guide.seen.has("first_sale") and not guide._bubble.visible, "首单恭喜到时收起")
 	_check(employee.frame_actor.action == "idle" and employee.frame_actor.direction == 0, "首单收银后员工朝向柜台外的顾客")
 	_run_until(func() -> bool: return employee.frame_actor.action == "walk", 30.0)
 	_check(employee.frame_actor.action == "walk", "员工接到下一单后继续行走")
 	view.free()
+
+func _pancake_late_guides() -> void:
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	var owner := ShopRules.new(PANCAKE, 42)
+	owner.gold = 260
+	owner.unlock("soy_milk")
+	owner.unlock("rear_equipment")
+	owner.sold = 5
+	view.session = TestSession.make(PANCAKE, save_path + "-late-guide", owner)
+	view.session.guide_enabled = true
+	await _reopen(view)
+	hud = view.ui
+	guide = view.guide
+	_check(guide.seen.has("welcome") and guide.seen.has("opening") and guide.active == "box_flour",
+		"旧档跳过开张和首单，缺面粉时先显示原料提示")
+	_check(guide._dialogue_visible and guide._pointer_bounds.has_area() and not guide.freezes(), "面粉提示有箭头但继续营业")
+	await _capture("calico-daily", 0.0)
+	_check(guide._bubble.size.y < 180.0, "原料提示保持紧凑")
+	await _click(view._station_buttons.raw_ingredients)
+	_check(hud.page == "station" and not guide._bubble.visible, "原料台可以直接打开，面板不被遮住")
+	await _click(hud.page_node("station").material_buttons.flour)
+	_check(owner.boxes.flour and guide.seen.has("box_flour"), "原料买好即结束提示")
+	for step in PANCAKE.guide:
+		if step.id != "shop_done": guide.seen[step.id] = true
+	guide.active = ""
+	owner.clock = 1122.0
+	owner.completed_at = 1122.0
+	owner.revenue = 3260
+	owner.stage_index = PANCAKE.stages.size() - 1
+	for id in ["fryer", "topping", "bag"]: owner.unlocked[id] = true
+	for material in owner.boxes: owner.boxes[material] = true
+	owner.sold_by_dish = {"soy": 75, "plain": 42, "guozi": 31, "floss": 18, "family": 13}
+	owner.levels["soy_milk"] = 6
+	owner.levels["rear_equipment"] = 7
+	owner.levels["topping"] = 6
+	hud.open_page("shop")
+	guide.refresh(0)
+	var card: Dictionary = hud.popups.current()
+	_check(owner.shop_complete() and card.get("id") == "guide:shop_done" and card.get("portrait_right"),
+		"正式首店完店卡从右侧展示店长")
+	_check(card.get("stats", []) == [["clock", "完店用时", "18 分 42 秒"], ["coin", "总营业额", "3260 金币"]],
+		"完店数据来自经营记录")
+	await _capture("calico-completed", 0.0)
+	await _click(hud.popups.button(0))
+	_check(guide.seen.has("shop_done") and not hud.popups.has_card(), "接着营业关闭完店卡")
+	view.free()
+
 
 func _pancake_roll_hint() -> void:
 	view = load("res://presentation/shop/shop_play.tscn").instantiate()
@@ -415,9 +486,9 @@ func _drag(from: Vector2, to: Vector2) -> void:
 	await process_frame
 
 
-func _capture(suffix: String) -> void:
+func _capture(suffix: String, advance := 0.4) -> void:
 	if DisplayServer.get_name() == "headless": return
-	guide.refresh(0.4)
+	guide.refresh(advance)
 	await process_frame
 	await RenderingServer.frame_post_draw
 	_check(root.get_texture().get_image().save_png("user://shop-guide-" + suffix + ".png") == OK, "截图存好")
