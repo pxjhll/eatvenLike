@@ -15,13 +15,16 @@ var _peak_us := 0
 var _slow_frames := 0
 var _cpu_total := Vector3.ZERO
 var _cpu_peak := Vector3i.ZERO
+var _logic_steps := 0
+var _steps_peak := 0
+var _stepping_us := 0
 var _staff_peak := 0
 var _customers_peak := 0
 var _save_count := 0
 var _save_peak_us := 0
 
 
-func record_frame(start_us: int, cpu_us: Vector3i, staff: int, customers: int) -> void:
+func record_frame(start_us: int, cpu_us: Vector3i, staff: int, customers: int, steps: int) -> void:
 	var previous := _last_frame_us
 	_last_frame_us = start_us
 	if previous < 0 or start_us <= previous: return
@@ -32,6 +35,9 @@ func record_frame(start_us: int, cpu_us: Vector3i, staff: int, customers: int) -
 	if elapsed > SLOW_FRAME_USEC: _slow_frames += 1
 	_cpu_total += Vector3(cpu_us)
 	_cpu_peak = _cpu_peak.max(cpu_us)
+	_logic_steps += steps
+	_steps_peak = maxi(_steps_peak, steps)
+	if steps > 0: _stepping_us += cpu_us.x
 	_staff_peak = maxi(_staff_peak, staff)
 	_customers_peak = maxi(_customers_peak, customers)
 	_second_frames += 1
@@ -55,6 +61,8 @@ func snapshot(consume := false) -> Dictionary:
 		"frames": _frames, "fps_avg": snappedf(float(_frames) * USEC_PER_SECOND / _total_us, 0.01),
 		"frame_max_ms": _ms(_peak_us), "frames_over_33ms": _slow_frames,
 		"logic_avg_ms": _ms(float(_cpu_total.x) / _frames), "logic_max_ms": _ms(_cpu_peak.x),
+		"logic_steps": _logic_steps, "steps_max_per_frame": _steps_peak,
+		"logic_ms_per_step": _ms(float(_stepping_us) / _logic_steps) if _logic_steps > 0 else 0.0,
 		"snapshot_avg_ms": _ms(float(_cpu_total.y) / _frames), "snapshot_max_ms": _ms(_cpu_peak.y),
 		"scene_avg_ms": _ms(float(_cpu_total.z) / _frames), "scene_max_ms": _ms(_cpu_peak.z),
 		"staff_peak": _staff_peak, "customers_peak": _customers_peak,
@@ -89,6 +97,9 @@ func _reset_sample() -> void:
 	_slow_frames = 0
 	_cpu_total = Vector3.ZERO
 	_cpu_peak = Vector3i.ZERO
+	_logic_steps = 0
+	_steps_peak = 0
+	_stepping_us = 0
 	_staff_peak = 0
 	_customers_peak = 0
 	_save_count = 0

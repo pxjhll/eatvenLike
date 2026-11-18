@@ -23,7 +23,7 @@ var _titles: Array[Label] = []
 var _tags: Array[Label] = []
 var _levels: Array[Label] = []
 var _portraits: Array[TextureRect] = []
-var _signature := ""
+var _roster_ids: Array = []
 var _styled := -1
 var _selected_portrait: TextureRect
 var _selected_name: Label
@@ -101,14 +101,14 @@ func setup(view: Node2D, hud: Control) -> void:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
-func _rebuild() -> void:
+func _rebuild(roster: Array) -> void:
 	for child in _cards.get_children(): child.free()
 	_view._staff_cards.clear()
 	_titles.clear()
 	_tags.clear()
 	_levels.clear()
 	_portraits.clear()
-	for worker in _view.all_staff():
+	for worker in roster:
 		var card := Button.new()
 		card.custom_minimum_size = Vector2(0, 170)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -163,13 +163,8 @@ func _rebuild() -> void:
 		badge.offset_right = 2
 		badge.offset_bottom = 34
 		_view._staff_cards.append(card)
-	_signature = _roster_signature()
 	_styled = -1
 	_hud.relayout()
-
-
-func _roster_signature() -> String:
-	return str(_view.all_staff().map(func(worker: Dictionary) -> int: return int(worker.id)))
 
 
 func _status(worker: Dictionary) -> Array:
@@ -207,13 +202,28 @@ func affordable() -> bool:
 func refresh() -> void:
 	var rules: ShopRules = _view.rules
 	var view: ShopView = _view.view
-	var roster: Array = _view.all_staff()
-	if _signature != _roster_signature(): _rebuild()
 	var selection: Control = _hud.get_node("%Selection")
+	selection.visible = _hud.page == "shop" and _hud.show_selection
+	if _hud.page != "staff" and not selection.visible: return
+	var roster: Array = _view.all_staff()
+	if _hud.page == "staff":
+		var ids := roster.map(func(worker: Dictionary) -> int: return int(worker.id))
+		if ids != _roster_ids:
+			_rebuild(roster)
+			_roster_ids = ids
 	if roster.is_empty():
-		selection.visible = false
+		selection.hide()
 		return
 	var selected: Dictionary = roster[0]
+	if selection.visible:
+		for worker: Dictionary in roster:
+			if int(worker.id) == _view.selected_worker:
+				selected = worker
+				break
+		var summary := view.worker_card(selected)
+		selection.get_node("Row/Avatar").texture = _hud.portrait_texture(String(selected.kind))
+		selection.get_node("Row/Summary").text = "%s · %s\n%s" % [staff_name(selected, roster), summary.cultivation, summary.task]
+		return
 	for i in roster.size():
 		var worker: Dictionary = roster[i]
 		var is_selected: bool = int(worker.id) == _view.selected_worker
@@ -258,9 +268,5 @@ func refresh() -> void:
 	_recruit_portrait.texture = _hud.portrait_texture(next_kind)
 	var kind := view.staff_kind(next_kind)
 	_recruit_label.text = "%s · %s" % [Characters.NAMES.get(next_kind, kind.display_name), kind.role] + ("\n招来直接上岗" if room else "\n解锁新设备后有更多空位")
-	selection.visible = _hud.show_selection and _hud.page == "shop"
-	selection.get_node("Row/Avatar").texture = _hud.portrait_texture(String(selected.kind))
-	selection.get_node("Row/Summary").text = "%s · %s\n%s" % [staff_name(selected, roster), card.cultivation, card.task]
-	if _hud.page == "staff":
-		var slots := view.slots()
-		_hud.set_subtitle(view.text("staff_slots" if slots.has("front") else "staff_slots_all", slots, "店内 %d / %d" % [slots.used, slots.all]))
+	var slots := view.slots()
+	_hud.set_subtitle(view.text("staff_slots" if slots.has("front") else "staff_slots_all", slots, "店内 %d / %d" % [slots.used, slots.all]))

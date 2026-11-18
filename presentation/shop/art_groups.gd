@@ -11,18 +11,34 @@ const Module := preload("res://presentation/shop/modules/shop_module.gd")
 ##   dine_seats:<N>      至少有 N 个堂食座（没挂堂食组件的场景，桌椅按买到的座位数摆出来）
 ## 另外，带 follows 标记（指向另一个节点）的阴影、文字跟着那个节点显示。
 
-static func refresh(art: Node2D, view: ShopView) -> void:
-	var visibility := {}
-	var followers: Array[CanvasItem] = []
+var _modules: Array[Node] = []
+var _groups := {}
+var _rules := {}
+var _followers: Array[CanvasItem] = []
+
+
+func _init(art: Node2D) -> void:
 	for node in art.find_children("*", "CanvasItem", true, false):
-		if node.get_script()==Module: node.refresh_visual(view)
-		if node.has_meta("follows"): followers.append(node)
+		if node.get_script() == Module: _modules.append(node)
+		if node.has_meta("follows"): _followers.append(node)
 		if not node.has_meta("layout_group"): continue
 		var group: String = node.get_meta("layout_group")
-		if not visibility.has(group):
-			var rule: String = node.get_meta("unlock_rule", "always")
-			visibility[group] = view.art_visible(rule)
-		node.visible = visibility[group]
-	for node in followers:
+		if not _groups.has(group):
+			_groups[group] = []
+			_rules[group] = node.get_meta("unlock_rule", "always")
+		_groups[group].append(node)
+
+
+func update(view: ShopView) -> void:
+	for node in _modules: node.refresh_visual(view)
+	for group in _groups:
+		var visible := view.art_visible(_rules[group])
+		for node: CanvasItem in _groups[group]:
+			if node.visible != visible: node.visible = visible
+	for node in _followers:
 		var owner: Variant = node.get_meta("follows")
 		node.visible = owner is CanvasItem and is_instance_valid(owner) and (owner as CanvasItem).is_visible_in_tree()
+
+## One-shot projection for callers that assemble and inspect a scene.
+static func refresh(art: Node2D, view: ShopView) -> void:
+	new(art).update(view)

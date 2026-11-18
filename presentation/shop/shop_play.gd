@@ -31,6 +31,8 @@ var session: RefCounted
 var shop: SpecShop
 var rules: ShopRules
 var view: ShopView
+var _art_groups: ArtGroups
+var _station_rects: Dictionary
 var _refresh_frame: Dictionary = {}
 var anchors: ShopAnchors
 var store: ShopSave
@@ -206,6 +208,8 @@ func _ready() -> void:
 	guide.setup(self, guides_seen)
 	guide.enabled = guide_enabled
 	ui.start()
+	_art_groups = ArtGroups.new(art)
+	_station_rects = anchors.station_rects()
 	_build_world_labels()
 	_drag = DragController.new()
 	$Canvas.add_child(_drag)
@@ -392,7 +396,8 @@ func _process(delta: float) -> void:
 	_update_pops(delta)
 	var timings := Vector3i(logic_finished - frame_started, snapshot_finished - logic_finished,
 		Time.get_ticks_usec() - snapshot_finished)
-	_frame_monitor.record_frame(frame_started, timings, _actors.size(), _customers.size())
+	var steps := maxi(0, roundi((rules.clock - before) / ShopRules.STEP))
+	_frame_monitor.record_frame(frame_started, timings, _actors.size(), _customers.size(), steps)
 	if recorder != null: recorder.tick(rules.clock - before, frame)
 	if store != null:
 		_autosave_elapsed += delta
@@ -577,8 +582,8 @@ func _build_world_labels() -> void:
 		if rect.has_area(): _station_buttons["connection:" + id] = _frame(rect, buy_connection.bind(id))
 	if rules.dine_group() != null and anchors.has("Tables/" + rules.dine_group().id):
 		_station_buttons["seat"] = _frame(Rect2(), station_action.bind("seat", rules.counter_id))
-	for id in anchors.station_rects():
-		var region: Rect2 = anchors.station_rects()[id]
+	for id in _station_rects:
+		var region: Rect2 = _station_rects[id]
 		var mark := UpgradeBadge.new()
 		var spot := Vector2(region.end.x - 14, region.position.y + 14)
 		mark.center_on(anchors.point("Stations/%s/Mark" % id, spot))
@@ -696,12 +701,12 @@ func _refresh_station_signs() -> void:
 		var optional_available := prerequisite >= 0 and rules.is_open() and rules.stage_index >= prerequisite
 		frame.visible = not rules.station_unlocked(id) and (shop.stage_of(id) == next_stage or optional_available)
 		if not frame.visible: continue
-		var card := view.station(id)
-		frame.can_unlock = card.unlock.status.code == "ok"
-		frame.tooltip_text = String(card.description) + "\n" + String(card.unlock.error)
-		var title: String = card.unlock.title if st.params.get("frame_title", "") == "stage" else view.station_name(id)
-		frame.text = _t("frame_unlock", {"title": title, "cost": card.unlock.cost})
-	ArtGroups.refresh(art, view)
+		var sign := view.unlock_sign(id, shop.stage_of(id))
+		frame.can_unlock = sign.status.code == "ok"
+		frame.tooltip_text = String(st.description) + "\n" + String(sign.error)
+		var title: String = sign.title if st.params.get("frame_title", "") == "stage" else view.station_name(id)
+		frame.text = _t("frame_unlock", {"title": title, "cost": sign.cost})
+	_art_groups.update(view)
 	for id in _upgrade_marks:
 		var frame: Button = _station_buttons.get(id)
 		_upgrade_marks[id].visible = view.can_buy(id) and not (frame != null and frame.visible)
@@ -716,7 +721,7 @@ func _refresh_station_signs() -> void:
 	# 刚堵上的时候弹一次完整原因，目标栏里留短句
 	if not hint.is_empty() and _hint_text != String(hint.text): _show_toast(String(hint.text))
 	_hint_text = String(hint.get("text", ""))
-	var rects := anchors.station_rects()
+	var rects := _station_rects
 	_hint_ring.visible = rects.has(target)
 	if _hint_ring.visible:
 		_hint_ring.position = rects[target].position - Vector2(6, 6)
@@ -1581,7 +1586,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if was_pan or _drag.worker_id != -1: return
 	# 点一下（没滚动）：打开点到的东西
 	var point: Vector2 = $Canvas.get_global_transform_with_canvas().affine_inverse() * event.position
-	var rects := anchors.station_rects()
+	var rects := _station_rects
 	for id in rects:
 		if rects[id].has_point(point):
 			ui.open_station(id)
