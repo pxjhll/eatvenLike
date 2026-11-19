@@ -339,6 +339,11 @@ func adopt_restore(data: Dictionary, candidate: Dictionary) -> void:
 	last_error = ""
 
 func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictionary = {}, refresh_layout := false) -> Dictionary:
+	return _prepare_restore(data, dynamic, limits, refresh_layout, null)
+
+## The service and runner restore from the same detached stock. The runner
+## still verifies the declared places, machines and physical task bindings.
+func _prepare_restore(data: Dictionary, dynamic: Variant, limits: Dictionary, refresh_layout: bool, restored_stock: RefCounted) -> Dictionary:
 	if not Inventory._shape(data, {"version":0, "next_task":0, "ports":{}, "inventory":{}, "machines":{}, "tasks":[], "actors":[], "interactions":[]}): return {"error":"invalid capability state shape"}
 	var additions: Dictionary = _dynamic_places if dynamic == null else dynamic
 	var expected_ports := ports.duplicate(true)
@@ -361,9 +366,12 @@ func prepare_restore(data: Dictionary, dynamic: Variant = null, limits: Dictiona
 		for id in expected_ports:
 			if not data.ports.get(id) is Vector2 or not data.ports[id].is_finite(): return {"error":"invalid saved capability port"}
 	elif data.ports != expected_ports: return {"error":"capability version or ports differ"}
-	var stock := Inventory.new()
-	var error := stock.restore(data.inventory)
-	if not error.is_empty(): return {"error":error}
+	var stock := restored_stock
+	var error := ""
+	if stock == null:
+		stock = Inventory.new()
+		error = stock.restore(data.inventory)
+		if not error.is_empty(): return {"error":error}
 	for place in data.inventory.places:
 		if Inventory.is_hand_place(place): continue
 		if not expected_places.has(place) or data.inventory.places[place] != expected_places[place]: return {"error":"inventory definition differs from template"}

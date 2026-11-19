@@ -4,6 +4,9 @@ extends RefCounted
 
 var areas: Array[Rect2i] = []
 var blocked_cells: Array[Vector2i] = []
+var _profile_cells: Variant = null
+var _profile_edges: Dictionary[Vector3i, bool] = {}
+const DIRECTIONS := [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]
 
 
 func contains_cell(cell: Vector2i) -> bool:
@@ -12,12 +15,27 @@ func contains_cell(cell: Vector2i) -> bool:
 	return false
 
 
+## Profile grids belong to one obstacle topology. Cache directed edges as BFS
+## reaches them so creating a grid does not pay for routes nobody will use.
+func prepare_profile(size: Vector2i, can_occupy: Callable) -> void:
+	_profile_cells = {}
+	_profile_edges.clear()
+	for y in size.y:
+		for x in size.x:
+			var cell := Vector2i(x, y)
+			if can_occupy.call(cell): _profile_cells[cell] = true
+
+
 ## 四方向广度优先搜索。包含起终点；不可达返回空数组。
 func find_path(from_cell: Vector2i, to_cell: Vector2i, can_step: Callable = Callable()) -> Array[Vector2i]:
 	var obstacles := {}
 	for cell in blocked_cells:
 		obstacles[cell] = true
-	if not contains_cell(from_cell) or not contains_cell(to_cell) or obstacles.has(from_cell) or obstacles.has(to_cell):
+	var has_edge_check := can_step.is_valid()
+	var profiled := _profile_cells != null and has_edge_check
+	if profiled:
+		if not _profile_cells.has(from_cell) or not _profile_cells.has(to_cell): return []
+	elif not contains_cell(from_cell) or not contains_cell(to_cell) or obstacles.has(from_cell) or obstacles.has(to_cell):
 		return []
 	var previous := {}
 	previous[from_cell] = from_cell
@@ -33,12 +51,20 @@ func find_path(from_cell: Vector2i, to_cell: Vector2i, can_step: Callable = Call
 				path.append(current)
 			path.reverse()
 			return path
-		for direction in [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]:
-			var next: Vector2i = current + direction
-			if contains_cell(next) and not obstacles.has(next) and not previous.has(next):
-				if can_step.is_valid() and not can_step.call(current,next): continue
-				previous[next] = current
-				frontier.append(next)
+		for direction in DIRECTIONS.size():
+			var next: Vector2i = current + DIRECTIONS[direction]
+			if previous.has(next): continue
+			if profiled:
+				if not _profile_cells.has(next): continue
+				var edge := Vector3i(current.x, current.y, direction)
+				if not _profile_edges.has(edge): _profile_edges[edge] = can_step.call(current, next)
+				if not _profile_edges[edge]: continue
+			elif not contains_cell(next) or obstacles.has(next):
+				continue
+			elif has_edge_check and not can_step.call(current, next):
+				continue
+			previous[next] = current
+			frontier.append(next)
 	return []
 
 

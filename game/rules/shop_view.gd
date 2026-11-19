@@ -130,6 +130,16 @@ func deployed_count() -> int:
 	return rules.workers.size()
 
 
+func has_idle_staff() -> bool:
+	for worker in rules.workers:
+		if rules.worker_idle(worker): return true
+	return false
+
+
+func waiting_customer_count() -> int:
+	return rules.waiting_customers().size()
+
+
 func is_deployed(id: int) -> bool:
 	var worker := rules.worker_by_id(id)
 	return not worker.is_empty() and bool(worker.deployed)

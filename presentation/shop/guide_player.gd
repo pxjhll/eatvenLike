@@ -443,10 +443,7 @@ func _holds(condition: String) -> bool:
 		"can_hire": return rules.hire_cost() >= 0 and rules.gold >= rules.hire_cost()
 		"can_staff": return not _waiting().is_empty() or (rules.hire_cost() >= 0 and rules.gold >= rules.hire_cost())
 		"can_send_flyers": return rules.shop.flyer != null and rules.command_status("send_flyers").code == "ok"
-		"idle_staff":
-			for worker in rules.workers:
-				if rules.worker_idle(worker): return true
-			return false
+		"idle_staff": return view.has_idle_staff()
 		"affordable": return rules.command_status("unlock", {"id": arg}).code == "ok"
 		"box": return rules.pending_box() == arg
 		"box_affordable": return not rules.pending_box().is_empty() and rules.command_status("unlock_box", {"material": rules.pending_box()}).code == "ok"
@@ -468,7 +465,7 @@ func _number(name: String) -> float:
 		"opening": return mini(2, rules.staff_slots())
 		"stage": return rules.stage_index
 		"sold": return rules.sold
-		"customers": return rules.waiting_customers().size()
+		"customers": return _view.view.waiting_customer_count()
 		"kitchen_staff": return rules.kitchen_staff()
 	return float(name) if name.is_valid_float() else 0.0
 

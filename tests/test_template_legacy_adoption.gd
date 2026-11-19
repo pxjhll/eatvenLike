@@ -13,8 +13,11 @@ func test_active_legacy_snapshots_convert_to_one_valid_public_state_without_rese
 			if not error.is_empty(): continue
 			var saved := owner.to_dict()
 			check_eq(saved.get("version"),2,"old format is actually replaced")
-			for key in ["gold","revenue","sold","boxes","seats","completed_at"]:
+			for key in ["gold","revenue","sold","boxes","completed_at"]:
 				check_eq(saved.outer[key],old[key],id+": preserve "+key)
+			var expected_seats: Dictionary = old.seats.duplicate()
+			if id == "tea": expected_seats.dine = maxi(4, int(expected_seats.dine))
+			check_eq(saved.outer.seats, expected_seats, id+": retain purchased seats and grant the current tea opening tier")
 			var expected_levels: Dictionary = old.levels.duplicate()
 			if id=="stirfry":
 				expected_levels.erase("plating")
