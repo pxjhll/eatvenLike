@@ -566,6 +566,9 @@ static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dic
 		var p := "seat_groups[%d]" % i
 		_enum(seat.purpose, ["dine", "wait"], p + ".purpose", errors)
 		for key in ["start", "seconds", "patience"]: _number(seat.get(key), p + "." + key, errors)
+		_number(seat.full_dining_tip, p + ".full_dining_tip", errors)
+		if seat.full_dining_tip > 0 and seat.purpose != "dine":
+			_error(errors, p + ".full_dining_tip", "Only dining seats can grant tips.")
 		_number(seat.step, p + ".step", errors, 0, true)
 		for n in seat.costs.size(): _number(seat.costs[n], p + ".costs[%d]" % n, errors)
 		for n in seat.steps.size(): _number(seat.steps[n], p + ".steps[%d]" % n, errors, 0, true)
@@ -615,6 +618,7 @@ static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dic
 		var p := "guide[%d]" % i
 		_enum(guide.trigger, ["start", "angry", "next"], p + ".trigger", errors)
 		_enum(guide.style, ["hint", "card"], p + ".style", errors)
+		_number(guide.when_seconds, p + ".when_seconds", errors)
 		_ref(guide.next, c.guides, p + ".next", errors, true)
 		for n in guide.cues.size():
 			var cue: Dictionary = guide.cues[n]

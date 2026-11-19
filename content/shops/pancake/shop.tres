@@ -948,6 +948,18 @@ cues = Array[Dictionary]([{
 }])
 skip_label = "知道了"
 
+[sub_resource type="Resource" id="Guide_flyer_low_traffic"]
+script = ExtResource("12_p70m1")
+id = "flyer_low_traffic"
+when = Array[String](["sold>=2", "no_box", "!complete", "can_send_flyers", "idle_staff", "customers<2"])
+when_seconds = 8.0
+done_when = Array[String](["!can_send_flyers", "!page:shop", "complete"])
+cues = Array[Dictionary]([{
+"finish_after_notice": true,
+"notice_seconds": 4.0,
+"text": "客人有点少，点前台免费发传单，招些客人来！"
+}])
+
 [sub_resource type="AtlasTexture" id="Serving_plain"]
 atlas = ExtResource("pancake_servings")
 region = Rect2(0, 0, 112, 132)
@@ -2054,7 +2066,7 @@ staff = SubResource("Resource_q5hjk")
 order_options = Array[ExtResource("27_kr8mi")]([SubResource("Resource_43m6u")])
 goals = SubResource("Resource_wtmls")
 layout = SubResource("Resource_rrmvw")
-guide = Array[ExtResource("12_p70m1")]([SubResource("Resource_3rjv3"), SubResource("Resource_2y8k5"), SubResource("Guide_first_sale"), SubResource("Resource_x354x"), SubResource("Resource_f53vs"), SubResource("Resource_nqi46"), SubResource("Resource_h5pau"), SubResource("Resource_ow3tk"), SubResource("Resource_tg2y0"), SubResource("Resource_u2yoc"), SubResource("Resource_psx6r"), SubResource("Resource_alpd3"), SubResource("Resource_rbnse")])
+guide = Array[ExtResource("12_p70m1")]([SubResource("Resource_3rjv3"), SubResource("Resource_2y8k5"), SubResource("Guide_first_sale"), SubResource("Resource_x354x"), SubResource("Resource_f53vs"), SubResource("Resource_nqi46"), SubResource("Resource_h5pau"), SubResource("Resource_ow3tk"), SubResource("Resource_tg2y0"), SubResource("Resource_u2yoc"), SubResource("Resource_psx6r"), SubResource("Resource_alpd3"), SubResource("Resource_rbnse"), SubResource("Guide_flyer_low_traffic")])
 scene_path = "res://presentation/shops/pancake/pancake_art.tscn"
 background_music = ExtResource("music_theme")
 save_file = "shop_pancake_v2.json"

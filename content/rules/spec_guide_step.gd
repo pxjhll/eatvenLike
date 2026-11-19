@@ -10,10 +10,14 @@ extends Resource
 ##   waiting                      名册里有没派出去的人
 ##   can_hire / !can_hire         现在付得起招人
 ##   can_staff                    有人可派或者付得起招人
+##   can_send_flyers              现在可以发传单
+##   customers<N / customers>=N   排队和等餐的顾客数
+##   idle_staff                   有员工手上没活
 ##   stage>=N / stage<N           阶段
 ##   affordable:<机器>            这台机器现在能解锁
 ##   box:<物料>                   正在等买这一箱，box_affordable 现在买得起
 ##   processing:<设备>            已接且未交付的订单需要该设备加工
+##   dining_seat_shortage        有顾客没座、堂食已满，且还有座位可以买
 ##   no_box                       没有待买的原料箱
 ##   kitchen_staff:0 / kitchen_staff>0
 ##   room / !room                 还有员工名额
@@ -27,6 +31,8 @@ extends Resource
 @export var trigger: String = "start"
 ## 开始条件（都满足）
 @export var when: Array[String] = []
+## 开始条件要连续满足多少营业秒。其他引导、弹卡和离开店面会重置等待。
+@export var when_seconds: float = 0.0
 ## 满足其中一条就结束（记为看过）
 @export var done_when: Array[String] = []
 ## 满足其中一条就直接记为看过、不弹（读到已经玩过这段的存档）

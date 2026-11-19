@@ -281,8 +281,10 @@ func _migrate_retired_staff() -> void:
 	hire_pool = available
 
 
-## Refresh only definition caches. Jobs, timers, stock and event effects stay recorded.
+## Refresh definition caches and grant any newly included starting seats.
 func _refresh_content_values() -> void:
+	for group in shop.seat_groups:
+		seats[group.id] = maxi(int(seats.get(group.id, 0)), group.start)
 	var previous := mods.entries.duplicate(true)
 	mods.entries = []
 	_refresh_all_modifiers()
@@ -715,6 +717,11 @@ func dine_group() -> SpecSeatGroup:
 func seat_total() -> int:
 	var g := dine_group()
 	return int(seats.get(g.id, 0)) if g != null else 0
+
+
+func dining_tip(seat_count: int) -> int:
+	var group := dine_group()
+	return group.full_dining_tip if group != null and group.full_dining_tip > 0 and seat_count >= seat_cap(group) else 0
 
 
 ## 能花钱买的那组座位（写了 costs 的第一组）：奶茶店是堂食座，煎饼摊是等位坐垫

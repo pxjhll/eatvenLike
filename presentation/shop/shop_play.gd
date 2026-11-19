@@ -90,6 +90,7 @@ var _toast: Label
 var _toast_left := 0.0
 var _last_sold := 0
 var _last_revenue := 0
+var _pending_dining_tip := 0
 ## 世界里能点的虚线框：机器 id / "connection:<id>" / "seat"
 var _station_buttons := {}
 var _upgrade_marks := {}
@@ -214,6 +215,7 @@ func _ready() -> void:
 	_drag = DragController.new()
 	$Canvas.add_child(_drag)
 	_drag.setup(self)
+	rules.events.on("sale", _on_sale)
 	_reset_visuals()
 	_refresh(0.0)
 	_fit()
@@ -366,6 +368,7 @@ func _reset_visuals() -> void:
 	_cups.clear()
 	_last_sold = rules.sold
 	_last_revenue = int(rules.revenue)
+	_pending_dining_tip = 0
 	for pop in _pops: pop.label.free()
 	_pops.clear()
 
@@ -450,11 +453,15 @@ func _refresh(delta: float, frame: Dictionary = {}) -> void:
 		var open := rules.station_unlocked(id)
 		var working: bool = status.get("working", false)
 		var need: String = status.get("need", "")
-		_bars[id].visible = open and working
-		_bars[id].value = float(status.get("progress", 0.0))
-		_badges[id].text = need
-		_badges[id].visible = open and not working and not need.is_empty()
-		_badges[id].tooltip_text = "%s · 输入 %d · 加工 %d · 输出 %d" % [view.station_name(id), status.get("input", 0), status.get("processing", 0), status.get("output", 0)]
+		var awaiting_stir: bool = status.get("phase", "") == "await_stir"
+		var bar: ProgressBar = _bars[id]
+		bar.visible = open and (working or awaiting_stir)
+		bar.value = float(status.get("progress", 0.0))
+		var badge: Label = _badges[id]
+		badge.text = need
+		badge.visible = open and not working and not need.is_empty()
+		if badge.visible: badge.position.y = bar.position.y + (bar.size.y + 3.0 if awaiting_stir else -6.0)
+		badge.tooltip_text = "%s · 输入 %d · 加工 %d · 输出 %d" % [view.station_name(id), status.get("input", 0), status.get("processing", 0), status.get("output", 0)]
 	if _shelf != null:
 		_shelf.visible = not frame.has("presentation_version") or frame.get("counters",{}).has("shelf")
 		if _shelf.visible:
@@ -485,7 +492,9 @@ func _refresh(delta: float, frame: Dictionary = {}) -> void:
 		if frame.has("movement"):
 			_dining.refresh_authoritative(rules.seat_total(),frame.movement.customers.values())
 		else: _dining.refresh(rules.seat_total(), frame.diners, _font, _customer_animation_clock, moving)
-	if frame.sold > _last_sold: _pop_income(int(frame.revenue) - _last_revenue)
+	if frame.sold > _last_sold:
+		_pop_income(int(frame.revenue) - _last_revenue, _pending_dining_tip)
+		_pending_dining_tip = 0
 	_last_sold = frame.sold
 	_last_revenue = int(frame.revenue)
 
@@ -761,10 +770,15 @@ func _sale_point() -> Vector2:
 	return anchors.point("Counter/Sale", Vector2(_world_size.x / 2.0, _world_size.y / 2.0))
 
 
-func _pop_income(amount: int) -> void:
+func _on_sale(sale: Dictionary) -> void:
+	_pending_dining_tip += int(sale.get("tip", 0))
+
+
+func _pop_income(amount: int, tip := 0) -> void:
 	if amount <= 0: return
 	var label := _label($Canvas/WorldLabels, _sale_point(), 30)
 	label.text = "+%d" % amount
+	if tip > 0: label.text += "\n堂食小费 +%d" % tip
 	label.add_theme_color_override("font_color", Color("8b6446"))
 	var coin := TextureRect.new()
 	coin.texture = preload("res://art/ui/coin_small.png")
@@ -1612,6 +1626,7 @@ func _notification(what: int) -> void:
 
 func _exit_tree() -> void:
 	if rules != null:
+		rules.events.off("sale", _on_sale)
 		ShopAudio.leave_shop(rules.events)
 		save_now(false)
 
