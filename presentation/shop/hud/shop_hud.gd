@@ -47,9 +47,9 @@ func setup(view: Node2D) -> void:
 		refresh())
 	%Shade.gui_input.connect(func(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			open_page("shop")
+			_dismiss_page()
 		elif event is InputEventScreenTouch and event.pressed:
-			open_page("shop"))
+			_dismiss_page())
 	bind_action($Selection/Row/Details, open_page.bind("staff"))
 	bind_action($Selection/Row/Dismiss, func() -> void: show_selection = false; refresh())
 	popups = PopupQueue.new()
@@ -79,7 +79,9 @@ func register_tab(id: String, label: String, icon: String, page_id := "") -> But
 	button.add_theme_constant_override("h_separation", 14)
 	button.add_theme_font_size_override("font_size", 32)
 	var target := page_id if not page_id.is_empty() else id
-	bind_action(button, open_page.bind(target))
+	if target == "fortune":
+		bind_action(button, func() -> void: open_page("fortune" if page == "shop" else "shop"))
+	else: bind_action(button, open_page.bind(target))
 	%Tabs.add_child(button)
 	_tabs.append({"id": id, "page": target, "button": button})
 	_style_tabs()
@@ -107,6 +109,14 @@ func register_page(id: String, node: Control, options := {}) -> Control:
 	_page_nodes[id] = column
 	_pages[id] = {"node": node, "options": options}
 	return column
+
+
+func register_overlay(id: String, node: Control) -> void:
+	add_child(node)
+	move_child(node, popups.get_index())
+	node.visible = false
+	_page_nodes[id] = node
+	_pages[id] = {"node":node, "options":{"overlay":true}}
 
 
 func page_node(id: String) -> Control:
@@ -322,6 +332,12 @@ func open_station(id: String) -> void:
 	open_page("station")
 
 
+func _dismiss_page() -> void:
+	var node := page_node(page)
+	if node != null and node.has_method("dismiss"): node.dismiss()
+	else: open_page("shop")
+
+
 func open_page(next_page: String) -> void:
 	if next_page != "shop" and not _pages.has(next_page):
 		return
@@ -331,7 +347,7 @@ func open_page(next_page: String) -> void:
 	var options: Dictionary = _pages[page].options if _pages.has(page) else {}
 	%Shade.visible = page != "shop"
 	%Shade.color.a = 0.34
-	%Sheet.visible = page != "shop"
+	%Sheet.visible = page != "shop" and not options.get("overlay", false)
 	%Title.text = String(options.get("title", ""))
 	var big: bool = options.get("big", false)
 	%Title.add_theme_font_size_override("font_size", 44 if big else 34)
@@ -385,7 +401,7 @@ func heading_icon() -> TextureRect:
 
 ## 面板跟内容一样高，最多占大半屏，短页面上方还看得见店
 func _fit_sheet() -> void:
-	if page == "shop" or _sheet_space == Vector2.ZERO:
+	if not %Sheet.visible or _sheet_space == Vector2.ZERO:
 		return
 	var options: Dictionary = _pages[page].options if _pages.has(page) else {}
 	var margin: MarginContainer = %Sheet.get_node("Margin")

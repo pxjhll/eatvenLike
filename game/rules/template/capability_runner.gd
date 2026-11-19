@@ -256,7 +256,7 @@ func step(dt: float, paused := false) -> String:
 		if not worker.deployed or tasks[id].profile != access_profile(worker) or (dispatcher != null and not dispatcher.allowed_task(worker, tasks[id], machines)):
 			var revoked := cancel(id)
 			if not revoked.is_empty(): return revoked
-	var error: String = machines.advance(dt)
+	var error: String = machines.advance(dt, false, 1.5 if owner.clock + 0.00001 < owner.lucky.machine_until else 1.0)
 	if not error.is_empty(): return error
 	last_error = ""
 	for worker in owner.workers:

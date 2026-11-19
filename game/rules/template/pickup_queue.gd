@@ -49,7 +49,7 @@ func targets(state: Dictionary, deliveries: Array, before_order := -1, counter_d
 	var targets := {}
 	for guest in state.guests:
 		if guest.state!="waiting" or carrying.has(guest.order): continue
-		if before_order>=0 and guest.order>=before_order and (guest.request.is_empty() or guest.request[0].dish not in counter_dishes): continue
+		if not guest.get("regular", false) and before_order>=0 and guest.order>=before_order and (guest.request.is_empty() or guest.request[0].dish not in counter_dishes): continue
 		if targets.size()>=_ports.size(): return {"targets":{},"error":"waiting customers exceed declared pickup points"}
 		var rank := targets.size()
 		targets[guest.id] = "queue:"+str(rank) if mixed_line and rank>0 else _ports[rank]

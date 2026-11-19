@@ -2,6 +2,8 @@ extends RefCounted
 const OrderState := preload("res://game/rules/rule_orders.gd")
 ## Owns sales counters and settlement arithmetic. Rules sequences external effects.
 
+const Fortunes := preload("res://game/rules/shop_fortunes.gd")
+var lucky := Fortunes.new()
 var gold := 0.0
 var revenue := 0.0
 var sold := 0
@@ -43,7 +45,8 @@ func credit_order(total: float, tip := 0) -> Dictionary:
 	var earned: float = total + sale_carry
 	var income: int = floori(earned + 0.0001)
 	sale_carry = maxf(0.0, earned - income)
-	income += tip
+	var extra := lucky.receipt(income)
+	income += tip + extra
 	gold += income
 	revenue += income
-	return {"income": income}
+	return {"income": income, "fortune_bonus": extra} if extra > 0 else {"income": income}

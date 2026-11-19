@@ -2,6 +2,7 @@ extends RefCounted
 ## 默认的 HUD 装配（规格 §6.2.1）：底部三个页签、各个面板页、顶栏下面的瓶颈提示和加成图标。
 ## 新玩法要加页签、面板页或小部件，另写一个组件再 register_* 进来，不用改 HUD 核心。
 
+const FortunePage := preload("res://presentation/shop/hud/fortune_page.gd")
 const StationPage := preload("res://presentation/shop/hud/station_page.gd")
 const GoalsPage := preload("res://presentation/shop/hud/goals_page.gd")
 const StaffPage := preload("res://presentation/shop/hud/staff_page.gd")
@@ -18,7 +19,13 @@ const TABS := [["shop", "店铺", "shop", "shop"], ["goals", "目标", "goals", 
 static func install(view: Node2D, hud: Control) -> void:
 	var texts: ShopView = view.view
 	for row in TABS:
-		hud.register_tab(row[0], texts.text("tab_" + row[0], {}, row[1]), row[2], row[3])
+		if row[0] == "shop":
+			var button: Button = hud.register_tab("shop", "抽签", "shop", "fortune")
+			button.icon = FortunePage.ART.box
+		else: hud.register_tab(row[0], texts.text("tab_" + row[0], {}, row[1]), row[2], row[3])
+	var fortune := FortunePage.new()
+	hud.register_overlay("fortune", fortune)
+	fortune.setup(view, hud)
 	_page(view, hud, "station", StationPage.new(), {"title": "设备", "icon": "hat"})
 	_page(view, hud, "goals", GoalsPage.new(), {"title": "目标", "icon": "goals"})
 	_page(view, hud, "staff", StaffPage.new(), {"title": "员工", "icon": "staff", "big": true, "bottom": 78.0})
