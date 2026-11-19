@@ -58,12 +58,14 @@ func _run() -> void:
 	# Both dishes must follow the actor occlusion together during delivery.
 	worker["presentation_version"] = 1
 	worker["held_items"] = [{"item":"black_tea"},{"item":"lemonade"}]
-	for facing in [4, 0, 3, 7, 5, 2]:
+	for facing in [4, 0, 3, 7, 5, 2, 6, 1]:
 		actor.frame_actor.set_direction(facing)
 		for i in 4:
 			actor.display(worker, clock + 0.2)
 			var layer: Node2D = actor.carried.get_parent()
 			var second: Sprite2D = actor._held_sprites[0]
+			var horizontal_spacing: float = second.position.x - actor.carried.position.x
+			_check(is_equal_approx(horizontal_spacing, -18.0 if facing > 4 else 18.0), "second dish stacks outward after turning")
 			_check((layer.get_index() < actor.frame_actor.get_index()) == (facing in [3, 4, 5]), "carried food occlusion stays stable across repeated draws")
 			_check(second.get_parent() == layer and actor.carried.get_index() < second.get_index(), "both dishes retain their order while turning")
 	actor.free()

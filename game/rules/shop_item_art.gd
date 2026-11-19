@@ -16,6 +16,8 @@ static func appearance(shop: SpecShop, id: String, dining := false) -> Dictionar
 		if dining and item.dining_texture != null:
 			return {"art": "", "tint": Color.WHITE, "texture": item.dining_texture}
 		look = {"art": item.art, "tint": item.tint, "texture": item.icon}
+		if not is_zero_approx(item.held_front_drop):
+			look.held_front_drop = item.held_front_drop
 	look.texture = texture_from_look(look)
 	return look
 

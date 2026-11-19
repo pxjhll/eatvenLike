@@ -4,6 +4,11 @@ extends Node2D
 ## The view is orthographic, so a cup is the same size on a belt, a shelf or in a paw.
 const ItemArt := preload("res://game/rules/shop_item_art.gd")
 const CUP_HEIGHT := 52.0
+## Hand centers in frame_actor order: front, front-right, right, back-right, then back to front-left.
+const HELD_CENTERS := [
+	Vector2(0, -44), Vector2(46, -50), Vector2(46, -50), Vector2(40, -54),
+	Vector2(0, -50), Vector2(-40, -54), Vector2(-46, -50), Vector2(-46, -50),
+]
 const Characters := preload("res://presentation/characters/character_library.gd")
 const Presentation := preload("res://content/characters/actor_presentation.tres")
 const BUBBLE := preload("res://art/ui/bubble.png")
@@ -190,8 +195,9 @@ func display(worker: Dictionary, clock: float, displayed_position := Vector2.INF
 		carried.position = Vector2(22, -78 + bob)
 		if frame_actor != null:
 			var facing: int = frame_actor.direction
-			# 拿在胸前偏下；侧身时离开身子一点，不贴在脸上
-			var center := Vector2(0, -50) if facing in [0, 4] else Vector2(-40 if facing > 4 else 40, -54)
+			var center: Vector2 = HELD_CENTERS[facing]
+			if facing == 0:
+				center.y += float(art.get("held_front_drop", 0.0))
 			carried.position = center - texture.get_size() * carried.scale / 2.0
 			amount.position = center + Vector2(10, 10)
 			var behind: bool = facing in [3, 4, 5]
@@ -217,7 +223,9 @@ func _display_held_items(worker: Dictionary) -> void:
 		sprite.texture = texture
 		sprite.modulate = look.get("tint",Color.WHITE)
 		sprite.scale = Vector2.ONE*CUP_HEIGHT/maxf(texture.get_width(),texture.get_height())
-		sprite.position = carried.position+Vector2((index+1)*18,-(index+1)*4)
+		var left_facing: bool = frame_actor.direction > 4 if frame_actor != null else body.flip_h
+		var spacing := Vector2(-18 if left_facing else 18, -4)
+		sprite.position = carried.position + spacing * (index + 1)
 
 
 func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -> void:

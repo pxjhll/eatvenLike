@@ -1055,36 +1055,42 @@ script = ExtResource("13_icdnm")
 id = "pancake"
 display_name = "摊好的饼"
 icon = ExtResource("19_50a0c")
+held_front_drop = 4.0
 
 [sub_resource type="Resource" id="Resource_ld46t"]
 script = ExtResource("13_icdnm")
 id = "pancake_crisp"
 display_name = "加了薄脆的饼"
 icon = ExtResource("20_n1vsr")
+held_front_drop = 4.0
 
 [sub_resource type="Resource" id="Resource_jwnyh"]
 script = ExtResource("13_icdnm")
 id = "ham_top"
 display_name = "加了火腿的饼"
 icon = ExtResource("21_70k8p")
+held_front_drop = 4.0
 
 [sub_resource type="Resource" id="Resource_agrpw"]
 script = ExtResource("13_icdnm")
 id = "floss_top"
 display_name = "加了肉松的饼"
 icon = ExtResource("22_5yr4h")
+held_front_drop = 4.0
 
 [sub_resource type="Resource" id="Resource_reclk"]
 script = ExtResource("13_icdnm")
 id = "bacon_top"
 display_name = "加了培根的饼"
 icon = ExtResource("23_fwjhy")
+held_front_drop = 4.0
 
 [sub_resource type="Resource" id="Resource_u2i5w"]
 script = ExtResource("13_icdnm")
 id = "family_top"
 display_name = "加了全家福的饼"
 icon = ExtResource("24_0u725")
+held_front_drop = 4.0
 
 [sub_resource type="Resource" id="Resource_3lm1h"]
 script = ExtResource("13_icdnm")
