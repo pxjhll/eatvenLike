@@ -17,6 +17,7 @@ extends Resource
 ##   affordable:<机器>            这台机器现在能解锁
 ##   box:<物料>                   正在等买这一箱，box_affordable 现在买得起
 ##   processing:<设备>            已接且未交付的订单需要该设备加工
+##   dining_seat_shortage        有顾客没座、堂食已满，且还有座位可以买
 ##   no_box                       没有待买的原料箱
 ##   kitchen_staff:0 / kitchen_staff>0
 ##   room / !room                 还有员工名额

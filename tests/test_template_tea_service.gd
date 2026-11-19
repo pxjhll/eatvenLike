@@ -50,39 +50,61 @@ func test_opening_stage_produces_and_delivers_only_lemonade_without_running_clos
 	if runtime==null: return
 	check_eq(runtime.set_service_open(true),"","start common opening wave")
 	check_eq(runtime.service.orders.snapshot().guests.size(),3,"same three opening visitors")
-	check_eq(runtime.service.orders.guest(1).seat,"seat:dine/0","first diner uses original seat")
-	check_eq(runtime.service.orders.guest(2).seat,"seat:dine/1","second diner uses original seat")
-	check_eq(runtime.service.orders.guest(3).state,"queue","third visitor waits for an actual seat before takeaway opens")
-	check_eq(runtime.set_service_open(false),"","freeze further arrivals for controlled three-customer completion")
-	_finish(runtime,[1,2,3])
-	check_eq(runtime.runner.owner.sold_by_dish.lemonade,3,"all three real drinks delivered through common inventory")
+	check_eq(runtime.runner.owner.seat_total(),4,"four seats are ready at opening")
+	for index in 2: check_eq(runtime.arrive([{"dish":"lemonade","qty":1}]).error,"","admit an additional opening visitor")
+	for seat in 4: check_eq(runtime.service.orders.guest(seat+1).seat,"seat:dine/"+str(seat),"first four diners use the starting seats")
+	check_eq(runtime.service.orders.guest(5).state,"queue","fifth visitor waits for an actual seat before takeaway opens")
+	check_eq(runtime.set_service_open(false),"","freeze further arrivals for controlled completion")
+	_finish(runtime,[1,2,3,4,5])
+	check_eq(runtime.runner.owner.sold_by_dish.lemonade,5,"all five real drinks delivered through common inventory")
 	for run in runtime.runner.machines.snapshot().runs: check_eq(run.machine,"lemonade","closed kitchen never starts speculative production")
-	check_eq(runtime.runner.owner.sold,3,"no double-counted opening visitors")
+	check_eq(runtime.runner.owner.sold,5,"no double-counted opening visitors")
 
-func test_actual_two_diners_and_one_takeaway_use_shared_counter_service_and_one_real_sealer_run() -> void:
+func test_actual_four_diners_and_one_takeaway_use_shared_counter_service_and_one_real_sealer_run() -> void:
 	var runtime := _runtime()
 	if runtime==null: return
-	for index in 3: check_eq(runtime.arrive([{"dish":"black_tea","qty":1}]).error,"","real black tea arrival")
-	check_eq(runtime.service.orders.guest(1).request[0].recipe,"black_tea","first drink is unsealed dining")
-	check_eq(runtime.service.orders.guest(2).request[0].recipe,"black_tea","second drink is unsealed dining")
-	check_eq(runtime.service.orders.guest(3).request[0].recipe,"black_tea:sealed","full seats select authored sealing graph")
-	_finish(runtime,[1,2,3])
+	for index in 5: check_eq(runtime.arrive([{"dish":"black_tea","qty":1}]).error,"","real black tea arrival")
+	for index in 4: check_eq(runtime.service.orders.guest(index+1).request[0].recipe,"black_tea","seated drinks are unsealed")
+	check_eq(runtime.service.orders.guest(5).request[0].recipe,"black_tea:sealed","full seats select authored sealing graph")
+	_finish(runtime,[1,2,3,4,5])
 	var sealed := 0
 	for run in runtime.runner.machines.snapshot().runs:
 		if run.machine=="seal": sealed += 1
 	check_eq(sealed,1,"only actual takeaway passes through shared sealer")
-	check_eq(runtime.runner.owner.sold_by_dish.black_tea,3,"same original sales identity across two routes")
-	check_eq(runtime.runner.owner.revenue,3.0*runtime.runner.owner.dish_price("black_tea"),"original common quote and payment retained")
+	check_eq(runtime.runner.owner.sold_by_dish.black_tea,5,"same original sales identity across two routes")
+	check_eq(runtime.runner.owner.revenue,5.0*runtime.runner.owner.dish_price("black_tea"),"original common quote and payment retained")
 	check_eq(runtime.runner.inventory.audit(),[],"single inventory ledger remains valid")
 
 func test_nonsealed_front_drinks_can_take_away_without_a_packaging_step() -> void:
 	var runtime := _runtime()
 	if runtime==null: return
-	for index in 3: check_eq(runtime.arrive([{"dish":"lemon_tea","qty":1}]).error,"","actual front-made lemon tea")
-	check_eq(runtime.service.orders.guest(3).request[0].recipe,"lemon_tea","declared takeaway fallback uses ordinary graph")
-	_finish(runtime,[1,2,3])
-	check_eq(runtime.runner.owner.sold_by_dish.lemon_tea,3,"all hand-pounded drinks really delivered")
+	for index in 5: check_eq(runtime.arrive([{"dish":"lemon_tea","qty":1}]).error,"","actual front-made lemon tea")
+	check_eq(runtime.service.orders.guest(5).seat,"","customer without a free chair uses takeaway")
+	check_eq(runtime.service.orders.guest(5).request[0].recipe,"lemon_tea","declared takeaway fallback uses ordinary graph")
+	_finish(runtime,[1,2,3,4,5])
+	check_eq(runtime.runner.owner.sold_by_dish.lemon_tea,5,"all hand-pounded drinks really delivered")
 	for run in runtime.runner.machines.snapshot().runs: check(run.machine!="seal","front takeaway never visits sealer")
+
+func test_tea_saves_grant_free_seats_and_retain_purchases() -> void:
+	var previous: SpecShop = SHOP.copy_for_editing()
+	previous.seat_groups[0].start = 2
+	previous.seat_groups[0].costs.assign([40, 154, 396])
+	for old_seats in [2, 6, 8]:
+		var owner := ShopRules.new(previous, 42)
+		check_eq(owner.unlock("lemonade"), "", "open an older tea shop")
+		owner.gold = 1000.0
+		for index in range(2, old_seats, 2): check_eq(owner.buy_seat(), "", "buy the older seat tier")
+		owner.run(1.0)
+		var path := "user://tea-seats-%d-%d.json" % [old_seats, Time.get_ticks_usec()]
+		check_eq(ShopSave.new(previous, path).save_game(owner), OK, "write the pre-change save")
+		var store := ShopSave.new(SHOP, path)
+		var reopened := store.load_game()
+		check_eq(store.load_error, OK, store.last_error)
+		check_eq(reopened.seat_total(), maxi(4, old_seats), "grant free seats without reducing purchased seating")
+		check_eq(reopened.seat_cost(), {2:154, 6:396, 8:-1}[old_seats], "keep the price of the next paid tier")
+		check_eq([reopened.gold, reopened.clock], [owner.gold, owner.clock], "seat update preserves money and time")
+		check_eq(reopened.runtime.service.orders.active_snapshot(), owner.runtime.service.orders.active_snapshot(), "opening guests and active seat assignments survive the update")
+		DirAccess.remove_absolute(path)
 
 func test_common_worker_gate_keeps_kitchen_menu_closed_until_real_employee_is_deployed() -> void:
 	var runtime := _runtime(true,false)

@@ -281,8 +281,10 @@ func _migrate_retired_staff() -> void:
 	hire_pool = available
 
 
-## Refresh only definition caches. Jobs, timers, stock and event effects stay recorded.
+## Refresh definition caches and grant any newly included starting seats.
 func _refresh_content_values() -> void:
+	for group in shop.seat_groups:
+		seats[group.id] = maxi(int(seats.get(group.id, 0)), group.start)
 	var previous := mods.entries.duplicate(true)
 	mods.entries = []
 	_refresh_all_modifiers()

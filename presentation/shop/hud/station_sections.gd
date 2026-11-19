@@ -87,8 +87,6 @@ class SeatsSection extends PanelContainer:
 			return
 		if int(seats.total) + int(seats.step) > int(seats.cap):
 			effect.text = "下一阶段开放更多 · 现在 %d 位客人在座" % seats.used
-		elif seats.purpose == "dine":
-			effect.text = "加一张座位 · 现在 %d 位客人在座" % seats.used
 		else:
 			effect.text = "加 %d 个座位 · 现在 %d 位客人在座" % [int(seats.step), seats.used]
 		button.text = "%d 金币" % int(seats.cost)

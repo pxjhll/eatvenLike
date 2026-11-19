@@ -451,6 +451,7 @@ func _holds(condition: String) -> bool:
 		"box": return rules.pending_box() == arg
 		"box_affordable": return not rules.pending_box().is_empty() and rules.command_status("unlock_box", {"material": rules.pending_box()}).code == "ok"
 		"processing": return view.has_order_requiring_processing(arg)
+		"dining_seat_shortage": return view.dining_seat_shortage()
 		"no_box": return rules.pending_box().is_empty()
 		"kitchen_staff": return rules.kitchen_staff() == int(arg)
 		"room": return _view.view.deployed_count() < rules.staff_slots()

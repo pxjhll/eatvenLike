@@ -172,6 +172,16 @@ func has_order_requiring_processing(station: String) -> bool:
 	return false
 
 
+## The counter routes customers without a free chair to the line or to takeaway.
+func dining_seat_shortage() -> bool:
+	if _runtime == null or _runtime.service == null or _runtime.service.dining == null or rules.seat_cost() < 0: return false
+	var orders: RefCounted = _runtime.service.orders
+	if orders.occupied_seats(true).size() < rules.seat_total(): return false
+	for id in orders.queue():
+		if String(orders.guest(id).seat).is_empty(): return true
+	return false
+
+
 func _guide_angry_cause() -> String:
 	if _runtime!=null:
 		if rules.angry_count()==0: return ""

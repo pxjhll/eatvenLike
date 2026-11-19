@@ -164,6 +164,7 @@ func _run() -> void:
 	_check(veteran.guide.active.is_empty() and veteran.guide.seen.has("opening"), "已经开过张的存档跳过开场")
 	veteran.free()
 	await _tea_contextual_guides()
+	await _tea_seat_shortage()
 	await _pancake_first_sale()
 	await _pancake_flyer_notice()
 	await _pancake_late_guides()
@@ -243,6 +244,47 @@ func _tea_contextual_guides() -> void:
 		"正式存档恢复营业进度，已看提示不重复")
 	view.free()
 	DirAccess.remove_absolute(path)
+
+
+func _tea_seat_shortage() -> void:
+	const NOTICE := "tea_seat_shortage"
+	var owner := ShopRules.new(CURRENT_TEA, 42)
+	_check(owner.unlock("lemonade").is_empty(), "用正式第二关开张")
+	owner.runtime.set_service_open(false)
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	view.session = TestSession.make(CURRENT_TEA, save_path + "-tea-seats", owner)
+	view.session.guide_enabled = true
+	await _reopen(view)
+	hud = view.ui
+	guide = view.guide
+	_check(owner.seat_total() == 4 and view._dining._available.size() == 4,
+		"开局实际摆出四个可用堂食座位")
+	for index in range(owner.seats_used(), 4):
+		_check(owner.runtime.arrive([{"dish": "lemonade", "qty": 1}]).error.is_empty(), "安排顾客入座")
+	guide.refresh(0.0)
+	_check(owner.seats_used() == 4 and guide.active.is_empty() and not view.view.dining_seat_shortage(),
+		"四座刚好坐满但无人等座时不弹提示")
+	var extra: Dictionary = owner.runtime.arrive([{"dish": "lemonade", "qty": 1}])
+	_check(extra.error.is_empty() and owner.runtime.service.orders.guest(extra.id).state == "queue",
+		"第五位顾客真的在等座")
+	guide.refresh(0.0)
+	_run_until(func() -> bool: return false, 3.5)
+	_check(guide.active.is_empty(), "短暂缺座不触发提示")
+	_run_until(func() -> bool: return guide.active == NOTICE, 1.0)
+	_check(guide.active == NOTICE and guide._show_notice and not view.frozen() and guide._pointer_bounds.intersects(_local(view._seats)),
+		"持续缺座时短提示指向堂食数字牌，营业继续")
+	owner.gold = 200.0
+	await _press(view._seats.get_global_transform_with_canvas() * (view._seats.size / 2.0))
+	_check(hud.page == "station" and hud.page_node("station").station_id == owner.counter_id,
+		"点数字牌打开前台扩座入口")
+	await _click(hud.page_node("station").seat_button)
+	owner.run(0.25)
+	view._refresh(0.0)
+	_check(owner.seat_total() == 6 and owner.gold == 46.0 and view._dining._available.size() == 6,
+		"154 金币加两座，店内同步摆出椅子")
+	_check(not String(owner.runtime.service.orders.guest(extra.id).seat).is_empty()
+		and guide.seen.has(NOTICE) and not guide._bubble.visible, "新座位让等位客人入座，提示收起")
+	view.free()
 
 
 func _pancake_first_sale() -> void:
