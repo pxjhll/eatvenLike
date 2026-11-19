@@ -719,7 +719,9 @@ func seats() -> Dictionary:
 	var status := rules.command_status("buy_seat", {})
 	return {"total": total, "max": full, "cap": rules.seat_cap(g), "used": used, "step": next, "purpose": g.purpose,
 		"title": text("seats_title_" + g.purpose, {}, "堂食座位" if dine else "等位坐垫"),
-		"cost": rules.seat_cost(), "status": status, "error": command_message(status)}
+		"cost": rules.seat_cost(), "status": status, "error": command_message(status),
+		"tip": rules.dining_tip(total) if dine else 0,
+		"next_tip": rules.dining_tip(total + next) if dine and next > 0 else 0}
 
 
 func flyer() -> Dictionary:

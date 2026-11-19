@@ -719,6 +719,11 @@ func seat_total() -> int:
 	return int(seats.get(g.id, 0)) if g != null else 0
 
 
+func dining_tip(seat_count: int) -> int:
+	var group := dine_group()
+	return group.full_dining_tip if group != null and group.full_dining_tip > 0 and seat_count >= seat_cap(group) else 0
+
+
 ## 能花钱买的那组座位（写了 costs 的第一组）：奶茶店是堂食座，煎饼摊是等位坐垫
 func buy_group() -> SpecSeatGroup:
 	for g in shop.seat_groups:

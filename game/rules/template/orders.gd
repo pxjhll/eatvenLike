@@ -168,14 +168,17 @@ func record_delivery(order_id: int, line_id: int, proof: int, inventory: RefCoun
 		guest.queued = false
 	return ""
 
-func settle(order_id: int, economy: RefCounted) -> Dictionary:
+func settle(order_id: int, economy: RefCounted, tip := 0) -> Dictionary:
 	var order: Dictionary = _orders_by_id.get(order_id, {})
 	if order.is_empty(): return {"error":"unknown order", "income":0}
 	if order.paid: return {"error":"", "income":order.income, "duplicate":true}
 	if _policy.pay_at == "on_deliver" and order.state != "delivered": return {"error":"order not delivered", "income":0}
+	if tip < 0 or (tip > 0 and (_policy.pay_at != "on_deliver" or _guests_by_id[order.guest].seat.is_empty())):
+		return {"error":"invalid dining tip", "income":0}
 	var amount: float = roundf(order.quote) if _policy.rounding == "order_round" else float(order.quote)
-	var receipt: Dictionary = economy.credit_order(amount)
+	var receipt: Dictionary = economy.credit_order(amount, tip)
 	order.income = int(receipt.income)
+	if tip > 0: order.tip = tip
 	order.paid = true
 	return {"error":"", "income":order.income, "duplicate":false}
 
@@ -337,8 +340,12 @@ func _validate(data: Dictionary, inventory: RefCounted) -> String:
 	var units := {}
 	var proofs := {}
 	for order in data.orders:
-		if not Inventory._shape(order, _order()): return "invalid order record"
+		var shape := _order()
+		if order is Dictionary and order.has("tip"): shape.tip = 0
+		if not Inventory._shape(order, shape): return "invalid order record"
 		if order.id < 1 or order.id >= data.next_order or orders.has(order.id) or not guests.has(order.guest) or guests[order.guest].order != order.id or order.lines.is_empty(): return "invalid order identity"
+		var tip: int = order.get("tip", 0)
+		if tip < 0 or (tip > 0 and (not order.paid or _policy.pay_at != "on_deliver" or guests[order.guest].seat.is_empty())): return "invalid dining tip"
 		if not is_finite(order.quote) or order.quote < 0.0 or order.income < 0 or order.state not in ["accepted", "delivered"]: return "invalid receipt values"
 		if not order.paid and order.income != 0: return "unpaid order has income"
 		if order.paid and _policy.pay_at == "on_deliver" and order.state != "delivered": return "incomplete order has a delivery receipt"
@@ -382,7 +389,8 @@ func _validate(data: Dictionary, inventory: RefCounted) -> String:
 		if not is_finite(quote) or quote != order.quote or (order.state == "delivered") != complete: return "order total or completion differs from lines"
 		if order.paid:
 			var expected := roundi(order.quote) if _policy.rounding == "order_round" else floori(order.quote)
-			if order.income < expected or order.income > expected + (0 if _policy.rounding == "order_round" else 1): return "receipt differs from configured rounding"
+			var base_income: int = order.income - tip
+			if base_income < expected or base_income > expected + (0 if _policy.rounding == "order_round" else 1): return "receipt differs from configured rounding"
 		var guest: Dictionary = guests[order.guest]
 		if (complete and guest.state not in ["served", "eating", "leaving", "gone"]) or (not complete and guest.state != "waiting"): return "customer state differs from order completion"
 		if guest.state in ["eating", "leaving", "gone"] and not order.paid: return "meal has no receipt"

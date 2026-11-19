@@ -89,6 +89,7 @@ func test_tea_saves_grant_free_seats_and_retain_purchases() -> void:
 	var previous: SpecShop = SHOP.copy_for_editing()
 	previous.seat_groups[0].start = 2
 	previous.seat_groups[0].costs.assign([40, 154, 396])
+	previous.seat_groups[0].full_dining_tip = 0
 	for old_seats in [2, 6, 8]:
 		var owner := ShopRules.new(previous, 42)
 		check_eq(owner.unlock("lemonade"), "", "open an older tea shop")
@@ -101,10 +102,54 @@ func test_tea_saves_grant_free_seats_and_retain_purchases() -> void:
 		var reopened := store.load_game()
 		check_eq(store.load_error, OK, store.last_error)
 		check_eq(reopened.seat_total(), maxi(4, old_seats), "grant free seats without reducing purchased seating")
-		check_eq(reopened.seat_cost(), {2:154, 6:396, 8:-1}[old_seats], "keep the price of the next paid tier")
+		check_eq(reopened.seat_cost(), {2:154, 6:180, 8:-1}[old_seats], "use current pricing for the next paid tier")
+		check_eq(reopened.dining_tip(reopened.seat_total()), 10 if old_seats == 8 else 0, "the full-seat perk follows restored ownership")
 		check_eq([reopened.gold, reopened.clock], [owner.gold, owner.clock], "seat update preserves money and time")
 		check_eq(reopened.runtime.service.orders.active_snapshot(), owner.runtime.service.orders.active_snapshot(), "opening guests and active seat assignments survive the update")
 		DirAccess.remove_absolute(path)
+
+func test_full_tea_seats_pay_one_tip_per_delivered_dining_order() -> void:
+	var owner := ShopRules.new(SHOP, 42)
+	owner.gold = 1000.0
+	for id in ["lemonade", "boil", "seal"]: check_eq(owner.unlock(id), "", "open real tea service and takeaway")
+	var runtime: RefCounted = owner.runtime
+	check_eq(runtime.set_service_open(false), "", "control arrivals after the opening wave")
+	check_eq(owner.seat_cost(), 154, "the first upgrade costs 154")
+	check_eq(owner.buy_seat(), "", "expand to six seats")
+	var ledger: RefCounted = runtime.service.orders
+	for tick in 400:
+		if ledger.order(1).paid: break
+		var error: String = runtime.step(0.1)
+		if not error.is_empty(): check(false, error); return
+	var first: Dictionary = ledger.order(1)
+	check(first.paid and first.get("tip", 0) == 0, "six seats do not pay a tip")
+	check_eq(owner.seat_cost(), 180, "the last upgrade costs 180")
+	check_eq(owner.buy_seat(), "", "expand to eight seats")
+	var seated: int = ledger.occupied_seats(true).size()
+	for index in range(seated, 8):
+		check_eq(runtime.arrive([{"dish":"lemonade", "qty":1}]).error, "", "fill an available seat")
+	var extra: Dictionary = runtime.arrive([{"dish":"lemonade", "qty":1}])
+	check_eq(extra.error, "", "accept a guest beyond the full dining area")
+	var takeaway: Dictionary = ledger.guest(extra.id)
+	check_eq(takeaway.get("seat"), "", "the guest beyond the seating pool takes away")
+	if extra.id < 1: return
+	_finish(runtime, [2, extra.id])
+	var diner_order: Dictionary = ledger.order(2)
+	var takeaway_order: Dictionary = ledger.order(takeaway.order)
+	check_eq(diner_order.get("tip"), 10, "an existing table also earns the full-seat tip")
+	check_eq(diner_order.income, floori(diner_order.quote) + 10, "the receipt includes exactly one ten-coin tip")
+	check(takeaway_order.paid and takeaway_order.get("tip", 0) == 0, "takeaway pays the ordinary price")
+	check_eq(owner.sold, ledger.snapshot().orders.filter(func(order: Dictionary) -> bool: return order.paid).size(),
+		"tips do not increase cup sales")
+	var reopened := ShopRules.new(SHOP, 42)
+	var restored := reopened.load_dict(owner.to_dict())
+	check_eq(restored, "", "restore the recorded tips and earlier untipped sales together")
+	if not restored.is_empty(): return
+	check_eq([reopened.gold, reopened.revenue], [owner.gold, owner.revenue], "save preserves the credited wallet and revenue")
+	var reopened_ledger: RefCounted = reopened.runtime.service.orders
+	check_eq(reopened_ledger.order(2), diner_order, "the tipped receipt survives restore")
+	check_eq(reopened_ledger.settle(2, reopened._sales, 10).get("duplicate"), true, "repeated settlement is recognized")
+	check_eq(reopened.gold, owner.gold, "the tip cannot be paid twice")
 
 func test_common_worker_gate_keeps_kitchen_menu_closed_until_real_employee_is_deployed() -> void:
 	var runtime := _runtime(true,false)

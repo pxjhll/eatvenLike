@@ -10,6 +10,8 @@ extends Resource
 @export var costs: Array[int] = []
 ## 每次加几个，按购买次数排（写了就盖过 step；比如坐垫一组 2/3/4 个）
 @export var steps: Array[int] = []
+## 堂食座位扩满后，每笔已交付的堂食订单额外到账的金币。
+@export var full_dining_tip: int = 0
 ## 默认坐多久（阶段可覆盖）
 @export var seconds: float = 0.0
 ## 坐着等时耐心倍率

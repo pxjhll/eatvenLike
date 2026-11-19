@@ -849,7 +849,9 @@ func _reconcile_delivery_records(dt: float) -> String:
 			if not error.is_empty(): return error
 		if orders.order(order.id).state == "delivered":
 			if _policy.orders.pay_at == "on_deliver":
-				var receipt: Dictionary = orders.settle(order.id, _runtime.runner.owner._sales)
+				var owner: RefCounted = _runtime.runner.owner
+				var tip: int = owner.dining_tip(owner.seat_total()) if dining != null and not guest.seat.is_empty() else 0
+				var receipt: Dictionary = orders.settle(order.id, owner._sales, tip)
 				if not String(receipt.error).is_empty(): return receipt.error
 			_runtime.runner.owner.events.emit("sale",_sale_event(orders.order(order.id)))
 			if dining != null:
@@ -863,4 +865,6 @@ func _sale_event(order: Dictionary) -> Dictionary:
 	for line in order.lines:
 		items.append({"dish":String(line.dish),"count":int(line.qty)})
 		count += int(line.qty)
-	return {"order":int(order.id),"guest":int(order.guest),"dish":String(order.lines[0].dish),"count":count,"items":items,"income":int(order.income)}
+	var sale := {"order":int(order.id),"guest":int(order.guest),"dish":String(order.lines[0].dish),"count":count,"items":items,"income":int(order.income)}
+	if order.has("tip"): sale.tip = order.tip
+	return sale

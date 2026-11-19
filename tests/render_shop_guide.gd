@@ -284,6 +284,18 @@ func _tea_seat_shortage() -> void:
 		"154 金币加两座，店内同步摆出椅子")
 	_check(not String(owner.runtime.service.orders.guest(extra.id).seat).is_empty()
 		and guide.seen.has(NOTICE) and not guide._bubble.visible, "新座位让等位客人入座，提示收起")
+	var seats_panel: Control = hud.page_node("station").section("seats")
+	_check(seats_panel.button.text == "180 金币" and seats_panel.effect.text.contains("解锁堂食小费 +10 金币"),
+		"最后一档显示 180 金币和堂食小费奖励")
+	owner.gold = 200.0
+	await _click(seats_panel.button)
+	_check(owner.seat_total() == 8 and owner.gold == 20.0 and seats_panel.effect.text.contains("每笔堂食小费 +10 金币"),
+		"买满后到账规则显示在座位面板")
+	await _click(hud.tab("shop"))
+	var shows_tip := func() -> bool:
+		return view._pops.any(func(pop: Dictionary) -> bool: return pop.label.text.contains("堂食小费 +10"))
+	_run_until(shows_tip, 45.0)
+	_check(shows_tip.call(), "真实堂食交付后柜台金币飘字显示堂食小费")
 	view.free()
 
 

@@ -39,10 +39,11 @@ func complete_single(customer: Dictionary, addon_dish: String, pay_on_take: bool
 	return {"dish": customer.kind, "income": customer.paid}
 
 ## 整单一次结账（送桌店：明细全部送达时）。每道菜价已保留 1 位小数，金币取整、零头累计到下一笔。
-func credit_order(total: float) -> Dictionary:
+func credit_order(total: float, tip := 0) -> Dictionary:
 	var earned: float = total + sale_carry
 	var income: int = floori(earned + 0.0001)
 	sale_carry = maxf(0.0, earned - income)
+	income += tip
 	gold += income
 	revenue += income
 	return {"income": income}

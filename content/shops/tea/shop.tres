@@ -831,7 +831,8 @@ script = ExtResource("16_35x7t")
 id = "dine"
 start = 4
 step = 2
-costs = Array[int]([154, 396])
+costs = Array[int]([154, 180])
+full_dining_tip = 10
 seconds = 40.0
 patience = 0.5
 
