@@ -100,6 +100,7 @@ func _tea_stock() -> void:
 	var fixture := _setup("tea")
 	if fixture.is_empty(): return
 	_check(fixture.owner.buy_connection("seal_to_shelf").is_empty(),"buy authored tea conveyor")
+	var belt: Node2D = fixture.scene.art.get_node("Sortables/BeltVertical")
 	var ids: Array = []
 	for recipe in ["black_tea","plain_milk_tea","pearl_milk_tea","black_tea:sealed","plain_milk_tea:sealed","pearl_milk_tea:sealed"]:
 		ids.append(fixture.runtime.request_production(recipe).id)
@@ -112,6 +113,9 @@ func _tea_stock() -> void:
 		if not frame.transports.is_empty():
 			saw_transport = true
 			_check(frame.draws.any(func(row: Dictionary) -> bool: return row.get("capability")=="transport_item"),"real flight has authored conveyor display")
+			for draw in frame.draws:
+				if draw.get("capability") == "transport_item":
+					_check(is_equal_approx(draw.pos.x, belt.position.x), "tea cup stays on the belt centerline until delivery")
 			if not saved:
 				var before: Dictionary = fixture.runtime.snapshot()
 				_check(fixture.runtime.restore(before).is_empty(),"restore actual sealer-to-rack flight")

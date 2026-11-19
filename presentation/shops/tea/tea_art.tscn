@@ -248,7 +248,7 @@ position = Vector2(626, 391)
 position = Vector2(626, 512)
 
 [node name="2" type="Marker2D" parent="Anchors/Connections/seal_to_shelf/Path"]
-position = Vector2(608, 574)
+position = Vector2(626, 574)
 
 [node name="Shelf" type="Node2D" parent="Anchors"]
 
