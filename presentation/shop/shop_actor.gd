@@ -3,6 +3,7 @@ extends Node2D
 
 ## The view is orthographic, so a cup is the same size on a belt, a shelf or in a paw.
 const ItemArt := preload("res://game/rules/shop_item_art.gd")
+const ServingTray := preload("res://presentation/shop/serving_tray.gd")
 const CUP_HEIGHT := 52.0
 ## Hand centers in frame_actor order: front, front-right, right, back-right, then back to front-left.
 const HELD_CENTERS := [
@@ -33,6 +34,7 @@ var progress_bar := ProgressBar.new()
 var body := Sprite2D.new()
 var carried := Sprite2D.new()
 var _held_layer := Node2D.new()
+var _serving_tray: ServingTray
 var _held_sprites: Array[Sprite2D] = []
 var _held_amounts: Array[Label] = []
 var amount := Label.new()
@@ -185,24 +187,36 @@ func display(worker: Dictionary, clock: float, displayed_position := Vector2.INF
 	var steps: Array = worker.get("steps", [])
 	var at: int = worker.get("step", 0)
 	var in_machine: bool = worker.get("presentation_version")!=1 and worker.get("phase", "") == "work" and at < steps.size() and (bool(steps[at].get("into_machine", false)) or bool(steps[at].get("put_down", false)))
-	carried.visible = not item.is_empty() and count > 0 and not in_machine
-	if carried.visible:
+	var holding := not item.is_empty() and count > 0 and not in_machine
+	var use_tray: bool = holding and count >= 2 and worker.get("delivering_to_guest", false)
+	carried.visible = holding and not use_tray
+	var center := Vector2(48, -52 + bob)
+	if holding and frame_actor != null:
+		var facing: int = frame_actor.direction
+		center = HELD_CENTERS[facing]
+		var behind: bool = facing in [3, 4, 5]
+		if behind != (_held_layer.get_index() < frame_actor.get_index()):
+			_visual.move_child(_held_layer, frame_actor.get_index())
+	if use_tray:
+		if _serving_tray == null:
+			_serving_tray = ServingTray.new()
+			_serving_tray.scale = Vector2.ONE * 0.8
+			_held_layer.add_child(_serving_tray)
+		var drop := 26.0 if frame_actor != null and frame_actor.direction == 0 else 18.0
+		_serving_tray.position = center + Vector2(signf(center.x) * 6.0, drop)
+		_serving_tray.show_meal(worker.held_items, item_art)
+	elif carried.visible:
 		var art: Dictionary = item_art.call(item)
 		var texture: Texture2D = ItemArt.texture_from_look(art)
 		carried.texture = texture
 		carried.modulate = art.get("tint", Color.WHITE)
-		# 按长边量：杯子还是 52 高，横着的饼、袋子不会比杯子宽一大截挡住脸
 		carried.scale = Vector2.ONE * CUP_HEIGHT / maxf(texture.get_height(), texture.get_width())
 		carried.position = Vector2(22, -78 + bob)
 		if frame_actor != null:
-			var facing: int = frame_actor.direction
-			var center: Vector2 = HELD_CENTERS[facing]
-			if facing == 0:
+			if frame_actor.direction == 0:
 				center.y += float(art.get("held_front_drop", 0.0))
 			carried.position = center - texture.get_size() * carried.scale / 2.0
-			var behind: bool = facing in [3, 4, 5]
-			if behind != (_held_layer.get_index() < frame_actor.get_index()):
-				_visual.move_child(_held_layer, frame_actor.get_index())
+	if _serving_tray != null: _serving_tray.visible = use_tray
 	_display_held_items(worker)
 	_last_pos = position
 	_last_clock = clock

@@ -79,6 +79,15 @@ func _run() -> void:
 	worker.carry_count = 2
 	actor.display(worker, clock + 0.2)
 	_check(not actor._held_amounts[0].visible, "dropping the secondary item clears its badge")
+	_check(actor._serving_tray == null, "two units in transit to a workstation stay hand-carried")
+	worker.delivering_to_guest = true
+	actor.display(worker, clock + 0.2)
+	_check(actor._serving_tray.visible and actor._serving_tray._portions.size() == 2, "two identical servings occupy two places on the tray")
+	_check(not actor.carried.visible and not actor.amount.visible, "the tray replaces the ordinary hand display")
+	worker.held_items[0].count = 1
+	worker.carry_count = 1
+	actor.display(worker, clock + 0.2)
+	_check(not actor._serving_tray.visible and actor.carried.visible, "a single serving stays in the hand")
 	actor.free()
 	print("RABBIT GAME VISUALS: %d failures" % failures)
 	quit(1 if failures else 0)

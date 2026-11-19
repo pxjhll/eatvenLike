@@ -151,7 +151,10 @@ func _meals(id: String) -> void:
 			for worker in frame.workers:
 				if worker.post!="counter": continue
 				var held: Array = worker.held_items.map(func(row: Dictionary) -> String: return row.item)
-				if "tomato_rice" in held and "soup" in held: saw_bundle = true
+				if "tomato_rice" in held and "soup" in held:
+					var actor: Node2D = fixture.scene._actors[worker.id]
+					_check(actor._serving_tray != null and actor._serving_tray.visible, "rice and soup share a tray for the actual handoff")
+					saw_bundle = true
 		if frame.draws.any(func(row: Dictionary) -> bool: return row.get("capability")=="dining_item"):
 			saw_meal = true
 			if not saved:

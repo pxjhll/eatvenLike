@@ -25,6 +25,7 @@ static func build(runtime: RefCounted, displays: Array = [], presentation: Dicti
 		var task: Dictionary = runtime.runner.tasks.get(worker.id,{})
 		var action_status: String = worker.get("action", {}).get("status", "")
 		worker.display_task = task.get("kind","idle")
+		worker.delivering_to_guest = worker.display_task == "bundle" and String(task.to).begins_with("guest:")
 		worker.work_station = ""
 		worker.display_working = worker.phase in ["work","pickup","dropoff"] and action_status != "blocked"
 		worker.display_progress = _progress(runtime,worker,task)
@@ -32,7 +33,7 @@ static func build(runtime: RefCounted, displays: Array = [], presentation: Dicti
 			var standing_by: bool = (task.is_empty() and worker.phase == "idle") or (task.get("kind") == "interact" and action_status == "blocked")
 			if not counter_pose.is_empty() and standing_by and Vector2(worker.pos).is_equal_approx(counter_pose.position):
 				worker.facing = counter_pose.direction
-			if worker.phase == "dropoff" and worker.display_working and task.get("kind") == "bundle" and String(task.to).begins_with("guest:"):
+			if worker.phase == "dropoff" and worker.display_working and worker.delivering_to_guest:
 				var guest_id := int(String(task.to).trim_prefix("guest:"))
 				for customer in frame.customers:
 					if customer.id != guest_id: continue
