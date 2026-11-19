@@ -23,13 +23,14 @@ func _draw() -> void:
 	var count := _portions.size()
 	var columns := maxi(2, ceili(sqrt(count)))
 	var rows := ceili(float(count) / columns)
-	var cell_width := 78.0 / columns
+	var column_spacing := 70.0 / columns
+	var portion_size := minf(40.0, 84.0 / columns)
 	for i in count:
 		var row := floori(float(i) / columns)
 		var row_size := mini(columns, count - row * columns)
-		var x := (i % columns - (row_size - 1) * 0.5) * cell_width
-		var y := 3.0 if rows == 1 else lerpf(-8, 8, float(row) / (rows - 1))
+		var x := (i % columns - (row_size - 1) * 0.5) * column_spacing
+		var y := 5.0 if rows == 1 else lerpf(-6, 10, float(row) / (rows - 1))
 		var look := _portions[i]
 		var texture: Texture2D = look.texture
-		var size := texture.get_size() * minf(cell_width, 36.0) / maxf(texture.get_width(), texture.get_height())
+		var size := texture.get_size() * portion_size / maxf(texture.get_width(), texture.get_height())
 		draw_texture_rect(texture, Rect2(Vector2(x - size.x * 0.5, y - size.y), size), false, look.tint)
