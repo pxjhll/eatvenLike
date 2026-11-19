@@ -121,9 +121,9 @@ machines = {
 "output": "bag:out",
 "processing_display": {
 "capability": "processing_item",
-"host": "bag",
+"host": "CounterFront",
 "items": ["soy", "plain", "guozi", "ham", "floss", "bacon", "family"],
-"points": [Vector2(500, 790), Vector2(510, 790), Vector2(520, 790), Vector2(530, 790)]
+"points": [Vector2(560, 908), Vector2(570, 908), Vector2(580, 908), Vector2(590, 908)]
 },
 "profile": {
 "manual": true,
@@ -170,9 +170,9 @@ machines = {
 "output": "roll:out",
 "processing_display": {
 "capability": "processing_item",
-"host": "roll",
+"host": "CounterFront",
 "items": ["pancake", "pancake_crisp", "ham_top", "floss_top", "bacon_top", "family_top"],
-"points": [Vector2(410, 790), Vector2(420, 790), Vector2(430, 790), Vector2(440, 790)]
+"points": [Vector2(410, 904), Vector2(420, 904), Vector2(430, 904), Vector2(440, 904)]
 },
 "profile": {
 "manual": true,

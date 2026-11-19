@@ -172,7 +172,7 @@ func _pancake() -> void:
 	var fixture := _setup("pancake")
 	if fixture.is_empty(): return
 	_check(fixture.runtime.arrive([{"dish":"ham","qty":1},{"dish":"soy","qty":1}],["bag"]).error.is_empty(),"real bagged pancake plus drink")
-	var saw_processing := false
+	var checked_stations := {}
 	var saw_waiting := false
 	var restored := false
 	var wave_added := false
@@ -180,7 +180,14 @@ func _pancake() -> void:
 		_check(fixture.runtime.step(0.25).is_empty(),"actual pancake pipeline")
 		var frame := _refresh(fixture)
 		if frame.draws.any(func(row: Dictionary) -> bool: return row.get("capability")=="processing_item"):
-			saw_processing = true
+			for i in frame.draws.size():
+				var draw: Dictionary = frame.draws[i]
+				if draw.get("capability") != "processing_item" or checked_stations.has(draw.machine): continue
+				var counter: Node2D = fixture.scene.art.get_node("Stall").source_node(46)
+				var surface: Rect2 = fixture.scene.anchors.rect("Nav/Obstacles/5")
+				_check(surface.has_point(draw.pos), draw.machine + " item rests inside the counter footprint")
+				_check(fixture.scene._cups[i].z_index > counter.z_index, draw.machine + " item is visible above the counter")
+				checked_stations[draw.machine] = true
 			await _capture("pancake-processing")
 			if not wave_added:
 				for index in 10: _check(fixture.runtime.arrive([{"dish":"soy","qty":1}],[]).error.is_empty(),"actual waiting cushion wave")
@@ -197,6 +204,7 @@ func _pancake() -> void:
 				if wave_added: await _capture("pancake-waiting")
 		if fixture.runtime.service.orders.snapshot().guests.all(func(guest: Dictionary) -> bool: return guest.state=="gone"): break
 	var complete: bool = fixture.runtime.service.orders.snapshot().guests.all(func(guest: Dictionary) -> bool: return guest.state=="gone")
+	var saw_processing := checked_stations.has("roll") and checked_stations.has("bag")
 	_check(saw_processing and saw_waiting and restored and complete,"complete pancake processing/waiting/customer lifecycle")
 	_check(fixture.scene.view.render_snapshot().draws.is_empty(),"finished work and meal leave no processing ghosts")
 	results.append({"case":"pancake","complete":complete,"processing":saw_processing,"waiting":saw_waiting,"restored":restored,"sold":fixture.owner.sold})
