@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cim3b157qa37h"
-path="res://.godot/imported/ticket.png-c5f604ba861749c44349a9e3cc05d98a.ctex"
+uid="uid://dac2dgqlqdkqj"
+path="res://.godot/imported/stamp_ticket.svg-f22b326acc2b12ad6990a377c720258b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ui/fortunes/ticket.png"
-dest_files=["res://.godot/imported/ticket.png-c5f604ba861749c44349a9e3cc05d98a.ctex"]
+source_file="res://art/ui/fortunes/stamp_ticket.svg"
+dest_files=["res://.godot/imported/stamp_ticket.svg-f22b326acc2b12ad6990a377c720258b.ctex"]
 
 [params]
 
@@ -38,3 +38,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false

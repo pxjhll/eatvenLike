@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="752" height="290" viewBox="0 0 376 145">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0.22" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#fff7e7"/>
+      <stop offset=".55" stop-color="#fff2dd"/>
+      <stop offset="1" stop-color="#f7e2c4"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#e4664b"/>
+      <stop offset="1" stop-color="#b83f30"/>
+    </linearGradient>
+    <path id="edge" d="M25 12 H351 Q354 12 355 16 Q356 23 364 24 Q369 25 369 30 V120 Q369 125 364 126 Q357 127 355 134 Q354 138 350 138 H26 Q22 138 21 134 Q19 127 12 126 Q7 125 7 120 V30 Q7 25 12 24 Q20 23 21 16 Q22 12 25 12Z"/>
+  </defs>
+  <use href="#edge" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#edge" transform="translate(0 2.8)" fill="#b18e6c" opacity=".38"/>
+  <use href="#edge" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#edge" fill="url(#paper)" stroke="#815733" stroke-width="2.1" stroke-linejoin="round"/>
+  <path d="M28 17 H348 Q351 26 364 29 V121 Q351 124 348 133 H28 Q25 124 12 121 V29 Q25 26 28 17Z" fill="none" stroke="#d6af80" stroke-width="1.1" stroke-linejoin="round"/>
+  <path d="M324 3.6 Q324.4 2.1 326.2 2.5 L343.4 6 Q345 6.3 344.4 8 L338.8 26.6 Q338.5 27.6 337.1 27.2 L329.3 24.9 L319.8 25.6 Q318.6 25.6 319 24.2Z" fill="url(#ribbon)" stroke="#743829" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M326.6 4.8 L341.7 7.7" fill="none" stroke="#f09372" stroke-width=".9" stroke-linecap="round"/>
+</svg>

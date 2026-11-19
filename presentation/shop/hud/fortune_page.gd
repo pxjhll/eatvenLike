@@ -6,7 +6,7 @@ const ART := {
 	"box_shadow":preload("res://art/ui/fortunes/box_shadow.png"),
 	"box":preload("res://art/ui/fortunes/box.png"), "pocket":preload("res://art/ui/fortunes/pocket.png"),
 	"held_back":preload("res://art/ui/fortunes/held_back.png"), "held_front":preload("res://art/ui/fortunes/held_front.png"),
-	"ticket":preload("res://art/ui/fortunes/ticket.png"), "button":preload("res://art/ui/fortunes/button.png"),
+	"ticket":preload("res://art/ui/fortunes/stamp_ticket.svg"), "button":preload("res://art/ui/fortunes/button.png"),
 	"close":preload("res://art/ui/fortunes/close.png"), "paw":preload("res://art/ui/fortunes/paw.png"),
 	"stamp":preload("res://art/ui/fortunes/stamp.png"), "flower":preload("res://art/ui/fortunes/flower.png"),
 	"postcard":preload("res://art/ui/fortunes/postcard.png"), "cash":preload("res://art/ui/coin.png")
