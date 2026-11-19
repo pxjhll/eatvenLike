@@ -694,8 +694,12 @@ func _refresh_station_signs() -> void:
 			frame.text = _t("frame_seat", {"step": group.step, "cost": rules.seat_cost()})
 			frame.tooltip_text = _t("frame_seat_tip") + "\n" + view.command_message(rules.command_status("buy_seat"))
 			continue
+		if id == rules.supply_id:
+			var slot := anchors.rect("Stations/%s/BoxFrames/%s" % [id, box]) if not box.is_empty() else Rect2()
+			frame.size = slot.size if slot.has_area() else FRAME_SIZE
+			frame.position = slot.position if slot.has_area() else anchors.rect("Stations/%s/Frame" % id).get_center() - FRAME_SIZE / 2.0
 		if id == rules.supply_id and not box.is_empty():
-			# 已有原料柜也能用同一个框显示待买的原料箱。
+			# 有独立原料位的柜子只框住当前待购原料。
 			frame.visible = true
 			var m := shop.station(rules.supply_id).material(box)
 			frame.can_unlock = rules.command_status("unlock_box", {"material": box}).code == "ok"
