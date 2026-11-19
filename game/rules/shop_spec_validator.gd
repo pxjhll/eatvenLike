@@ -615,6 +615,7 @@ static func _validate_auxiliary(shop: SpecShop, c: Dictionary, errors: Array[Dic
 		var p := "guide[%d]" % i
 		_enum(guide.trigger, ["start", "angry", "next"], p + ".trigger", errors)
 		_enum(guide.style, ["hint", "card"], p + ".style", errors)
+		_number(guide.when_seconds, p + ".when_seconds", errors)
 		_ref(guide.next, c.guides, p + ".next", errors, true)
 		for n in guide.cues.size():
 			var cue: Dictionary = guide.cues[n]

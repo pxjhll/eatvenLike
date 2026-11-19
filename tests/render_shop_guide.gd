@@ -165,6 +165,7 @@ func _run() -> void:
 	veteran.free()
 	await _tea_contextual_guides()
 	await _pancake_first_sale()
+	await _pancake_flyer_notice()
 	await _pancake_late_guides()
 	await _pancake_roll_hint()
 	await _pancake_skip_tutorial(false)
@@ -310,6 +311,67 @@ func _pancake_first_sale() -> void:
 	_check(employee.frame_actor.action == "idle" and employee.frame_actor.direction == 0, "首单收银后员工朝向柜台外的顾客")
 	_run_until(func() -> bool: return employee.frame_actor.action == "walk", 30.0)
 	_check(employee.frame_actor.action == "walk", "员工接到下一单后继续行走")
+	view.free()
+
+func _pancake_flyer_notice() -> void:
+	const NOTICE := "flyer_low_traffic"
+	var path := save_path + "-flyer-notice"
+	var owner := ShopRules.new(PANCAKE, 42)
+	owner.unlock("soy_milk")
+	owner.sold = 2
+	var service: RefCounted = owner.runtime.service
+	_check(owner.send_flyers().is_empty(), "可以在缺客提示前自行发传单")
+	view = load("res://presentation/shop/shop_play.tscn").instantiate()
+	view.session = TestSession.make(PANCAKE, path, owner)
+	await _reopen(view)
+	hud = view.ui
+	guide = view.guide
+	for step in PANCAKE.guide:
+		if step.id != NOTICE: guide.seen[step.id] = true
+	guide.enabled = true
+	guide.refresh(0.0)
+	owner.clock += 10.0
+	guide.refresh(0.0)
+	_check(guide.active.is_empty(), "顾客少时，传单冷却中也不弹提示")
+	# Advance the cooldown without sampling stochastic arrivals in this UI test.
+	var flyers: RefCounted = service.flyers
+	for index in 4: flyers.consume()
+	flyers.advance(120.0, true)
+	guide.refresh(0.0)
+	owner.clock += 7.5
+	guide.refresh(0.0)
+	_check(guide.active.is_empty(), "可发传单但缺客不足八秒，不弹提示")
+	for index in range(owner.waiting_customers().size(), 2):
+		_check(String(service._automatic_arrival()).is_empty(), "安排一位测试顾客进店")
+	owner.clock += 0.5
+	guide.refresh(0.0)
+	_check(owner.waiting_customers().size() >= 2 and guide.active.is_empty(), "有两位未交餐顾客时重置缺客计时")
+	# Resolve the test queue at the existing service boundary before the next quiet spell.
+	owner.run(120.0)
+	if owner.waiting_customers().size() >= 2:
+		_run_until(func() -> bool: return owner.waiting_customers().size() < 2, 120.0)
+	guide.restart()
+	guide.refresh(0.0)
+	hud.open_page("staff")
+	guide.refresh(0.0)
+	owner.clock += 8.0
+	hud.open_page("shop")
+	guide.refresh(0.0)
+	_check(guide.active.is_empty(), "员工页停留时间不计入缺客提示")
+	_run_until(func() -> bool: return guide.active == NOTICE, 180.0)
+	_check(guide.active == NOTICE and guide._show_notice and not view.frozen() and guide._point == Vector2.INF,
+		"实际营业时持续缺客才显示非阻塞短提示")
+	_check(guide._bubble_text.text.contains("点前台免费发传单"), "短提示说明前台入口和发传单免费")
+	await _capture("pancake-flyer-notice", 0.0)
+	var counter: Rect2 = view.anchors.rect("Stations/front_counter/Tap")
+	await _press(_screen(counter.position + counter.size * Vector2(0.8, 0.7)))
+	_check(hud.page == "station" and hud.page_node("station").station_id == owner.counter_id
+		and not guide._bubble.visible, "点前台可以直接打开面板，短提示收起")
+	await _click(hud.page_node("station").flyer_button)
+	_check(guide.seen.has(NOTICE) and owner.command_status("send_flyers").code == "flyer_cooldown",
+		"通过前台按钮发传单后结束提示并记录已看")
+	await _click(hud.tab("shop"))
+	_check(guide.active.is_empty(), "发完传单回店面不会再次弹出")
 	view.free()
 
 func _pancake_late_guides() -> void:

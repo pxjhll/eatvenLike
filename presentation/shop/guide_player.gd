@@ -49,6 +49,7 @@ var _skip_touch := -1
 var _show_bubble := false
 var _show_notice := false
 var _notice_elapsed := {}
+var _eligible_since := {}
 
 
 func setup(view: Node2D, seen_ids: Array) -> void:
@@ -141,6 +142,7 @@ func restart() -> void:
 	_staff_at_start = 0
 	_announcement_left = 0.0
 	_announcement_portrait = null
+	_eligible_since.clear()
 	_skip_touch = -1
 	visible = false
 	if _bubble != null: _bubble.hide()
@@ -217,9 +219,18 @@ func _pick() -> void:
 		if _any(step.seen_when, step):
 			seen[step.id] = true
 			continue
-		if step.shop_page_only and _hud.page != "shop": return
+		if step.shop_page_only and _hud.page != "shop":
+			_eligible_since.clear()
+			return
 		if step.trigger == "angry" and not _angry_pending: continue
-		if not _all(step.when, step): continue
+		var delayed := step.when_seconds > 0.0
+		if (delayed and not can_show_announcement()) or not _all(step.when, step):
+			if delayed: _eligible_since.erase(step.id)
+			continue
+		if delayed:
+			var clock: float = _view.rules.clock
+			var since: float = _eligible_since.get_or_add(step.id, clock)
+			if clock - since + 0.000001 < step.when_seconds: continue
 		if step.trigger == "angry": _angry_pending = false
 		_start(step.id)
 		return
@@ -235,6 +246,7 @@ func _opening_done() -> bool:
 
 func _start(id: String) -> void:
 	active = id
+	_eligible_since.clear()
 	_notice_elapsed.clear()
 	_staff_at_start = _view.view.deployed_count()
 	var step := _step()
@@ -430,6 +442,11 @@ func _holds(condition: String) -> bool:
 		"waiting": return not _waiting().is_empty()
 		"can_hire": return rules.hire_cost() >= 0 and rules.gold >= rules.hire_cost()
 		"can_staff": return not _waiting().is_empty() or (rules.hire_cost() >= 0 and rules.gold >= rules.hire_cost())
+		"can_send_flyers": return rules.shop.flyer != null and rules.command_status("send_flyers").code == "ok"
+		"idle_staff":
+			for worker in rules.workers:
+				if rules.worker_idle(worker): return true
+			return false
 		"affordable": return rules.command_status("unlock", {"id": arg}).code == "ok"
 		"box": return rules.pending_box() == arg
 		"box_affordable": return not rules.pending_box().is_empty() and rules.command_status("unlock_box", {"material": rules.pending_box()}).code == "ok"
@@ -450,6 +467,7 @@ func _number(name: String) -> float:
 		"opening": return mini(2, rules.staff_slots())
 		"stage": return rules.stage_index
 		"sold": return rules.sold
+		"customers": return rules.waiting_customers().size()
 		"kitchen_staff": return rules.kitchen_staff()
 	return float(name) if name.is_valid_float() else 0.0
 
