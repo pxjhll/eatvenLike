@@ -711,7 +711,7 @@ cues = Array[Dictionary]([{
 script = ExtResource("13_l0dwn")
 id = "tea_leaf"
 display_name = "茶叶"
-art = "pearl_tea"
+art = "tea_tin"
 
 [sub_resource type="Resource" id="Resource_cffgs"]
 script = ExtResource("13_l0dwn")

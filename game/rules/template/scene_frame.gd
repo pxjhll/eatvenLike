@@ -67,7 +67,7 @@ static func build(runtime: RefCounted, displays: Array = [], presentation: Dicti
 		row.seat = -1 if row.seat_key.is_empty() else int(String(row.seat_key).get_slice("/",1))
 		row.seated = not row.seat_key.is_empty() and runtime.service.customers.ready(guest.id,row.seat_key)
 		row.exiting = guest.state=="leaving"
-		row.takeaway = bool(routes.get(guest.id,false))
+		row.takeaway = guest.get("regular", false) or bool(routes.get(guest.id,false))
 		row.mood = owner.order_mood({"wait":guest.wait,"seat":row.seat})
 		var patience: float = runtime._definition.service.orders.patience
 		row.patience = maxf(0.0,1.0-float(guest.wait)/patience) if patience>0.0 and guest.state=="queue" else -1.0

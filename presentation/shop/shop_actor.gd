@@ -34,6 +34,7 @@ var body := Sprite2D.new()
 var carried := Sprite2D.new()
 var _held_layer := Node2D.new()
 var _held_sprites: Array[Sprite2D] = []
+var _held_amounts: Array[Label] = []
 var amount := Label.new()
 var task := Label.new()
 var selected := false:
@@ -55,6 +56,7 @@ var _patience := -1.0
 ## 0 calm, 1 impatient, 2 angry; customers never leave, they show it on their face instead.
 var _mood := 0
 var _order_scale := 1.0
+var _order_offset := Vector2.ZERO
 var _takeaway := false
 var _order_cup := Sprite2D.new()
 ## All visible attachments share this offset; the actor root stays authoritative.
@@ -122,7 +124,7 @@ func setup(art_id: String, font: Font, height := -1.0) -> void:
 	_visual.add_child(progress_bar)
 
 
-func show_order(item: String, patience: float, mood := 0, takeaway := false, compact := false) -> void:
+func show_order(item: String, patience: float, mood := 0, takeaway := false, compact := false, offset := Vector2.ZERO) -> void:
 	task.visible = false
 	var item_changed := item != _order_item
 	_order_item = item
@@ -131,16 +133,16 @@ func show_order(item: String, patience: float, mood := 0, takeaway := false, com
 		if item_changed: _visual.queue_redraw()
 		return
 	var scale_factor := 0.72 if compact else 1.0
-	var size_changed := scale_factor != _order_scale
+	var layout_changed := scale_factor != _order_scale or offset != _order_offset
 	if item_changed:
 		_order_cup.texture = order_icon.call(item)
-	if item_changed or size_changed:
+	if item_changed or layout_changed:
 		_order_cup.scale = Vector2.ONE * 40.0 * scale_factor / _order_cup.texture.get_height()
 		var icon_width := _order_cup.texture.get_width() * _order_cup.scale.x
 		var inset := maxf(0.0, (40.0 * scale_factor - icon_width) / 2.0)
-		_order_cup.position = Vector2(-46.0 * scale_factor + inset, -_height - 4.0 - 58.0 * scale_factor)
+		_order_cup.position = offset + Vector2(-46.0 * scale_factor + inset, -_height - 4.0 - 58.0 * scale_factor)
 	patience = clampf(patience, 0.0, 1.0) if patience >= 0.0 else -1.0
-	var redraw := item_changed or size_changed or mood != _mood or takeaway != _takeaway
+	var redraw := item_changed or layout_changed or mood != _mood or takeaway != _takeaway
 	if not redraw and patience != _patience:
 		# Retain the fill until its tip moves a screen pixel, with immediate
 		# updates to colors and empty/full states.
@@ -151,6 +153,7 @@ func show_order(item: String, patience: float, mood := 0, takeaway := false, com
 		_patience = patience
 		_mood = mood
 		_takeaway = takeaway
+		_order_offset = offset
 		_order_scale = scale_factor
 		_visual.queue_redraw()
 
@@ -183,8 +186,6 @@ func display(worker: Dictionary, clock: float, displayed_position := Vector2.INF
 	var at: int = worker.get("step", 0)
 	var in_machine: bool = worker.get("presentation_version")!=1 and worker.get("phase", "") == "work" and at < steps.size() and (bool(steps[at].get("into_machine", false)) or bool(steps[at].get("put_down", false)))
 	carried.visible = not item.is_empty() and count > 0 and not in_machine
-	amount.visible = carried.visible and count > 1
-	amount.text = "×%d" % count
 	if carried.visible:
 		var art: Dictionary = item_art.call(item)
 		var texture: Texture2D = ItemArt.texture_from_look(art)
@@ -199,7 +200,6 @@ func display(worker: Dictionary, clock: float, displayed_position := Vector2.INF
 			if facing == 0:
 				center.y += float(art.get("held_front_drop", 0.0))
 			carried.position = center - texture.get_size() * carried.scale / 2.0
-			amount.position = center + Vector2(10, 10)
 			var behind: bool = facing in [3, 4, 5]
 			if behind != (_held_layer.get_index() < frame_actor.get_index()):
 				_visual.move_child(_held_layer, frame_actor.get_index())
@@ -209,23 +209,37 @@ func display(worker: Dictionary, clock: float, displayed_position := Vector2.INF
 
 func _display_held_items(worker: Dictionary) -> void:
 	var items: Array = worker.get("held_items",[]) if worker.get("presentation_version")==1 and carried.visible else []
+	var primary_count: int = worker.get("carry_count", 0) if items.is_empty() else items[0].get("count", 1)
+	amount.visible = carried.visible and primary_count > 1
+	amount.text = "×%d" % primary_count
+	var left_facing: bool = frame_actor.direction > 4 if frame_actor != null else body.flip_h
+	var spacing := Vector2(-18 if left_facing else 18, -4)
+	if carried.visible:
+		var primary_center := carried.position + carried.texture.get_size() * carried.scale * 0.5
+		amount.position = primary_center + Vector2(-24 if items.size() > 1 and not left_facing else 10, 10)
 	while _held_sprites.size()<maxi(0,items.size()-1):
 		var sprite := Sprite2D.new()
 		sprite.centered = false
 		_held_layer.add_child(sprite)
 		_held_sprites.append(sprite)
+		var label := amount.duplicate() as Label
+		_visual.add_child(label)
+		_held_amounts.append(label)
 	for index in _held_sprites.size():
 		var sprite := _held_sprites[index]
 		sprite.visible = index+1<items.size()
+		var label := _held_amounts[index]
+		label.visible = sprite.visible and int(items[index+1].get("count", 1)) > 1
 		if not sprite.visible: continue
 		var look: Dictionary = item_art.call(items[index+1].item)
 		var texture: Texture2D = ItemArt.texture_from_look(look)
 		sprite.texture = texture
 		sprite.modulate = look.get("tint",Color.WHITE)
 		sprite.scale = Vector2.ONE*CUP_HEIGHT/maxf(texture.get_width(),texture.get_height())
-		var left_facing: bool = frame_actor.direction > 4 if frame_actor != null else body.flip_h
-		var spacing := Vector2(-18 if left_facing else 18, -4)
 		sprite.position = carried.position + spacing * (index + 1)
+		if label.visible:
+			label.text = "×%d" % int(items[index+1].count)
+			label.position = sprite.position + texture.get_size() * sprite.scale * 0.5 + Vector2(-24 if left_facing else 10, 10)
 
 
 func _display_frames(worker: Dictionary, movement: Vector2, clock_step: float) -> void:
@@ -280,7 +294,7 @@ func _draw_visual() -> void:
 	if _order_item.is_empty():
 		return
 	var anchor := Vector2(0.0,-_height-4.0)
-	_visual.draw_set_transform(anchor*(1.0-_order_scale),0.0,Vector2.ONE*_order_scale)
+	_visual.draw_set_transform(_order_offset + anchor*(1.0-_order_scale),0.0,Vector2.ONE*_order_scale)
 	var top := -_height - 64.0
 	_visual.draw_texture_rect(BUBBLE, Rect2(-48, top, 96, 60), false)
 	if _patience >= 0:

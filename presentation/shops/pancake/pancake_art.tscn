@@ -175,6 +175,12 @@ metadata/note = "拿到餐从下方中间离开"
 
 [node name="Counter" type="Node2D" parent="Anchors"]
 
+[node name="OrderBubbleArea" type="Node2D" parent="Anchors/Counter"]
+position = Vector2(431, 1000)
+script = ExtResource("anchor")
+size = Vector2(83, 92)
+metadata/bubble_offset = Vector2(68, 82)
+
 [node name="Sale" type="Node2D" parent="Anchors/Counter"]
 position = Vector2(470, 690)
 

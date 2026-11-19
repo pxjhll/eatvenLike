@@ -101,6 +101,8 @@ var _hint_text := ""
 var _dining: Node2D
 var _scroll := 0.0
 var _scroll_min := 0.0
+var _counter_bubble_area := Rect2()
+var _counter_bubble_offset := Vector2.ZERO
 var _world_top := 0.0
 var _world_factor := 1.0
 var _pan_press := Vector2.INF
@@ -180,6 +182,8 @@ func _ready() -> void:
 	$Canvas.move_child(art, 0)
 	anchors = ShopAnchors.new(art.get_node("Anchors"))
 	_world_size = anchors.meta(".", "world_size", _world_size)
+	_counter_bubble_area = anchors.rect("Counter/OrderBubbleArea")
+	_counter_bubble_offset = anchors.meta("Counter/OrderBubbleArea", "bubble_offset", Vector2.ZERO)
 	_top_margin = float(anchors.meta(".", "top_margin", 0.0))
 	_actor_unit_scale = Presentation.scene_units(_world_size)
 	_customer_height = Presentation.customer_height
@@ -999,8 +1003,9 @@ func _update_customers_motion(frame: Dictionary, delta := 0.0) -> void:
 		if row.has("patience"): patience = float(row.patience)
 		elif shop.fulfillment.handoff=="single" and row.state=="queue" and shop.fulfillment.leave_after>0:
 			patience = 1.0-float(row.wait)/shop.fulfillment.leave_after
-		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway,row.get("compact_order",false))
 		var displayed: Vector2 = pose.pos if row.seated else _customer_route_presentation.point(row,float(Presentation.customer_speed)*shop.layout.motion_units)
+		var offset := _counter_bubble_offset if _counter_bubble_area.has_point(displayed) else Vector2.ZERO
+		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway,row.get("compact_order",false),offset)
 		actor.display(pose,float(frame.clock)+_customer_route_presentation.age,displayed)
 		_customer_positions[key] = row.pos
 		if _z_by_y: actor.z_index = int(displayed.y)
