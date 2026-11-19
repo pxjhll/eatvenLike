@@ -161,6 +161,16 @@ func guide_snapshot() -> Dictionary:
 		"any_angry": rules.angry_count() > 0, "angry_cause": _guide_angry_cause(), "slow_machine": _guide_slow_machine()}
 
 
+func has_idle_staff() -> bool:
+	for worker in rules.workers:
+		if rules.worker_idle(worker): return true
+	return false
+
+
+func waiting_customer_count() -> int:
+	return rules.waiting_customers().size()
+
+
 func has_order_requiring_processing(station: String) -> bool:
 	if _runtime == null or _runtime.service == null or not rules.station_unlocked(station): return false
 	for order in _runtime.service.orders.active_snapshot().orders:
