@@ -3,7 +3,9 @@ extends Control
 const Fortunes := preload("res://game/rules/shop_fortunes.gd")
 const ART := {
 	"frame":preload("res://art/ui/fortunes/frame.png"), "plaque":preload("res://art/ui/fortunes/plaque.png"),
+	"box_shadow":preload("res://art/ui/fortunes/box_shadow.png"),
 	"box":preload("res://art/ui/fortunes/box.png"), "pocket":preload("res://art/ui/fortunes/pocket.png"),
+	"held_back":preload("res://art/ui/fortunes/held_back.png"), "held_front":preload("res://art/ui/fortunes/held_front.png"),
 	"ticket":preload("res://art/ui/fortunes/ticket.png"), "button":preload("res://art/ui/fortunes/button.png"),
 	"close":preload("res://art/ui/fortunes/close.png"), "paw":preload("res://art/ui/fortunes/paw.png"),
 	"stamp":preload("res://art/ui/fortunes/stamp.png"), "flower":preload("res://art/ui/fortunes/flower.png"),
@@ -50,7 +52,7 @@ func refresh() -> void:
 		timer = null
 		_art("frame", Rect2(Vector2.ZERO, SIZE))
 		_art("plaque", Rect2(118, 32, 374, 80))
-		_label("幸运签盒", Rect2(125, 35, 360, 64), 43)
+		_label("幸运签盒", Rect2(125, 34, 360, 68), 49)
 		_art("close", Rect2(530, 9, 64, 64))
 		_hit("关闭", Rect2(528, 7, 68, 68), dismiss)
 		if state.pending == "": _home(state)
@@ -60,29 +62,37 @@ func refresh() -> void:
 		timer.text = "下次恢复 %02d:%02d" % [seconds / 60, seconds % 60] if state.opened and state.charges < 2 else ("次数已满" if state.opened else "完成首单后可抽签")
 
 func _home(state: RefCounted) -> void:
-	_art("box", Rect2(205, 125, 200, 146))
+	_art("box_shadow", Rect2(198, 214, 214, 49))
+	_art("box", Rect2(201, 112, 208, 150))
 	if state.held.size() == 2:
-		_art("ticket", Rect2(72, 280, 466, 114))
-		_label(Fortunes.TITLES[state.held[1]], Rect2(114, 285, 382, 42), 24)
-		_hit("切换留签", Rect2(72, 280, 466, 49), _act.bind("swap"))
-	var front_y := 324 if state.held.size() == 2 else 310
-	_art("ticket", Rect2(59, front_y, 492, 105))
+		_art("held_back", Rect2(67, 267, 477, 64))
+		_label(Fortunes.TITLES[state.held[1]], Rect2(146, 275, 318, 44), 32)
+		var swap := _hit("切换留签", Rect2(81, 270, 395, 45), _act.bind("swap"))
+		swap.tooltip_text = "点后排签可切换"
 	if state.held.is_empty():
-		_label("可留一张签" if state.slots() == 1 else "可留两张签", Rect2(80, front_y + 10, 450, 58), 29)
+		_art("pocket", Rect2(40, 370, 530, 76))
+		_label("可留一张签" if state.slots() == 1 else "可留两张签", Rect2(80, 322, 450, 63), 29)
 	else:
-		var id: String = state.held[0]
-		_label("已留签", Rect2(73, front_y + 16, 93, 52), 20)
-		_label(Fortunes.TITLES[id], Rect2(165, front_y + 8, 215, 40), 29)
-		_label(Fortunes.DETAILS[id], Rect2(154, front_y + 48, 240, 30), 17)
-		_button("使用", Rect2(410, front_y + 14, 109, 58), _act.bind("held"), 24)
-	_art("pocket", Rect2(40, 389, 530, 74))
-	if state.held.size() == 2:
-		_label("点后排签可切换", Rect2(75, 457, 460, 32), 19)
-	elif state.progress < 5:
-		_label("第二槽 · 连抽 %d/5 次解锁" % state.progress, Rect2(75, 458, 460, 32), 19)
-	_label("可抽 %d/2 次" % state.charges, Rect2(115, 492, 380, 46), 29)
-	_button("免费抽一签", Rect2(129, 544, 352, 86), _act.bind("draw"), 38, state.charges == 0)
-	timer = _label("", Rect2(85, 622, 440, 38), 21)
+		_held_front(state.held[0])
+	var has_progress: bool = state.progress < 5
+	if has_progress:
+		_label("第二槽 · 连抽 %d/5 次解锁" % state.progress, Rect2(75, 447, 460, 32), 19)
+	var footer_offset := 17 if has_progress else 0
+	_label("可抽 %d/2 次" % state.charges, Rect2(115, 449 + footer_offset, 380, 54), 31)
+	_button("免费抽一签", Rect2(126, 508 + footer_offset, 357, 91), _act.bind("draw"), 38, state.charges == 0)
+	timer = _label("", Rect2(85, 601 + footer_offset, 440, 40), 21)
+
+func _held_front(id: String) -> void:
+	_art("held_front", Rect2(36, 296, 539, 156))
+	_label("已留签", Rect2(92, 343, 83, 44), 23)
+	var title := _label(Fortunes.TITLES[id], Rect2(209, 329, 183, 49), 34)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	var detail: String = {"machine":"+50% · 20秒", "walk":"+40% · 20秒", "tips":"+20% · 3单", "guest":"自带餐盒 · 1单"}[id]
+	var value := _label(detail, Rect2(209, 370, 187, 42), 25)
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	value.add_theme_color_override("font_color", Color("845633"))
+	_label("使用", Rect2(427, 345, 102, 49), 26)
+	_hit("使用", Rect2(422, 341, 113, 62), _act.bind("held"))
 
 func _reveal(state: RefCounted) -> void:
 	var id: String = state.pending
