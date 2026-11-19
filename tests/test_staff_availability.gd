@@ -108,7 +108,7 @@ func _check_identities(owner: ShopRules, before: Array, refresh := false) -> voi
 func _check_legacy_progress(owner: ShopRules, before: Dictionary) -> void:
 	var after := owner.to_dict()
 	check_eq(after.version,2,"historical format is adopted by the public protocol")
-	for key in ["gold","revenue","sold","stage_index","unlocked","levels","boxes","completed_at","seats","_next_staff","rng","event_rng","_sale_carry"]:
+	for key in ["gold","revenue","sold","stage_index","unlocked","levels","boxes","completed_at","_next_staff","rng","event_rng","_sale_carry"]:
 		if key=="stage_index" and owner.shop==STIRFRY:
 			check_eq(after.outer.stage_index,owner.shop.stages.size()-1,"old final stage maps to the new final stage")
 			continue
@@ -122,6 +122,9 @@ func _check_legacy_progress(owner: ShopRules, before: Dictionary) -> void:
 			check_eq(after.outer.levels,expected,"third shop restores existing levels and initializes new upgrade tracks")
 			continue
 		check_eq(after.outer[key],before[key],owner.shop.id+": migration preserves "+key)
+	var expected_seats: Dictionary = before.seats.duplicate()
+	if owner.shop == TEA: expected_seats.dine = maxi(4, int(expected_seats.dine))
+	check_eq(after.outer.seats, expected_seats, owner.shop.id+": retain purchased seats and grant the current tea opening tier")
 	for dish in before.sold_by_dish:
 		check_eq(after.outer.sold_by_dish[dish],before.sold_by_dish[dish],owner.shop.id+": migration preserves sales of "+dish)
 	check_eq(after.runtime.clock,before.clock,"migration retains the simulation clock")
