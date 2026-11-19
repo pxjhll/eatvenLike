@@ -726,7 +726,7 @@ func admission_pending(worker: Dictionary) -> bool:
 	var queue: Array = orders.queue()
 	return not queue.is_empty() and orders.guest(queue[0]).state=="queue" and (_policy.seats.is_empty() or not _free_seat().is_empty())
 
-func candidates(worker: Dictionary) -> Array:
+func candidates(worker: Dictionary, active_orders: Variant = null) -> Array:
 	var out: Array = []
 	var queue: Array = orders.queue()
 	if _policy.admission == "employee" and not queue.is_empty() and _menu_ready() and _eligible(worker, _policy.admission_roles):
@@ -736,7 +736,7 @@ func candidates(worker: Dictionary) -> Array:
 				"from":String(_policy.admission_port), "to":String(_policy.admission_port), "seconds":float(_policy.admission_seconds)})
 	if not _eligible(worker, _policy.delivery_roles): return out
 	var handoff: Dictionary = _policy.get("staff_handoff",{})
-	for order in orders.active_snapshot().orders:
+	for order in (orders.active_snapshot().orders if active_orders == null else active_orders):
 		if order.state == "delivered": continue
 		var guest: Dictionary = orders.guest(order.guest)
 		if uses_customer_pickup(order.id):

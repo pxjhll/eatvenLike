@@ -31,6 +31,9 @@ var _diagnostics: Array = []
 var _restocks: RefCounted
 var service: RefCounted
 var _transports: RefCounted
+var _allocation_production: Variant = null
+var _allocation_orders: Variant = null
+var _allocation_facts := {}
 
 func _init(owner: RefCounted, template: Resource, compiled: Dictionary = {}) -> void:
 	runner = Runner.new(owner)
@@ -299,17 +302,18 @@ func restore(data: Dictionary, refresh_numeric := false, refresh_layout := false
 	if not limit_overrides.error.is_empty(): return limit_overrides.error
 	var restored_service: RefCounted
 	var dynamic: Dictionary = {}
-	var service_stock := Inventory.new()
+	var service_stock: RefCounted
 	if service != null:
 		if not data.runner.get("inventory") is Dictionary: return "missing service inventory"
-		var stock_error := service_stock.restore(data.runner.inventory)
+		service_stock = Inventory.new()
+		var stock_error: String = service_stock.restore(data.runner.inventory)
 		if not stock_error.is_empty(): return stock_error
 		restored_service = Service.new(self, _definition.service)
 		if not restored_service.last_error.is_empty(): return restored_service.last_error
 		var service_error: String = restored_service.prepare_restore(data.service, service_stock,refresh_numeric,data.dispatch,data.units,refresh_layout)
 		if not service_error.is_empty(): return service_error
 		dynamic = restored_service.dynamic_places()
-	var restored_runner: Dictionary = runner.prepare_restore(data.runner, dynamic, limit_overrides.definition,refresh_layout)
+	var restored_runner: Dictionary = runner._prepare_restore(data.runner, dynamic, limit_overrides.definition, refresh_layout, service_stock)
 	if not String(restored_runner.error).is_empty(): return restored_runner.error
 	var error: String = _restocks.validate_snapshot(data.restocks, data.runner.machines, data.runner.inventory)
 	if not error.is_empty(): return error
@@ -429,6 +433,7 @@ func restore(data: Dictionary, refresh_numeric := false, refresh_layout := false
 	return ""
 
 func dispatch_facts(unit_data: Variant = null, service_data: Variant = null) -> Dictionary:
+	if unit_data == null and service_data == null and not _allocation_facts.is_empty(): return _allocation_facts
 	var units: Array = _units if unit_data == null else unit_data
 	var state: Dictionary = ({"orders":service.orders.active_snapshot()} if service != null else {}) if service_data == null else service_data
 	var facts := {"units":{}, "open":{}}
@@ -649,17 +654,16 @@ func _start_transports() -> void:
 			if result.error.is_empty(): unit.running[node.id] = int(result.id)
 
 func _allocate() -> void:
-	var production: Variant = null
-	var facts := {}
 	for worker in runner.owner.workers:
 		if not runner.idle(worker.id) or worker.walking: continue
-		if production == null:
-			production = _candidates()
-			facts = dispatch_facts()
-		var candidates := _ranked_candidates(worker, production, facts)
-		if not candidates.is_empty():
-			# An attempt can change stock, even if it has to cancel after starting.
-			production = null
+		if _allocation_facts.is_empty():
+			# Starting work can claim a guest or reserve goods. Order
+			# acceptance and unit completion happen before allocation.
+			var state: Dictionary = {"orders":service.orders.active_snapshot()} if service != null else {}
+			_allocation_orders = state.orders.orders if service != null else null
+			_allocation_facts = dispatch_facts(null, state)
+		if _allocation_production == null: _allocation_production = _candidates()
+		var candidates := _ranked_candidates(worker, _allocation_production, _allocation_facts)
 		for candidate in candidates:
 			var error := ""
 			match String(candidate.kind):
@@ -668,6 +672,9 @@ func _allocate() -> void:
 					candidate.count, _definition.hop_seconds, candidate.owner, candidate.unit, candidate.seconds)
 				"bundle": error = runner.transfer_bundle(worker.id, candidate.entries, candidate.get("seconds",_definition.hop_seconds))
 				"interact": error = runner.interact(worker.id, candidate.from, candidate.seconds, "admit", candidate.guest)
+			# Recheck production after a reservation or machine start, even
+			# when the attempt later fails. Admission only changes the queue.
+			if candidate.kind != "interact": _allocation_production = null
 			if not error.is_empty(): continue
 			if candidate.has("node"):
 				_find_unit(candidate.unit).running[candidate.node] = int(runner.tasks[worker.id].bundle)
@@ -678,6 +685,9 @@ func _allocate() -> void:
 				if not error.is_empty(): last_error = error; runner.cancel(worker.id)
 			break
 		if runner.idle(worker.id): runner.park_idle(worker)
+	_allocation_production = null
+	_allocation_orders = null
+	_allocation_facts = {}
 
 
 func candidates_for(worker_id: int) -> Array:
@@ -691,7 +701,7 @@ func _ranked_candidates(worker: Dictionary, production: Array, facts: Dictionary
 	return TransportBatch.compose(self, worker, ranked, facts)
 
 func dispatch_candidates(worker: Dictionary) -> Array:
-	return _dispatch_candidates(worker, _candidates())
+	return _dispatch_candidates(worker, _candidates() if _allocation_production == null else _allocation_production)
 
 func _dispatch_candidates(worker: Dictionary, production: Array) -> Array:
 	var handoff: Dictionary = _definition.get("service",{}).get("staff_handoff",{})
@@ -699,7 +709,7 @@ func _dispatch_candidates(worker: Dictionary, production: Array) -> Array:
 	if not handoff.is_empty() and worker.post==handoff.post:
 		pool = pool.filter(func(candidate: Dictionary) -> bool: return candidate.get("to")!=handoff.container)
 	if service == null: return pool
-	var service_candidates: Array = service.candidates(worker)
+	var service_candidates: Array = service.candidates(worker, _allocation_orders)
 	_set_candidate_progress(service_candidates)
 	return pool + service_candidates
 
