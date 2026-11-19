@@ -266,7 +266,8 @@ func status(machine: String) -> Dictionary:
 		result.operator = run.operator
 		result.working = run.phase == "processing" or run.phase in MANUAL
 		result.need = String(run.phase).trim_prefix("await_") if String(run.phase).begins_with("await_") else ""
-		if run.phase in MANUAL:
+		# A batch with stirring keeps its cooking meter on the batch clock.
+		if run.phase in MANUAL and definition.profile.stir_points.is_empty():
 			result.progress = 1.0 - float(run.stage_left) / maxf(0.000001, float(run.stage_total))
 		else: result.progress = 1.0 - float(run.remaining) / maxf(0.000001, float(run.duration))
 	return result

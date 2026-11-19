@@ -450,11 +450,15 @@ func _refresh(delta: float, frame: Dictionary = {}) -> void:
 		var open := rules.station_unlocked(id)
 		var working: bool = status.get("working", false)
 		var need: String = status.get("need", "")
-		_bars[id].visible = open and working
-		_bars[id].value = float(status.get("progress", 0.0))
-		_badges[id].text = need
-		_badges[id].visible = open and not working and not need.is_empty()
-		_badges[id].tooltip_text = "%s · 输入 %d · 加工 %d · 输出 %d" % [view.station_name(id), status.get("input", 0), status.get("processing", 0), status.get("output", 0)]
+		var awaiting_stir: bool = status.get("phase", "") == "await_stir"
+		var bar: ProgressBar = _bars[id]
+		bar.visible = open and (working or awaiting_stir)
+		bar.value = float(status.get("progress", 0.0))
+		var badge: Label = _badges[id]
+		badge.text = need
+		badge.visible = open and not working and not need.is_empty()
+		if badge.visible: badge.position.y = bar.position.y + (bar.size.y + 3.0 if awaiting_stir else -6.0)
+		badge.tooltip_text = "%s · 输入 %d · 加工 %d · 输出 %d" % [view.station_name(id), status.get("input", 0), status.get("processing", 0), status.get("output", 0)]
 	if _shelf != null:
 		_shelf.visible = not frame.has("presentation_version") or frame.get("counters",{}).has("shelf")
 		if _shelf.visible:
