@@ -95,7 +95,10 @@ func _reveal(state: RefCounted) -> void:
 		return
 	_label(Fortunes.TITLES[id], Rect2(40, 128, 530, 70), 38)
 	if id == "postcard":
-		_art("postcard", Rect2(103, 204, 404, 236))
+		_art("postcard", Rect2(39, 202, 532, 304))
+		var letter: String = Fortunes.DETAILS[id].replace("，", "，\n").replace("。", "。\n")
+		var writing := _label(letter, Rect2(316, 279, 215, 176), 21)
+		writing.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	elif id == "stamp":
 		_art("ticket", Rect2(117, 239, 376, 145))
 		var seal := _art("stamp", Rect2(259, 250, 92, 92))
@@ -109,9 +112,9 @@ func _reveal(state: RefCounted) -> void:
 		_art(id, Rect2(234, 236, 142, 146))
 	else:
 		_art("box", Rect2(210, 230, 190, 142))
-	var message: String = "金币 +%d" % state.amount if id == "cash" else Fortunes.DETAILS[id]
-	var description := _label(message, Rect2(85, 430, 440, 95), 22 if id == "postcard" else 29)
-	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if id != "postcard":
+		var message: String = "金币 +%d" % state.amount if id == "cash" else Fortunes.DETAILS[id]
+		_label(message, Rect2(70, 430, 470, 95), 29)
 	if id in Fortunes.STORABLE:
 		_button("立即使用", Rect2(71, 548, 224, 73), _act.bind("use"), 28)
 		_button("留签", Rect2(315, 548, 224, 73), _choose_replace.bind(true) if state.held.size() >= state.slots() else _act.bind("save"), 28)
