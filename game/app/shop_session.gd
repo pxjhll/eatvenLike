@@ -68,6 +68,8 @@ func start() -> Error:
 			guides_seen = store.loaded_guides.duplicate()
 	if not rules.runtime_error.is_empty(): return _fail(ERR_INVALID_DATA,rules.runtime_error)
 	if store.requires_shared_runtime() and rules.runtime==null: return _fail(ERR_INVALID_DATA,"公共经营模板未初始化")
+	if not rules.lucky.opened: rules.lucky.random.randomize()
+	rules.lucky.progress = maxi(rules.lucky.progress, mini(5, int(profile.perk_levels.get("fortune_draws", 0))))
 	started = true
 	# A corrupt shop may safely start fresh while retaining its existing warning.
 	last_error = store.last_error
@@ -77,7 +79,9 @@ func start() -> Error:
 func restart() -> Error:
 	var error := _active_error()
 	if error != OK: return error
+	var draws: int = rules.lucky.progress
 	rules.reset()
+	rules.lucky.progress = draws
 	rules.paused = false
 	last_error = ""
 	restarted.emit()
@@ -102,11 +106,28 @@ func save(guides: Array = []) -> Error:
 	return OK
 
 
+func fortune_action(action: String, index := 0, guides: Array = []) -> Error:
+	var active := _active_error()
+	if active != OK: return active
+	var before: Dictionary = rules.lucky.snapshot()
+	var balance := rules.gold
+	if not rules.lucky.act(rules, action, index): return _fail(ERR_UNAVAILABLE, "当前无法执行这个抽签操作")
+	var result := save(guides)
+	if result != OK:
+		rules.lucky.restore(before)
+		rules.gold = balance
+	return result
+
+
 func finish(record: Dictionary) -> Error:
 	var error := _active_error()
 	if error != OK: return error
+	var perks: Dictionary = profile.perk_levels.duplicate()
+	if rules.lucky.progress > 0: profile.perk_levels["fortune_draws"] = rules.lucky.progress
 	error = _progress.finish_shop(profile, store, record)
-	if error != OK: return _fail(error, _progress.last_error)
+	if error != OK:
+		profile.perk_levels = perks
+		return _fail(error, _progress.last_error)
 	transition_committed = true
 	last_error = ""
 	return OK
@@ -116,8 +137,12 @@ func jump(target: String, guides: Array = []) -> Error:
 	var error := _active_error()
 	if error != OK: return error
 	var seen := guides_seen if guides.is_empty() else guides
+	var perks: Dictionary = profile.perk_levels.duplicate()
+	if rules.lucky.progress > 0: profile.perk_levels["fortune_draws"] = rules.lucky.progress
 	error = _progress.jump_shop(profile, store, rules, target, speed, seen)
-	if error != OK: return _fail(error, _progress.last_error)
+	if error != OK:
+		profile.perk_levels = perks
+		return _fail(error, _progress.last_error)
 	guides_seen = seen.duplicate()
 	transition_committed = true
 	last_error = ""

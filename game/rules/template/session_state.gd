@@ -35,6 +35,7 @@ static func save(owner: RefCounted, compact_history := false, identity: Dictiona
 			"log": outer[key] = owner.events.log
 			"pending_events": outer[key] = owner.pending_events.map(func(event: SpecEvent) -> String: return event.id)
 			_: outer[key] = owner.get(key)
+	outer.fortunes = owner.lucky.snapshot()
 	outer.roster = []
 	for worker in owner.roster:
 		var row := {}
@@ -75,6 +76,7 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 	var expected := {}
 	for key in OUTER: expected[key] = defaults[key]
 	expected.roster = []
+	if data.outer.has("fortunes"): expected.fortunes = {}
 	if not Shape._shape(data.outer,expected): return "invalid outer state shape"
 	for key in OUTER: flat[key] = data.outer[key]
 	flat.roster = []; flat.workers = []
@@ -108,6 +110,8 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 	var error: String = Validator.new().validate(flat,defaults,owner.shop,candidate.chains,candidate.event_defs)
 	if not error.is_empty(): return error
 	candidate._restore_validated(flat)
+	if data.outer.has("fortunes") and not candidate.lucky.restore(data.outer.fortunes): return "invalid fortune box"
+	candidate.lucky.sync(flat.clock, flat.sold)
 	if refresh: candidate._refresh_content_values()
 	error = candidate.enable_runtime(template, false, prepared.get("compiled", {}))
 	if not error.is_empty(): return error
@@ -137,6 +141,7 @@ static func restore(owner: RefCounted, data: Dictionary, refresh := false, prepa
 	owner.rng = candidate.rng; owner.event_rng = candidate.event_rng; owner.mods = candidate.mods
 	owner.pending_events = candidate.pending_events
 	owner.events.log = candidate.events.log; owner.events.clock = candidate.clock
+	owner._sales.lucky = candidate.lucky
 	owner.runtime = candidate.runtime
 	owner.runtime.runner.owner = owner
 	owner.runtime_error = ""

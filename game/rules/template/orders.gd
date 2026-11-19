@@ -41,13 +41,14 @@ func _init(options: Dictionary = {}) -> void:
 	_policy.patience = float(_policy.patience)
 	_state.policy = Contract._canonical(_policy).sha256_text()
 
-func arrive(request: Array, capacity: int) -> Dictionary:
+func arrive(request: Array, capacity: int, regular := false) -> Dictionary:
 	if not last_error.is_empty(): return {"error":last_error, "id":-1}
 	if (not _request_valid(request) and not (request.is_empty() and _policy.get("request_at")=="admission")) or capacity < 1: return {"error":"invalid customer request or queue capacity", "id":-1}
 	if _policy.get("request_at")=="admission" and not request.is_empty(): return {"error":"admission menu cannot be selected at arrival","id":-1}
 	if queue().size() >= capacity:
 		return reject_arrival()
 	var guest := _guest()
+	if regular: guest.regular = true
 	guest.id = _state.next_guest
 	_state.next_guest += 1
 	guest.request = request.duplicate(true)
@@ -178,6 +179,7 @@ func settle(order_id: int, economy: RefCounted, tip := 0) -> Dictionary:
 	var amount: float = roundf(order.quote) if _policy.rounding == "order_round" else float(order.quote)
 	var receipt: Dictionary = economy.credit_order(amount, tip)
 	order.income = int(receipt.income)
+	if receipt.get("fortune_bonus", 0) > 0: order.fortune_bonus = receipt.fortune_bonus
 	if tip > 0: order.tip = tip
 	order.paid = true
 	return {"error":"", "income":order.income, "duplicate":false}
@@ -320,7 +322,9 @@ func _validate(data: Dictionary, inventory: RefCounted) -> String:
 	if data.version != 1 or data.policy != _state.policy or data.next_guest < 1 or data.next_order < 1 or data.next_line < 1 or data.lost < 0: return "order policy or sequence differs"
 	var guests := {}
 	for guest in data.guests:
-		if not Inventory._shape(guest, _guest()): return "invalid guest state"
+		var guest_shape := _guest()
+		if guest is Dictionary and guest.has("regular"): guest_shape.regular = false
+		if not Inventory._shape(guest, guest_shape): return "invalid guest state"
 		var unresolved: bool = _policy.get("request_at")=="admission" and guest.order==-1
 		if unresolved:
 			if not guest.request.is_empty(): return "unaccepted admission menu was selected early"
@@ -342,6 +346,7 @@ func _validate(data: Dictionary, inventory: RefCounted) -> String:
 	for order in data.orders:
 		var shape := _order()
 		if order is Dictionary and order.has("tip"): shape.tip = 0
+		if order is Dictionary and order.has("fortune_bonus"): shape.fortune_bonus = 0
 		if not Inventory._shape(order, shape): return "invalid order record"
 		if order.id < 1 or order.id >= data.next_order or orders.has(order.id) or not guests.has(order.guest) or guests[order.guest].order != order.id or order.lines.is_empty(): return "invalid order identity"
 		var tip: int = order.get("tip", 0)
@@ -389,7 +394,9 @@ func _validate(data: Dictionary, inventory: RefCounted) -> String:
 		if not is_finite(quote) or quote != order.quote or (order.state == "delivered") != complete: return "order total or completion differs from lines"
 		if order.paid:
 			var expected := roundi(order.quote) if _policy.rounding == "order_round" else floori(order.quote)
-			var base_income: int = order.income - tip
+			var bonus: int = order.get("fortune_bonus", 0)
+			var base_income: int = order.income - tip - bonus
+			if order.has("fortune_bonus") and bonus != maxi(1, roundi(base_income * 0.2)): return "invalid fortune tip"
 			if base_income < expected or base_income > expected + (0 if _policy.rounding == "order_round" else 1): return "receipt differs from configured rounding"
 		var guest: Dictionary = guests[order.guest]
 		if (complete and guest.state not in ["served", "eating", "leaving", "gone"]) or (not complete and guest.state != "waiting"): return "customer state differs from order completion"

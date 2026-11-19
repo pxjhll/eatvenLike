@@ -21,6 +21,11 @@ func setup(view: Node2D, hud: Control) -> void:
 
 func refresh() -> void:
 	var buffs: Array = _view.view.buffs()
+	var lucky: RefCounted = _view.rules.lucky
+	for row in [["walk", "移速", lucky.walk_until], ["machine", "加工", lucky.machine_until]]:
+		var left := ceili(float(row[2]) - _view.rules.clock - 0.00001)
+		if left > 0: buffs.append({"id":row[0], "fortune":"%s %d秒" % [row[1], left]})
+	if lucky.tips > 0: buffs.append({"id":"tips","fortune":"小费 %d单" % lucky.tips})
 	visible = not buffs.is_empty()
 	while _chips.size() < buffs.size(): _chips.append(_chip())
 	for i in _chips.size():
@@ -28,6 +33,12 @@ func refresh() -> void:
 		chip.visible = i < buffs.size()
 		if not chip.visible: continue
 		var buff: Dictionary = buffs[i]
+		chip.get_node("Row/Icon").visible = not buff.has("fortune")
+		if buff.has("fortune"):
+			chip.get_node("Row/Left").text = buff.fortune
+			chip.tooltip_text = buff.fortune
+			chip.set_meta("buff", buff.id)
+			continue
 		var view: ShopView = _view.view
 		var key := view.buff_icon(buff)
 		chip.get_node("Row/Icon").texture = Icons.texture(key)

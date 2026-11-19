@@ -46,6 +46,8 @@ var rng := RandomNumberGenerator.new()
 # ---------- 店铺状态 ----------
 var clock := 0.0
 var _sales := Sales.new()
+var lucky: RefCounted:
+	get: return _sales.lucky
 var _orders_state := OrderState.new()
 var gold: float:
 	get: return _sales.gold
@@ -350,6 +352,8 @@ func reset(seed := -1) -> void:
 	_next_order = 1
 	_next_staff = 1
 	rng.seed = shop.random_seed if seed < 0 else seed
+	_sales.lucky = Sales.Fortunes.new()
+	lucky.random.seed = rng.seed ^ 0x1F0A7
 	mods = RuleModifiers.new()
 	events.clear_history()
 	unlocked = {}
@@ -617,6 +621,7 @@ func _tick_runtime() -> void:
 		runtime_error = runtime.step(STEP)
 		if runtime!=advancing: return
 		clock = runtime._clock
+		lucky.sync(clock, sold)
 		events.clock = clock
 		if not runtime_error.is_empty(): return
 		_track_bottleneck()
@@ -866,7 +871,7 @@ func stat(worker: Dictionary, name: String) -> float:
 
 
 func walk_speed(worker: Dictionary) -> float:
-	return Numbers.walk_speed(shop, mods, tune, worker) * (shop.layout.motion_units if movement_enabled() else 1.0)
+	return (1.4 if clock + 0.00001 < lucky.walk_until else 1.0) * Numbers.walk_speed(shop, mods, tune, worker) * (shop.layout.motion_units if movement_enabled() else 1.0)
 
 
 func movement_enabled() -> bool:

@@ -152,7 +152,7 @@ func engage(id: int, worker: int, work_rate: float = 1.0, stage_seconds: float =
 	run.operator_rate = work_rate
 	return ""
 
-func advance(dt: float, paused := false) -> String:
+func advance(dt: float, paused := false, automatic_rate := 1.0) -> String:
 	if not is_finite(dt) or dt < 0.0: return "invalid machine time"
 	if paused or dt == 0.0: return ""
 	for run in _active_runs.values():
@@ -178,7 +178,7 @@ func advance(dt: float, paused := false) -> String:
 					var error := _complete(run)
 					if not error.is_empty(): return error
 			continue
-		run.remaining = maxf(0.0, float(run.remaining) - dt)
+		run.remaining = maxf(0.0, float(run.remaining) - dt * automatic_rate)
 		if run.stir_index < profile.stir_points.size():
 			var stop := float(run.duration) * (1.0 - float(profile.stir_points[run.stir_index]))
 			if run.remaining <= stop + 0.000001:
