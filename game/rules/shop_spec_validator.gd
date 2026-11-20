@@ -16,6 +16,7 @@ static func capabilities(mode: String) -> Dictionary:
 	if mode not in ["single", "handoff"]: return {}
 	var single := mode == "single"
 	var f := {
+		"whole_coin_prices": _supported([false, true]),
 		"flow_version":_reserved(0),"delivery_batch":_reserved("item"),"delivery_points":_reserved({}),
 		"handoff": _fixed([mode]), "taker": _fixed(["follower" if single else "front"]),
 		"dine_rule": _fixed(["takeaway_only" if single else "seat_first"]),
@@ -59,6 +60,7 @@ static func capabilities(mode: String) -> Dictionary:
 ## 每趟端 1 件、不合送；整单送齐时一次结账；附加菜（例汤）作为订单第二条明细。
 static func _serve_capabilities() -> Dictionary:
 	var f := {
+		"whole_coin_prices": _supported([false, true]),
 		"flow_version":_supported([0,1]),"delivery_batch":_supported(["item","order"]),"delivery_points":_supported(),
 		"handoff": _fixed(["serve"]), "taker": _fixed(["front"]), "dine_rule": _supported(["seat_wait", "self_pickup"]),
 		"pay_at": _fixed(["on_deliver"]), "price_rounding": _fixed(["dish_tenth_carry"]), "leave_queue": _fixed(["after_take"]),

@@ -431,6 +431,7 @@ track = SubResource("Resource_vul3f")
 
 [sub_resource type="Resource" id="Resource_k38dn"]
 script = ExtResource("10_kqskb")
+whole_coin_prices = true
 flow_version = 1
 addon_dish = "soup"
 addon_chance = 0.4
@@ -674,7 +675,7 @@ starting_posts = Array[String](["counter"])
 hire_pool = Array[String](["rabbit", "bear", "gray_cat", "fox", "parrot"])
 hire_costs = Array[int]([30, 60, 80, 110])
 zones = Array[String](["front", "kitchen"])
-second_front_slot_after = "rice_cooker"
+second_front_slot_after = "plum_dispenser"
 can_drag = true
 tracks = Array[ExtResource("9_47jng")]([ExtResource("training_front"), ExtResource("training_kitchen")])
 training_requires = Dictionary[String, String]({"kitchen": "rice_cooker"})
@@ -722,13 +723,13 @@ display_name = "酸梅汤机开张"
 stations = Array[String](["plum_dispenser"])
 cost = 12
 dish = "plum_juice"
-unlock_note = "先卖酸梅汤，攒金币买炒锅 A"
+unlock_note = "先卖酸梅汤，可招募第二位前台员工"
 customer_interval = 10.0
 order_weights = Dictionary[String, float]({
 "plum_juice": 1.0
 })
 staff_slots = Dictionary[String, int]({
-"kitchen": 2
+"kitchen": 0
 })
 queue_capacity = 6
 seat_seconds = 45.0
@@ -741,7 +742,7 @@ stations = Array[String](["rice_cooker"])
 cost = 20
 dish = "plain_fried_rice"
 grant_worker = "bear"
-unlock_note = "赠送一位后厨员工，开放第二个前台位"
+unlock_note = "开放后厨，赠送一位后厨员工"
 customer_interval = 13.0
 order_weights = Dictionary[String, float]({
 "plum_juice": 0.4,
@@ -765,7 +766,7 @@ order_weights = Dictionary[String, float]({
 "plum_juice": 1.0
 })
 staff_slots = Dictionary[String, int]({
-"kitchen": 2
+"kitchen": 0
 })
 queue_capacity = 6
 seat_seconds = 45.0
@@ -1666,10 +1667,25 @@ price_dishes = Array[String](["plum_juice"])
 description = "前台独立接取酸梅汤并送到出餐口，不占后厨工位"
 icon = "res://art/stirfry/scene/plum_machine.tres"
 
+[sub_resource type="Resource" id="StirfryComplete"]
+script = ExtResource("12_nb268")
+id = "shop_done"
+when = Array[String](["complete"])
+style = "card"
+title = "{shop}完成！"
+title_size = 48
+medal = "medal"
+stats = [["clock", "用时", "time"], ["coin", "总营业额", "revenue"]]
+text = "经营目标全部达成。"
+confirm_label = "去{next}"
+cancel_label = "继续营业"
+confirm_action = "leave"
+
 [resource]
 script = ExtResource("16_jxyor")
 id = "stirfry"
 display_name = "小炒饭馆"
+guide = Array[ExtResource("12_nb268")]([SubResource("StirfryComplete")])
 start_gold = 12
 random_seed = 11
 items = Array[ExtResource("13_2vgy6")]([SubResource("Resource_fxkk4"), SubResource("Resource_i5amu"), SubResource("Resource_wyaw6"), SubResource("Resource_b0fip"), SubResource("Resource_vysub"), SubResource("Resource_aqvop"), SubResource("Resource_sjrtd"), SubResource("Resource_xt8p7"), SubResource("Resource_rwojx"), SubResource("Resource_4sto7"), SubResource("Resource_ejaim"), SubResource("Resource_qct10"), SubResource("Resource_nld4s"), SubResource("Resource_npkjl"), SubResource("Resource_o4017"), SubResource("PlumItem"), SubResource("PlainRiceItem"), SubResource("FriedRiceBaseItem")])

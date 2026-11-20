@@ -186,3 +186,28 @@ func test_tea_quote_keeps_fractional_carry_at_real_sale_boundary() -> void:
 		receipts.append(int(rules.gold - before))
 	check_eq(receipts, [12, 13, 12, 13, 13], "真实交付累计五杯63金币")
 	check(ShopView.new(rules).quote_text(quote).contains("小数累计"), "展示解释累计结算")
+
+
+func test_live_shop_prices_round_up_and_each_price_level_adds_a_coin() -> void:
+	for id in ["pancake", "tea", "stirfry"]:
+		var spec: SpecShop = load("res://content/shops/%s/shop.tres" % id)
+		var owner := ShopRules.new(spec, 42)
+		for key in owner.levels:
+			if key == "flyer" or key.begins_with("staff/"): continue
+			var track := owner.track_of(key)
+			if track == null: continue
+			for level in range(1, track.levels.size() + 1):
+				var before := owner.query_context({key: level})
+				var after := owner.query_context({key: level + 1})
+				for dish in spec.dishes:
+					var price := float(after.dish_quote(dish.id).calculated)
+					check_eq(price, ceilf(price), "%s %s %s whole coin quote" % [id, key, dish.id])
+					if after.raw_price(dish.id) > before.raw_price(dish.id) + 0.000001:
+						check(price >= before.dish_price(dish.id) + 1, "%s %s Lv%d increases %s by a coin" % [id, key, level, dish.id])
+		if id == "pancake":
+			var query := owner.query_context({"soy_milk": 3})
+			for option in spec.order_options:
+				var main := float(query.dish_price("ham"))
+				var addon := int(query.dish_price("soy"))
+				check_eq(query.order_price_single({"kind": "ham", "addon": true, "options": [option.id]}),
+					ceili(snappedf(main * option.price_mult, 0.000001)) + addon, "each customized portion and addon settles at its quoted price")

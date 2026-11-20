@@ -127,7 +127,7 @@ func _run() -> void:
 	_rules().gold = 0
 	_make_angry(false)
 	guide.refresh(0)
-	_check(guide.active == "lost_seats" and guide._hole.intersects(_local(view._seats)), "座位坐满：指着堂食数字牌")
+	_check(guide.active == "lost_seats" and guide._hole.intersects(_local(view._register_target)), "座位坐满：指着收银台")
 	await _click(guide._bubble_skip)
 	_rules().diners.clear()
 	for order in _rules().orders: order.wait = 0.0
@@ -271,10 +271,10 @@ func _tea_seat_shortage() -> void:
 	_run_until(func() -> bool: return false, 3.5)
 	_check(guide.active.is_empty(), "短暂缺座不触发提示")
 	_run_until(func() -> bool: return guide.active == NOTICE, 1.0)
-	_check(guide.active == NOTICE and guide._show_notice and not view.frozen() and guide._pointer_bounds.intersects(_local(view._seats)),
-		"持续缺座时短提示指向堂食数字牌，营业继续")
+	_check(guide.active == NOTICE and guide._show_notice and not view.frozen() and guide._pointer_bounds.intersects(_local(view._register_target)),
+		"持续缺座时短提示指向收银台，营业继续")
 	owner.gold = 200.0
-	await _press(view._seats.get_global_transform_with_canvas() * (view._seats.size / 2.0))
+	await _press(view._register_target.get_global_transform_with_canvas() * (view._register_target.size / 2.0))
 	_check(hud.page == "station" and hud.page_node("station").station_id == owner.counter_id,
 		"点数字牌打开前台扩座入口")
 	await _click(hud.page_node("station").seat_button)

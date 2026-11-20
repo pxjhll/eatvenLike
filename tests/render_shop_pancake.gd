@@ -138,7 +138,7 @@ func _run() -> void:
 	_check(guide.active == "" and not hud.popups.has_card(), "引导走完（当前：%s）"%guide.active)
 
 	# 点柜台：面板里发传单，传单没有升级就不显示升级那一行
-	await _press(_screen(view.anchors.rect("Stations/front_counter/Tap").get_center() + Vector2(200, 40)))
+	await _press(_screen(view.anchors.rect("Stations/front_counter/Tap").get_center()))
 	_check(hud.page == "station" and hud.page_node("station").station_id == "front_counter", "点柜台打开柜台面板")
 	var flyer_button: Button = _find_button(hud.page_node("station"), "发传单")
 	await _click(flyer_button)

@@ -236,7 +236,7 @@ func _test_pantry_unlock(scene: Node2D) -> void:
 	var ingredient: Button = station.material_buttons["yangzhou_raw"]
 	suite.check(not ingredient.disabled, "the new ingredient price track is usable")
 	await _success(scene, func() -> void: ingredient.pressed.emit(), "upgraded", "Yangzhou ingredient price upgrade")
-	suite.check(is_equal_approx(rules.dish_price("yangzhou_rice"), price * 1.05), "ingredient level increases only the corresponding dish price")
+	suite.check(is_equal_approx(rules.dish_price("yangzhou_rice"), ceilf(price * 1.05)), "ingredient level increases only the corresponding dish price")
 	suite.check_eq(rules.level("pantry"), 2, "ingredient upgrade does not buy the next machine level")
 	suite.check(upgrade.disabled and "炒锅 B" in track.effect.text, "the next cabinet upgrade shows the pending equipment requirement")
 	suite.check_eq(rules.execute_command("unlock", {"id": "wok_b"}).code, "ok", "advance to the next pantry upgrade")

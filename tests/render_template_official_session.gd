@@ -23,7 +23,7 @@ func _shop(id: String) -> void:
 	if id!="stirfry":
 		for stage in spec.stages.size(): check(owner.unlock(spec.sold_at(stage)).is_empty(),"normal purchase")
 	for material in owner.boxes: check(owner.unlock_box(material).is_empty(),"normal material purchase")
-	while owner.roster.size()<2: check(owner.hire().is_empty(),"normal hiring")
+	while id != "stirfry" and owner.roster.size()<2: check(owner.hire().is_empty(),"normal hiring")
 	for worker in owner.roster:
 		if not worker.deployed: check(owner.deploy_worker(worker.id).is_empty(),"normal deployment")
 	var scene: Node2D = load("res://presentation/shop/shop_play.tscn").instantiate()
@@ -40,6 +40,9 @@ func _shop(id: String) -> void:
 				var frame: Control = scene._station_buttons.get(station)
 				check(frame!=null and frame.visible,station+": next physical purchase is visible at its station")
 			scene.station_action("recipe" if stage.stations.is_empty() else "unlock",station)
+			if index == 0:
+				scene.hire_worker()
+				check(owner.workers.size() == 2 and owner.kitchen_staff() == 0, "opening recruit serves at the register")
 			check(owner.stage_index==index and owner.station_unlocked(station),station+": purchase works from the normal scene action")
 	check(scene.view._runtime==owner.runtime and scene.view._follows_owner,"scene binds the session runtime without a test injection")
 	var restored := false

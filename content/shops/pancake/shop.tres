@@ -679,6 +679,7 @@ track = SubResource("Resource_hdkfn")
 
 [sub_resource type="Resource" id="Resource_8o5ay"]
 script = ExtResource("10_ldojk")
+whole_coin_prices = true
 addon_dish = "soy"
 addon_chance = 0.3
 dine_rule = "takeaway_only"
@@ -905,7 +906,7 @@ portrait_right = true
 stats = [["clock", "完店用时", "time"], ["coin", "总营业额", "revenue"]]
 text = "你把小摊照看得真好！
 下一站，咱们去开奶茶店吧。"
-confirm_label = "去下一家店"
+confirm_label = "去{next}"
 cancel_label = "接着营业"
 confirm_action = "leave"
 
@@ -918,7 +919,7 @@ done_when = Array[String](["!page:shop"])
 cues = Array[Dictionary]([{
 "at": "station:front_counter",
 "text": "有客人等急了！坐垫坐满了，
-点前台加坐垫，客人能坐着等"
+点收银台加坐垫，客人能坐着等"
 }])
 skip_label = "知道了"
 

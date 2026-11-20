@@ -87,10 +87,11 @@ static func select(definition: Dictionary, dish: String, base: String, selected:
 	return {"ids":chosen,"recipe":resolved.recipe,"error":resolved.error}
 
 static func quote(definition: Dictionary, owner: RefCounted, dish: String, selected: Array) -> float:
-	var price := Numbers.raw_price(owner.shop,owner.mods,owner.tune,dish)
+	var whole: bool = owner.shop.fulfillment.whole_coin_prices
+	var price: float = owner.dish_price(dish) if whole else Numbers.raw_price(owner.shop,owner.mods,owner.tune,dish)
 	for option in definition.options:
 		if option.id in selected: price *= option.price_mult
-	return price
+	return Numbers.whole_coins(price) if whole else price
 
 static func _error(message: String) -> Dictionary:
 	return {"definition":{},"error":message}

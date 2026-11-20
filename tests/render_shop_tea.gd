@@ -86,7 +86,7 @@ func _run() -> void:
 
 	# 点柜台：买座位、发传单
 	_rules().gold = 1000.0
-	await _click(view._seats)
+	await _click(view._register_target)
 	_check(hud.page == "station" and hud.page_node("station").station_id == "counter", "点柜台打开柜台面板")
 	var seats := _rules().seat_total()
 	await _click(hud.page_node("station").seat_button)
@@ -269,7 +269,7 @@ func _click(button: Control) -> void:
 	for unused in 4: await process_frame
 	view._refresh(0)
 	var ok: bool = button != null and button.is_visible_in_tree() and not (button is BaseButton and button.disabled)
-	_check(ok, "按钮看得见、能按：" + (String(button.get("text")) if button != null else "null"))
+	_check(ok, "按钮看得见、能按：" + (str(button.name) if button != null else "null"))
 	if not ok: return
 	await _press(button.get_global_transform_with_canvas() * (button.size / 2.0))
 

@@ -14,10 +14,6 @@ metadata/unlock_rule = "box:tea_leaf"
 metadata/layout_group = "牛奶箱"
 metadata/unlock_rule = "box:milk"
 
-[node name="GlassPartition" parent="Sortables/Checkout"]
-metadata/toggle_label = "玻璃隔板"
-metadata/toggle_icon = "glass"
-
 [node name="DiningArea" parent="Sortables"]
 script = ExtResource("dining")
 
@@ -168,6 +164,14 @@ script = ExtResource("anchor")
 size = Vector2(108, 110)
 
 [node name="counter" type="Node2D" parent="Anchors/Stations"]
+
+[node name="Tap" type="Node2D" parent="Anchors/Stations/counter"]
+position = Vector2(483, 725)
+script = ExtResource("anchor")
+size = Vector2(81, 68)
+
+[node name="Mark" type="Marker2D" parent="Anchors/Stations/counter"]
+position = Vector2(555, 728)
 
 [node name="Post" type="Node2D" parent="Anchors/Stations/counter"]
 position = Vector2(32, 709)

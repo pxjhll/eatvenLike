@@ -256,7 +256,9 @@ func refresh() -> void:
 		var button: Button = upgrade_buttons[zone]
 		var info: Dictionary = view.staff_track(zone)
 		if info.is_empty(): continue
-		if info.status.code == "station_required":
+		if info.status.code == "box_required":
+			button.text = "%s培养\n先解锁%s" % [info.title, rules.shop.station(rules.supply_id).material(info.status.params.material).display_name]
+		elif info.status.code == "station_required":
 			button.text = "%s培养\n先解锁%s" % [info.title, view.station_name(info.status.params.station)]
 		else:
 			button.text = ("%s升级已买完" % info.title) if int(info.cost) < 0 else "%s %d/%d · %d 金币\n%s" % [info.title, int(info.bought) + 1, int(info.total), int(info.cost), info.name]

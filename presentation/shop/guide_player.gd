@@ -349,7 +349,7 @@ func _push_card(step: SpecGuideStep) -> void:
 		buttons.append({"label": step.cancel_label if not step.cancel_label.is_empty() else step.confirm_label, "primary": true, "action": _skip})
 	else:
 		if not step.cancel_label.is_empty(): buttons.append({"label": step.cancel_label, "action": _skip})
-		buttons.append({"label": step.confirm_label, "primary": true, "action": _confirm})
+		buttons.append({"label": _fill(step.confirm_label, step), "primary": true, "action": _confirm})
 	var stats: Array = []
 	for row in step.stats: stats.append([row[0], row[1], _stat_value(String(row[2]))])
 	_hud.popups.push({"id": "guide:" + step.id, "title": _fill(step.title, step), "title_size": step.title_size,
@@ -500,6 +500,8 @@ func _fill(text: String, step: SpecGuideStep) -> String:
 	if not "{" in text: return text
 	var rules: ShopRules = _view.rules
 	var values: Dictionary = step.params.duplicate()
+	if "{shop}" in text: values.shop = rules.shop.display_name
+	if "{next}" in text and _view.next_shop() != null: values.next = _view.next_shop().display_name
 	var next := rules.stage_index + 1
 	var stage: int = int(step.params.get("stage", next))
 	if stage < rules.shop.stages.size():
@@ -545,7 +547,7 @@ func _ui(name: String) -> Control:
 		"hire": return _hud.page_node("staff").hire_button
 		"deploy": return _hud.page_node("staff").deploy_button
 		"unlock": return _hud.page_node("station").unlock_button
-		"chip:seats": return _view._seats
+		"chip:seats": return _view._register_target
 	return null
 
 

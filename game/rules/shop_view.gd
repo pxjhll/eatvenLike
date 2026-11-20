@@ -619,18 +619,21 @@ func timing_text(id: String) -> String:
 
 func quote_text(quote: Dictionary) -> String:
 	var calculated := price_text(quote.calculated)
+	if quote.policy == "whole_coin": return "售价 %s 金" % calculated
 	if quote.has("solo_payment"):
 		return "计算 %s 金 · 单点实收 %d 金" % [calculated, quote.solo_payment]
 	return "单价 %s 金 · 小数累计" % calculated
 
 
 func quote_primary(quote: Dictionary) -> String:
+	if quote.policy == "whole_coin": return "售价 %d 金" % int(quote.calculated)
 	return "单点实收 %d 金" % quote.solo_payment if quote.has("solo_payment") else "单价 %s 金" % price_text(quote.calculated)
 
 
 func quote_change(now: Dictionary, next: Dictionary, changing := true) -> String:
 	var calculated := price_text(now.calculated)
 	if changing: calculated += " → " + price_text(next.calculated)
+	if now.policy == "whole_coin": return "售价 %s 金" % calculated
 	if now.has("solo_payment"):
 		var payment := str(now.solo_payment)
 		if changing: payment += " → " + str(next.solo_payment)
