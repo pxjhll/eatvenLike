@@ -11,6 +11,8 @@ const Module := preload("res://presentation/shop/modules/shop_module.gd")
 ##   dine_seats:<N>      至少有 N 个堂食座（没挂堂食组件的场景，桌椅按买到的座位数摆出来）
 ## 另外，带 follows 标记（指向另一个节点）的阴影、文字跟着那个节点显示。
 
+const MachineWorkSprite := preload("res://presentation/shop/machine_work_sprite.gd")
+var _machine_sprites: Array[MachineWorkSprite] = []
 var _modules: Array[Node] = []
 var _groups := {}
 var _rules := {}
@@ -19,6 +21,7 @@ var _followers: Array[CanvasItem] = []
 
 func _init(art: Node2D) -> void:
 	for node in art.find_children("*", "CanvasItem", true, false):
+		if node is MachineWorkSprite: _machine_sprites.append(node)
 		if node.get_script() == Module: _modules.append(node)
 		if node.has_meta("follows"): _followers.append(node)
 		if not node.has_meta("layout_group"): continue
@@ -27,6 +30,11 @@ func _init(art: Node2D) -> void:
 			_groups[group] = []
 			_rules[group] = node.get_meta("unlock_rule", "always")
 		_groups[group].append(node)
+
+
+func update_machines(machines: Dictionary, clock: float) -> void:
+	for sprite in _machine_sprites:
+		sprite.show_machine_state(machines, clock)
 
 
 func update(view: ShopView) -> void:
