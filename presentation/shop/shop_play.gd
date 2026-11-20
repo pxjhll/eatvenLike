@@ -1258,7 +1258,9 @@ func _build_tuning() -> void:
 	recorder.performance_sample = _frame_monitor.snapshot
 	recorder.setup(view)
 	_frame_monitor.reset()
-	_frame_monitor.show()
+	var show_debug_ui := OS.is_debug_build()
+	_frame_monitor.visible = show_debug_ui
+	ui.speed_button.visible = show_debug_ui
 	var shade := ColorRect.new()
 	shade.name = "TuningShade"
 	shade.color = Color(0.12, 0.09, 0.065, 0.34)
@@ -1275,6 +1277,7 @@ func _build_tuning() -> void:
 	tuning.visibility_changed.connect(func() -> void: shade.visible = tuning.visible)
 	var button := Button.new()
 	button.name = "Tuning"
+	button.visible = show_debug_ui
 	button.text = "调参"
 	button.custom_minimum_size = Vector2(68, 34)
 	button.theme = ui.theme
