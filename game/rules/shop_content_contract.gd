@@ -1,6 +1,6 @@
 extends RefCounted
 ## Versioned canonical fingerprints of exported gameplay resources.
-const PRESENTATION := ["display_name", "description", "icon", "art", "tint", "dining_texture", "label", "effect_label", "preview_label", "preview_dishes", "speaker", "card_text", "notice_portrait", "unlock_note", "texts", "guide", "scene_path", "save_file", "background_music", "scale_anchor"]
+const PRESENTATION := ["display_name", "description", "icon", "art", "tint", "dining_texture", "held_front_drop", "label", "effect_label", "preview_label", "preview_dishes", "speaker", "card_text", "notice_portrait", "unlock_note", "texts", "guide", "scene_path", "save_file", "background_music", "scale_anchor"]
 const TYPES := ["SpecShop", "SpecShopTemplate", "SpecItem", "SpecDish", "SpecStation", "SpecStage", "SpecFulfillment", "SpecDispatch", "SpecFlyer", "SpecSeatGroup", "SpecStaffRules", "SpecStaffKind", "SpecConnection", "SpecOrderOption", "SpecGoalRules", "SpecLayout", "SpecMaterial", "SpecStep", "SpecStockRule", "SpecTask", "SpecUpgradeTrack", "SpecUpgradeLevel", "SpecEffect", "SpecEvent"]
 const TemplateSchema := preload("res://content/rules/spec_shop_template.gd")
 const TemplateProjection := preload("res://game/rules/template/content_projection.gd")
