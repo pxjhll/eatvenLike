@@ -1,0 +1,1592 @@
+{
+  "version": 3,
+  "setup": {
+    "audit_seeds": {
+      "stirfry": [
+        42,
+        84
+      ]
+    },
+    "bot": "minute_visit_role_load_v1",
+    "limit_seconds": 5400.0,
+    "playback_speed": 1.0,
+    "save_interval_seconds": 10.0,
+    "scenario": "empty_shop",
+    "target_tolerance": 0.05
+  },
+  "shops": {
+    "tea": {
+      "actions": [
+        [
+          1.0,
+          "unlock lemonade"
+        ],
+        [
+          1.0,
+          "staff front"
+        ],
+        [
+          1.0,
+          "staff kitchen"
+        ],
+        [
+          181.0,
+          "unlock boil"
+        ],
+        [
+          181.0,
+          "box tea_leaf"
+        ],
+        [
+          241.0,
+          "upgrade boil"
+        ],
+        [
+          241.0,
+          "upgrade lemonade"
+        ],
+        [
+          301.0,
+          "seat"
+        ],
+        [
+          361.0,
+          "hire"
+        ],
+        [
+          361.0,
+          "deploy 2"
+        ],
+        [
+          361.0,
+          "staff kitchen"
+        ],
+        [
+          421.0,
+          "staff front"
+        ],
+        [
+          421.0,
+          "hire"
+        ],
+        [
+          421.0,
+          "deploy 3 counter"
+        ],
+        [
+          481.0,
+          "upgrade boil"
+        ],
+        [
+          481.0,
+          "upgrade lemonade"
+        ],
+        [
+          541.0,
+          "material supply tea_leaf"
+        ],
+        [
+          541.0,
+          "flyer_upgrade"
+        ],
+        [
+          721.0,
+          "unlock seal"
+        ],
+        [
+          721.0,
+          "upgrade seal"
+        ],
+        [
+          721.0,
+          "upgrade seal"
+        ],
+        [
+          781.0,
+          "upgrade seal"
+        ],
+        [
+          841.0,
+          "unlock mix"
+        ],
+        [
+          841.0,
+          "box milk"
+        ],
+        [
+          901.0,
+          "hire"
+        ],
+        [
+          901.0,
+          "deploy 4"
+        ],
+        [
+          961.0,
+          "material supply milk"
+        ],
+        [
+          961.0,
+          "upgrade mix"
+        ],
+        [
+          961.0,
+          "upgrade lemonade"
+        ],
+        [
+          961.0,
+          "staff kitchen"
+        ],
+        [
+          1021.0,
+          "material supply tea_leaf"
+        ],
+        [
+          1021.0,
+          "upgrade boil"
+        ],
+        [
+          1021.0,
+          "material supply milk"
+        ],
+        [
+          1081.0,
+          "staff front"
+        ],
+        [
+          1081.0,
+          "upgrade mix"
+        ],
+        [
+          1141.0,
+          "seat"
+        ],
+        [
+          1141.0,
+          "upgrade seal"
+        ],
+        [
+          1261.0,
+          "unlock press"
+        ],
+        [
+          1321.0,
+          "material press lemon"
+        ],
+        [
+          1321.0,
+          "upgrade press"
+        ],
+        [
+          1321.0,
+          "material press lemon"
+        ],
+        [
+          1381.0,
+          "upgrade lemonade"
+        ],
+        [
+          1381.0,
+          "upgrade press"
+        ],
+        [
+          1441.0,
+          "flyer_upgrade"
+        ],
+        [
+          1441.0,
+          "staff kitchen"
+        ],
+        [
+          1501.0,
+          "upgrade mix"
+        ],
+        [
+          1501.0,
+          "upgrade boil"
+        ],
+        [
+          1621.0,
+          "unlock topping"
+        ],
+        [
+          1621.0,
+          "hire"
+        ],
+        [
+          1621.0,
+          "deploy 5"
+        ],
+        [
+          1621.0,
+          "hire"
+        ],
+        [
+          1621.0,
+          "deploy 6"
+        ],
+        [
+          1681.0,
+          "hire"
+        ],
+        [
+          1681.0,
+          "deploy 7"
+        ],
+        [
+          1681.0,
+          "material topping pearl"
+        ],
+        [
+          1681.0,
+          "upgrade topping"
+        ],
+        [
+          1681.0,
+          "material topping coconut"
+        ],
+        [
+          1681.0,
+          "material topping pearl"
+        ],
+        [
+          1741.0,
+          "upgrade topping"
+        ],
+        [
+          1741.0,
+          "material topping redbean"
+        ],
+        [
+          1741.0,
+          "material topping coconut"
+        ],
+        [
+          1741.0,
+          "material topping redbean"
+        ],
+        [
+          1741.0,
+          "upgrade topping"
+        ],
+        [
+          1801.0,
+          "material topping taro"
+        ],
+        [
+          1801.0,
+          "material topping taro"
+        ],
+        [
+          1861.0,
+          "staff front"
+        ],
+        [
+          1861.0,
+          "upgrade seal"
+        ],
+        [
+          1921.0,
+          "upgrade press"
+        ],
+        [
+          1921.0,
+          "seat"
+        ],
+        [
+          1981.0,
+          "upgrade mix"
+        ],
+        [
+          2041.0,
+          "staff kitchen"
+        ],
+        [
+          2101.0,
+          "upgrade boil"
+        ],
+        [
+          2101.0,
+          "upgrade press"
+        ],
+        [
+          2161.0,
+          "flyer_upgrade"
+        ],
+        [
+          2221.0,
+          "upgrade mix"
+        ],
+        [
+          2281.0,
+          "staff kitchen"
+        ]
+      ],
+      "clock": 2382.2,
+      "completed_at": 2382.2,
+      "content": {
+        "gameplay": "0e5df357138ef20ef1c047f7ae7987736b29555a2153f407e63ac71bd31398ad",
+        "structure": "52e77ed363c336b423f129cc3b1dc5723879d56edb263503823a2ff8d0ad215f",
+        "version": 1
+      },
+      "first_sale_tick": 86,
+      "lost": 186,
+      "maximum_sale_gap_ticks": 282,
+      "restore_error": "",
+      "revenue": 15174.0,
+      "role_ticks": {
+        "front": {
+          "busy": 26354,
+          "idle": 17080
+        },
+        "kitchen": {
+          "busy": 27712,
+          "idle": 29548
+        }
+      },
+      "seed": 20261025,
+      "sold": 408,
+      "staff": 7,
+      "stages": [
+        {
+          "at": 0.1,
+          "gold": 50.0,
+          "sold": 0,
+          "stage": 0
+        },
+        {
+          "at": 181.1,
+          "gold": 17.0,
+          "sold": 12,
+          "stage": 1
+        },
+        {
+          "at": 721.1,
+          "gold": 49.0,
+          "sold": 72,
+          "stage": 2
+        },
+        {
+          "at": 841.1,
+          "gold": 6.0,
+          "sold": 96,
+          "stage": 3
+        },
+        {
+          "at": 1261.1,
+          "gold": 36.0,
+          "sold": 169,
+          "stage": 4
+        },
+        {
+          "at": 1621.1,
+          "gold": 49.0,
+          "sold": 256,
+          "stage": 5
+        }
+      ]
+    },
+    "pancake": {
+      "actions": [
+        [
+          1.0,
+          "unlock soy_milk"
+        ],
+        [
+          61.0,
+          "flyer"
+        ],
+        [
+          61.0,
+          "upgrade soy_milk"
+        ],
+        [
+          121.0,
+          "unlock rear_equipment"
+        ],
+        [
+          121.0,
+          "box flour"
+        ],
+        [
+          121.0,
+          "hire"
+        ],
+        [
+          181.0,
+          "flyer"
+        ],
+        [
+          181.0,
+          "upgrade rear_equipment"
+        ],
+        [
+          181.0,
+          "upgrade soy_milk"
+        ],
+        [
+          241.0,
+          "seat"
+        ],
+        [
+          241.0,
+          "upgrade rear_equipment"
+        ],
+        [
+          241.0,
+          "staff "
+        ],
+        [
+          301.0,
+          "unlock fryer"
+        ],
+        [
+          361.0,
+          "hire"
+        ],
+        [
+          421.0,
+          "upgrade rear_equipment"
+        ],
+        [
+          421.0,
+          "upgrade rear_equipment"
+        ],
+        [
+          481.0,
+          "flyer"
+        ],
+        [
+          481.0,
+          "upgrade rear_equipment"
+        ],
+        [
+          481.0,
+          "upgrade soy_milk"
+        ],
+        [
+          481.0,
+          "flyer_upgrade"
+        ],
+        [
+          541.0,
+          "upgrade fryer"
+        ],
+        [
+          541.0,
+          "upgrade soy_milk"
+        ],
+        [
+          541.0,
+          "upgrade fryer"
+        ],
+        [
+          601.0,
+          "seat"
+        ],
+        [
+          601.0,
+          "staff "
+        ],
+        [
+          661.0,
+          "unlock topping"
+        ],
+        [
+          721.0,
+          "hire"
+        ],
+        [
+          781.0,
+          "unlock bag"
+        ],
+        [
+          781.0,
+          "material topping ham"
+        ],
+        [
+          841.0,
+          "material topping ham"
+        ],
+        [
+          841.0,
+          "upgrade topping"
+        ],
+        [
+          841.0,
+          "material topping floss"
+        ],
+        [
+          841.0,
+          "material topping floss"
+        ],
+        [
+          841.0,
+          "upgrade topping"
+        ],
+        [
+          841.0,
+          "material topping bacon"
+        ],
+        [
+          901.0,
+          "material topping bacon"
+        ],
+        [
+          901.0,
+          "upgrade soy_milk"
+        ],
+        [
+          901.0,
+          "upgrade topping"
+        ],
+        [
+          901.0,
+          "material topping family"
+        ],
+        [
+          961.0,
+          "material topping family"
+        ],
+        [
+          961.0,
+          "upgrade fryer"
+        ],
+        [
+          961.0,
+          "flyer_upgrade"
+        ],
+        [
+          961.0,
+          "upgrade soy_milk"
+        ],
+        [
+          1021.0,
+          "seat"
+        ],
+        [
+          1081.0,
+          "staff "
+        ],
+        [
+          1081.0,
+          "upgrade fryer"
+        ],
+        [
+          1141.0,
+          "upgrade topping"
+        ],
+        [
+          1141.0,
+          "upgrade rear_equipment"
+        ],
+        [
+          1201.0,
+          "upgrade soy_milk"
+        ],
+        [
+          1261.0,
+          "upgrade rear_equipment"
+        ],
+        [
+          1321.0,
+          "flyer_upgrade"
+        ],
+        [
+          1321.0,
+          "upgrade fryer"
+        ]
+      ],
+      "clock": 1377.1,
+      "completed_at": 1377.1,
+      "content": {
+        "gameplay": "e8c57a3b2e2765476dca92ad12afb4a86db93e5514249120e09f6ad0360aecc3",
+        "structure": "6a25de7067db3016f1c6ee894826699367a5b97b33a91d79ac68a0583f19ea63",
+        "version": 1
+      },
+      "first_sale_tick": 94,
+      "lost": 22,
+      "maximum_sale_gap_ticks": 239,
+      "restore_error": "",
+      "revenue": 5824.0,
+      "role_ticks": {
+        "all": {
+          "busy": 38283,
+          "idle": 4771
+        }
+      },
+      "seed": 0,
+      "sold": 272,
+      "staff": 4,
+      "stages": [
+        {
+          "at": 0.1,
+          "gold": 10.0,
+          "sold": 0,
+          "stage": 0
+        },
+        {
+          "at": 121.1,
+          "gold": 0.0,
+          "sold": 16,
+          "stage": 1
+        },
+        {
+          "at": 301.1,
+          "gold": 14.0,
+          "sold": 39,
+          "stage": 2
+        },
+        {
+          "at": 661.1,
+          "gold": 18.0,
+          "sold": 102,
+          "stage": 3
+        },
+        {
+          "at": 781.1,
+          "gold": 1.0,
+          "sold": 127,
+          "stage": 4
+        }
+      ]
+    },
+    "stirfry": {
+      "actions": [
+        [
+          1.0,
+          "unlock wok_a"
+        ],
+        [
+          61.0,
+          "flyer"
+        ],
+        [
+          121.0,
+          "hire"
+        ],
+        [
+          121.0,
+          "deploy 5"
+        ],
+        [
+          181.0,
+          "flyer"
+        ],
+        [
+          181.0,
+          "upgrade plating"
+        ],
+        [
+          181.0,
+          "upgrade plum_dispenser"
+        ],
+        [
+          181.0,
+          "upgrade plating"
+        ],
+        [
+          241.0,
+          "upgrade plum_dispenser"
+        ],
+        [
+          241.0,
+          "upgrade wok_a"
+        ],
+        [
+          361.0,
+          "flyer"
+        ],
+        [
+          361.0,
+          "unlock wok_a"
+        ],
+        [
+          361.0,
+          "upgrade wok_a"
+        ],
+        [
+          421.0,
+          "upgrade plating"
+        ],
+        [
+          421.0,
+          "upgrade plum_dispenser"
+        ],
+        [
+          481.0,
+          "upgrade rice_cooker"
+        ],
+        [
+          481.0,
+          "upgrade wok_a"
+        ],
+        [
+          541.0,
+          "hire"
+        ],
+        [
+          541.0,
+          "deploy 4"
+        ],
+        [
+          601.0,
+          "upgrade plating"
+        ],
+        [
+          601.0,
+          "upgrade plum_dispenser"
+        ],
+        [
+          661.0,
+          "upgrade rice_cooker"
+        ],
+        [
+          721.0,
+          "upgrade wok_a"
+        ],
+        [
+          781.0,
+          "unlock wok_b"
+        ],
+        [
+          781.0,
+          "upgrade wok_b"
+        ],
+        [
+          841.0,
+          "upgrade wok_b"
+        ],
+        [
+          841.0,
+          "upgrade wok_b"
+        ],
+        [
+          901.0,
+          "upgrade wok_b"
+        ],
+        [
+          901.0,
+          "upgrade plating"
+        ],
+        [
+          961.0,
+          "hire"
+        ],
+        [
+          961.0,
+          "deploy 6"
+        ],
+        [
+          1021.0,
+          "upgrade plum_dispenser"
+        ],
+        [
+          1081.0,
+          "upgrade wok_b"
+        ],
+        [
+          1141.0,
+          "upgrade rice_cooker"
+        ],
+        [
+          1141.0,
+          "upgrade wok_a"
+        ],
+        [
+          1201.0,
+          "upgrade plating"
+        ],
+        [
+          1261.0,
+          "upgrade wok_b"
+        ],
+        [
+          1441.0,
+          "unlock soup_pot"
+        ],
+        [
+          1441.0,
+          "upgrade soup_pot"
+        ],
+        [
+          1441.0,
+          "upgrade soup_pot"
+        ],
+        [
+          1501.0,
+          "upgrade soup_pot"
+        ],
+        [
+          1501.0,
+          "upgrade soup_pot"
+        ],
+        [
+          1561.0,
+          "upgrade soup_pot"
+        ],
+        [
+          1621.0,
+          "upgrade rice_cooker"
+        ],
+        [
+          1621.0,
+          "upgrade wok_a"
+        ],
+        [
+          1861.0,
+          "unlock wok_a"
+        ],
+        [
+          1921.0,
+          "hire"
+        ],
+        [
+          1921.0,
+          "deploy 7"
+        ],
+        [
+          1981.0,
+          "upgrade wok_b"
+        ],
+        [
+          2041.0,
+          "upgrade rice_cooker"
+        ],
+        [
+          2101.0,
+          "seat"
+        ],
+        [
+          2101.0,
+          "upgrade wok_a"
+        ],
+        [
+          2161.0,
+          "upgrade wok_b"
+        ],
+        [
+          2341.0,
+          "unlock wok_b"
+        ],
+        [
+          2401.0,
+          "seat"
+        ],
+        [
+          2461.0,
+          "upgrade rice_cooker"
+        ],
+        [
+          2521.0,
+          "upgrade wok_a"
+        ],
+        [
+          2581.0,
+          "upgrade wok_b"
+        ],
+        [
+          2641.0,
+          "seat"
+        ],
+        [
+          2701.0,
+          "upgrade rice_cooker"
+        ],
+        [
+          2761.0,
+          "upgrade wok_a"
+        ],
+        [
+          2821.0,
+          "seat"
+        ]
+      ],
+      "clock": 2917.0,
+      "completed_at": 2917.0,
+      "content": {
+        "gameplay": "6581289c9e157c8d92348b7cfdc824a040476a5c7a6cd78cc02cc9a5715eee8f",
+        "structure": "7f02f0629b5c323a937bd5f4f8d90bb21154c1761a4b237f06c214d0201a8501",
+        "version": 1
+      },
+      "first_sale_tick": 202,
+      "lost": 90,
+      "maximum_sale_gap_ticks": 480,
+      "restore_error": "",
+      "revenue": 3803.0,
+      "role_ticks": {
+        "front": {
+          "busy": 22309,
+          "idle": 6861
+        },
+        "kitchen": {
+          "busy": 46336,
+          "idle": 64074
+        }
+      },
+      "seed": 11,
+      "sold": 252,
+      "staff": 6,
+      "stages": [
+        {
+          "at": 0.1,
+          "gold": 0.0,
+          "sold": 0,
+          "stage": 0
+        },
+        {
+          "at": 361.1,
+          "gold": 13.0,
+          "sold": 21,
+          "stage": 1
+        },
+        {
+          "at": 781.1,
+          "gold": 14.0,
+          "sold": 50,
+          "stage": 2
+        },
+        {
+          "at": 1441.1,
+          "gold": 3.0,
+          "sold": 100,
+          "stage": 3
+        },
+        {
+          "at": 1861.1,
+          "gold": 44.0,
+          "sold": 138,
+          "stage": 4
+        },
+        {
+          "at": 2341.1,
+          "gold": 36.0,
+          "sold": 185,
+          "stage": 5
+        }
+      ]
+    }
+  },
+  "audits": {
+    "stirfry": {
+      "42": {
+        "actions": [
+          [
+            1.0,
+            "unlock wok_a"
+          ],
+          [
+            61.0,
+            "flyer"
+          ],
+          [
+            121.0,
+            "hire"
+          ],
+          [
+            121.0,
+            "deploy 5"
+          ],
+          [
+            181.0,
+            "flyer"
+          ],
+          [
+            181.0,
+            "upgrade plating"
+          ],
+          [
+            181.0,
+            "upgrade plum_dispenser"
+          ],
+          [
+            181.0,
+            "upgrade plating"
+          ],
+          [
+            181.0,
+            "upgrade plum_dispenser"
+          ],
+          [
+            241.0,
+            "upgrade wok_a"
+          ],
+          [
+            301.0,
+            "flyer"
+          ],
+          [
+            361.0,
+            "unlock wok_a"
+          ],
+          [
+            361.0,
+            "upgrade wok_a"
+          ],
+          [
+            361.0,
+            "upgrade plating"
+          ],
+          [
+            421.0,
+            "upgrade plum_dispenser"
+          ],
+          [
+            481.0,
+            "hire"
+          ],
+          [
+            481.0,
+            "deploy 4"
+          ],
+          [
+            541.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            541.0,
+            "upgrade wok_a"
+          ],
+          [
+            601.0,
+            "upgrade plating"
+          ],
+          [
+            601.0,
+            "upgrade plum_dispenser"
+          ],
+          [
+            661.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            661.0,
+            "upgrade wok_a"
+          ],
+          [
+            781.0,
+            "unlock wok_b"
+          ],
+          [
+            781.0,
+            "upgrade wok_b"
+          ],
+          [
+            841.0,
+            "upgrade wok_b"
+          ],
+          [
+            841.0,
+            "upgrade wok_b"
+          ],
+          [
+            841.0,
+            "upgrade wok_b"
+          ],
+          [
+            901.0,
+            "upgrade plating"
+          ],
+          [
+            961.0,
+            "hire"
+          ],
+          [
+            961.0,
+            "deploy 6"
+          ],
+          [
+            1021.0,
+            "upgrade plum_dispenser"
+          ],
+          [
+            1081.0,
+            "upgrade wok_b"
+          ],
+          [
+            1141.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            1141.0,
+            "upgrade wok_a"
+          ],
+          [
+            1201.0,
+            "upgrade plating"
+          ],
+          [
+            1261.0,
+            "upgrade wok_b"
+          ],
+          [
+            1441.0,
+            "unlock soup_pot"
+          ],
+          [
+            1501.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1501.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1501.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1561.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1561.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1621.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            1681.0,
+            "upgrade wok_a"
+          ],
+          [
+            1861.0,
+            "unlock wok_a"
+          ],
+          [
+            1921.0,
+            "upgrade wok_b"
+          ],
+          [
+            1981.0,
+            "hire"
+          ],
+          [
+            1981.0,
+            "deploy 7"
+          ],
+          [
+            2041.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            2101.0,
+            "seat"
+          ],
+          [
+            2101.0,
+            "upgrade wok_a"
+          ],
+          [
+            2161.0,
+            "upgrade wok_b"
+          ],
+          [
+            2341.0,
+            "unlock wok_b"
+          ],
+          [
+            2401.0,
+            "seat"
+          ],
+          [
+            2461.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            2521.0,
+            "upgrade wok_a"
+          ],
+          [
+            2581.0,
+            "upgrade wok_b"
+          ],
+          [
+            2641.0,
+            "seat"
+          ],
+          [
+            2701.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            2821.0,
+            "upgrade wok_a"
+          ]
+        ],
+        "clock": 2864.1,
+        "completed_at": 2864.1,
+        "content": {
+          "gameplay": "6581289c9e157c8d92348b7cfdc824a040476a5c7a6cd78cc02cc9a5715eee8f",
+          "structure": "7f02f0629b5c323a937bd5f4f8d90bb21154c1761a4b237f06c214d0201a8501",
+          "version": 1
+        },
+        "first_sale_tick": 443,
+        "lost": 97,
+        "maximum_sale_gap_ticks": 539,
+        "restore_error": "",
+        "revenue": 3661.0,
+        "role_ticks": {
+          "front": {
+            "busy": 21885,
+            "idle": 6756
+          },
+          "kitchen": {
+            "busy": 45577,
+            "idle": 62188
+          }
+        },
+        "seed": 42,
+        "sold": 242,
+        "staff": 6,
+        "stages": [
+          {
+            "at": 0.1,
+            "gold": 0.0,
+            "sold": 0,
+            "stage": 0
+          },
+          {
+            "at": 361.1,
+            "gold": 0.0,
+            "sold": 21,
+            "stage": 1
+          },
+          {
+            "at": 781.1,
+            "gold": 3.0,
+            "sold": 50,
+            "stage": 2
+          },
+          {
+            "at": 1441.1,
+            "gold": 9.0,
+            "sold": 99,
+            "stage": 3
+          },
+          {
+            "at": 1861.1,
+            "gold": 28.0,
+            "sold": 142,
+            "stage": 4
+          },
+          {
+            "at": 2341.1,
+            "gold": 24.0,
+            "sold": 194,
+            "stage": 5
+          }
+        ]
+      },
+      "84": {
+        "actions": [
+          [
+            1.0,
+            "unlock wok_a"
+          ],
+          [
+            61.0,
+            "flyer"
+          ],
+          [
+            121.0,
+            "hire"
+          ],
+          [
+            121.0,
+            "deploy 5"
+          ],
+          [
+            181.0,
+            "upgrade plating"
+          ],
+          [
+            181.0,
+            "upgrade plum_dispenser"
+          ],
+          [
+            241.0,
+            "flyer"
+          ],
+          [
+            241.0,
+            "upgrade plating"
+          ],
+          [
+            241.0,
+            "upgrade plum_dispenser"
+          ],
+          [
+            241.0,
+            "upgrade wok_a"
+          ],
+          [
+            361.0,
+            "flyer"
+          ],
+          [
+            361.0,
+            "unlock wok_a"
+          ],
+          [
+            421.0,
+            "hire"
+          ],
+          [
+            421.0,
+            "deploy 4"
+          ],
+          [
+            481.0,
+            "upgrade wok_a"
+          ],
+          [
+            481.0,
+            "upgrade plating"
+          ],
+          [
+            481.0,
+            "upgrade plum_dispenser"
+          ],
+          [
+            541.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            601.0,
+            "upgrade wok_a"
+          ],
+          [
+            601.0,
+            "upgrade plating"
+          ],
+          [
+            661.0,
+            "upgrade plum_dispenser"
+          ],
+          [
+            661.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            721.0,
+            "upgrade wok_a"
+          ],
+          [
+            841.0,
+            "unlock wok_b"
+          ],
+          [
+            841.0,
+            "upgrade wok_b"
+          ],
+          [
+            841.0,
+            "upgrade wok_b"
+          ],
+          [
+            901.0,
+            "hire"
+          ],
+          [
+            901.0,
+            "deploy 6"
+          ],
+          [
+            961.0,
+            "upgrade wok_b"
+          ],
+          [
+            961.0,
+            "upgrade wok_b"
+          ],
+          [
+            1021.0,
+            "upgrade plating"
+          ],
+          [
+            1081.0,
+            "upgrade plum_dispenser"
+          ],
+          [
+            1081.0,
+            "upgrade wok_b"
+          ],
+          [
+            1141.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            1201.0,
+            "upgrade wok_a"
+          ],
+          [
+            1261.0,
+            "upgrade plating"
+          ],
+          [
+            1261.0,
+            "upgrade wok_b"
+          ],
+          [
+            1441.0,
+            "unlock soup_pot"
+          ],
+          [
+            1441.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1441.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1501.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1501.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1561.0,
+            "upgrade soup_pot"
+          ],
+          [
+            1621.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            1621.0,
+            "upgrade wok_a"
+          ],
+          [
+            1861.0,
+            "unlock wok_a"
+          ],
+          [
+            1921.0,
+            "upgrade wok_b"
+          ],
+          [
+            1981.0,
+            "hire"
+          ],
+          [
+            1981.0,
+            "deploy 7"
+          ],
+          [
+            2041.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            2101.0,
+            "seat"
+          ],
+          [
+            2161.0,
+            "upgrade wok_a"
+          ],
+          [
+            2221.0,
+            "upgrade wok_b"
+          ],
+          [
+            2401.0,
+            "unlock wok_b"
+          ],
+          [
+            2461.0,
+            "seat"
+          ],
+          [
+            2521.0,
+            "upgrade rice_cooker"
+          ],
+          [
+            2581.0,
+            "upgrade wok_a"
+          ],
+          [
+            2641.0,
+            "upgrade wok_b"
+          ],
+          [
+            2701.0,
+            "seat"
+          ],
+          [
+            2761.0,
+            "upgrade rice_cooker"
+          ]
+        ],
+        "clock": 2814.9,
+        "completed_at": 2814.9,
+        "content": {
+          "gameplay": "6581289c9e157c8d92348b7cfdc824a040476a5c7a6cd78cc02cc9a5715eee8f",
+          "structure": "7f02f0629b5c323a937bd5f4f8d90bb21154c1761a4b237f06c214d0201a8501",
+          "version": 1
+        },
+        "first_sale_tick": 443,
+        "lost": 86,
+        "maximum_sale_gap_ticks": 473,
+        "restore_error": "",
+        "revenue": 3497.0,
+        "role_ticks": {
+          "front": {
+            "busy": 21658,
+            "idle": 6491
+          },
+          "kitchen": {
+            "busy": 41518,
+            "idle": 64987
+          }
+        },
+        "seed": 84,
+        "sold": 241,
+        "staff": 6,
+        "stages": [
+          {
+            "at": 0.1,
+            "gold": 0.0,
+            "sold": 0,
+            "stage": 0
+          },
+          {
+            "at": 361.1,
+            "gold": 15.0,
+            "sold": 19,
+            "stage": 1
+          },
+          {
+            "at": 841.1,
+            "gold": 9.0,
+            "sold": 54,
+            "stage": 2
+          },
+          {
+            "at": 1441.1,
+            "gold": 22.0,
+            "sold": 100,
+            "stage": 3
+          },
+          {
+            "at": 1861.1,
+            "gold": 35.0,
+            "sold": 141,
+            "stage": 4
+          },
+          {
+            "at": 2401.1,
+            "gold": 26.0,
+            "sold": 196,
+            "stage": 5
+          }
+        ]
+      }
+    }
+  }
+}

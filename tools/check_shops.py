@@ -31,7 +31,7 @@ def validate_manifest(data: dict, root: Path) -> None:
         ids.add(name)
         if job.get('profile') not in ['headless', 'window', 'economy', 'web'] or job.get('kind') not in ['script', 'python', 'web']:
             raise ValueError(f'invalid profile/kind: {name}')
-        if type(job.get('timeout')) is not int or not 0 < job['timeout'] <= 600:
+        if type(job.get('timeout')) is not int or not 0 < job['timeout'] <= 1200:
             raise ValueError(f'invalid timeout: {name}')
         if not isinstance(job.get('args', []), list) or not all(isinstance(arg, str) for arg in job.get('args', [])):
             raise ValueError(f'args must be a string array: {name}')
