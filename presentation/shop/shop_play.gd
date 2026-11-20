@@ -1596,16 +1596,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	# 点一下（没滚动）：打开点到的东西
 	var point: Vector2 = $Canvas.get_global_transform_with_canvas().affine_inverse() * event.position
 	for id in _station_rects:
-		if not rules.station_unlocked(id): continue
+		if not view.can_inspect_station(id): continue
 		var mark: Control = _upgrade_marks.get(id)
 		if mark != null and mark.visible and mark.get_rect().has_point(point):
 			ui.open_station(id)
 			get_viewport().set_input_as_handled()
 			return
 	for id in _station_rects:
-		if not _station_rects[id].has_point(point) or not rules.station_unlocked(id): continue
-		if id == rules.counter_id and not rules.is_open(): continue
-		if id == rules.supply_id and not rules.boxes.is_empty() and not true in rules.boxes.values(): continue
+		if not _station_rects[id].has_point(point) or not view.can_inspect_station(id): continue
 		ui.open_station(id)
 		get_viewport().set_input_as_handled()
 		return

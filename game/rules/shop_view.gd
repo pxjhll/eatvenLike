@@ -761,6 +761,13 @@ func flyer() -> Dictionary:
 
 
 ## 现在能在这台机器的面板里花钱（红 ↑）
+func can_inspect_station(id: String) -> bool:
+	if not rules.station_unlocked(id): return false
+	if id == rules.counter_id: return rules.is_open()
+	if id == rules.supply_id and not rules.boxes.is_empty(): return rules.boxes.values().has(true)
+	return true
+
+
 func can_buy(id: String) -> bool:
 	if not rules.station_unlocked(id): return false
 	if rules.track_of(id) != null and CommandResult.is_ok(rules.command_status("upgrade", {"key": id})): return true
