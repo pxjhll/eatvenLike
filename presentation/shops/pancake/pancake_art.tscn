@@ -98,12 +98,12 @@ position = Vector2(425, 848)
 [node name="front_counter" type="Node2D" parent="Anchors/Stations"]
 
 [node name="Tap" type="Node2D" parent="Anchors/Stations/front_counter"]
-position = Vector2(632, 802)
+position = Vector2(632, 819)
 script = ExtResource("anchor")
 size = Vector2(131, 87)
 
 [node name="Mark" type="Node2D" parent="Anchors/Stations/front_counter"]
-position = Vector2(745, 805)
+position = Vector2(749, 824)
 
 [node name="Badge" type="Node2D" parent="Anchors/Stations/fryer"]
 position = Vector2(110, 400)
