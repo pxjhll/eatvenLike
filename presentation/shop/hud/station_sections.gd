@@ -92,6 +92,7 @@ class SeatsSection extends PanelContainer:
 			effect.text = "加 %d 座 · 解锁堂食小费 +%d 金币" % [seats.step, seats.next_tip]
 		else:
 			effect.text = "加 %d 个座位 · 现在 %d 位客人在座" % [int(seats.step), seats.used]
+		if page.view_node().rules.dine_group() != null: effect.text += "\n客人先入座再点单，坐着等更有耐心"
 		button.text = "%d 金币" % int(seats.cost)
 		button.disabled = not CommandResult.is_ok(seats.status)
 

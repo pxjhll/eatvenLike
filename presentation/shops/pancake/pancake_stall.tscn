@@ -870,3 +870,6 @@ metadata/source_name = "yellow_straw_cup"
 
 [node name="Sortables" type="Node2D" parent="SceneClip"]
 metadata/z_by_y = true
+
+[node name="CounterFront" type="Marker2D" parent="SceneClip/Sortables"]
+position = Vector2(470, 976)

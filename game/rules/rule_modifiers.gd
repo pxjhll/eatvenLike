@@ -5,6 +5,8 @@ extends RefCounted
 ## 计算顺序固定：先 set（后加的覆盖先加的），再连乘 mul，最后加 add。
 
 var entries: Array = []
+## Immutable marginal price gains by track for this shop definition. Not saved.
+var price_gains := {}
 
 
 ## 加一条。target 空 = 全店；dishes 空 = 不限菜；part 空 = 整道菜。

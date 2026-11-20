@@ -13,6 +13,13 @@ func check(ok: bool, message: String) -> void:
 		failures += 1
 		push_error(message)
 
+func mouse_button(at: Vector2, down: bool) -> void:
+	var event := InputEventMouseButton.new()
+	event.position = at
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = down
+	root.push_input(event, true)
+
 func run_tests() -> void:
 	if not ResourceLoader.exists("res://presentation/opening/opening.tscn"):
 		check(false, "Production startup scene must exist")
@@ -63,13 +70,22 @@ func run_tests() -> void:
 	media.finished.emit()
 	await process_frame
 	check(scene.poster.visible and scene.start_button.visible, "Finished video displays a permanent poster and real button")
-	check(scene.start_button.disabled, "Button cannot activate during its pop-in animation")
-	await create_timer(0.6).timeout
-	check(not scene.start_button.disabled and scene.phase == scene.Phase.READY, "Pop-in settles before enabling entry")
-	check(scene.start_button.scale.is_equal_approx(Vector2.ONE), "Final button settles at its intended size")
+	check(not scene.start_button.disabled, "A visible start button accepts the first tap during pop-in")
 	var requests: Array = []
 	scene.shop_requested.connect(func() -> void: requests.append(true))
-	scene.start_shop()
+	var center: Vector2 = scene.start_button.get_global_rect().get_center()
+	var idle_position: Vector2 = scene._button_face.position
+	mouse_button(center, true)
+	check(scene._button_face.position.y > idle_position.y and scene._button_face.modulate != Color.WHITE, "Holding the button depresses and darkens its face")
+	var drag := InputEventMouseMotion.new()
+	drag.position = Vector2(10, 10)
+	drag.button_mask = MOUSE_BUTTON_MASK_LEFT
+	root.push_input(drag, true)
+	mouse_button(Vector2(10, 10), false)
+	check(scene._button_face.position == idle_position and scene._button_face.modulate == Color.WHITE and requests.is_empty(), "Releasing outside cancels and restores the button")
+	mouse_button(center, true)
+	mouse_button(center, false)
+	check(scene.start_button.disabled and scene.start_button.text == "正在进店…" and scene._button_face.position.y > idle_position.y, "A valid click displays entering feedback and locks the button")
 	scene.start_shop()
 	check(requests.size() == 1, "Repeated final clicks request exactly one shop")
 	scene.free()

@@ -1,5 +1,5 @@
 extends VBoxContainer
-## 菜单页（HUD 组件）：角色预览、暂停、存档、美术开关（场景里带 toggle_label 的节点，如玻璃隔板）、重新开始。
+## 菜单页（HUD 组件）：角色预览、暂停、存档、美术开关（场景里带 toggle_label 的节点）、重新开始。
 
 const Icons := preload("res://presentation/ui/reference_icons.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")

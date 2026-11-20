@@ -1,6 +1,8 @@
 extends RefCounted
 ## Numeric formulas shared by live rules and detached query snapshots.
 
+const Upgrades := preload("res://game/rules/upgrade_modifiers.gd")
+
 const TUNING_MIN := 0.25
 const TUNING_MAX := 3.0
 const TUNING_STEP := 0.05
@@ -43,24 +45,59 @@ static func raw_price(shop: SpecShop, mods: RuleModifiers, tune: Dictionary, dis
 	return total * tuned(tune, "price")
 
 
-static func dish_price(shop: SpecShop, mods: RuleModifiers, tune: Dictionary, dish_id: String) -> float:
+static func dish_price(shop: SpecShop, mods: RuleModifiers, tune: Dictionary, dish_id: String, levels: Dictionary = {}) -> float:
+	if shop.fulfillment.whole_coin_prices:
+		var amount := raw_price(shop, mods, tune, dish_id)
+		for key in levels:
+			if int(levels[key]) <= 1 or key == "flyer" or String(key).begins_with("staff/"): continue
+			for gain in _track_gains(shop, mods, key, dish_id).slice(0, int(levels[key]) - 1):
+				if gain > 0.0: amount += maxf(0.0, 1.0 - gain * tuned(tune, "price"))
+		return whole_coins(amount)
 	return snappedf(raw_price(shop, mods, tune, dish_id), 0.1) if shop.fulfillment.price_rounding == "dish_tenth_carry" else raw_price(shop, mods, tune, dish_id)
+
+
+static func whole_coins(value: float) -> int:
+	return ceili(snappedf(value, 0.000001))
+
+
+## Measure each authored increase in isolation, so a low-priced dish still gains
+## one coin per price level. Cross-track multipliers remain part of the raw price.
+static func _track_gains(shop: SpecShop, mods: RuleModifiers, key: String, dish: String) -> Array:
+	if not mods.price_gains.has(dish): mods.price_gains[dish] = {}
+	var cached: Dictionary = mods.price_gains[dish]
+	if cached.has(key): return cached[key]
+	var gains: Array[float] = []
+	var track := Upgrades.track_of(shop, key)
+	if track != null:
+		var station := shop.station(key.get_slice("/", 0))
+		var isolated := RuleModifiers.new()
+		var previous := 0.0
+		for level in range(1, track.levels.size() + 2):
+			Upgrades.refresh_track(isolated, station, track, key, level, station.id)
+			var current := raw_price(shop, isolated, {}, dish)
+			if level > 1: gains.append(current - previous)
+			previous = current
+	cached[key] = gains
+	return gains
 
 
 ## Calculated dish amount and settlement policy. Solo payment excludes options/addons.
 
 
-static func dish_quote(shop: SpecShop, mods: RuleModifiers, tune: Dictionary, dish_id: String) -> Dictionary:
-	var quote := {"calculated": dish_price(shop, mods, tune, dish_id), "policy": shop.fulfillment.price_rounding}
+static func dish_quote(shop: SpecShop, mods: RuleModifiers, tune: Dictionary, dish_id: String, levels: Dictionary = {}) -> Dictionary:
+	var quote := {"calculated": dish_price(shop, mods, tune, dish_id, levels), "policy": shop.fulfillment.price_rounding}
+	if shop.fulfillment.whole_coin_prices:
+		quote.policy = "whole_coin"
+		return quote
 	if shop.fulfillment.price_rounding != "dish_tenth_carry":
 		quote.solo_payment = order_price_single(shop, mods, tune, {"kind": dish_id, "addon": false, "options": []})
 	return quote
 
 
-static func order_price_single(shop: SpecShop, mods: RuleModifiers, tune: Dictionary, c: Dictionary) -> int:
+static func order_price_single(shop: SpecShop, mods: RuleModifiers, tune: Dictionary, c: Dictionary, levels: Dictionary = {}) -> int:
 	var f := shop.fulfillment
 	# 点的那份（只点豆浆时就是豆浆）乘订单选项的倍数；搭配的那杯豆浆不乘
-	var total := raw_price(shop, mods, tune, c.kind)
+	var total := dish_price(shop, mods, tune, c.kind, levels) if f.whole_coin_prices else raw_price(shop, mods, tune, c.kind)
 	for id in c.get("options", []):
 		var option: SpecOrderOption = null
 		for candidate in shop.order_options:
@@ -68,6 +105,8 @@ static func order_price_single(shop: SpecShop, mods: RuleModifiers, tune: Dictio
 				option = candidate
 				break
 		if option != null: total *= option.price_mult
+	if f.whole_coin_prices:
+		return whole_coins(total) + (int(dish_price(shop, mods, tune, f.addon_dish, levels)) if c.addon and c.kind != f.addon_dish else 0)
 	if c.addon and c.kind != f.addon_dish: total += raw_price(shop, mods, tune, f.addon_dish)
 	return int(round(total))
 

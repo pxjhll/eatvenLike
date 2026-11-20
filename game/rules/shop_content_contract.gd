@@ -1,6 +1,6 @@
 extends RefCounted
 ## Versioned canonical fingerprints of exported gameplay resources.
-const PRESENTATION := ["display_name", "description", "icon", "art", "tint", "dining_texture", "label", "effect_label", "preview_label", "preview_dishes", "speaker", "card_text", "notice_portrait", "unlock_note", "texts", "guide", "scene_path", "save_file", "background_music", "scale_anchor"]
+const PRESENTATION := ["display_name", "description", "icon", "art", "tint", "dining_texture", "held_front_drop", "label", "effect_label", "preview_label", "preview_dishes", "speaker", "card_text", "notice_portrait", "unlock_note", "texts", "guide", "scene_path", "save_file", "background_music", "scale_anchor"]
 const TYPES := ["SpecShop", "SpecShopTemplate", "SpecItem", "SpecDish", "SpecStation", "SpecStage", "SpecFulfillment", "SpecDispatch", "SpecFlyer", "SpecSeatGroup", "SpecStaffRules", "SpecStaffKind", "SpecConnection", "SpecOrderOption", "SpecGoalRules", "SpecLayout", "SpecMaterial", "SpecStep", "SpecStockRule", "SpecTask", "SpecUpgradeTrack", "SpecUpgradeLevel", "SpecEffect", "SpecEvent"]
 const TemplateSchema := preload("res://content/rules/spec_shop_template.gd")
 const TemplateProjection := preload("res://game/rules/template/content_projection.gd")
@@ -37,6 +37,7 @@ static func _project(value: Variant, structural: bool, geometry := false) -> Var
 			if type_name=="SpecMaterial" and key=="requires_station" and value.requires_station.is_empty(): continue
 			# A box gift changes recruitment rewards, while existing physical state stays compatible.
 			if type_name=="SpecMaterial" and key=="grant_worker" and (structural or value.grant_worker.is_empty()): continue
+			if type_name == "SpecFulfillment" and key == "whole_coin_prices" and (structural or not value.whole_coin_prices): continue
 			if type_name == "SpecFulfillment" and value.flow_version==0 and key in ["flow_version","delivery_batch","delivery_points"]: continue
 			if type_name == "SpecDispatch" and key == "action_version" and value.action_version == 0: continue
 			if type_name == "SpecDispatch" and key == "transport_helpers" and value.transport_helpers.is_empty(): continue

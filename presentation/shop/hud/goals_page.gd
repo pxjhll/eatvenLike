@@ -72,6 +72,7 @@ func setup(view: Node2D, hud: Control) -> void:
 	hud.bind_action(leave_button, func() -> void: view.open_summary())
 	leave_button.visible = false
 	add_child(leave_button)
+	move_child(leave_button, 0)
 
 
 func refresh() -> void:
@@ -134,4 +135,5 @@ func refresh() -> void:
 	_stat_cells.shelf.visible = rules.shelf_capacity() > 0
 	if leave_button.visible != _view.can_leave():
 		leave_button.visible = _view.can_leave()
+		if leave_button.visible: leave_button.text = "去" + _view.next_shop().display_name
 		_hud.relayout()

@@ -456,6 +456,7 @@ func _before_staff_and_wok_expansion() -> SpecShop:
 	previous.runtime_template.dispatch.port_queues["pantry:out"] = [Vector2(250,365),Vector2(250,425),Vector2(250,485)]
 	previous.runtime_template.dispatch.port_queues.erase("counter")
 	previous.staff.second_front_slot_after = ""
+	for index in 2: previous.stages[index].staff_slots["kitchen"] = 2
 	for wok in ["wok_a","wok_b"]: previous.runtime_template.machines[wok].production_batch.erase("reserve_on_feed")
 	return previous
 
@@ -702,14 +703,15 @@ func test_first_paid_recruit_fills_the_new_front_slot() -> void:
 	rules.gold = 142.0
 	for id in ["plum_dispenser","wok_a"]:
 		check_eq(rules.unlock(id),"","open the front drink service")
-	check_eq(rules.front_slots(),1,"the second front slot waits for the kitchen")
-	check_eq(rules.unlock("rice_cooker"),"","open the kitchen")
-	check_eq(rules.front_slots(),2,"the rice cooker unlocks the second front slot")
-	check_eq(rules.kitchen_staff(),1,"the free bear keeps its kitchen assignment")
+	check_eq(rules.front_slots(),2,"two front slots during drink service")
+	check_eq(rules.kitchen_slots(),0,"the kitchen waits for a rice supply")
 	check_eq(rules.hire(),"","pay 30 gold for the first recruit")
 	var recruit: Dictionary = rules.roster.back()
 	check_eq(rules.execute_command("deploy_worker",{"id":recruit.id,"from_hire":true}).code,"ok","use the staff screen deployment")
-	check_eq(recruit.post,rules.counter_id,"the recruit joins the front despite an open kitchen spot")
+	check_eq(recruit.post,rules.counter_id,"the recruit immediately serves at the counter")
+	check_eq(rules.unlock("rice_cooker"),"","open the kitchen")
+	check_eq(rules.front_slots(),2,"opening the kitchen retains two front slots")
+	check_eq(rules.kitchen_staff(),1,"the free bear keeps its kitchen assignment")
 	check_eq(rules.gold,0.0,"the front slot needs no additional purchase")
 	rules.run(1.0)
 	check(recruit.pos.distance_to(rules.workers[0].pos)>30.0,"both front workers have distinct standby spots")
@@ -726,7 +728,7 @@ func test_pantry_ingredient_upgrades_are_independent() -> void:
 	for id in ["plum_dispenser","wok_a","rice_cooker","pantry"]:
 		check_eq(rules.unlock(id),"","open the pantry")
 	check_eq(rules.upgrade("pantry/egg_rice_raw"),"","upgrade egg fried rice seasoning")
-	check(is_equal_approx(rules.dish_price("egg_fried_rice"),12.6),"only the egg fried rice earns the seasoning price bonus")
+	check(is_equal_approx(rules.dish_price("egg_fried_rice"),13.0),"only the egg fried rice earns the seasoning price bonus")
 	check_eq(rules.dish_price("plain_fried_rice"),11.0,"no seasoning bonus on plain fried rice")
 	check(not rules.upgrade("pantry/yangzhou_raw").is_empty(),"locked seasoning cannot be upgraded")
 	check_eq(rules.unlock("pantry"),"","cabinet level unlocks the next seasoning")
@@ -975,3 +977,22 @@ func test_preexisting_kitchen_training_survives_the_new_unlock_requirement() -> 
 	check_eq(restored.unlock("rice_cooker"),"","unlock the kitchen on the restored store")
 	check_eq(restored.command_status("upgrade",{"key":"staff/kitchen"}).code,"ok","the next training purchase becomes available")
 	check_eq(restored.level("staff/kitchen"),bought,"opening the kitchen resumes the player's previous level")
+
+
+func test_previous_opening_recruit_is_retained_at_the_register() -> void:
+	var previous := SHOP.copy_for_editing()
+	previous.staff.second_front_slot_after = "rice_cooker"
+	previous.stages[0].staff_slots["kitchen"] = 2
+	var old := ShopRules.new(previous, 42)
+	old.gold = 100.0
+	check_eq(old.unlock("plum_dispenser"), "", "open old drink counter")
+	check_eq(old.hire(), "", "hire under the old opening rules")
+	var recruit: int = old.roster.back().id
+	check_eq(old.deploy_worker(recruit), "", "paid hire starts in the old kitchen")
+	old.step(0.1)
+	var current := ShopRules.new(SHOP, 42)
+	check_eq(current.load_dict(old.to_dict(), true), "", "adopt previous staff assignments")
+	check_eq(current.worker_by_id(recruit).post, current.counter_id, "same employee now works at register")
+	check_eq(current.gold, old.gold, "no additional hire cost")
+	current.step(0.1)
+	check_eq(current.load_dict(current.to_dict()), "", "new assignment survives reload")

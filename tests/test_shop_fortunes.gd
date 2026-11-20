@@ -102,6 +102,8 @@ func test_regular_takeaway_delivers_without_seat_in_all_three_shops() -> void:
 			if guest.order < 1: continue
 			if not checked:
 				check_eq(guest.seat, "", "regular customer needs no seat")
+				var frame := ShopView.new(rules).render_snapshot()
+				check(frame.movement.customers["guest:"+str(guest_id)].takeaway, "regular customer displays takeaway in " + entry[1])
 				check_eq(guest.request.size(), 1, "one feasible dish")
 				check_eq(guest.request[0].qty, 1, "one item only")
 				var copy := ShopRules.new(entry[0], 42)

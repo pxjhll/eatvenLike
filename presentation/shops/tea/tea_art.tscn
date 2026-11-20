@@ -6,9 +6,13 @@
 
 [node name="TeaArt" instance=ExtResource("art")]
 
-[node name="GlassPartition" parent="Sortables/Checkout"]
-metadata/toggle_label = "玻璃隔板"
-metadata/toggle_icon = "glass"
+[node name="Sprite" parent="Sortables/IngredientTable/TeaTin"]
+metadata/layout_group = "茶叶箱"
+metadata/unlock_rule = "box:tea_leaf"
+
+[node name="Sprite" parent="Sortables/IngredientTable/MilkBottle"]
+metadata/layout_group = "牛奶箱"
+metadata/unlock_rule = "box:milk"
 
 [node name="DiningArea" parent="Sortables"]
 script = ExtResource("dining")
@@ -31,6 +35,21 @@ size = Vector2(134, 95)
 position = Vector2(69, 155)
 script = ExtResource("anchor")
 size = Vector2(134, 78)
+
+[node name="Mark" type="Marker2D" parent="Anchors/Stations/supply"]
+position = Vector2(231, 242)
+
+[node name="BoxFrames" type="Node2D" parent="Anchors/Stations/supply"]
+
+[node name="tea_leaf" type="Node2D" parent="Anchors/Stations/supply/BoxFrames"]
+position = Vector2(65, 141)
+script = ExtResource("anchor")
+size = Vector2(78, 95)
+
+[node name="milk" type="Node2D" parent="Anchors/Stations/supply/BoxFrames"]
+position = Vector2(146, 147)
+script = ExtResource("anchor")
+size = Vector2(78, 89)
 
 [node name="boil" type="Node2D" parent="Anchors/Stations"]
 
@@ -146,6 +165,14 @@ size = Vector2(108, 110)
 
 [node name="counter" type="Node2D" parent="Anchors/Stations"]
 
+[node name="Tap" type="Node2D" parent="Anchors/Stations/counter"]
+position = Vector2(484, 739)
+script = ExtResource("anchor")
+size = Vector2(107, 70)
+
+[node name="Mark" type="Marker2D" parent="Anchors/Stations/counter"]
+position = Vector2(578, 742)
+
 [node name="Post" type="Node2D" parent="Anchors/Stations/counter"]
 position = Vector2(32, 709)
 script = ExtResource("anchor")
@@ -225,7 +252,7 @@ position = Vector2(626, 391)
 position = Vector2(626, 512)
 
 [node name="2" type="Marker2D" parent="Anchors/Connections/seal_to_shelf/Path"]
-position = Vector2(608, 574)
+position = Vector2(626, 574)
 
 [node name="Shelf" type="Node2D" parent="Anchors"]
 

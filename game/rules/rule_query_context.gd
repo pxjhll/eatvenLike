@@ -14,6 +14,7 @@ func _init(definition: SpecShop, source_levels: Dictionary, source_mods: RuleMod
 	shop = definition
 	levels = source_levels.duplicate(true)
 	mods.entries = source_mods.entries.duplicate(true)
+	mods.price_gains = source_mods.price_gains
 	tune = source_tune.duplicate(true)
 	for key in level_overrides:
 		if Upgrades.track_of(shop, key) == null: continue
@@ -60,15 +61,15 @@ func raw_price(dish_id: String) -> float:
 
 
 func dish_price(dish_id: String) -> float:
-	return Numbers.dish_price(shop, mods, tune, dish_id)
+	return Numbers.dish_price(shop, mods, tune, dish_id, levels)
 
 
 func dish_quote(dish_id: String) -> Dictionary:
-	return Numbers.dish_quote(shop, mods, tune, dish_id)
+	return Numbers.dish_quote(shop, mods, tune, dish_id, levels)
 
 
 func order_price_single(c: Dictionary) -> int:
-	return Numbers.order_price_single(shop, mods, tune, c)
+	return Numbers.order_price_single(shop, mods, tune, c, levels)
 
 
 func side_of(worker: Dictionary) -> String:

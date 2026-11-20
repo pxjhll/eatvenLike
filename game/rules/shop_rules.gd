@@ -537,12 +537,12 @@ func raw_price(dish_id: String) -> float:
 
 
 func dish_price(dish_id: String) -> float:
-	return Numbers.dish_price(shop, mods, tune, dish_id)
+	return Numbers.dish_price(shop, mods, tune, dish_id, levels)
 
 
 ## Calculated dish amount and settlement policy. Solo payment excludes options/addons.
 func dish_quote(dish_id: String) -> Dictionary:
-	return Numbers.dish_quote(shop, mods, tune, dish_id)
+	return Numbers.dish_quote(shop, mods, tune, dish_id, levels)
 
 
 func flavor_open(dish: SpecDish) -> bool:
@@ -1215,7 +1215,7 @@ func _item_name(id: String) -> String:
 
 
 func order_price_single(c: Dictionary) -> int:
-	return Numbers.order_price_single(shop, mods, tune, c)
+	return Numbers.order_price_single(shop, mods, tune, c, levels)
 
 
 # =====================================================================
@@ -1528,6 +1528,12 @@ func command_status(command: String, arguments: Dictionary = {}) -> Dictionary:
 					if not required_station.is_empty() and not station_unlocked(required_station):
 						code = CommandResult.STATION_REQUIRED
 						params.station = required_station
+					elif parts[1] == "kitchen" and not supply_id.is_empty():
+						for material in shop.station(supply_id).materials:
+							if not material.grant_worker.is_empty() and not boxes.get(material.id, false):
+								code = CommandResult.BOX_REQUIRED
+								params.material = material.id
+								break
 				elif key != "flyer":
 					if not station_unlocked(parts[0]) and shop.station(parts[0]).companion_of.is_empty():
 						code = CommandResult.STATION_REQUIRED

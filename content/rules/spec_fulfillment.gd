@@ -30,6 +30,7 @@ extends Resource
 @export var pay_at: String = "on_deliver"
 ## 计价取整：dish_tenth_carry = 每道菜价保留 1 位小数、金币取整零头累计；order_round = 整单四舍五入
 ## Fixed: single=order_round; handoff=dish_tenth_carry.
+@export var whole_coin_prices := false
 @export var price_rounding: String = "dish_tenth_carry"
 ## handoff: after_deliver. single: after_take (take action complete).
 ## after_pay is only an alias for after_take when pay_at=on_take.

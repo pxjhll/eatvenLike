@@ -5,6 +5,8 @@ const Video := preload("res://presentation/opening/opening_video.gd")
 const ReferenceTheme := preload("res://presentation/ui/reference_theme.gd")
 const LoadingView := preload("res://presentation/opening/loading_view.gd")
 const BUTTON_FACE := preload("res://art/opening/start_button.svg")
+const FACE_POSITION := Vector2(-45, -22)
+const PRESS_DEPTH := 5.0
 const BASE := Vector2(720, 1280)
 const SHOP := "res://presentation/shop/shop_play.tscn"
 
@@ -19,6 +21,7 @@ var welcome: Control
 var poster: TextureRect
 var welcome_button: Button
 var start_button: Button
+var _button_face: TextureRect
 var status: Label
 var _pop: Tween
 var _web_loading: JavaScriptObject
@@ -63,18 +66,25 @@ func _ready() -> void:
 	start_button.add_theme_color_override("font_outline_color", Color("512800"))
 	start_button.add_theme_constant_override("outline_size", 2)
 	start_button.add_theme_stylebox_override("focus", ReferenceTheme.style("gold", 55, "focus"))
-	for state in ["normal", "hover", "pressed", "disabled"]:
+	for state in ["normal", "hover", "disabled"]:
 		start_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	var depressed := StyleBoxEmpty.new()
+	depressed.content_margin_top = PRESS_DEPTH * 2.0
+	for state in ["pressed", "hover_pressed"]:
+		start_button.add_theme_stylebox_override(state, depressed)
+	start_button.add_theme_color_override("font_disabled_color", Color("512800"))
+	start_button.button_down.connect(_show_start_press.bind(true))
+	start_button.button_up.connect(_show_start_press.bind(false))
 	start_button.pressed.connect(start_shop)
 	frame.add_child(start_button)
-	var face := TextureRect.new()
-	face.texture = BUTTON_FACE
-	face.position = Vector2(-45, -22)
-	face.size = Vector2(520, 145)
-	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	face.show_behind_parent = true
-	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	start_button.add_child(face)
+	_button_face = TextureRect.new()
+	_button_face.texture = BUTTON_FACE
+	_button_face.position = FACE_POSITION
+	_button_face.size = Vector2(520, 145)
+	_button_face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_button_face.show_behind_parent = true
+	_button_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	start_button.add_child(_button_face)
 	start_button.hide()
 	status = Label.new()
 	status.position = Vector2(100, 1085)
@@ -146,26 +156,30 @@ func _finish_intro(failed: bool) -> void:
 	video.stop()
 	if failed:
 		status.text = "片头暂时无法播放，可以直接开始营业"
-	start_button.disabled = true
-	start_button.scale = Vector2.ONE * 0.08
+	start_button.scale = Vector2.ONE * 0.88
 	start_button.show()
+	start_button.grab_focus()
 	if _web_loading != null:
 		_web_loading.release(true)
 	_pop = create_tween()
 	_pop.tween_property(start_button, "scale", Vector2.ONE * 1.04, 0.30).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_pop.tween_property(start_button, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	_pop.tween_callback(_enable_start)
 
 
-func _enable_start() -> void:
+func _show_start_press(down: bool) -> void:
 	if phase != Phase.READY: return
-	start_button.disabled = false
-	start_button.grab_focus()
+	if _pop != null: _pop.kill()
+	start_button.scale = Vector2.ONE
+	_button_face.position = FACE_POSITION + (Vector2.DOWN * PRESS_DEPTH if down else Vector2.ZERO)
+	_button_face.modulate = Color("dfbf9a") if down else Color.WHITE
 
 
 func start_shop() -> void:
 	if phase != Phase.READY or start_button.disabled: return
+	_show_start_press(true)
 	phase = Phase.ENTERING
+	start_button.text = "正在进店…"
+	start_button.add_theme_stylebox_override("disabled", start_button.get_theme_stylebox("pressed"))
 	start_button.disabled = true
 	shop_requested.emit()
 	if change_scene_on_start:
@@ -173,10 +187,16 @@ func start_shop() -> void:
 
 
 func _enter_shop() -> void:
+	# Let the entering state reach the display before synchronous scene loading.
+	await get_tree().process_frame
+	await get_tree().process_frame
 	var error := get_tree().change_scene_to_file(SHOP)
 	if error != OK:
 		phase = Phase.READY
 		start_button.disabled = false
+		start_button.text = "开始营业"
+		_show_start_press(false)
+		start_button.grab_focus()
 		status.text = "进入店铺失败，请再试一次"
 
 

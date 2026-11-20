@@ -62,12 +62,18 @@ func _run() -> void:
 	_rules().gold = 20.0
 	view._refresh(0)
 	_check(view._station_buttons.has("supply") and view._station_buttons.supply.is_visible_in_tree(), "原料柜上有框，等着买茶叶箱")
+	var tea: Sprite2D = view.art.get_node("Sortables/IngredientTable/TeaTin/Sprite")
+	var milk: Sprite2D = view.art.get_node("Sortables/IngredientTable/MilkBottle/Sprite")
+	var tea_slot: Rect2 = _frame("supply").get_rect()
+	_check(not tea.is_visible_in_tree() and not milk.is_visible_in_tree(), "购买前两种原料都隐藏")
 	await _click(view._station_buttons.supply)
 	_check(hud.page_node("station").station_id == "supply", "点原料柜打开原料柜面板")
 	var box: Button = hud.page_node("station").material_buttons.get("tea_leaf")
 	await _click(box)
 	_check(bool(_rules().boxes.tea_leaf), "在原料柜面板里买到茶叶箱")
 	await _click(hud.tab("shop"))
+
+	_check(tea.is_visible_in_tree() and not milk.is_visible_in_tree() and not _frame("supply").visible, "只买茶叶只显示茶叶罐")
 
 	# 员工页招人：有后厨名额就直接上岗，开局的人留在柜台
 	_rules().gold = 100.0
@@ -80,7 +86,7 @@ func _run() -> void:
 
 	# 点柜台：买座位、发传单
 	_rules().gold = 1000.0
-	await _click(view._seats)
+	await _click(view._register_target)
 	_check(hud.page == "station" and hud.page_node("station").station_id == "counter", "点柜台打开柜台面板")
 	var seats := _rules().seat_total()
 	await _click(hud.page_node("station").seat_button)
@@ -104,7 +110,13 @@ func _run() -> void:
 	# 开到调奶台，买封口机 → 外带架的传送带
 	_rules().gold = 100000.0
 	for id in ["seal", "mix"]: _rules().unlock(id)
-	_rules().unlock_box("milk")
+	view._refresh(0)
+	var milk_frame := _frame("supply")
+	_check(milk_frame.visible and milk_frame.get_rect().position.x >= tea_slot.end.x and not milk.is_visible_in_tree(), "牛奶虚线框只在右侧空位")
+	await _click(milk_frame)
+	await _click(hud.page_node("station").material_buttons.get("milk"))
+	await _click(hud.tab("shop"))
+	_check(tea.is_visible_in_tree() and milk.is_visible_in_tree() and not milk_frame.visible, "买牛奶后两种原料齐全，虚线框消失")
 	view._refresh(0)
 	var belt: String = _rules().connection_rows()[0].id
 	_check(view._station_buttons.has("connection:" + belt) and view._station_buttons["connection:" + belt].is_visible_in_tree(), "调奶台以后传送带有虚线框")
@@ -257,7 +269,7 @@ func _click(button: Control) -> void:
 	for unused in 4: await process_frame
 	view._refresh(0)
 	var ok: bool = button != null and button.is_visible_in_tree() and not (button is BaseButton and button.disabled)
-	_check(ok, "按钮看得见、能按：" + (String(button.get("text")) if button != null else "null"))
+	_check(ok, "按钮看得见、能按：" + (str(button.name) if button != null else "null"))
 	if not ok: return
 	await _press(button.get_global_transform_with_canvas() * (button.size / 2.0))
 

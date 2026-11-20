@@ -25,6 +25,7 @@ static func build(runtime: RefCounted, displays: Array = [], presentation: Dicti
 		var task: Dictionary = runtime.runner.tasks.get(worker.id,{})
 		var action_status: String = worker.get("action", {}).get("status", "")
 		worker.display_task = task.get("kind","idle")
+		worker.delivering_to_guest = worker.display_task == "bundle" and String(task.to).begins_with("guest:")
 		worker.work_station = ""
 		worker.display_working = worker.phase in ["work","pickup","dropoff"] and action_status != "blocked"
 		worker.display_progress = _progress(runtime,worker,task)
@@ -32,7 +33,7 @@ static func build(runtime: RefCounted, displays: Array = [], presentation: Dicti
 			var standing_by: bool = (task.is_empty() and worker.phase == "idle") or (task.get("kind") == "interact" and action_status == "blocked")
 			if not counter_pose.is_empty() and standing_by and Vector2(worker.pos).is_equal_approx(counter_pose.position):
 				worker.facing = counter_pose.direction
-			if worker.phase == "dropoff" and worker.display_working and task.get("kind") == "bundle" and String(task.to).begins_with("guest:"):
+			if worker.phase == "dropoff" and worker.display_working and worker.delivering_to_guest:
 				var guest_id := int(String(task.to).trim_prefix("guest:"))
 				for customer in frame.customers:
 					if customer.id != guest_id: continue
@@ -67,7 +68,7 @@ static func build(runtime: RefCounted, displays: Array = [], presentation: Dicti
 		row.seat = -1 if row.seat_key.is_empty() else int(String(row.seat_key).get_slice("/",1))
 		row.seated = not row.seat_key.is_empty() and runtime.service.customers.ready(guest.id,row.seat_key)
 		row.exiting = guest.state=="leaving"
-		row.takeaway = bool(routes.get(guest.id,false))
+		row.takeaway = guest.get("regular", false) or bool(routes.get(guest.id,false))
 		row.mood = owner.order_mood({"wait":guest.wait,"seat":row.seat})
 		var patience: float = runtime._definition.service.orders.patience
 		row.patience = maxf(0.0,1.0-float(guest.wait)/patience) if patience>0.0 and guest.state=="queue" else -1.0

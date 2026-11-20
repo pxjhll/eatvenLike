@@ -84,7 +84,7 @@ var _bars := {}
 var _pops: Array[Dictionary] = []
 var _staff_cards: Array[Button] = []
 var _shelf: Label
-var _seats: Label
+var _register_target: Control
 var _post_labels := {}
 var _toast: Label
 var _toast_left := 0.0
@@ -101,6 +101,8 @@ var _hint_text := ""
 var _dining: Node2D
 var _scroll := 0.0
 var _scroll_min := 0.0
+var _counter_bubble_area := Rect2()
+var _counter_bubble_offset := Vector2.ZERO
 var _world_top := 0.0
 var _world_factor := 1.0
 var _pan_press := Vector2.INF
@@ -180,6 +182,8 @@ func _ready() -> void:
 	$Canvas.move_child(art, 0)
 	anchors = ShopAnchors.new(art.get_node("Anchors"))
 	_world_size = anchors.meta(".", "world_size", _world_size)
+	_counter_bubble_area = anchors.rect("Counter/OrderBubbleArea")
+	_counter_bubble_offset = anchors.meta("Counter/OrderBubbleArea", "bubble_offset", Vector2.ZERO)
 	_top_margin = float(anchors.meta(".", "top_margin", 0.0))
 	_actor_unit_scale = Presentation.scene_units(_world_size)
 	_customer_height = Presentation.customer_height
@@ -467,10 +471,7 @@ func _refresh(delta: float, frame: Dictionary = {}) -> void:
 		if _shelf.visible:
 			var count: int = frame.counters.shelf.count if frame.has("presentation_version") else frame.shelf_count
 			_shelf.text = _t("chip_shelf", {"count":count,"limit":rules.shelf_capacity()})
-	if _seats != null and rules.dine_group() != null:
-		var seats := view.seats()
-		_seats.text = _t("chip_seats", {"used": seats.used, "total": seats.total})
-		_seats.visible = rules.is_open()
+	if _register_target != null: _register_target.visible = rules.is_open()
 	_refresh_station_signs()
 	for post in _post_labels:
 		var owner := -1
@@ -569,11 +570,13 @@ func _build_world_labels() -> void:
 		label.mouse_filter = Control.MOUSE_FILTER_PASS
 		_badges[id] = label
 	if anchors.has("Chips/Shelf"): _shelf = _chip(parent, anchors.point("Chips/Shelf"))
-	if anchors.has("Chips/Seats") and rules.dine_group() != null:
-		_seats = _chip(parent, anchors.point("Chips/Seats"))
-		_seats.mouse_filter = Control.MOUSE_FILTER_STOP
-		_seats.gui_input.connect(_on_seats_input)
-		_seats.visible = false
+	var register := anchors.rect("Stations/%s/Tap" % rules.counter_id)
+	if register.has_area():
+		_register_target = Control.new()
+		_register_target.position = register.position
+		_register_target.size = register.size
+		_register_target.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		parent.add_child(_register_target)
 	for id in anchors.children("Stations"):
 		if not anchors.has("Stations/%s/PostPoint" % id): continue
 		var label := _chip(parent, anchors.point("Stations/%s/PostPoint" % id) + Vector2(-26, 14))
@@ -596,9 +599,6 @@ func _build_world_labels() -> void:
 		mark.center_on(anchors.point("Stations/%s/Mark" % id, spot))
 		parent.add_child(mark)
 		_upgrade_marks[id] = mark
-	if _seats != null:
-		_upgrade_marks[rules.counter_id] = UpgradeBadge.new()
-		_seats.add_child(_upgrade_marks[rules.counter_id])
 	_hint_ring = HintRing.new()
 	parent.add_child(_hint_ring)
 	var staff_tab: Button = ui.tab("staff")
@@ -662,10 +662,6 @@ func _frame(rect: Rect2, action: Callable) -> Button:
 	return frame
 
 
-func _on_seats_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT: ui.open_station(rules.counter_id)
-
-
 func _refresh_station_signs() -> void:
 	var next_stage := view.next_stage()
 	var box := rules.pending_box()
@@ -692,10 +688,13 @@ func _refresh_station_signs() -> void:
 			frame.position = tables[table_index] + Vector2(0, -42) - FRAME_SIZE / 2.0
 			frame.can_unlock = rules.command_status("buy_seat").code == "ok"
 			frame.text = _t("frame_seat", {"step": group.step, "cost": rules.seat_cost()})
-			frame.tooltip_text = _t("frame_seat_tip") + "\n" + view.command_message(rules.command_status("buy_seat"))
 			continue
+		if id == rules.supply_id:
+			var slot := anchors.rect("Stations/%s/BoxFrames/%s" % [id, box]) if not box.is_empty() else Rect2()
+			frame.size = slot.size if slot.has_area() else FRAME_SIZE
+			frame.position = slot.position if slot.has_area() else anchors.rect("Stations/%s/Frame" % id).get_center() - FRAME_SIZE / 2.0
 		if id == rules.supply_id and not box.is_empty():
-			# 已有原料柜也能用同一个框显示待买的原料箱。
+			# 有独立原料位的柜子只框住当前待购原料。
 			frame.visible = true
 			var m := shop.station(rules.supply_id).material(box)
 			frame.can_unlock = rules.command_status("unlock_box", {"material": box}).code == "ok"
@@ -717,9 +716,6 @@ func _refresh_station_signs() -> void:
 	for id in _upgrade_marks:
 		var frame: Button = _station_buttons.get(id)
 		_upgrade_marks[id].visible = view.can_buy(id) and not (frame != null and frame.visible)
-	if _seats != null and _upgrade_marks.has(rules.counter_id):
-		# 在数字牌旁边，不挡座位数
-		_upgrade_marks[rules.counter_id].center_on(Vector2(_seats.size.x + 16, _seats.size.y / 2.0))
 	var staff_page: Control = ui.page_node("staff")
 	var staff_tab: Button = ui.tab("staff")
 	if _staff_mark != null: _staff_mark.visible = staff_page != null and staff_page.affordable()
@@ -995,8 +991,9 @@ func _update_customers_motion(frame: Dictionary, delta := 0.0) -> void:
 		if row.has("patience"): patience = float(row.patience)
 		elif shop.fulfillment.handoff=="single" and row.state=="queue" and shop.fulfillment.leave_after>0:
 			patience = 1.0-float(row.wait)/shop.fulfillment.leave_after
-		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway,row.get("compact_order",false))
 		var displayed: Vector2 = pose.pos if row.seated else _customer_route_presentation.point(row,float(Presentation.customer_speed)*shop.layout.motion_units)
+		var offset := _counter_bubble_offset if _counter_bubble_area.has_point(displayed) else Vector2.ZERO
+		actor.show_order(bubble,patience,int(row.mood) if row.has("mood") else rules.order_mood({"wait":row.wait,"seat":row.seat}),row.takeaway,row.get("compact_order",false),offset)
 		actor.display(pose,float(frame.clock)+_customer_route_presentation.age,displayed)
 		_customer_positions[key] = row.pos
 		if _z_by_y: actor.z_index = int(displayed.y)
@@ -1503,7 +1500,7 @@ func _show_toast(text: String) -> void:
 
 func _staffing_warning(workers: Array) -> String:
 	if workers.is_empty(): return _t("no_staff")
-	if shop.staff.zones.is_empty(): return ""
+	if shop.staff.zones.is_empty() or rules.kitchen_slots() == 0: return ""
 	for worker in workers:
 		if String(worker.get("post", "")).is_empty(): return ""
 	var kitchen_open := false
@@ -1598,22 +1595,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if was_pan or _drag.worker_id != -1: return
 	# 点一下（没滚动）：打开点到的东西
 	var point: Vector2 = $Canvas.get_global_transform_with_canvas().affine_inverse() * event.position
-	var rects := _station_rects
-	for id in rects:
-		if rects[id].has_point(point):
+	for id in _station_rects:
+		if not view.can_inspect_station(id): continue
+		var mark: Control = _upgrade_marks.get(id)
+		if mark != null and mark.visible and mark.get_rect().has_point(point):
 			ui.open_station(id)
 			get_viewport().set_input_as_handled()
 			return
-	if _opens_counter(point):
-		ui.open_station(rules.counter_id)
+	for id in _station_rects:
+		if not _station_rects[id].has_point(point) or not view.can_inspect_station(id): continue
+		ui.open_station(id)
 		get_viewport().set_input_as_handled()
-
-
-## 柜台面板（座位、传单）从堂食数字牌、它旁边的红 ↑、柜台本身或堂食区打开；柜台上的机器先判断
-func _opens_counter(point: Vector2) -> bool:
-	if _seats == null or not _seats.visible: return false
-	var chip := Rect2(_seats.position, _seats.size).grow_individual(12, 14, 52, 14)
-	return chip.has_point(point) or anchors.rect("Stations/%s/Post" % rules.counter_id).has_point(point) or anchors.rect("Counter/Dining").has_point(point)
+		return
 
 
 func _notification(what: int) -> void:

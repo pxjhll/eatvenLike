@@ -57,15 +57,37 @@ func _run() -> void:
 	_check(absf(actor.carried.texture.get_height() * actor.carried.scale.y - 52.0) < 0.001, "rabbit keeps existing orthographic cup size")
 	# Both dishes must follow the actor occlusion together during delivery.
 	worker["presentation_version"] = 1
-	worker["held_items"] = [{"item":"black_tea"},{"item":"lemonade"}]
-	for facing in [4, 0, 3, 7, 5, 2]:
+	worker["held_items"] = [{"item":"black_tea", "count":1},{"item":"lemonade", "count":1}]
+	for facing in [4, 0, 3, 7, 5, 2, 6, 1]:
 		actor.frame_actor.set_direction(facing)
 		for i in 4:
 			actor.display(worker, clock + 0.2)
 			var layer: Node2D = actor.carried.get_parent()
 			var second: Sprite2D = actor._held_sprites[0]
+			var horizontal_spacing: float = second.position.x - actor.carried.position.x
+			_check(is_equal_approx(horizontal_spacing, -18.0 if facing > 4 else 18.0), "second dish stacks outward after turning")
 			_check((layer.get_index() < actor.frame_actor.get_index()) == (facing in [3, 4, 5]), "carried food occlusion stays stable across repeated draws")
 			_check(second.get_parent() == layer and actor.carried.get_index() < second.get_index(), "both dishes retain their order while turning")
+	_check(not actor.amount.visible and not actor._held_amounts[0].visible, "two different singles have no quantity badges")
+	worker.carry_count = 5
+	worker.held_items[0].count = 2
+	worker.held_items[1].count = 3
+	actor.display(worker, clock + 0.2)
+	_check(actor.amount.visible and actor.amount.text == "×2", "primary quantity is specific to its item")
+	_check(actor._held_amounts[0].visible and actor._held_amounts[0].text == "×3", "secondary quantity is specific to its item")
+	worker.held_items.pop_back()
+	worker.carry_count = 2
+	actor.display(worker, clock + 0.2)
+	_check(not actor._held_amounts[0].visible, "dropping the secondary item clears its badge")
+	_check(actor._serving_tray == null, "two units in transit to a workstation stay hand-carried")
+	worker.delivering_to_guest = true
+	actor.display(worker, clock + 0.2)
+	_check(actor._serving_tray.visible and actor._serving_tray._portions.size() == 2, "two identical servings occupy two places on the tray")
+	_check(not actor.carried.visible and not actor.amount.visible, "the tray replaces the ordinary hand display")
+	worker.held_items[0].count = 1
+	worker.carry_count = 1
+	actor.display(worker, clock + 0.2)
+	_check(not actor._serving_tray.visible and actor.carried.visible, "a single serving stays in the hand")
 	actor.free()
 	print("RABBIT GAME VISUALS: %d failures" % failures)
 	quit(1 if failures else 0)

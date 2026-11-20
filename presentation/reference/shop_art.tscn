@@ -683,16 +683,6 @@ centered = false
 metadata/layout_group = "打包袋"
 metadata/unlock_rule = "seal"
 
-[node name="GlassPartition" type="Node2D" parent="Sortables/Checkout"]
-visible = false
-position = Vector2(-155, -90)
-metadata/art_layer = "glass"
-
-[node name="Sprite" type="Sprite2D" parent="Sortables/Checkout/GlassPartition"]
-script = ExtResource("32_prop")
-asset_path = "res://art/reference/glass_partition-v1.png"
-display_width = 500.0
-
 [node name="DiningArea" type="Node2D" parent="Sortables"]
 y_sort_enabled = true
 

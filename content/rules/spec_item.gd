@@ -10,3 +10,5 @@ extends Resource
 @export var tint: Color = Color.WHITE
 ## Optional texture for a finished item served at a dining seat.
 @export var dining_texture: Texture2D
+## Extra downward offset in actor units when carried facing the camera.
+@export var held_front_drop := 0.0

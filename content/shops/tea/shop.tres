@@ -535,6 +535,7 @@ track = SubResource("Resource_8ch08")
 
 [sub_resource type="Resource" id="Resource_q8vau"]
 script = ExtResource("10_x4rom")
+whole_coin_prices = true
 takeaway_station = "seal"
 mood_seconds = Array[float]([15.0, 30.0])
 seated_patience = 0.5
@@ -632,12 +633,14 @@ script = ExtResource("12_anqca")
 id = "shop_done"
 when = Array[String](["complete"])
 style = "card"
-title = "首店完成！"
+title = "{shop}完成！"
 title_size = 64
 medal = "medal"
 stats = [["clock", "用时", "time"], ["coin", "总营业额", "revenue"]]
-text = "第二家店还在准备中，可以继续把这家店做大。"
-confirm_label = "继续营业"
+text = "经营目标全部达成。"
+confirm_label = "去{next}"
+cancel_label = "继续营业"
+confirm_action = "leave"
 
 [sub_resource type="Resource" id="Guide_tea_opening_notice"]
 script = ExtResource("12_anqca")
@@ -701,17 +704,17 @@ when = Array[String](["open", "dining_seat_shortage"])
 when_seconds = 4.0
 done_when = Array[String](["!page:shop", "!dining_seat_shortage"])
 cues = Array[Dictionary]([{
-"at": "ui:chip:seats",
+"at": "station:counter",
 "finish_after_notice": true,
 "notice_seconds": 4.0,
-"text": "堂食座位满了，点座位数字牌就能加座位。"
+"text": "堂食座位满了，点收银台就能加座位。"
 }])
 
 [sub_resource type="Resource" id="Resource_ofbvg"]
 script = ExtResource("13_l0dwn")
 id = "tea_leaf"
 display_name = "茶叶"
-art = "pearl_tea"
+art = "tea_tin"
 
 [sub_resource type="Resource" id="Resource_cffgs"]
 script = ExtResource("13_l0dwn")

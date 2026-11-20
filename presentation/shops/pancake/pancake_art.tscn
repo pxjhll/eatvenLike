@@ -98,12 +98,12 @@ position = Vector2(425, 848)
 [node name="front_counter" type="Node2D" parent="Anchors/Stations"]
 
 [node name="Tap" type="Node2D" parent="Anchors/Stations/front_counter"]
-position = Vector2(41, 760)
+position = Vector2(632, 819)
 script = ExtResource("anchor")
-size = Vector2(847, 216)
+size = Vector2(131, 87)
 
 [node name="Mark" type="Node2D" parent="Anchors/Stations/front_counter"]
-position = Vector2(745, 805)
+position = Vector2(749, 824)
 
 [node name="Badge" type="Node2D" parent="Anchors/Stations/fryer"]
 position = Vector2(110, 400)
@@ -174,6 +174,12 @@ position = Vector2(468, 1720)
 metadata/note = "拿到餐从下方中间离开"
 
 [node name="Counter" type="Node2D" parent="Anchors"]
+
+[node name="OrderBubbleArea" type="Node2D" parent="Anchors/Counter"]
+position = Vector2(431, 1000)
+script = ExtResource("anchor")
+size = Vector2(83, 92)
+metadata/bubble_offset = Vector2(68, 82)
 
 [node name="Sale" type="Node2D" parent="Anchors/Counter"]
 position = Vector2(470, 690)
