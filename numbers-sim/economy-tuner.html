@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eatvenLike 三店经济实验｜PXJ-41</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:#1c2938;font:14px/1.65 system-ui,sans-serif}main{max-width:1440px;margin:auto;padding:28px}h1{font-size:25px;margin:0}h2{font-size:17px;margin:0 0 12px}p{margin:8px 0 16px}.muted{color:#5b6775}.notice{background:#fff3da;border:1px solid #dfba65;padding:14px 18px;border-radius:10px}.layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;margin-top:20px}.panel{background:white;border:1px solid #dde1e7;border-radius:10px;padding:20px;margin-bottom:16px}fieldset{border:0;padding:0;margin:16px 0}legend{font-weight:700;margin-bottom:8px}label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0}input,select,button{font:inherit;border:1px solid #b8c2ce;border-radius:6px;padding:6px 8px;background:white;color:inherit}input{width:95px}select{max-width:170px}button{cursor:pointer;background:#235f9e;color:white;border-color:#235f9e;margin:6px 6px 0 0}button:disabled{opacity:.5;cursor:default}input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid #85b6e8;outline-offset:2px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #e4e8ed}th{white-space:nowrap;color:#53657b}td{font-variant-numeric:tabular-nums}.scroll{overflow:auto}#error{color:#a02626}code{font-size:12px}li{margin:6px 0}@media(max-width:920px){.layout{grid-template-columns:1fr}main{padding:16px}.panel{padding:16px}}@media(prefers-color-scheme:dark){body{background:#161b22;color:#e7edf4}.panel,input,select{background:#212831;color:#e7edf4;border-color:#465363}.muted,th{color:#b7c4d2}.notice{background:#392e1a;color:#f6dfae}th,td{border-color:#465363}}
+</style>
+<main>
+<h1>三店经济实验</h1><p class="muted">PXJ-41 · 旧基线保留，新客流规则采用显式假设。没有改动正式游戏数值。</p>
+<div class="notice"><strong>这里比较假设，尚不能预测正式通关时间。</strong> 本轮没有工序、物流、断货模拟。任务未配置时显示 N/A；“满级”和“通关”分别统计。</div>
+<div class="layout">
+<form class="panel" id="controls">
+<h2>经济配置</h2>
+<label>载入配置<select id="preset"><option value="original">原默认</option><option value="candidateB">试玩候选 B</option></select></label>
+<div id="globals"></div>
+<fieldset><legend>客流与品质：未校准假设</legend>
+<label>场景<select id="scenario"></select></label><div id="assumptions"></div>
+</fieldset>
+<fieldset><legend>购买习惯与假设任务</legend>
+<label>购买间隔<select id="every"><option value="0">随时购买</option><option value="60">每 1 分钟</option><option value="300">每 5 分钟</option><option value="900">每 15 分钟</option></select></label>
+<label>每菜销量目标（假设）<input id="target" type="number" min="1" step="1" placeholder="未配置"></label>
+<p class="muted">留空 = 不配置任务。间隔购买仍是全程在线生产，不代表离线收益。</p>
+</fieldset>
+<button type="submit">运行对照</button><button type="button" id="export" disabled>导出输入与结果</button>
+<p id="error" role="alert"></p>
+</form>
+<section>
+<div class="panel"><h2>三店结果</h2><p id="task-note" aria-live="polite"></p>
+<p class="muted">菜数 / 等级上限 / 产能档数：奶茶 2 / 20 / 8；煎饼 2 / 35 / 12；面包 6 / 70 / 14。</p>
+<div class="scroll"><table><thead><tr><th>店</th><th>购买策略</th><th>全部菜满级</th><th>菜单＋任务</th><th>新菜解锁</th><th>最大购买间隔</th><th>菜价/机器/员工/魅力支出</th><th>停止原因</th></tr></thead><tbody id="rows"></tbody></table></div></div>
+<div class="panel"><h2>如何理解结果</h2>
+<p><strong>即时回本：</strong>比较购买后的即时收入增量，是贪心策略，可能比固定循环更慢，不能称为最优方案。</p>
+<p><strong>固定循环：</strong>新菜优先；之后循环买菜价、机器、员工、魅力，不识别瓶颈。仅用于对照。</p>
+<p>新客流 = 魅力拉新 + 品质回头。升星只改变售价；“每菜岗位负荷”只是兼岗代理。所有换算系数都属于本轮实验假设。</p>
+<p>停止原因：<code>reference_complete</code> 仅升满；<code>tasks_and_reference_complete</code> 两项都完成；<code>time_limit</code> 达到 48 小时；<code>zero_income</code> 无收入；<code>no_actions</code> 无可行购买。</p>
+<ul id="limits"></ul>
+</div>
+</section>
+</div>
+</main>
+<script type="module">
+// Economic baseline from the supplied model. These are not new official values.
+const G0 = Object.freeze({ pg: 1.08, cg: 1.20, starEvery: 10, starMult: 2, starArr: .25,
+  crossMult: 1.4, rM: 1.5, rS: 1.5, rL: 1.5, newDishFactor: 1, newShare: .45,
+  flowStep: 1.25, capStep: .2, perStaff: .2, p0: 10, unlockAt: 10, volGrow: .2 });
+const CANDIDATE_B = Object.freeze({ rM: 1.2, rS: 1, rL: 1.2, crossMult: 1.3 });
+const SHOPS = Object.freeze([
+  { id: 'tea', name: '奶茶店', type: '小店', dishes: 2, cap: 20, staff0: 1, staffMax: 3, volMax: 8, c0: .25, d0: .2 },
+  { id: 'pancake', name: '煎饼果子店', type: '小店', dishes: 2, cap: 35, staff0: 2, staffMax: 5, volMax: 12, c0: .25, d0: .2 },
+  { id: 'bakery', name: '面包店', type: '中店', dishes: 6, cap: 70, staff0: 2, staffMax: 8, volMax: 14, c0: .25, d0: .2 },
+].map(Object.freeze));
+
+// Experimental linear flow assumptions, not calibrated game formulas.
+const SCENARIOS = Object.freeze([
+  ['low', '低回头率假设', .025], ['middle', '中回头率假设', .05], ['high', '高回头率假设', .1],
+].map(([id, label, returnAtQualityOne]) => Object.freeze({
+  id, label, newVisits: .15, returnAtQualityOne, baseQuality: .8,
+  overloadPenalty: .1, postsPerDish: 1, charm: 0, perCharm: .1,
+})));
+const LIMITATIONS = Object.freeze([
+  '实验线性客流换算，系数与兼岗规则未校准；不代表正式公式。',
+  '总产能/总人力近似，未模拟自动、人工、人机配合的工序阶段。',
+  '未模拟配方、共用设备争抢、物流、库存、断料及顾客耐心。',
+  '销量为连续流量估算；正式任务目标未配置时通关时间为 N/A。',
+  '定时购买期间仍按在线生产；不是实际离线收益。',
+]);
+
+function dishPrice(dish, g) {
+  return dish.p * g.pg ** (dish.L - 1) * g.starMult ** Math.floor(dish.L / g.starEvery);
+}
+function upgradeCost(dish, g) { return 4 * dish.p * g.cg ** (dish.L - 1); }
+function capacityCost(state, g, kind) {
+  const keys = { machine: ['rM', 'kM'], staff: ['rS', 'kS'], lure: ['rL', 'kL'] };
+  if (!keys[kind]) throw new TypeError('Unknown capacity purchase');
+  const [ratio, count] = keys[kind];
+  const ruler = state.dishes.reduce((sum, dish) => sum + upgradeCost(dish, g), 0) / state.dishes.length;
+  return g[ratio] * ruler * (1 + g.volGrow) ** state[count];
+}
+function validateScenario(s) {
+  for (const key of ['newVisits', 'returnAtQualityOne', 'baseQuality', 'overloadPenalty', 'postsPerDish', 'charm', 'perCharm'])
+    if (!Number.isFinite(s?.[key]) || s[key] < 0) throw new RangeError(`Invalid scenario: ${key}`);
+  if (s.baseQuality > 1) throw new RangeError('baseQuality must be within 0..1');
+}
+function demandDetails(state, g, scenario) {
+  validateScenario(scenario);
+  // Explicit hypothesis: active dishes proxy simultaneous posts, not actual dispatch.
+  const posts = state.dishes.length * scenario.postsPerDish;
+  const overload = state.staff > 0 ? Math.max(0, posts / state.staff - 1) : (posts > 0 ? Infinity : 0);
+  const penalty = scenario.overloadPenalty === 0 ? 0 : scenario.overloadPenalty * overload;
+  const quality = Math.max(0, Math.min(1, scenario.baseQuality - penalty));
+  const attraction = scenario.newVisits * (1 + scenario.charm * scenario.perCharm) * (1 + g.capStep) ** state.kL;
+  const returns = scenario.returnAtQualityOne * quality;
+  if (![attraction, returns, attraction + returns].every(Number.isFinite))
+    throw new RangeError('Demand parameters exceed numeric range');
+  return { attraction, returns, quality, total: attraction + returns };
+}
+function incomeState(state, g, scenario, multiplier = 1) {
+  const demand = demandDetails(state, g, scenario);
+  const labor = state.staff * g.perStaff * state.train;
+  const flow = Math.min(demand.total, state.C, labor);
+  const revenue = flow * multiplier * state.dishes.reduce((sum, d) => sum + d.w * dishPrice(d, g), 0);
+  const bottleneck = flow === demand.total ? 'demand' : flow === state.C ? 'machine' : 'labor';
+  return { ...demand, flow, revenue, labor, bottleneck };
+}
+
+function evaluateTasks(spec, sales, menuComplete, dishCount) {
+  if (spec == null || (Array.isArray(spec) && spec.length === 0)) return null;
+  if (!Array.isArray(spec)) throw new TypeError('Task specification must be an array');
+  const tasks = spec.map(task => {
+    if ((task.type != null && task.type !== 'sales') || !Number.isInteger(task.dish) || task.dish < 0 || task.dish >= dishCount || !Number.isInteger(task.target) || task.target <= 0)
+      throw new RangeError('Only positive sales targets for known dish indices are supported');
+    const sold = sales[task.dish] ?? 0;
+    return { ...task, sold, done: sold + 1e-9 >= task.target };
+  });
+  return { done: menuComplete && tasks.every(t => t.done), tasks };
+}
+function secondsToTasks(spec, sales, rates, menuComplete) {
+  if (!menuComplete || !spec?.length) return Infinity;
+  return Math.max(0, ...spec.map(task => {
+    const remaining = task.target - (sales[task.dish] ?? 0);
+    if (remaining <= 1e-9) return 0;
+    const rate = rates[task.dish] ?? 0;
+    return rate > 0 ? remaining / rate : Infinity;
+  }));
+}
+
+
+function purchaseOptions(state, shop, g) {
+  const last = state.dishes.at(-1), options = [];
+  if (state.dishes.length < shop.dishes && last.L >= g.unlockAt)
+    options.push({ kind: 'unlock', cost: 20 * dishPrice(last, g) });
+  state.dishes.forEach((d, index) => {
+    if (d.L < shop.cap) options.push({ kind: 'price', index, cost: upgradeCost(d, g) });
+  });
+  const progress = (state.dishes.length - 1 + last.L / shop.cap) / shop.dishes;
+  const volCap = Math.ceil(shop.volMax * Math.min(1, progress + .1));
+  for (const [kind, key] of [['machine', 'kM'], ['staff', 'kS'], ['lure', 'kL']])
+    if (state[key] < volCap) options.push({ kind, cost: capacityCost(state, g, kind) });
+  return options;
+}
+function applyPurchase(state, action, shop, g) {
+  const s = { ...state, dishes: state.dishes.map(d => ({ ...d })) };
+  if (action.kind === 'price') s.dishes[action.index].L++;
+  else if (action.kind === 'machine') { s.C *= 1 + g.capStep; s.kM++; }
+  else if (action.kind === 'staff') {
+    if (s.staff < shop.staffMax) s.staff++;
+    else s.train *= 1 + g.capStep;
+    s.kS++;
+  } else if (action.kind === 'lure') s.kL++;
+  else if (action.kind === 'unlock') {
+    const p = dishPrice(s.dishes.at(-1), g) * g.newDishFactor;
+    s.dishes.forEach(d => { d.w *= 1 - g.newShare; });
+    s.dishes.push({ p, L: 1, w: g.newShare });
+  } else throw new TypeError('Unknown purchase kind');
+  return s;
+}
+function choosePurchases(state, shop, g, scenario, multiplier, strategy, purchaseCount) {
+  const options = purchaseOptions(state, shop, g);
+  const unlock = options.find(o => o.kind === 'unlock');
+  if (unlock) return [unlock];
+  if (strategy === 'routine') {
+    // A stated non-adaptive habit, not a claim about real player behaviour.
+    const order = ['price', 'machine', 'staff', 'lure'];
+    for (let step = 0; step < order.length; step++) {
+      const kind = order[(purchaseCount + step) % order.length];
+      const matches = options.filter(o => o.kind === kind);
+      if (matches.length) return [matches.reduce((a, b) => a.cost <= b.cost ? a : b)];
+    }
+    return null;
+  }
+  const base = incomeState(state, g, scenario, multiplier).revenue;
+  let best = null;
+  const score = combo => {
+    const trial = combo.reduce((s, o) => applyPurchase(s, o, shop, g), state);
+    const gain = incomeState(trial, g, scenario, multiplier).revenue - base;
+    const cost = combo.reduce((sum, o) => sum + o.cost, 0);
+    if (gain <= 1e-12 * Math.max(1, base)) return;
+    const payback = cost / gain;
+    if (!best || payback < best.payback) best = { payback, combo };
+  };
+  options.forEach(o => score([o]));
+  const capacity = options.filter(o => o.kind !== 'price');
+  for (let i = 0; i < capacity.length; i++) for (let j = i + 1; j < capacity.length; j++) {
+    score([capacity[i], capacity[j]]);
+    for (let k = j + 1; k < capacity.length; k++) score([capacity[i], capacity[j], capacity[k]]);
+  }
+  return best?.combo ?? null;
+}
+
+
+
+
+function validateInputs(shop, g, opts) {
+  for (const key of ['dishes', 'cap', 'staff0', 'staffMax', 'volMax'])
+    if (!Number.isInteger(shop[key]) || shop[key] < 0) throw new RangeError(`Invalid shop ${key}`);
+  if (shop.dishes < 1 || shop.cap < 1 || shop.staffMax < shop.staff0) throw new RangeError('Invalid shop limits');
+  if (![shop.c0, shop.d0].every(x => Number.isFinite(x) && x >= 0)) throw new RangeError('Invalid capacities');
+  for (const key of ['pg', 'cg', 'starMult', 'starEvery', 'p0', 'perStaff', 'unlockAt', 'newDishFactor'])
+    if (!Number.isFinite(g[key]) || g[key] <= 0) throw new RangeError(`Invalid global ${key}`);
+  for (const key of ['rM', 'rS', 'rL', 'capStep', 'volGrow'])
+    if (!Number.isFinite(g[key]) || g[key] < 0) throw new RangeError(`Invalid global ${key}`);
+  if (!(g.newShare > 0 && g.newShare < 1)) throw new RangeError('newShare must be between zero and one');
+  if (!['roi', 'routine'].includes(opts.strategy)) throw new RangeError('Unknown strategy');
+  for (const key of ['every', 'initialGold'])
+    if (!Number.isFinite(opts[key]) || opts[key] < 0) throw new RangeError(`Invalid ${key}`);
+  if (!Number.isFinite(opts.maxSeconds) || opts.maxSeconds <= 0) throw new RangeError('Invalid horizon');
+  const baseStep = g.pg ** (g.unlockAt - 1) * g.starMult ** Math.floor(g.unlockAt / g.starEvery) * g.newDishFactor;
+  const maxBase = g.p0 * Math.max(1, baseStep) ** (shop.dishes - 1);
+  const maxPrice = maxBase * Math.max(1, g.pg) ** (shop.cap - 1) * Math.max(1, g.starMult) ** Math.floor(shop.cap / g.starEvery);
+  const maxUpgrade = 4 * maxBase * Math.max(1, g.cg) ** (shop.cap - 1);
+  const maxCost = maxUpgrade * Math.max(1, g.rM, g.rS, g.rL) * (1 + g.volGrow) ** shop.volMax;
+  const maxFlow = Math.max(1, shop.c0, (shop.staffMax + shop.volMax) * g.perStaff) * (1 + g.capStep) ** shop.volMax;
+  const bounds = [maxBase, maxPrice, maxCost * (shop.dishes * shop.cap + 3 * shop.volMax), maxPrice * maxFlow * opts.multiplier * opts.maxSeconds];
+  if (!bounds.every(Number.isFinite)) throw new RangeError('Economic parameters exceed numeric range');
+}
+
+function estimateOfflineIncome(onlinePerSecond, secondsAway, capSeconds) {
+  if (![onlinePerSecond, secondsAway, capSeconds].every(x => Number.isFinite(x) && x >= 0))
+    throw new RangeError('Offline estimate requires an explicit nonnegative duration cap');
+  return onlinePerSecond * Math.min(secondsAway, capSeconds) / 10;
+}
+
+function simulateShop(shop, g, scenario, options = {}) {
+  const opts = { strategy: 'roi', every: 0, initialGold: 60, maxSeconds: 172800, multiplier: 1, tasks: null, ...options };
+  validateInputs(shop, g, opts); validateScenario(scenario);
+  if (!Number.isFinite(opts.multiplier) || opts.multiplier <= 0) throw new RangeError('Invalid income multiplier');
+  const configured = evaluateTasks(opts.tasks, [], false, shop.dishes) !== null;
+  let state = { dishes: [{ p: g.p0, L: 1, w: 1 }], C: shop.c0, staff: shop.staff0, train: 1, kM: 0, kS: 0, kL: 0 };
+  let t = 0, gold = opts.initialGold, fullLevelSeconds = null, taskCompletionSeconds = null;
+  const sales = Array(shop.dishes).fill(0), unlocks = [], events = [];
+  const spend = { price: 0, machine: 0, staff: 0, lure: 0, unlock: 0 };
+  const bottleneckSeconds = { machine: 0, labor: 0, demand: 0 };
+  const menuComplete = () => state.dishes.length === shop.dishes;
+  const full = () => menuComplete() && state.dishes.every(d => d.L >= shop.cap);
+  const observe = () => {
+    if (full() && fullLevelSeconds === null) fullLevelSeconds = t;
+    if (configured && taskCompletionSeconds === null && evaluateTasks(opts.tasks, sales, menuComplete(), shop.dishes).done)
+      taskCompletionSeconds = t;
+  };
+  const advance = (seconds, stats) => {
+    const rates = sales.map((_, i) => stats.flow * (state.dishes[i]?.w ?? 0));
+    const remaining = secondsToTasks(opts.tasks, sales, rates, menuComplete());
+    if (configured && taskCompletionSeconds === null && remaining <= seconds + 1e-9)
+      taskCompletionSeconds = t + Math.min(seconds, remaining);
+    rates.forEach((rate, i) => { sales[i] += seconds * rate; });
+    gold += seconds * stats.revenue;
+    bottleneckSeconds[stats.bottleneck] += seconds;
+    t += seconds;
+  };
+  let stopReason = 'event_limit';
+  for (let iteration = 0; iteration < 20000; iteration++) {
+    observe();
+    if (full() && (!configured || taskCompletionSeconds !== null)) {
+      stopReason = configured ? 'tasks_and_reference_complete' : 'reference_complete'; break;
+    }
+    const stats = incomeState(state, g, scenario, opts.multiplier);
+    if (!Number.isFinite(stats.revenue)) { stopReason = 'non_finite'; break; }
+    if (t >= opts.maxSeconds) { stopReason = 'time_limit'; break; }
+    if (full()) {
+      if (stats.revenue <= 0) { stopReason = 'zero_income'; break; }
+      const rates = sales.map((_, i) => stats.flow * (state.dishes[i]?.w ?? 0));
+      const remaining = secondsToTasks(opts.tasks, sales, rates, menuComplete());
+      if (!Number.isFinite(remaining)) { stopReason = 'unreachable_tasks'; break; }
+      advance(Math.min(remaining, opts.maxSeconds - t), stats);
+      continue;
+    }
+    const combo = choosePurchases(state, shop, g, scenario, opts.multiplier, opts.strategy, events.length);
+    if (!combo) {
+      if (configured && taskCompletionSeconds === null && menuComplete() && stats.revenue > 0) {
+        const rates = sales.map((_, i) => stats.flow * (state.dishes[i]?.w ?? 0));
+        const remaining = secondsToTasks(opts.tasks, sales, rates, true);
+        if (Number.isFinite(remaining)) {
+          advance(Math.min(remaining, opts.maxSeconds - t), stats);
+          stopReason = taskCompletionSeconds === null ? 'time_limit' : 'tasks_complete_without_full_level';
+          break;
+        }
+      }
+      stopReason = stats.revenue <= 0 ? 'zero_income' : 'no_actions'; break;
+    }
+    const cost = combo.reduce((sum, o) => sum + o.cost, 0);
+    if (!Number.isFinite(cost)) { stopReason = 'non_finite'; break; }
+    if (gold < cost) {
+      if (stats.revenue <= 0) { stopReason = 'zero_income'; break; }
+      let wait = (cost - gold) / stats.revenue;
+      if (opts.every) wait = Math.max(wait, Math.ceil((t + wait) / opts.every - 1e-12) * opts.every - t);
+      const available = opts.maxSeconds - t;
+      advance(Math.min(wait, available), stats);
+      if (wait > available) { stopReason = 'time_limit'; break; }
+    }
+    gold = Math.max(0, gold - cost);
+    for (const action of combo) {
+      spend[action.kind] += action.cost;
+      state = applyPurchase(state, action, shop, g);
+      if (action.kind === 'unlock') unlocks.push(t);
+    }
+    events.push({ time: t, kinds: combo.map(o => o.kind), cost });
+  }
+  observe();
+  const totalSpend = Object.values(spend).reduce((a, b) => a + b, 0);
+  const last = incomeState(state, g, scenario, opts.multiplier);
+  const gaps = events.map((event, i) => event.time - (events[i - 1]?.time ?? 0));
+  return {
+    elapsedSeconds: t, fullLevelSeconds, taskCompletionSeconds,
+    tasks: evaluateTasks(opts.tasks, sales, menuComplete(), shop.dishes), menuComplete: menuComplete(),
+    stopReason, sales, unlocks, events, spend, totalSpend,
+    spendShares: Object.fromEntries(Object.entries(spend).map(([k, v]) => [k, totalSpend > 0 ? v / totalSpend : 0])),
+    bottleneckSeconds, gapMaxSeconds: Math.max(0, ...gaps),
+    gold, finalRevenuePerSecond: last.revenue, finalDemand: { attraction: last.attraction, returns: last.returns, quality: last.quality },
+    levels: state.dishes.map(d => d.L), productionMode: 'online', strategy: opts.strategy,
+    coverage: 'aggregate_capacity_not_physical_production',
+  };
+}
+
+
+
+const $ = id => document.getElementById(id);
+const fields = [
+  ['pg', '售价每级倍率', 1.02, 1.15, .01], ['cg', '升级费每级倍率', 1.05, 1.4, .01],
+  ['starEvery', '每几级升星', 5, 25, 1], ['starMult', '每星售价倍率', 1.2, 3, .1],
+  ['rM', '机器价格比例', .1, 5, .1], ['rS', '员工价格比例', .1, 5, .1],
+  ['rL', '魅力投入价格比例', .1, 5, .1], ['crossMult', '跨店收入倍率', 1, 2.5, .05],
+];
+const assumptions = [
+  ['newVisits', '基础拉新率（人/秒）', 0, 10, .01],
+  ['returnAtQualityOne', '满品质回头流量（人/秒）', 0, 10, .005],
+  ['baseQuality', '基础品质（0–1）', 0, 1, .05],
+  ['overloadPenalty', '兼岗品质惩罚系数', 0, 1, .05],
+  ['postsPerDish', '每菜岗位负荷代理', 0, 10, .5],
+  ['charm', '初始魅力', 0, 100, 1], ['perCharm', '每点魅力拉新系数', 0, 10, .05],
+];
+function numericField([key, label, min, max, step], prefix, parent) {
+  const wrap = document.createElement('label'); wrap.textContent = label;
+  const input = document.createElement('input');
+  Object.assign(input, { id: prefix + key, type: 'number', min, max, step, required: true });
+  wrap.append(input); parent.append(wrap);
+}
+fields.forEach(f => numericField(f, 'g-', $('globals')));
+assumptions.forEach(f => numericField(f, 'a-', $('assumptions')));
+SCENARIOS.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = s.label; $('scenario').append(o); });
+$('scenario').value = 'middle';
+LIMITATIONS.forEach(text => { const li = document.createElement('li'); li.textContent = text; $('limits').append(li); });
+function fillGlobals() {
+  const g = { ...G0, ...($('preset').value === 'candidateB' ? CANDIDATE_B : {}) };
+  fields.forEach(([key]) => { $('g-' + key).value = g[key]; });
+}
+function fillScenario() {
+  const scenario = SCENARIOS.find(s => s.id === $('scenario').value);
+  assumptions.forEach(([key]) => { $('a-' + key).value = scenario[key]; });
+}
+fillGlobals(); fillScenario();
+let latest = null;
+const minutes = seconds => seconds === null ? 'N/A' : (seconds / 60).toFixed(2) + ' 分';
+function readInputs() {
+  if (!$('controls').reportValidity()) return null;
+  const g = { ...G0 };
+  fields.forEach(([key]) => { g[key] = $('g-' + key).valueAsNumber; });
+  const scenario = { label: '当前实验假设（未校准）' };
+  assumptions.forEach(([key]) => { scenario[key] = $('a-' + key).valueAsNumber; });
+  const target = $('target').value === '' ? null : $('target').valueAsNumber;
+  if (target !== null && (!Number.isInteger(target) || target <= 0)) throw new RangeError('假设销量目标必须为正整数，或留空表示未配置。');
+  return { g, scenario, every: Number($('every').value), target, shops: SHOPS };
+}
+function render() {
+  $('error').textContent = '';
+  try {
+    const input = readInputs(); if (!input) return;
+    const rows = [];
+    for (const strategy of ['roi', 'routine']) SHOPS.forEach((shop, i) => {
+      const tasks = input.target === null ? null : Array.from({ length: shop.dishes }, (_, dish) => ({ dish, target: input.target }));
+      const r = simulateShop(shop, input.g, input.scenario, { strategy, every: input.every, multiplier: input.g.crossMult ** i, tasks });
+      rows.push({ shop: shop.name, strategy, ...r });
+    });
+    const tbody = $('rows'); tbody.replaceChildren();
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      const share = ['price', 'machine', 'staff', 'lure'].map(k => (r.spendShares[k] * 100).toFixed(0) + '%').join(' / ');
+      const cells = [r.shop, r.strategy === 'roi' ? '即时回本' : '固定循环', minutes(r.fullLevelSeconds),
+        minutes(r.taskCompletionSeconds), r.unlocks.map(minutes).join(' / ') || '—',
+        (r.gapMaxSeconds / 60).toFixed(2) + ' 分', share, r.stopReason];
+      for (const text of cells) { const td = document.createElement('td'); td.textContent = text; tr.append(td); }
+      tbody.append(tr);
+    }
+    $('task-note').textContent = input.target === null
+      ? '任务目标未配置：通关时间全部为 N/A。满级时间只是结构指标。'
+      : '当前使用“每菜售出 ' + input.target + ' 份”的假设任务，不是正式任务规格。';
+    latest = { inputs: input, coverage: 'aggregate_capacity_not_physical_production', limitations: LIMITATIONS, rows };
+    $('export').disabled = false;
+  } catch (error) {
+    $('rows').replaceChildren(); latest = null; $('export').disabled = true;
+    $('error').textContent = error.message;
+  }
+}
+$('controls').addEventListener('submit', e => { e.preventDefault(); render(); });
+$('controls').addEventListener('input', () => {
+  latest = null; $('export').disabled = true;
+  $('task-note').textContent = '输入已改变，请运行对照；表中暂为上次运行结果。';
+});
+$('preset').addEventListener('change', () => { fillGlobals(); render(); });
+$('scenario').addEventListener('change', () => { fillScenario(); render(); });
+$('export').addEventListener('click', () => {
+  if (!latest) return;
+  const url = URL.createObjectURL(new Blob([JSON.stringify(latest, null, 2)], { type: 'application/json' }));
+  const a = document.createElement('a'); a.href = url; a.download = 'economy-experiment.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+render();
+
+</script>
+</html>
