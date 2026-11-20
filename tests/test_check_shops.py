@@ -41,6 +41,23 @@ class AcceptanceTests(unittest.TestCase):
         self.assertLessEqual(required, scripts)
         self.assertTrue(any(job['kind'] == 'web' for job in data['jobs']))
 
+    def test_rules_shards_are_complete_and_keep_original_timeout(self):
+        data = json.loads(MANIFEST.read_text(encoding='utf-8'))
+        rules = [job for job in data['jobs'] if job.get('script') == 'tests/run_all.gd']
+        self.assertEqual(len(rules), 8)
+        self.assertEqual({job['args'][0] for job in rules}, {f'--shard={i}/8' for i in range(8)})
+        self.assertTrue(all(job['timeout'] == 600 for job in rules))
+        self.tool().validate_manifest(data, ROOT)
+        for changed in [rules[:-1], [*rules[:-1], dict(rules[-1], args=['--shard=0/8'])],
+                        [dict(rules[0], args=[]), *rules[1:]],
+                        [dict(rules[0], args=['--shard=8/8']), *rules[1:]]]:
+            with self.assertRaises(ValueError):
+                self.tool().validate_manifest({'version': 1, 'jobs': changed}, ROOT)
+        # Deterministic modulo selection is disjoint and exhaustive, including uneven totals.
+        for total in [1, 7, 8, 9, 1077]:
+            partitions = [[i for i in range(total) if i % 8 == shard] for shard in range(8)]
+            self.assertEqual(sorted(i for part in partitions for i in part), list(range(total)))
+
     def run_child(self, code, timeout=3, success=None):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
