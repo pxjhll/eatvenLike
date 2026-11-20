@@ -1,5 +1,11 @@
 [gd_scene format=3]
 
+[ext_resource type="Script" path="res://presentation/shop/machine_work_sprite.gd" id="machine_sprite"]
+[ext_resource type="Texture2D" path="res://art/pancake/machines/fryer.webp" id="work_fryer"]
+[ext_resource type="Texture2D" path="res://art/pancake/machines/griddle.webp" id="work_griddle"]
+[ext_resource type="Texture2D" path="res://art/pancake/machines/soy.webp" id="work_soy"]
+[ext_resource type="Texture2D" path="res://art/pancake/machines/mixer.webp" id="work_mixer"]
+
 [ext_resource type="Script" path="res://presentation/shops/pancake/pancake_stall.gd" id="controller"]
 [ext_resource type="Script" path="res://presentation/shops/pancake/procedural_layer.gd" id="procedural"]
 [ext_resource type="FontFile" path="res://art/pancake/labels_font.otf" id="font"]
@@ -16,11 +22,6 @@
 [ext_resource type="Texture2D" path="res://art/reference/checkout.png" id="library_21"]
 [ext_resource type="Texture2D" path="res://art/reference/register.png" id="library_23"]
 [ext_resource type="Texture2D" path="res://art/reference/brewing_pipe.png" id="library_26"]
-
-[sub_resource type="AtlasTexture" id="sprite_0"]
-atlas = ExtResource("atlas")
-region = Rect2(1947, 433, 73, 48)
-filter_clip = true
 
 [sub_resource type="AtlasTexture" id="sprite_1"]
 atlas = ExtResource("atlas")
@@ -82,11 +83,6 @@ atlas = ExtResource("atlas")
 region = Rect2(989, 568, 206, 146)
 filter_clip = true
 
-[sub_resource type="AtlasTexture" id="sprite_13"]
-atlas = ExtResource("atlas")
-region = Rect2(1390, 1048, 127, 120)
-filter_clip = true
-
 [sub_resource type="AtlasTexture" id="sprite_16"]
 atlas = ExtResource("atlas")
 region = Rect2(1390, 568, 279, 168)
@@ -105,11 +101,6 @@ filter_clip = true
 [sub_resource type="AtlasTexture" id="sprite_19"]
 atlas = ExtResource("atlas")
 region = Rect2(1819, 3, 183, 345)
-filter_clip = true
-
-[sub_resource type="AtlasTexture" id="sprite_22"]
-atlas = ExtResource("atlas")
-region = Rect2(1675, 664, 160, 241)
 filter_clip = true
 
 [sub_resource type="AtlasTexture" id="sprite_24"]
@@ -172,19 +163,9 @@ atlas = ExtResource("atlas")
 region = Rect2(921, 1614, 463, 328)
 filter_clip = true
 
-[sub_resource type="AtlasTexture" id="sprite_37"]
-atlas = ExtResource("atlas")
-region = Rect2(1155, 918, 156, 149)
-filter_clip = true
-
 [sub_resource type="AtlasTexture" id="sprite_38"]
 atlas = ExtResource("atlas")
 region = Rect2(1543, 934, 78, 79)
-filter_clip = true
-
-[sub_resource type="AtlasTexture" id="sprite_39"]
-atlas = ExtResource("atlas")
-region = Rect2(1201, 748, 144, 164)
 filter_clip = true
 
 [node name="PancakeArt" type="Node2D"]
@@ -379,22 +360,24 @@ metadata/source_name = "connector_pipe"
 
 [node name="N23_pancake_griddle" type="Sprite2D" parent="SceneClip/N21_05 后排设备"]
 transform = Transform2D(1.0376461988, 0, 0, 1.0365853659, 0, 13)
-texture = SubResource("sprite_39")
+texture = ExtResource("work_griddle")
 centered = false
+hframes = 9
+script = ExtResource("machine_sprite")
+machine = "rear_equipment"
+work_phase = "operate"
+first_work_frame = 1
 metadata/figcraft_id = 23
 metadata/source_name = "pancake_griddle"
 
-[node name="N24_round_pancake" type="Sprite2D" parent="SceneClip/N21_05 后排设备"]
-transform = Transform2D(1.0273972603, 0, 0, 0.7916666667, 49, 105)
-texture = SubResource("sprite_0")
-centered = false
-metadata/figcraft_id = 24
-metadata/source_name = "round_pancake"
-
 [node name="N25_batter_mixer" type="Sprite2D" parent="SceneClip/N21_05 后排设备"]
 transform = Transform2D(1.031496063, 0, 0, 1.0396825397, 190, 53.619047619)
-texture = SubResource("sprite_13")
+texture = ExtResource("work_mixer")
 centered = false
+hframes = 8
+script = ExtResource("machine_sprite")
+machine = "rear_equipment"
+work_phase = "load"
 metadata/figcraft_id = 25
 metadata/source_name = "batter_mixer"
 
@@ -456,8 +439,12 @@ visible = false
 
 [node name="N32_fryer" type="Sprite2D" parent="SceneClip/N31_08 油炸工位"]
 transform = Transform2D(1.0384615385, 0, 0, 1.0134228188, 0, 0)
-texture = SubResource("sprite_37")
+texture = ExtResource("work_fryer")
 centered = false
+hframes = 8
+script = ExtResource("machine_sprite")
+machine = "fryer"
+work_phase = "processing"
 metadata/figcraft_id = 32
 metadata/source_name = "fryer"
 
@@ -583,8 +570,12 @@ visible = false
 
 [node name="N48_soy_milk_dispenser" type="Sprite2D" parent="SceneClip/N161_豆浆机"]
 transform = Transform2D(1.0375, 0, 0, 1.0393086008, 0, 0)
-texture = SubResource("sprite_22")
+texture = ExtResource("work_soy")
 centered = false
+hframes = 8
+script = ExtResource("machine_sprite")
+machine = "soy_milk"
+work_phase = "operate"
 metadata/figcraft_id = 48
 metadata/source_name = "soy_milk_dispenser"
 

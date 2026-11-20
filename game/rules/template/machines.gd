@@ -256,11 +256,13 @@ func status(machine: String) -> Dictionary:
 	if not _state.definitions.has(machine): return {}
 	var definition: Dictionary = _state.definitions[machine]
 	var output: int = _inventory.quantity(definition.output)
-	var result := {"working":false, "progress":0.0, "input":_inventory.quantity(definition.input),
+	var result := {"active_phases":[], "working":false, "progress":0.0, "input":_inventory.quantity(definition.input),
 		"processing":0, "output":output, "phase":"ready" if output > 0 else "idle", "operator":-1, "need":""}
 	for run in _active_runs.values():
 		if run.machine != machine or run.phase in TERMINAL: continue
 		for claim in operation_ids(run): result.processing += Inventory._total(_inventory.claim(claim).produces)
+		if (run.phase == "processing" or run.phase in MANUAL) and run.phase not in result.active_phases:
+			result.active_phases.append(run.phase)
 		if result.phase not in ["idle", "ready"]: continue
 		result.phase = run.phase
 		result.operator = run.operator

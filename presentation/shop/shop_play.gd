@@ -473,6 +473,7 @@ func _refresh(delta: float, frame: Dictionary = {}) -> void:
 			_shelf.text = _t("chip_shelf", {"count":count,"limit":rules.shelf_capacity()})
 	if _register_target != null: _register_target.visible = rules.is_open()
 	_refresh_station_signs()
+	_art_groups.update_machines(frame.get("machines", {}), float(frame.clock))
 	for post in _post_labels:
 		var owner := -1
 		for worker in frame.workers:
